@@ -1,0 +1,30 @@
+---
+title: "BannerSlot"
+description: "Full-width banner placement — announcements, usage warnings, and promotional messages."
+tableOfContents: false
+sidebar:
+  label: "BannerSlot"
+---
+
+import BannerSlotGallery from '../../../components/galleries/BannerSlotGallery';
+
+A full-width banner for announcements, usage warnings, and time-sensitive promotions. Supports top/bottom positioning and optional dismiss.
+
+**Content fields:** `header`, `body`, `cta_label`, `position` (`top` | `bottom`), `dismissible`
+
+<BannerSlotGallery client:only="react" />
+
+## Usage
+
+```tsx
+import { FixedSurfaceSlot } from '@revt-eng/sdk';
+
+<FixedSurfaceSlot
+  id="top_banner"
+  surfaceTemplateIds={["banner_placement"]}
+/>
+```
+
+The `BannerSlot` renders automatically when the decision engine selects a `banner_placement` template. Banners render at the top or bottom of the page. When `dismissible` is `true`, users can close the banner. The SDK tracks dismissals to prevent re-showing.
+
+**Related:** [Playground → Annual Banner](/playground/fixed-slots/fixed-banner/) · [API Reference](/api/)

@@ -1,0 +1,3225 @@
+{
+  "version": "1.0.0",
+  "exported_at": "2026-04-02T00:00:00Z",
+  "plans": [
+    {
+      "id": "starter",
+      "unique_handle": "starter",
+      "name": "Starter"
+    },
+    {
+      "id": "professional",
+      "unique_handle": "professional",
+      "name": "Professional"
+    },
+    {
+      "id": "enterprise",
+      "unique_handle": "enterprise",
+      "name": "Enterprise"
+    }
+  ],
+  "entitlements": [
+    {
+      "id": "ent_core_credits",
+      "unique_handle": "core_credits",
+      "name": "Core Credits",
+      "type": "credits",
+      "unit": "minutes"
+    },
+    {
+      "id": "ent_premium_credits",
+      "unique_handle": "premium_credits",
+      "name": "Premium Credits",
+      "type": "credits",
+      "unit": "minutes"
+    },
+    {
+      "id": "ent_active_projects",
+      "unique_handle": "active_projects",
+      "name": "Active Projects",
+      "type": "usage_limit",
+      "unit": "projects"
+    },
+    {
+      "id": "ent_attachment_size",
+      "unique_handle": "attachment_size_mb",
+      "name": "Attachment Size Limit",
+      "type": "usage_limit",
+      "unit": "minutes"
+    },
+    {
+      "id": "ent_items_per_project",
+      "unique_handle": "items_per_project",
+      "name": "Items per Project",
+      "type": "usage_limit",
+      "unit": "items"
+    },
+    {
+      "id": "ent_seats",
+      "unique_handle": "seats",
+      "name": "Editor Seats",
+      "type": "seat",
+      "unit": "seats"
+    },
+    {
+      "id": "ent_custom_workflows",
+      "unique_handle": "custom_workflows",
+      "name": "Custom Workflows",
+      "type": "usage_limit",
+      "unit": "workflows"
+    },
+    {
+      "id": "ent_automations",
+      "unique_handle": "automations",
+      "name": "Automations",
+      "type": "usage_limit",
+      "unit": "automations"
+    },
+    {
+      "id": "ent_branding",
+      "unique_handle": "branding",
+      "name": "Branding",
+      "type": "capability_tier"
+    },
+    {
+      "id": "ent_data_export",
+      "unique_handle": "data_export",
+      "name": "Data Export",
+      "type": "feature"
+    },
+    {
+      "id": "ent_bulk_export",
+      "unique_handle": "bulk_export",
+      "name": "Bulk Export",
+      "type": "feature"
+    },
+    {
+      "id": "ent_brand_kit",
+      "unique_handle": "brand_kit",
+      "name": "Brand Kit",
+      "type": "feature"
+    },
+    {
+      "id": "ent_analytics",
+      "unique_handle": "analytics",
+      "name": "Analytics",
+      "type": "feature"
+    },
+    {
+      "id": "ent_collaboration",
+      "unique_handle": "collaboration",
+      "name": "Collaboration",
+      "type": "feature"
+    },
+    {
+      "id": "ent_support",
+      "unique_handle": "support",
+      "name": "Support Level",
+      "type": "capability_tier"
+    },
+    {
+      "id": "ent_sso_saml",
+      "unique_handle": "sso_saml",
+      "name": "SSO / SAML",
+      "type": "feature"
+    },
+    {
+      "id": "ent_custom_data_residency",
+      "unique_handle": "custom_data_residency",
+      "name": "Data Residency",
+      "type": "feature"
+    },
+    {
+      "id": "ent_dedicated_csm",
+      "unique_handle": "dedicated_csm",
+      "name": "Dedicated CSM",
+      "type": "feature"
+    }
+  ],
+  "entitlement_rules": [
+    {
+      "id": "ev_core_credits_free",
+      "entitlement_id": "ent_core_credits",
+      "plan_ids": [
+        "starter"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "credits",
+        "initial_grant": 30,
+        "allowance": 5,
+        "period": "per_month",
+        "rollover": true,
+        "max_balance": 90,
+        "top_up_available": false,
+        "unit": "minutes"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_core_credits_pro_monthly",
+      "entitlement_id": "ent_core_credits",
+      "plan_ids": [
+        "professional"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "credits",
+        "allowance": 30,
+        "period": "per_month",
+        "rollover": true,
+        "max_balance": 360,
+        "top_up_available": false,
+        "unit": "minutes"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_core_credits_enterprise",
+      "entitlement_id": "ent_core_credits",
+      "plan_ids": [
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "credits",
+        "allowance": 999999,
+        "period": "per_month",
+        "rollover": false,
+        "top_up_available": false,
+        "unit": "minutes"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_premium_credits_free",
+      "entitlement_id": "ent_premium_credits",
+      "plan_ids": [
+        "starter"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "credits",
+        "initial_grant": 5,
+        "allowance": 0,
+        "period": "per_month",
+        "rollover": false,
+        "top_up_available": false,
+        "unit": "minutes"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_premium_credits_pro_monthly",
+      "entitlement_id": "ent_premium_credits",
+      "plan_ids": [
+        "professional"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "credits",
+        "allowance": 10,
+        "period": "per_month",
+        "rollover": true,
+        "max_balance": 120,
+        "top_up_available": false,
+        "unit": "minutes"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_premium_credits_enterprise",
+      "entitlement_id": "ent_premium_credits",
+      "plan_ids": [
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "credits",
+        "allowance": 125,
+        "period": "per_month",
+        "rollover": true,
+        "max_balance": 1500,
+        "top_up_available": false,
+        "unit": "minutes"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_projects_free",
+      "entitlement_id": "ent_active_projects",
+      "plan_ids": [
+        "starter"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "usage_limit",
+        "limit_value": 6,
+        "unit": "projects",
+        "period": "concurrent",
+        "enforcement": "hard_block"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_projects_paid",
+      "entitlement_id": "ent_active_projects",
+      "plan_ids": [
+        "professional",
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "usage_limit",
+        "limit_value": 999999,
+        "unit": "projects",
+        "period": "concurrent",
+        "enforcement": "allow_overage"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_attachment_size_free",
+      "entitlement_id": "ent_attachment_size",
+      "plan_ids": [
+        "starter"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "usage_limit",
+        "limit_value": 5,
+        "unit": "minutes",
+        "period": "per_instance",
+        "enforcement": "hard_block"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_attachment_size_pro",
+      "entitlement_id": "ent_attachment_size",
+      "plan_ids": [
+        "professional"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "usage_limit",
+        "limit_value": 30,
+        "unit": "minutes",
+        "period": "per_instance",
+        "enforcement": "hard_block"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_attachment_size_enterprise",
+      "entitlement_id": "ent_attachment_size",
+      "plan_ids": [
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "usage_limit",
+        "limit_value": 999999,
+        "unit": "minutes",
+        "period": "per_instance",
+        "enforcement": "allow_overage"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_items_free",
+      "entitlement_id": "ent_items_per_project",
+      "plan_ids": [
+        "starter"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "usage_limit",
+        "limit_value": 15,
+        "unit": "items",
+        "period": "per_instance",
+        "enforcement": "hard_block"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_items_pro",
+      "entitlement_id": "ent_items_per_project",
+      "plan_ids": [
+        "professional"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "usage_limit",
+        "limit_value": 25,
+        "unit": "items",
+        "period": "per_instance",
+        "enforcement": "hard_block"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_items_enterprise",
+      "entitlement_id": "ent_items_per_project",
+      "plan_ids": [
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "usage_limit",
+        "limit_value": 999999,
+        "unit": "items",
+        "period": "per_instance",
+        "enforcement": "allow_overage"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_seats_free",
+      "entitlement_id": "ent_seats",
+      "plan_ids": [
+        "starter"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "seat",
+        "included_seats": 1,
+        "max_seats": 1,
+        "seat_type": "editor"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_seats_pro",
+      "entitlement_id": "ent_seats",
+      "plan_ids": [
+        "professional"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "seat",
+        "included_seats": 1,
+        "max_seats": null,
+        "seat_type": "editor"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_seats_enterprise",
+      "entitlement_id": "ent_seats",
+      "plan_ids": [
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "seat",
+        "included_seats": 10,
+        "max_seats": 999999,
+        "seat_type": "editor"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_custom_workflows_free",
+      "entitlement_id": "ent_custom_workflows",
+      "plan_ids": [
+        "starter"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "usage_limit",
+        "limit_value": 1,
+        "unit": "workflows",
+        "period": "concurrent",
+        "enforcement": "hard_block"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_custom_workflows_pro",
+      "entitlement_id": "ent_custom_workflows",
+      "plan_ids": [
+        "professional"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "usage_limit",
+        "limit_value": 10,
+        "unit": "workflows",
+        "period": "concurrent",
+        "enforcement": "hard_block"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_custom_workflows_enterprise",
+      "entitlement_id": "ent_custom_workflows",
+      "plan_ids": [
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "usage_limit",
+        "limit_value": 999999,
+        "unit": "workflows",
+        "period": "concurrent",
+        "enforcement": "allow_overage"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_automations_free",
+      "entitlement_id": "ent_automations",
+      "plan_ids": [
+        "starter"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "usage_limit",
+        "limit_value": 1,
+        "unit": "automations",
+        "period": "concurrent",
+        "enforcement": "hard_block"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_automations_pro",
+      "entitlement_id": "ent_automations",
+      "plan_ids": [
+        "professional"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "usage_limit",
+        "limit_value": 10,
+        "unit": "automations",
+        "period": "concurrent",
+        "enforcement": "hard_block"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_automations_enterprise",
+      "entitlement_id": "ent_automations",
+      "plan_ids": [
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "usage_limit",
+        "limit_value": 999999,
+        "unit": "automations",
+        "period": "concurrent",
+        "enforcement": "allow_overage"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_branding_free",
+      "entitlement_id": "ent_branding",
+      "plan_ids": [
+        "starter"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "feature",
+        "enabled": false
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_branding_paid",
+      "entitlement_id": "ent_branding",
+      "plan_ids": [
+        "professional",
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "capability_tier",
+        "tier_name": "White Label",
+        "tier_description": "White-label experience with custom branding across all customer surfaces"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_support_free",
+      "entitlement_id": "ent_support",
+      "plan_ids": [
+        "starter"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "capability_tier",
+        "tier_name": "Community",
+        "tier_description": "Self-serve support via help center and community forum"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_support_pro",
+      "entitlement_id": "ent_support",
+      "plan_ids": [
+        "professional"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "capability_tier",
+        "tier_name": "Standard",
+        "tier_description": "Email and chat support with priority response during business hours"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_support_enterprise",
+      "entitlement_id": "ent_support",
+      "plan_ids": [
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "capability_tier",
+        "tier_name": "Dedicated Priority",
+        "tier_description": "Dedicated support team with priority escalation and direct Slack channel"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_data_export_starter_denied",
+      "entitlement_id": "ent_data_export",
+      "plan_ids": [
+        "starter"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "feature",
+        "enabled": false
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_data_export_enabled",
+      "entitlement_id": "ent_data_export",
+      "plan_ids": [
+        "professional",
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "feature",
+        "enabled": true
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_bulk_export_enabled",
+      "entitlement_id": "ent_bulk_export",
+      "plan_ids": [
+        "professional",
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "feature",
+        "enabled": true
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_brand_kit_starter_denied",
+      "entitlement_id": "ent_brand_kit",
+      "plan_ids": [
+        "starter"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "feature",
+        "enabled": false
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_brand_kit_enabled",
+      "entitlement_id": "ent_brand_kit",
+      "plan_ids": [
+        "professional",
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "feature",
+        "enabled": true
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_analytics_enabled",
+      "entitlement_id": "ent_analytics",
+      "plan_ids": [
+        "professional",
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "feature",
+        "enabled": true
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_collaboration_enabled",
+      "entitlement_id": "ent_collaboration",
+      "plan_ids": [
+        "professional",
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "feature",
+        "enabled": true
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_sso_enabled",
+      "entitlement_id": "ent_sso_saml",
+      "plan_ids": [
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "feature",
+        "enabled": true
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_data_residency_enabled",
+      "entitlement_id": "ent_custom_data_residency",
+      "plan_ids": [
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "feature",
+        "enabled": true
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_csm_enabled",
+      "entitlement_id": "ent_dedicated_csm",
+      "plan_ids": [
+        "enterprise"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "feature",
+        "enabled": true
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_seats_extra_seat",
+      "entitlement_id": "ent_seats",
+      "plan_ids": [
+        "addon_sandbox_extra_seat"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "seat",
+        "included_seats": 1,
+        "max_seats": 1,
+        "seat_type": "editor"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_premium_credits_ep1",
+      "entitlement_id": "ent_premium_credits",
+      "plan_ids": [
+        "addon_sandbox_premium_ep1"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "credits",
+        "allowance": 20,
+        "period": "per_month",
+        "rollover": false,
+        "top_up_available": false,
+        "unit": "minutes"
+      },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_premium_credits_ep2",
+      "entitlement_id": "ent_premium_credits",
+      "plan_ids": [
+        "addon_sandbox_premium_ep2"
+      ],
+      "segment_id": null,
+      "type_fields": {
+        "kind": "credits",
+        "allowance": 40,
+        "period": "per_month",
+        "rollover": false,
+        "top_up_available": false,
+        "unit": "minutes"
+      },
+      "current_usage": 0
+    }
+  ],
+  "segments": [
+    {
+      "id": "plan_starter",
+      "name": "Starter Plan",
+      "slug": "plan_starter",
+      "predicates": [
+        {
+          "field": "plan",
+          "operator": "eq",
+          "value": "starter"
+        }
+      ]
+    },
+    {
+      "id": "plan_professional",
+      "name": "Professional Plan",
+      "slug": "plan_professional",
+      "predicates": [
+        {
+          "field": "plan",
+          "operator": "eq",
+          "value": "professional"
+        }
+      ]
+    },
+    {
+      "id": "plan_enterprise",
+      "name": "Enterprise Plan",
+      "slug": "plan_enterprise",
+      "predicates": [
+        {
+          "field": "plan",
+          "operator": "eq",
+          "value": "enterprise"
+        }
+      ]
+    },
+    {
+      "id": "role_owner",
+      "name": "Owner Role",
+      "slug": "role_owner",
+      "predicates": [
+        {
+          "field": "role",
+          "operator": "eq",
+          "value": "owner"
+        }
+      ]
+    },
+    {
+      "id": "role_admin",
+      "name": "Admin Role",
+      "slug": "role_admin",
+      "predicates": [
+        {
+          "field": "role",
+          "operator": "eq",
+          "value": "admin"
+        }
+      ]
+    },
+    {
+      "id": "role_editor",
+      "name": "Editor Role",
+      "slug": "role_editor",
+      "predicates": [
+        {
+          "field": "role",
+          "operator": "eq",
+          "value": "editor"
+        }
+      ]
+    },
+    {
+      "id": "role_viewer",
+      "name": "Viewer Role",
+      "slug": "role_viewer",
+      "predicates": [
+        {
+          "field": "role",
+          "operator": "eq",
+          "value": "viewer"
+        }
+      ]
+    },
+    {
+      "id": "perm_use_core",
+      "name": "Can Use Core",
+      "slug": "perm_use_core",
+      "predicates": [
+        {
+          "field": "perm_use_core",
+          "operator": "eq",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "perm_use_premium",
+      "name": "Can Use Premium",
+      "slug": "perm_use_premium",
+      "predicates": [
+        {
+          "field": "perm_use_premium",
+          "operator": "eq",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "perm_manage_brand_kit",
+      "name": "Can Manage Brand Kit",
+      "slug": "perm_manage_brand_kit",
+      "predicates": [
+        {
+          "field": "perm_manage_brand_kit",
+          "operator": "eq",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "perm_view_analytics",
+      "name": "Can View Analytics",
+      "slug": "perm_view_analytics",
+      "predicates": [
+        {
+          "field": "perm_view_analytics",
+          "operator": "eq",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "perm_export_bulk",
+      "name": "Can Export Bulk Data",
+      "slug": "perm_export_bulk",
+      "predicates": [
+        {
+          "field": "perm_export_bulk",
+          "operator": "eq",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "perm_export_data",
+      "name": "Can Export Data",
+      "slug": "perm_export_data",
+      "predicates": [
+        {
+          "field": "perm_export_data",
+          "operator": "eq",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "perm_manage_billing",
+      "name": "Can Manage Billing",
+      "slug": "perm_manage_billing",
+      "predicates": [
+        {
+          "field": "perm_manage_billing",
+          "operator": "eq",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "perm_manage_seats",
+      "name": "Can Manage Seats",
+      "slug": "perm_manage_seats",
+      "predicates": [
+        {
+          "field": "perm_manage_seats",
+          "operator": "eq",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "can_purchase_credits",
+      "name": "Can Purchase Credits",
+      "slug": "can_purchase_credits",
+      "predicates": [
+        {
+          "field": "canOrgPurchaseCredits",
+          "operator": "eq",
+          "value": "true"
+        },
+        {
+          "field": "perm_manage_billing",
+          "operator": "eq",
+          "value": "true"
+        }
+      ]
+    }
+  ],
+  "theme": {
+    "id": "0b0a4b5e-27bb-4d67-8bd3-e2f1df9640df",
+    "name": "Sandbox Default",
+    "version": "1",
+    "colors": {
+      "primary": "#6C5CE7",
+      "primaryText": "#FFFFFF",
+      "accent": "#00B894",
+      "accentText": "#FFFFFF",
+      "surface": "#FFFFFF",
+      "surfaceBorder": "#E6E8EC",
+      "text": "#212121",
+      "textSecondary": "#616161"
+    },
+    "typography": {
+      "fontFamily": "Inter, sans-serif",
+      "fontSize": "14px",
+      "fontSizeSmall": "12px",
+      "fontSizeHeader": "20px"
+    },
+    "shape": {
+      "borderRadius": "8px",
+      "borderRadiusSmall": "6px",
+      "borderRadiusLarge": "12px"
+    }
+  },
+  "content_ui_paths": [
+    {
+      "name": "Checkout: Professional",
+      "action_type": "open_checkout_modal",
+      "plan_handle": "professional",
+      "description": "Opens Stripe Checkout for the Professional plan"
+    },
+    {
+      "name": "Checkout: Expansion Pack",
+      "action_type": "open_checkout_modal",
+      "plan_handle": "premium_expansion_pack_1",
+      "description": "Opens Stripe Checkout for Advanced Expansion Pack 1"
+    },
+    {
+      "name": "Contact Sales",
+      "action_type": "book_demo",
+      "url": "/sales/demo",
+      "description": "Routes to sales contact form or Calendly booking"
+    },
+    {
+      "name": "View Pricing",
+      "action_type": "navigate_to_plans",
+      "description": "Navigates to external pricing page with plan comparison"
+    },
+    {
+      "name": "Switch to Annual",
+      "action_type": "open_checkout_modal",
+      "plan_handle": "professional",
+      "description": "Opens billing period switch flow with proration preview"
+    },
+    {
+      "name": "Manage Subscription",
+      "action_type": "custom_url",
+      "url": "/settings/billing",
+      "description": "Opens billing management settings"
+    }
+  ],
+  "surface_templates": [
+    {
+      "id": "button",
+      "surface_type": "button"
+    },
+    {
+      "id": "inline_gate_message",
+      "surface_type": "in_page",
+      "fields": [
+        {
+          "name": "message",
+          "type": "text",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "in_page_card",
+      "surface_type": "in_page",
+      "fields": [
+        {
+          "name": "header",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "body",
+          "type": "text"
+        },
+        {
+          "name": "image"
+        }
+      ]
+    },
+    {
+      "id": "usage_counter",
+      "surface_type": "in_page",
+      "fields": [
+        {
+          "name": "entitlement",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "header",
+          "type": "text"
+        },
+        {
+          "name": "body",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "banner_placement",
+      "surface_type": "banner",
+      "fields": [
+        {
+          "name": "header",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "body",
+          "type": "text"
+        },
+        {
+          "name": "dismissible",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": "modal_overlay",
+      "surface_type": "modal",
+      "fields": [
+        {
+          "name": "modal_type",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "header",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "secondary_body",
+          "type": "text"
+        },
+        {
+          "name": "image"
+        }
+      ]
+    },
+    {
+      "id": "toast_message",
+      "surface_type": "toast",
+      "fields": [
+        {
+          "name": "header",
+          "type": "text"
+        },
+        {
+          "name": "message",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "duration",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "id": "email",
+      "surface_type": "email",
+      "fields": [
+        {
+          "name": "subject",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "preheader",
+          "type": "text"
+        },
+        {
+          "name": "header",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "image"
+        },
+        {
+          "name": "send_delay",
+          "type": "number"
+        },
+        {
+          "name": "from_name",
+          "type": "text"
+        }
+      ]
+    }
+  ],
+  "placements": [
+    {
+      "id": "pl_nav_upgrade",
+      "name": "NAV-1: Upgrade Button",
+      "category": "fixed",
+      "order": 0,
+      "trigger": {
+        "type": "surface_render",
+        "slot_id": "nav_bar_right"
+      },
+      "payloads": [
+        {
+          "id": "pl_nav_upgrade_p0",
+          "target": {
+            "plan_ids": [
+              "starter"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "button",
+              "fields": {},
+              "ctas": [
+                {
+                  "label": "Upgrade",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_pricing_page",
+      "name": "Plans & Pricing Page",
+      "category": "fixed",
+      "order": 1,
+      "trigger": {
+        "type": "surface_render",
+        "slot_id": "pricing_main_content"
+      },
+      "payloads": [
+        {
+          "id": "pl_pricing_page_p0",
+          "target": {
+            "plan_ids": [],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "in_page_card",
+              "fields": {
+                "header": "Choose your plan",
+                "body": "Full product access on every plan. Upgrade when you need professional white-label delivery."
+              },
+              "ctas": [
+                {
+                  "label": "Get Professional",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_quota_core_credits",
+      "name": "QM-1: Core Credits Quota Meter",
+      "category": "fixed",
+      "order": 2,
+      "trigger": {
+        "type": "surface_render",
+        "slot_id": "sidebar_usage_widget"
+      },
+      "payloads": [
+        {
+          "id": "pl_quota_core_credits_p0",
+          "target": {
+            "plan_ids": [],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "usage_counter",
+              "fields": {
+                "entitlement": "core_credits",
+                "header": "{{usage_remaining}}/{{usage_limit}} minutes left",
+                "body": "Renews {{reset_date}}"
+              },
+              "ctas": [
+                {
+                  "label": "Get more credits",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_gate_data_export",
+      "name": "D1: Data Export Gate",
+      "category": "gated",
+      "order": 0,
+      "trigger": {
+        "type": "entitlement_gate",
+        "entitlement_handle": "data_export"
+      },
+      "payloads": [
+        {
+          "id": "pl_gate_data_export_p0",
+          "target": {
+            "plan_ids": [
+              "starter"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": {
+                "modal_type": "Optional",
+                "header": "Export your data",
+                "body": "Get your data as files to share anywhere \u2014 email, Slack, presentations, social media. Professional plan starts at $55/mo.",
+                "secondary_body": ""
+              },
+              "ctas": [
+                {
+                  "label": "Upgrade to Professional",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                },
+                {
+                  "label": "Share via link instead",
+                  "path": "dismiss"
+                }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_gate_bulk_export",
+      "name": "D2: Bulk Export Gate",
+      "category": "gated",
+      "order": 1,
+      "trigger": {
+        "type": "entitlement_gate",
+        "entitlement_handle": "bulk_export"
+      },
+      "payloads": [
+        {
+          "id": "pl_gate_bulk_export_p0",
+          "target": {
+            "plan_ids": [
+              "starter"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": {
+                "modal_type": "Optional",
+                "header": "Bulk export your data",
+                "body": "Bulk export all your data in standard formats for downstream systems and integrations. Professional plan starts at $55/mo."
+              },
+              "ctas": [
+                {
+                  "label": "Upgrade to Professional",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                },
+                {
+                  "label": "What is bulk export?",
+                  "path": "custom",
+                  "config": {
+                    "handle": "help_bulk_export"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_gate_branding",
+      "name": "D3: Branding Gate",
+      "category": "gated",
+      "order": 2,
+      "trigger": {
+        "type": "entitlement_gate",
+        "entitlement_handle": "branding",
+        "tier_threshold": "white_label"
+      },
+      "payloads": [
+        {
+          "id": "pl_gate_branding_p0",
+          "target": {
+            "plan_ids": [
+              "starter"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "inline_gate_message",
+              "fields": {
+                "message": "Deliver fully white-labeled experiences without the Sandbox brand."
+              },
+              "ctas": [
+                {
+                  "label": "Upgrade to Professional",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_gate_brand_kit",
+      "name": "D6: Brand Kit Gate",
+      "category": "gated",
+      "order": 3,
+      "trigger": {
+        "type": "entitlement_gate",
+        "entitlement_handle": "brand_kit"
+      },
+      "payloads": [
+        {
+          "id": "pl_gate_brand_kit_p0",
+          "target": {
+            "plan_ids": [
+              "starter"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "in_page_card",
+              "fields": {
+                "header": "Match your brand identity across the product",
+                "body": "Set up your brand colors, fonts, and logo once. Apply them across every customer-facing surface with one click."
+              },
+              "ctas": [
+                {
+                  "label": "Upgrade to Professional",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_gate_analytics",
+      "name": "D7: Analytics Gate",
+      "category": "gated",
+      "order": 4,
+      "trigger": {
+        "type": "entitlement_gate",
+        "entitlement_handle": "analytics"
+      },
+      "payloads": [
+        {
+          "id": "pl_gate_analytics_p0",
+          "target": {
+            "plan_ids": [
+              "starter"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "in_page_card",
+              "fields": {
+                "header": "See how your customers engage",
+                "body": "Track usage, engagement, and completion metrics across your product."
+              },
+              "ctas": [
+                {
+                  "label": "Upgrade to Professional",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_gate_seats",
+      "name": "D8: Add Seat Gate",
+      "category": "gated",
+      "order": 5,
+      "trigger": {
+        "type": "entitlement_gate",
+        "entitlement_handle": "seats"
+      },
+      "payloads": [
+        {
+          "id": "pl_gate_seats_p0",
+          "target": {
+            "plan_ids": [
+              "starter"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": {
+                "modal_type": "Optional",
+                "header": "Collaborate with your team",
+                "body": "Add up to 3 editors to your workspace. Share templates, review drafts, and collaborate together. Professional plan starts at $55/mo."
+              },
+              "ctas": [
+                {
+                  "label": "Upgrade to Professional",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                },
+                {
+                  "label": "Not now",
+                  "path": "dismiss"
+                }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_credits_80pct",
+      "name": "V1: Core Credits Approaching 80%",
+      "category": "usage_credit_seat",
+      "order": 0,
+      "trigger": {
+        "type": "credit_threshold",
+        "entitlement_handle": "core_credits",
+        "threshold_percent": 80
+      },
+      "payloads": [
+        {
+          "id": "pl_credits_80pct_p0",
+          "target": {
+            "plan_ids": [
+              "starter"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "banner_placement",
+              "fields": {
+                "header": "{{usage_remaining}} credits left this period",
+                "body": "Upgrade to Professional for 360 credits/yr",
+                "dismissible": "Yes"
+              },
+              "ctas": [
+                {
+                  "label": "Get more credits",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {
+            "max_per_period": {
+              "count": 1,
+              "period": "day"
+            },
+            "cooldown_days": 3
+          },
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_credits_exhausted",
+      "name": "V2: Core Credits Exhausted",
+      "category": "usage_credit_seat",
+      "order": 1,
+      "trigger": {
+        "type": "credit_threshold",
+        "entitlement_handle": "core_credits",
+        "threshold_percent": 100
+      },
+      "payloads": [
+        {
+          "id": "pl_credits_exhausted_p0",
+          "target": {
+            "plan_ids": [
+              "starter"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": {
+                "modal_type": "Blocking",
+                "header": "You've used all your credits",
+                "body": "Professional gives you 360 credits/yr (30/mo) to keep working. Starts at $55/mo.",
+                "secondary_body": "Your balance refreshes with +5 credits on your next login."
+              },
+              "ctas": [
+                {
+                  "label": "Upgrade to Professional",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_premium_credits_exhausted",
+      "name": "V3: Premium Credits Exhausted",
+      "category": "usage_credit_seat",
+      "order": 2,
+      "trigger": {
+        "type": "credit_threshold",
+        "entitlement_handle": "premium_credits",
+        "threshold_percent": 100
+      },
+      "payloads": [
+        {
+          "id": "pl_premium_credits_exhausted_p0",
+          "target": {
+            "plan_ids": [
+              "starter"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": {
+                "modal_type": "Blocking",
+                "header": "Want more Premium credits?",
+                "body": "You've used your 5 free Premium credits. Professional gives you 120 Premium credits/yr for higher-tier work. Starts at $55/mo.",
+                "secondary_body": "You can still keep working with Core credits."
+              },
+              "ctas": [
+                {
+                  "label": "Upgrade to Professional",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_project_limit",
+      "name": "V4: Project Limit (7th Project)",
+      "category": "usage_credit_seat",
+      "order": 3,
+      "trigger": {
+        "type": "usage_threshold",
+        "entitlement_handle": "active_projects",
+        "threshold_percent": 100
+      },
+      "payloads": [
+        {
+          "id": "pl_project_limit_p0",
+          "target": {
+            "plan_ids": [
+              "starter"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": {
+                "modal_type": "Blocking",
+                "header": "You have 6 active projects",
+                "body": "Delete an existing project to make room, or upgrade to Professional for unlimited projects."
+              },
+              "ctas": [
+                {
+                  "label": "Upgrade to Professional",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_rt_welcome",
+      "name": "RT1: Trial Welcome",
+      "category": "trials",
+      "order": 0,
+      "trigger": {
+        "type": "trial_started",
+        "trial_type": "reverse"
+      },
+      "payloads": [
+        {
+          "id": "pl_rt_welcome_p0",
+          "target": {
+            "plan_ids": [],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "toast_message",
+              "fields": {
+                "header": "Welcome! You have full Professional access for 14 days",
+                "body": "Try data export, bulk export, brand kit, and analytics.",
+                "dismissible": "Yes"
+              },
+              "ctas": [
+                {
+                  "label": "See what's included",
+                  "path": "view_plans"
+                }
+              ]
+            }
+          ],
+          "caps": {
+            "max_per_period": {
+              "count": 1,
+              "period": "lifetime"
+            }
+          },
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_rt_midpoint",
+      "name": "RT2: Mid-Trial Nudge (Day 7)",
+      "category": "trials",
+      "order": 1,
+      "trigger": {
+        "type": "trial_progress",
+        "trial_type": "reverse",
+        "progress_percent": 50
+      },
+      "payloads": [
+        {
+          "id": "pl_rt_midpoint_p0",
+          "target": {
+            "plan_ids": [
+              "starter"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "banner_placement",
+              "fields": {
+                "header": "7 days left \u2014 you've used {{usage_current}} credits",
+                "body": "Keep access to data export, bulk export, and brand kit.",
+                "dismissible": "Yes"
+              },
+              "ctas": [
+                {
+                  "label": "Keep access",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {
+            "max_per_period": {
+              "count": 1,
+              "period": "lifetime"
+            }
+          },
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_rt_ending",
+      "name": "RT3: Trial Ending (2 Days)",
+      "category": "trials",
+      "order": 2,
+      "trigger": {
+        "type": "trial_ending",
+        "trial_type": "reverse",
+        "days_before_end": 2
+      },
+      "payloads": [
+        {
+          "id": "pl_rt_ending_p0",
+          "target": {
+            "plan_ids": [],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": {
+                "modal_type": "Optional",
+                "header": "Your trial ends in {{trial_days_remaining}} days",
+                "body": "Here's what you'll lose: data export, bulk export, brand kit, and analytics."
+              },
+              "ctas": [
+                {
+                  "label": "Upgrade to Professional",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                },
+                {
+                  "label": "Remind me tomorrow",
+                  "path": "snooze"
+                }
+              ]
+            }
+          ],
+          "caps": {
+            "max_per_period": {
+              "count": 1,
+              "period": "lifetime"
+            }
+          },
+          "status": "active",
+          "created_at": "2026-02-15"
+        },
+        {
+          "id": "pl_rt_ending_p1",
+          "target": {
+            "plan_ids": [],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "email",
+              "fields": {
+                "subject": "Your Professional trial ends in 2 days",
+                "preheader": "Here's what you created \u2014 and what you'll lose",
+                "header": "Your trial ends {{trial_days_remaining}} days",
+                "body": "During your trial, you used {{usage_current}} Core credits. On expiry, you'll lose access to data export, bulk export, brand kit, and analytics.",
+                "send_delay": "0"
+              },
+              "ctas": [
+                {
+                  "label": "Upgrade to Professional ($55/mo)",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {
+            "max_per_period": {
+              "count": 1,
+              "period": "lifetime"
+            }
+          },
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_rt_expired",
+      "name": "RT4: Trial Expired",
+      "category": "trials",
+      "order": 3,
+      "trigger": {
+        "type": "trial_ended",
+        "trial_type": "reverse"
+      },
+      "payloads": [
+        {
+          "id": "pl_rt_expired_p0",
+          "target": {
+            "plan_ids": [],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": {
+                "modal_type": "Blocking",
+                "header": "Your Professional access has ended",
+                "body": "Your data is safe \u2014 upgrade anytime to unlock data export, bulk export, brand kit, and analytics again.",
+                "secondary_body": ""
+              },
+              "ctas": [
+                {
+                  "label": "Upgrade to Professional ($55/mo annual)",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_premium_expansion",
+      "name": "E1: Advanced Monthly Cap \u2014 Expansion Pack",
+      "category": "other_conversion",
+      "order": 0,
+      "trigger": {
+        "type": "qualifier",
+        "qualifier": "always_on"
+      },
+      "payloads": [
+        {
+          "id": "pl_premium_expansion_p0",
+          "target": {
+            "plan_ids": [
+              "professional"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": {
+                "modal_type": "Optional",
+                "header": "You've used your monthly Premium credits",
+                "body": "Add an Expansion Pack for 240 more Premium credits/yr. Available on annual plans only."
+              },
+              "ctas": [
+                {
+                  "label": "Add Expansion Pack ($1,680/yr)",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "premium_expansion_pack_1"
+                  }
+                },
+                {
+                  "label": "Contact Sales for Enterprise",
+                  "path": "contact_sales"
+                }
+              ]
+            }
+          ],
+          "caps": {
+            "max_per_period": {
+              "count": 1,
+              "period": "month"
+            },
+            "cooldown_days": 7
+          },
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_4th_seat",
+      "name": "E4: 4th Seat \u2014 Enterprise Nudge",
+      "category": "other_conversion",
+      "order": 1,
+      "trigger": {
+        "type": "qualifier",
+        "qualifier": "always_on"
+      },
+      "payloads": [
+        {
+          "id": "pl_4th_seat_p0",
+          "target": {
+            "plan_ids": [
+              "professional"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": {
+                "modal_type": "Optional",
+                "header": "Teams larger than 3 need Enterprise",
+                "body": "Enterprise gives you unlimited seats, dedicated support, and a Customer Success Manager."
+              },
+              "ctas": [
+                {
+                  "label": "Contact Sales",
+                  "path": "contact_sales"
+                },
+                {
+                  "label": "Not now",
+                  "path": "dismiss"
+                }
+              ]
+            }
+          ],
+          "caps": {
+            "max_per_period": {
+              "count": 1,
+              "period": "month"
+            },
+            "cooldown_days": 14
+          },
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_annual_nudge",
+      "name": "L2: Monthly to Annual Nudge",
+      "category": "fixed",
+      "order": 2,
+      "trigger": {
+        "type": "surface_render",
+        "slot_id": "dashboard_top_banner"
+      },
+      "payloads": [
+        {
+          "id": "pl_annual_nudge_p0",
+          "target": {
+            "plan_ids": [
+              "professional"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "banner_placement",
+              "fields": {
+                "header": "Save 44% by switching to annual",
+                "body": "That's $528/yr saved vs monthly billing.",
+                "dismissible": "Yes"
+              },
+              "ctas": [
+                {
+                  "label": "Switch to annual",
+                  "path": "switch_billing_period",
+                  "config": {
+                    "target_billing_period": "annual"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {
+            "max_per_period": {
+              "count": 1,
+              "period": "week"
+            },
+            "cooldown_days": 7
+          },
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_usage_update",
+      "name": "U1: Session Usage Update",
+      "category": "other_conversion",
+      "order": 3,
+      "trigger": {
+        "type": "qualifier",
+        "qualifier": "always_on"
+      },
+      "payloads": [
+        {
+          "id": "pl_usage_update_p0",
+          "target": {
+            "plan_ids": [
+              "starter"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "banner_placement",
+              "fields": {
+                "header": "{{displayName}}, you've used {{usage_current}} of {{usage_limit}} credits",
+                "body": "Your {{plan_name}} plan is active for {{role}} role access.",
+                "dismissible": "Yes"
+              },
+              "ctas": [
+                {
+                  "label": "Get more credits",
+                  "path": "open_checkout",
+                  "config": {
+                    "purchase": "professional"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {
+            "max_per_period": {
+              "count": 1,
+              "period": "session"
+            },
+            "cooldown_days": 1
+          },
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_payment_recovery",
+      "name": "Payment Recovery",
+      "category": "retention",
+      "order": 0,
+      "trigger": {
+        "type": "qualifier",
+        "qualifier": "payment_failed"
+      },
+      "payloads": [
+        {
+          "id": "pl_payment_recovery_p0",
+          "target": {
+            "plan_ids": [
+              "professional"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": {
+                "modal_type": "Blocking",
+                "header": "Payment failed \u2014 update your method",
+                "body": "We couldn't process your last payment. Update your payment method to keep your Professional access."
+              },
+              "ctas": [
+                {
+                  "label": "Update payment method",
+                  "path": "update_payment_method"
+                }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_renewal_reminder",
+      "name": "L3: Approaching Renewal",
+      "category": "retention",
+      "order": 1,
+      "trigger": {
+        "type": "qualifier",
+        "qualifier": "always_on"
+      },
+      "payloads": [
+        {
+          "id": "pl_renewal_reminder_p0",
+          "target": {
+            "plan_ids": [
+              "professional"
+            ],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "email",
+              "fields": {
+                "subject": "Your Sandbox renewal is coming up",
+                "preheader": "You used {{usage_current}} Core credits this year",
+                "header": "Here's what you accomplished this year",
+                "body": "Your plan auto-renews on {{reset_date}} at your current rate. Review your subscription anytime.",
+                "send_delay": "0"
+              },
+              "ctas": [
+                {
+                  "label": "Manage subscription",
+                  "path": "manage_subscription"
+                }
+              ]
+            }
+          ],
+          "caps": {
+            "max_per_period": {
+              "count": 1,
+              "period": "lifetime"
+            }
+          },
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "pl_personalized_welcome",
+      "name": "P-1: Personalized Welcome Card",
+      "category": "fixed",
+      "order": 24,
+      "trigger": {
+        "type": "surface_render",
+        "slot_id": "dashboard_welcome_card"
+      },
+      "payloads": [
+        {
+          "id": "pl_personalized_welcome_p0",
+          "target": {
+            "plan_ids": [],
+            "segment_chips": []
+          },
+          "surfaces": [
+            {
+              "template_id": "in_page_card",
+              "fields": {
+                "header": "Welcome back, {{first_name}}!",
+                "body": "You're on the {{plan_name}} plan. You've used {{usage_current}} of {{usage_limit}} credits this period.",
+                "dismissible": "No"
+              },
+              "ctas": [
+                {
+                  "label": "View your dashboard",
+                  "path": "custom",
+                  "config": {
+                    "url": "/dashboard"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-02-15"
+        }
+      ]
+    }
+  ],
+  "placement_payloads": [
+    {
+      "payload_id": "pl_nav_upgrade_p0",
+      "placement_id": "pl_nav_upgrade",
+      "target": {
+        "plan_ids": [
+          "starter"
+        ],
+        "segment_chips": []
+      },
+      "caps": {},
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "button",
+          "fields": {},
+          "ctas": [
+            {
+              "label": "Upgrade",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_pricing_page_p0",
+      "placement_id": "pl_pricing_page",
+      "target": {
+        "plan_ids": [],
+        "segment_chips": []
+      },
+      "caps": {},
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "in_page_card",
+          "fields": {
+            "header": "Choose your plan",
+            "body": "Full product access on every plan. Upgrade when you need professional white-label delivery."
+          },
+          "ctas": [
+            {
+              "label": "Get Professional",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_quota_core_credits_p0",
+      "placement_id": "pl_quota_core_credits",
+      "target": {
+        "plan_ids": [],
+        "segment_chips": []
+      },
+      "caps": {},
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "usage_counter",
+          "fields": {
+            "entitlement": "core_credits",
+            "header": "{{usage_remaining}}/{{usage_limit}} minutes left",
+            "body": "Renews {{reset_date}}"
+          },
+          "ctas": [
+            {
+              "label": "Get more credits",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_gate_data_export_p0",
+      "placement_id": "pl_gate_data_export",
+      "target": {
+        "plan_ids": [
+          "starter"
+        ],
+        "segment_chips": []
+      },
+      "caps": {},
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "modal_overlay",
+          "fields": {
+            "modal_type": "Optional",
+            "header": "Export your data",
+            "body": "Get your data as files to share anywhere \u2014 email, Slack, presentations, social media. Professional plan starts at $55/mo.",
+            "secondary_body": ""
+          },
+          "ctas": [
+            {
+              "label": "Upgrade to Professional",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            },
+            {
+              "label": "Share via link instead",
+              "path": "dismiss"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_gate_bulk_export_p0",
+      "placement_id": "pl_gate_bulk_export",
+      "target": {
+        "plan_ids": [
+          "starter"
+        ],
+        "segment_chips": []
+      },
+      "caps": {},
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "modal_overlay",
+          "fields": {
+            "modal_type": "Optional",
+            "header": "Bulk export your data",
+            "body": "Bulk export all your data in standard formats for downstream systems and integrations. Professional plan starts at $55/mo."
+          },
+          "ctas": [
+            {
+              "label": "Upgrade to Professional",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            },
+            {
+              "label": "What is bulk export?",
+              "path": "custom",
+              "config": {
+                "handle": "help_bulk_export"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_gate_branding_p0",
+      "placement_id": "pl_gate_branding",
+      "target": {
+        "plan_ids": [
+          "starter"
+        ],
+        "segment_chips": []
+      },
+      "caps": {},
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "inline_gate_message",
+          "fields": {
+            "message": "Deliver fully white-labeled experiences without the Sandbox brand."
+          },
+          "ctas": [
+            {
+              "label": "Upgrade to Professional",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_gate_brand_kit_p0",
+      "placement_id": "pl_gate_brand_kit",
+      "target": {
+        "plan_ids": [
+          "starter"
+        ],
+        "segment_chips": []
+      },
+      "caps": {},
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "in_page_card",
+          "fields": {
+            "header": "Match your brand identity across the product",
+            "body": "Set up your brand colors, fonts, and logo once. Apply them across every customer-facing surface with one click."
+          },
+          "ctas": [
+            {
+              "label": "Upgrade to Professional",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_gate_analytics_p0",
+      "placement_id": "pl_gate_analytics",
+      "target": {
+        "plan_ids": [
+          "starter"
+        ],
+        "segment_chips": []
+      },
+      "caps": {},
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "in_page_card",
+          "fields": {
+            "header": "See how your customers engage",
+            "body": "Track usage, engagement, and completion metrics across your product."
+          },
+          "ctas": [
+            {
+              "label": "Upgrade to Professional",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_gate_seats_p0",
+      "placement_id": "pl_gate_seats",
+      "target": {
+        "plan_ids": [
+          "starter"
+        ],
+        "segment_chips": []
+      },
+      "caps": {},
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "modal_overlay",
+          "fields": {
+            "modal_type": "Optional",
+            "header": "Collaborate with your team",
+            "body": "Add up to 3 editors to your workspace. Share templates, review drafts, and collaborate together. Professional plan starts at $55/mo."
+          },
+          "ctas": [
+            {
+              "label": "Upgrade to Professional",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            },
+            {
+              "label": "Not now",
+              "path": "dismiss"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_credits_80pct_p0",
+      "placement_id": "pl_credits_80pct",
+      "target": {
+        "plan_ids": [
+          "starter"
+        ],
+        "segment_chips": []
+      },
+      "caps": {
+        "max_per_period": {
+          "count": 1,
+          "period": "day"
+        },
+        "cooldown_days": 3
+      },
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "banner_placement",
+          "fields": {
+            "header": "{{usage_remaining}} credits left this period",
+            "body": "Upgrade to Professional for 360 credits/yr",
+            "dismissible": "Yes"
+          },
+          "ctas": [
+            {
+              "label": "Get more credits",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_credits_exhausted_p0",
+      "placement_id": "pl_credits_exhausted",
+      "target": {
+        "plan_ids": [
+          "starter"
+        ],
+        "segment_chips": []
+      },
+      "caps": {},
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "modal_overlay",
+          "fields": {
+            "modal_type": "Blocking",
+            "header": "You've used all your credits",
+            "body": "Professional gives you 360 credits/yr (30/mo) to keep working. Starts at $55/mo.",
+            "secondary_body": "Your balance refreshes with +5 credits on your next login."
+          },
+          "ctas": [
+            {
+              "label": "Upgrade to Professional",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_premium_credits_exhausted_p0",
+      "placement_id": "pl_premium_credits_exhausted",
+      "target": {
+        "plan_ids": [
+          "starter"
+        ],
+        "segment_chips": []
+      },
+      "caps": {},
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "modal_overlay",
+          "fields": {
+            "modal_type": "Blocking",
+            "header": "Want more Premium credits?",
+            "body": "You've used your 5 free Premium credits. Professional gives you 120 Premium credits/yr for higher-tier work. Starts at $55/mo.",
+            "secondary_body": "You can still keep working with Core credits."
+          },
+          "ctas": [
+            {
+              "label": "Upgrade to Professional",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_project_limit_p0",
+      "placement_id": "pl_project_limit",
+      "target": {
+        "plan_ids": [
+          "starter"
+        ],
+        "segment_chips": []
+      },
+      "caps": {},
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "modal_overlay",
+          "fields": {
+            "modal_type": "Blocking",
+            "header": "You have 6 active projects",
+            "body": "Delete an existing project to make room, or upgrade to Professional for unlimited projects."
+          },
+          "ctas": [
+            {
+              "label": "Upgrade to Professional",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_rt_welcome_p0",
+      "placement_id": "pl_rt_welcome",
+      "target": {
+        "plan_ids": [],
+        "segment_chips": []
+      },
+      "caps": {
+        "max_per_period": {
+          "count": 1,
+          "period": "lifetime"
+        }
+      },
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "toast_message",
+          "fields": {
+            "header": "Welcome! You have full Professional access for 14 days",
+            "body": "Try data export, bulk export, brand kit, and analytics.",
+            "dismissible": "Yes"
+          },
+          "ctas": [
+            {
+              "label": "See what's included",
+              "path": "view_plans"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_rt_midpoint_p0",
+      "placement_id": "pl_rt_midpoint",
+      "target": {
+        "plan_ids": [
+          "starter"
+        ],
+        "segment_chips": []
+      },
+      "caps": {
+        "max_per_period": {
+          "count": 1,
+          "period": "lifetime"
+        }
+      },
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "banner_placement",
+          "fields": {
+            "header": "7 days left \u2014 you've used {{usage_current}} credits",
+            "body": "Keep access to data export, bulk export, and brand kit.",
+            "dismissible": "Yes"
+          },
+          "ctas": [
+            {
+              "label": "Keep access",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_rt_ending_p0",
+      "placement_id": "pl_rt_ending",
+      "target": {
+        "plan_ids": [],
+        "segment_chips": []
+      },
+      "caps": {
+        "max_per_period": {
+          "count": 1,
+          "period": "lifetime"
+        }
+      },
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "modal_overlay",
+          "fields": {
+            "modal_type": "Optional",
+            "header": "Your trial ends in {{trial_days_remaining}} days",
+            "body": "Here's what you'll lose: data export, bulk export, brand kit, and analytics."
+          },
+          "ctas": [
+            {
+              "label": "Upgrade to Professional",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            },
+            {
+              "label": "Remind me tomorrow",
+              "path": "snooze"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_rt_ending_p1",
+      "placement_id": "pl_rt_ending",
+      "target": {
+        "plan_ids": [],
+        "segment_chips": []
+      },
+      "caps": {
+        "max_per_period": {
+          "count": 1,
+          "period": "lifetime"
+        }
+      },
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "email",
+          "fields": {
+            "subject": "Your Professional trial ends in 2 days",
+            "preheader": "Here's what you created \u2014 and what you'll lose",
+            "header": "Your trial ends {{trial_days_remaining}} days",
+            "body": "During your trial, you used {{usage_current}} Core credits. On expiry, you'll lose access to data export, bulk export, brand kit, and analytics.",
+            "send_delay": "0"
+          },
+          "ctas": [
+            {
+              "label": "Upgrade to Professional ($55/mo)",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_rt_expired_p0",
+      "placement_id": "pl_rt_expired",
+      "target": {
+        "plan_ids": [],
+        "segment_chips": []
+      },
+      "caps": {},
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "modal_overlay",
+          "fields": {
+            "modal_type": "Blocking",
+            "header": "Your Professional access has ended",
+            "body": "Your data is safe \u2014 upgrade anytime to unlock data export, bulk export, brand kit, and analytics again.",
+            "secondary_body": ""
+          },
+          "ctas": [
+            {
+              "label": "Upgrade to Professional ($55/mo annual)",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_premium_expansion_p0",
+      "placement_id": "pl_premium_expansion",
+      "target": {
+        "plan_ids": [
+          "professional"
+        ],
+        "segment_chips": []
+      },
+      "caps": {
+        "max_per_period": {
+          "count": 1,
+          "period": "month"
+        },
+        "cooldown_days": 7
+      },
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "modal_overlay",
+          "fields": {
+            "modal_type": "Optional",
+            "header": "You've used your monthly Premium credits",
+            "body": "Add an Expansion Pack for 240 more Premium credits/yr. Available on annual plans only."
+          },
+          "ctas": [
+            {
+              "label": "Add Expansion Pack ($1,680/yr)",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "premium_expansion_pack_1"
+              }
+            },
+            {
+              "label": "Contact Sales for Enterprise",
+              "path": "contact_sales"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_4th_seat_p0",
+      "placement_id": "pl_4th_seat",
+      "target": {
+        "plan_ids": [
+          "professional"
+        ],
+        "segment_chips": []
+      },
+      "caps": {
+        "max_per_period": {
+          "count": 1,
+          "period": "month"
+        },
+        "cooldown_days": 14
+      },
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "modal_overlay",
+          "fields": {
+            "modal_type": "Optional",
+            "header": "Teams larger than 3 need Enterprise",
+            "body": "Enterprise gives you unlimited seats, dedicated support, and a Customer Success Manager."
+          },
+          "ctas": [
+            {
+              "label": "Contact Sales",
+              "path": "contact_sales"
+            },
+            {
+              "label": "Not now",
+              "path": "dismiss"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_annual_nudge_p0",
+      "placement_id": "pl_annual_nudge",
+      "target": {
+        "plan_ids": [
+          "professional"
+        ],
+        "segment_chips": []
+      },
+      "caps": {
+        "max_per_period": {
+          "count": 1,
+          "period": "week"
+        },
+        "cooldown_days": 7
+      },
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "banner_placement",
+          "fields": {
+            "header": "Save 44% by switching to annual",
+            "body": "That's $528/yr saved vs monthly billing.",
+            "dismissible": "Yes"
+          },
+          "ctas": [
+            {
+              "label": "Switch to annual",
+              "path": "switch_billing_period",
+              "config": {
+                "target_billing_period": "annual"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_usage_update_p0",
+      "placement_id": "pl_usage_update",
+      "target": {
+        "plan_ids": [
+          "starter"
+        ],
+        "segment_chips": []
+      },
+      "caps": {
+        "max_per_period": {
+          "count": 1,
+          "period": "session"
+        },
+        "cooldown_days": 1
+      },
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "banner_placement",
+          "fields": {
+            "header": "{{displayName}}, you've used {{usage_current}} of {{usage_limit}} credits",
+            "body": "Your {{plan_name}} plan is active for {{role}} role access.",
+            "dismissible": "Yes"
+          },
+          "ctas": [
+            {
+              "label": "Get more credits",
+              "path": "open_checkout",
+              "config": {
+                "purchase": "professional"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_payment_recovery_p0",
+      "placement_id": "pl_payment_recovery",
+      "target": {
+        "plan_ids": [
+          "professional"
+        ],
+        "segment_chips": []
+      },
+      "caps": {},
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "modal_overlay",
+          "fields": {
+            "modal_type": "Blocking",
+            "header": "Payment failed \u2014 update your method",
+            "body": "We couldn't process your last payment. Update your payment method to keep your Professional access."
+          },
+          "ctas": [
+            {
+              "label": "Update payment method",
+              "path": "update_payment_method"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_renewal_reminder_p0",
+      "placement_id": "pl_renewal_reminder",
+      "target": {
+        "plan_ids": [
+          "professional"
+        ],
+        "segment_chips": []
+      },
+      "caps": {
+        "max_per_period": {
+          "count": 1,
+          "period": "lifetime"
+        }
+      },
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "email",
+          "fields": {
+            "subject": "Your Sandbox renewal is coming up",
+            "preheader": "You used {{usage_current}} Core credits this year",
+            "header": "Here's what you accomplished this year",
+            "body": "Your plan auto-renews on {{reset_date}} at your current rate. Review your subscription anytime.",
+            "send_delay": "0"
+          },
+          "ctas": [
+            {
+              "label": "Manage subscription",
+              "path": "manage_subscription"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "payload_id": "pl_personalized_welcome_p0",
+      "placement_id": "pl_personalized_welcome",
+      "target": {
+        "plan_ids": [],
+        "segment_chips": []
+      },
+      "caps": {},
+      "status": "active",
+      "created_at": "2026-02-15",
+      "updated_at": "2026-04-03T00:00:00Z",
+      "source_mode": "inline",
+      "surfaces": [
+        {
+          "template_id": "in_page_card",
+          "fields": {
+            "header": "Welcome back, {{first_name}}!",
+            "body": "You're on the {{plan_name}} plan. You've used {{usage_current}} of {{usage_limit}} credits this period.",
+            "dismissible": "No"
+          },
+          "ctas": [
+            {
+              "label": "View your dashboard",
+              "path": "custom",
+              "config": {
+                "url": "/dashboard"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

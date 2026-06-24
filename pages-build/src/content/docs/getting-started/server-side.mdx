@@ -1,0 +1,142 @@
+---
+title: Server-Side Integration
+description: Use RevTurbine server-side for entitlement checks, placement decisions, and SSR.
+sidebar:
+  order: 5
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+The SDK supports server-side entitlement checks and placement decisions using the **local runtime** mode — all logic runs against an ExportedConfig snapshot with no network calls required.
+
+## When to Use Server-Side
+
+| Use case | Client SDK | Server SDK |
+|---|---|---|
+| Render placements in React | ✅ | — |
+| Gate API endpoints | — | ✅ |
+| Enforce usage limits before processing | — | ✅ |
+| SSR placement decisions | ✅ (local mode) | ✅ |
+| Track server-side events | — | 🔜 Coming soon |
+
+## Local Runtime (Available Now)
+
+The local runtime evaluates entitlements and placements entirely from an ExportedConfig JSON snapshot. No API server connection required.
+
+### Installation
+
+```bash
+pnpm add @revt-eng/sdk
+```
+
+### Entitlement Checks
+
+```ts
+import { initRevTurbine } from '@revt-eng/sdk';
+import exportedConfig from './exported_config.json';
+
+const sdk = initRevTurbine({
+  localRuntime: { exportedConfig },
+  user: {
+    id: 'user_123',
+    plan: { id: 'starter', name: 'Starter' },
+    entitlements: { data_export: false },
+  },
+});
+
+// Check an entitlement
+const result = await sdk.checkEntitlement('data_export');
+
+if (!result.allowed) {
+  // deny access — user needs to upgrade
+  console.log('Upgrade required:', result.status);
+}
+```
+
+### Placement Decisions (SSR)
+
+Resolve placements server-side for SSR or email templates:
+
+```ts
+import { initRevTurbine } from '@revt-eng/sdk';
+import exportedConfig from './exported_config.json';
+
+const sdk = initRevTurbine({
+  localRuntime: { exportedConfig },
+  user: {
+    id: req.user.id,
+    plan: { id: req.user.planId },
+  },
+});
+
+// Report current usage
+sdk.updateUsage({ api_calls: req.user.apiCallCount });
+
+// Resolve a specific slot's placement
+const banner = await sdk.getPlacement({
+  slotId: 'dashboard_banner',
+  surfaceTemplateIds: ['banner_placement'],
+});
+
+if (banner) {
+  // Render banner.content into your template
+}
+```
+
+## SSR with React (Local Mode)
+
+For frameworks like Next.js, resolve placements with the local runtime and hydrate client-side:
+
+```tsx
+// components/Dashboard.tsx
+'use client';
+
+import { RevTurbineProvider, FixedSurfaceSlot } from '@revt-eng/sdk';
+import exportedConfig from './exported_config.json';
+import { useMemo } from 'react';
+
+export default function Dashboard({ user }) {
+  const options = useMemo(() => ({
+    localRuntime: { exportedConfig },
+    user: {
+      id: user.id,
+      plan: { id: user.planId, name: user.planName },
+      entitlements: user.entitlements,
+    },
+  }), [user]);
+
+  return (
+    <RevTurbineProvider options={options}>
+      <FixedSurfaceSlot
+        id="dashboard_banner"
+        surfaceTemplateIds={["banner_placement"]}
+      />
+      {/* rest of your dashboard */}
+    </RevTurbineProvider>
+  );
+}
+```
+
+## RevTurbineServer Provider
+
+:::note[Coming Soon]
+The `RevTurbineServer` provider — which connects to the RevTurbine API for real-time decisions, server-side event tracking, and usage reporting — is not yet available. Use the **local runtime** mode shown above for all server-side use cases today.
+:::
+
+## Other Language SDKs
+
+Server SDKs for additional languages are planned:
+
+| Language | Package | Status |
+|---|---|---|
+| Node.js | `@revt-eng/sdk` (local runtime) | ✅ Available |
+| Python | `revturbine-server` | 🔜 Coming soon |
+| Java | `com.revturbine:server-sdk` | 🔜 Coming soon |
+| C# | `RevTurbine.Server` | 🔜 Coming soon |
+| Rust | `revturbine-server` | 🔜 Coming soon |
+
+## Next Steps
+
+- [Entitlements Guide](/guides/entitlements/) — entitlement types and checking patterns
+- [Runtime Modes](/guides/runtime-modes/) — choosing the right runtime mode
+- [Headless API](/guides/headless-api/) — imperative SDK usage without React

@@ -1,0 +1,169 @@
+---
+title: Quickstart
+description: Get your first RevTurbine placement rendering in under 5 minutes — no backend required.
+sidebar:
+  order: 1
+---
+
+import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+This guide walks you through installing the SDK, running in **local-only mode**, and rendering your first placement — all client-side, no API keys or backend needed.
+
+## Before You Begin
+
+- A React 18+ application
+- Node.js 20+
+- A GitHub personal access token with `read:packages` scope (the SDK is published to [GitHub Packages](https://github.com/features/packages))
+
+## Steps
+
+<Steps>
+
+1. **Configure the GitHub Packages registry**
+
+    `@revt-eng/sdk` is published to GitHub Packages, which requires authentication even for read access. Create or update an `.npmrc` file in your project root:
+
+    ```ini title=".npmrc"
+    @revt-eng:registry=https://npm.pkg.github.com
+    //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+    ```
+
+    Set `GITHUB_TOKEN` in your environment to a [personal access token](https://github.com/settings/tokens) with `read:packages` scope:
+
+    ```bash
+    export GITHUB_TOKEN=ghp_your_token_here
+    ```
+
+    <Aside type="caution">
+    Never commit your token to source control. Add `.npmrc` to your `.gitignore` if it contains a hardcoded token, or use the environment variable pattern shown above.
+    </Aside>
+
+2. **Install the SDK**
+
+    <Tabs>
+      <TabItem label="npm">
+      ```bash
+      pnpm add @revt-eng/sdk
+      ```
+      </TabItem>
+      <TabItem label="pnpm">
+      ```bash
+      pnpm add @revt-eng/sdk
+      ```
+      </TabItem>
+      <TabItem label="yarn">
+      ```bash
+      yarn add @revt-eng/sdk
+      ```
+      </TabItem>
+    </Tabs>
+
+3. **Add an exported config**
+
+    Export your `exported_config.json` from the RevTurbine dashboard and place it in your `src/` directory.
+
+    The exported config contains your plans, entitlements, placements, targeting rules, surface templates, and **UI paths** — everything the SDK needs to run locally.
+
+4. **Wrap your app in `RevTurbineProvider` with local runtime**
+
+    ```tsx title="src/App.tsx"
+    import { RevTurbineProvider, FixedSurfaceSlot } from '@revt-eng/sdk';
+    import exportedConfig from './exported_config.json';
+    import { useMemo } from 'react';
+
+    function App() {
+      const options = useMemo(() => ({
+        localRuntime: { exportedConfig },
+        user: {
+          id: 'user_123',
+          context: { plan_handle: 'starter' },
+        },
+        uiPathResolvers: {
+          navigate_to_plans: (ctx) => {
+            window.location.href = '/pricing';
+          },
+          open_checkout_modal: (ctx) => {
+            // Open your checkout flow, e.g. Stripe Checkout
+            console.log('Checkout for plan:', ctx.plan_handle);
+          },
+          book_demo: (ctx) => {
+            window.open(ctx.url ?? '/sales/demo', '_blank');
+          },
+          custom_url: (ctx) => {
+            if (ctx.url) window.location.href = ctx.url;
+          },
+        },
+      }), []);
+
+      return (
+        <RevTurbineProvider options={options}>
+          <YourApp />
+        </RevTurbineProvider>
+      );
+    }
+    ```
+
+    <Aside type="tip">
+    With `localRuntime`, the SDK makes **zero network calls**. All decisioning happens client-side using the exported config. No API keys or backend needed.
+    </Aside>
+
+5. **Add a placement slot**
+
+    Drop a `FixedSurfaceSlot` where you want a placement to appear:
+
+    ```tsx title="src/components/Dashboard.tsx"
+    import { FixedSurfaceSlot } from '@revt-eng/sdk';
+
+    function Dashboard() {
+      return (
+        <div>
+          <h1>Dashboard</h1>
+
+          {/* RevTurbine renders an upgrade banner here — or nothing */}
+          <FixedSurfaceSlot
+            id="dashboard_top_banner"
+            surfaceTemplateIds={["banner_placement"]}
+          />
+
+          {/* Rest of your dashboard */}
+        </div>
+      );
+    }
+    ```
+
+6. **Verify it works**
+
+    Start your dev server. The SDK evaluates targeting rules from the exported config and renders the matching placement for each slot. If no placement matches the current user context, the component renders nothing — that's the additive principle at work.
+
+</Steps>
+
+## What Are UI Paths?
+
+A **UI path** is the bridge between a RevTurbine placement and your application's navigation. When a user clicks a CTA button inside a placement (e.g., "Upgrade Now" or "View Plans"), the SDK doesn't navigate directly — instead, it invokes a **UI path resolver** function that *you* provide, giving your app full control over what happens next.
+
+Each UI path has an `action_type` that identifies the intent:
+
+| Action Type | Typical Use |
+|---|---|
+| `navigate_to_plans` | Go to pricing / plan comparison page |
+| `open_checkout_modal` | Open Stripe Checkout or your billing flow |
+| `book_demo` | Open a sales demo booking form |
+| `custom_url` | Navigate to an arbitrary URL |
+| `open_upgrade_modal` | Show an upgrade modal |
+| `open_feature_tour` | Launch a product tour |
+| `dismiss` | Close / dismiss the placement |
+
+The resolver receives a context object with any metadata attached in the config (e.g., `plan_handle`, `url`, `promotion_id`). This keeps your conversion flows decoupled from placement content — marketers can change CTA copy and targeting without code changes.
+
+## Expected Output
+
+When a placement is configured and the user matches targeting rules, the slot renders the appropriate component — a banner, modal, button, toast, or other surface. When no placement is eligible, it renders nothing.
+
+## Next Steps
+
+- [Interactive playground](/playground/) — try live editable SDK scenarios in your browser
+- [Runtime modes](/guides/runtime-modes/) — understand local_only, server, and custom endpoints
+- [Component Gallery](/components/) — interactive demos of every built-in slot component
+- [Entitlement gates](/guides/entitlements/) — gate features, enforce usage limits
+- [Headless API](/guides/headless-api/) — use the SDK without React
+- [API Reference](/api/) — full TypeDoc reference for all exports

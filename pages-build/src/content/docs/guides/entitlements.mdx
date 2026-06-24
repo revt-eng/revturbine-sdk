@@ -1,0 +1,201 @@
+---
+title: Entitlements
+description: Feature gates, usage limits, credits, seats, and capability tiers — check access and enforce limits with the SDK.
+sidebar:
+  order: 5
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+Entitlements define what users can do based on their plan. The SDK evaluates entitlements locally (in `local_only` mode) or via the RevTurbine API, and provides React hooks and imperative APIs for access control.
+
+## Entitlement Types
+
+| Type | Example | Check Pattern |
+|---|---|---|
+| **Feature gate** | `brand_kit`, `data_export` | Boolean — allowed or denied |
+| **Usage limit** | `api_calls`, `storage_gb` | Numeric — current vs. limit |
+| **Credits** | `render_credits` | Depleting balance |
+| **Seats** | `team_members` | Per-account count limit |
+| **Capability tier** | `analytics_tier` | Plan-level access (starter → pro → enterprise) |
+
+## Checking Entitlements
+
+### React Hook
+
+```tsx
+import { useEntitlement } from '@revt-eng/sdk';
+
+function ExportButton() {
+  const { allowed, denied, isLoading } = useEntitlement({
+    handle: 'data_export',
+  });
+
+  if (isLoading) return <button disabled>Loading…</button>;
+  if (denied) return <button disabled>Upgrade to Export</button>;
+
+  return <button>Export Video</button>;
+}
+```
+
+### With Auto-Gate
+
+When `autoGate: true`, the hook automatically resolves an upgrade placement if the entitlement is denied:
+
+```tsx
+const { allowed, denied, gatedPlacement } = useEntitlement({
+  handle: 'data_export',
+  autoGate: true,
+  gatePlacementRequest: {
+    slotId: 'export_gate',
+    surfaceTemplateIds: ['modal_overlay'],
+  },
+});
+
+if (denied && gatedPlacement) {
+  // Render gatedPlacement.content as an upgrade prompt
+}
+```
+
+### Imperative API
+
+```ts
+const result = await sdk.checkEntitlement('data_export');
+
+// result.status: 'allowed' | 'limited' | 'denied'
+// result.allowed: boolean
+// result.reason: string (optional)
+// result.used: number (for usage-based)
+// result.limit: number (for usage-based)
+// result.remaining: number (for usage-based)
+// result.tier: string (for tier-based)
+```
+
+## Entitlement Result
+
+Every entitlement check returns an `EntitlementResult`:
+
+```ts
+interface EntitlementResult {
+  status: 'allowed' | 'limited' | 'denied';
+  allowed: boolean;
+  reason?: string;
+  used?: number;
+  limit?: number;
+  remaining?: number;
+  tier?: string;
+}
+```
+
+| Status | Meaning |
+|---|---|
+| `allowed` | Full access — proceed normally |
+| `limited` | Access granted but approaching limit (e.g., 85% usage) |
+| `denied` | No access — show upgrade prompt or block |
+
+## Usage Tracking
+
+Report usage to keep entitlement checks accurate:
+
+```ts
+// Update current balances
+sdk.updateUsage({
+  api_calls: 950,
+  storage_gb: 45,
+  team_members: 5,
+});
+```
+
+`updateUsage()` triggers:
+
+- Re-evaluation of usage-based entitlements
+- Segment re-evaluation (targeting rules may change)
+- Decision cache invalidation
+- Local runtime state persistence
+
+### Reading Usage
+
+```tsx
+import { useUsageSnapshot } from '@revt-eng/sdk';
+
+function UsagePanel() {
+  const { usage, refresh } = useUsageSnapshot();
+
+  return (
+    <ul>
+      {Object.entries(usage).map(([handle, data]) => (
+        <li key={handle}>
+          {handle}: {data.current} / {data.limit ?? '∞'}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## Patterns by Entitlement Type
+
+### Feature Gate
+
+```tsx
+const { allowed } = useEntitlement({ handle: 'brand_kit' });
+// allowed: true/false
+```
+
+### Usage Limit
+
+```tsx
+const { allowed, limited, result } = useEntitlement({ handle: 'api_calls' });
+// limited: true when usage > 80%
+// result.used: 8500, result.limit: 10000
+```
+
+### Credits
+
+```tsx
+const { result } = useEntitlement({ handle: 'render_credits' });
+// result.used: 850
+// result.limit: 1000
+// result.remaining: 150
+```
+
+### Seats
+
+```tsx
+const { denied, result } = useEntitlement({ handle: 'team_members' });
+if (denied) {
+  // result.used: 10
+  // result.limit: 10
+  // Show "seat limit reached" prompt
+}
+```
+
+### Capability Tier
+
+```tsx
+const { denied, result } = useEntitlement({ handle: 'advanced_analytics' });
+if (denied) {
+  // result.tier: 'professional'
+  // Show "upgrade to Professional" prompt
+}
+```
+
+## Fail-Open Semantics
+
+The SDK uses **fail-open** behavior — if the entitlement service is unreachable, `checkEntitlement` returns `allowed: true` with reason `'entitlement_service_unavailable'`. This ensures your app's baseline UX is never blocked by RevTurbine downtime.
+
+```ts
+// If API is down:
+// { status: 'allowed', allowed: true, reason: 'entitlement_service_unavailable' }
+```
+
+:::tip
+In `local_only` mode, all entitlement checks are resolved instantly from the ExportedConfig — no network calls, no failure scenarios.
+:::
+
+## Next Steps
+
+- [Placements Guide](/guides/placements/) — render upgrade prompts for denied entitlements
+- [Events & Analytics](/guides/events/) — track entitlement check outcomes
+- [Error Handling](/guides/error-handling/) — fail-open behavior and recovery patterns
+- [Try it live → Data Export Gate](/playground/access-gates/gate-modal/)

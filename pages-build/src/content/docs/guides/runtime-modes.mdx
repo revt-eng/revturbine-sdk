@@ -1,0 +1,169 @@
+---
+title: Runtime Modes
+description: Choose between local_only, revturbine_server, and custom_endpoints runtime modes.
+sidebar:
+  order: 1
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+The SDK supports three runtime modes. **Start with `local_only`** to get up and running without any backend, then switch to a server mode when you're ready for live decisioning.
+
+## Decision Tree
+
+1. Are you getting started, building a demo, or need offline-first behavior?
+   - **Yes →** `local_only` *(recommended starting point)*
+   - **No →** continue
+2. Do you need to route SDK calls through customer-owned endpoints?
+   - **Yes →** `custom_endpoints`
+   - **No →** `revturbine_server`
+
+## Mode Comparison
+
+| Mode | Best for | Network dependency | Required config |
+|---|---|---|---|
+| **`local_only`** | Getting started, demos, offline | **None** | `localRuntime: { exportedConfig }` |
+| `revturbine_server` | Production with live A/B testing | RevTurbine edge endpoints | `tenantId`, `apiKey`, `endpoint` |
+| `custom_endpoints` | Customer proxy/service boundaries | Customer endpoints | Base config + `endpointOverrides` |
+
+## Copy-Paste Setup
+
+<Tabs>
+<TabItem label="Local-only (start here)">
+
+```ts
+import { initRevTurbine, createLocalRuntimeConfig } from '@revt-eng/sdk';
+import exportedConfig from './exported_config.json';
+
+const sdk = initRevTurbine(
+  createLocalRuntimeConfig({
+    tenantId: 'my-app',
+    apiKey: 'local',
+    endpoint: 'http://localhost',
+    mode: 'react',
+    localRuntime: {
+      exportedConfig,
+      storageKey: 'my-app:revturbine-local-runtime',
+    },
+  }),
+);
+```
+
+<Aside type="tip">
+In `local_only` mode the SDK evaluates all targeting rules, entitlements, and placement decisions client-side using the exported config. No network calls are made.
+</Aside>
+
+</TabItem>
+<TabItem label="Server runtime">
+
+```ts
+import { initRevTurbine, createServerRuntimeConfig } from '@revt-eng/sdk';
+
+const sdk = initRevTurbine(
+  createServerRuntimeConfig({
+    tenantId: 'tenant_abc',
+    apiKey: 'rt_live_xxx',
+    endpoint: 'https://api.revturbine.io',
+    mode: 'react',
+  }),
+);
+```
+
+</TabItem>
+<TabItem label="Custom endpoints">
+
+```ts
+import { initRevTurbine, createCustomEndpointRuntimeConfig } from '@revt-eng/sdk';
+
+const sdk = initRevTurbine(
+  createCustomEndpointRuntimeConfig({
+    tenantId: 'tenant_abc',
+    apiKey: 'rt_live_xxx',
+    endpoint: 'https://proxy.example.com',
+    mode: 'react',
+    endpointOverrides: {
+      decideContext: '/decisioning/decide-context',
+      bootstrapContext: '/decisioning/bootstrap',
+      checkEntitlement: '/entitlements/check',
+      ingestEvents: '/events/ingest',
+      touchpointTransition: '/touchpoints/transition',
+    },
+  }),
+);
+```
+
+</TabItem>
+</Tabs>
+
+## Migrating from Local to Server Mode
+
+When you're ready for production, the change is a single config swap. Your component code stays the same:
+
+```diff
+  <RevTurbineProvider
+    options={{
+-     tenantId: 'my-app',
+-     apiKey: 'local',
+-     endpoint: 'http://localhost',
+-     runtimeMode: 'local_only',
+-     localRuntime: { exportedConfig },
++     tenantId: process.env.REVTURBINE_TENANT_ID!,
++     apiKey: process.env.REVTURBINE_API_KEY!,
++     endpoint: 'https://api.revturbine.io',
++     runtimeMode: 'revturbine_server',
+    }}
+    defaultUserId="user_123"
+  >
+```
+
+## Provider Fallback Strategy
+
+Provider fallbacks are orthogonal to runtime mode. You can configure them in any mode when you want explicit provider-chain control.
+
+**Available options:**
+
+- `provider`: primary provider.
+- `providerFallbacks`: ordered fallback provider list.
+- `providerFailureSlotBehavior`: `'invisible'` (default) or `'placeholder'`.
+
+**Behavior:**
+
+1. SDK calls primary provider first.
+2. If primary fails, SDK logs a warning and executes fallbacks in order.
+3. If all configured providers fail for a method, SDK disables itself.
+4. Disabled SDK returns hidden or placeholder placement output based on `providerFailureSlotBehavior`.
+
+### Recommendation by Mode
+
+1. **`revturbine_server`:** add at least one fallback provider for resilience.
+2. **`custom_endpoints`:** strongly recommend fallbacks because proxy integrations can be brittle during deploys.
+3. **`local_only`:** provider fallbacks are optional; local runtime resolvers are often sufficient.
+
+### Server Runtime with Fallback
+
+```ts
+import { initRevTurbine, createServerRuntimeConfig } from '@revt-eng/sdk';
+
+const sdk = initRevTurbine({
+  ...createServerRuntimeConfig({
+    tenantId: 'tenant_abc',
+    apiKey: 'rt_live_xxx',
+    endpoint: 'https://api.revturbine.io',
+    mode: 'react',
+  }),
+  provider: primaryProvider,
+  providerFallbacks: [fallbackProviderA, fallbackProviderB],
+  providerFailureSlotBehavior: 'placeholder',
+});
+```
+
+## Production Checklist
+
+1. Start with `local_only` to validate your integration and placement slots.
+2. When ready, switch to `runtimeMode: 'revturbine_server'` and provide real credentials.
+3. Configure a primary RT provider first in the chain.
+4. Add at least one fallback provider in `providerFallbacks`.
+5. Keep fallback providers ordered by trust and operational readiness.
+6. Choose `providerFailureSlotBehavior` intentionally per surface criticality.
+7. Monitor console warnings for provider-chain failures.
+8. Assume fail-closed behavior: if all providers fail, SDK disables itself and slots render placeholder or invisible output.

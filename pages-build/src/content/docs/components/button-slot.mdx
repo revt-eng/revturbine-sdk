@@ -1,0 +1,30 @@
+---
+title: "ButtonSlot"
+description: "Standalone CTA button placement — renders a styled upgrade/action button."
+tableOfContents: false
+sidebar:
+  label: "ButtonSlot"
+---
+
+import ButtonSlotGallery from '../../../components/galleries/ButtonSlotGallery';
+
+A standalone CTA button suitable for persistent nav CTAs or inline upgrade prompts.
+
+**Content fields:** `cta_label`, `style` (`primary` | `secondary` | `accent`)
+
+<ButtonSlotGallery client:only="react" />
+
+## Usage
+
+```tsx
+import { FixedSurfaceSlot } from '@revt-eng/sdk';
+
+<FixedSurfaceSlot
+  id="header_upgrade_cta"
+  surfaceTemplateIds={["button"]}
+/>
+```
+
+The `ButtonSlot` renders automatically when the decision engine selects a `button` template for the slot. Style variants are controlled via the `style` content field in your placement configuration.
+
+**Related:** [Playground → Upgrade Button](/playground/fixed-slots/fixed-button/) · [API Reference](/api/)

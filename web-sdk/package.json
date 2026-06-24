@@ -1,0 +1,64 @@
+{
+  "name": "@revt-eng/sdk",
+  "version": "0.2.12",
+  "description": "RevTurbine customer-facing SDK — placement decisioning, entitlement checks, and usage tracking.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/types/web-sdk/index.d.ts"
+    },
+    "./headless": {
+      "import": "./dist/headless.js",
+      "types": "./dist/types/web-sdk/headless.d.ts"
+    },
+    "./source": "./index.ts",
+    "./source/headless": "./headless.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup && tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir dist/types",
+    "verify": "npm run deps:prefer-local && cd ../revturbine-web && npm run typecheck",
+    "typecheck:sdk-api": "npx tsx ../scripts/check-sdk-types.ts",
+    "deps:prefer-local": "node ../scripts/prefer-local-deps.mjs",
+    "sync:prism-config": "node ../scripts/sync-prism-config.mjs",
+    "playground": "vite --config playground/vite.config.ts",
+    "predev": "npm run deps:prefer-local",
+    "prebuild": "npm run deps:prefer-local",
+    "harness:headless": "npx tsx ../scripts/headless-harness.ts"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@revt-eng/schema": "0.1.78",
+    "@revt-eng/schema-external": "0.1.78",
+    "@revt-eng/core": "0.1.78",
+    "openapi-fetch": "^0.17.0",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "playwright": "^1.59.1",
+    "tsup": "^8.5.0",
+    "typescript": "^6.0.2"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/revt-eng/revturbine-external.git"
+  },
+  "license": "UNLICENSED"
+}

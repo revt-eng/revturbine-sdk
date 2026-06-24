@@ -1,0 +1,30 @@
+---
+title: "QuotaMeterSlot"
+description: "Usage meter placement — progress bars, numeric counters, and circular gauges."
+tableOfContents: false
+sidebar:
+  label: "QuotaMeterSlot"
+---
+
+import QuotaMeterSlotGallery from '../../../components/galleries/QuotaMeterSlotGallery';
+
+A usage meter that visualizes consumption against limits. Supports progress bar, numeric counter, and circular gauge display styles with automatic color thresholds.
+
+**Content fields:** `header`, `usage_current`, `usage_limit`, `cta_label`, `display_style` (`progress_bar` | `numeric_counter` | `circular_gauge`), `show_at`
+
+<QuotaMeterSlotGallery client:only="react" />
+
+## Usage
+
+```tsx
+import { FixedSurfaceSlot } from '@revt-eng/sdk';
+
+<FixedSurfaceSlot
+  id="sidebar_usage_widget"
+  surfaceTemplateIds={["usage_counter"]}
+/>
+```
+
+The `QuotaMeterSlot` renders automatically when the decision engine selects a `usage_counter` template. The meter changes color automatically based on usage percentage — green below 70%, amber at 70-90%, red above 90%. The `show_at` threshold hides the meter until usage reaches that percentage.
+
+**Related:** [Playground → Quota Meter](/playground/fixed-slots/fixed-usage-counter/) · [API Reference](/api/)

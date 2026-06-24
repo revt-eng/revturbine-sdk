@@ -1,0 +1,33 @@
+---
+title: "ModalSlot"
+description: "Overlay modal placement — feature gates, trial endings, and upgrade prompts."
+tableOfContents: false
+sidebar:
+  label: "ModalSlot"
+---
+
+import ModalSlotGallery from '../../../components/galleries/ModalSlotGallery';
+
+An overlay modal for feature gates, trial expirations, and high-impact upgrade prompts. Supports optional (dismissible) and blocking modes.
+
+**Content fields:** `header`, `body`, `cta_label`, `secondary_cta_label`, `image_url`, `style` (`blocking`)
+
+<ModalSlotGallery client:only="react" />
+
+## Usage
+
+```tsx
+import { AccessGateSurfaceSlot } from '@revt-eng/sdk';
+
+<AccessGateSurfaceSlot
+  id="feature_gate_modal"
+  surfaceTemplateIds={["modal_overlay"]}
+  check={{ entitlement: "data_export" }}
+>
+  <VideoExportPanel />
+</AccessGateSurfaceSlot>
+```
+
+The `ModalSlot` renders automatically when the decision engine selects a `modal_overlay` template. Blocking modals have no dismiss option — the user must take action. Optional modals include a secondary CTA or close button.
+
+**Related:** [Playground → Data Export Gate](/playground/access-gates/gate-modal/) · [API Reference](/api/)

@@ -1,0 +1,181 @@
+---
+title: "Tutorial: Add an Upgrade Button"
+description: End-to-end tutorial — install the SDK, configure local mode, and place an upgrade button that renders based on targeting rules.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+In this tutorial, you'll install the SDK, configure it in local mode, and render an upgrade button that only appears for users on the Starter plan. Takes about 10 minutes.
+
+## What You'll Build
+
+An upgrade button in your navigation bar that:
+
+- Shows "Upgrade to Pro" for Starter plan users
+- Hides automatically for Professional/Enterprise users
+- Tracks impressions and CTA clicks
+- Navigates to your pricing page on click
+
+## Prerequisites
+
+- A React 18+ application (Next.js, Vite, or CRA)
+- Node.js 20+
+
+## Steps
+
+<Steps>
+
+1. **Install the SDK**
+
+   ```bash
+   pnpm add @revt-eng/sdk
+   ```
+
+2. **Create an ExportedConfig fixture**
+
+   For local development, you need a config file with plans, entitlements, and placements. Create `src/fixtures/exported_config.json`:
+
+   ```json
+   {
+     "plans": [
+       { "id": "starter", "name": "Starter", "tier": 1 },
+       { "id": "professional", "name": "Professional", "tier": 2 }
+     ],
+     "surface_templates": [
+       {
+         "id": "button",
+         "surface_type": "button",
+         "name": "CTA Button"
+       }
+     ],
+     "placements": [
+       {
+         "id": "upgrade_button_placement",
+         "slot_id": "nav_upgrade",
+         "surface_template_id": "button",
+         "targeting": {
+           "plan_ids": ["starter"]
+         },
+         "content": {
+           "cta_label": "Upgrade to Pro",
+           "style": "primary"
+         },
+         "ui_path": {
+           "action_type": "open_pricing"
+         }
+       }
+     ]
+   }
+   ```
+
+3. **Wrap your app with the provider**
+
+   ```tsx
+   // src/App.tsx
+   import { RevTurbineProvider } from '@revt-eng/sdk';
+   import exportedConfig from './fixtures/exported_config.json';
+
+   export default function App() {
+     return (
+       <RevTurbineProvider
+         options={{
+           tenantId: 'demo',
+           apiKey: 'local',
+           endpoint: 'http://localhost',
+           mode: 'react',
+           runtimeMode: 'local_only',
+           localRuntime: { exportedConfig },
+           uiPathResolvers: {
+             open_pricing: () => {
+               window.location.href = '/pricing';
+             },
+           },
+         }}
+       >
+         <NavBar />
+         <MainContent />
+       </RevTurbineProvider>
+     );
+   }
+   ```
+
+4. **Add the upgrade button slot**
+
+   ```tsx
+   // src/components/NavBar.tsx
+   import { FixedSurfaceSlot } from '@revt-eng/sdk';
+
+   export function NavBar() {
+     return (
+       <nav style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '8px 16px' }}>
+         <span style={{ fontWeight: 600 }}>MyApp</span>
+         <div style={{ flex: 1 }} />
+
+         {/* This slot renders only when targeting matches */}
+         <FixedSurfaceSlot
+           id="nav_upgrade"
+           surfaceTemplateIds={['button']}
+         />
+       </nav>
+     );
+   }
+   ```
+
+5. **Verify it works**
+
+   Start your dev server and you should see:
+
+   - **Starter user** → "Upgrade to Pro" button appears
+   - **Professional user** → nothing renders (slot is invisible)
+
+   To test different users, change the user context in the provider:
+
+   ```tsx
+   <RevTurbineProvider
+     options={{
+       // ...
+       user: { id: 'user_1', plan: { id: 'starter' } },
+       // Try: plan: { id: 'professional' } — button disappears
+     }}
+   >
+   ```
+
+</Steps>
+
+## What Just Happened
+
+1. The `RevTurbineProvider` initialized the SDK in `local_only` mode with your ExportedConfig
+2. The `FixedSurfaceSlot` asked the decision engine for a placement at slot `nav_upgrade`
+3. The engine evaluated the targeting rule (`plan_ids: ['starter']`) against the user context
+4. For Starter users, it resolved the `button` template with content `"Upgrade to Pro"`
+5. For Professional users, no rule matched — the slot rendered nothing
+
+## Moving to Production
+
+When you're ready for real decisions from the RevTurbine API:
+
+```diff
+  <RevTurbineProvider
+    options={{
+-     tenantId: 'demo',
+-     apiKey: 'local',
+-     endpoint: 'http://localhost',
++     tenantId: process.env.NEXT_PUBLIC_RT_TENANT_ID!,
++     apiKey: process.env.NEXT_PUBLIC_RT_API_KEY!,
++     endpoint: process.env.NEXT_PUBLIC_RT_ENDPOINT!,
+      mode: 'react',
+-     runtimeMode: 'local_only',
+-     localRuntime: { exportedConfig },
++     runtimeMode: 'revturbine_server',
+    }}
+  >
+```
+
+## Try It Live
+
+> [Interactive Playground → Upgrade Button](/playground/fixed-slots/fixed-button/)
+
+## Next Steps
+
+- [Tutorial: Gate a Premium Feature](/tutorials/gate-premium-feature/) — add an entitlement gate
+- [Component Gallery](/components/) — interactive demos of all built-in slot components

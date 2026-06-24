@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://revt-eng.github.io/sitemap-index.xml

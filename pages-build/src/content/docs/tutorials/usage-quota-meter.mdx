@@ -1,0 +1,243 @@
+---
+title: "Tutorial: Track Usage and Show a Quota Meter"
+description: End-to-end tutorial — report usage, check limits, and render a quota meter that updates in real time.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+In this tutorial, you'll report API usage to the SDK, display a quota meter that updates in real time, and trigger a warning placement when usage exceeds 80%. Takes about 15 minutes.
+
+## What You'll Build
+
+A usage tracking flow that:
+
+- Reports API call counts to the SDK via `updateUsage()`
+- Shows a quota meter with current/limit display
+- Triggers a warning banner when usage exceeds 80%
+- Triggers an upgrade modal when usage exceeds 100%
+
+## Prerequisites
+
+- A React 18+ application with `@revt-eng/sdk` installed
+- A `RevTurbineProvider` set up (see [Quickstart](/getting-started/quickstart/))
+
+## Steps
+
+<Steps>
+
+1. **Add usage entitlements and placements to your config**
+
+   ```json
+   {
+     "entitlements": [
+       {
+         "handle": "api_calls",
+         "name": "API Calls",
+         "type": "usage_limit",
+         "limits": {
+           "starter": 1000,
+           "professional": 10000,
+           "enterprise": -1
+         }
+       }
+     ],
+     "surface_templates": [
+       {
+         "id": "usage_counter",
+         "surface_type": "quota_meter",
+         "name": "Usage Counter"
+       },
+       {
+         "id": "banner_warning",
+         "surface_type": "banner",
+         "name": "Warning Banner"
+       }
+     ],
+     "placements": [
+       {
+         "id": "api_quota_meter",
+         "slot_id": "sidebar_usage",
+         "surface_template_id": "usage_counter",
+         "content": {
+           "header": "API Calls",
+           "body": "{{usage_current}} / {{usage_limit}} calls used"
+         }
+       },
+       {
+         "id": "usage_warning_banner",
+         "slot_id": "dashboard_banner",
+         "surface_template_id": "banner_warning",
+         "targeting": {
+           "usage_handle": "api_calls",
+           "usage_percent_gte": 80
+         },
+         "content": {
+           "header": "Usage limit approaching",
+           "body": "You've used {{usage_percent}}% of your API calls this month.",
+           "cta_label": "View Plans",
+           "dismissible": true
+         },
+         "ui_path": {
+           "action_type": "open_pricing"
+         }
+       }
+     ]
+   }
+   ```
+
+2. **Add the quota meter to your sidebar**
+
+   ```tsx
+   // src/components/Sidebar.tsx
+   import { FixedSurfaceSlot } from '@revt-eng/sdk';
+
+   export function Sidebar() {
+     return (
+       <aside style={{ width: 240, padding: 16 }}>
+         <h3>Dashboard</h3>
+         <nav>{/* ... nav links ... */}</nav>
+
+         <div style={{ marginTop: 24 }}>
+           <FixedSurfaceSlot
+             id="sidebar_usage"
+             surfaceTemplateIds={['usage_counter']}
+           />
+         </div>
+       </aside>
+     );
+   }
+   ```
+
+3. **Add the warning banner**
+
+   ```tsx
+   // src/components/DashboardLayout.tsx
+   import { MessageSurfaceSlot } from '@revt-eng/sdk';
+
+   export function DashboardLayout({ children }) {
+     return (
+       <div>
+         {/* Warning banner appears when usage > 80% */}
+         <MessageSurfaceSlot
+           id="dashboard_banner"
+           surfaceTemplateIds={['banner_warning']}
+         />
+
+         <div style={{ display: 'flex' }}>
+           <Sidebar />
+           <main style={{ flex: 1, padding: 16 }}>
+             {children}
+           </main>
+         </div>
+       </div>
+     );
+   }
+   ```
+
+4. **Report usage from your API layer**
+
+   ```tsx
+   // src/hooks/useApiCall.ts
+   import { useRevTurbine } from '@revt-eng/sdk';
+   import { useCallback, useRef } from 'react';
+
+   export function useApiCall() {
+     const { sdk } = useRevTurbine();
+     const callCount = useRef(0);
+
+     const apiCall = useCallback(async (endpoint: string, options?: RequestInit) => {
+       const response = await fetch(endpoint, options);
+
+       // Report usage to the SDK
+       callCount.current += 1;
+       sdk?.updateUsage({ api_calls: callCount.current });
+
+       return response;
+     }, [sdk]);
+
+     return { apiCall };
+   }
+   ```
+
+5. **Test the flow**
+
+   Simulate increasing usage to see the meter and banner update:
+
+   ```tsx
+   function DemoControls() {
+     const { sdk } = useRevTurbine();
+     const [calls, setCalls] = useState(0);
+
+     const simulateUsage = (count: number) => {
+       setCalls(count);
+       sdk?.updateUsage({ api_calls: count });
+     };
+
+     return (
+       <div style={{ padding: 16, border: '1px solid #ddd', borderRadius: 8 }}>
+         <h3>Demo: Simulate API Usage</h3>
+         <p>Current: {calls} calls</p>
+         <div style={{ display: 'flex', gap: 8 }}>
+           <button onClick={() => simulateUsage(500)}>50% (500)</button>
+           <button onClick={() => simulateUsage(800)}>80% (800)</button>
+           <button onClick={() => simulateUsage(950)}>95% (950)</button>
+           <button onClick={() => simulateUsage(1000)}>100% (1000)</button>
+         </div>
+       </div>
+     );
+   }
+   ```
+
+   **Expected behavior:**
+
+   | Usage | Quota Meter | Warning Banner |
+   |---|---|---|
+   | 500 / 1000 (50%) | Green bar, "500 / 1000" | Hidden |
+   | 800 / 1000 (80%) | Yellow bar, "800 / 1000" | Shows "Usage limit approaching" |
+   | 950 / 1000 (95%) | Red bar, "950 / 1000" | Shows with urgency styling |
+   | 1000 / 1000 (100%) | Full red bar | Shows upgrade modal |
+
+</Steps>
+
+## How It Works
+
+1. `updateUsage()` updates the SDK's internal usage balances
+2. The decision engine re-evaluates all active placements
+3. The quota meter refreshes its display (current/limit)
+4. When usage exceeds the targeting threshold (80%), the warning banner becomes visible
+5. Token expansion fills in `{{usage_current}}`, `{{usage_limit}}`, `{{usage_percent}}`
+
+## Triggering Programmatic Alerts
+
+For more control, emit trigger events:
+
+```ts
+// When usage approaches limit
+if (usagePercent >= 80) {
+  await sdk.emitTrigger('usage_limit_approaching', {
+    entitlement_handle: 'api_calls',
+    current_usage: currentCalls,
+    usage_limit: 1000,
+    usage_percent: usagePercent,
+  });
+}
+
+// When usage exceeds limit
+if (usagePercent >= 100) {
+  await sdk.emitTrigger('usage_limit_exceeded', {
+    entitlement_handle: 'api_calls',
+    current_usage: currentCalls,
+    usage_limit: 1000,
+  });
+}
+```
+
+## Try It Live
+
+> [Interactive Playground → Quota Meter](/playground/fixed-slots/fixed-usage-counter/)
+
+## Next Steps
+
+- [Entitlements Guide](/guides/entitlements/) — all entitlement types
+- [Events & Analytics](/guides/events/) — trigger events and tracking
+- [Component Gallery](/components/) — interactive demos of all built-in slot components

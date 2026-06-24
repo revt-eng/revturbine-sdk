@@ -1,0 +1,199 @@
+---
+title: "Tutorial: Gate a Premium Feature"
+description: End-to-end tutorial — check an entitlement, block access for free users, and show an upgrade modal.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+In this tutorial, you'll gate a premium feature (video export) behind an entitlement check and show an upgrade modal when access is denied. Takes about 10 minutes.
+
+## What You'll Build
+
+A video export button that:
+
+- Checks the `data_export` entitlement before allowing access
+- Shows an upgrade modal when the user doesn't have the entitlement
+- Works instantly in local mode, no API calls needed
+
+## Prerequisites
+
+- A React 18+ application with `@revt-eng/sdk` installed
+- A `RevTurbineProvider` set up (see [Quickstart](/getting-started/quickstart/))
+
+## Steps
+
+<Steps>
+
+1. **Add entitlement and gate placement to your config**
+
+   Add to your `exported_config.json`:
+
+   ```json
+   {
+     "entitlements": [
+       {
+         "handle": "data_export",
+         "name": "Data Export",
+         "plan_ids": ["professional", "enterprise"]
+       }
+     ],
+     "surface_templates": [
+       {
+         "id": "modal_overlay",
+         "surface_type": "modal",
+         "name": "Modal Overlay"
+       }
+     ],
+     "placements": [
+       {
+         "id": "export_gate_placement",
+         "slot_id": "editor_export_action",
+         "surface_template_id": "modal_overlay",
+         "targeting": {
+           "entitlement_handle": "data_export",
+           "entitlement_status": "denied"
+         },
+         "content": {
+           "header": "Unlock Data Export",
+           "body": "Video export is available on the Professional plan. Upgrade to export your projects in MP4, WebM, and GIF formats.",
+           "cta_label": "View Plans",
+           "dismissible": true
+         },
+         "ui_path": {
+           "action_type": "open_pricing"
+         }
+       }
+     ]
+   }
+   ```
+
+2. **Create the gated component**
+
+   ```tsx
+   // src/components/ExportPanel.tsx
+   import { AccessGateSurfaceSlot } from '@revt-eng/sdk';
+
+   function ExportControls() {
+     return (
+       <div style={{ padding: 16, background: '#e8f5e9', borderRadius: 8 }}>
+         <h3>Export Settings</h3>
+         <select>
+           <option>MP4 (1080p)</option>
+           <option>WebM (720p)</option>
+           <option>GIF (480p)</option>
+         </select>
+         <button style={{ marginTop: 8 }}>Start Export</button>
+       </div>
+     );
+   }
+
+   export function ExportPanel() {
+     return (
+       <AccessGateSurfaceSlot
+         id="editor_export_action"
+         surfaceTemplateIds={['modal_overlay']}
+         entitlementHandle="data_export"
+       >
+         {/* This only renders when the entitlement is granted */}
+         <ExportControls />
+       </AccessGateSurfaceSlot>
+     );
+   }
+   ```
+
+3. **Use it in your page**
+
+   ```tsx
+   // src/pages/Editor.tsx
+   import { ExportPanel } from '../components/ExportPanel';
+
+   export default function Editor() {
+     return (
+       <div>
+         <h1>Video Editor</h1>
+         <div>{/* ... editor UI ... */}</div>
+
+         <h2>Export</h2>
+         <ExportPanel />
+       </div>
+     );
+   }
+   ```
+
+4. **Test with different users**
+
+   ```tsx
+   // Starter user → sees upgrade modal
+   <RevTurbineProvider
+     options={{
+       // ...
+       user: { id: 'user_1', plan: { id: 'starter' } },
+     }}
+   >
+
+   // Professional user → sees export controls
+   <RevTurbineProvider
+     options={{
+       // ...
+       user: { id: 'user_2', plan: { id: 'professional' } },
+     }}
+   >
+   ```
+
+</Steps>
+
+## How It Works
+
+The `AccessGateSurfaceSlot` component:
+
+1. Checks the `data_export` entitlement against the user's plan
+2. If **granted** → renders the children (`ExportControls`)
+3. If **denied** → resolves the gate placement and renders the upgrade modal
+
+The gate check happens instantly in `local_only` mode using the ExportedConfig.
+
+## Alternative: Hook-Based Approach
+
+For more control, use the `useEntitlement` hook directly:
+
+```tsx
+import { useEntitlement, usePlacement } from '@revt-eng/sdk';
+
+function ExportPanel() {
+  const { allowed, denied } = useEntitlement({
+    handle: 'data_export',
+  });
+
+  const { visible, content, dismiss, ctaClick } = usePlacement({
+    surfaceSlot: {
+      id: 'editor_export_action',
+      surfaceTemplateIds: ['modal_overlay'],
+    },
+    autoLoad: denied, // Only load placement if denied
+  });
+
+  if (allowed) return <ExportControls />;
+
+  if (visible) {
+    return (
+      <div className="modal-overlay">
+        <h2>{content?.header}</h2>
+        <p>{content?.body}</p>
+        <button onClick={() => ctaClick()}>{content?.cta_label}</button>
+        <button onClick={() => dismiss()}>Maybe Later</button>
+      </div>
+    );
+  }
+
+  return <button disabled>Export (Upgrade Required)</button>;
+}
+```
+
+## Try It Live
+
+> [Interactive Playground → Data Export Gate](/playground/access-gates/gate-modal/)
+
+## Next Steps
+
+- [Tutorial: Track Usage and Show a Quota Meter](/tutorials/usage-quota-meter/) — usage-based entitlements
+- [Entitlements Guide](/guides/entitlements/) — all entitlement types and patterns

@@ -1,0 +1,25 @@
+---
+title: Interactive Playground
+description: Explore RevTurbine SDK scenarios with live, editable code — all running in local_only mode.
+---
+
+import ScenarioIndex from '../../../components/ScenarioIndex';
+
+The playground embeds live SDK demos running entirely in `local_only` mode. Each scenario shows editable code alongside a live preview — edit the code and see the output update in real time.
+
+All examples use the bundled SDK with a demo `exported_config.json` containing plans, entitlements, placements, and targeting rules.
+
+## Scenarios
+
+<ScenarioIndex client:only="react" />
+
+## How It Works
+
+Each playground scenario runs the SDK in an isolated Sandpack environment:
+
+1. **`exported_config.json`** provides plans, entitlements, placements, surface templates, and targeting rules
+2. **`RevTurbineProvider`** initializes the SDK in `local_only` mode — no network calls
+3. **Demo users** (Alice, Bob, Carol, Dan, Eve, Frank) have different plans, usage, and entitlements
+4. **Targeting rules** evaluate against the user context to decide which placements to show
+
+Try switching demo users in the code to see how the SDK renders different placements for different user segments.

@@ -1,0 +1,12 @@
+{
+  "name": "@revt-eng/server-node",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "RevTurbine Node.js server-side SDK — server evaluation, placement decisions, and entitlement checks.",
+  "main": "index.ts",
+  "dependencies": {
+    "@revt-eng/schema": "workspace:*",
+    "@revt-eng/core": "workspace:*"
+  }
+}

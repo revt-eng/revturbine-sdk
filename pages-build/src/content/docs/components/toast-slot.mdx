@@ -1,0 +1,30 @@
+---
+title: "ToastSlot"
+description: "Ephemeral toast notification — non-blocking alerts for usage events and feature announcements."
+tableOfContents: false
+sidebar:
+  label: "ToastSlot"
+---
+
+import ToastSlotGallery from '../../../components/galleries/ToastSlotGallery';
+
+A non-blocking toast notification for usage alerts, feature announcements, and success confirmations. Supports multiple positions and optional CTA.
+
+**Content fields:** `message`, `cta_label`, `position` (`bottom-right` | `top-right` | `bottom-center`), `duration`
+
+<ToastSlotGallery client:only="react" />
+
+## Usage
+
+```tsx
+import { MessageSurfaceSlot } from '@revt-eng/sdk';
+
+<MessageSurfaceSlot
+  id="global_toast"
+  surfaceTemplateIds={["toast_message"]}
+/>
+```
+
+The `ToastSlot` renders automatically when the decision engine selects a `toast_message` template. Toasts auto-dismiss after `duration` milliseconds (set to `0` to disable auto-dismiss). Position is controlled by the `position` content field.
+
+**Related:** [Playground → Trial Toast](/playground/global-slots/msg-toast/) · [API Reference](/api/)

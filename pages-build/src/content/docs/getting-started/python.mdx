@@ -1,0 +1,198 @@
+---
+title: Python SDK
+description: Headless, in-memory entitlement and placement decisioning for Python services — RevTurbineCustomerSdk.
+sidebar:
+  order: 6
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The Python SDK is a **headless *server* library**: it decides entitlements and
+placements **in-process**, with no network call and no persistence beyond
+memory. The server holds the user context and an `ExportedConfig` snapshot and
+passes both to the SDK; the SDK decides locally.
+
+It is intentionally a small surface — the same decision core as the TypeScript
+SDK's headless `LocalRuntime`, exposed as a clean public class. It is **not** a
+port of the browser SDK (no React, no hooks, no decision cache — see
+[Non-goals](#non-goals)).
+
+<Aside type="note">
+The Python decision output is **byte-identical** to the canonical TypeScript
+`LocalRuntime` for the same inputs. A cross-language parity corpus
+(`tests/parity/`) drives both implementations through the same fixtures and
+fails CI on any divergence — the Python port is never allowed to drift.
+</Aside>
+
+## Install
+
+The package (`revturbine`, requires Python ≥ 3.10) is published as a **GitHub
+Release on
+[`revt-eng/revturbine-external`](https://github.com/revt-eng/revturbine-external/releases)**
+— the repo you have collaborator access to. There is no PyPI release.
+
+`revturbine-external` is private, so fetch the wheel with an authenticated
+GitHub client (the same access you already use for RevTurbine), then install
+the downloaded file:
+
+```bash
+# GitHub CLI, authenticated as your revturbine-external collaborator
+gh release download python-v0.1.0 \
+  --repo revt-eng/revturbine-external \
+  --pattern "revturbine-*.whl"
+
+pip install ./revturbine-*.whl
+```
+
+<Aside type="tip">
+No `gh` CLI? Download the `revturbine-*.whl` asset from the [Releases
+page](https://github.com/revt-eng/revturbine-external/releases) in a browser
+(signed in to GitHub as a collaborator), then `pip install
+./revturbine-<version>.whl`. A plain `pip install <url>` will **not** work —
+private-repo release assets require authentication.
+</Aside>
+
+Pin to a release tag (`python-v<version>`) whose schema version matches the
+`ExportedConfig` you deploy — see [Refreshing the
+ExportedConfig](#refreshing-the-exportedconfig).
+
+## Quick start
+
+Construct one SDK per `(user_context, exported_config)`, then check
+entitlements and decide placements:
+
+```python
+import json
+from revturbine import RevTurbineCustomerSdk
+
+with open("exported_config.json") as f:
+    exported_config = json.load(f)
+
+sdk = RevTurbineCustomerSdk(
+    user_context={
+        "tenant_id": "tenant_abc",
+        "user_id": "user_123",
+        # optional — the user's current plan + usage:
+        "plan_handle": "pro",
+        "usage": {"api_calls": {"used": 900.0, "limit": 1000.0}},
+    },
+    exported_config=exported_config,
+)
+
+# Entitlement gate
+result = sdk.check_entitlement("advanced_analytics")
+if not result["allowed"]:
+    raise PermissionError(result["reason"])
+
+# Placement decision (which payload, if any, to show)
+decision = sdk.get_placement_decision(
+    {"placement_id": "pl_dashboard_upsell", "user_id": "user_123"}
+)
+if decision["visible"]:
+    render(decision["output"])
+
+# Batch form — same decision path, order-preserving
+decisions = sdk.get_placement_decisions(
+    [
+        {"placement_id": "pl_a", "user_id": "user_123"},
+        {"placement_id": "pl_b", "user_id": "user_123"},
+    ]
+)
+```
+
+### User context
+
+| Key | Required | Meaning |
+|---|---|---|
+| `tenant_id` | ✅ | Tenant identifier. |
+| `user_id` | ✅ | Current user identifier. |
+| `plan_handle` | — | The user's current plan handle (feeds the plan + entitlements providers). |
+| `plan_name` | — | Display name; defaults to `plan_handle`. |
+| `usage` | — | Per-entitlement overrides: `{handle: {"used": float, "limit": float}}`. |
+
+`tenant_id` and `user_id` are the only required fields; an empty/missing one
+raises `ValueError` at construction.
+
+### Public surface
+
+| Method | Returns |
+|---|---|
+| `check_entitlement(handle, context=None)` | `{status, allowed, reason, ...}` |
+| `get_placement_decision(input)` | `{placement_id, visible, output, content, ...}` |
+| `get_placement_decisions(inputs)` | ordered `list` of the above |
+
+That is the entire public API. There is **no storage/persistence parameter**
+— the instance is stateless and in-memory by construction; construct a fresh
+one per user context.
+
+## Runtime model
+
+Unlike the TypeScript SDK (which has `revturbine_server` / `custom_endpoints`
+/ `local_only` runtime modes), the Python SDK is **local-only by design**.
+There is no runtime-mode switch and no network path:
+
+| | Python `RevTurbineCustomerSdk` |
+|---|---|
+| Network | None — decides from the supplied `ExportedConfig` |
+| Persistence | None — `InMemoryStorage` only; no file/db, no decision cache |
+| State | None across calls; no interaction/suppression hydration |
+| Inputs | `user_context` + `ExportedConfig`, both supplied by the server |
+
+This makes it safe on a request hot path: an entitlement gate is a pure
+in-process computation, with no decision-API round-trip and no shared mutable
+state between requests.
+
+## Refreshing the ExportedConfig
+
+The `ExportedConfig` is a snapshot exported from the RevTurbine control plane.
+The SDK never fetches or caches it — your service owns its lifecycle:
+
+1. Fetch/export the latest `ExportedConfig` JSON (on boot, on a timer, or on a
+   webhook from the control plane).
+2. Construct a **new** `RevTurbineCustomerSdk` with the new snapshot. Because
+   the instance is stateless, "refresh" is just "rebuild" — atomically swap
+   the reference your handlers read.
+
+```python
+# e.g. behind a lock / atomic reference, refreshed every N minutes
+_sdk = RevTurbineCustomerSdk(user_context=ctx, exported_config=load_config())
+```
+
+Pin the installed SDK tag to a version whose schema matches the
+`ExportedConfig` you deploy; a snapshot newer than the SDK's schema can decide
+differently than your TypeScript frontend.
+
+## Non-goals
+
+The Python SDK is the headless server decision core only. The following are
+**intentionally not ported** (plan 33 REQ-14) — they are browser/full-SDK
+concerns with no server equivalent:
+
+- React / JSX components and hooks (no Python equivalent).
+- Browser storage, `localStorage` theme persistence, `window.RevTurbine`.
+- The HTTP-backed / dual-mode dispatch (`runtime_mode`) of the original plan
+  — superseded; the Python library is local-only.
+- `identify`, `dismiss` / `snooze` / `convert`,
+  `track_treatment_interaction`, `get_trial_status`, `capture`,
+  `bootstrap_placement_decisions`, `get_user_context`, decision-cache /
+  interaction-state hydration.
+- Segment / targeting / personalization-token derivation from raw traits
+  (the evaluator matches pre-resolved data; deriving segments is
+  browser/segments machinery).
+
+<Aside type="caution">
+A legacy thin-RPC client (`revturbine_server`) also exists in the package for
+historical reasons. It is **independent of and unrelated to**
+`RevTurbineCustomerSdk` (not folded in) and currently depends on an
+unmaintained generated types module — prefer `RevTurbineCustomerSdk` for all
+new server integrations.
+</Aside>
+
+## Parity guarantee
+
+Every public method delegates, with zero added decision logic, to the same
+decision substrate the TypeScript SDK uses. The shared corpus at
+`revturbine-sdk-internal/tests/parity/` runs both languages through identical fixtures
+and asserts **byte-identical** normalized output; a divergence is treated as a
+Python-port bug, never a fixture to loosen. This is what lets you gate in
+Python and render in TypeScript and trust they decided the same thing.

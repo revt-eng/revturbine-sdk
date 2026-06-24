@@ -1,0 +1,271 @@
+---
+title: React Integration
+description: Use the RevTurbine SDK with React — Provider, hooks, and components.
+sidebar:
+  order: 4
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+The React integration provides a provider, hooks, and drop-in components for placement rendering and entitlement checks.
+
+## RevTurbineProvider
+
+Wrap your app (or a subtree) with the provider:
+
+```tsx
+import { RevTurbineProvider } from '@revt-eng/sdk';
+import exportedConfig from './exported_config.json';
+import { useMemo } from 'react';
+
+export default function App() {
+  const options = useMemo(() => ({
+    localRuntime: { exportedConfig },
+    user: {
+      id: 'user_123',
+      context: { plan_handle: 'starter' },
+    },
+  }), []);
+
+  return (
+    <RevTurbineProvider options={options}>
+      <Dashboard />
+    </RevTurbineProvider>
+  );
+}
+```
+
+### Props
+
+| Prop | Type | Description |
+|---|---|---|
+| `options` | `RevTurbineInitOptions` | SDK initialization options (see [Configuration Reference](/reference/configuration/)) |
+| `bootstrapPlacements` | `BootstrapPlacementInput[]` | Placements to preload on mount |
+| `children` | `ReactNode` | Your app |
+
+### Bootstrap Placements
+
+Preload placement decisions during initialization to eliminate loading flicker:
+
+```tsx
+<RevTurbineProvider
+  options={options}
+  bootstrapPlacements={[
+    { placement: { name: 'hero_banner' }, userId: 'user_123' },
+    { placement: { name: 'nav_cta' }, userId: 'user_123' },
+  ]}
+>
+```
+
+## Hooks
+
+### useRevTurbine
+
+Access the SDK instance and provider state:
+
+```tsx
+import { useRevTurbine } from '@revt-eng/sdk';
+
+function StatusBar() {
+  const { sdk, isReady, error, setContext } = useRevTurbine();
+
+  if (!isReady) return <span>Loading SDK…</span>;
+  if (error) return <span>SDK error: {error}</span>;
+
+  return <span>SDK ready</span>;
+}
+```
+
+**Returns:**
+
+| Field | Type | Description |
+|---|---|---|
+| `sdk` | `RevTurbineCustomerSdk \| null` | SDK instance (null until ready) |
+| `isReady` | `boolean` | Whether the SDK has initialized |
+| `error` | `string` | Error message if initialization failed |
+| `setContext` | `(ctx: RevTurbineUserContext) => void` | Update user context dynamically |
+
+### usePlacement
+
+Resolve a placement for a surface slot:
+
+```tsx
+import { usePlacement } from '@revt-eng/sdk';
+
+function UpgradeBanner() {
+  const {
+    visible,
+    content,
+    isLoading,
+    dismiss,
+    ctaClick,
+  } = usePlacement({
+    surfaceSlot: { id: 'dashboard_banner', surfaceTemplateIds: ['banner_placement'] },
+  });
+
+  if (!visible) return null;
+
+  return (
+    <div>
+      <h3>{content?.header}</h3>
+      <p>{content?.body}</p>
+      <button onClick={() => ctaClick()}>{content?.cta_label}</button>
+      <button onClick={() => dismiss()}>✕</button>
+    </div>
+  );
+}
+```
+
+**Options:**
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `surfaceSlot` | `RevTurbineSurfaceSlotConfig` | — | Slot configuration (id, surfaceTemplateIds) |
+| `userId` | `string` | — | Override user ID |
+| `contextMode` | `'auto' \| 'override'` | `'auto'` | Context resolution mode |
+| `traits` | `Record<string, string \| number \| boolean>` | — | Additional targeting traits |
+| `ttlMs` | `number` | `300000` | Cache TTL in milliseconds |
+| `autoLoad` | `boolean` | `true` | Load placement on mount |
+
+**Returns:**
+
+| Field | Type | Description |
+|---|---|---|
+| `isLoading` | `boolean` | Whether the placement is being resolved |
+| `error` | `string` | Error message if resolution failed |
+| `visible` | `boolean` | Whether the placement should be shown |
+| `decision` | `RevTurbinePlacementDecision \| null` | Full decision object |
+| `content` | `object \| null` | Resolved content (header, body, cta_label, etc.) |
+| `refresh` | `() => Promise<void>` | Re-resolve the placement |
+| `dismiss` | `(cooldownMs?) => Promise<void>` | Dismiss and suppress |
+| `snooze` | `(seconds?) => Promise<void>` | Temporarily suppress |
+| `remindMeLater` | `(seconds?) => Promise<void>` | Alias for snooze |
+| `ctaClick` | `(target?) => Promise<void>` | Record CTA click |
+| `ctaComplete` | `(target?) => Promise<void>` | Record CTA completion |
+
+### useEntitlement
+
+Check whether a user has access to a feature:
+
+```tsx
+import { useEntitlement } from '@revt-eng/sdk';
+
+function ExportButton() {
+  const { allowed, denied, gatedPlacement, recheck } = useEntitlement({
+    handle: 'data_export',
+    autoGate: true, // auto-resolve upgrade placement if denied
+  });
+
+  if (denied && gatedPlacement) {
+    return <UpgradePrompt placement={gatedPlacement} />;
+  }
+
+  return <button disabled={!allowed}>Export Video</button>;
+}
+```
+
+**Options:**
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `handle` | `string` | — | Entitlement handle (required) |
+| `autoCheck` | `boolean` | `true` | Check on mount |
+| `autoGate` | `boolean` | `false` | Auto-resolve gated placement if denied |
+| `gatePlacementRequest` | `object` | — | Placement config for the gate |
+
+**Returns:**
+
+| Field | Type | Description |
+|---|---|---|
+| `isLoading` | `boolean` | Whether the check is in progress |
+| `error` | `string \| null` | Error message |
+| `result` | `EntitlementResult \| null` | Full result |
+| `allowed` | `boolean` | Access granted |
+| `limited` | `boolean` | Approaching limit |
+| `denied` | `boolean` | Access denied |
+| `gatedPlacement` | `PlacementOutput \| null` | Upgrade placement (if `autoGate: true`) |
+| `recheck` | `() => Promise<void>` | Re-check entitlement |
+
+### useUsageSnapshot
+
+Get current usage balances:
+
+```tsx
+import { useUsageSnapshot } from '@revt-eng/sdk';
+
+function UsagePanel() {
+  const { usage, refresh } = useUsageSnapshot();
+
+  return (
+    <div>
+      <p>API calls: {usage.api_calls?.current} / {usage.api_calls?.limit}</p>
+      <button onClick={refresh}>Refresh</button>
+    </div>
+  );
+}
+```
+
+### useRevTurbineTheme
+
+Access the resolved theme:
+
+```tsx
+import { useRevTurbineTheme } from '@revt-eng/sdk';
+
+function ThemedCard({ children }) {
+  const theme = useRevTurbineTheme();
+
+  return (
+    <div style={{
+      background: theme.colors.surface,
+      borderRadius: theme.shape.borderRadius,
+      color: theme.colors.text,
+    }}>
+      {children}
+    </div>
+  );
+}
+```
+
+## Drop-In Components
+
+For the simplest integration, use `SurfaceSlotComponent` — it resolves the placement and renders the matching built-in slot:
+
+```tsx
+import { SurfaceSlotComponent } from '@revt-eng/sdk';
+
+// Banner
+<SurfaceSlotComponent id="hero_banner" surfaceType="banner" />
+
+// Modal gate
+<SurfaceSlotComponent id="export_gate" surfaceType="modal" />
+
+// Inline card
+<SurfaceSlotComponent id="pricing_card" surfaceType="in_page" />
+```
+
+See the [Component Gallery](/components/) for interactive demos of every built-in slot component.
+
+## Dynamic Context Updates
+
+Update the user context after login, plan change, or navigation:
+
+```tsx
+const { setContext } = useRevTurbine();
+
+// After login
+setContext({
+  id: user.id,
+  plan: { id: user.planId },
+  traits: { role: user.role },
+});
+```
+
+All active placements and entitlement checks re-evaluate automatically when context changes.
+
+## Next Steps
+
+- [Entitlements Guide](/guides/entitlements/) — feature gates, usage limits, and credits
+- [Placements Guide](/guides/placements/) — slot-based and entitlement-based patterns
+- [Theming Guide](/guides/theming/) — customize slot component appearance
+- [Interactive Playground](/playground/) — try live editable SDK scenarios

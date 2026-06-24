@@ -1,0 +1,793 @@
+/*
+ * Prism playground — skeleton styling (TASK-2).
+ * A clean, legible base; the full "playground/circus" design system lands in
+ * TASK-6. Kept as a hand-rolled stylesheet (no Tailwind) to match the SDK's
+ * dependency-free convention.
+ */
+
+:root {
+  --prism-bg: #0e1016;
+  --prism-surface: #171a22;
+  --prism-surface-2: #1f2430;
+  --prism-border: #2a303d;
+  --prism-text: #e8ebf2;
+  --prism-muted: #8b93a7;
+  --prism-accent: #7c5cff;
+  --prism-accent-2: #29d3c2;
+  --prism-radius: 12px;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(1200px 600px at 80% -10%, #1b1f2e 0%, var(--prism-bg) 60%);
+  color: var(--prism-text);
+}
+
+.prism {
+  min-height: 100vh;
+}
+
+/* ── Prism app chrome (plan 83) — the demo product ─────────────────────────── */
+
+.prism-app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-right: 340px; /* room for the fixed Director drawer */
+  transition: padding-right 0.2s ease;
+}
+
+.prism--director-collapsed .prism-app {
+  padding-right: 2.75rem;
+}
+
+.prism-app__bar {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.7rem 1.25rem;
+  border-bottom: 1px solid var(--prism-border);
+  background: rgba(23, 26, 34, 0.85);
+  backdrop-filter: blur(8px);
+}
+
+.prism-app__brand {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.prism-app__logo {
+  background: linear-gradient(135deg, var(--prism-accent), var(--prism-accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.prism-app__topnav {
+  display: flex;
+  gap: 1.1rem;
+  font-size: 0.85rem;
+}
+
+.prism-app__topnav a {
+  color: var(--prism-muted);
+  cursor: default;
+}
+
+.prism-app__topnav a.is-active {
+  color: var(--prism-text);
+}
+
+.prism-app__bar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.prism-app__plan {
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.24rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--prism-border);
+  color: var(--prism-muted);
+}
+
+.prism-app__plan--pro,
+.prism-app__plan--enterprise {
+  color: #0e1016;
+  background: linear-gradient(135deg, var(--prism-accent), var(--prism-accent-2));
+  border-color: transparent;
+}
+
+.prism-app__avatar {
+  width: 1.6rem;
+  height: 1.6rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--prism-surface-2);
+  color: var(--prism-muted);
+}
+
+.prism-app__body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(220px, 260px) 1fr;
+  gap: 1.25rem;
+  padding: 1.25rem;
+}
+
+.prism-app__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.prism-app__sidenav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.prism-app__sidenav a {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  color: var(--prism-muted);
+  font-size: 0.9rem;
+  cursor: default;
+}
+
+.prism-app__sidenav a.is-active {
+  background: var(--prism-surface-2);
+  color: var(--prism-text);
+}
+
+.prism-app__sidenav-icon {
+  width: 1.1rem;
+  text-align: center;
+}
+
+.prism-app__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--prism-border);
+}
+
+.prism-app__main {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-height: 60vh;
+}
+
+/* ── Director (plan 83) — distinct dev tooling, collapsible right drawer ────── */
+
+.prism-director {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 340px;
+  z-index: 40;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background: #0b0d12;
+  border-left: 2px solid var(--prism-accent);
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.35);
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+}
+
+.prism-director.is-collapsed {
+  width: 2.75rem;
+  overflow: hidden;
+  padding: 0.5rem 0;
+  align-items: center;
+}
+
+.prism-director__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.prism-director.is-collapsed .prism-director__head {
+  flex-direction: column;
+}
+
+.prism-director__title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--prism-accent-2);
+}
+
+.prism-director.is-collapsed .prism-director__title {
+  writing-mode: vertical-rl;
+  margin-top: 0.5rem;
+}
+
+.prism-director__tag {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--prism-muted);
+  border: 1px solid var(--prism-border);
+  border-radius: 999px;
+  padding: 0.1rem 0.4rem;
+}
+
+.prism-director.is-collapsed .prism-director__tag {
+  display: none;
+}
+
+.prism-director__toggle {
+  margin-left: auto;
+  background: var(--prism-surface-2);
+  color: var(--prism-text);
+  border: 1px solid var(--prism-border);
+  border-radius: 6px;
+  width: 1.6rem;
+  height: 1.6rem;
+  cursor: pointer;
+}
+
+.prism-director.is-collapsed .prism-director__toggle {
+  margin-left: 0;
+}
+
+.prism-director__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.prism__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--prism-muted);
+}
+
+.prism__field select,
+.prism__field input[type="range"] {
+  width: 100%;
+}
+
+.prism__field select,
+.prism__field input[type="text"] {
+  background: var(--prism-surface-2);
+  color: var(--prism-text);
+  border: 1px solid var(--prism-border);
+  border-radius: 8px;
+  padding: 0.4rem 0.5rem;
+}
+
+.prism__field input[type="text"]::placeholder {
+  color: var(--prism-muted);
+}
+
+.prism__field select:disabled,
+.prism__field input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Journey authoring (plan 83): the "save current state" sub-block, set apart
+   from the load picker with a faint accent edge. */
+.prism-director__save {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.7rem;
+  border: 1px solid var(--prism-border);
+  border-left: 2px solid var(--prism-accent);
+  border-radius: 8px;
+  background: rgba(124, 92, 255, 0.06);
+}
+
+.prism-director__error {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #ff6b6b;
+}
+
+.prism__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed var(--prism-border);
+}
+
+.prism__group-title {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--prism-muted);
+}
+
+.prism__check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--prism-text);
+}
+
+.prism__check input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--prism-accent);
+}
+
+.prism__activity h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--prism-muted);
+}
+
+.prism__activity ul {
+  margin: 0;
+  padding-left: 1rem;
+  font-size: 0.82rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.prism__canvas {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid var(--prism-border);
+  border-radius: var(--prism-radius);
+  background: repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.015) 0,
+      rgba(255, 255, 255, 0.015) 1px,
+      transparent 1px,
+      transparent 12px
+    ),
+    var(--prism-surface-2);
+}
+
+.prism__canvas-art {
+  font-size: 3rem;
+  background: linear-gradient(135deg, var(--prism-accent), var(--prism-accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.prism__meter {
+  min-height: 2rem;
+}
+
+/* ── Nudges (TASK-3): toast / banner / modal / inline ──────────────────────── */
+
+.prism-nudge-region {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.prism-nudge-region--toasts {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 50;
+  width: min(360px, calc(100vw - 2rem));
+}
+
+.prism-nudge {
+  border: 1px solid var(--prism-border);
+  border-radius: 10px;
+  background: var(--prism-surface-2);
+  padding: 0.7rem 0.85rem;
+  font-size: 0.85rem;
+}
+
+.prism-nudge--toast {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  border-left: 3px solid var(--prism-accent-2);
+}
+
+.prism-nudge--banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-left: 3px solid var(--prism-warning);
+}
+
+.prism-nudge--inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 1px dashed var(--prism-border);
+  color: var(--prism-muted);
+}
+
+.prism-nudge__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.prism-nudge__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.prism-nudge__close {
+  background: transparent;
+  border: none;
+  color: var(--prism-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.prism-btn--small {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.78rem;
+}
+
+.prism-link {
+  background: none;
+  border: none;
+  color: var(--prism-accent-2);
+  cursor: pointer;
+  font-size: 0.82rem;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.prism-modal__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--prism-overlay, rgba(10, 12, 18, 0.6));
+  backdrop-filter: blur(3px);
+}
+
+.prism-modal {
+  width: min(440px, calc(100vw - 2rem));
+  background: var(--prism-surface);
+  border: 1px solid var(--prism-border);
+  border-radius: var(--prism-radius);
+  padding: 1.5rem;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+
+.prism-modal__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+.prism-modal__body {
+  margin: 0 0 0.5rem;
+  color: var(--prism-text);
+  font-size: 0.9rem;
+}
+
+.prism-modal__secondary {
+  margin: 0 0 1rem;
+  color: var(--prism-muted);
+  font-size: 0.82rem;
+}
+
+/* Plan-recommendation line (recommendation_strategy) in upgrade modals. */
+.prism-modal__recommend {
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(124, 92, 255, 0.12);
+  border: 1px solid var(--prism-accent);
+  color: var(--prism-text);
+  font-size: 0.85rem;
+}
+
+.prism-modal__actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+.prism-modal--wide {
+  width: min(720px, calc(100vw - 2rem));
+}
+
+.prism-plans {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.prism-plan {
+  border: 1px solid var(--prism-border);
+  border-radius: 10px;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.prism-plan.is-current {
+  border-color: var(--prism-accent-2);
+}
+
+.prism-plan h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.prism-plan__badge {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--prism-accent-2);
+}
+
+/* ── "Why am I seeing this?" decision trace (TASK-7) ───────────────────────── */
+
+.prism-why {
+  margin-top: 0.4rem;
+  font-size: 0.76rem;
+}
+
+.prism-why > summary {
+  cursor: pointer;
+  color: var(--prism-accent-2);
+  list-style: none;
+}
+
+.prism-why > summary::-webkit-details-marker {
+  display: none;
+}
+
+.prism-why__body {
+  margin: 0.4rem 0 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.prism-why__body > div {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 0.4rem;
+}
+
+.prism-why__body dt {
+  color: var(--prism-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.68rem;
+}
+
+.prism-why__body dd {
+  margin: 0;
+  color: var(--prism-text);
+}
+
+.prism__muted {
+  color: var(--prism-muted);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+/* ── Studio + feature-type mechanics (TASK-3) ─────────────────────────────── */
+
+.prism-studio {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.prism-studio__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.prism-btn {
+  appearance: none;
+  border: 1px solid var(--prism-border);
+  background: var(--prism-surface-2);
+  color: var(--prism-text);
+  border-radius: 10px;
+  padding: 0.55rem 0.95rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.08s ease, border-color 0.15s ease;
+}
+
+.prism-btn:hover {
+  border-color: var(--prism-accent);
+}
+
+.prism-btn:active {
+  transform: translateY(1px);
+}
+
+.prism-btn--primary {
+  background: linear-gradient(135deg, var(--prism-accent), var(--prism-accent-2));
+  border-color: transparent;
+  color: #0e1016;
+}
+
+.prism-btn.is-locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: repeating-linear-gradient(45deg, var(--prism-surface-2) 0 6px, #232838 6px 12px);
+}
+
+.prism-studio__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--prism-muted);
+}
+
+.prism-studio__meta strong {
+  color: var(--prism-text);
+}
+
+.prism-studio__tier {
+  color: var(--prism-warning);
+  border: 1px solid color-mix(in srgb, var(--prism-warning) 40%, transparent);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.74rem;
+}
+
+/* Per-image overage price (price_per_unit entitlement). */
+.prism-studio__overage {
+  color: var(--prism-accent-2);
+  border: 1px solid color-mix(in srgb, var(--prism-accent-2) 40%, transparent);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.74rem;
+}
+
+.prism-canvas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
+  min-height: 180px;
+}
+
+.prism-canvas--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--prism-border);
+  border-radius: var(--prism-radius);
+  background: var(--prism-surface-2);
+}
+
+.prism-canvas__hint {
+  color: var(--prism-muted);
+  font-size: 0.9rem;
+}
+
+.prism-tile {
+  position: relative;
+  margin: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--prism-border);
+  aspect-ratio: 1;
+}
+
+.prism-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: filter 0.5s ease;
+}
+
+/* Capability tier: free outputs are watermarked + softened; on unlock the
+   overlay fades and the image sharpens. */
+.prism-tile.is-watermarked img {
+  filter: blur(0.5px) saturate(0.9) brightness(0.96);
+}
+
+.prism-tile.is-watermarked::after {
+  content: "PRISM · PREVIEW  PRISM · PREVIEW  PRISM · PREVIEW";
+  position: absolute;
+  inset: -30%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-30deg);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.55);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+  pointer-events: none;
+  line-height: 2.4;
+}
+
+.prism-tile__badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: rgba(14, 16, 22, 0.72);
+  color: var(--prism-accent-2);
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prism-btn,
+  .prism-tile img {
+    transition: none;
+  }
+}
+
+@media (max-width: 820px) {
+  .prism-app {
+    padding-right: 0;
+  }
+
+  .prism-app__body {
+    grid-template-columns: 1fr;
+  }
+
+  /* On small screens the Director drops from a fixed drawer to a static panel. */
+  .prism-director,
+  .prism-director.is-collapsed {
+    position: static;
+    width: auto;
+    border-left: none;
+    border-top: 2px solid var(--prism-accent);
+    box-shadow: none;
+  }
+}

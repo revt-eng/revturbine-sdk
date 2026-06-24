@@ -1,0 +1,15 @@
+[package]
+name = "revturbine-server-sdk"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "RevTurbine server-side evaluation SDK for Rust"
+
+[dependencies]
+revturbine-schema-types = { path = "../../revturbine-scaffold/crates/revturbine-schema-types" }
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt"] }
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }

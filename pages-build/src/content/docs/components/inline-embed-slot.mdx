@@ -1,0 +1,33 @@
+---
+title: "InlineEmbedSlot"
+description: "Inline card placement — feature gates and upgrade prompts embedded in page flow."
+tableOfContents: false
+sidebar:
+  label: "InlineEmbedSlot"
+---
+
+import InlineEmbedSlotGallery from '../../../components/galleries/InlineEmbedSlotGallery';
+
+An inline card for feature gates and contextual upgrade prompts. Embeds naturally in the page flow alongside content.
+
+**Content fields:** `header`, `body`, `cta_label`, `image_url`, `message`
+
+<InlineEmbedSlotGallery client:only="react" />
+
+## Usage
+
+```tsx
+import { AccessGateSurfaceSlot } from '@revt-eng/sdk';
+
+<AccessGateSurfaceSlot
+  id="feature_gate_inline"
+  surfaceTemplateIds={["inline_gate_message"]}
+  check={{ entitlement: "advanced_reporting" }}
+>
+  <ReportingDashboard />
+</AccessGateSurfaceSlot>
+```
+
+The `InlineEmbedSlot` renders automatically when the decision engine selects an `inline_gate_message` template. Inline embeds render in-flow where you place them. When the entitlement is denied, the gate content replaces the protected component.
+
+**Related:** [Playground → Branding Gate](/playground/access-gates/gate-inline/) · [API Reference](/api/)

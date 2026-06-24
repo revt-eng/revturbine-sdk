@@ -1,0 +1,127 @@
+---
+title: Installation
+description: Install the RevTurbine SDK and configure your project.
+sidebar:
+  order: 2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Web SDK (React)
+
+### Registry Configuration
+
+The `@revt-eng/sdk` package is published to GitHub Packages. Create or update an `.npmrc` file in your project root:
+
+```ini title=".npmrc"
+@revt-eng:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+Set `GITHUB_TOKEN` to a [personal access token](https://github.com/settings/tokens) with `read:packages` scope. You can also authenticate interactively:
+
+```bash
+npm login --registry=https://npm.pkg.github.com
+```
+
+### Install
+
+<Tabs>
+  <TabItem label="npm">
+  ```bash
+  pnpm add @revt-eng/sdk
+  ```
+  </TabItem>
+  <TabItem label="pnpm">
+  ```bash
+  pnpm add @revt-eng/sdk
+  ```
+  </TabItem>
+  <TabItem label="yarn">
+  ```bash
+  yarn add @revt-eng/sdk
+  ```
+  </TabItem>
+</Tabs>
+
+### Peer Dependencies
+
+The web SDK requires:
+
+| Package | Version |
+|---|---|
+| `react` | `>=18.0.0` |
+| `react-dom` | `>=18.0.0` |
+
+### TypeScript
+
+The SDK ships with full TypeScript declarations. No additional `@types/` packages are needed.
+
+Recommended `tsconfig.json` settings:
+
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "jsx": "react-jsx"
+  }
+}
+```
+
+## Headless / Non-React
+
+The same `@revt-eng/sdk` package includes a headless entry point for use without React:
+
+```ts
+import { initRevTurbine } from '@revt-eng/sdk/headless';
+```
+
+This import tree-shakes React dependencies. See the [Headless API guide](/guides/headless-api/) for usage patterns with vanilla JS, Vue, Svelte, and Angular.
+
+## Server-Side
+
+Server SDKs are available for backend entitlement checks and placement resolution:
+
+| Language | Package |
+|---|---|
+| Node.js | `@revt-eng/server-node` |
+| Python | `revturbine-server` (PyPI) |
+| Java | `io.revturbine:server-java` (Maven) |
+| C# | `RevTurbine.Server` (NuGet) |
+| Rust | `revturbine-server` (crates.io) |
+
+:::note
+Server SDKs are under active development. Contact your RevTurbine account team for current availability.
+:::
+
+## Environment Variables
+
+Set these in your environment (`.env`, CI secrets, etc.) — never commit them to source:
+
+| Variable | Description | Required |
+|---|---|---|
+| `REVTURBINE_TENANT_ID` | Your tenant identifier | Yes |
+| `REVTURBINE_API_KEY` | API key (prefixed `rt_live_` or `rt_test_`) | Yes |
+| `REVTURBINE_ENDPOINT` | API endpoint URL | Yes (defaults to `https://api.revturbine.io`) |
+
+```bash title=".env"
+REVTURBINE_TENANT_ID=tenant_abc
+REVTURBINE_API_KEY=rt_live_your_key_here
+REVTURBINE_ENDPOINT=https://api.revturbine.io
+```
+
+## Supported Runtimes
+
+| Runtime | Minimum Version |
+|---|---|
+| Node.js | 20+ |
+| Modern browsers | Chrome 90+, Firefox 90+, Safari 15+, Edge 90+ |
+| React | 18.0+ |
+| TypeScript | 5.0+ |
+
+## Next Steps
+
+- [Quickstart](/getting-started/quickstart/) — render your first placement
+- [Runtime modes](/guides/runtime-modes/) — choose server, custom endpoints, or local-only

@@ -1,0 +1,18 @@
+---
+title: "Brand Kit Gate"
+description: "Card-style entitlement gate — shows an upgrade card when brand kit access is denied."
+tableOfContents: false
+sidebar:
+  label: "G-3: Brand Kit Gate"
+---
+
+import SandpackPlayground from '../../../../components/SandpackPlayground';
+
+A card-style gate that shows an upgrade prompt when the `brand_kit` entitlement is denied.
+
+- **Slot:** `settings_brand_section`
+- **Entitlement:** `brand_kit`
+- **Template:** `in_page_card`
+- **Demo user:** Dan (Starter plan, no entitlements)
+
+<SandpackPlayground scenarioId="gate-card" client:only="react" />

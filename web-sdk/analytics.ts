@@ -1,0 +1,216 @@
+/**
+ * Analytics adapter — bridges RevTurbine SDK events to third-party analytics
+ * platforms (Heap, Segment, Amplitude, Mixpanel, PostHog, custom, etc.).
+ *
+ * Implements the {@link EventConsumerProvider} domain provider interface so it
+ * plugs into the SDK's `domainProviders` array at init time.
+ *
+ * @example
+ * ```ts
+ * import { createAnalyticsProvider } from '@revt-eng/sdk';
+ *
+ * const analytics = createAnalyticsProvider({
+ *   handler: (eventName, properties) => {
+ *     window.analytics.track(eventName, properties);
+ *   },
+ * });
+ *
+ * initRevTurbine({ domainProviders: [analytics], ... });
+ * ```
+ *
+ * @module
+ */
+
+import type {
+  EventConsumer,
+  EventConsumerProvider,
+  EventConsumerProviderState,
+} from '@revt-eng/core';
+
+/* ------------------------------------------------------------------ */
+/*  Public types                                                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Flat properties object passed to the analytics handler after
+ * transforming a raw {@link RevTurbineEventEnvelope}.
+ */
+export type AnalyticsEventProperties = Record<string, unknown>; // sdk-ok: type-definition
+
+/**
+ * Callback invoked for every SDK event.
+ *
+ * @param eventName - Normalised event name (e.g. `'placement_interaction'`).
+ * @param properties - Flat key-value properties derived from the event envelope.
+ */
+export type AnalyticsEventHandler = (
+  eventName: string,
+  properties: AnalyticsEventProperties,
+) => void;
+
+/**
+ * Optional transformer applied before the handler.
+ * Return `null` to drop the event silently.
+ */
+export type AnalyticsEventTransformer = (
+  eventName: string,
+  properties: AnalyticsEventProperties,
+) => { eventName: string; properties: AnalyticsEventProperties } | null;
+
+/** Configuration for {@link createAnalyticsProvider}. */
+export interface AnalyticsProviderOptions {
+  /**
+   * Callback that pushes one event to the analytics platform.
+   * Called once per SDK event after optional transformation.
+   */
+  handler: AnalyticsEventHandler;
+
+  /**
+   * Optional transform applied before the handler.
+   * Use this to rename events, enrich properties, or drop events
+   * you don't care about.
+   *
+   * Return `null` to suppress the event.
+   */
+  transform?: AnalyticsEventTransformer;
+
+  /**
+   * When provided, only events whose `type` matches one of these
+   * strings are forwarded. All others are silently dropped.
+   *
+   * @example ['placement_interaction', 'placement_dismissed']
+   */
+  filter?: string[];
+
+  /**
+   * Human-readable consumer name shown in diagnostics.
+   * @default 'analytics'
+   */
+  name?: string;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+interface EventEnvelopeLike {
+  type: string;
+  tenant_id: string;
+  user_id: string | null;
+  anonymous_id: string;
+  session_id: string;
+  url: string;
+  path: string;
+  page_title: string;
+  event_time: string;
+  properties: Record<string, unknown>; // sdk-ok: type-definition
+  identity: { traits: Record<string, unknown> }; // sdk-ok: type-definition
+}
+
+/** Flatten an envelope into a simple properties bag. */
+function flattenEnvelope(env: EventEnvelopeLike): AnalyticsEventProperties {
+  return {
+    tenant_id: env.tenant_id,
+    user_id: env.user_id,
+    anonymous_id: env.anonymous_id,
+    session_id: env.session_id,
+    url: env.url,
+    path: env.path,
+    page_title: env.page_title,
+    event_time: env.event_time,
+    ...env.properties,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/*  AnalyticsConsumer (internal EventConsumer implementation)           */
+/* ------------------------------------------------------------------ */
+
+class AnalyticsConsumer implements EventConsumer {
+  readonly name: string;
+  private readonly handler: AnalyticsEventHandler;
+  private readonly transform?: AnalyticsEventTransformer;
+  private readonly filterSet?: Set<string>;
+
+  constructor(options: AnalyticsProviderOptions) {
+    this.name = options.name ?? 'analytics';
+    this.handler = options.handler;
+    this.transform = options.transform;
+    this.filterSet = options.filter ? new Set(options.filter) : undefined;
+  }
+
+  consume(events: EventEnvelopeLike[]): void {
+    for (const event of events) {
+      if (this.filterSet && !this.filterSet.has(event.type)) continue;
+
+      let eventName = event.type;
+      let props = flattenEnvelope(event);
+
+      if (this.transform) {
+        const result = this.transform(eventName, props);
+        if (result === null) continue;
+        eventName = result.eventName;
+        props = result.properties;
+      }
+
+      try {
+        this.handler(eventName, props);
+      } catch {
+        // Never let a third-party analytics error crash the SDK.
+      }
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Factory                                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Create an analytics domain provider that forwards SDK events
+ * (impressions, interactions, triggers, page views, etc.) to a
+ * third-party analytics platform.
+ *
+ * The returned provider should be passed in the `domainProviders`
+ * array when calling `initRevTurbine()`.
+ *
+ * @example Segment
+ * ```ts
+ * const analytics = createAnalyticsProvider({
+ *   handler: (eventName, properties) => {
+ *     window.analytics.track(eventName, properties);
+ *   },
+ * });
+ * ```
+ *
+ * @example Heap (filtered to interactions only)
+ * ```ts
+ * const analytics = createAnalyticsProvider({
+ *   handler: (eventName, properties) => {
+ *     heap.track(eventName, properties);
+ *   },
+ *   filter: ['placement_interaction', 'placement_dismissed', 'placement_converted'],
+ * });
+ * ```
+ *
+ * @example Custom transform
+ * ```ts
+ * const analytics = createAnalyticsProvider({
+ *   handler: (name, props) => posthog.capture(name, props),
+ *   transform: (name, props) => ({
+ *     eventName: `revturbine.${name}`,
+ *     properties: { ...props, source: 'revturbine-sdk' },
+ *   }),
+ * });
+ * ```
+ */
+export function createAnalyticsProvider(
+  options: AnalyticsProviderOptions,
+): EventConsumerProvider {
+  const consumer = new AnalyticsConsumer(options);
+
+  return {
+    domain: 'events',
+    resolve: () => ({ consumers: [consumer] }),
+  };
+}

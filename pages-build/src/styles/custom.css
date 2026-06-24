@@ -1,0 +1,39 @@
+/*
+ * RevTurbine SDK Docs — Starlight Theme
+ *
+ * Generated from Starlight's theme editor:
+ * Accent hue 264 / chroma 0.243 (brand blue #1447e6)
+ * Gray hue 264 / chroma 0.015 (near-neutral with subtle blue tint)
+ *
+ * https://starlight.astro.build/guides/css-and-tailwind/#color-theme-editor
+ */
+
+/* Dark mode colors. */
+:root {
+	--sl-color-accent-low: #0f214a;
+	--sl-color-accent: #1d54f2;
+	--sl-color-accent-high: #aec9fe;
+	--sl-color-white: #ffffff;
+	--sl-color-gray-1: #eceef2;
+	--sl-color-gray-2: #bfc2c7;
+	--sl-color-gray-3: #878c95;
+	--sl-color-gray-4: #545861;
+	--sl-color-gray-5: #343840;
+	--sl-color-gray-6: #23272e;
+	--sl-color-black: #16181c;
+}
+/* Light mode colors. */
+:root[data-theme='light'] {
+	--sl-color-accent-low: #c4d7ff;
+	--sl-color-accent: #1f56f5;
+	--sl-color-accent-high: #112b6f;
+	--sl-color-white: #16181c;
+	--sl-color-gray-1: #23272e;
+	--sl-color-gray-2: #343840;
+	--sl-color-gray-3: #545861;
+	--sl-color-gray-4: #878c95;
+	--sl-color-gray-5: #bfc2c7;
+	--sl-color-gray-6: #eceef2;
+	--sl-color-gray-7: #f5f6f8;
+	--sl-color-black: #ffffff;
+}

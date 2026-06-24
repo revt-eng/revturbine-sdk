@@ -1,0 +1,118 @@
+{
+  "id": "built-in",
+  "label": "Built-in journeys",
+  "journeys": [
+    {
+      "id": "baseline",
+      "label": "New free user",
+      "shows": "New-user sidebar + quota meter; no nudges yet.",
+      "state": {
+        "userId": "prism-demo-user",
+        "planHandle": "free",
+        "generationsUsed": 0,
+        "creditBalance": 20,
+        "seatsUsed": 0,
+        "custom": { "email_type": "personal", "engagement_score": 40, "days_since_signup": 1, "days_since_active": 0, "has_purchased": false, "billing_status": "ok", "billing_period": "monthly" },
+        "trial": { "inTrial": false, "trialType": null, "dayNumber": 0, "daysRemaining": 0 }
+      }
+    },
+    {
+      "id": "usage_cap",
+      "label": "Usage cap approaching",
+      "shows": "“Running low” toast at 80% of free generations.",
+      "state": {
+        "userId": "prism-demo-user",
+        "planHandle": "free",
+        "generationsUsed": 25,
+        "creditBalance": 20,
+        "seatsUsed": 0,
+        "custom": { "email_type": "personal", "engagement_score": 40, "days_since_signup": 1, "days_since_active": 0, "has_purchased": false, "billing_status": "ok", "billing_period": "monthly" },
+        "trial": { "inTrial": false, "trialType": null, "dayNumber": 0, "daysRemaining": 0 }
+      }
+    },
+    {
+      "id": "out_of_generations",
+      "label": "Out of generations",
+      "shows": "Blocking “out of generations” modal at 100%.",
+      "state": {
+        "userId": "prism-demo-user",
+        "planHandle": "free",
+        "generationsUsed": 30,
+        "creditBalance": 20,
+        "seatsUsed": 0,
+        "custom": { "email_type": "personal", "engagement_score": 40, "days_since_signup": 1, "days_since_active": 0, "has_purchased": false, "billing_status": "ok", "billing_period": "monthly" },
+        "trial": { "inTrial": false, "trialType": null, "dayNumber": 0, "daysRemaining": 0 }
+      }
+    },
+    {
+      "id": "credits_low",
+      "label": "Credits running low",
+      "shows": "Credit-balance banner once 80% of style credits are spent.",
+      "state": {
+        "userId": "prism-demo-user",
+        "planHandle": "free",
+        "generationsUsed": 0,
+        "creditBalance": 3,
+        "seatsUsed": 0,
+        "custom": { "email_type": "personal", "engagement_score": 40, "days_since_signup": 1, "days_since_active": 0, "has_purchased": false, "billing_status": "ok", "billing_period": "monthly" },
+        "trial": { "inTrial": false, "trialType": null, "dayNumber": 0, "daysRemaining": 0 }
+      }
+    },
+    {
+      "id": "reverse_trial",
+      "label": "Reverse trial active",
+      "shows": "Reverse-trial banner; premium features unlocked on the Free plan.",
+      "state": {
+        "userId": "prism-demo-user",
+        "planHandle": "free",
+        "generationsUsed": 0,
+        "creditBalance": 20,
+        "seatsUsed": 0,
+        "custom": { "email_type": "personal", "engagement_score": 40, "days_since_signup": 1, "days_since_active": 0, "has_purchased": false, "billing_status": "ok", "billing_period": "monthly" },
+        "trial": { "inTrial": true, "trialType": "reverse", "dayNumber": 2, "daysRemaining": 5 }
+      }
+    },
+    {
+      "id": "trial_ending",
+      "label": "Free trial ending",
+      "shows": "Trial-ending banner counting down the last days.",
+      "state": {
+        "userId": "prism-demo-user",
+        "planHandle": "free",
+        "generationsUsed": 0,
+        "creditBalance": 20,
+        "seatsUsed": 0,
+        "custom": { "email_type": "personal", "engagement_score": 40, "days_since_signup": 1, "days_since_active": 0, "has_purchased": false, "billing_status": "ok", "billing_period": "monthly" },
+        "trial": { "inTrial": true, "trialType": "free", "dayNumber": 5, "daysRemaining": 2 }
+      }
+    },
+    {
+      "id": "payment_recovery",
+      "label": "Payment failed",
+      "shows": "Non-dismissible payment-recovery banner (retention).",
+      "state": {
+        "userId": "prism-demo-user",
+        "planHandle": "free",
+        "generationsUsed": 0,
+        "creditBalance": 20,
+        "seatsUsed": 0,
+        "custom": { "email_type": "personal", "engagement_score": 40, "days_since_signup": 1, "days_since_active": 0, "has_purchased": false, "billing_status": "failed", "billing_period": "monthly" },
+        "trial": { "inTrial": false, "trialType": null, "dayNumber": 0, "daysRemaining": 0 }
+      }
+    },
+    {
+      "id": "annual_upsell",
+      "label": "Monthly Pro → annual",
+      "shows": "Annual-billing upsell banner for a monthly Pro subscriber.",
+      "state": {
+        "userId": "prism-demo-user",
+        "planHandle": "pro",
+        "generationsUsed": 0,
+        "creditBalance": 20,
+        "seatsUsed": 0,
+        "custom": { "email_type": "personal", "engagement_score": 40, "days_since_signup": 1, "days_since_active": 0, "has_purchased": true, "billing_status": "ok", "billing_period": "monthly" },
+        "trial": { "inTrial": false, "trialType": null, "dayNumber": 0, "daysRemaining": 0 }
+      }
+    }
+  ]
+}

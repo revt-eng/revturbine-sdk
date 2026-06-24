@@ -1,0 +1,47 @@
+{
+  "name": "revturbine-sdk-pages-build",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "bundle:sdk-local": "node scripts/bundle-local-sdk.mjs",
+    "predev": "pnpm bundle:sdk-local",
+    "prebuild": "pnpm bundle:sdk-local",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "lint:md": "markdownlint-cli2 \"src/content/docs/{getting-started,tutorials,guides,concepts,reference,playground}/**/*.{md,mdx}\"",
+    "lint:links": "node scripts/check-links.mjs",
+    "lint:snippets": "node scripts/check-snippets.mjs",
+    "check": "pnpm lint:md && pnpm build && pnpm lint:links"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "dependencies": {
+    "@astrojs/react": "^5.0.4",
+    "@astrojs/starlight": "^0.38.4",
+    "@codesandbox/sandpack-react": "^2.20.0",
+    "@revt-eng/core": "0.1.78",
+    "@revt-eng/schema": "0.1.78",
+    "@revt-eng/schema-external": "0.1.78",
+    "astro": "^6.1.9",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "starlight-typedoc": "^0.21.5",
+    "typedoc-plugin-markdown": "^4.11.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "esbuild": "^0.28.0",
+    "markdownlint-cli2": "^0.22.1",
+    "typedoc": "^0.28.19",
+    "typescript": "^6.0.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "es5-ext"
+    ]
+  }
+}

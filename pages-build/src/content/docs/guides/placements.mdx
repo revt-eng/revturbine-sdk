@@ -1,0 +1,259 @@
+---
+title: Placements
+description: Slot-based and entitlement-based placement patterns — how the SDK decides what to show, where, and when.
+sidebar:
+  order: 6
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+<Aside type="tip" title="Visual gallery">
+Each built-in slot component has a co-located Storybook story with 3-5 variants.
+Run `pnpm storybook` in the SDK repo to browse them, or see the
+[Playground](/playground/) for live Sandpack demos.
+</Aside>
+
+Placements are the SDK's core output — they're the decisions about what content to render in which slot, for which user, at what moment. This guide covers placement configuration, resolution, lifecycle, and chaining.
+
+## How Placements Work
+
+1. You define **slots** in your UI — named positions where placements can appear
+2. The SDK evaluates **targeting rules** against the current user context
+3. If a rule matches, the SDK resolves a **placement decision** with content, surface template, and CTA path
+4. The slot component renders the decision using a built-in or custom template
+
+## Slot Configuration
+
+Every slot needs an `id` and optionally a list of accepted `surfaceTemplateIds`:
+
+```tsx
+<SurfaceSlotComponent
+  id="dashboard_banner"
+  surfaceTemplateIds={['banner_placement', 'banner_announcement']}
+/>
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | Unique slot identifier (matches server-side placement rules) |
+| `surfaceTemplateIds` | `string[]` | Templates this slot accepts (filters available placements) |
+
+## Slot Types
+
+### Fixed Slots
+
+Always-visible inline placements — buttons, cards, meters:
+
+```tsx
+import { FixedSurfaceSlot } from '@revt-eng/sdk';
+
+<FixedSurfaceSlot
+  id="nav_bar_right"
+  surfaceTemplateIds={['button']}
+/>
+```
+
+Fixed slots render nothing if no placement matches — your layout stays intact.
+
+> [Try it live → Upgrade Button](/playground/fixed-slots/fixed-button/)
+
+### Access Gate Slots
+
+Wrap premium content and show an upgrade prompt when access is denied:
+
+```tsx
+import { AccessGateSurfaceSlot } from '@revt-eng/sdk';
+
+<AccessGateSurfaceSlot
+  id="editor_export_action"
+  surfaceTemplateIds={['modal_overlay']}
+  entitlementHandle="data_export"
+>
+  <ExportPanel />
+</AccessGateSurfaceSlot>
+```
+
+If the entitlement is granted, children render normally. If denied, the gate renders an upgrade placement instead.
+
+> [Try it live → Data Export Gate](/playground/access-gates/gate-modal/)
+
+### Message Slots
+
+Page-level overlays triggered by targeting rules — toasts, modals, banners:
+
+```tsx
+import { MessageSurfaceSlot } from '@revt-eng/sdk';
+
+<MessageSurfaceSlot
+  id="global_banner"
+  surfaceTemplateIds={['banner_placement', 'banner_warning']}
+/>
+```
+
+Message slots render nothing until a targeting rule triggers. Place them at the top level of your layout.
+
+> [Try it live → Usage Warning Banner](/playground/global-slots/msg-banner/)
+
+## Placement Output
+
+When a placement resolves, the decision contains:
+
+```ts
+interface PlacementOutput {
+  output_id: string;
+  decision_id?: string;
+  surface_type: string;      // 'banner', 'modal', 'toast', etc.
+  template_id: string;       // Which surface template was selected
+  content: {
+    header?: string;         // Headline text
+    body?: string;           // Body/description text
+    cta_label?: string;      // Primary CTA button label
+    secondary_cta_label?: string;
+    image_url?: string;
+    dismissible?: boolean;
+    position?: string;       // 'top', 'bottom', 'center'
+    duration?: number;       // Auto-dismiss in ms (toasts)
+  };
+  ui_path?: {
+    action_type: string;     // 'open_pricing', 'upgrade', 'start_trial'
+    plan_handle?: string;
+    promotion_id?: string;
+    url?: string;
+  };
+  promotion?: {
+    id: string;
+    type: string;
+    discount?: number | string;
+  };
+  reason_codes?: string[];
+  cap_policies?: Array<{
+    count: number;
+    period: 'session' | 'day' | 'week' | 'month' | 'lifetime';
+  }>;
+}
+```
+
+## Placement Lifecycle
+
+### Impression → Interaction → Outcome
+
+```text
+┌─────────┐     ┌──────────┐     ┌──────────┐
+│ Resolve  │ ──► │ Visible  │ ──► │ Interact │
+└─────────┘     └──────────┘     └──────────┘
+                     │                  │
+                     │            ┌─────┴─────┐
+                     │            │  dismiss   │
+                     │            │  snooze    │
+                     │            │  ctaClick  │
+                     │            │ ctaComplete│
+                     │            └───────────┘
+                     │
+                     ▼
+              (auto-tracked impression)
+```
+
+### Interaction Methods
+
+```tsx
+const { dismiss, snooze, ctaClick, ctaComplete } = usePlacement({ ... });
+
+// Dismiss — suppresses for default cooldown
+await dismiss();
+
+// Dismiss with custom cooldown (30 minutes)
+await dismiss(30 * 60 * 1000);
+
+// Snooze — temporarily suppress (1 hour)
+await snooze(3600);
+
+// Record CTA click
+await ctaClick();
+
+// Record CTA completion (e.g., checkout finished)
+await ctaComplete();
+```
+
+Each interaction is automatically tracked as a treatment interaction event.
+
+## Cap Policies
+
+Placement decisions can include cap policies that limit how often a placement appears:
+
+```ts
+cap_policies: [
+  { count: 3, period: 'session' },    // Max 3 times per session
+  { count: 1, period: 'day' },        // Max 1 per day
+  { count: 5, period: 'lifetime' },   // Max 5 ever
+]
+```
+
+The SDK enforces caps client-side using localStorage. When a cap is reached, the placement returns `reason_codes: ['cap_limit_exceeded']` and `visible: false`.
+
+## Placement Chaining
+
+A CTA can point to another placement via `ui_path.placement_handle`:
+
+```ts
+// First placement decides: show upgrade banner
+const banner = await sdk.getPlacement({ slotId: 'dashboard_banner' });
+// banner.ui_path = { action_type: 'upgrade', plan_handle: 'professional' }
+
+// On CTA click, resolve the follow-up placement
+const followUp = await sdk.getPlacement({
+  slotId: 'checkout_modal',
+  placementHandle: banner.ui_path.placement_handle,
+});
+```
+
+## UI Path Resolvers
+
+Map CTA actions to application navigation:
+
+```tsx
+<RevTurbineProvider
+  options={{
+    // ...
+    uiPathResolvers: {
+      open_pricing: () => router.push('/pricing'),
+      upgrade: (uiPath) => {
+        stripe.redirectToCheckout({ priceId: uiPath.plan_handle });
+      },
+      start_trial: () => router.push('/trial/start'),
+    },
+  }}
+>
+```
+
+When a user clicks a CTA, the SDK calls the matching resolver.
+
+## Using the Hook
+
+For custom rendering, use `usePlacement` directly:
+
+```tsx
+const {
+  visible,
+  content,
+  decision,
+  isLoading,
+  error,
+  refresh,
+  dismiss,
+  ctaClick,
+} = usePlacement({
+  surfaceSlot: {
+    id: 'dashboard_banner',
+    surfaceTemplateIds: ['banner_placement'],
+  },
+  ttlMs: 300_000,   // Cache for 5 minutes
+  autoLoad: true,    // Load on mount
+});
+```
+
+## Next Steps
+
+- [Component Gallery](/components/) — interactive demos of every built-in slot component
+- [Custom Slot Types](/guides/custom-slots/) — register your own slot components
+- [Events & Analytics](/guides/events/) — track impressions and interactions
+- [Interactive Playground](/playground/) — try all slot types live

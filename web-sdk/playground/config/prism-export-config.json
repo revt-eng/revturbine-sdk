@@ -1,0 +1,791 @@
+{
+  "version": "1.0.0",
+  "exported_at": "2026-06-12T00:00:00.000Z",
+  "plans": [
+    { "id": "plan_prism_free", "unique_handle": "free", "name": "Free", "tier_position": 0, "sort_order": 0 },
+    { "id": "plan_prism_pro", "unique_handle": "pro", "name": "Pro", "tier_position": 1, "sort_order": 1 },
+    { "id": "plan_prism_enterprise", "unique_handle": "enterprise", "name": "Enterprise", "tier_position": 2, "sort_order": 2 }
+  ],
+  "entitlements": [
+    { "id": "ent_batch_export", "unique_handle": "batch_export", "name": "Batch Export", "type": "feature" },
+    { "id": "ent_style_packs", "unique_handle": "style_packs", "name": "Premium Style Packs", "type": "feature" },
+    { "id": "ent_generations", "unique_handle": "generations", "name": "Image Generations", "type": "usage_limit", "unit": "images" },
+    { "id": "ent_credits", "unique_handle": "credits", "name": "Style Credits", "type": "credits", "unit": "credits" },
+    { "id": "ent_burst_rate", "unique_handle": "burst_rate", "name": "Generation Rate", "type": "rate_limit", "unit": "requests" },
+    { "id": "ent_resolution_tier", "unique_handle": "resolution_tier", "name": "Resolution & Watermark", "type": "capability_tier" },
+    { "id": "ent_seats", "unique_handle": "seats", "name": "Team Seats", "type": "seat" },
+    { "id": "ent_generation_overage", "unique_handle": "generation_overage", "name": "Generation Overage", "type": "price_per_unit", "unit": "image" }
+  ],
+  "entitlement_rules": [
+    {
+      "id": "ev_batch_export_paid",
+      "entitlement_id": "ent_batch_export",
+      "targets": [
+        { "kind": "plan", "id": "plan_prism_pro" },
+        { "kind": "plan", "id": "plan_prism_enterprise" }
+      ],
+      "segment_ids": [],
+      "type_fields": { "kind": "feature", "enabled": true },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_style_packs_paid",
+      "entitlement_id": "ent_style_packs",
+      "targets": [
+        { "kind": "plan", "id": "plan_prism_pro" },
+        { "kind": "plan", "id": "plan_prism_enterprise" }
+      ],
+      "segment_ids": [],
+      "type_fields": { "kind": "feature", "enabled": true },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_batch_export_free",
+      "entitlement_id": "ent_batch_export",
+      "targets": [{ "kind": "plan", "id": "plan_prism_free" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "feature", "enabled": false },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_style_packs_free",
+      "entitlement_id": "ent_style_packs",
+      "targets": [{ "kind": "plan", "id": "plan_prism_free" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "feature", "enabled": false },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_generations_free",
+      "entitlement_id": "ent_generations",
+      "targets": [{ "kind": "plan", "id": "plan_prism_free" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "usage_limit", "limit_value": 30, "unit": "images", "period": "per_month", "enforcement": "hard_block" },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_generations_pro",
+      "entitlement_id": "ent_generations",
+      "targets": [{ "kind": "plan", "id": "plan_prism_pro" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "usage_limit", "limit_value": 2000, "unit": "images", "period": "per_month", "enforcement": "allow_overage" },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_generations_enterprise",
+      "entitlement_id": "ent_generations",
+      "targets": [{ "kind": "plan", "id": "plan_prism_enterprise" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "usage_limit", "limit_value": 999999, "unit": "images", "period": "per_month", "enforcement": "allow_overage" },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_overage_pro",
+      "entitlement_id": "ent_generation_overage",
+      "targets": [{ "kind": "plan", "id": "plan_prism_pro" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "price_per_unit", "amount_cents": 5, "currency": "usd", "unit": "image", "period": "per_month" },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_overage_enterprise",
+      "entitlement_id": "ent_generation_overage",
+      "targets": [{ "kind": "plan", "id": "plan_prism_enterprise" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "price_per_unit", "amount_cents": 3, "currency": "usd", "unit": "image", "period": "per_month" },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_credits_free",
+      "entitlement_id": "ent_credits",
+      "targets": [{ "kind": "plan", "id": "plan_prism_free" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "credits", "initial_grant": 20, "allowance": 0, "period": "per_month", "rollover": false, "top_up_available": true, "unit": "credits" },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_credits_pro",
+      "entitlement_id": "ent_credits",
+      "targets": [{ "kind": "plan", "id": "plan_prism_pro" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "credits", "allowance": 1000, "period": "per_month", "rollover": true, "max_rollover": 3000, "top_up_available": true, "unit": "credits" },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_credits_enterprise",
+      "entitlement_id": "ent_credits",
+      "targets": [{ "kind": "plan", "id": "plan_prism_enterprise" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "credits", "allowance": 999999, "period": "per_month", "rollover": false, "top_up_available": true, "unit": "credits" },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_burst_free",
+      "entitlement_id": "ent_burst_rate",
+      "targets": [{ "kind": "plan", "id": "plan_prism_free" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "rate_limit", "rate_value": 3, "period_scope": "per_minute", "enforcement": "hard_block" },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_burst_pro",
+      "entitlement_id": "ent_burst_rate",
+      "targets": [{ "kind": "plan", "id": "plan_prism_pro" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "rate_limit", "rate_value": 30, "period_scope": "per_minute", "enforcement": "soft_block" },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_burst_enterprise",
+      "entitlement_id": "ent_burst_rate",
+      "targets": [{ "kind": "plan", "id": "plan_prism_enterprise" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "rate_limit", "rate_value": 999999, "period_scope": "per_minute", "enforcement": "allow_overage" },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_resolution_free",
+      "entitlement_id": "ent_resolution_tier",
+      "targets": [{ "kind": "plan", "id": "plan_prism_free" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "capability_tier", "tier_name": "Watermarked 720p", "tier_description": "Outputs carry a Prism watermark at up to 720p." },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_resolution_paid",
+      "entitlement_id": "ent_resolution_tier",
+      "targets": [
+        { "kind": "plan", "id": "plan_prism_pro" },
+        { "kind": "plan", "id": "plan_prism_enterprise" }
+      ],
+      "segment_ids": [],
+      "type_fields": { "kind": "capability_tier", "tier_name": "Clean 4K", "tier_description": "Watermark-free exports at up to 4K resolution." },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_seats_free",
+      "entitlement_id": "ent_seats",
+      "targets": [{ "kind": "plan", "id": "plan_prism_free" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "seat", "included_seats": 1, "max_seats": 1, "seat_type": "user" },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_seats_pro",
+      "entitlement_id": "ent_seats",
+      "targets": [{ "kind": "plan", "id": "plan_prism_pro" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "seat", "included_seats": 5, "max_seats": 5, "seat_type": "user" },
+      "current_usage": 0
+    },
+    {
+      "id": "ev_seats_enterprise",
+      "entitlement_id": "ent_seats",
+      "targets": [{ "kind": "plan", "id": "plan_prism_enterprise" }],
+      "segment_ids": [],
+      "type_fields": { "kind": "seat", "included_seats": 999999, "max_seats": 999999, "seat_type": "user" },
+      "current_usage": 0
+    }
+  ],
+  "segments": [
+    {
+      "id": "seg_email_business",
+      "name": "Business Email Signups",
+      "handle": "seg_email_business",
+      "predicates": [{ "field": "email_type", "operator": "eq", "value": "business" }]
+    },
+    {
+      "id": "seg_email_personal",
+      "name": "Personal Email Signups",
+      "handle": "seg_email_personal",
+      "predicates": [{ "field": "email_type", "operator": "eq", "value": "personal" }]
+    },
+    {
+      "id": "seg_eng_new",
+      "name": "New Users (first 3 days)",
+      "handle": "seg_eng_new",
+      "predicates": [{ "field": "days_since_signup", "operator": "lte", "value": "3" }]
+    },
+    {
+      "id": "seg_eng_active",
+      "name": "Active Users",
+      "handle": "seg_eng_active",
+      "predicates": [{ "field": "engagement_score", "operator": "gte", "value": "60" }]
+    },
+    {
+      "id": "seg_eng_inactive",
+      "name": "Inactive Users",
+      "handle": "seg_eng_inactive",
+      "predicates": [{ "field": "days_since_active", "operator": "gte", "value": "14" }]
+    },
+    {
+      "id": "seg_buyer",
+      "name": "Buyers",
+      "handle": "seg_buyer",
+      "predicates": [{ "field": "has_purchased", "operator": "eq", "value": "true" }]
+    },
+    {
+      "id": "seg_non_buyer",
+      "name": "Non-Buyers",
+      "handle": "seg_non_buyer",
+      "predicates": [{ "field": "has_purchased", "operator": "eq", "value": "false" }]
+    },
+    {
+      "id": "seg_billing_failed",
+      "name": "Failed Payment",
+      "handle": "seg_billing_failed",
+      "predicates": [{ "field": "billing_status", "operator": "eq", "value": "failed" }]
+    },
+    {
+      "id": "seg_billing_late",
+      "name": "Late Payment",
+      "handle": "seg_billing_late",
+      "predicates": [{ "field": "billing_status", "operator": "eq", "value": "late" }]
+    },
+    {
+      "id": "seg_plan_nudge_annual",
+      "name": "Monthly Pro (annual upsell)",
+      "handle": "seg_plan_nudge_annual",
+      "predicates": [
+        { "field": "plan", "operator": "eq", "value": "pro" },
+        { "field": "billing_period", "operator": "eq", "value": "monthly" }
+      ]
+    }
+  ],
+  "content_ui_paths": [
+    { "name": "Checkout: Pro", "action_type": "open_checkout_modal", "plan_handle": "pro", "description": "Opens the Pro plan checkout." },
+    { "name": "Checkout: Enterprise", "action_type": "contact_sales", "description": "Routes to the sales contact form." },
+    { "name": "Buy Credits", "action_type": "open_checkout_modal", "plan_handle": "credit_pack", "description": "Opens the add-on checkout for a Style Credits pack." },
+    { "name": "View Plans", "action_type": "navigate_to_plans", "description": "Opens the plans & pricing comparison." },
+    { "name": "Switch to Annual", "action_type": "open_checkout_modal", "plan_handle": "pro", "description": "Opens the monthly-to-annual billing switch." }
+  ],
+  "surface_templates": [
+    { "id": "button", "surface_type": "button", "fields": [] },
+    {
+      "id": "inline_gate_message",
+      "surface_type": "in_page",
+      "fields": [{ "name": "Body", "type": "text", "required": true }]
+    },
+    {
+      "id": "in_page_card",
+      "surface_type": "in_page",
+      "fields": [
+        { "name": "Header", "type": "text", "required": true },
+        { "name": "Body", "type": "text", "required": false },
+        { "name": "Image", "type": "asset_selector", "required": false }
+      ]
+    },
+    {
+      "id": "usage_counter",
+      "surface_type": "in_page",
+      "fields": [
+        { "name": "Entitlement", "type": "entitlement_selector", "required": true },
+        { "name": "Header", "type": "text", "required": false },
+        { "name": "Body", "type": "text", "required": false }
+      ]
+    },
+    {
+      "id": "quota_meter",
+      "surface_type": "in_page",
+      "fields": [
+        { "name": "Entitlement", "type": "entitlement_selector", "required": true },
+        { "name": "Header", "type": "text", "required": false },
+        { "name": "Body", "type": "text", "required": false }
+      ]
+    },
+    {
+      "id": "credit_balance_counter",
+      "surface_type": "in_page",
+      "fields": [
+        { "name": "Entitlement", "type": "entitlement_selector", "required": true },
+        { "name": "Header", "type": "text", "required": false },
+        { "name": "Body", "type": "text", "required": false }
+      ]
+    },
+    {
+      "id": "banner_placement",
+      "surface_type": "banner",
+      "fields": [
+        { "name": "Header", "type": "text", "required": true },
+        { "name": "Body", "type": "text", "required": false },
+        { "name": "Dismissible", "type": "dropdown", "required": true }
+      ]
+    },
+    {
+      "id": "modal_overlay",
+      "surface_type": "modal",
+      "fields": [
+        { "name": "Modal Type", "type": "dropdown", "required": true },
+        { "name": "Header", "type": "text", "required": true },
+        { "name": "Body", "type": "text", "required": true },
+        { "name": "Secondary Body", "type": "text", "required": false },
+        { "name": "Image", "type": "asset_selector", "required": false }
+      ]
+    },
+    {
+      "id": "toast_message",
+      "surface_type": "toast",
+      "fields": [
+        { "name": "Header", "type": "text", "required": false },
+        { "name": "Body", "type": "text", "required": true },
+        { "name": "Duration", "type": "number", "required": false }
+      ]
+    }
+  ],
+  "placements": [
+    {
+      "id": "pl_nav_upgrade",
+      "name": "NAV-1: Persistent Upgrade Button",
+      "category": "fixed",
+      "trigger": { "type": "surface_render", "slot_id": "header_upgrade_cta" },
+      "payloads": [
+        {
+          "id": "pl_nav_upgrade_p0",
+          "target": { "plan_ids": ["plan_prism_free"], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "button",
+              "fields": {},
+              "ctas": [{ "label": "Upgrade", "path": "open_checkout", "config": { "purchase": "pro" } }]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-06-12"
+        }
+      ],
+      "order": 0
+    },
+    {
+      "id": "pl_usage_meter",
+      "name": "QM-1: Generations Quota Meter",
+      "category": "fixed",
+      "trigger": { "type": "surface_render", "slot_id": "quota_meter" },
+      "payloads": [
+        {
+          "id": "pl_usage_meter_p0",
+          "target": { "plan_ids": [], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "quota_meter",
+              "fields": { "entitlement": "generations", "header": "{{usage_remaining}}/{{usage_limit}} generations left", "body": "Renews {{reset_date}}" },
+              "ctas": [{ "label": "Get more generations", "path": "open_checkout", "config": { "purchase": "pro" } }]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-06-12"
+        }
+      ],
+      "order": 1
+    },
+    {
+      "id": "pl_credit_balance",
+      "name": "CB-1: Style Credit Balance",
+      "category": "fixed",
+      "trigger": { "type": "surface_render", "slot_id": "credit_counter" },
+      "payloads": [
+        {
+          "id": "pl_credit_balance_p0",
+          "target": { "plan_ids": [], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "credit_balance_counter",
+              "fields": { "entitlement": "credits", "header": "{{usage_remaining}} credits", "body": "Premium styles cost 1 credit each" },
+              "ctas": [{ "label": "Buy credits", "path": "open_checkout", "config": { "purchase": "credit_pack" } }]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-06-12"
+        }
+      ],
+      "order": 2
+    },
+    {
+      "id": "pl_gate_batch_export",
+      "name": "D1: Batch Export Hard Gate",
+      "category": "gated",
+      "trigger": { "type": "entitlement_gate", "entitlement_handle": "batch_export" },
+      "payloads": [
+        {
+          "id": "pl_gate_batch_export_p0",
+          "target": { "plan_ids": ["plan_prism_free"], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": {
+                "modal_type": "Blocking",
+                "header": "Batch export is a Pro feature",
+                "body": "Export entire collections in one click. Upgrade to Pro to unlock batch export.",
+                "secondary_body": ""
+              },
+              "ctas": [
+                { "label": "Upgrade to Pro", "path": "open_checkout", "config": { "purchase": "pro" } },
+                { "label": "Not now", "path": "dismiss" }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-06-12"
+        }
+      ],
+      "order": 0
+    },
+    {
+      "id": "pl_gate_style_packs",
+      "name": "D2: Premium Style Packs Soft Gate",
+      "category": "gated",
+      "trigger": { "type": "entitlement_gate", "entitlement_handle": "style_packs" },
+      "payloads": [
+        {
+          "id": "pl_gate_style_packs_p0",
+          "target": { "plan_ids": ["plan_prism_free"], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": {
+                "modal_type": "Optional",
+                "header": "Unlock premium style packs",
+                "body": "Pro unlocks 40+ premium art styles. You can keep using the free styles for now.",
+                "secondary_body": ""
+              },
+              "ctas": [
+                { "label": "Upgrade to Pro", "path": "open_checkout", "config": { "purchase": "pro" } },
+                { "label": "Use a free style", "path": "dismiss" }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-06-12"
+        }
+      ],
+      "order": 1
+    },
+    {
+      "id": "pl_gate_watermark",
+      "name": "D3: Remove Watermark Gate",
+      "category": "gated",
+      "trigger": { "type": "entitlement_gate", "entitlement_handle": "resolution_tier", "tier_threshold": "clean_4k" },
+      "payloads": [
+        {
+          "id": "pl_gate_watermark_p0",
+          "target": { "plan_ids": ["plan_prism_free"], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "inline_gate_message",
+              "fields": { "body": "Export clean, watermark-free images at up to 4K with Pro." },
+              "ctas": [{ "label": "Upgrade to Pro", "path": "open_checkout", "config": { "purchase": "pro" } }]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-06-12"
+        }
+      ],
+      "order": 2
+    },
+    {
+      "id": "pl_usage_50",
+      "name": "V1: Generations 50% Warning",
+      "category": "usage_credit_seat",
+      "trigger": { "type": "usage_threshold", "entitlement_handle": "generations", "threshold_percent": 50 },
+      "payloads": [
+        {
+          "id": "pl_usage_50_p0",
+          "target": { "plan_ids": ["plan_prism_free"], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "toast_message",
+              "fields": { "header": "Halfway there", "body": "You've used {{usage_percent}}% of your free generations this month.", "duration": "8" },
+              "ctas": [{ "label": "See plans", "path": "view_plans" }]
+            }
+          ],
+          "caps": { "max_per_period": { "count": 1, "period": "session" } },
+          "status": "active",
+          "created_at": "2026-06-12"
+        }
+      ],
+      "order": 0
+    },
+    {
+      "id": "pl_usage_80",
+      "name": "V2: Generations 80% Warning",
+      "category": "usage_credit_seat",
+      "trigger": { "type": "usage_threshold", "entitlement_handle": "generations", "threshold_percent": 80 },
+      "payloads": [
+        {
+          "id": "pl_usage_80_p0",
+          "target": { "plan_ids": ["plan_prism_free"], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "toast_message",
+              "fields": { "header": "Running low", "body": "Only {{usage_remaining}} generations left this month.", "duration": "8" },
+              "ctas": [{ "label": "Upgrade to Pro", "path": "open_checkout", "config": { "purchase": "pro" } }]
+            }
+          ],
+          "caps": { "max_per_period": { "count": 1, "period": "session" } },
+          "status": "active",
+          "created_at": "2026-06-12"
+        }
+      ],
+      "order": 1
+    },
+    {
+      "id": "pl_usage_100",
+      "name": "V3: Generations Exhausted",
+      "category": "usage_credit_seat",
+      "trigger": { "type": "usage_threshold", "entitlement_handle": "generations", "threshold_percent": 100 },
+      "payloads": [
+        {
+          "id": "pl_usage_100_p0",
+          "target": { "plan_ids": ["plan_prism_free"], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": {
+                "modal_type": "Blocking",
+                "header": "You're out of generations",
+                "body": "You've used all 30 free generations this month. Upgrade to Pro for 2,000/mo, or grab a top-up pack.",
+                "secondary_body": "Your free generations refresh next month."
+              },
+              "ctas": [
+                { "label": "Upgrade to Pro", "path": "open_checkout", "config": { "purchase": "pro" } },
+                { "label": "Buy a top-up pack", "path": "open_checkout", "config": { "purchase": "credit_pack" } }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-06-12",
+          "recommendation_strategy": "next_tier_up"
+        }
+      ],
+      "order": 2
+    },
+    {
+      "id": "pl_credit_low",
+      "name": "V4: Credits Running Low",
+      "category": "usage_credit_seat",
+      "trigger": { "type": "credit_threshold", "entitlement_handle": "credits", "threshold_percent": 80 },
+      "payloads": [
+        {
+          "id": "pl_credit_low_p0",
+          "target": { "plan_ids": ["plan_prism_free"], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "banner_placement",
+              "fields": { "header": "{{usage_remaining}} style credits left", "body": "Top up to keep using premium styles.", "dismissible": "Yes" },
+              "ctas": [{ "label": "Buy credits", "path": "open_checkout", "config": { "purchase": "credit_pack" } }]
+            }
+          ],
+          "caps": { "max_per_period": { "count": 1, "period": "day" }, "cooldown_days": 1 },
+          "status": "active",
+          "created_at": "2026-06-12"
+        }
+      ],
+      "order": 3
+    },
+    {
+      "id": "pl_credit_out",
+      "name": "E1: Credits Exhausted — Buy More",
+      "category": "usage_credit_seat",
+      "trigger": { "type": "credit_threshold", "entitlement_handle": "credits", "threshold_percent": 100 },
+      "payloads": [
+        {
+          "id": "pl_credit_out_p0",
+          "target": { "plan_ids": ["plan_prism_free"], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": {
+                "modal_type": "Optional",
+                "header": "Out of style credits",
+                "body": "Add a Style Credits pack to keep generating with premium styles, or upgrade to Pro for 1,000 credits a month.",
+                "secondary_body": ""
+              },
+              "ctas": [
+                { "label": "Buy 50 credits", "path": "open_checkout", "config": { "purchase": "credit_pack" } },
+                { "label": "Upgrade to Pro", "path": "open_checkout", "config": { "purchase": "pro" } },
+                { "label": "Not now", "path": "dismiss" }
+              ]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-06-12"
+        }
+      ],
+      "order": 4
+    },
+    {
+      "id": "pl_sidebar_engagement",
+      "name": "U1: New-User Sidebar Upsell",
+      "category": "other_conversion",
+      "trigger": { "type": "surface_render", "slot_id": "sidebar" },
+      "payloads": [
+        {
+          "id": "pl_sidebar_engagement_p0",
+          "target": { "plan_ids": ["plan_prism_free"], "segment_chips": ["seg_eng_new"] },
+          "surfaces": [
+            {
+              "template_id": "in_page_card",
+              "fields": { "header": "Welcome to Prism", "body": "New here? Pro unlocks premium styles, 4K exports, and 2,000 generations a month." },
+              "ctas": [{ "label": "Explore Pro", "path": "view_plans" }]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-06-12"
+        }
+      ],
+      "order": 0
+    },
+    {
+      "id": "pl_annual_nudge",
+      "name": "L1: Monthly-to-Annual Nudge",
+      "category": "other_conversion",
+      "trigger": { "type": "qualifier", "qualifier": "annual_available" },
+      "payloads": [
+        {
+          "id": "pl_annual_nudge_p0",
+          "target": { "plan_ids": ["plan_prism_pro"], "segment_chips": ["seg_plan_nudge_annual"] },
+          "surfaces": [
+            {
+              "template_id": "banner_placement",
+              "fields": { "header": "Save 20% with annual billing", "body": "Switch your Pro plan to annual and save two months a year.", "dismissible": "Yes" },
+              "ctas": [{ "label": "Switch to annual", "path": "switch_billing_period", "config": { "target_billing_period": "annual" } }]
+            }
+          ],
+          "caps": { "max_per_period": { "count": 1, "period": "week" }, "cooldown_days": 7 },
+          "status": "active",
+          "created_at": "2026-06-12"
+        }
+      ],
+      "order": 1
+    },
+    {
+      "id": "pl_trial_ending",
+      "name": "T1: Free-trial Ending",
+      "category": "trials",
+      "trigger": { "type": "trial_ending", "days_before_end": 3 },
+      "payloads": [
+        {
+          "id": "pl_trial_ending_p0",
+          "target": { "plan_ids": [], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "banner_placement",
+              "fields": { "header": "Your Pro trial ends in {{days_remaining}} days", "body": "Keep premium styles, 4K exports, and 2,000 generations — upgrade before it ends.", "dismissible": "Yes" },
+              "ctas": [{ "label": "Keep Pro", "path": "open_checkout", "config": { "purchase": "pro" } }]
+            }
+          ],
+          "caps": { "max_per_period": { "count": 1, "period": "day" } },
+          "status": "active",
+          "created_at": "2026-06-15"
+        }
+      ],
+      "order": 2
+    },
+    {
+      "id": "pl_reverse_trial",
+      "name": "T2: Reverse-trial Active",
+      "category": "trials",
+      "trigger": { "type": "trial_progress", "progress_percent": 1 },
+      "payloads": [
+        {
+          "id": "pl_reverse_trial_p0",
+          "target": { "plan_ids": [], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "banner_placement",
+              "fields": { "header": "You're trying Pro free", "body": "Premium styles and 4K exports are unlocked for {{days_remaining}} more days. Keep them after the trial.", "dismissible": "Yes" },
+              "ctas": [{ "label": "Keep Pro", "path": "open_checkout", "config": { "purchase": "pro" } }]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-06-15"
+        }
+      ],
+      "order": 3
+    },
+    {
+      "id": "pl_payment_recovery",
+      "name": "R1: Payment Recovery",
+      "category": "retention",
+      "trigger": { "type": "qualifier", "qualifier": "payment_failed" },
+      "payloads": [
+        {
+          "id": "pl_payment_recovery_p0",
+          "target": { "plan_ids": [], "segment_chips": ["seg_billing_failed"] },
+          "surfaces": [
+            {
+              "template_id": "banner_placement",
+              "fields": { "header": "Your last payment failed", "body": "Update your payment method to keep your plan active.", "dismissible": "No" },
+              "ctas": [{ "label": "Update payment", "path": "update_payment_method" }]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-06-15"
+        }
+      ],
+      "order": 4
+    },
+    {
+      "id": "pl_seat_limit",
+      "name": "S1: Seat Limit Reached",
+      "category": "usage_credit_seat",
+      "trigger": { "type": "seat_threshold", "entitlement_handle": "seats", "threshold_percent": 100 },
+      "payloads": [
+        {
+          "id": "pl_seat_limit_p0",
+          "target": { "plan_ids": ["plan_prism_free"], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "banner_placement",
+              "fields": { "header": "You've used all your seats", "body": "Free includes 1 seat. Upgrade to Pro for 5 seats and invite your team.", "dismissible": "Yes" },
+              "ctas": [{ "label": "Upgrade to Pro", "path": "open_checkout", "config": { "purchase": "pro" } }]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-06-15"
+        }
+      ],
+      "order": 5
+    }
+  ],
+  "free_trial_rules": [
+    {
+      "id": "ftr_pro_7d",
+      "name": "Pro 7-day free trial",
+      "handle": "pro_7d",
+      "plan_id": "pro",
+      "duration_days": 7,
+      "grace_period_days": 0,
+      "require_payment_method": false,
+      "auto_convert": false,
+      "convert_to_plan_id": "pro",
+      "limit_per_customer": 1,
+      "is_active": true
+    }
+  ],
+  "reverse_trial_rules": [
+    {
+      "id": "rtr_free_to_pro_7d",
+      "name": "Free → Pro 7-day reverse trial",
+      "handle": "free_to_pro_7d",
+      "premium_plan_id": "pro",
+      "fallback_plan_id": "free",
+      "duration_days": 7,
+      "start_policy": "signup",
+      "show_upgrade_prompt_at_day": 5,
+      "entitlements_during_trial": ["batch_export", "style_packs", "resolution_tier"],
+      "is_active": true
+    }
+  ]
+}
