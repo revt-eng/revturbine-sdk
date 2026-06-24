@@ -1,0 +1,81 @@
+name: Publish to PyPI
+
+# Plan 103 (TASK-6). Publishes the Python SDK (`revturbine`) to PyPI on a
+# python-v* release tag (pushed here by the source-mirror pipeline), using PyPI
+# Trusted Publishing (OIDC) — no stored token.
+#
+# This reverses the internal repo's deliberate "twine check only, no upload"
+# stance (plan 33): the upload now happens here, from the public repo.
+#
+# Requires a PyPI Trusted Publisher configured for the `revturbine` project:
+#   PyPI → project → Publishing → add a GitHub publisher
+#   owner=revt-eng, repo=revturbine-sdk, workflow=release-pypi.yml
+#
+# NOTE: server-python/pyproject.toml currently declares a PROPRIETARY license.
+# Reconcile it to MIT (in revturbine-sdk-internal, then re-sync) before the first
+# public PyPI publish — see the PR description.
+
+on:
+  push:
+    tags:
+      - 'python-v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish (e.g. python-v0.2.13)'
+        required: true
+
+permissions:
+  contents: read
+  id-token: write # PyPI Trusted Publishing (OIDC)
+
+concurrency:
+  group: pypi-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="${{ inputs.tag }}"
+          fi
+          echo "version=${TAG#python-v}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: ${TAG#python-v}"
+
+      - name: Assert pyproject version matches the tag
+        working-directory: server-python
+        run: |
+          set -euo pipefail
+          PY_VERSION=$(grep -E '^version' pyproject.toml | head -1 \
+            | sed -E 's/^version[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/')
+          if [ "$PY_VERSION" != "${{ steps.version.outputs.version }}" ]; then
+            echo "::error::pyproject version ($PY_VERSION) != tag (${{ steps.version.outputs.version }})"
+            exit 1
+          fi
+          echo "Version match: $PY_VERSION"
+
+      - name: Build sdist + wheel
+        working-directory: server-python
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+          python -m twine check dist/*
+
+      - name: Publish to PyPI (Trusted Publishing / OIDC)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: server-python/dist
