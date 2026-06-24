@@ -1,0 +1,87 @@
+name: Deploy Pages
+
+# Self-hosted docs deploy for the public revturbine-sdk repo (plan 103 TASK-4).
+# Ported from revt-eng/revturbine-external's deploy-pages.yml, but self-hosted:
+# the SDK source lives in THIS repo (synced from revturbine-sdk-internal on each
+# release), so there is no cross-repo checkout. revturbine-external is retired
+# once this is live (TASK-8).
+#
+# The source sync only pushes to main on an actual release, so "on push to main"
+# effectively rebuilds the docs once per release. workflow_dispatch allows a
+# manual rebuild.
+#
+# One-time repo setting required: Settings → Pages → Source = "GitHub Actions".
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'pages-build/**'
+      - 'web-sdk/**'
+      - 'core/**'
+      - 'package.json'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          scope: '@revt-eng'
+
+      - name: Install root deps (hoists @revt-eng/* for web-sdk resolution)
+        run: pnpm install --no-frozen-lockfile --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install pages-build deps
+        working-directory: pages-build
+        run: pnpm install --no-frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bundle vendor SDK for the Sandpack playground
+        working-directory: pages-build
+        run: pnpm bundle:sdk-local
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build static site
+        # astro.config derives base from GITHUB_REPOSITORY → /revturbine-sdk/ when
+        # PAGES_BASE is unset, which matches the github.io project-pages URL.
+        working-directory: pages-build
+        run: pnpm build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages-build/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

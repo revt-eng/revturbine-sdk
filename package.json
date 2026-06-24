@@ -1,0 +1,13 @@
+{
+  "name": "revturbine-sdk-build",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Build aggregator for the public RevTurbine SDK repo. Installing here hoists the @revt-eng/* packages to the repo-root node_modules so web-sdk's source resolves them during the docs (TypeDoc) build. The published artifacts are web-sdk (npm) and server-python (PyPI); this manifest is build-only and is owned by the public repo (not overwritten by the source sync).",
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "dependencies": {
+    "@revt-eng/core": "0.1.83",
+    "@revt-eng/schema": "0.1.83",
+    "@revt-eng/schema-external": "0.1.83"
+  }
+}
