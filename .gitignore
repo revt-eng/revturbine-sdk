@@ -1,0 +1,8 @@
+node_modules/
+**/node_modules/
+**/dist/
+**/.astro/
+**/.vite/
+*.tsbuildinfo
+# root build-aggregator lockfile only (pages-build/pnpm-lock.yaml is tracked)
+/pnpm-lock.yaml
