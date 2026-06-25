@@ -1,0 +1,94 @@
+name: Deploy docs to Vercel (/docs origin)
+
+# Plan 104 Option C. Builds the docs a SECOND time at base=/docs and deploys the
+# static output to a Vercel project, which the marketing site proxies as
+# revturbine.com/docs (clean URLs). The github.io/revturbine-sdk standalone site
+# (base /revturbine-sdk, deploy-pages.yml) is untouched.
+#
+# The build runs here (GitHub Actions) so @revt-eng/* resolve from GitHub Packages
+# via the repo GITHUB_TOKEN — no private-registry token is needed in Vercel. Only a
+# prebuilt static bundle is shipped to Vercel.
+#
+# Requires these secrets on this repo: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+# (the docs Vercel project). Without VERCEL_TOKEN the deploy step is skipped.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'pages-build/**'
+      - 'web-sdk/**'
+      - 'core/**'
+      - 'package.json'
+      - '.github/workflows/deploy-docs-vercel.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: docs-vercel
+  cancel-in-progress: false
+
+env:
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          scope: '@revt-eng'
+
+      - name: Install root deps (hoists @revt-eng/* for web-sdk resolution)
+        run: pnpm install --no-frozen-lockfile --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install pages-build deps
+        working-directory: pages-build
+        run: pnpm install --no-frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bundle vendor SDK for the Sandpack playground
+        working-directory: pages-build
+        run: pnpm bundle:sdk-local
+
+      - name: Build static site at base /docs
+        working-directory: pages-build
+        run: pnpm build
+        env:
+          PAGES_BASE: /docs/
+
+      - name: Stage static bundle under /docs for Vercel
+        # Vercel serves the deployed dir at the project root; base=/docs means the
+        # site's links are /docs/* — so nest the build under docs/. trailingSlash
+        # matches the Astro directory-URL format so deep pages resolve cleanly.
+        run: |
+          rm -rf _site && mkdir -p _site/docs
+          cp -r pages-build/dist/. _site/docs/
+          printf '{\n  "trailingSlash": true,\n  "cleanUrls": true\n}\n' > _site/vercel.json
+
+      - name: Deploy to Vercel
+        if: ${{ env.VERCEL_TOKEN != '' }}
+        run: |
+          npm i -g vercel@latest
+          vercel deploy _site --prod --yes --token="$VERCEL_TOKEN"
+
+      - name: Note (deploy skipped — no VERCEL_TOKEN)
+        if: ${{ env.VERCEL_TOKEN == '' }}
+        run: echo "VERCEL_TOKEN not set — built the /docs bundle but skipped the Vercel deploy. Add VERCEL_TOKEN/VERCEL_ORG_ID/VERCEL_PROJECT_ID to enable."
