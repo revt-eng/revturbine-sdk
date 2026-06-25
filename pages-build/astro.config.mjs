@@ -30,12 +30,22 @@ function baseAbsoluteInternalLinks(base) {
       'astro:build:done': async ({ dir }) => {
         if (!b) return; // nothing to do when served at the root
         const root = fileURLToPath(dir);
+        const prefix = (p) =>
+          p === b || p.startsWith(b + '/') ? null : b + p; // null = already based
         const rewrite = (html) =>
-          html.replace(/(href|src)="\/(?!\/)([^"]*)"/g, (m, attr, rest) => {
-            const path = '/' + rest;
-            if (path === b || path.startsWith(b + '/')) return m; // already based
-            return `${attr}="${b}/${rest}"`;
-          });
+          html
+            // href/src links
+            .replace(/(href|src)="(\/(?!\/)[^"]*)"/g, (m, attr, p) => {
+              const np = prefix(p);
+              return np ? `${attr}="${np}"` : m;
+            })
+            // meta-refresh redirect targets, e.g. <meta http-equiv="refresh"
+            // content="0;url=/api/readme/"> (Astro `redirects` destinations aren't
+            // base-prefixed, so they'd 404 under a subpath mount)
+            .replace(/(content="\d+;\s*url=)(\/(?!\/)[^"]*)"/gi, (m, pre, p) => {
+              const np = prefix(p);
+              return np ? `${pre}${np}"` : m;
+            });
         const walk = async (d) => {
           for (const e of await readdir(d, { withFileTypes: true })) {
             const p = join(d, e.name);
