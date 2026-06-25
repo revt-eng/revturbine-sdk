@@ -72,15 +72,27 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Build static site
-        # astro.config derives base from GITHUB_REPOSITORY → /revturbine-sdk/ when
-        # PAGES_BASE is unset, which matches the github.io project-pages URL.
+        # Plan 104: serve the docs namespaced under /docs so the marketing site can
+        # proxy revturbine.com/docs → docs-origin.revturbine.com/docs (the /app
+        # multi-zone pattern). base=/docs makes the HTML reference /docs/_astro/*.
         working-directory: pages-build
         run: pnpm build
+        env:
+          PAGES_BASE: /docs/
+
+      - name: Stage artifact under /docs + custom-domain CNAME
+        # Custom domain serves at the root, but base=/docs means assets live at
+        # /docs/* — so nest the built site under docs/ in the published artifact.
+        # CNAME sets the GitHub Pages custom domain (DOCS_ORIGIN).
+        run: |
+          rm -rf _site && mkdir -p _site/docs
+          cp -r pages-build/dist/. _site/docs/
+          echo "docs-origin.revturbine.com" > _site/CNAME
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: pages-build/dist
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment
