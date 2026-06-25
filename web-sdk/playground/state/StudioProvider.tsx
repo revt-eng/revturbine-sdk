@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { PRISM_CONFIG } from '../config/prism-config';
 import { useDemo } from './DemoProvider';
-import { burstRateFor, creditAllowanceFor, generationsLimitFor } from './derived';
+import { burstRateFor, creditAllowanceFor, effectivePlanHandle, generationsLimitFor, overagePriceFor } from './derived';
 import { makeImage, type GeneratedImage, type GenerateOutcome } from './image-engine';
 
 interface StudioContextValue {
@@ -38,9 +38,13 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [gallery, setGallery] = useState<GeneratedImage[]>([]);
   const recentRef = useRef<number[]>([]);
 
-  const generationsLimit = generationsLimitFor(PRISM_CONFIG, state.planHandle);
+  // A reverse trial lifts the usage cap and rate limit to the premium plan's
+  // (it grants Pro entitlements without changing the plan); credits are not part
+  // of the trial grant, so they stay on the actual plan.
+  const effectivePlan = effectivePlanHandle(state);
+  const generationsLimit = generationsLimitFor(PRISM_CONFIG, effectivePlan);
   const creditLimit = creditAllowanceFor(PRISM_CONFIG, state.planHandle);
-  const burstLimit = burstRateFor(PRISM_CONFIG, state.planHandle);
+  const burstLimit = burstRateFor(PRISM_CONFIG, effectivePlan);
 
   const generate = useCallback(
     (opts?: { premium?: boolean }): GenerateOutcome => {
@@ -49,12 +53,18 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       // Sliding 60s window — client-simulated rate limit (no engine trigger exists).
       recentRef.current = recentRef.current.filter((t) => now - t < 60_000);
       if (recentRef.current.length >= burstLimit) return { ok: false, reason: 'rate_limited' };
-      if (state.generationsUsed >= generationsLimit) return { ok: false, reason: 'usage_exhausted' };
+      // At the cap: plans that allow overage keep generating (billed per image);
+      // plans without it (Free) hard-block and surface the usage gate.
+      const allowsOverage = !!overagePriceFor(PRISM_CONFIG, state.planHandle);
+      if (state.generationsUsed >= generationsLimit && !allowsOverage)
+        return { ok: false, reason: 'usage_exhausted' };
       if (premium && state.creditBalance <= 0) return { ok: false, reason: 'no_credits' };
 
       recentRef.current.push(now);
       const image = makeImage(state.generationsUsed, premium);
-      setGallery((prev) => [image, ...prev].slice(0, 9));
+      // Keep the 24 most-recent tiles (a 3×8 grid); the usage count keeps
+      // climbing past this and the canvas shows an "and N more" caption.
+      setGallery((prev) => [image, ...prev].slice(0, 24));
       patch({
         generationsUsed: state.generationsUsed + 1,
         ...(premium ? { creditBalance: Math.max(0, state.creditBalance - 1) } : {}),
@@ -64,7 +74,12 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     [state.generationsUsed, state.creditBalance, generationsLimit, burstLimit, patch],
   );
 
-  const clear = useCallback(() => setGallery([]), []);
+  // Clear the studio: the generated gallery AND the rate-limit window, so a
+  // reset / journey change starts clean (the burst history must not carry over).
+  const clear = useCallback(() => {
+    setGallery([]);
+    recentRef.current = [];
+  }, []);
 
   const value = useMemo<StudioContextValue>(
     () => ({

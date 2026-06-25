@@ -20,7 +20,7 @@ describe('resolutionKey', () => {
     ['engagement_score', { ...base, custom: { ...base.custom, engagement_score: 99 } }],
     ['days_since_signup', { ...base, custom: { ...base.custom, days_since_signup: 10 } }],
     ['days_since_active', { ...base, custom: { ...base.custom, days_since_active: 20 } }],
-    ['has_purchased', { ...base, custom: { ...base.custom, has_purchased: true } }],
+    ['has_purchased', { ...base, custom: { ...base.custom, has_purchased: !base.custom.has_purchased } }],
     ['billing_status', { ...base, custom: { ...base.custom, billing_status: 'failed' } }],
     ['billing_period', { ...base, custom: { ...base.custom, billing_period: 'annual' } }],
     ['trial.inTrial', { ...base, trial: { ...base.trial, inTrial: true } }],

@@ -5,12 +5,13 @@ import { PRISM_CONFIG } from './config/prism-config';
 import { DemoProvider, useDemo } from './state/DemoProvider';
 import { StudioProvider } from './state/StudioProvider';
 import { resolutionKey } from './state/demo-state';
+import { creditAllowanceFor } from './state/derived';
 import { toTrialStatus, toUserContext } from './state/to-user-context';
 import { ImageStudio } from './stage/ImageStudio';
 import { Nudges } from './stage/Nudges';
 import { gatePlacementForHandle } from './state/active-nudges';
-import { dispatchCta, type CtaPath, type DemoActions } from './state/cta-actions';
-import { ContactModal, PlansModal } from './stage/Storefront';
+import { dispatchCta, isPurchaseCta, type CtaPath, type DemoActions } from './state/cta-actions';
+import { ContactAdminModal, ContactModal, PlansModal } from './stage/Storefront';
 import { AppBar } from './stage/AppBar';
 import { AppSidebar } from './stage/AppSidebar';
 import { DirectorPanel } from './stage/DirectorPanel';
@@ -41,6 +42,9 @@ function PrismStage() {
   const [gatePlacementId, setGatePlacementId] = useState<string | null>(null);
   const [showPlans, setShowPlans] = useState(false);
   const [showContact, setShowContact] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  // A non-buyer has no purchase authority — purchase CTAs route to their admin.
+  const canUpgrade = state.custom.has_purchased;
   const [directorCollapsed, setDirectorCollapsed] = useState(loadDirectorCollapsed);
   const note = (label: string) => setActivity((prev) => [label, ...prev].slice(0, ACTIVITY_LIMIT));
 
@@ -60,19 +64,42 @@ function PrismStage() {
   const actions: DemoActions = {
     upgradeTo: (plan) => {
       setGatePlacementId(null);
-      patch({ planHandle: plan });
+      // Start the new plan fresh: reset usage and grant the plan's credit
+      // allowance. Otherwise the old (smaller) balance reads as nearly exhausted
+      // against the new plan's larger allowance and fires a false credit warning.
+      // Converting also ends any active trial — otherwise the trial-ending card
+      // keeps firing after the user has paid, so the CTA looks like a no-op.
+      patch({
+        planHandle: plan,
+        generationsUsed: 0,
+        creditBalance: creditAllowanceFor(PRISM_CONFIG, plan),
+        trial: { inTrial: false, trialType: null, dayNumber: 0, daysRemaining: 0 },
+      });
     },
-    topUpCredits: (amount) => patch({ creditBalance: Math.min(20, state.creditBalance + amount) }),
+    topUpCredits: (amount) =>
+      patch({
+        creditBalance: Math.min(
+          creditAllowanceFor(PRISM_CONFIG, state.planHandle),
+          state.creditBalance + amount,
+        ),
+      }),
     switchBillingPeriod: (period) => patchCustom({ billing_period: period }),
     openPlans: () => setShowPlans(true),
     contactSales: () => {
       setShowPlans(false);
       setShowContact(true);
     },
+    contactAdmin: () => {
+      setShowPlans(false);
+      setShowAdmin(true);
+    },
     fixPayment: () => patchCustom({ billing_status: 'ok' }),
     note,
   };
-  const handleCta = (cta: CtaPath) => dispatchCta(cta, actions);
+  // Non-buyers can browse plans but not self-serve a purchase — reroute any
+  // purchase CTA (upgrade / top-up / switch-to-annual) to the admin gate.
+  const handleCta = (cta: CtaPath) =>
+    dispatchCta(!canUpgrade && isPurchaseCta(cta) ? { type: 'contact_admin', params: {} } : cta, actions);
   const handleSlotCta = (_label: string, uiPath: PlacementUiPath) =>
     handleCta({ type: String(uiPath.type), params: uiPath.params ?? {} });
 
@@ -117,7 +144,7 @@ function PrismStage() {
           <AppBar planHandle={state.planHandle} onSlotCta={handleSlotCta} />
 
           <div className="prism-app__body">
-            <AppSidebar onSlotCta={handleSlotCta} />
+            <AppSidebar onCta={handleCta} onOpenPlans={() => setShowPlans(true)} />
 
             <main className="prism-app__main">
               <Nudges
@@ -130,7 +157,7 @@ function PrismStage() {
                 onStatus={note}
                 onGate={(kind, handle) => {
                   note(`${kind === 'hard' ? 'Hard' : 'Soft'} gate · ${handle}`);
-                  const pid = gatePlacementForHandle(handle);
+                  const pid = gatePlacementForHandle(handle, state.planHandle);
                   if (pid) setGatePlacementId(pid);
                 }}
               />
@@ -144,12 +171,16 @@ function PrismStage() {
         activity={activity}
         collapsed={directorCollapsed}
         onToggle={toggleDirector}
-        onResetGate={() => setGatePlacementId(null)}
+        onResetEphemeral={() => {
+          setGatePlacementId(null);
+          setActivity([]);
+        }}
       />
 
       {showPlans && (
         <PlansModal
           currentPlan={state.planHandle}
+          canUpgrade={canUpgrade}
           onChoose={(plan) => {
             actions.upgradeTo(plan);
             note(`Chose ${plan}`);
@@ -159,10 +190,12 @@ function PrismStage() {
             setShowPlans(false);
             setShowContact(true);
           }}
+          onContactAdmin={() => actions.contactAdmin()}
           onClose={() => setShowPlans(false)}
         />
       )}
       {showContact && <ContactModal onClose={() => setShowContact(false)} />}
+      {showAdmin && <ContactAdminModal onClose={() => setShowAdmin(false)} />}
     </div>
   );
 }

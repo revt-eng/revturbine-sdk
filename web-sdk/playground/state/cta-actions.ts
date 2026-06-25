@@ -13,8 +13,25 @@ export interface DemoActions {
   switchBillingPeriod(period: BillingPeriod): void;
   openPlans(): void;
   contactSales(): void;
+  /** A non-buyer tried to purchase — only an account admin can change the plan. */
+  contactAdmin(): void;
   fixPayment(): void;
   note(label: string): void;
+}
+
+/** Shared label for the non-buyer admin gate. */
+export const CONTACT_ADMIN_LABEL = 'Contact your admin';
+
+/**
+ * CTA actions that commit a purchase (upgrade, top-up, switch to annual). These
+ * are gated for non-buyers — a user without purchase authority can browse plans
+ * but is routed to "contact your admin" instead of self-serve checkout.
+ * Viewing plans / contacting sales / fixing payment are NOT purchases.
+ */
+const PURCHASE_CTA_TYPES = new Set(['open_checkout', 'open_checkout_modal', 'switch_billing_period']);
+
+export function isPurchaseCta(cta: CtaPath): boolean {
+  return PURCHASE_CTA_TYPES.has(cta.type);
 }
 
 /**
@@ -67,6 +84,10 @@ export function dispatchCta(cta: CtaPath, actions: DemoActions): void {
     case 'contact_sales':
       actions.contactSales();
       actions.note('Opened contact sales');
+      break;
+    case 'contact_admin':
+      actions.contactAdmin();
+      actions.note('Asked your admin to upgrade');
       break;
     case 'update_payment_method':
       actions.fixPayment();

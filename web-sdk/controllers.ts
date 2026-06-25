@@ -549,6 +549,16 @@ export class SdkSession {
   }
 
   /**
+   * Hard-reset the user context to a blank slate (no anonymous inference) —
+   * removes every user-context value plus usage balances and clears the
+   * decision cache, interaction state, and impression history. Mostly for
+   * demo / fixture flows. See {@link RevTurbineCustomerSdk.resetUserContext}.
+   */
+  resetUserContext(): void {
+    this.sdk.resetUserContext();
+  }
+
+  /**
    * Merge fields into the current user context.
    * Triggers segment re-evaluation.
    */

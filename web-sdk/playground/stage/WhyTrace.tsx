@@ -11,7 +11,9 @@ export function WhyTrace({ id }: { id: string }) {
   if (!trace) return null;
   return (
     <details className="prism-why">
-      <summary>Why am I seeing this?</summary>
+      <summary className="prism-why__toggle" aria-label="Why am I seeing this?" title="Why am I seeing this?">
+        ?
+      </summary>
       <dl className="prism-why__body">
         <div>
           <dt>Capability</dt>

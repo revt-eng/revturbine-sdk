@@ -4,10 +4,10 @@ build-backend = "hatchling.build"
 
 [project]
 name = "revturbine"
-version = "0.2.12"
+version = "0.2.13"
 description = "RevTurbine SDK for Python — local-mode and HTTP-mode placement and entitlement decisioning"
 requires-python = ">=3.10"
-license = "LicenseRef-Proprietary"
+license = "MIT"
 readme = "README.md"
 authors = [{ name = "RevTurbine" }]
 dependencies = [
@@ -22,7 +22,6 @@ dependencies = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: Other/Proprietary License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",

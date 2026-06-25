@@ -23,31 +23,12 @@ describe('activeNudges', () => {
     expect(ids(free({ generationsUsed: 0, creditBalance: 20 }))).toContain('pl_gate_watermark');
   });
 
-  it('fires the right generations tier (50 / 80 / 100%)', () => {
-    // limit = 30 for free.
-    expect(ids(free({ generationsUsed: 10 }))).not.toContain('pl_usage_50'); // 33%
-    expect(ids(free({ generationsUsed: 15 }))).toContain('pl_usage_50'); // 50%
-    expect(ids(free({ generationsUsed: 24 }))).toContain('pl_usage_80'); // 80%
-    expect(ids(free({ generationsUsed: 30 }))).toContain('pl_usage_100'); // 100%
-    // Only the highest crossed tier shows.
-    const at100 = ids(free({ generationsUsed: 30 }));
-    expect(at100).not.toContain('pl_usage_50');
-    expect(at100).not.toContain('pl_usage_80');
-  });
-
-  it('renders the usage-exhausted tier as a modal, warnings as toasts', () => {
-    const nudges = activeNudges(PRISM_CONFIG, free({ generationsUsed: 30 }));
-    expect(nudges.find((n) => n.placementId === 'pl_usage_100')?.surface).toBe('modal');
-    const warn = activeNudges(PRISM_CONFIG, free({ generationsUsed: 24 }));
-    expect(warn.find((n) => n.placementId === 'pl_usage_80')?.surface).toBe('toast');
-  });
-
-  it('fires credit nudges by remaining balance (allowance 20)', () => {
-    expect(ids(free({ creditBalance: 20 }))).not.toContain('pl_credit_low'); // 0% used
-    expect(ids(free({ creditBalance: 3 }))).toContain('pl_credit_low'); // 85% used → banner
-    expect(activeNudges(PRISM_CONFIG, free({ creditBalance: 3 })).find((n) => n.placementId === 'pl_credit_low')?.surface).toBe('banner');
-    expect(ids(free({ creditBalance: 0 }))).toContain('pl_credit_out'); // exhausted → modal
-    expect(activeNudges(PRISM_CONFIG, free({ creditBalance: 0 })).find((n) => n.placementId === 'pl_credit_out')?.surface).toBe('modal');
+  it('no longer fires usage or credit warnings (moved to the smart rail)', () => {
+    // Usage + credit proximity warnings are owned by pickSmartRail now.
+    expect(ids(free({ generationsUsed: 30 }))).not.toContain('pl_usage_100');
+    expect(ids(free({ generationsUsed: 24 }))).not.toContain('pl_usage_80');
+    expect(ids(free({ creditBalance: 0 }))).not.toContain('pl_credit_out');
+    expect(ids(free({ creditBalance: 3 }))).not.toContain('pl_credit_low');
   });
 
   it('fires the annual qualifier only for monthly Pro', () => {
@@ -55,6 +36,17 @@ describe('activeNudges', () => {
     const annualPro: DemoState = { ...DEFAULT_DEMO_STATE, planHandle: 'pro', custom: { ...DEFAULT_DEMO_STATE.custom, billing_period: 'annual' } };
     expect(ids(monthlyPro)).toContain('pl_annual_nudge');
     expect(ids(annualPro)).not.toContain('pl_annual_nudge');
+  });
+
+  it('does not stack the annual nudge on top of an active trial', () => {
+    const monthlyProInTrial: DemoState = {
+      ...DEFAULT_DEMO_STATE,
+      planHandle: 'pro',
+      custom: { ...DEFAULT_DEMO_STATE.custom, billing_period: 'monthly' },
+      trial: { inTrial: true, trialType: 'reverse', dayNumber: 0, daysRemaining: 7 },
+    };
+    expect(ids(monthlyProInTrial)).toContain('pl_reverse_trial');
+    expect(ids(monthlyProInTrial)).not.toContain('pl_annual_nudge');
   });
 
   it('shows no free-plan nudges once upgraded to Pro', () => {
@@ -65,21 +57,19 @@ describe('activeNudges', () => {
     }
   });
 
-  it('supplies personalization tokens for the usage meter', () => {
-    const n = activeNudges(PRISM_CONFIG, free({ generationsUsed: 24 })).find((x) => x.placementId === 'pl_usage_80');
-    expect(n?.tokens.usage_remaining).toBe('6');
-    expect(n?.tokens.usage_limit).toBe('30');
-    expect(n?.tokens.usage_percent).toBe('80');
-  });
 });
 
 describe('activeNudges — breadth (trials / retention / seat)', () => {
-  it('fires the seat-limit nudge for a Free user at their seat cap', () => {
+  it('fires the seat-limit nudge on any plan at its seat cap', () => {
     expect(ids(free({ seatsUsed: 1 }))).toContain('pl_seat_limit'); // free cap = 1
     expect(ids(free({ seatsUsed: 0 }))).not.toContain('pl_seat_limit');
-    // Pro includes 5 seats — 1 used is well under the cap.
-    const pro: DemoState = { ...DEFAULT_DEMO_STATE, planHandle: 'pro', seatsUsed: 1 };
-    expect(ids(pro)).not.toContain('pl_seat_limit');
+    // Pro includes 5 seats — under the cap is quiet, at the cap fires the Pro
+    // seat placement.
+    const pro = (n: number): DemoState => ({ ...DEFAULT_DEMO_STATE, planHandle: 'pro', seatsUsed: n });
+    expect(ids(pro(1))).not.toContain('pl_seat_limit_pro');
+    expect(ids(pro(5))).toContain('pl_seat_limit_pro');
+    // Enterprise is effectively unlimited — never fires.
+    expect(ids({ ...DEFAULT_DEMO_STATE, planHandle: 'enterprise', seatsUsed: 50 })).not.toContain('pl_seat_limit');
   });
 
   it('fires the reverse-trial banner while a reverse trial is active', () => {
@@ -88,11 +78,44 @@ describe('activeNudges — breadth (trials / retention / seat)', () => {
     expect(ids(reverse)).not.toContain('pl_trial_ending');
   });
 
-  it('fires the trial-ending banner near the end of a free trial', () => {
+  it('counts the reverse trial down off days_since_signup, escalates to a modal, then retires', () => {
+    const onReverse = (daysSinceSignup: number) =>
+      free({
+        custom: { ...DEFAULT_DEMO_STATE.custom, days_since_signup: daysSinceSignup },
+        trial: { inTrial: true, trialType: 'reverse', dayNumber: 0, daysRemaining: 7 },
+      });
+    const find = (s: DemoState, id: string) => activeNudges(PRISM_CONFIG, s).find((n) => n.placementId === id);
+    // Early (day 2): ambient banner, 5 of 7 days remaining.
+    expect(find(onReverse(2), 'pl_reverse_trial')?.tokens.days_remaining).toBe('5');
+    expect(find(onReverse(2), 'pl_trial_ending')).toBeUndefined();
+    // From the prompt day (5): escalates to a conversion modal.
+    const day5 = find(onReverse(5), 'pl_trial_ending');
+    expect(day5?.surface).toBe('modal');
+    expect(day5?.tokens.days_remaining).toBe('2');
+    expect(find(onReverse(5), 'pl_reverse_trial')).toBeUndefined();
+    expect(find(onReverse(6), 'pl_trial_ending')?.tokens.days_remaining).toBe('1');
+    // Past the 7-day window → nothing.
+    expect(activeNudges(PRISM_CONFIG, onReverse(7)).map((n) => n.placementId)).not.toContain('pl_trial_ending');
+    expect(activeNudges(PRISM_CONFIG, onReverse(7)).map((n) => n.placementId)).not.toContain('pl_reverse_trial');
+  });
+
+  it('no longer fires the free-trial-ending warning (moved to the smart rail)', () => {
     const ending = free({ trial: { inTrial: true, trialType: 'free', dayNumber: 5, daysRemaining: 2 } });
-    expect(ids(ending)).toContain('pl_trial_ending');
-    const early = free({ trial: { inTrial: true, trialType: 'free', dayNumber: 1, daysRemaining: 6 } });
-    expect(ids(early)).not.toContain('pl_trial_ending');
+    expect(ids(ending)).not.toContain('pl_trial_ending');
+  });
+
+  it('shows one winning banner when several qualify (competition, not stacking)', () => {
+    // Billing failed (payment banner) AND at the seat cap (seat banner) — only
+    // the higher-priority payment-recovery banner survives.
+    const both = free({
+      seatsUsed: 1,
+      custom: { ...DEFAULT_DEMO_STATE.custom, billing_status: 'failed' },
+    });
+    const banners = activeNudges(PRISM_CONFIG, both).filter((n) => n.surface === 'banner');
+    expect(banners).toHaveLength(1);
+    expect(banners[0].placementId).toBe('pl_payment_recovery');
+    // The inline watermark notice is unaffected by banner competition.
+    expect(ids(both)).toContain('pl_gate_watermark');
   });
 
   it('fires payment recovery only when billing has failed', () => {
@@ -105,7 +128,16 @@ describe('gatePlacementForHandle', () => {
   it('maps gated feature handles to their gate modals', () => {
     expect(gatePlacementForHandle('batch_export')).toBe('pl_gate_batch_export');
     expect(gatePlacementForHandle('style_packs')).toBe('pl_gate_style_packs');
+    expect(gatePlacementForHandle('burst_rate')).toBe('pl_rate_limit');
     expect(gatePlacementForHandle('unknown')).toBeNull();
+  });
+
+  it('maps usage/credit exhaustion to a blocking gate (plan-aware)', () => {
+    // Hitting the generation cap (Free hard-blocks; paid plans run into overage).
+    expect(gatePlacementForHandle('generations', 'free')).toBe('pl_usage_100');
+    // Running out of style credits — Free vs the paid variant.
+    expect(gatePlacementForHandle('credits', 'free')).toBe('pl_credit_out');
+    expect(gatePlacementForHandle('credits', 'pro')).toBe('pl_credit_out_pro');
   });
 });
 

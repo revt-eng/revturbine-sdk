@@ -1,12 +1,11 @@
-import { SlotHost } from '../shared/SlotHost';
-import type { PlacementUiPath } from '../../placements/types';
+import { SmartRail } from './SmartRail';
+import type { CtaPath } from '../state/cta-actions';
 
 /**
  * Prism's fake app sidebar (plan 83) — the demo product's left rail: app
- * navigation (non-functional) plus the usage rail where the SDK surfaces live
- * naturally. The generations quota meter, the credit counter, and the
- * contextual upsell card all render here, so they read as part of the app's
- * own chrome rather than a demo panel (REQ-4).
+ * navigation (non-functional), the smart rail (a single bottom-left slot that
+ * surfaces the one most-urgent monetization moment), and a Plans & pricing
+ * link at the very bottom. Reads as part of the app's own chrome (REQ-4).
  */
 const NAV: ReadonlyArray<{ label: string; icon: string; active?: boolean }> = [
   { label: 'Create', icon: '✨', active: true },
@@ -16,9 +15,11 @@ const NAV: ReadonlyArray<{ label: string; icon: string; active?: boolean }> = [
 ];
 
 export function AppSidebar({
-  onSlotCta,
+  onCta,
+  onOpenPlans,
 }: {
-  onSlotCta: (label: string, uiPath: PlacementUiPath) => void;
+  onCta: (cta: CtaPath) => void;
+  onOpenPlans: () => void;
 }) {
   return (
     <aside className="prism-app__sidebar" aria-label="Prism navigation">
@@ -34,28 +35,12 @@ export function AppSidebar({
       </nav>
 
       <div className="prism-app__rail">
-        <SlotHost
-          id="quota_meter"
-          category="fixed"
-          surfaceTemplateIds={['quota_meter', 'usage_counter']}
-          onCta={onSlotCta}
-          fallback={<span className="prism__muted">No usage meter.</span>}
-        />
-        <SlotHost
-          id="credit_counter"
-          category="fixed"
-          surfaceTemplateIds={['credit_balance_counter']}
-          onCta={onSlotCta}
-          fallback={<span className="prism__muted">No credit counter.</span>}
-        />
-        <SlotHost
-          id="sidebar"
-          category="fixed"
-          surfaceTemplateIds={['in_page_card']}
-          onCta={onSlotCta}
-          fallback={null}
-        />
+        <SmartRail onCta={onCta} />
       </div>
+
+      <button className="prism-app__plans-link" onClick={onOpenPlans}>
+        Plans &amp; pricing
+      </button>
     </aside>
   );
 }

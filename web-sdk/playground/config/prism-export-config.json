@@ -757,6 +757,147 @@
         }
       ],
       "order": 5
+    },
+    {
+      "id": "pl_rate_limit",
+      "name": "RL-1: Generation Rate Limit",
+      "category": "gated",
+      "trigger": { "type": "entitlement_gate", "entitlement_handle": "burst_rate" },
+      "payloads": [
+        {
+          "id": "pl_rate_limit_p0",
+          "target": { "plan_ids": ["plan_prism_free", "plan_prism_pro", "plan_prism_enterprise"], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": { "modal_type": "Blocking", "header": "You're generating too fast", "body": "You're generating faster than {{rate_limit}} a minute. Pause a moment, or move up to a higher limit.", "secondary_body": "The limit resets every minute." },
+              "ctas": [{ "label": "See plans", "path": "view_plans" }, { "label": "Got it", "path": "dismiss" }]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-06-18",
+          "recommendation_strategy": "next_tier_up"
+        }
+      ],
+      "order": 6
+    },
+    {
+      "id": "pl_overage_active",
+      "name": "OV-1: Generation Overage Active",
+      "category": "usage_credit_seat",
+      "trigger": { "type": "usage_threshold", "entitlement_handle": "generations", "threshold_percent": 100 },
+      "payloads": [
+        {
+          "id": "pl_overage_active_p0",
+          "target": { "plan_ids": ["plan_prism_pro", "plan_prism_enterprise"], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "banner_placement",
+              "fields": { "header": "You're now in overage", "body": "You've used all your included generations this month. Extra generations are billed at {{overage_price}} each until it resets.", "dismissible": "Yes" },
+              "ctas": [{ "label": "See plans", "path": "view_plans" }]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-06-18"
+        }
+      ],
+      "order": 7
+    },
+    {
+      "id": "pl_usage_80_pro",
+      "name": "V2-Pro: Generations 80% Warning (Pro)",
+      "category": "usage_credit_seat",
+      "trigger": { "type": "usage_threshold", "entitlement_handle": "generations", "threshold_percent": 80 },
+      "payloads": [
+        {
+          "id": "pl_usage_80_pro_p0",
+          "target": { "plan_ids": ["plan_prism_pro"], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "toast_message",
+              "fields": { "header": "Running low on generations", "body": "Only {{usage_remaining}} of your 2,000 monthly generations left.", "duration": "8" },
+              "ctas": [{ "label": "See plans", "path": "view_plans" }]
+            }
+          ],
+          "caps": { "max_per_period": { "count": 1, "period": "session" } },
+          "status": "active",
+          "created_at": "2026-06-19",
+          "recommendation_strategy": "next_tier_up"
+        }
+      ],
+      "order": 8
+    },
+    {
+      "id": "pl_credit_low_pro",
+      "name": "V4-Pro: Credits Running Low (Pro)",
+      "category": "usage_credit_seat",
+      "trigger": { "type": "credit_threshold", "entitlement_handle": "credits", "threshold_percent": 80 },
+      "payloads": [
+        {
+          "id": "pl_credit_low_pro_p0",
+          "target": { "plan_ids": ["plan_prism_pro"], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "banner_placement",
+              "fields": { "header": "{{usage_remaining}} style credits left", "body": "Running low on your monthly Pro credits — top up to keep using premium styles.", "dismissible": "Yes" },
+              "ctas": [{ "label": "Buy credits", "path": "open_checkout", "config": { "purchase": "credit_pack" } }]
+            }
+          ],
+          "caps": { "max_per_period": { "count": 1, "period": "day" }, "cooldown_days": 1 },
+          "status": "active",
+          "created_at": "2026-06-19"
+        }
+      ],
+      "order": 9
+    },
+    {
+      "id": "pl_credit_out_pro",
+      "name": "E1-Pro: Credits Exhausted (Pro)",
+      "category": "usage_credit_seat",
+      "trigger": { "type": "credit_threshold", "entitlement_handle": "credits", "threshold_percent": 100 },
+      "payloads": [
+        {
+          "id": "pl_credit_out_pro_p0",
+          "target": { "plan_ids": ["plan_prism_pro"], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "modal_overlay",
+              "fields": { "modal_type": "Optional", "header": "Out of style credits", "body": "You've used all 1,000 Pro credits this month. Add a Style Credits pack, or move to Enterprise for unlimited.", "secondary_body": "" },
+              "ctas": [{ "label": "Buy 50 credits", "path": "open_checkout", "config": { "purchase": "credit_pack" } }, { "label": "See plans", "path": "view_plans" }, { "label": "Not now", "path": "dismiss" }]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-06-19",
+          "recommendation_strategy": "next_tier_up"
+        }
+      ],
+      "order": 10
+    },
+    {
+      "id": "pl_seat_limit_pro",
+      "name": "S1-Pro: Seat Limit Reached (Pro)",
+      "category": "usage_credit_seat",
+      "trigger": { "type": "seat_threshold", "entitlement_handle": "seats", "threshold_percent": 100 },
+      "payloads": [
+        {
+          "id": "pl_seat_limit_pro_p0",
+          "target": { "plan_ids": ["plan_prism_pro"], "segment_chips": [] },
+          "surfaces": [
+            {
+              "template_id": "banner_placement",
+              "fields": { "header": "You've used all your seats", "body": "Pro includes 5 seats. Move to Enterprise for unlimited seats.", "dismissible": "Yes" },
+              "ctas": [{ "label": "See plans", "path": "view_plans" }]
+            }
+          ],
+          "caps": {},
+          "status": "active",
+          "created_at": "2026-06-19"
+        }
+      ],
+      "order": 11
     }
   ],
   "free_trial_rules": [

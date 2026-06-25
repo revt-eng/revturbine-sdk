@@ -12,7 +12,7 @@
         "generationsUsed": 0,
         "creditBalance": 20,
         "seatsUsed": 0,
-        "custom": { "email_type": "personal", "engagement_score": 40, "days_since_signup": 1, "days_since_active": 0, "has_purchased": false, "billing_status": "ok", "billing_period": "monthly" },
+        "custom": { "email_type": "personal", "engagement_score": 40, "days_since_signup": 1, "days_since_active": 0, "has_purchased": true, "billing_status": "ok", "billing_period": "monthly" },
         "trial": { "inTrial": false, "trialType": null, "dayNumber": 0, "daysRemaining": 0 }
       }
     },
@@ -111,6 +111,20 @@
         "creditBalance": 20,
         "seatsUsed": 0,
         "custom": { "email_type": "personal", "engagement_score": 40, "days_since_signup": 1, "days_since_active": 0, "has_purchased": true, "billing_status": "ok", "billing_period": "monthly" },
+        "trial": { "inTrial": false, "trialType": null, "dayNumber": 0, "daysRemaining": 0 }
+      }
+    },
+    {
+      "id": "pro_overage",
+      "label": "Pro — in overage",
+      "shows": "Overage banner once a Pro user passes the 2,000 included generations (annual billing, so the annual nudge stays quiet).",
+      "state": {
+        "userId": "prism-demo-user",
+        "planHandle": "pro",
+        "generationsUsed": 2050,
+        "creditBalance": 20,
+        "seatsUsed": 0,
+        "custom": { "email_type": "personal", "engagement_score": 40, "days_since_signup": 1, "days_since_active": 0, "has_purchased": true, "billing_status": "ok", "billing_period": "annual" },
         "trial": { "inTrial": false, "trialType": null, "dayNumber": 0, "daysRemaining": 0 }
       }
     }

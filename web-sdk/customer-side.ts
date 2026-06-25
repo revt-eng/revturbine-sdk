@@ -1522,7 +1522,7 @@ export class RevTurbineCustomerSdk {
     void this.impressionHistory.hydrate();
     this.rebuildSegmentPredicateFieldIndex();
     void this.refreshExportedConfigSnapshot();
-    this.hydrateUsageLimitRulesFromExportedConfig();
+    // recalculateDerivedUsageTraits() hydrates usage limits for the current plan.
     this.recalculateDerivedUsageTraits();
 
     if (isBrowser() && this.policy.routerAutoTrack) {
@@ -2109,9 +2109,49 @@ export class RevTurbineCustomerSdk {
     }
   }
 
+  /**
+   * The set of identifiers (lowercased plan id + unique_handle) that name the
+   * user's CURRENT plan, so an `entitlement_rule` whose plan target carries
+   * either form is matched. The app may set `plan.id` to the handle (`"free"`)
+   * or the config id (`"plan_free"`); both resolve to the same plan here.
+   */
+  private activePlanIdentifiers(exportedConfig: ExportedConfig): Set<string> {
+    const raw = (isRecord(this.userContext.plan) && typeof this.userContext.plan.id === 'string')
+      ? this.userContext.plan.id
+      : (typeof this.userContext.custom?.plan === 'string' ? this.userContext.custom.plan : '');
+    const current = String(raw || '').toLowerCase();
+    const ids = new Set<string>();
+    if (!current) return ids;
+    ids.add(current);
+    for (const plan of exportedConfig.plans ?? []) {
+      const id = typeof plan.id === 'string' ? plan.id.toLowerCase() : '';
+      const handle = typeof plan.unique_handle === 'string' ? plan.unique_handle.toLowerCase() : '';
+      if (id === current || handle === current) {
+        if (id) ids.add(id);
+        if (handle) ids.add(handle);
+      }
+    }
+    return ids;
+  }
+
+  /** Whether a rule's plan targets include the active plan (no plan target = applies to all plans). */
+  private ruleTargetsActivePlan(rule: JsonObject, activePlanIds: Set<string>): boolean {
+    const targets = Array.isArray(rule.targets) ? rule.targets : [];
+    const planTargets = targets.filter((t): t is JsonObject => isRecord(t) && t.kind === 'plan');
+    if (planTargets.length === 0) return true;
+    return planTargets.some((t) => typeof t.id === 'string' && activePlanIds.has(t.id.toLowerCase()));
+  }
+
   private hydrateUsageLimitRulesFromExportedConfig(): void {
     const exportedConfig = this.getConfiguredExportedConfig();
     if (!exportedConfig) return;
+
+    // Rebuilt on every context change (via recalculateDerivedUsageTraits), so
+    // reset and re-scope to the CURRENT user's plan. Without this, every plan's
+    // rule wrote to the same key (last-write-wins → the highest tier's limit
+    // leaked to all users), and a plan switch kept the prior plan's limit.
+    this.usageLimitByEntitlement.clear();
+    const activePlanIds = this.activePlanIdentifiers(exportedConfig);
 
     const entitlementHandleById = new Map<string, string>();
     const entitlements = exportedConfig.entitlements ?? [];
@@ -2163,6 +2203,10 @@ export class RevTurbineCustomerSdk {
       const limit = Number(typeFields.limit_value ?? typeFields.allowance ?? typeFields.limit);
       if (!Number.isFinite(limit) || limit <= 0) continue;
 
+      // Only record the limit when the rule applies to the user's current plan.
+      // (The usage-unit prefix above is plan-agnostic and stays unconditional.)
+      if (!this.ruleTargetsActivePlan(rule, activePlanIds)) continue;
+
       const warningPercentRaw = Number(
         rule.warning_threshold_percent
         ?? rule.warning_percentage
@@ -2182,6 +2226,10 @@ export class RevTurbineCustomerSdk {
 
   private recalculateDerivedUsageTraits(): void {
     const exportedConfig = this.getConfiguredExportedConfig();
+
+    // Re-scope usage limits to the current plan on every context change — the
+    // plan may have changed (identify / setUser) since the last hydrate.
+    this.hydrateUsageLimitRulesFromExportedConfig();
 
     const usageTokens = recalculateDerivedUsageTokens({
       context: this.userContext,
@@ -4941,10 +4989,41 @@ export class RevTurbineCustomerSdk {
   }
 
   resetIdentity(): void {
+    this.clearAllUserState({ reinfer: true });
+  }
+
+  /**
+   * Hard-reset the user context to a blank slate — removes EVERY user-context
+   * value (`id`, `plan`, `email`, `account_id`, `custom`, `usage`,
+   * `entitlements`, `personalization`) plus usage balances, and clears the
+   * decision cache, interaction state, and impression history.
+   *
+   * Unlike {@link resetIdentity} (a sign-out that re-infers anonymous context
+   * when the `inferUser` policy is on), this performs **no** inference, so the
+   * resulting context is guaranteed empty. Mostly for demo / fixture flows that
+   * reset cleanly between scenarios.
+   *
+   * @example
+   * // Between demo personas:
+   * rt.resetUserContext();
+   * rt.identify('demo_pro', { plan: { id: 'pro', name: 'Pro' } });
+   */
+  resetUserContext(): void {
+    this.clearAllUserState({ reinfer: false });
+  }
+
+  /**
+   * Shared teardown for {@link resetIdentity} / {@link resetUserContext}:
+   * blanks the user context and usage balances, recomputes derived traits, and
+   * clears the decision cache, interaction state, and impression history.
+   * `reinfer` controls whether anonymous context is re-inferred (sign-out) or
+   * the context is left fully empty (hard reset).
+   */
+  private clearAllUserState({ reinfer }: { reinfer: boolean }): void {
     const previousContext = this.userContext;
     this.userContext = {
       usage: {},
-      ...(this.policy.inferUser ? inferUserContext() : {}),
+      ...(reinfer && this.policy.inferUser ? inferUserContext() : {}),
       id: undefined,
       custom: {},
       entitlements: {},

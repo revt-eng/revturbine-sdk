@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.78/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.83/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -944,17 +944,6 @@ class ExportedConfigPlacementTrigger(
         | ExportedConfigPlacementTrigger10
         | ExportedConfigPlacementTrigger11
     )
-
-
-class ExportedConfigPlansItem(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    unique_handle: constr(min_length=1)
-    name: constr(min_length=1)
-    tier_position: conint(ge=0, le=9007199254740991)
-    sort_order: conint(ge=0, le=9007199254740991)
 
 
 class Operator(Enum):
@@ -2861,6 +2850,17 @@ class Experiment(BaseModel):
     metadata: dict[str, Any]
 
 
+class ExportedConfigAddonsItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    unique_handle: constr(min_length=1)
+    name: constr(min_length=1)
+    sort_order: conint(ge=0, le=9007199254740991)
+    visibility: PlanVisibility
+
+
 class ExportedConfigEntitlementRulesItem(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -2888,6 +2888,18 @@ class ExportedConfigPlacementPayloadItem(BaseModel):
     surfaces: list[ExportedConfigStudioPayloadSurface] | None = None
     surface_slot_ids: list[str] | None = None
     content_link: ContentLink | None = None
+
+
+class ExportedConfigPlansItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    unique_handle: constr(min_length=1)
+    name: constr(min_length=1)
+    tier_position: conint(ge=0, le=9007199254740991)
+    sort_order: conint(ge=0, le=9007199254740991)
+    visibility: PlanVisibility
 
 
 class ExportedConfigStudioPayload(BaseModel):
@@ -2927,6 +2939,8 @@ class FieldDefinition(BaseModel):
     field_type: TemplateFieldType
     required: bool
     default_value: Any | None = None
+    order: conint(ge=0, le=9007199254740991) | None = None
+    help_text: constr(max_length=500) | None = None
 
 
 class FreeTrialRule(BaseModel):
@@ -3366,6 +3380,7 @@ class ExportedConfig(BaseModel):
     )
     change_set_id: str | None
     plans: list[ExportedConfigPlansItem]
+    addons: list[ExportedConfigAddonsItem] | None = None
     entitlements: list[ExportedConfigEntitlementsItem]
     entitlement_rules: list[ExportedConfigEntitlementRulesItem]
     segments: list[ExportedConfigSegmentsItem]

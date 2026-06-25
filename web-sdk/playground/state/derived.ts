@@ -1,5 +1,22 @@
 import type { ExportedConfig } from '@revt-eng/schema';
-import type { PrismPlanHandle } from './demo-state';
+import type { DemoState, PrismPlanHandle } from './demo-state';
+
+/**
+ * The plan whose *limits* apply right now. A reverse trial grants the premium
+ * plan's entitlements (config `reverse_trial_rules.premium_plan_id` = "pro")
+ * without changing the user's plan, so for limit purposes — the usage cap and
+ * rate limit — the user is effectively on Pro while the reverse trial is active.
+ * Credits and seats are not part of the trial grant, so callers that meter those
+ * keep using `state.planHandle`.
+ *
+ * NOTE: this is a playground convenience. A real customer app should read the
+ * effective entitlements from the SDK rather than recompute them here — see the
+ * abstraction to-do in the Prism project notes.
+ */
+export function effectivePlanHandle(state: DemoState): PrismPlanHandle {
+  if (state.trial.inTrial && state.trial.trialType === 'reverse') return 'pro';
+  return state.planHandle;
+}
 
 const PLAN_ID_BY_HANDLE: Record<PrismPlanHandle, string> = {
   free: 'plan_prism_free',

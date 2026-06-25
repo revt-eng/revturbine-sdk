@@ -23,6 +23,7 @@ function createMockSdk(overrides: Record<string, unknown> = {}) {
     getPlacement: vi.fn().mockResolvedValue(null),
     identify: vi.fn(),
     resetIdentity: vi.fn(),
+    resetUserContext: vi.fn(),
     setUserContext: vi.fn(),
     updateUsage: vi.fn(),
     fetchUserContext: vi.fn().mockResolvedValue({ userId: 'user_1', segmentIds: [], traits: {} }),
@@ -568,6 +569,11 @@ describe('SdkSession', () => {
     it('delegates resetIdentity() to SDK', () => {
       session.resetIdentity();
       expect(sdk.resetIdentity).toHaveBeenCalled();
+    });
+
+    it('delegates resetUserContext() to SDK', () => {
+      session.resetUserContext();
+      expect(sdk.resetUserContext).toHaveBeenCalled();
     });
 
     it('delegates setUserContext() to SDK', () => {

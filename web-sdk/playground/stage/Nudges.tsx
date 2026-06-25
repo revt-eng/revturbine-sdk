@@ -3,8 +3,8 @@ import { usePlacement } from '../../index';
 import { useDemo } from '../state/DemoProvider';
 import { PRISM_CONFIG, RECOMMENDATION_PLACEMENT_IDS } from '../config/prism-config';
 import { activeNudges, authoredSecondary, interpolate, type ActiveNudge, type NudgeSurface } from '../state/active-nudges';
-import { authoredCta, type CtaPath } from '../state/cta-actions';
-import { recommendedPlanName } from '../state/derived';
+import { authoredCta, isPurchaseCta, CONTACT_ADMIN_LABEL, type CtaPath } from '../state/cta-actions';
+import { burstRateFor, recommendedPlanName } from '../state/derived';
 import { WhyTrace } from './WhyTrace';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -18,11 +18,30 @@ function field(content: unknown, key: string, tokens: Record<string, string>): s
   return typeof raw === 'string' ? interpolate(raw, tokens) : '';
 }
 
+/**
+ * The primary CTA label, with the non-buyer admin gate applied: a user without
+ * purchase authority sees "Contact your admin" on any purchase CTA (the action
+ * is rerouted centrally in PrismApp; this keeps the label honest).
+ */
+function primaryCtaLabel(
+  placementId: string,
+  content: unknown,
+  tokens: Record<string, string>,
+  canUpgrade: boolean,
+): string {
+  const cta = authoredCta(PRISM_CONFIG, placementId, 0);
+  if (!canUpgrade && cta && isPurchaseCta(cta)) return CONTACT_ADMIN_LABEL;
+  return field(content, 'cta_label', tokens);
+}
+
 interface NudgeProps {
   placementId: string;
   tokens: Record<string, string>;
   /** Dispatch a CTA action (the playground performs the effect + logs it). */
   onCta: (cta: CtaPath) => void;
+  /** Whether the user can self-serve a purchase (a buyer). Non-buyers see the
+   *  "Contact your admin" label on purchase CTAs. */
+  canUpgrade: boolean;
   /** Called when the user dismisses the surface (banner/modal/gate). */
   onDismiss?: () => void;
 }
@@ -32,10 +51,10 @@ interface NudgeProps {
  * + which CTA; the playground owns presentation, the personalization tokens, and
  * the CTA effect (sourced from the authored config — see {@link authoredCta}).
  */
-function Toast({ placementId, tokens, onCta }: NudgeProps) {
+function Toast({ placementId, tokens, onCta, canUpgrade }: NudgeProps) {
   const { content, visible, ctaClick } = usePlacement({ placement: { name: placementId } });
   if (!visible) return null;
-  const label = field(content, 'cta_label', tokens);
+  const label = primaryCtaLabel(placementId, content, tokens, canUpgrade);
   return (
     <div className="prism-nudge prism-nudge--toast" role="status">
       <strong>{field(content, 'header', tokens)}</strong>
@@ -57,10 +76,10 @@ function Toast({ placementId, tokens, onCta }: NudgeProps) {
   );
 }
 
-function Banner({ placementId, tokens, onCta, onDismiss }: NudgeProps) {
+function Banner({ placementId, tokens, onCta, canUpgrade, onDismiss }: NudgeProps) {
   const { content, visible, ctaClick, dismiss } = usePlacement({ placement: { name: placementId } });
   if (!visible) return null;
-  const label = field(content, 'cta_label', tokens);
+  const label = primaryCtaLabel(placementId, content, tokens, canUpgrade);
   return (
     <div className="prism-nudge prism-nudge--banner" role="status">
       <div className="prism-nudge__copy">
@@ -96,7 +115,7 @@ function Banner({ placementId, tokens, onCta, onDismiss }: NudgeProps) {
   );
 }
 
-function Modal({ placementId, tokens, onCta, onDismiss }: NudgeProps) {
+function Modal({ placementId, tokens, onCta, canUpgrade, onDismiss }: NudgeProps) {
   const { state } = useDemo();
   const { content, visible, ctaClick, dismiss } = usePlacement({ placement: { name: placementId } });
   // The decision content drops secondary_body + the second CTA, so read them
@@ -108,7 +127,7 @@ function Modal({ placementId, tokens, onCta, onDismiss }: NudgeProps) {
     ? recommendedPlanName(PRISM_CONFIG, placementId, state.planHandle)
     : null;
   if (!visible) return null;
-  const primary = field(content, 'cta_label', tokens);
+  const primary = primaryCtaLabel(placementId, content, tokens, canUpgrade);
   const secondary = interpolate(authored.ctaLabel, tokens);
   const secondaryBody = interpolate(authored.body, tokens);
   const close = () => {
@@ -156,10 +175,10 @@ function Modal({ placementId, tokens, onCta, onDismiss }: NudgeProps) {
   );
 }
 
-function Inline({ placementId, tokens, onCta }: NudgeProps) {
+function Inline({ placementId, tokens, onCta, canUpgrade }: NudgeProps) {
   const { content, visible, ctaClick } = usePlacement({ placement: { name: placementId } });
   if (!visible) return null;
-  const label = field(content, 'cta_label', tokens);
+  const label = primaryCtaLabel(placementId, content, tokens, canUpgrade);
   return (
     <div className="prism-nudge prism-nudge--inline">
       <span>{field(content, 'body', tokens)}</span>
@@ -205,6 +224,7 @@ export interface NudgesProps {
 export function Nudges({ gatePlacementId, onCta, onDismissGate }: NudgesProps) {
   const { state } = useDemo();
   const nudges = useMemo(() => activeNudges(PRISM_CONFIG, state), [state]);
+  const canUpgrade = state.custom.has_purchased;
 
   const inline = nudges.filter((n) => n.surface === 'inline');
   const banners = nudges.filter((n) => n.surface === 'banner');
@@ -213,7 +233,9 @@ export function Nudges({ gatePlacementId, onCta, onDismissGate }: NudgesProps) {
 
   const render = (n: ActiveNudge) => {
     const Component = SURFACE_COMPONENT[n.surface];
-    return <Component key={n.placementId} placementId={n.placementId} tokens={n.tokens} onCta={onCta} />;
+    return (
+      <Component key={n.placementId} placementId={n.placementId} tokens={n.tokens} onCta={onCta} canUpgrade={canUpgrade} />
+    );
   };
 
   return (
@@ -230,7 +252,19 @@ export function Nudges({ gatePlacementId, onCta, onDismissGate }: NudgesProps) {
       {/* At most one modal at a time: a click-driven gate takes precedence over
           the state-driven threshold modals. */}
       {gatePlacementId ? (
-        <Modal placementId={gatePlacementId} tokens={{}} onCta={onCta} onDismiss={onDismissGate} />
+        <Modal
+          placementId={gatePlacementId}
+          // The rate-limit modal copy adapts to the current plan's burst limit
+          // (3/min on Free, 30/min on Pro) via the {{rate_limit}} token.
+          tokens={
+            gatePlacementId === 'pl_rate_limit'
+              ? { rate_limit: String(burstRateFor(PRISM_CONFIG, state.planHandle)) }
+              : {}
+          }
+          onCta={onCta}
+          canUpgrade={canUpgrade}
+          onDismiss={onDismissGate}
+        />
       ) : (
         modals[0] && render(modals[0])
       )}

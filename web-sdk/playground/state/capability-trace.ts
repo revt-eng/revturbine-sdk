@@ -54,6 +54,11 @@ const TRACES: Record<string, CapabilityTrace> = {
     why: 'Free is on the Watermarked-720p tier; Pro unlocks the Clean-4K tier.',
     spec: 'plans-entitlements-studio-ui.md §2.3 — Capability tier',
   },
+  pl_rate_limit: {
+    capability: 'Rate limit (hard)',
+    why: 'Free is capped at 3 generations/min (burst_rate, hard_block); exceeding it opens a blocking gate.',
+    spec: 'plans-entitlements-studio-ui.md §2.3 — Rate limit',
+  },
 
   // ── Usage / credit threshold nudges ────────────────────────────────────────
   pl_usage_50: {
@@ -80,6 +85,31 @@ const TRACES: Record<string, CapabilityTrace> = {
     capability: 'Credit threshold (exhausted)',
     why: 'Free plan’s style credits are exhausted; offers a top-up or upgrade.',
     spec: 'plans-entitlements-studio-ui.md §2.3 — Credits',
+  },
+  pl_overage_active: {
+    capability: 'Usage overage (price_per_unit)',
+    why: 'A Pro/Enterprise user passed their included generations; further use bills per image (allow_overage).',
+    spec: 'plans-entitlements-studio-ui.md §2.3 — Overage pricing',
+  },
+  pl_usage_80_pro: {
+    capability: 'Usage threshold (Pro)',
+    why: 'A Pro plan crossed 80% of its 2,000 monthly generations.',
+    spec: 'overall-app-ux-structure.md §3.4 — Usage alerts',
+  },
+  pl_credit_low_pro: {
+    capability: 'Credit threshold (Pro)',
+    why: 'A Pro plan spent 80% of its 1,000 monthly style credits.',
+    spec: 'overall-app-ux-structure.md §3.4 — Credit alerts',
+  },
+  pl_credit_out_pro: {
+    capability: 'Credit threshold exhausted (Pro)',
+    why: 'A Pro plan’s 1,000 monthly style credits are exhausted; offers a top-up or Enterprise.',
+    spec: 'plans-entitlements-studio-ui.md §2.3 — Credits',
+  },
+  pl_seat_limit_pro: {
+    capability: 'Seat limit (Pro)',
+    why: 'The Pro plan’s 5-seat cap is filled; Enterprise unlocks unlimited seats.',
+    spec: 'plans-entitlements-studio-ui.md §2.3 — Seat',
   },
 
   // ── Conversion / trials / retention / seat ─────────────────────────────────

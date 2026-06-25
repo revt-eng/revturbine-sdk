@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ExportedConfigSchema } from '@revt-eng/schema';
 import rawConfig from '../config/prism-export-config.json';
-import { authoredCta, CREDIT_PACK_SIZE, dispatchCta, type DemoActions } from './cta-actions';
+import { authoredCta, CREDIT_PACK_SIZE, dispatchCta, isPurchaseCta, type DemoActions } from './cta-actions';
 
 const PRISM_CONFIG = ExportedConfigSchema.parse(rawConfig);
 
@@ -16,10 +16,31 @@ function mockActions(): DemoActions & { calls: Record<string, unknown[]> } {
     switchBillingPeriod: vi.fn(rec('switchBillingPeriod')),
     openPlans: vi.fn(rec('openPlans')),
     contactSales: vi.fn(rec('contactSales')),
+    contactAdmin: vi.fn(rec('contactAdmin')),
+    fixPayment: vi.fn(rec('fixPayment')),
     note: vi.fn(rec('note')),
     calls,
   };
 }
+
+describe('isPurchaseCta (non-buyer admin gate)', () => {
+  it('flags purchases (upgrade / top-up / switch-to-annual) but not browsing or sales', () => {
+    expect(isPurchaseCta({ type: 'open_checkout', params: {} })).toBe(true);
+    expect(isPurchaseCta({ type: 'open_checkout_modal', params: {} })).toBe(true);
+    expect(isPurchaseCta({ type: 'switch_billing_period', params: {} })).toBe(true);
+    // Browsing plans, contacting sales, and dismissing are not purchases.
+    expect(isPurchaseCta({ type: 'view_plans', params: {} })).toBe(false);
+    expect(isPurchaseCta({ type: 'navigate_to_plans', params: {} })).toBe(false);
+    expect(isPurchaseCta({ type: 'contact_sales', params: {} })).toBe(false);
+    expect(isPurchaseCta({ type: 'dismiss', params: {} })).toBe(false);
+  });
+
+  it('routes a contact_admin CTA to the admin gate', () => {
+    const a = mockActions();
+    dispatchCta({ type: 'contact_admin', params: {} }, a);
+    expect(a.contactAdmin).toHaveBeenCalled();
+  });
+});
 
 describe('dispatchCta', () => {
   it('open_checkout (pro) upgrades to Pro', () => {

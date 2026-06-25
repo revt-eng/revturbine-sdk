@@ -1,6 +1,11 @@
 import type { ExportedConfig } from '@revt-eng/schema';
-import type { DemoState } from './demo-state';
-import { creditAllowanceFor, generationsLimitFor, seatLimitFor } from './derived';
+import {
+  REVERSE_TRIAL_PROMPT_DAY,
+  trialDaysRemaining,
+  type DemoState,
+  type PrismPlanHandle,
+} from './demo-state';
+import { seatLimitFor } from './derived';
 
 /** How a nudge placement should be presented on the Prism stage. */
 export type NudgeSurface = 'toast' | 'banner' | 'modal' | 'inline';
@@ -18,10 +23,6 @@ export interface ActiveNudge {
   tokens: Record<string, string>;
 }
 
-function usagePercent(used: number, limit: number): number {
-  if (limit <= 0) return 0;
-  return Math.min(100, Math.round((used / limit) * 100));
-}
 
 /**
  * Compute which threshold / qualifier / inline-gate placements should render
@@ -40,51 +41,53 @@ export function activeNudges(config: ExportedConfig, state: DemoState): ActiveNu
   const onFree = state.planHandle === 'free';
 
   if (onFree) {
-    // Generations usage meter.
-    const limit = generationsLimitFor(config, 'free');
-    const pct = usagePercent(state.generationsUsed, limit);
-    const tokens = {
-      usage_remaining: String(Math.max(0, limit - state.generationsUsed)),
-      usage_limit: String(limit),
-      usage_percent: String(pct),
-      reset_date: 'next month',
-    };
-    if (pct >= 100) out.push({ placementId: 'pl_usage_100', surface: 'modal', tokens });
-    else if (pct >= 80) out.push({ placementId: 'pl_usage_80', surface: 'toast', tokens });
-    else if (pct >= 50) out.push({ placementId: 'pl_usage_50', surface: 'toast', tokens });
-
-    // Style-credit balance (creditBalance is the REMAINING balance).
-    const allowance = creditAllowanceFor(config, 'free');
-    const remaining = state.creditBalance;
-    const creditUsedPct = usagePercent(Math.max(0, allowance - remaining), allowance);
-    const creditTokens = { usage_remaining: String(remaining), usage_limit: String(allowance) };
-    if (remaining <= 0) out.push({ placementId: 'pl_credit_out', surface: 'modal', tokens: creditTokens });
-    else if (creditUsedPct >= 80)
-      out.push({ placementId: 'pl_credit_low', surface: 'banner', tokens: creditTokens });
-
-    // Watermark inline gate — always shown to free-plan users.
+    // Usage + credit proximity warnings now live in the smart rail (see
+    // pickSmartRail). The nudge host keeps the always-on watermark notice.
     out.push({ placementId: 'pl_gate_watermark', surface: 'inline', tokens: {} });
-
-    // Seat limit — Free includes 1 seat; firing once the seat is filled.
-    if (state.seatsUsed >= seatLimitFor(config, 'free')) {
-      out.push({ placementId: 'pl_seat_limit', surface: 'banner', tokens: {} });
-    }
   }
 
-  // Monthly-Pro → annual upsell qualifier banner.
+  // Seat limit — fires on any plan with a finite seat cap once it is filled
+  // (Free 1, Pro 5; Enterprise is effectively unlimited so it never trips).
+  const seatCap = seatLimitFor(config, state.planHandle);
+  if (seatCap < 999999 && state.seatsUsed >= seatCap) {
+    out.push({
+      placementId: state.planHandle === 'free' ? 'pl_seat_limit' : 'pl_seat_limit_pro',
+      surface: 'banner',
+      tokens: {},
+    });
+  }
+
+  // Monthly-Pro → annual upsell qualifier banner. No special-casing for trials:
+  // banners compete for the single banner slot below, so a more urgent banner
+  // (e.g. the reverse-trial one) simply outranks this.
   if (state.planHandle === 'pro' && state.custom.billing_period === 'monthly') {
     out.push({ placementId: 'pl_annual_nudge', surface: 'banner', tokens: {} });
   }
 
-  // Trial nudges — driven by the Director's trial controls.
-  if (state.trial.inTrial) {
-    const trialTokens = { days_remaining: String(state.trial.daysRemaining) };
-    if (state.trial.trialType === 'reverse') {
-      // Reverse trial: premium unlocked without a plan change; nudge to keep it.
-      out.push({ placementId: 'pl_reverse_trial', surface: 'banner', tokens: trialTokens });
-    } else if (state.trial.daysRemaining <= 3) {
-      // Free trial nearing its end.
-      out.push({ placementId: 'pl_trial_ending', surface: 'banner', tokens: trialTokens });
+  // Reverse trial (premium unlocked — a positive banner) stays in the nudge
+  // host; the free-trial-ending proximity warning moved to the smart rail.
+  // A reverse trial starts at signup (config start_policy: "signup"), so its
+  // countdown tracks days_since_signup — advancing that slider counts it down —
+  // and the banner retires once the trial window has elapsed.
+  if (state.trial.inTrial && state.trial.trialType === 'reverse') {
+    const daysLeft = trialDaysRemaining(state.custom.days_since_signup);
+    if (daysLeft > 0) {
+      // Early in the trial, an ambient "you're trying Pro" banner. From the
+      // prompt day onward (config show_upgrade_prompt_at_day), escalate to a
+      // blocking conversion modal — convert before the trial ends.
+      if (state.custom.days_since_signup >= REVERSE_TRIAL_PROMPT_DAY) {
+        out.push({
+          placementId: 'pl_trial_ending',
+          surface: 'modal',
+          tokens: { days_remaining: String(daysLeft) },
+        });
+      } else {
+        out.push({
+          placementId: 'pl_reverse_trial',
+          surface: 'banner',
+          tokens: { days_remaining: String(daysLeft) },
+        });
+      }
     }
   }
 
@@ -93,16 +96,55 @@ export function activeNudges(config: ExportedConfig, state: DemoState): ActiveNu
     out.push({ placementId: 'pl_payment_recovery', surface: 'banner', tokens: {} });
   }
 
-  return out;
+  // Banners compete for the single banner slot rather than stacking — the most
+  // urgent one wins (mirroring the engine's single-slot ranking, not a config
+  // dedup). Inline + modal surfaces are unaffected.
+  return pickWinningBanner(out);
 }
 
-/** Map a denied feature's entitlement handle to its click-driven gate modal. */
-export function gatePlacementForHandle(handle: string): string | null {
+/**
+ * Priority for the one banner slot — higher wins. Payment recovery is the most
+ * urgent (account-blocking retention); a hit limit (seat) beats trial status,
+ * which beats the soft annual upsell.
+ */
+const BANNER_PRIORITY: Record<string, number> = {
+  pl_payment_recovery: 4,
+  pl_seat_limit: 3,
+  pl_seat_limit_pro: 3,
+  pl_reverse_trial: 2,
+  pl_annual_nudge: 1,
+};
+
+/** Keep only the highest-priority banner; leave inline/modal surfaces intact. */
+function pickWinningBanner(nudges: ActiveNudge[]): ActiveNudge[] {
+  const banners = nudges.filter((n) => n.surface === 'banner');
+  if (banners.length <= 1) return nudges;
+  const winner = banners.reduce((best, b) =>
+    (BANNER_PRIORITY[b.placementId] ?? 0) > (BANNER_PRIORITY[best.placementId] ?? 0) ? b : best,
+  );
+  return nudges.filter((n) => n.surface !== 'banner' || n === winner);
+}
+
+/**
+ * Map a blocked action's handle to its click-driven gate modal. Usage/credit
+ * exhaustion is plan-aware (Free vs the paid variants); the feature/rate gates
+ * are the same on every plan.
+ */
+export function gatePlacementForHandle(handle: string, planHandle: PrismPlanHandle = 'free'): string | null {
+  const paid = planHandle !== 'free';
   switch (handle) {
     case 'batch_export':
       return 'pl_gate_batch_export';
     case 'style_packs':
       return 'pl_gate_style_packs';
+    case 'burst_rate':
+      return 'pl_rate_limit';
+    case 'generations':
+      // Only Free hard-blocks at the cap (paid plans continue into overage), so
+      // the usage gate is always the Free 100% placement.
+      return 'pl_usage_100';
+    case 'credits':
+      return paid ? 'pl_credit_out_pro' : 'pl_credit_out';
     default:
       return null;
   }

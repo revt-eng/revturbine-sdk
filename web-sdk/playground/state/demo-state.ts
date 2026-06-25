@@ -31,12 +31,31 @@ export interface PrismCustomTraits {
   billing_period: BillingPeriod;
 }
 
-/** Free/reverse trial simulation state. */
+/** Trial length for both the free and reverse trials (config `duration_days`). */
+export const TRIAL_DURATION_DAYS = 7;
+
+/**
+ * Day of a reverse trial at which the ambient "you're trying Pro" banner
+ * escalates to a conversion modal (config `show_upgrade_prompt_at_day`).
+ */
+export const REVERSE_TRIAL_PROMPT_DAY = 5;
+
+/**
+ * Free/reverse trial simulation state. `daysRemaining` is always derived from
+ * `dayNumber` (days since signup) against {@link TRIAL_DURATION_DAYS} — they are
+ * not independent — so the "N more days" copy tracks how far into the trial you
+ * are. See {@link trialDaysRemaining}.
+ */
 export interface PrismTrialState {
   inTrial: boolean;
   trialType: TrialKind | null;
   dayNumber: number;
   daysRemaining: number;
+}
+
+/** Days left in a trial that started `dayNumber` days ago. */
+export function trialDaysRemaining(dayNumber: number): number {
+  return Math.max(0, TRIAL_DURATION_DAYS - dayNumber);
 }
 
 /**
@@ -69,7 +88,7 @@ export const DEFAULT_DEMO_STATE: DemoState = {
     engagement_score: 40,
     days_since_signup: 1,
     days_since_active: 0,
-    has_purchased: false,
+    has_purchased: true,
     billing_status: 'ok',
     billing_period: 'monthly',
   },
