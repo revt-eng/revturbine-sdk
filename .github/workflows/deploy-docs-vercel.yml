@@ -76,12 +76,13 @@ jobs:
 
       - name: Stage static bundle under /docs for Vercel
         # Vercel serves the deployed dir at the project root; base=/docs means the
-        # site's links are /docs/* — so nest the build under docs/. trailingSlash
-        # matches the Astro directory-URL format so deep pages resolve cleanly.
+        # site's links are /docs/* — so nest the build under docs/. No vercel.json:
+        # a trailingSlash redirect here makes Vercel 308 /docs → /docs/, which the
+        # marketing proxy turns into a redirect loop. Default static serving (no
+        # forced slash redirect) serves both /docs and /docs/ as 200.
         run: |
           rm -rf _site && mkdir -p _site/docs
           cp -r pages-build/dist/. _site/docs/
-          printf '{\n  "trailingSlash": true,\n  "cleanUrls": true\n}\n' > _site/vercel.json
 
       - name: Deploy to Vercel
         if: ${{ env.VERCEL_TOKEN != '' }}
