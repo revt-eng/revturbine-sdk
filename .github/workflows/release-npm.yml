@@ -1,0 +1,94 @@
+name: Publish to npm
+
+# Plan 103 (TASK-5). Publishes the JS SDK to the PUBLIC npm registry as
+# @revturbine/sdk with build provenance, on a v* release tag (pushed here by the
+# source-mirror pipeline in revturbine-sdk-internal).
+#
+# The build bundles all @revt-eng/* deps (web-sdk tsup `noExternal`), so the
+# published package is self-contained — only react/react-dom are peers.
+#
+# Build-time deps (@revt-eng/*, tsup, typescript) come from GitHub Packages via
+# web-sdk/.npmrc + GITHUB_TOKEN. The publish itself targets npmjs with NPM_TOKEN.
+#
+# Requires the NPM_TOKEN secret (an automation token for the @revturbine org).
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish (e.g. v0.2.13)'
+        required: true
+
+permissions:
+  contents: read
+  id-token: write # npm provenance
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node (npm registry for publish)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="${{ inputs.tag }}"
+          fi
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: ${TAG#v}"
+
+      - name: Install web-sdk build deps (@revt-eng/* from GitHub Packages)
+        working-directory: web-sdk
+        run: pnpm install --no-frozen-lockfile --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build SDK bundle (tsup + declarations)
+        # Invoke the build directly — `pnpm build` would fire the prebuild hook,
+        # which references internal-only ../scripts that are not in the public repo.
+        working-directory: web-sdk
+        run: |
+          pnpm exec tsup
+          pnpm exec tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir dist/types
+
+      - name: Prepare public package manifest
+        working-directory: web-sdk
+        run: |
+          npm pkg set name=@revturbine/sdk
+          npm pkg set publishConfig.registry=https://registry.npmjs.org
+          npm pkg set publishConfig.access=public
+          npm pkg set repository.type=git
+          npm pkg set repository.url=git+https://github.com/revt-eng/revturbine-sdk.git
+          npm pkg set homepage=https://revt-eng.github.io/revturbine-sdk/
+          npm pkg set bugs.url=https://github.com/revt-eng/revturbine-sdk/issues
+          npm pkg set license=MIT
+          # scripts reference internal-only ../scripts and ../revturbine-web; drop
+          # them from the published manifest (the package ships built dist only).
+          npm pkg delete scripts
+          npm version "${{ steps.version.outputs.version }}" --no-git-tag-version --allow-same-version
+
+      - name: Publish to npm (public, with provenance)
+        working-directory: web-sdk
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
