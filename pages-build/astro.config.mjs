@@ -2,7 +2,9 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import react from '@astrojs/react';
 import starlightTypeDoc from 'starlight-typedoc';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
+import { readFile, writeFile, readdir } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 
 // PAGES_BASE can be set by the deploy workflow.
 const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? '';
@@ -13,6 +15,40 @@ const base = process.env.PAGES_BASE
 // Resolve @revt-eng/* packages from pages-build/node_modules so Vite can find
 // them even when the web-sdk/ workspace dependencies use workspace:* protocol.
 const pagesNodeModules = resolve(import.meta.dirname, 'node_modules');
+
+// Starlight base-prefixes its own sidebar/asset links, but NOT authored links in
+// markdown content or hero `actions` frontmatter — those stay as raw `/getting-started/…`
+// and break under any subpath mount (GitHub Pages /revturbine-sdk, or the proxied
+// /docs). Post-build, prefix every internal root-absolute href/src that isn't already
+// under the base. Base-aware (uses whatever `base` the build ran with), so it fixes
+// both the GitHub Pages and the /docs (Vercel) builds. No trailing-slash dependency.
+function baseAbsoluteInternalLinks(base) {
+  const b = base.replace(/\/+$/, ''); // '/docs' or '/revturbine-sdk' (or '' at root)
+  return {
+    name: 'base-absolute-internal-links',
+    hooks: {
+      'astro:build:done': async ({ dir }) => {
+        if (!b) return; // nothing to do when served at the root
+        const root = fileURLToPath(dir);
+        const rewrite = (html) =>
+          html.replace(/(href|src)="\/(?!\/)([^"]*)"/g, (m, attr, rest) => {
+            const path = '/' + rest;
+            if (path === b || path.startsWith(b + '/')) return m; // already based
+            return `${attr}="${b}/${rest}"`;
+          });
+        const walk = async (d) => {
+          for (const e of await readdir(d, { withFileTypes: true })) {
+            const p = join(d, e.name);
+            if (e.isDirectory()) await walk(p);
+            else if (e.name.endsWith('.html'))
+              await writeFile(p, rewrite(await readFile(p, 'utf8')));
+          }
+        };
+        await walk(root);
+      },
+    },
+  };
+}
 
 export default defineConfig({
   site: 'https://revt-eng.github.io',
@@ -30,6 +66,7 @@ export default defineConfig({
     },
   },
   integrations: [
+    baseAbsoluteInternalLinks(base),
     starlight({
       title: 'RevTurbine SDK',
       description: 'Placement decisioning, entitlement checks, and usage tracking for web applications.',
