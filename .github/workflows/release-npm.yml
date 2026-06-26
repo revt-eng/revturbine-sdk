@@ -24,6 +24,7 @@ on:
 
 permissions:
   contents: read
+  packages: read # read @revt-eng/* build deps from GitHub Packages
   id-token: write # npm provenance
 
 concurrency:
