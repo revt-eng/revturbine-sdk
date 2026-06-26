@@ -1,0 +1,131 @@
+---
+title: "Tutorial: Show a Banner Placement"
+description: End-to-end tutorial — render a targeted, dismissible banner (an upsell or announcement) with a CTA, controlled from your config.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+In this tutorial, you'll render a **banner** at the top of your app — a targeted upsell or announcement with a call-to-action — controlled entirely from your config. The banner shows only for the users your config targets, and renders nothing for everyone else. Takes about 10 minutes.
+
+## What You'll Build
+
+A header banner that:
+
+- Renders a placement in a fixed slot via `FixedSurfaceSlot`
+- Shows only to a targeted audience (here, Pro users), and nothing otherwise
+- Has a dismissible CTA that opens your checkout flow
+
+## Prerequisites
+
+- A React 18+ application with `@revturbine/sdk` installed
+- A `RevTurbineProvider` set up (see [Quickstart](/getting-started/quickstart/))
+
+## Steps
+
+<Steps>
+
+1. **Add a banner placement to your config**
+
+   This is a minimal but complete `ExportedConfig` — author the same shape in the [studio](https://www.revturbine.com/app) or with the CLI. The banner is a `fixed` placement bound to a named slot, targeted at the Pro plan.
+
+   ```json title="exported_config.json"
+   {
+     "version": "v1",
+     "plans": [
+       { "id": "plan_pro", "unique_handle": "pro", "name": "Pro", "tier_position": 1, "sort_order": 1 }
+     ],
+     "entitlements": [],
+     "entitlement_rules": [],
+     "segments": [],
+     "content_ui_paths": [],
+     "surface_templates": [
+       { "id": "banner_placement", "surface_type": "banner", "fields": [] }
+     ],
+     "placements": [
+       {
+         "id": "pl_annual_upsell",
+         "name": "Annual billing upsell",
+         "category": "fixed",
+         "trigger": { "type": "surface_render", "slot_id": "app_header_banner" },
+         "payloads": [
+           {
+             "id": "pl_annual_upsell_p0",
+             "target": { "plan_ids": ["plan_pro"], "segment_chips": [] },
+             "surfaces": [
+               {
+                 "template_id": "banner_placement",
+                 "fields": {
+                   "header": "Save 20% with annual billing",
+                   "body": "Switch your Pro plan to annual and get two months free.",
+                   "dismissible": "Yes"
+                 },
+                 "ctas": [
+                   { "label": "Switch to annual", "path": "open_checkout", "config": { "purchase": "pro_annual" } }
+                 ]
+               }
+             ],
+             "caps": {},
+             "status": "active"
+           }
+         ],
+         "order": 0
+       }
+     ]
+   }
+   ```
+
+2. **Drop the slot into your header**
+
+   `FixedSurfaceSlot` renders the matching placement for the current user — or nothing. The `id` matches the placement trigger's `slot_id`.
+
+   ```tsx title="src/components/AppHeader.tsx"
+   import { FixedSurfaceSlot } from '@revturbine/sdk';
+
+   export function AppHeader() {
+     return (
+       <header>
+         {/* Renders the targeted banner, or nothing */}
+         <FixedSurfaceSlot id="app_header_banner" surfaceTemplateIds={['banner_placement']} />
+         <nav>{/* ...your nav... */}</nav>
+       </header>
+     );
+   }
+   ```
+
+3. **Provide the user context that targeting reads**
+
+   The placement targets `plan_ids: ["plan_pro"]`, so the banner only renders for Pro users. Pass the user's plan in the provider; the banner's CTA dispatches through the UI path resolvers you registered at init.
+
+   ```tsx title="src/App.tsx"
+   <RevTurbineProvider
+     options={{
+       localRuntime: { exportedConfig },
+       user: { id: 'user_123', context: { plan_handle: 'pro' } },
+     }}
+   >
+     <AppHeader />
+   </RevTurbineProvider>
+   ```
+
+</Steps>
+
+## How It Works
+
+1. `FixedSurfaceSlot` asks the decision engine which placement wins for `app_header_banner`.
+2. The engine evaluates the payload's `target` against the current user (plan, segments). If nothing matches, the slot renders nothing — your header is unchanged.
+3. The slot renders the surface's `fields` (header, body) and CTA; clicking the CTA dispatches through your resolvers (see [Quickstart](/getting-started/quickstart/)).
+4. Dismissing the banner records the interaction, so any `caps` (cooldowns, max-per-period) apply on the next render.
+
+<Aside type="tip">
+A banner is a **fixed** placement — it renders wherever you place the slot, filtered by targeting. For a banner that fires on a *condition* (credits running low, a failed payment), use a trigger instead — see [Warn Users About Low Credits](/tutorials/low-credits-warning/) and [Recover a Failed Payment](/tutorials/payment-recovery/).
+</Aside>
+
+## Try It Live
+
+> [Interactive Playground → Banner Slot](/playground/fixed-slots/fixed-banner/)
+
+## Next Steps
+
+- [Placements Guide](/guides/placements/) — targeting, triggers, and surface types
+- [Tutorial: Add an Upgrade Button](/tutorials/upgrade-button/) — a persistent CTA button instead of a banner
+- [Component Gallery](/components/) — every built-in slot component

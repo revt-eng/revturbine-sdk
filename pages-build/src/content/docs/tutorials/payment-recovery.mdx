@@ -1,0 +1,151 @@
+---
+title: "Tutorial: Recover a Failed Payment"
+description: End-to-end tutorial — show a persistent, non-dismissible banner that prompts users to fix a failed payment before they lose access.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+In this tutorial, you'll surface a **payment recovery** banner to users whose last charge failed — a persistent, non-dismissible prompt to update their payment method before their subscription lapses. Takes about 10 minutes.
+
+## What You'll Build
+
+A dunning banner that:
+
+- Targets only users in a failed-payment state via a segment
+- Stays visible (non-dismissible) until the issue is resolved
+- Links to your billing portal to update the card on file
+
+## Prerequisites
+
+- A React 18+ application with `@revturbine/sdk` installed
+- A `RevTurbineProvider` set up (see [Quickstart](/getting-started/quickstart/))
+- A way to know a user's billing status (e.g. a Stripe webhook updating your backend)
+
+## Steps
+
+<Steps>
+
+1. **Add a billing-failed segment and a recovery placement**
+
+   A segment matches users whose `billing_status` is `payment_failed`; the `retention` placement targets that segment and is non-dismissible. This is a complete, valid `ExportedConfig`.
+
+   ```json title="exported_config.json"
+   {
+     "version": "v1",
+     "plans": [],
+     "entitlements": [],
+     "entitlement_rules": [],
+     "segments": [
+       {
+         "id": "seg_billing_failed",
+         "name": "Payment failed",
+         "handle": "seg_billing_failed",
+         "predicates": [
+           { "field": "billing_status", "operator": "eq", "value": "payment_failed" }
+         ]
+       }
+     ],
+     "content_ui_paths": [],
+     "surface_templates": [
+       { "id": "banner_placement", "surface_type": "banner", "fields": [] }
+     ],
+     "placements": [
+       {
+         "id": "pl_payment_recovery",
+         "name": "Payment recovery",
+         "category": "retention",
+         "trigger": { "type": "qualifier", "qualifier": "payment_failed" },
+         "payloads": [
+           {
+             "id": "pl_payment_recovery_p0",
+             "target": { "plan_ids": [], "segment_chips": ["seg_billing_failed"] },
+             "surfaces": [
+               {
+                 "template_id": "banner_placement",
+                 "fields": {
+                   "header": "Your last payment failed",
+                   "body": "Update your payment method to keep your subscription active.",
+                   "dismissible": "No"
+                 },
+                 "ctas": [
+                   { "label": "Update payment", "path": "update_payment_method" }
+                 ]
+               }
+             ],
+             "caps": {},
+             "status": "active"
+           }
+         ],
+         "order": 0
+       }
+     ]
+   }
+   ```
+
+2. **Pass the user's billing status into the SDK**
+
+   Feed `billing_status` from your backend into the user context so the segment evaluates correctly. Update it whenever your payment provider's webhook fires.
+
+   ```tsx title="src/App.tsx"
+   <RevTurbineProvider
+     options={{
+       localRuntime: { exportedConfig },
+       user: {
+         id: 'user_123',
+         context: {
+           plan_handle: 'pro',
+           billing_status: billingStatus, // 'active' | 'payment_failed'
+         },
+       },
+     }}
+   >
+     <AppHeader />
+   </RevTurbineProvider>
+   ```
+
+3. **Render the banner slot**
+
+   ```tsx title="src/components/AppHeader.tsx"
+   import { FixedSurfaceSlot } from '@revturbine/sdk';
+
+   export function AppHeader() {
+     return (
+       <header>
+         {/* Visible only while billing_status is payment_failed; non-dismissible */}
+         <FixedSurfaceSlot id="app_header_banner" surfaceTemplateIds={['banner_placement']} />
+         <nav>{/* ... */}</nav>
+       </header>
+     );
+   }
+   ```
+
+4. **Clear it on recovery**
+
+   When the payment succeeds, set `billing_status` back to `active` and the banner stops rendering automatically — no manual teardown.
+
+   ```ts
+   sdk.identify('user_123', { context: { plan_handle: 'pro', billing_status: 'active' } });
+   ```
+
+</Steps>
+
+## How It Works
+
+1. The `seg_billing_failed` segment matches users whose `billing_status` context equals `payment_failed`.
+2. The placement targets that segment via `segment_chips`, so only affected users see the banner.
+3. `"dismissible": "No"` keeps it visible — dunning prompts shouldn't be dismissible.
+4. Updating the user's billing status to `active` removes them from the segment, and the banner disappears on the next evaluation.
+
+<Aside type="caution">
+The SDK targets and renders the banner; it doesn't process payments. Drive `billing_status` from your billing provider's source of truth (e.g. a Stripe `invoice.payment_failed` / `invoice.paid` webhook) so the banner reflects reality.
+</Aside>
+
+## Try It Live
+
+> [Interactive Playground → Banner Slot](/playground/fixed-slots/fixed-banner/)
+
+## Next Steps
+
+- [Placements Guide](/guides/placements/) — segments, targeting, and triggers
+- [Tutorial: Show a Banner Placement](/tutorials/banner-placement/) — targeted banners
+- [Tutorial: Show a Trial-Ending Countdown](/tutorials/trial-ending-nudge/) — another lifecycle nudge

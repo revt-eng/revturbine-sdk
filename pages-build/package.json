@@ -13,7 +13,8 @@
     "lint:md": "markdownlint-cli2 \"src/content/docs/{getting-started,tutorials,guides,concepts,reference,playground}/**/*.{md,mdx}\"",
     "lint:links": "node scripts/check-links.mjs",
     "lint:snippets": "node scripts/check-snippets.mjs",
-    "check": "pnpm lint:md && pnpm build && pnpm lint:links"
+    "lint:config": "node scripts/check-config-examples.mjs",
+    "check": "pnpm lint:md && pnpm lint:config && pnpm build && pnpm lint:links"
   },
   "packageManager": "pnpm@10.33.0",
   "dependencies": {

@@ -28,40 +28,59 @@ A video export button that:
 
    Add to your `exported_config.json`:
 
-   ```json
+   ```json title="exported_config.json"
    {
+     "version": "v1",
+     "plans": [
+       { "id": "plan_free", "unique_handle": "free", "name": "Free", "tier_position": 0, "sort_order": 0 },
+       { "id": "plan_pro", "unique_handle": "professional", "name": "Professional", "tier_position": 1, "sort_order": 1 }
+     ],
      "entitlements": [
+       { "id": "ent_data_export", "unique_handle": "data_export", "name": "Data Export", "type": "feature" }
+     ],
+     "entitlement_rules": [
        {
-         "handle": "data_export",
-         "name": "Data Export",
-         "plan_ids": ["professional", "enterprise"]
+         "id": "er_data_export_pro",
+         "entitlement_id": "ent_data_export",
+         "targets": [{ "kind": "plan", "id": "plan_pro" }],
+         "segment_ids": [],
+         "type_fields": { "kind": "feature", "enabled": true }
        }
      ],
+     "segments": [],
+     "content_ui_paths": [],
      "surface_templates": [
-       {
-         "id": "modal_overlay",
-         "surface_type": "modal",
-         "name": "Modal Overlay"
-       }
+       { "id": "modal_overlay", "surface_type": "modal", "fields": [] }
      ],
      "placements": [
        {
-         "id": "export_gate_placement",
-         "slot_id": "editor_export_action",
-         "surface_template_id": "modal_overlay",
-         "targeting": {
-           "entitlement_handle": "data_export",
-           "entitlement_status": "denied"
-         },
-         "content": {
-           "header": "Unlock Data Export",
-           "body": "Video export is available on the Professional plan. Upgrade to export your projects in MP4, WebM, and GIF formats.",
-           "cta_label": "View Plans",
-           "dismissible": true
-         },
-         "ui_path": {
-           "action_type": "open_pricing"
-         }
+         "id": "pl_export_gate",
+         "name": "Export gate",
+         "category": "gated",
+         "trigger": { "type": "entitlement_gate", "entitlement_handle": "data_export" },
+         "payloads": [
+           {
+             "id": "pl_export_gate_p0",
+             "target": { "plan_ids": ["plan_free"], "segment_chips": [] },
+             "surfaces": [
+               {
+                 "template_id": "modal_overlay",
+                 "fields": {
+                   "modal_type": "Blocking",
+                   "header": "Unlock Data Export",
+                   "body": "Video export is available on the Professional plan. Upgrade to export your projects in MP4, WebM, and GIF formats."
+                 },
+                 "ctas": [
+                   { "label": "View Plans", "path": "open_checkout", "config": { "purchase": "professional" } },
+                   { "label": "Maybe later", "path": "dismiss" }
+                 ]
+               }
+             ],
+             "caps": {},
+             "status": "active"
+           }
+         ],
+         "order": 0
        }
      ]
    }
@@ -123,11 +142,11 @@ A video export button that:
 4. **Test with different users**
 
    ```tsx
-   // Starter user → sees upgrade modal
+   // Free user → sees upgrade modal
    <RevTurbineProvider
      options={{
        // ...
-       user: { id: 'user_1', plan: { id: 'starter' } },
+       user: { id: 'user_1', context: { plan_handle: 'free' } },
      }}
    >
 
@@ -135,7 +154,7 @@ A video export button that:
    <RevTurbineProvider
      options={{
        // ...
-       user: { id: 'user_2', plan: { id: 'professional' } },
+       user: { id: 'user_2', context: { plan_handle: 'professional' } },
      }}
    >
    ```

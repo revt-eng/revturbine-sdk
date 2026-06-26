@@ -139,8 +139,12 @@ export default defineConfig({
           label: 'Tutorials',
           items: [
             { label: 'Add an Upgrade Button', slug: 'tutorials/upgrade-button' },
+            { label: 'Show a Banner Placement', slug: 'tutorials/banner-placement' },
             { label: 'Gate a Premium Feature', slug: 'tutorials/gate-premium-feature' },
             { label: 'Track Usage & Quota Meter', slug: 'tutorials/usage-quota-meter' },
+            { label: 'Warn About Low Credits', slug: 'tutorials/low-credits-warning' },
+            { label: 'Trial-Ending Countdown', slug: 'tutorials/trial-ending-nudge' },
+            { label: 'Recover a Failed Payment', slug: 'tutorials/payment-recovery' },
           ],
         },
         {

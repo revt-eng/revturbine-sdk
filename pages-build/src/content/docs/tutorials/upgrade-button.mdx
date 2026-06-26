@@ -35,34 +35,44 @@ An upgrade button in your navigation bar that:
 
    For local development, you need a config file with plans, entitlements, and placements. Create `src/fixtures/exported_config.json`:
 
-   ```json
+   ```json title="exported_config.json"
    {
+     "version": "v1",
      "plans": [
-       { "id": "starter", "name": "Starter", "tier": 1 },
-       { "id": "professional", "name": "Professional", "tier": 2 }
+       { "id": "plan_starter", "unique_handle": "starter", "name": "Starter", "tier_position": 0, "sort_order": 0 },
+       { "id": "plan_pro", "unique_handle": "pro", "name": "Pro", "tier_position": 1, "sort_order": 1 }
      ],
+     "entitlements": [],
+     "entitlement_rules": [],
+     "segments": [],
+     "content_ui_paths": [],
      "surface_templates": [
-       {
-         "id": "button",
-         "surface_type": "button",
-         "name": "CTA Button"
-       }
+       { "id": "button", "surface_type": "button", "fields": [] }
      ],
      "placements": [
        {
-         "id": "upgrade_button_placement",
-         "slot_id": "nav_upgrade",
-         "surface_template_id": "button",
-         "targeting": {
-           "plan_ids": ["starter"]
-         },
-         "content": {
-           "cta_label": "Upgrade to Pro",
-           "style": "primary"
-         },
-         "ui_path": {
-           "action_type": "open_pricing"
-         }
+         "id": "pl_nav_upgrade",
+         "name": "Upgrade button",
+         "category": "fixed",
+         "trigger": { "type": "surface_render", "slot_id": "nav_upgrade" },
+         "payloads": [
+           {
+             "id": "pl_nav_upgrade_p0",
+             "target": { "plan_ids": ["plan_starter"], "segment_chips": [] },
+             "surfaces": [
+               {
+                 "template_id": "button",
+                 "fields": {},
+                 "ctas": [
+                   { "label": "Upgrade to Pro", "path": "open_checkout", "config": { "purchase": "pro" } }
+                 ]
+               }
+             ],
+             "caps": {},
+             "status": "active"
+           }
+         ],
+         "order": 0
        }
      ]
    }
@@ -85,11 +95,8 @@ An upgrade button in your navigation bar that:
            mode: 'react',
            runtimeMode: 'local_only',
            localRuntime: { exportedConfig },
-           uiPathResolvers: {
-             open_pricing: () => {
-               window.location.href = '/pricing';
-             },
-           },
+           // The button's CTA fires the action you configured; wire CTA
+           // handling to your navigation — see the Quickstart.
          }}
        >
          <NavBar />
@@ -134,8 +141,8 @@ An upgrade button in your navigation bar that:
    <RevTurbineProvider
      options={{
        // ...
-       user: { id: 'user_1', plan: { id: 'starter' } },
-       // Try: plan: { id: 'professional' } — button disappears
+       user: { id: 'user_1', context: { plan_handle: 'starter' } },
+       // Try: context: { plan_handle: 'pro' } — button disappears
      }}
    >
    ```
@@ -146,9 +153,9 @@ An upgrade button in your navigation bar that:
 
 1. The `RevTurbineProvider` initialized the SDK in `local_only` mode with your ExportedConfig
 2. The `FixedSurfaceSlot` asked the decision engine for a placement at slot `nav_upgrade`
-3. The engine evaluated the targeting rule (`plan_ids: ['starter']`) against the user context
-4. For Starter users, it resolved the `button` template with content `"Upgrade to Pro"`
-5. For Professional users, no rule matched — the slot rendered nothing
+3. The engine evaluated the payload target (`plan_ids: ['plan_starter']`) against the user context
+4. For Starter users, it resolved the `button` template with the "Upgrade to Pro" CTA
+5. For Pro users, no payload matched — the slot rendered nothing
 
 ## Moving to Production
 

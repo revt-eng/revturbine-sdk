@@ -27,59 +27,81 @@ A usage tracking flow that:
 
 1. **Add usage entitlements and placements to your config**
 
-   ```json
+   ```json title="exported_config.json"
    {
+     "version": "v1",
+     "plans": [
+       { "id": "plan_starter", "unique_handle": "starter", "name": "Starter", "tier_position": 0, "sort_order": 0 },
+       { "id": "plan_pro", "unique_handle": "professional", "name": "Professional", "tier_position": 1, "sort_order": 1 }
+     ],
      "entitlements": [
+       { "id": "ent_api_calls", "unique_handle": "api_calls", "name": "API Calls", "type": "usage_limit", "unit": "calls" }
+     ],
+     "entitlement_rules": [
        {
-         "handle": "api_calls",
-         "name": "API Calls",
-         "type": "usage_limit",
-         "limits": {
-           "starter": 1000,
-           "professional": 10000,
-           "enterprise": -1
-         }
+         "id": "er_api_calls_starter",
+         "entitlement_id": "ent_api_calls",
+         "targets": [{ "kind": "plan", "id": "plan_starter" }],
+         "segment_ids": [],
+         "type_fields": { "kind": "usage_limit", "limit_value": 1000, "unit": "calls", "period": "per_month", "enforcement": "hard_block" }
        }
      ],
+     "segments": [],
+     "content_ui_paths": [],
      "surface_templates": [
-       {
-         "id": "usage_counter",
-         "surface_type": "quota_meter",
-         "name": "Usage Counter"
-       },
-       {
-         "id": "banner_warning",
-         "surface_type": "banner",
-         "name": "Warning Banner"
-       }
+       { "id": "usage_counter", "surface_type": "in_page", "fields": [] },
+       { "id": "banner_warning", "surface_type": "banner", "fields": [] }
      ],
      "placements": [
        {
-         "id": "api_quota_meter",
-         "slot_id": "sidebar_usage",
-         "surface_template_id": "usage_counter",
-         "content": {
-           "header": "API Calls",
-           "body": "{{usage_current}} / {{usage_limit}} calls used"
-         }
+         "id": "pl_api_quota_meter",
+         "name": "API quota meter",
+         "category": "fixed",
+         "trigger": { "type": "surface_render", "slot_id": "sidebar_usage" },
+         "payloads": [
+           {
+             "id": "pl_api_quota_meter_p0",
+             "target": { "plan_ids": [], "segment_chips": [] },
+             "surfaces": [
+               {
+                 "template_id": "usage_counter",
+                 "fields": { "header": "API Calls", "body": "{{usage_current}} / {{usage_limit}} calls used" },
+                 "ctas": []
+               }
+             ],
+             "caps": {},
+             "status": "active"
+           }
+         ],
+         "order": 0
        },
        {
-         "id": "usage_warning_banner",
-         "slot_id": "dashboard_banner",
-         "surface_template_id": "banner_warning",
-         "targeting": {
-           "usage_handle": "api_calls",
-           "usage_percent_gte": 80
-         },
-         "content": {
-           "header": "Usage limit approaching",
-           "body": "You've used {{usage_percent}}% of your API calls this month.",
-           "cta_label": "View Plans",
-           "dismissible": true
-         },
-         "ui_path": {
-           "action_type": "open_pricing"
-         }
+         "id": "pl_usage_warning",
+         "name": "Usage limit approaching",
+         "category": "usage_credit_seat",
+         "trigger": { "type": "usage_threshold", "entitlement_handle": "api_calls", "threshold_percent": 80 },
+         "payloads": [
+           {
+             "id": "pl_usage_warning_p0",
+             "target": { "plan_ids": ["plan_starter"], "segment_chips": [] },
+             "surfaces": [
+               {
+                 "template_id": "banner_warning",
+                 "fields": {
+                   "header": "Usage limit approaching",
+                   "body": "You've used {{usage_percent}}% of your API calls this month.",
+                   "dismissible": "Yes"
+                 },
+                 "ctas": [
+                   { "label": "View Plans", "path": "open_checkout", "config": { "purchase": "professional" } }
+                 ]
+               }
+             ],
+             "caps": {},
+             "status": "active"
+           }
+         ],
+         "order": 1
        }
      ]
    }
