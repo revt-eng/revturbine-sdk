@@ -9,37 +9,24 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 ## Web SDK (React)
 
-### Registry Configuration
-
-The `@revt-eng/sdk` package is published to GitHub Packages. Create or update an `.npmrc` file in your project root:
-
-```ini title=".npmrc"
-@revt-eng:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
-```
-
-Set `GITHUB_TOKEN` to a [personal access token](https://github.com/settings/tokens) with `read:packages` scope. You can also authenticate interactively:
-
-```bash
-npm login --registry=https://npm.pkg.github.com
-```
-
 ### Install
+
+`@revturbine/sdk` is published to the public npm registry — no auth, token, or registry configuration required.
 
 <Tabs>
   <TabItem label="npm">
   ```bash
-  pnpm add @revt-eng/sdk
+  npm install @revturbine/sdk
   ```
   </TabItem>
   <TabItem label="pnpm">
   ```bash
-  pnpm add @revt-eng/sdk
+  pnpm add @revturbine/sdk
   ```
   </TabItem>
   <TabItem label="yarn">
   ```bash
-  yarn add @revt-eng/sdk
+  yarn add @revturbine/sdk
   ```
   </TabItem>
 </Tabs>
@@ -72,10 +59,10 @@ Recommended `tsconfig.json` settings:
 
 ## Headless / Non-React
 
-The same `@revt-eng/sdk` package includes a headless entry point for use without React:
+The same `@revturbine/sdk` package includes a headless entry point for use without React:
 
 ```ts
-import { initRevTurbine } from '@revt-eng/sdk/headless';
+import { initRevTurbine } from '@revturbine/sdk/headless';
 ```
 
 This import tree-shakes React dependencies. See the [Headless API guide](/guides/headless-api/) for usage patterns with vanilla JS, Vue, Svelte, and Angular.
@@ -86,15 +73,29 @@ Server SDKs are available for backend entitlement checks and placement resolutio
 
 | Language | Package |
 |---|---|
-| Node.js | `@revt-eng/server-node` |
-| Python | `revturbine-server` (PyPI) |
-| Java | `io.revturbine:server-java` (Maven) |
-| C# | `RevTurbine.Server` (NuGet) |
-| Rust | `revturbine-server` (crates.io) |
+| Node.js | `@revturbine/sdk` (headless entry) |
+| Python | `revturbine` (PyPI) |
 
 :::note
-Server SDKs are under active development. Contact your RevTurbine account team for current availability.
+Both server SDKs are published — `@revturbine/sdk` (npm) and `revturbine` (PyPI) — and produce byte-identical decisions for the same config and user context.
 :::
+
+## CLI
+
+The **`@revturbine/cli`** package manages your RevTurbine configuration (plans, entitlements, placements) and change sets from the terminal — verify, diff, upload, and deploy an `ExportedConfig`.
+
+```bash
+npm install -g @revturbine/cli
+revturbine --help
+```
+
+Or run it without installing:
+
+```bash
+npx @revturbine/cli verify ./exported_config.json
+```
+
+See the [CLI reference](https://www.npmjs.com/package/@revturbine/cli) for the full command surface (`verify`, `diff`, `upload`, `deploy`, `export`, `status`, and the change-set lifecycle).
 
 ## Environment Variables
 

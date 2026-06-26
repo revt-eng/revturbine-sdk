@@ -26,13 +26,13 @@ The local runtime evaluates entitlements and placements entirely from an Exporte
 ### Installation
 
 ```bash
-pnpm add @revt-eng/sdk
+pnpm add @revturbine/sdk
 ```
 
 ### Entitlement Checks
 
 ```ts
-import { initRevTurbine } from '@revt-eng/sdk';
+import { initRevTurbine } from '@revturbine/sdk';
 import exportedConfig from './exported_config.json';
 
 const sdk = initRevTurbine({
@@ -58,7 +58,7 @@ if (!result.allowed) {
 Resolve placements server-side for SSR or email templates:
 
 ```ts
-import { initRevTurbine } from '@revt-eng/sdk';
+import { initRevTurbine } from '@revturbine/sdk';
 import exportedConfig from './exported_config.json';
 
 const sdk = initRevTurbine({
@@ -91,7 +91,7 @@ For frameworks like Next.js, resolve placements with the local runtime and hydra
 // components/Dashboard.tsx
 'use client';
 
-import { RevTurbineProvider, FixedSurfaceSlot } from '@revt-eng/sdk';
+import { RevTurbineProvider, FixedSurfaceSlot } from '@revturbine/sdk';
 import exportedConfig from './exported_config.json';
 import { useMemo } from 'react';
 
@@ -123,17 +123,16 @@ export default function Dashboard({ user }) {
 The `RevTurbineServer` provider — which connects to the RevTurbine API for real-time decisions, server-side event tracking, and usage reporting — is not yet available. Use the **local runtime** mode shown above for all server-side use cases today.
 :::
 
-## Other Language SDKs
+## Python server SDK
 
-Server SDKs for additional languages are planned:
+A Python server SDK is also available, with byte-identical decisioning parity to the Node SDK:
 
 | Language | Package | Status |
 |---|---|---|
-| Node.js | `@revt-eng/sdk` (local runtime) | ✅ Available |
-| Python | `revturbine-server` | 🔜 Coming soon |
-| Java | `com.revturbine:server-sdk` | 🔜 Coming soon |
-| C# | `RevTurbine.Server` | 🔜 Coming soon |
-| Rust | `revturbine-server` | 🔜 Coming soon |
+| Node.js | `@revturbine/sdk` (local runtime) | ✅ Available |
+| Python | `revturbine` (PyPI) | ✅ Available |
+
+See the [Python SDK guide](/getting-started/python/) for setup and usage.
 
 ## Next Steps
 

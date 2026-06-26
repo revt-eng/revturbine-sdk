@@ -26,35 +26,18 @@ fails CI on any divergence — the Python port is never allowed to drift.
 
 ## Install
 
-The package (`revturbine`, requires Python ≥ 3.10) is published as a **GitHub
-Release on
-[`revt-eng/revturbine-external`](https://github.com/revt-eng/revturbine-external/releases)**
-— the repo you have collaborator access to. There is no PyPI release.
-
-`revturbine-external` is private, so fetch the wheel with an authenticated
-GitHub client (the same access you already use for RevTurbine), then install
-the downloaded file:
+The `revturbine` package (requires Python ≥ 3.10) is published to **PyPI**:
 
 ```bash
-# GitHub CLI, authenticated as your revturbine-external collaborator
-gh release download python-v0.1.0 \
-  --repo revt-eng/revturbine-external \
-  --pattern "revturbine-*.whl"
-
-pip install ./revturbine-*.whl
+pip install revturbine
 ```
 
-<Aside type="tip">
-No `gh` CLI? Download the `revturbine-*.whl` asset from the [Releases
-page](https://github.com/revt-eng/revturbine-external/releases) in a browser
-(signed in to GitHub as a collaborator), then `pip install
-./revturbine-<version>.whl`. A plain `pip install <url>` will **not** work —
-private-repo release assets require authentication.
-</Aside>
+Pin to a version whose schema matches the `ExportedConfig` you deploy — see
+[Refreshing the ExportedConfig](#refreshing-the-exportedconfig):
 
-Pin to a release tag (`python-v<version>`) whose schema version matches the
-`ExportedConfig` you deploy — see [Refreshing the
-ExportedConfig](#refreshing-the-exportedconfig).
+```bash
+pip install "revturbine==<version>"
+```
 
 ## Quick start
 

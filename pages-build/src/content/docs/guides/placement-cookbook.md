@@ -117,10 +117,10 @@ Only request a modal at **safe moments**: after a user action (clicked a button,
 ## Lifecycle Callbacks
 
 ```tsx
-import type { PlacementUiPath } from '@revt-eng/sdk';
+import type { PlacementUiPath } from '@revturbine/sdk';
 
 const createPlacementCallbacks = (
-  sdk: import('@revt-eng/sdk').RevTurbineCustomerSdk,
+  sdk: import('@revturbine/sdk').RevTurbineCustomerSdk,
   placementId: string,
 ) => ({
   onImpression: () => {
@@ -156,7 +156,7 @@ import {
   createSlotPlacementRequest,
   createEntitlementPlacementRequest,
   createChainedPlacementRequest,
-} from '@revt-eng/sdk';
+} from '@revturbine/sdk';
 
 const slotRequest = createSlotPlacementRequest('dashboard_banner', 'banner');
 const entitlementRequest = createEntitlementPlacementRequest('mp4_download', {

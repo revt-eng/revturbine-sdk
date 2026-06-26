@@ -21,13 +21,13 @@ import {
   initRevTurbine,
   PlacementController,
   EntitlementGate,
-} from '@revt-eng/sdk/headless';
+} from '@revturbine/sdk/headless';
 ```
 
 ## Quick Start
 
 ```ts
-import { initRevTurbine } from '@revt-eng/sdk/headless';
+import { initRevTurbine } from '@revturbine/sdk/headless';
 
 const session = await initRevTurbine({
   tenantId: 'tenant_abc',
@@ -250,7 +250,7 @@ document.getElementById('dismiss-btn')?.addEventListener('click', () => {
 
 ```ts
 import { ref, onMounted, onUnmounted } from 'vue';
-import { initRevTurbine } from '@revt-eng/sdk/headless';
+import { initRevTurbine } from '@revturbine/sdk/headless';
 
 export function usePlacement(slotId: string) {
   const state = ref({ visible: false, content: null });
@@ -275,7 +275,7 @@ export function usePlacement(slotId: string) {
 
 ```ts
 import { writable } from 'svelte/store';
-import { initRevTurbine } from '@revt-eng/sdk/headless';
+import { initRevTurbine } from '@revturbine/sdk/headless';
 
 export function createPlacementStore(slotId: string) {
   const store = writable({ visible: false, content: null });

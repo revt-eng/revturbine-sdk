@@ -45,7 +45,7 @@ Every slot needs an `id` and optionally a list of accepted `surfaceTemplateIds`:
 Always-visible inline placements — buttons, cards, meters:
 
 ```tsx
-import { FixedSurfaceSlot } from '@revt-eng/sdk';
+import { FixedSurfaceSlot } from '@revturbine/sdk';
 
 <FixedSurfaceSlot
   id="nav_bar_right"
@@ -62,7 +62,7 @@ Fixed slots render nothing if no placement matches — your layout stays intact.
 Wrap premium content and show an upgrade prompt when access is denied:
 
 ```tsx
-import { AccessGateSurfaceSlot } from '@revt-eng/sdk';
+import { AccessGateSurfaceSlot } from '@revturbine/sdk';
 
 <AccessGateSurfaceSlot
   id="editor_export_action"
@@ -82,7 +82,7 @@ If the entitlement is granted, children render normally. If denied, the gate ren
 Page-level overlays triggered by targeting rules — toasts, modals, banners:
 
 ```tsx
-import { MessageSurfaceSlot } from '@revt-eng/sdk';
+import { MessageSurfaceSlot } from '@revturbine/sdk';
 
 <MessageSurfaceSlot
   id="global_banner"

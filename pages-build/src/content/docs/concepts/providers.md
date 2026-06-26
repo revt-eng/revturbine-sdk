@@ -111,7 +111,7 @@ const identityProvider: RevTurbineSdkProvider = {
 Pass your provider via the `provider` option:
 
 ```tsx
-import { RevTurbineProvider } from '@revt-eng/sdk';
+import { RevTurbineProvider } from '@revturbine/sdk';
 import exportedConfig from './exported_config.json';
 import { useMemo } from 'react';
 
@@ -188,7 +188,7 @@ The SDK can forward all impressions, interactions, and lifecycle events to your 
 ### Basic Setup
 
 ```tsx
-import { RevTurbineProvider, createAnalyticsProvider } from '@revt-eng/sdk';
+import { RevTurbineProvider, createAnalyticsProvider } from '@revturbine/sdk';
 import exportedConfig from './exported_config.json';
 import { useMemo } from 'react';
 

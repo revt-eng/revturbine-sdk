@@ -54,7 +54,7 @@ The SDK version is tied to the `@revt-eng/schema` package version. When upgradin
 
 ```bash
 # Regenerate types after SDK upgrade
-pnpm add @revt-eng/sdk@latest
+pnpm add @revturbine/sdk@latest
 ```
 
 ---
@@ -63,7 +63,6 @@ pnpm add @revt-eng/sdk@latest
 
 Features planned for upcoming releases. Subject to change.
 
-- **Server SDKs** — Python, Java, C#, Rust
 - **A/B testing integration** — experiment assignment and variant tracking
 - **Offline mode** — queue events and decisions when offline
 - **React Server Components** — first-class RSC support

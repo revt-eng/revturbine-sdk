@@ -36,8 +36,8 @@ Run `pnpm storybook` in the SDK repo to preview all variants, or try the
 Create a `PlacementSlotType` definition and register it:
 
 ```tsx
-import { PlacementTypeRegistry } from '@revt-eng/sdk';
-import type { PlacementSlotProps } from '@revt-eng/sdk';
+import { PlacementTypeRegistry } from '@revturbine/sdk';
+import type { PlacementSlotProps } from '@revturbine/sdk';
 
 // 1. Define the component
 function FeedbackWidget({ content, onDismiss, onCtaClick }: PlacementSlotProps) {

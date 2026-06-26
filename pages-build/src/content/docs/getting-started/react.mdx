@@ -14,7 +14,7 @@ The React integration provides a provider, hooks, and drop-in components for pla
 Wrap your app (or a subtree) with the provider:
 
 ```tsx
-import { RevTurbineProvider } from '@revt-eng/sdk';
+import { RevTurbineProvider } from '@revturbine/sdk';
 import exportedConfig from './exported_config.json';
 import { useMemo } from 'react';
 
@@ -64,7 +64,7 @@ Preload placement decisions during initialization to eliminate loading flicker:
 Access the SDK instance and provider state:
 
 ```tsx
-import { useRevTurbine } from '@revt-eng/sdk';
+import { useRevTurbine } from '@revturbine/sdk';
 
 function StatusBar() {
   const { sdk, isReady, error, setContext } = useRevTurbine();
@@ -90,7 +90,7 @@ function StatusBar() {
 Resolve a placement for a surface slot:
 
 ```tsx
-import { usePlacement } from '@revt-eng/sdk';
+import { usePlacement } from '@revturbine/sdk';
 
 function UpgradeBanner() {
   const {
@@ -148,7 +148,7 @@ function UpgradeBanner() {
 Check whether a user has access to a feature:
 
 ```tsx
-import { useEntitlement } from '@revt-eng/sdk';
+import { useEntitlement } from '@revturbine/sdk';
 
 function ExportButton() {
   const { allowed, denied, gatedPlacement, recheck } = useEntitlement({
@@ -191,7 +191,7 @@ function ExportButton() {
 Get current usage balances:
 
 ```tsx
-import { useUsageSnapshot } from '@revt-eng/sdk';
+import { useUsageSnapshot } from '@revturbine/sdk';
 
 function UsagePanel() {
   const { usage, refresh } = useUsageSnapshot();
@@ -210,7 +210,7 @@ function UsagePanel() {
 Access the resolved theme:
 
 ```tsx
-import { useRevTurbineTheme } from '@revt-eng/sdk';
+import { useRevTurbineTheme } from '@revturbine/sdk';
 
 function ThemedCard({ children }) {
   const theme = useRevTurbineTheme();
@@ -232,7 +232,7 @@ function ThemedCard({ children }) {
 For the simplest integration, use `SurfaceSlotComponent` — it resolves the placement and renders the matching built-in slot:
 
 ```tsx
-import { SurfaceSlotComponent } from '@revt-eng/sdk';
+import { SurfaceSlotComponent } from '@revturbine/sdk';
 
 // Banner
 <SurfaceSlotComponent id="hero_banner" surfaceType="banner" />

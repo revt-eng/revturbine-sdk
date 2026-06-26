@@ -28,7 +28,7 @@ An upgrade button in your navigation bar that:
 1. **Install the SDK**
 
    ```bash
-   pnpm add @revt-eng/sdk
+   pnpm add @revturbine/sdk
    ```
 
 2. **Create an ExportedConfig fixture**
@@ -72,7 +72,7 @@ An upgrade button in your navigation bar that:
 
    ```tsx
    // src/App.tsx
-   import { RevTurbineProvider } from '@revt-eng/sdk';
+   import { RevTurbineProvider } from '@revturbine/sdk';
    import exportedConfig from './fixtures/exported_config.json';
 
    export default function App() {
@@ -103,7 +103,7 @@ An upgrade button in your navigation bar that:
 
    ```tsx
    // src/components/NavBar.tsx
-   import { FixedSurfaceSlot } from '@revt-eng/sdk';
+   import { FixedSurfaceSlot } from '@revturbine/sdk';
 
    export function NavBar() {
      return (

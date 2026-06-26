@@ -13,61 +13,43 @@ This guide walks you through installing the SDK, running in **local-only mode**,
 
 - A React 18+ application
 - Node.js 20+
-- A GitHub personal access token with `read:packages` scope (the SDK is published to [GitHub Packages](https://github.com/features/packages))
 
 ## Steps
 
 <Steps>
 
-1. **Configure the GitHub Packages registry**
+1. **Install the SDK**
 
-    `@revt-eng/sdk` is published to GitHub Packages, which requires authentication even for read access. Create or update an `.npmrc` file in your project root:
-
-    ```ini title=".npmrc"
-    @revt-eng:registry=https://npm.pkg.github.com
-    //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
-    ```
-
-    Set `GITHUB_TOKEN` in your environment to a [personal access token](https://github.com/settings/tokens) with `read:packages` scope:
-
-    ```bash
-    export GITHUB_TOKEN=ghp_your_token_here
-    ```
-
-    <Aside type="caution">
-    Never commit your token to source control. Add `.npmrc` to your `.gitignore` if it contains a hardcoded token, or use the environment variable pattern shown above.
-    </Aside>
-
-2. **Install the SDK**
+    `@revturbine/sdk` is published to the public npm registry — no auth, token, or registry configuration needed.
 
     <Tabs>
       <TabItem label="npm">
       ```bash
-      pnpm add @revt-eng/sdk
+      npm install @revturbine/sdk
       ```
       </TabItem>
       <TabItem label="pnpm">
       ```bash
-      pnpm add @revt-eng/sdk
+      pnpm add @revturbine/sdk
       ```
       </TabItem>
       <TabItem label="yarn">
       ```bash
-      yarn add @revt-eng/sdk
+      yarn add @revturbine/sdk
       ```
       </TabItem>
     </Tabs>
 
-3. **Add an exported config**
+2. **Add an exported config**
 
     Export your `exported_config.json` from the RevTurbine dashboard and place it in your `src/` directory.
 
     The exported config contains your plans, entitlements, placements, targeting rules, surface templates, and **UI paths** — everything the SDK needs to run locally.
 
-4. **Wrap your app in `RevTurbineProvider` with local runtime**
+3. **Wrap your app in `RevTurbineProvider` with local runtime**
 
     ```tsx title="src/App.tsx"
-    import { RevTurbineProvider, FixedSurfaceSlot } from '@revt-eng/sdk';
+    import { RevTurbineProvider, FixedSurfaceSlot } from '@revturbine/sdk';
     import exportedConfig from './exported_config.json';
     import { useMemo } from 'react';
 
@@ -107,12 +89,12 @@ This guide walks you through installing the SDK, running in **local-only mode**,
     With `localRuntime`, the SDK makes **zero network calls**. All decisioning happens client-side using the exported config. No API keys or backend needed.
     </Aside>
 
-5. **Add a placement slot**
+4. **Add a placement slot**
 
     Drop a `FixedSurfaceSlot` where you want a placement to appear:
 
     ```tsx title="src/components/Dashboard.tsx"
-    import { FixedSurfaceSlot } from '@revt-eng/sdk';
+    import { FixedSurfaceSlot } from '@revturbine/sdk';
 
     function Dashboard() {
       return (
@@ -131,7 +113,7 @@ This guide walks you through installing the SDK, running in **local-only mode**,
     }
     ```
 
-6. **Verify it works**
+5. **Verify it works**
 
     Start your dev server. The SDK evaluates targeting rules from the exported config and renders the matching placement for each slot. If no placement matches the current user context, the component renders nothing — that's the additive principle at work.
 

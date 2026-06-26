@@ -17,7 +17,7 @@ A video export button that:
 
 ## Prerequisites
 
-- A React 18+ application with `@revt-eng/sdk` installed
+- A React 18+ application with `@revturbine/sdk` installed
 - A `RevTurbineProvider` set up (see [Quickstart](/getting-started/quickstart/))
 
 ## Steps
@@ -71,7 +71,7 @@ A video export button that:
 
    ```tsx
    // src/components/ExportPanel.tsx
-   import { AccessGateSurfaceSlot } from '@revt-eng/sdk';
+   import { AccessGateSurfaceSlot } from '@revturbine/sdk';
 
    function ExportControls() {
      return (
@@ -157,7 +157,7 @@ The gate check happens instantly in `local_only` mode using the ExportedConfig.
 For more control, use the `useEntitlement` hook directly:
 
 ```tsx
-import { useEntitlement, usePlacement } from '@revt-eng/sdk';
+import { useEntitlement, usePlacement } from '@revturbine/sdk';
 
 function ExportPanel() {
   const { allowed, denied } = useEntitlement({

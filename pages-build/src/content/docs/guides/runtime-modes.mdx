@@ -32,7 +32,7 @@ The SDK supports three runtime modes. **Start with `local_only`** to get up and 
 <TabItem label="Local-only (start here)">
 
 ```ts
-import { initRevTurbine, createLocalRuntimeConfig } from '@revt-eng/sdk';
+import { initRevTurbine, createLocalRuntimeConfig } from '@revturbine/sdk';
 import exportedConfig from './exported_config.json';
 
 const sdk = initRevTurbine(
@@ -57,7 +57,7 @@ In `local_only` mode the SDK evaluates all targeting rules, entitlements, and pl
 <TabItem label="Server runtime">
 
 ```ts
-import { initRevTurbine, createServerRuntimeConfig } from '@revt-eng/sdk';
+import { initRevTurbine, createServerRuntimeConfig } from '@revturbine/sdk';
 
 const sdk = initRevTurbine(
   createServerRuntimeConfig({
@@ -73,7 +73,7 @@ const sdk = initRevTurbine(
 <TabItem label="Custom endpoints">
 
 ```ts
-import { initRevTurbine, createCustomEndpointRuntimeConfig } from '@revt-eng/sdk';
+import { initRevTurbine, createCustomEndpointRuntimeConfig } from '@revturbine/sdk';
 
 const sdk = initRevTurbine(
   createCustomEndpointRuntimeConfig({
@@ -142,7 +142,7 @@ Provider fallbacks are orthogonal to runtime mode. You can configure them in any
 ### Server Runtime with Fallback
 
 ```ts
-import { initRevTurbine, createServerRuntimeConfig } from '@revt-eng/sdk';
+import { initRevTurbine, createServerRuntimeConfig } from '@revturbine/sdk';
 
 const sdk = initRevTurbine({
   ...createServerRuntimeConfig({

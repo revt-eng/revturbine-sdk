@@ -9,7 +9,7 @@ sidebar:
 
 ```text
 sdk/
-├── index.ts                  # Barrel export (entry point for @revt-eng/sdk)
+├── index.ts                  # Barrel export (entry point for @revturbine/sdk)
 ├── customer-side.ts          # Core SDK class — identity, placements, entitlements, events
 ├── generated.ts              # Re-exports types from @revt-eng/schema (DO NOT EDIT)
 ├── react/                    # React integration layer

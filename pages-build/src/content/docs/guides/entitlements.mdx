@@ -24,7 +24,7 @@ Entitlements define what users can do based on their plan. The SDK evaluates ent
 ### React Hook
 
 ```tsx
-import { useEntitlement } from '@revt-eng/sdk';
+import { useEntitlement } from '@revturbine/sdk';
 
 function ExportButton() {
   const { allowed, denied, isLoading } = useEntitlement({
@@ -116,7 +116,7 @@ sdk.updateUsage({
 ### Reading Usage
 
 ```tsx
-import { useUsageSnapshot } from '@revt-eng/sdk';
+import { useUsageSnapshot } from '@revturbine/sdk';
 
 function UsagePanel() {
   const { usage, refresh } = useUsageSnapshot();

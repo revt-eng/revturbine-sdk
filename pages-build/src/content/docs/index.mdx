@@ -1,36 +1,27 @@
 ---
-title: RevTurbine SDK
-description: Placement decisioning, entitlement checks, and usage tracking for web applications.
-template: splash
-hero:
-  title: RevTurbine SDK
-  tagline: Web SaaS monetization in a single SDK. Placement decisioning, entitlements, and conversion experiments — without a code deploy for every change.
-  actions:
-    - text: Quickstart
-      link: /getting-started/quickstart/
-      icon: rocket
-      variant: primary
-    - text: API Reference
-      link: /api/
-      variant: secondary
-
+title: Getting Started
+description: Placement decisioning, entitlement checks, and usage tracking for web applications — render your first placement in under 5 minutes, no backend required.
 ---
 
 import { Steps, Tabs, TabItem, Card, CardGrid, Aside } from '@astrojs/starlight/components';
+
+RevTurbine is web SaaS monetization in a single SDK: placement decisioning, entitlements, and conversion experiments — without a code deploy for every change. It's **additive** — if RevTurbine is disconnected, misconfigured, or every placement is paused, your product keeps working and slots simply render nothing.
+
+This page gets you from zero to a rendered placement in local mode. For the detailed walkthrough see the [Quickstart](/getting-started/quickstart/); to pick a framework or server integration, jump to [Choose your integration path](#choose-your-integration-path).
 
 ## Why RevTurbine
 
 <CardGrid>
   <Card title="Decisioning, not just rendering">
-    RevTurbine optimizes for your revenue outcomes and a great end-user UI. RevTurbine decides — caps, cooldowns, eligibility, priority across competing placements, and ML-scored propensity for conversion, expansion, and retention nudges. One `getPlacement()` call returns the winner. No client-side orchestration, no homegrown segment logic.
+    RevTurbine optimizes for your revenue outcomes and a great end-user UI. It decides — caps, cooldowns, eligibility, priority across competing placements, and ML-scored propensity for conversion, expansion, and retention nudges. One `getPlacement()` call returns the winner. No client-side orchestration, no homegrown segment logic.
   </Card>
 
   <Card title="Entitlements and placements in one engine, linked to billing">
-    Most web SaaS apps end up with three disconnected systems: entitlement access control, upgrade UX, and a billing provider. `getPlacement()` surfaces usage warnings/limits, trial nudges and other lifecycle retention nudges linked to billing state. For gated features, RevTurbine pairs `checkEntitlement()` to confirm/deny entitlement access, e.g. gate the feature with `getPlacement()` to surface the customer and feature-specific gate to convert the upgrade. Like RevenueCat for SaaS.
+    Most web SaaS apps end up with three disconnected systems: entitlement access control, upgrade UX, and a billing provider. `getPlacement()` surfaces usage warnings, trial nudges, and other lifecycle prompts tied to billing state; `checkEntitlement()` confirms or denies feature access. Pair them to gate a feature *and* surface the customer-specific upgrade prompt that converts it. Like RevenueCat for SaaS.
   </Card>
 
-  <Card title="PM or marketer-controlled, dev-decoupled">
-    Drop a slot once. Your PM, growth team, marketing team or CRO consultant changes content, targeting, and CTAs in the studio — no engineering tickets, no deploys. UI Path resolvers keep the navigation contract in your code; everything else iterates without you.
+  <Card title="PM- and marketer-controlled, dev-decoupled">
+    Drop a slot once. Your PM, growth, marketing, or CRO team changes content, targeting, and CTAs in the studio — no engineering tickets, no deploys. UI path resolvers keep the navigation contract in your code; everything else iterates without you.
   </Card>
 </CardGrid>
 
@@ -40,57 +31,46 @@ import { Steps, Tabs, TabItem, Card, CardGrid, Aside } from '@astrojs/starlight/
 |---|---|---|
 | Show an upgrade banner to free users on day 7 | Cron + segment query + cap tracking + cooldown logic + content store | One placement in the studio |
 | Block a feature with a contextual upgrade prompt | Custom gating + upgrade modal + plan lookup + Stripe redirect | `checkEntitlement()` + `getPlacement()` |
-| Test three CTA variants for the same banner | Frontend deploy per change + custom analytics pipeline | Variants in the studio, RT picks the winner |
-| Show a trial-ending nudge three days out | Email infrastructure + in-app toast logic + dedupe | One trial placement, RT routes to the surface |
+| Test three CTA variants for the same banner | Frontend deploy per change + custom analytics pipeline | Variants in the studio; RT picks the winner |
+| Show a trial-ending nudge three days out | Email infra + in-app toast logic + dedupe | One trial placement; RT routes it to the surface |
 | Gate a feature by plan tier, not just plan ID | Hard-coded plan checks, refactored every plan rename | `checkEntitlement(handle, { requiredTier })` |
 
-## Design Principle: Additive Only
+## Quickstart — local mode, no backend
 
-RevTurbine is **additive** — it enhances your app but is never required for baseline UX. If RevTurbine is disconnected, misconfigured, or if all placements are paused, your product continues to work normally. Surface slots return "nothing to show" by default; your app renders its standard UI.
-
-## Try It — Local Mode in 4 Steps
-
-The SDK runs entirely client-side in `local_only` mode. No backend, no API keys, no network calls. Ship an `exported_config.json` with your app and everything works offline.
+The SDK runs entirely client-side in `local_only` mode: ship an `exported_config.json` with your app and every decision happens offline — no API keys, no network calls.
 
 <Steps>
 
-1. **Configure registry & install**
+1. **Install the SDK**
 
-    The SDK is published to GitHub Packages. Add an `.npmrc` to your project root:
-
-    ```ini title=".npmrc"
-    @revt-eng:registry=https://npm.pkg.github.com
-    //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
-    ```
-
-    Then install:
+    `@revturbine/sdk` is published to the public npm registry — no auth token or registry configuration needed.
 
     <Tabs>
       <TabItem label="npm">
       ```bash
-      pnpm add @revt-eng/sdk
+      npm install @revturbine/sdk
       ```
       </TabItem>
       <TabItem label="pnpm">
       ```bash
-      pnpm add @revt-eng/sdk
+      pnpm add @revturbine/sdk
       ```
       </TabItem>
       <TabItem label="yarn">
       ```bash
-      yarn add @revt-eng/sdk
+      yarn add @revturbine/sdk
       ```
       </TabItem>
     </Tabs>
 
-    <Aside type="caution">
-    `GITHUB_TOKEN` must be a [personal access token](https://github.com/settings/tokens) with `read:packages` scope. Never commit it to source control.
-    </Aside>
+2. **Add an exported config**
 
-2. **Wrap your app with local runtime**
+    Export `exported_config.json` from the RevTurbine studio and place it in your `src/` directory. It contains your plans, entitlements, placements, targeting rules, surface templates, and **UI paths** — everything the SDK needs to run locally.
+
+3. **Wrap your app in `RevTurbineProvider`**
 
     ```tsx title="src/App.tsx"
-    import { RevTurbineProvider } from '@revt-eng/sdk';
+    import { RevTurbineProvider } from '@revturbine/sdk';
     import exportedConfig from './exported_config.json';
     import { useMemo } from 'react';
 
@@ -103,7 +83,7 @@ The SDK runs entirely client-side in `local_only` mode. No backend, no API keys,
         },
         uiPathResolvers: {
           navigate_to_plans: () => { window.location.href = '/pricing'; },
-          open_checkout_modal: (ctx) => { console.log('Checkout:', ctx.plan_handle); },
+          open_checkout_modal: (ctx) => { console.log('Checkout for plan:', ctx.plan_handle); },
           book_demo: (ctx) => { window.open(ctx.url ?? '/sales/demo', '_blank'); },
           custom_url: (ctx) => { if (ctx.url) window.location.href = ctx.url; },
         },
@@ -118,36 +98,38 @@ The SDK runs entirely client-side in `local_only` mode. No backend, no API keys,
     ```
 
     <Aside type="tip">
-    The `exported_config.json` contains your plans, entitlements, placements, targeting rules, and **UI paths**. Export it from the RevTurbine dashboard.
+    **UI path resolvers** connect placement CTAs to your app's navigation. When a user clicks "Upgrade Now" inside a placement, the SDK invokes *your* resolver for that `action_type` — so you keep full control of checkout flows, routing, and modals. See [What are UI paths?](/getting-started/quickstart/#what-are-ui-paths) for the full list.
     </Aside>
-
-3. **Wire up UI path resolvers**
-
-    **UI paths** connect placement CTAs to your app's navigation. When a user clicks "Upgrade Now" inside a placement, the SDK calls your resolver for that `action_type` — giving you full control over checkout flows, routing, and modals. See [What Are UI Paths?](/getting-started/quickstart/#what-are-ui-paths) for the full list of action types.
 
 4. **Drop in a placement slot**
 
     ```tsx title="src/components/Dashboard.tsx"
-    import { FixedSurfaceSlot } from '@revt-eng/sdk';
+    import { FixedSurfaceSlot } from '@revturbine/sdk';
 
     function Dashboard() {
       return (
         <div>
           <h1>Dashboard</h1>
+
+          {/* RevTurbine renders an upgrade banner here — or nothing */}
           <FixedSurfaceSlot
             id="dashboard_top_banner"
             surfaceTemplateIds={["banner_placement"]}
           />
+
+          {/* Rest of your dashboard */}
         </div>
       );
     }
     ```
 
-    The SDK evaluates targeting rules locally and renders the matching placement — or nothing if no placement applies. **Your app always works**, with or without RevTurbine.
+5. **Run it**
+
+    Start your dev server. The SDK evaluates targeting rules from the exported config and renders the matching placement for each slot. If no placement matches the current user context, the slot renders nothing — the additive principle at work.
 
 </Steps>
 
-## What Can the SDK Do?
+## What the SDK can do
 
 | Capability | Method | Description |
 |---|---|---|
@@ -158,7 +140,7 @@ The SDK runs entirely client-side in `local_only` mode. No backend, no API keys,
 | **Interactions** | `dismiss()` / `snooze()` / `convert()` | CTA lifecycle tracking |
 | **Trial status** | `getTrialStatus()` | Current trial state and countdown |
 
-## Choose Your Integration Path
+## Choose your integration path
 
 <CardGrid>
   <Card title="React (Recommended)" icon="seti:react">
@@ -176,7 +158,7 @@ The SDK runs entirely client-side in `local_only` mode. No backend, no API keys,
   <Card title="Server-Side (Node.js)" icon="seti:typescript">
     Check entitlements and resolve placements server-side for SSR or API-layer enforcement.
 
-    [Server SDK →](/getting-started/installation/#server-side)
+    [Server SDK →](/getting-started/server-side/)
   </Card>
 
   <Card title="Entitlement Gates" icon="approve-check">
@@ -186,15 +168,15 @@ The SDK runs entirely client-side in `local_only` mode. No backend, no API keys,
   </Card>
 </CardGrid>
 
-## Runtime Modes
+## Runtime modes
 
 <CardGrid>
-  <Card title="local_only (Start Here)" icon="laptop">
-    **Zero network dependency.** All config provided at initialization via `exported_config.json`. Ideal for getting started, demos, and offline use.
+  <Card title="local_only (start here)" icon="laptop">
+    **Zero network dependency.** All config is provided at initialization via `exported_config.json`. Ideal for getting started, demos, and offline use.
   </Card>
 
   <Card title="revturbine_server" icon="cloud">
-    Production mode. SDK calls RevTurbine-hosted APIs for live decisioning and A/B testing.
+    Production mode. The SDK calls RevTurbine-hosted APIs for live decisioning and A/B testing.
   </Card>
 
   <Card title="custom_endpoints" icon="setting">
@@ -203,3 +185,11 @@ The SDK runs entirely client-side in `local_only` mode. No backend, no API keys,
 </CardGrid>
 
 [Compare runtime modes →](/guides/runtime-modes/)
+
+## Next steps
+
+- [Quickstart](/getting-started/quickstart/) — the detailed local-mode walkthrough, including every UI path action type
+- [Interactive playground](/playground/) — live, editable SDK scenarios in your browser
+- [Component gallery](/components/) — interactive demos of every built-in slot component
+- [Entitlement gates](/guides/entitlements/) — gate features and enforce usage limits
+- [API reference](/api/) — full TypeDoc reference for all exports

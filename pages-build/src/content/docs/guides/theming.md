@@ -109,7 +109,7 @@ Partial themes are merged with defaults — you only need to specify the tokens 
 ### In React Components
 
 ```tsx
-import { useRevTurbineTheme } from '@revt-eng/sdk';
+import { useRevTurbineTheme } from '@revturbine/sdk';
 
 function ThemedBadge({ label }) {
   const theme = useRevTurbineTheme();
