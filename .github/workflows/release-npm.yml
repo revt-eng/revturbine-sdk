@@ -58,6 +58,14 @@ jobs:
           echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
           echo "Resolved version: ${TAG#v}"
 
+      - name: Install root deps (hoists @revt-eng/* so ../server-node resolves them)
+        # tsup bundles web-sdk's headless entry, which imports ../server-node, which
+        # imports @revt-eng/core — resolved by walking up to the repo-root
+        # node_modules. Without this root install those imports fail to resolve.
+        run: pnpm install --no-frozen-lockfile --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Install web-sdk build deps (@revt-eng/* from GitHub Packages)
         working-directory: web-sdk
         run: pnpm install --no-frozen-lockfile --ignore-scripts
