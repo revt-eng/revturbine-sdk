@@ -230,6 +230,20 @@ export class RevTurbineServer {
   }
 
   /**
+   * Check whether a user can do something — the advertised `can` alias of
+   * {@link checkEntitlement}. Declared for the `server` surface in the scaffold
+   * SDK function-surface manifest (`@revt-eng/core` `SDK_FUNCTION_SURFACE`), so
+   * the hero-API verb is consistent across the web and server SDKs.
+   */
+  can(
+    userId: string,
+    handle: string,
+    context?: { used?: number; balance?: number; requiredTier?: string },
+  ): Promise<ServerEvaluationPayloadEntitlementsValue> {
+    return this.checkEntitlement(userId, handle, context);
+  }
+
+  /**
    * Fetch trial status for a user.
    */
   async getTrialStatus(userId: string): Promise<ServerEvaluationPayloadTrialStatus> {

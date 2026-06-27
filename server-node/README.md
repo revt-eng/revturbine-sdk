@@ -44,7 +44,4 @@ All payload types are re-exported from `@revt-eng/schema`:
 
 ## See Also
 
-- [server-csharp/](../server-csharp/) — C# implementation
-- [server-java/](../server-java/) — Java implementation
 - [server-python/](../server-python/) — Python implementation
-- [server-rust/](../server-rust/) — Rust implementation

@@ -191,6 +191,40 @@ class RevTurbineServer:
                 reason="network_error",
             )
 
+    def can(
+        self,
+        user_id: str,
+        handle: str,
+        *,
+        used: Optional[float] = None,
+        balance: Optional[float] = None,
+        required_tier: Optional[str] = None,
+    ) -> ServerEvaluationPayloadEntitlementsValue:
+        """Check whether a user can do something — the advertised ``can`` alias
+        of :meth:`check_entitlement`. Declared for the ``server`` surface in the
+        scaffold SDK function-surface manifest, so the hero-API verb is
+        consistent across the web and server SDKs."""
+        return self.check_entitlement(
+            user_id,
+            handle,
+            used=used,
+            balance=balance,
+            required_tier=required_tier,
+        )
+
+    def get_placement(
+        self,
+        user_id: str,
+        placement: PlacementRequest,
+        traits: Optional[Dict[str, Any]] = None,
+    ) -> ServerEvaluationPayloadDecisionsItem:
+        """Resolve a single placement decision for a user. Mirrors the
+        server-node ``getPlacement`` (declared for the ``server`` surface in the
+        scaffold SDK function-surface manifest) so the two server ports expose
+        the same single-placement convenience; behaviour is identical to one
+        placement passed to :meth:`evaluate`."""
+        return self._evaluate_single_placement(_request_id(), user_id, placement, traits)
+
     def get_trial_status(self, user_id: str) -> ServerEvaluationPayloadTrialStatus:
         """Fetch trial status for a user."""
         return self._fetch_trial_status(_request_id(), user_id)

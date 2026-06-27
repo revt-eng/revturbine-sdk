@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.83/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.84/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -1839,6 +1839,26 @@ class RuntimePromotionSnapshot(BaseModel):
     status: str | None = None
 
 
+class SdkConfigShape(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    plans: conint(ge=0, le=9007199254740991)
+    entitlements: conint(ge=0, le=9007199254740991)
+    entitlement_rules: conint(ge=0, le=9007199254740991)
+    segments: conint(ge=0, le=9007199254740991)
+    placements: conint(ge=0, le=9007199254740991)
+    placement_payloads: conint(ge=0, le=9007199254740991)
+    content_ui_paths: conint(ge=0, le=9007199254740991)
+    surface_templates: conint(ge=0, le=9007199254740991)
+
+
+class SdkMetaEventType(Enum):
+    sdk_init = "sdk_init"
+    sdk_error = "sdk_error"
+    sdk_validation_warning = "sdk_validation_warning"
+
+
 class SeatType(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -3193,6 +3213,29 @@ class ReverseTrialSettings(BaseModel):
     tenant_id: constr(min_length=1)
     trial_limit_policy: TrialLimitPolicy
     eligibility_scope: TrialEligibilityScope
+
+
+class SdkMetaEvent(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    event_type: SdkMetaEventType
+    occurred_at: AwareDatetime
+    request_id: constr(min_length=1) | None = None
+    config_hash_id: constr(min_length=1, max_length=64) | None = None
+    sdk_version: constr(min_length=1, max_length=64) | None = None
+    runtime_mode: constr(min_length=1, max_length=64) | None = None
+    schema_version: constr(min_length=1, max_length=64) | None = None
+    bundle_version: constr(min_length=1, max_length=64) | None = None
+    config_shape: SdkConfigShape | None = None
+    message: constr(max_length=500) | None = None
+
+
+class SdkMetaIngestBatch(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    events: list[SdkMetaEvent] = Field(..., max_length=10, min_length=1)
 
 
 class ServerEvaluationPayloadDecisionsItem(BaseModel):
