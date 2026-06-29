@@ -1,4 +1,4 @@
-import type { ExportedConfig } from '@revt-eng/schema';
+import type { RevTurbineConfig } from '@revt-eng/schema';
 import {
   REVERSE_TRIAL_PROMPT_DAY,
   trialDaysRemaining,
@@ -36,7 +36,7 @@ export interface ActiveNudge {
  * crossed tier wins); the click-driven feature-gate modals are handled
  * separately (see {@link gatePlacementForHandle}).
  */
-export function activeNudges(config: ExportedConfig, state: DemoState): ActiveNudge[] {
+export function activeNudges(config: RevTurbineConfig, state: DemoState): ActiveNudge[] {
   const out: ActiveNudge[] = [];
   const onFree = state.planHandle === 'free';
 
@@ -165,7 +165,7 @@ export function interpolate(text: string, tokens: Record<string, string>): strin
  * the bundled config (which it owns) to render the modal as authored.
  */
 export function authoredSecondary(
-  config: ExportedConfig,
+  config: RevTurbineConfig,
   placementId: string,
 ): { body: string; ctaLabel: string } {
   const surface = (config.placements ?? []).find((p) => p.id === placementId)?.payloads?.[0]?.surfaces?.[0];

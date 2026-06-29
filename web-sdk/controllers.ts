@@ -676,7 +676,7 @@ export class SdkSession {
  * It handles:
  * 1. SDK initialization via `initRevTurbine()`
  * 2. User identification (if `options.user.id` is provided)
- * 3. Theme resolution (from ExportedConfig or API)
+ * 3. Theme resolution (from RevTurbineConfig or API)
  * 4. Placement bootstrapping (preloading decisions)
  *
  * The returned {@link SdkSession} exposes the full imperative API:

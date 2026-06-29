@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ExportedConfigSchema } from '@revt-eng/schema';
+import { RevTurbineConfigSchema } from '@revt-eng/schema';
 import rawConfig from '../config/prism-export-config.json';
 import { traceFor } from './capability-trace';
 
-const PRISM_CONFIG = ExportedConfigSchema.parse(rawConfig);
+const PRISM_CONFIG = RevTurbineConfigSchema.parse(rawConfig);
 
 /**
  * Plan 81 TASK-7 / AC-7: every placement the playground can render must carry a

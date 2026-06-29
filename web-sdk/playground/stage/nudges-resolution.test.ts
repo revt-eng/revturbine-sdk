@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ExportedConfigSchema } from '@revt-eng/schema';
+import { RevTurbineConfigSchema } from '@revt-eng/schema';
 import { RevTurbineCustomerSdk, createLocalRuntimeConfig } from '../../index';
 import { InMemoryStorage, type RevTurbineStorage } from '../../storage';
 import rawConfig from '../config/prism-export-config.json';
@@ -14,7 +14,7 @@ import { toTrialStatus, toUserContext } from '../state/to-user-context';
  * visible decision with the bundled copy — the assumption the Nudges component
  * depends on and that can't be eyeballed in a headless test run.
  */
-const PRISM_CONFIG = ExportedConfigSchema.parse(rawConfig);
+const PRISM_CONFIG = RevTurbineConfigSchema.parse(rawConfig);
 
 /** Per-mount store options. The playground injects a fresh `InMemoryStorage`
  * per mount so a stale persisted trialStatus can't override initialData. */

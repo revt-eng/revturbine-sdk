@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ExportedConfigSchema } from '@revt-eng/schema';
+import { RevTurbineConfigSchema } from '@revt-eng/schema';
 import rawConfig from '../config/prism-export-config.json';
 import { overagePriceFor, recommendedPlanName } from './derived';
 
-const PRISM_CONFIG = ExportedConfigSchema.parse(rawConfig);
+const PRISM_CONFIG = RevTurbineConfigSchema.parse(rawConfig);
 
 /** Plan 84 TASK-4/5: the price_per_unit overage helper + plan-recommendation helper. */
 describe('overagePriceFor (price_per_unit)', () => {

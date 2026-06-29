@@ -7,6 +7,6 @@
 export { evaluateSegments } from '@revt-eng/core';
 export type { Trait } from '@revt-eng/core';
 export type {
-  ExportedConfigSegmentsItem,
-  ExportedConfigSegmentsItemPredicatesItem,
+  RevTurbineConfigSegmentsItem,
+  RevTurbineConfigSegmentsItemPredicatesItem,
 } from '@revt-eng/schema';

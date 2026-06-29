@@ -96,7 +96,7 @@ export type {
 
 // ---- Segment evaluation ----
 export { evaluateSegments } from './evaluation/segments';
-export type { Trait, ExportedConfigSegmentsItem, ExportedConfigSegmentsItemPredicatesItem } from './evaluation/segments';
+export type { Trait, RevTurbineConfigSegmentsItem, RevTurbineConfigSegmentsItemPredicatesItem } from './evaluation/segments';
 
 // ---- Rules evaluation ----
 export {

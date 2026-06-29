@@ -72,3 +72,11 @@ export {
 // the canonical name is still exported via `export * from './placements'` above.
 export { SurfaceSlotComponent as RTSlot } from './placements/SurfaceSlotComponent';
 export type { SurfaceSlotComponentProps as RTSlotProps } from './placements/SurfaceSlotComponent';
+
+// Backwards-compatible alias (plan 104). `ExportedConfig` was renamed to
+// `RevTurbineConfig` in @revt-eng/schema 0.1.88. Existing SDK consumers
+// (e.g. ThetaEdge) import the old name, so it is retained as a deprecated
+// alias rather than removed; drop in a future major once consumers migrate.
+import type { RevTurbineConfig } from '@revt-eng/schema';
+/** @deprecated Renamed to `RevTurbineConfig` (@revt-eng/schema 0.1.88). Import `RevTurbineConfig` instead. */
+export type ExportedConfig = RevTurbineConfig;

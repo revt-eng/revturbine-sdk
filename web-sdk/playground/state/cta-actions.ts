@@ -1,4 +1,4 @@
-import type { ExportedConfig } from '@revt-eng/schema';
+import type { RevTurbineConfig } from '@revt-eng/schema';
 import type { BillingPeriod, PrismPlanHandle } from './demo-state';
 
 /**
@@ -48,7 +48,7 @@ export interface CtaPath {
 export const CREDIT_PACK_SIZE = 20;
 
 /** Read a placement's authored CTA (primary `index` 0, secondary 1) from the config. */
-export function authoredCta(config: ExportedConfig, placementId: string, index = 0): CtaPath | null {
+export function authoredCta(config: RevTurbineConfig, placementId: string, index = 0): CtaPath | null {
   const cta = (config.placements ?? []).find((p) => p.id === placementId)?.payloads?.[0]?.surfaces?.[0]?.ctas?.[index];
   if (!cta) return null;
   return { type: cta.path, params: cta.config ?? {} };

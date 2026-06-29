@@ -10,10 +10,10 @@ import type {
   PlacementDecisionOutput,
   EntitlementStatus as SchemaEntitlementStatus,
   EntitlementCheckResult,
-  ExportedConfig,
-  ExportedConfigPlacementItem,
-  ExportedConfigSegmentsItem,
-  ExportedConfigSegmentsItemPredicatesItem,
+  RevTurbineConfig,
+  RevTurbineConfigPlacementItem,
+  RevTurbineConfigSegmentsItem,
+  RevTurbineConfigSegmentsItemPredicatesItem,
   ContentUiPath,
   UserContext,
   UserTrialStatus,
@@ -163,7 +163,7 @@ export type RevTurbineLocalOnlyMinimalInitOptions = Omit<
   mode?: RevTurbineSdkMode;
   runtimeMode?: 'local_only';
   localRuntime: RevTurbineLocalRuntimeOptions & {
-    exportedConfig: ExportedConfig;
+    exportedConfig: RevTurbineConfig;
   };
 };
 
@@ -341,8 +341,8 @@ export type RevTurbinePersonalizationTokens = Record<string, string | number>;
  * Snapshot of the active targeting context used by placement eligibility.
  */
 export interface RevTurbineTargeting extends UserTargetingContext {
-  /** Segment definitions configured in the active ExportedConfig. */
-  configuredSegments: ExportedConfigSegmentsItem[];
+  /** Segment definitions configured in the active RevTurbineConfig. */
+  configuredSegments: RevTurbineConfigSegmentsItem[];
   /** Predicate fields discovered from configured segments (targeting dimensions). */
   configuredTraitFields: string[];
 }
@@ -525,16 +525,16 @@ export interface RevTurbineUiPathResolverValidationOptions {
 }
 
 /**
- * Provider abstraction for ExportedConfig access inside the SDK.
+ * Provider abstraction for RevTurbineConfig access inside the SDK.
  *
  * Local mode typically uses a static provider backed by `localRuntime.exportedConfig`.
  * Other modes can provide custom or REST-backed resolvers via `refresh()`.
  */
 export interface RevTurbineConfigProvider {
-  /** Return the latest available ExportedConfig snapshot. */
-  getExportedConfig(): ExportedConfig | undefined;
+  /** Return the latest available RevTurbineConfig snapshot. */
+  getExportedConfig(): RevTurbineConfig | undefined;
   /** Optionally refresh the snapshot (for example, from a REST API). */
-  refresh?(): Promise<ExportedConfig | undefined>;
+  refresh?(): Promise<RevTurbineConfig | undefined>;
 }
 
 /**
@@ -605,7 +605,7 @@ export interface RevTurbineInitOptions {
   runtimeMode?: RevTurbineRuntimeMode;
   /** Optional endpoint overrides used in `custom_endpoints` mode. */
   endpointOverrides?: Partial<RevTurbineEndpointOverrides>;
-  /** Optional provider for ExportedConfig-backed data (plans, segments, rules, ui paths). */
+  /** Optional provider for RevTurbineConfig-backed data (plans, segments, rules, ui paths). */
   configProvider?: RevTurbineConfigProvider;
   /** Local-only runtime configuration used in `local_only` mode. */
   localRuntime?: RevTurbineLocalRuntimeOptions;
@@ -686,18 +686,18 @@ export interface RevTurbineLocalRuntimeResolvers {
   checkEntitlement?: (handle: string, context?: RevTurbineEntitlementContext) => EntitlementResult | Promise<EntitlementResult>;
   fetchUserContext?: (userId: string) => UserTargetingContext | Promise<UserTargetingContext>;
   getTrialStatus?: () => RevTurbineTrialContext | Promise<RevTurbineTrialContext>;
-  /** Optional ExportedConfig resolver for provider-backed config access in any mode. */
-  resolveExportedConfig?: () => ExportedConfig | Promise<ExportedConfig>;
+  /** Optional RevTurbineConfig resolver for provider-backed config access in any mode. */
+  resolveExportedConfig?: () => RevTurbineConfig | Promise<RevTurbineConfig>;
 }
 
 export interface RevTurbineLocalRuntimeOptions {
   /**
-   * Full ExportedConfig snapshot loaded at initialization for local-only execution.
+   * Full RevTurbineConfig snapshot loaded at initialization for local-only execution.
    * Contains plans, entitlements, entitlement rules, segments, ui paths,
    * surface templates, trial, and theme. Providers and resolvers can read
    * this to hydrate domain state without a server.
    */
-  exportedConfig?: ExportedConfig;
+  exportedConfig?: RevTurbineConfig;
   /** Optional static placements dataset used by the SDK's built-in local resolver. */
   placements?: LocalPlacementDataset;
   /**
@@ -734,7 +734,7 @@ export type RevTurbineInitOptionsStrict =
   | (RevTurbineBaseInitWithoutRuntimeSpecifics & {
       runtimeMode: 'local_only';
       localRuntime: RevTurbineLocalRuntimeOptions & {
-        exportedConfig: ExportedConfig;
+        exportedConfig: RevTurbineConfig;
       };
       uiPathResolvers: RevTurbineUiPathResolverMap;
     })
@@ -784,7 +784,7 @@ export function createCustomEndpointRuntimeConfig(
 export function createLocalRuntimeConfig<const TUiPaths extends readonly unknown[]>(
   options: RevTurbineInitBaseOptions & {
     localRuntime: RevTurbineLocalRuntimeOptions & {
-      exportedConfig: Omit<ExportedConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths };
+      exportedConfig: Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths };
     };
     uiPathResolvers: RevTurbineRequiredUiPathResolvers<TUiPaths> & RevTurbineUiPathResolverMap;
   },
@@ -824,7 +824,7 @@ export function createLocalRuntimeConfig(
 export function createStrictLocalRuntimeConfig<const TUiPaths extends readonly unknown[]>(
   options: RevTurbineInitBaseOptions & {
     localRuntime: RevTurbineLocalRuntimeOptions & {
-      exportedConfig: Omit<ExportedConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths };
+      exportedConfig: Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths };
     };
     uiPathResolvers: RevTurbineRequiredUiPathResolvers<TUiPaths> & RevTurbineUiPathResolverMap;
   },
@@ -1312,7 +1312,7 @@ function inferUserContext(): RevTurbineUserContext {
 }
 
 function evaluateSegmentPredicateForDiagnostics(
-  predicate: ExportedConfigSegmentsItemPredicatesItem,
+  predicate: RevTurbineConfigSegmentsItemPredicatesItem,
   traits: SdkTraits,
 ): RevTurbineSegmentPredicateEvaluation {
   // Narrow SdkTraits (Record<string, JsonValue>) to Trait (Record<string, string|number|boolean>)
@@ -1353,34 +1353,34 @@ function matchesEntitlementRuleSegmentsForDiagnostics(
 }
 
 class StaticExportedConfigProvider implements RevTurbineConfigProvider {
-  private readonly exportedConfig?: ExportedConfig;
+  private readonly exportedConfig?: RevTurbineConfig;
 
-  constructor(exportedConfig?: ExportedConfig) {
+  constructor(exportedConfig?: RevTurbineConfig) {
     this.exportedConfig = exportedConfig;
   }
 
-  getExportedConfig(): ExportedConfig | undefined {
+  getExportedConfig(): RevTurbineConfig | undefined {
     return this.exportedConfig;
   }
 }
 
 class ResolverBackedExportedConfigProvider implements RevTurbineConfigProvider {
-  private cached?: ExportedConfig;
-  private readonly resolver: () => ExportedConfig | Promise<ExportedConfig>;
+  private cached?: RevTurbineConfig;
+  private readonly resolver: () => RevTurbineConfig | Promise<RevTurbineConfig>;
 
   constructor(
-    resolver: () => ExportedConfig | Promise<ExportedConfig>,
-    initialConfig?: ExportedConfig,
+    resolver: () => RevTurbineConfig | Promise<RevTurbineConfig>,
+    initialConfig?: RevTurbineConfig,
   ) {
     this.resolver = resolver;
     this.cached = initialConfig;
   }
 
-  getExportedConfig(): ExportedConfig | undefined {
+  getExportedConfig(): RevTurbineConfig | undefined {
     return this.cached;
   }
 
-  async refresh(): Promise<ExportedConfig | undefined> {
+  async refresh(): Promise<RevTurbineConfig | undefined> {
     const next = parseExportedConfigOrThrow(
       await this.resolver(),
       'localRuntime.resolvers.resolveExportedConfig()',
@@ -1462,7 +1462,7 @@ export class RevTurbineCustomerSdk {
   private readonly usageLimitByEntitlement = new Map<string, { limit: number; warningPercent: number }>();
   private readonly usageTokenPrefixByEntitlement = new Map<string, string>();
   private readonly segmentIdsByPredicateField = new Map<string, Set<string>>();
-  private readonly configuredSegmentsById = new Map<string, ExportedConfigSegmentsItem>();
+  private readonly configuredSegmentsById = new Map<string, RevTurbineConfigSegmentsItem>();
   private readonly dirtySegmentIds = new Set<string>();
   private readonly segmentMembershipBySegmentId = new Map<string, boolean>();
   private segmentMembershipUserId?: string;
@@ -1595,7 +1595,7 @@ export class RevTurbineCustomerSdk {
     }
   }
 
-  private getConfiguredExportedConfig(): ExportedConfig | undefined {
+  private getConfiguredExportedConfig(): RevTurbineConfig | undefined {
     return this.configProvider?.getExportedConfig();
   }
 
@@ -2134,7 +2134,7 @@ export class RevTurbineCustomerSdk {
    * either form is matched. The app may set `plan.id` to the handle (`"free"`)
    * or the config id (`"plan_free"`); both resolve to the same plan here.
    */
-  private activePlanIdentifiers(exportedConfig: ExportedConfig): Set<string> {
+  private activePlanIdentifiers(exportedConfig: RevTurbineConfig): Set<string> {
     const raw = (isRecord(this.userContext.plan) && typeof this.userContext.plan.id === 'string')
       ? this.userContext.plan.id
       : (typeof this.userContext.custom?.plan === 'string' ? this.userContext.custom.plan : '');
@@ -2281,7 +2281,7 @@ export class RevTurbineCustomerSdk {
    * is the base; next-tier-up from Free is Pro.
    */
   private deriveRecommendedPlanTokens(
-    exportedConfig: ExportedConfig | undefined,
+    exportedConfig: RevTurbineConfig | undefined,
     recommendation?: { strategy: RecommendationStrategy; planOverride?: string },
   ): { recommended_plan_handle: string; recommended_plan_name: string } {
     const empty = { recommended_plan_handle: '', recommended_plan_name: '' };
@@ -2466,7 +2466,7 @@ export class RevTurbineCustomerSdk {
 
   /**
    * Inline adapter — given a UserTrialStatus + the tenant's
-   * reverse_trial_rules from ExportedConfig, derive the inputs that
+   * reverse_trial_rules from RevTurbineConfig, derive the inputs that
    * close plan 43 TASK-2. Returns undefined fields when the user
    * isn't on an active reverse trial, when no rule matches, or when
    * the rule has no entitlements_during_trial[].
@@ -2479,7 +2479,7 @@ export class RevTurbineCustomerSdk {
    * single configured rule the user can be on per spec §2.4.2.
    */
   private resolveReverseTrialGrants(
-    exportedConfig: ExportedConfig,
+    exportedConfig: RevTurbineConfig,
   ): { trialGrantedEntitlementHandles?: ReadonlySet<string>; effectivePlanHandle?: string } {
     const trial = this.localTrialStatus;
     if (!trial.in_trial || trial.trial_type !== 'reverse') return {};
@@ -2687,7 +2687,7 @@ export class RevTurbineCustomerSdk {
             ? entitlementHandleById.get(entitlementId)
             : undefined;
           // Plan scoping derives from kind:'plan' targets. `plan_ids` was
-          // removed from the canonical ExportedConfig entitlement rule in
+          // removed from the canonical RevTurbineConfig entitlement rule in
           // plan 32 (`targets.min(1)`); plan-kind targets carry the same
           // plan ids. Matches the scaffold evaluators (entitlement-check.ts
           // / rules.ts) so the SDK doesn't drift from the reference.
@@ -2809,7 +2809,7 @@ export class RevTurbineCustomerSdk {
     // 1. Exact match by decision output rule_id (the selected placement).
     // 2. Name-based match (legacy).
     // 3. Template-based match — any placement with a surface template in the slot's accepted list.
-    const candidatePlacements: ExportedConfigPlacementItem[] = [];
+    const candidatePlacements: RevTurbineConfigPlacementItem[] = [];
     const seenPlacementIds = new Set<string>();
 
     if (Array.isArray(exportedConfig?.placements)) {
@@ -4789,10 +4789,10 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
-   * Returns the ExportedConfig snapshot loaded at initialization, if any.
+   * Returns the RevTurbineConfig snapshot loaded at initialization, if any.
    * Available only in `local_only` mode when `exportedConfig` was provided.
    */
-  getExportedConfig(): ExportedConfig | undefined {
+  getExportedConfig(): RevTurbineConfig | undefined {
     return this.getConfiguredExportedConfig();
   }
 

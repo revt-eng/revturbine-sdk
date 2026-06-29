@@ -2,7 +2,7 @@
  * Tests for BrowserRuntime — verifies browser-specific wiring over LocalRuntime.
  */
 import { describe, expect, it, beforeEach, vi } from 'vitest';
-import type { ExportedConfig } from '@revt-eng/schema';
+import type { RevTurbineConfig } from '@revt-eng/schema';
 import { createStaticProviders, InMemoryStorage } from '@revt-eng/core';
 import { BrowserRuntime } from './browser-runtime';
 
@@ -10,7 +10,7 @@ import { BrowserRuntime } from './browser-runtime';
 /*  Fixtures                                                           */
 /* ================================================================== */
 
-function createTestConfig(overrides: Partial<ExportedConfig> = {}): ExportedConfig {
+function createTestConfig(overrides: Partial<RevTurbineConfig> = {}): RevTurbineConfig {
   return {
     version: 'v1-test',
     tenant_id: 'tenant_test',
@@ -64,7 +64,7 @@ function createTestConfig(overrides: Partial<ExportedConfig> = {}): ExportedConf
     ],
     theme: { brand_color: '#4F46E5' },
     ...overrides,
-  } as unknown as ExportedConfig;
+  } as unknown as RevTurbineConfig;
 }
 
 /* ================================================================== */
@@ -72,7 +72,7 @@ function createTestConfig(overrides: Partial<ExportedConfig> = {}): ExportedConf
 /* ================================================================== */
 
 describe('BrowserRuntime', () => {
-  let config: ExportedConfig;
+  let config: RevTurbineConfig;
 
   beforeEach(() => {
     config = createTestConfig();

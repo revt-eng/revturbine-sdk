@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ExportedConfigSchema } from '@revt-eng/schema';
+import { RevTurbineConfigSchema } from '@revt-eng/schema';
 import rawConfig from '../config/prism-export-config.json';
 import { authoredCta, CREDIT_PACK_SIZE, dispatchCta, isPurchaseCta, type DemoActions } from './cta-actions';
 
-const PRISM_CONFIG = ExportedConfigSchema.parse(rawConfig);
+const PRISM_CONFIG = RevTurbineConfigSchema.parse(rawConfig);
 
 function mockActions(): DemoActions & { calls: Record<string, unknown[]> } {
   const calls: Record<string, unknown[]> = {};
