@@ -1,6 +1,7 @@
 import { DomainProviderRegistry } from './providers/registry';
 import type { AnyDomainProvider } from './providers/types';
 import { isServer, isBrowser } from './env';
+import { redactPii, redactIdentityField } from './pii-redact';
 import { evaluateSegments } from './segments';
 import type { RevTurbineStorage } from './storage';
 import { resolvePersistentStorage, resolveSessionStorage } from './storage';
@@ -576,6 +577,21 @@ export interface RevTurbineInitOptions {
    * `'default'` when omitted.
    */
   environmentId?: string;
+  /**
+   * Analytics/clickstream telemetry opt-out.
+   *
+   * Analytics is **on by default** (`true`). Set to `false` to opt out:
+   * the SDK then emits **no** clickstream events to `POST /api/track`
+   * across every path (`capture` / `track` / batched flush / page-unload).
+   * Locally-registered {@link RevTurbineEventConsumer} adapters and
+   * `local_only` runtime state are unaffected — this flag governs only the
+   * RevTurbine ingest network call.
+   *
+   * Note: this opt-out covers the authed clickstream. The separate keyless
+   * anonymous SDK-init beacon has its own opt-out (`anonymousTelemetry`,
+   * tracked in plan 95).
+   */
+  analytics?: boolean;
   /** Base URL of the RevTurbine API Edge. */
   endpoint: string;
   /** SDK integration mode. */
@@ -1406,6 +1422,8 @@ export class RevTurbineCustomerSdk {
   private readonly apiKey: string;
   private readonly ingestPublicKey?: string;
   private readonly environmentId: string;
+  private readonly analyticsEnabled: boolean;
+  private piiRedactionWarned = false;
   private readonly endpoint: string;
   private readonly runtimeMode: RevTurbineRuntimeMode;
   private readonly endpointOverrides: Partial<RevTurbineEndpointOverrides>;
@@ -1462,6 +1480,7 @@ export class RevTurbineCustomerSdk {
     this.apiKey = options.apiKey;
     this.ingestPublicKey = options.ingestPublicKey;
     this.environmentId = options.environmentId?.trim() || 'default';
+    this.analyticsEnabled = options.analytics !== false;
     this.endpoint = options.endpoint.replace(/\/$/, '');
     this.runtimeMode = options.runtimeMode ?? 'revturbine_server';
     this.endpointOverrides = options.endpointOverrides ?? {};
@@ -3170,6 +3189,20 @@ export class RevTurbineCustomerSdk {
     };
   }
 
+  /**
+   * Emit the one-time PII-redaction notice (plan 106 REQ-7). Idempotent per
+   * SDK instance so a noisy event stream never floods the console.
+   */
+  private warnPiiRedactedOnce(): void {
+    if (this.piiRedactionWarned) return;
+    this.piiRedactionWarned = true;
+    console.warn(
+      '[RevTurbine] Detected and redacted PII-shaped values (emails / card numbers) ' +
+        'from event data before sending. Do not put PII in event properties or traits; ' +
+        'this is best-effort redaction, not a guarantee.',
+    );
+  }
+
   private async sendEvents(events: RevTurbineEventEnvelope[]): Promise<void> {
     if (events.length === 0) return;
 
@@ -3181,7 +3214,14 @@ export class RevTurbineCustomerSdk {
       return;
     }
 
+    // Analytics opt-out (plan 106 REQ-8): when disabled, emit NOTHING to
+    // /api/track across every path. Consumer dispatch + local state above
+    // are intentionally unaffected — this flag governs only the RevTurbine
+    // ingest network call.
+    if (!this.analyticsEnabled) return;
+
     const rid = requestId();
+    let valuesRedacted = 0;
     // Map each envelope to the canonical scaffold `TrackEvent`
     // (`@revt-eng/schema`). The SDK has no first-class environment /
     // account concept, so: `environment_id` comes from the init option
@@ -3192,26 +3232,36 @@ export class RevTurbineCustomerSdk {
     // optional `properties` JSON string; `experiment_id`/`variant_key`
     // are lifted out so they survive end-to-end (plan 41 REQ-7).
     const trackEvents: TrackEvent[] = events.map((event) => {
-      const userId = event.user_id || event.anonymous_id;
+      const rawUserId = event.user_id || event.anonymous_id;
+      const rawAccountId = this.userContext.account_id || rawUserId;
+      // Best-effort redaction BEFORE the value leaves the browser (plan 106
+      // REQ-6): scrub obvious PII out of the property bag and hash
+      // email-shaped identity ids. The server-side scrub at /api/track is
+      // the authoritative gate; this is defense-in-depth.
+      const userId = redactIdentityField(rawUserId);
+      const accountId = redactIdentityField(rawAccountId);
+      const redactedProps = redactPii({
+        level: event.level,
+        message: event.message,
+        path: event.path,
+        url: event.url,
+        page_title: event.page_title,
+        session_id: event.session_id,
+        anonymous_id: event.anonymous_id,
+        tags: event.tags,
+        traits: event.identity.traits ?? null,
+        payload: event.properties,
+        source: SDK_EVENT_SOURCE,
+      });
+      valuesRedacted +=
+        redactedProps.redactions + (userId.redacted ? 1 : 0) + (accountId.redacted ? 1 : 0);
       return {
         environment_id: this.environmentId,
-        user_id: userId,
-        account_id: this.userContext.account_id || userId,
+        user_id: userId.value,
+        account_id: accountId.value,
         event_name: normalizeEventType(event.type).slice(0, 120),
         event_ts: event.event_time,
-        properties: JSON.stringify({
-          level: event.level,
-          message: event.message,
-          path: event.path,
-          url: event.url,
-          page_title: event.page_title,
-          session_id: event.session_id,
-          anonymous_id: event.anonymous_id,
-          tags: event.tags,
-          traits: event.identity.traits ?? null,
-          payload: event.properties,
-          source: SDK_EVENT_SOURCE,
-        }),
+        properties: JSON.stringify(redactedProps.value),
         surface_slot_id: pickClickstreamField(event.properties, 'surface_slot_id'),
         placement_id: pickClickstreamField(event.properties, 'placement_id'),
         payload_id: pickClickstreamField(event.properties, 'payload_id'),
@@ -3221,6 +3271,11 @@ export class RevTurbineCustomerSdk {
         tenant_id: event.tenant_id,
       };
     });
+
+    // One-time warning when redaction fired (plan 106 REQ-7): tell the
+    // developer that PII-shaped values were stripped and how to avoid it.
+    // Once per SDK instance — never per event, never when nothing redacted.
+    if (valuesRedacted > 0) this.warnPiiRedactedOnce();
 
     // `/api/track` accepts ONLY a `public` ingest token; the tenant is
     // derived from the verified token, never a header (plan 41 REQ-13),
