@@ -27,6 +27,8 @@ import {
   SurfaceTypeSchema,
   TriggerEventTypeSchema,
 } from '@revt-eng/schema';
+import type { components } from './generated/openapi';
+import { version as SDK_VERSION } from './package.json';
 import type {
   InteractionState,
   PresentationCapState,
@@ -588,10 +590,35 @@ export interface RevTurbineInitOptions {
    * RevTurbine ingest network call.
    *
    * Note: this opt-out covers the authed clickstream. The separate keyless
-   * anonymous SDK-init beacon has its own opt-out (`anonymousTelemetry`,
-   * tracked in plan 95).
+   * anonymous SDK-init beacon has its own opt-out ({@link anonymousTelemetry}).
    */
   analytics?: boolean;
+  /**
+   * Keyless anonymous SDK-init telemetry opt-out (plan 95).
+   *
+   * When **no** {@link ingestPublicKey} is configured, the SDK sends a single
+   * anonymous `sdk_init` beacon to `POST /api/sdk/meta` carrying config-shape
+   * **counts only** (number of plans, entitlements, placements, etc.), the SDK
+   * version, runtime/schema/bundle versions, and a one-way hashed config id —
+   * **never** any user, account, or PII context. It powers RevTurbine's
+   * SDK-adoption metrics for installs that haven't wired an ingest key.
+   *
+   * On by default (`true`). Set to `false` to opt out entirely; the SDK then
+   * sends no keyless telemetry. When active, the SDK logs a one-time info
+   * console notice naming this flag. Has no effect once an `ingestPublicKey`
+   * is present (that path uses the authed clickstream instead), nor in
+   * `local_only` runtime mode.
+   */
+  anonymousTelemetry?: boolean;
+  /**
+   * Client-side clickstream batching policy (plan 95). Events are buffered and
+   * flushed to `POST /api/track` on whichever comes first: the batch reaching
+   * {@link RevTurbineEventBatchingOptions.maxBatchSize}, the
+   * {@link RevTurbineEventBatchingOptions.flushIntervalMs} timer elapsing, or a
+   * page-unload signal (`pagehide` / `visibilitychange: hidden`). Tune for
+   * low-volume sessions that would otherwise strand events.
+   */
+  eventBatching?: RevTurbineEventBatchingOptions;
   /** Base URL of the RevTurbine API Edge. */
   endpoint: string;
   /** SDK integration mode. */
@@ -666,10 +693,27 @@ export interface RevTurbineEndpointOverrides {
   userContext: string;
   trialStatus: string;
   ingestEvents: string;
+  /** Keyless anonymous SDK telemetry endpoint (`POST /api/sdk/meta`). */
+  ingestSdkMeta: string;
   touchpointTransition: string;
   legacyInteractions: string;
   placementTypes: string;
   surfaceSlots: string;
+}
+
+/** Client-side clickstream batching policy (plan 95 TASK-6). */
+export interface RevTurbineEventBatchingOptions {
+  /**
+   * Flush the buffer once this many events are queued. Default `20`.
+   * Clamped to a minimum of `1`.
+   */
+  maxBatchSize?: number;
+  /**
+   * Also flush the buffer on this interval, in milliseconds, so low-volume
+   * sessions don't strand events. Default `5000`. Set to `0` to disable the
+   * timer (size + page-unload flushing still apply).
+   */
+  flushIntervalMs?: number;
 }
 
 export interface RevTurbineLocalRuntimeData {
@@ -1221,9 +1265,20 @@ const DECISION_CACHE_STORAGE_PREFIX = 'revturbine:decision-cache';
 const INTERACTION_STATE_STORAGE_PREFIX = 'revturbine:interaction-state';
 const PRESENTATION_CAPS_STORAGE_PREFIX = 'revturbine:presentation-caps';
 const INGEST_GATEWAY_PATH = '/api/track';
+const SDK_META_GATEWAY_PATH = '/api/sdk/meta';
 const TOUCHPOINT_TRANSITION_PATH = '/api/touchpoints/transition';
 const LEGACY_INTERACTIONS_PATH = '/api/placements/interactions';
 const SDK_EVENT_SOURCE = 'revturbine-web-sdk';
+
+/** Default client-side clickstream batching policy (plan 95 TASK-6). */
+const DEFAULT_EVENT_BATCH_SIZE = 20;
+const DEFAULT_EVENT_FLUSH_INTERVAL_MS = 5_000;
+
+// Keyless anonymous SDK telemetry body shapes — sourced from the generated
+// OpenAPI client (the scaffold contract), never hand-rolled (plan 95 TASK-7).
+type SdkMetaIngestBatchBody = components['schemas']['SdkMetaIngestBatch'];
+type SdkMetaEventBody = components['schemas']['SdkMetaEvent'];
+type SdkConfigShapeBody = components['schemas']['SdkConfigShape'];
 
 interface ValidationIssue {
   code: string;
@@ -1423,6 +1478,12 @@ export class RevTurbineCustomerSdk {
   private readonly ingestPublicKey?: string;
   private readonly environmentId: string;
   private readonly analyticsEnabled: boolean;
+  private readonly anonymousTelemetryEnabled: boolean;
+  private readonly maxBatchSize: number;
+  private readonly flushIntervalMs: number;
+  private flushTimer?: ReturnType<typeof setInterval>;
+  private readonly batchingTeardown: Array<() => void> = [];
+  private anonTelemetryNoticeShown = false;
   private piiRedactionWarned = false;
   private readonly endpoint: string;
   private readonly runtimeMode: RevTurbineRuntimeMode;
@@ -1481,6 +1542,9 @@ export class RevTurbineCustomerSdk {
     this.ingestPublicKey = options.ingestPublicKey;
     this.environmentId = options.environmentId?.trim() || 'default';
     this.analyticsEnabled = options.analytics !== false;
+    this.anonymousTelemetryEnabled = options.anonymousTelemetry !== false;
+    this.maxBatchSize = Math.max(1, options.eventBatching?.maxBatchSize ?? DEFAULT_EVENT_BATCH_SIZE);
+    this.flushIntervalMs = Math.max(0, options.eventBatching?.flushIntervalMs ?? DEFAULT_EVENT_FLUSH_INTERVAL_MS);
     this.endpoint = options.endpoint.replace(/\/$/, '');
     this.runtimeMode = options.runtimeMode ?? 'revturbine_server';
     this.endpointOverrides = options.endpointOverrides ?? {};
@@ -1558,6 +1622,13 @@ export class RevTurbineCustomerSdk {
       source: 'sdk_init',
       placement_behavior_flags: this.placementBehavior as unknown as JsonValue, // sdk-ok: boundary-parse
     });
+
+    // Plan 95 TASK-6: time-interval + page-unload flushing so buffered
+    // clickstream events reach /api/track even in low-volume sessions.
+    this.startEventBatchFlushing();
+    // Plan 95 TASK-7: keyless anonymous adoption beacon — only fires when no
+    // ingest key is configured (see emitSdkInitTelemetry); best-effort.
+    void this.emitSdkInitTelemetry();
   }
 
   private isLocalOnlyMode(): boolean {
@@ -3203,6 +3274,118 @@ export class RevTurbineCustomerSdk {
     );
   }
 
+  // ── Keyless anonymous SDK telemetry (plan 95 TASK-7) ──────────────────────
+  //
+  // When NO ingest key is configured, the SDK still reports a minimal,
+  // anonymous adoption signal to the non-authed /api/sdk/meta endpoint:
+  // config-shape COUNTS only + a one-way hashed config id, never any user
+  // context or PII (REQ-6/REQ-7/REQ-9). On by default, opt out via
+  // `anonymousTelemetry: false` (REQ-8); a one-time console notice names the
+  // flag (REQ-8b).
+
+  /** True when keyless anonymous telemetry should fire (REQ-4 conditions). */
+  private anonymousTelemetryActive(): boolean {
+    return (
+      !this.ingestPublicKey && // keyless only — a keyed install uses /api/track
+      this.anonymousTelemetryEnabled &&
+      !this.isLocalOnlyMode() &&
+      isBrowser()
+    );
+  }
+
+  /** Fire the one anonymous `sdk_init` adoption beacon at startup. */
+  private async emitSdkInitTelemetry(): Promise<void> {
+    if (!this.anonymousTelemetryActive()) return;
+    await this.emitAnonMeta('sdk_init', { config_shape: this.computeConfigShape() });
+  }
+
+  /**
+   * Config-shape COUNTS only (REQ-6) — number of plans/entitlements/rules/etc.
+   * No names, ids, or user context. Returns undefined when no config is loaded.
+   */
+  private computeConfigShape(): SdkConfigShapeBody | undefined {
+    const cfg = this.getConfiguredExportedConfig();
+    if (!cfg) return undefined;
+    const placements = cfg.placements ?? [];
+    const placementPayloads = placements.reduce(
+      (total, placement) => total + (placement.payloads?.length ?? 0),
+      0,
+    );
+    return {
+      plans: cfg.plans?.length ?? 0,
+      entitlements: cfg.entitlements?.length ?? 0,
+      entitlement_rules: cfg.entitlement_rules?.length ?? 0,
+      segments: cfg.segments?.length ?? 0,
+      placements: placements.length,
+      placement_payloads: placementPayloads,
+      content_ui_paths: cfg.content_ui_paths?.length ?? 0,
+      surface_templates: cfg.surface_templates?.length ?? 0,
+    };
+  }
+
+  /**
+   * Build + POST one allowlisted anonymous meta event to /api/sdk/meta.
+   * No auth header (keyless), no tenant in the body (REQ-9), best-effort and
+   * non-throwing. Stamps SDK/schema versions + a one-way hashed config id.
+   */
+  private async emitAnonMeta(
+    eventType: components['schemas']['SdkMetaEventType'],
+    extra: Pick<SdkMetaEventBody, 'config_shape' | 'message'> = {},
+  ): Promise<void> {
+    if (!this.anonymousTelemetryActive()) return;
+
+    this.showAnonTelemetryNoticeOnce();
+
+    // Whole body is best-effort: hashing, serialization, AND delivery must
+    // never throw into the host app (REQ-3/REQ-4).
+    try {
+      const cfg = this.getConfiguredExportedConfig();
+      const bundleVersion = cfg?.version != null ? String(cfg.version) : undefined;
+      // One-way, non-reversible attribution so distinct deployments can be
+      // counted without exposing the real id (REQ-7). The tenant handle is an
+      // explicitly-sanctioned, non-secret input; hashing it is the point.
+      const hashInput = bundleVersion ? `${this.tenantId}:${bundleVersion}` : this.tenantId;
+      const configHashId = (await sha256Base64Url(hashInput)).slice(0, 64);
+
+      const event: SdkMetaEventBody = {
+        event_type: eventType,
+        occurred_at: new Date().toISOString(),
+        request_id: requestId(),
+        config_hash_id: configHashId,
+        sdk_version: SDK_VERSION,
+        runtime_mode: this.runtimeMode,
+        // schema_version is intentionally omitted: the only source
+        // (@revt-eng/core/bundle SCHEMA_VERSION) drags the bundle compiler
+        // into the client SDK. bundle_version (the ExportedConfig version)
+        // and sdk_version already carry the meaningful version signal.
+        ...(bundleVersion ? { bundle_version: bundleVersion } : {}),
+        ...(extra.config_shape ? { config_shape: extra.config_shape } : {}),
+        ...(extra.message ? { message: extra.message.slice(0, 500) } : {}),
+      };
+      const body: SdkMetaIngestBatchBody = { events: [event] };
+
+      await fetch(this.endpointFor('ingestSdkMeta', SDK_META_GATEWAY_PATH), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+        keepalive: true,
+      });
+    } catch {
+      // Best-effort: anonymous telemetry must never throw into the host app.
+    }
+  }
+
+  /** One-time info notice that keyless telemetry is active + how to disable it (REQ-8b). */
+  private showAnonTelemetryNoticeOnce(): void {
+    if (this.anonTelemetryNoticeShown) return;
+    this.anonTelemetryNoticeShown = true;
+    console.info(
+      '[RevTurbine] Sending anonymous SDK telemetry (config-shape counts and SDK ' +
+        'version only — no user data or PII). Disable it by setting ' +
+        '`anonymousTelemetry: false` in your initRevTurbine() options.',
+    );
+  }
+
   private async sendEvents(events: RevTurbineEventEnvelope[]): Promise<void> {
     if (events.length === 0) return;
 
@@ -3291,6 +3474,9 @@ export class RevTurbineCustomerSdk {
           'x-request-id': rid,
         },
         body: JSON.stringify({ events: trackEvents }),
+        // keepalive lets a page-unload flush (pagehide / visibilitychange)
+        // complete after the document starts tearing down (plan 95 TASK-6).
+        keepalive: true,
       });
     } catch {
       // Swallow — telemetry delivery is best-effort and non-fatal.
@@ -3334,11 +3520,75 @@ export class RevTurbineCustomerSdk {
     }
 
     this.events.push(...envelopesToQueue);
-    if (this.events.length >= 20) {
-      const batch = [...this.events];
-      this.events.length = 0;
-      await this.sendEvents(batch);
+    if (this.events.length >= this.maxBatchSize) {
+      await this.flushEvents();
     }
+  }
+
+  /**
+   * Flush any buffered clickstream events to `POST /api/track` immediately.
+   *
+   * Called on the size threshold, the {@link RevTurbineEventBatchingOptions}
+   * interval timer, and page-unload. Best-effort and non-throwing — delivery
+   * failures are swallowed (plan 95 REQ-3). Safe to call when the buffer is
+   * empty (no-op).
+   */
+  async flushEvents(): Promise<void> {
+    if (this.events.length === 0) return;
+    const batch = [...this.events];
+    this.events.length = 0;
+    await this.sendEvents(batch);
+  }
+
+  /**
+   * Install the interval timer + page-unload listeners that flush buffered
+   * clickstream events (plan 95 TASK-6). Browser-only and skipped in
+   * `local_only` mode (no network sink). Listeners are released by
+   * {@link dispose}.
+   */
+  private startEventBatchFlushing(): void {
+    if (!isBrowser() || this.isLocalOnlyMode()) return;
+
+    if (this.flushIntervalMs > 0) {
+      this.flushTimer = setInterval(() => {
+        void this.flushEvents();
+      }, this.flushIntervalMs);
+      // Don't keep a (non-browser) event loop alive purely for the flush tick.
+      (this.flushTimer as { unref?: () => void }).unref?.();
+    }
+
+    const flushOnHide = () => {
+      void this.flushEvents();
+    };
+    const flushOnVisibilityHidden = () => {
+      if (document.visibilityState === 'hidden') void this.flushEvents();
+    };
+    window.addEventListener('pagehide', flushOnHide);
+    document.addEventListener('visibilitychange', flushOnVisibilityHidden);
+    this.batchingTeardown.push(
+      () => window.removeEventListener('pagehide', flushOnHide),
+      () => document.removeEventListener('visibilitychange', flushOnVisibilityHidden),
+    );
+  }
+
+  /**
+   * Stop background clickstream flushing and release page-unload listeners.
+   * Flushes any buffered events one last time. Call when tearing down an SDK
+   * instance (e.g. SPA unmount) to avoid a dangling interval/listeners.
+   */
+  dispose(): void {
+    if (this.flushTimer !== undefined) {
+      clearInterval(this.flushTimer);
+      this.flushTimer = undefined;
+    }
+    for (const teardown of this.batchingTeardown.splice(0)) {
+      try {
+        teardown();
+      } catch {
+        // Listener removal is best-effort.
+      }
+    }
+    void this.flushEvents();
   }
 
   async emitSemantic(eventType: string, payload: SdkEventProperties, options?: RevTurbineEventOptions): Promise<void> {
