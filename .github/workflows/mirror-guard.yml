@@ -1,0 +1,132 @@
+name: Mirror guard
+
+# This repo (revt-eng/revturbine-sdk) is a CURATED, AUTO-GENERATED MIRROR of the
+# private revt-eng/revturbine-sdk-internal repo. The "mirrored" source trees listed
+# below are overwritten on every release by, in revturbine-sdk-internal:
+#   .github/workflows/publish-to-public.yml  (source: "release: sync ..." commits)
+#   .github/workflows/sync-docs-to-public.yml (docs:   "docs: sync ..."   commits)
+# Both push to this repo as github-actions[bot] using the REVTURBINE_GIT_TOKEN PAT.
+#
+# Editing those trees here directly is futile and harmful: the next release sync
+# clobbers the change, and the real fix never reaches the source of truth. PR #11
+# (a hand-authored vocab rename pushed straight to this mirror) is the case this
+# guard exists to stop.
+#
+# This guard FAILS any human change to a mirrored path — whether via pull request
+# or a direct push to main — while allowing the automation's own sync commits. Make
+# the change in revturbine-sdk-internal instead; it flows here automatically on the
+# next release.
+#
+# Make this a REQUIRED status check in branch protection so offending PRs cannot
+# merge, and protect `main` against direct human pushes.
+#
+# Keep MIRRORED_DIRS / MIRRORED_FILES in sync with the ALLOWLIST in
+# revturbine-sdk-internal/scripts/public-sync/allowlist.mjs.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  # Default-deny mirror. Directory prefixes (trailing slash) + exact files.
+  MIRRORED_DIRS: "core/ web-sdk/ server-node/ server-python/ pages-build/ docs/guides/"
+  MIRRORED_FILES: "docs/README.md docs/sdk-integration-points.md"
+  # Authorized sync identity (committer email) + allowed commit-subject prefixes.
+  SYNC_COMMITTER_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enforce mirror ownership
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          is_mirrored() {
+            local f="$1"
+            local d x
+            for d in $MIRRORED_DIRS; do
+              case "$f" in "$d"*) return 0 ;; esac
+            done
+            for x in $MIRRORED_FILES; do
+              [ "$f" = "$x" ] && return 0
+            done
+            return 1
+          }
+
+          is_authorized_sync() {
+            # $1 = commit sha. Authorized iff committed by the sync bot AND the
+            # subject is one of the automation's sync messages.
+            local sha="$1" email subject
+            email=$(git show -s --format='%ce' "$sha")
+            subject=$(git show -s --format='%s' "$sha")
+            [ "$email" = "$SYNC_COMMITTER_EMAIL" ] || return 1
+            case "$subject" in
+              "release: sync "*|"docs: sync "*) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+
+          fail=0
+          guidance() {
+            echo ""
+            echo "Mirrored source is OWNED by revt-eng/revturbine-sdk-internal."
+            echo "Make the change there — it is published to this mirror automatically"
+            echo "by publish-to-public.yml / sync-docs-to-public.yml on the next release."
+          }
+
+          if [ "$EVENT" = "pull_request" ]; then
+            # Any PR touching a mirrored path is a human edit — automation never PRs.
+            git fetch --no-tags --quiet origin "$BASE_REF"
+            base_sha=$(git merge-base "origin/$BASE_REF" "$PR_HEAD")
+            offending=()
+            while IFS= read -r f; do
+              [ -n "$f" ] && is_mirrored "$f" && offending+=("$f")
+            done < <(git diff --name-only "$base_sha" "$PR_HEAD")
+            if [ "${#offending[@]}" -gt 0 ]; then
+              fail=1
+              echo "::error::This PR edits mirrored source paths, which are auto-generated from revt-eng/revturbine-sdk-internal and will be overwritten on the next release sync."
+              printf '  - %s\n' "${offending[@]}"
+            fi
+          else
+            # push to main — allow only the automation's sync commits.
+            if [ -z "${PUSH_BEFORE//0/}" ]; then
+              range="${PUSH_AFTER}^..${PUSH_AFTER}"   # new branch / unknown before
+            else
+              range="${PUSH_BEFORE}..${PUSH_AFTER}"
+            fi
+            for c in $(git rev-list "$range"); do
+              touches=0
+              while IFS= read -r f; do
+                if [ -n "$f" ] && is_mirrored "$f"; then touches=1; break; fi
+              done < <(git diff-tree --no-commit-id --name-only -r "$c")
+              [ "$touches" -eq 0 ] && continue
+              if is_authorized_sync "$c"; then
+                echo "ok (authorized sync): $c $(git show -s --format='%s' "$c")"
+              else
+                fail=1
+                echo "::error::Commit $c edits mirrored paths but is not an authorized sync commit (committer=$(git show -s --format='%ce' "$c") subject=\"$(git show -s --format='%s' "$c")\")."
+              fi
+            done
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            guidance
+            exit 1
+          fi
+          echo "Mirror guard passed."
