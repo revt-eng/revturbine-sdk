@@ -3,7 +3,7 @@
  * personalization-token resolution.
  *
  * Pins the contract: when the user has a current commercial plan and the
- * tenant's ExportedConfig.plans defines a hierarchy with `tier_position`,
+ * tenant's RevTurbineConfig.plans defines a hierarchy with `tier_position`,
  * the SDK exposes the next-tier-up plan as personalization tokens
  * `recommended_plan_handle` and `recommended_plan_name`. At the top of the
  * ladder (no next tier), tokens resolve to empty strings.
@@ -18,7 +18,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RevTurbineCustomerSdk } from './customer-side';
-import type { ExportedConfig } from '@revt-eng/schema';
+import type { RevTurbineConfig } from '@revt-eng/schema';
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(async () =>
@@ -31,7 +31,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function makeExportedConfig(): ExportedConfig {
+function makeExportedConfig(): RevTurbineConfig {
   return {
     version: 'v1',
     exported_at: '2026-01-01T00:00:00Z',
@@ -46,7 +46,7 @@ function makeExportedConfig(): ExportedConfig {
     content_ui_paths: [],
     surface_templates: [],
     placements: [],
-  } as unknown as ExportedConfig;
+  } as unknown as RevTurbineConfig;
 }
 
 function makeSdk(): RevTurbineCustomerSdk {

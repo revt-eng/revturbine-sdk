@@ -1,10 +1,10 @@
-import type { ExportedConfig } from '@revt-eng/schema';
-import { ExportedConfigSchema } from '@revt-eng/schema/zod';
+import type { RevTurbineConfig } from '@revt-eng/schema';
+import { RevTurbineConfigSchema } from '@revt-eng/schema/zod';
 import prismExportConfigJson from './prism-export-config.json';
 
 /**
  * The bundled "Prism" demo configuration — a synthetic AI image-studio
- * {@link ExportedConfig} the playground drives the SDK against in local-runtime
+ * {@link RevTurbineConfig} the playground drives the SDK against in local-runtime
  * mode.
  *
  * `prism-export-config.json` is a bundled copy that keeps the playground
@@ -12,7 +12,7 @@ import prismExportConfigJson from './prism-export-config.json';
  * canonical source of truth is the revturbine-demo-data repo
  * (`customers/prism/export-config.json`), which is schema-validated via
  * `revt-config verify prism`; keep the two in sync. It is re-parsed through
- * `ExportedConfigSchema` here so the playground fails loud if the copy ever
+ * `RevTurbineConfigSchema` here so the playground fails loud if the copy ever
  * drifts from the schema, rather than silently shipping an invalid config.
  */
 /**
@@ -39,14 +39,14 @@ const PRISM_THEME: Record<string, unknown> = {
   shape: { radius: 12 },
 };
 
-export const PRISM_CONFIG: ExportedConfig = {
-  ...ExportedConfigSchema.parse(prismExportConfigJson),
+export const PRISM_CONFIG: RevTurbineConfig = {
+  ...RevTurbineConfigSchema.parse(prismExportConfigJson),
   theme: PRISM_THEME,
 };
 
 /**
  * Placement ids whose payload carries an *explicitly authored* recommendation
- * strategy. Read from the RAW JSON on purpose: `ExportedConfigSchema` applies a
+ * strategy. Read from the RAW JSON on purpose: `RevTurbineConfigSchema` applies a
  * `recommendation_strategy` default to every payload, so the parsed config can't
  * tell an authored recommendation from the default — the raw bundle can. The
  * playground only surfaces a recommended plan for placements in this set.

@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ExportedConfigSchema } from '@revt-eng/schema';
+import { RevTurbineConfigSchema } from '@revt-eng/schema';
 import bundledConfig from './prism-export-config.json';
 
 /**
@@ -12,7 +12,7 @@ import bundledConfig from './prism-export-config.json';
  * dependency. The canonical source of truth lives in revturbine-demo-data
  * (`customers/prism/export-config.json`). These tests make the contract real:
  *
- *  1. The bundled copy MUST validate against `ExportedConfigSchema` — the same
+ *  1. The bundled copy MUST validate against `RevTurbineConfigSchema` — the same
  *     parse `prism-config.ts` does at load time, but as a CI gate so the
  *     playground can't ship an invalid config undetected.
  *  2. It MUST keep exercising the breadth of capabilities the demo is for, so a
@@ -24,11 +24,11 @@ import bundledConfig from './prism-export-config.json';
  *     is independently validated by `revturbine-cli verify prism`.
  */
 describe('Prism playground bundled config', () => {
-  it('validates against ExportedConfigSchema', () => {
-    const result = ExportedConfigSchema.safeParse(bundledConfig);
+  it('validates against RevTurbineConfigSchema', () => {
+    const result = RevTurbineConfigSchema.safeParse(bundledConfig);
     if (!result.success) {
       throw new Error(
-        `prism-export-config.json is not a valid ExportedConfig:\n${JSON.stringify(
+        `prism-export-config.json is not a valid RevTurbineConfig:\n${JSON.stringify(
           result.error.issues,
           null,
           2,
@@ -39,7 +39,7 @@ describe('Prism playground bundled config', () => {
   });
 
   it('exercises the demo capability breadth', () => {
-    const config = ExportedConfigSchema.parse(bundledConfig);
+    const config = RevTurbineConfigSchema.parse(bundledConfig);
 
     // Entitlement types the demo showcases — dropping one is a breadth regression.
     const entitlementTypes = new Set(config.entitlements.map((e) => e.type));

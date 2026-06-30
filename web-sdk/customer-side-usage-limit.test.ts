@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RevTurbineCustomerSdk } from './customer-side';
-import type { ExportedConfig } from '@revt-eng/schema';
+import type { RevTurbineConfig } from '@revt-eng/schema';
 
 /**
  * Regression: in local-runtime, `getUsage()` must return the limit for the
@@ -10,7 +10,7 @@ import type { ExportedConfig } from '@revt-eng/schema';
  * `usage_limit` rule to the same map key with no plan filter, so the last rule
  * (here Enterprise = 999999) overwrote Free/Pro — for every user.
  */
-function makeConfig(): ExportedConfig {
+function makeConfig(): RevTurbineConfig {
   return {
     version: 'v1',
     exported_at: '2026-01-01T00:00:00Z',
@@ -35,7 +35,7 @@ function makeConfig(): ExportedConfig {
     content_ui_paths: [],
     surface_templates: [],
     placements: [],
-  } as unknown as ExportedConfig;
+  } as unknown as RevTurbineConfig;
 }
 
 function makeSdk(): RevTurbineCustomerSdk {

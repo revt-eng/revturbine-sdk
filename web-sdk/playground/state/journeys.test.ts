@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { ExportedConfigSchema } from '@revt-eng/schema';
+import { RevTurbineConfigSchema } from '@revt-eng/schema';
 import rawConfig from '../config/prism-export-config.json';
 import { activeNudges } from './active-nudges';
 import { pickSmartRail } from './smart-rail';
 import { JOURNEY_SETS, allJourneys, findJourney } from './journeys';
 import { DEFAULT_DEMO_STATE } from './demo-state';
 
-const PRISM_CONFIG = ExportedConfigSchema.parse(rawConfig);
+const PRISM_CONFIG = RevTurbineConfigSchema.parse(rawConfig);
 const nudgeIds = (id: string) => activeNudges(PRISM_CONFIG, findJourney(id)!.state).map((n) => n.placementId);
 const railId = (id: string) => pickSmartRail(PRISM_CONFIG, findJourney(id)!.state).placementId;
 

@@ -1,4 +1,4 @@
-import type { ExportedConfig } from '@revt-eng/schema';
+import type { RevTurbineConfig } from '@revt-eng/schema';
 import type { DemoState } from './demo-state';
 import { creditAllowanceFor, effectivePlanHandle, generationsLimitFor } from './derived';
 
@@ -37,7 +37,7 @@ export const WARNING_AT = 80;
  * conversion category). The app owns live usage, so it computes proximity here
  * and asks the SDK to render the winner — the realistic local-runtime pattern.
  */
-export function pickSmartRail(config: ExportedConfig, state: DemoState): SmartRailPick {
+export function pickSmartRail(config: RevTurbineConfig, state: DemoState): SmartRailPick {
   const candidates: SmartRailPick[] = [];
 
   // Usage (generations). A reverse trial lifts the cap to the premium plan's,

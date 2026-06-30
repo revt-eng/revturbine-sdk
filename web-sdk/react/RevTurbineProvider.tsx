@@ -101,12 +101,12 @@ export function RevTurbineProvider({ options, bootstrapPlacements, children }: R
           );
         }
 
-        // Load theme — prefer ExportedConfig snapshot, fall back to API fetch.
+        // Load theme — prefer RevTurbineConfig snapshot, fall back to API fetch.
         const exportedConfig = options.localRuntime?.exportedConfig;
         const configTheme = exportedConfig?.theme;
 
         if (configTheme && typeof configTheme === 'object') {
-          // ExportedConfig supplies the theme — merge with defaults (no API call).
+          // RevTurbineConfig supplies the theme — merge with defaults (no API call).
           const resolved = mergeTheme(configTheme as RevTurbineThemeInput);
           if (mounted) setTheme(resolved);
         } else {

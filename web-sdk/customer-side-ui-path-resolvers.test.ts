@@ -5,7 +5,7 @@ import {
   type RevTurbineUiPathResolverMap,
 } from './customer-side';
 import type { AnyDomainProvider } from './providers/types';
-import type { ExportedConfig } from '@revt-eng/schema';
+import type { RevTurbineConfig } from '@revt-eng/schema';
 
 /**
  * Coverage for the `uiPathResolvers` validation surface — the init-time guard
@@ -22,7 +22,7 @@ const noop = (): void => {};
 /** A raw `content_ui_paths` entry — kept raw (not schema-parsed) so `id` survives. */
 type RawUiPath = Record<string, unknown>;
 
-function makeConfig(contentUiPaths: RawUiPath[]): ExportedConfig {
+function makeConfig(contentUiPaths: RawUiPath[]): RevTurbineConfig {
   return {
     version: 'v1',
     exported_at: '2026-01-01T00:00:00Z',
@@ -33,7 +33,7 @@ function makeConfig(contentUiPaths: RawUiPath[]): ExportedConfig {
     content_ui_paths: contentUiPaths,
     surface_templates: [],
     placements: [],
-  } as unknown as ExportedConfig;
+  } as unknown as RevTurbineConfig;
 }
 
 function makeSdk(

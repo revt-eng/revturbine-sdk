@@ -1,4 +1,4 @@
-import type { ExportedConfig } from '@revt-eng/schema';
+import type { RevTurbineConfig } from '@revt-eng/schema';
 import type { RevTurbineTrialContext, RevTurbineUserContext } from '../../index';
 import type { DemoState } from './demo-state';
 import { creditAllowanceFor, generationsLimitFor, planName } from './derived';
@@ -15,7 +15,7 @@ import { creditAllowanceFor, generationsLimitFor, planName } from './derived';
  * - `custom` carries the segmentation attributes the Prism config's segment
  *   predicates read (see {@link DemoState.custom}).
  */
-export function toUserContext(config: ExportedConfig, state: DemoState): RevTurbineUserContext {
+export function toUserContext(config: RevTurbineConfig, state: DemoState): RevTurbineUserContext {
   const generationsLimit = generationsLimitFor(config, state.planHandle);
   const creditLimit = creditAllowanceFor(config, state.planHandle);
 

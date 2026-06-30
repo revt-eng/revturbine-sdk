@@ -30,7 +30,7 @@ import type {
   AnyDomainProvider,
   RevTurbineStorage,
 } from '@revt-eng/core';
-import type { ExportedConfig } from '@revt-eng/schema';
+import type { RevTurbineConfig } from '@revt-eng/schema';
 
 import type {
   ServerEvaluationPayload,
@@ -49,8 +49,8 @@ export interface LocalEvaluationServerOptions {
   tenantId: string;
   /** Pre-built domain providers (from createStaticProviders, createDrizzleProviders, etc.) */
   providers: AnyDomainProvider[];
-  /** ExportedConfig for local placement resolution. */
-  exportedConfig?: ExportedConfig;
+  /** RevTurbineConfig for local placement resolution. */
+  exportedConfig?: RevTurbineConfig;
   /** Optional storage for interaction state (defaults to in-memory). */
   storage?: RevTurbineStorage;
   /** Default TTL for evaluation payloads (seconds). Default: 60. */

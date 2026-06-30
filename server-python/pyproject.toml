@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "revturbine"
-version = "0.2.16"
+version = "0.2.17"
 description = "RevTurbine SDK for Python — local-mode and HTTP-mode placement and entitlement decisioning"
 requires-python = ">=3.10"
 license = "MIT"

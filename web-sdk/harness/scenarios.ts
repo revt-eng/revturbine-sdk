@@ -803,15 +803,15 @@ export const DEFAULT_THEME: HarnessTheme = {
 };
 
 // ---------------------------------------------------------------------------
-// ExportedConfig — build / load
+// RevTurbineConfig — build / load
 // ---------------------------------------------------------------------------
 
 import type {
-  ExportedConfig,
+  RevTurbineConfig,
   Theme,
 } from '@revt-eng/schema';
 
-export type { ExportedConfig };
+export type { RevTurbineConfig };
 
 export const EXPORTED_CONFIG_VERSION = '1.0.0';
 
@@ -847,7 +847,7 @@ function toExportedTheme(theme: HarnessTheme): Theme {
   };
 }
 
-/** Serialise the full harness state into an ExportedConfig JSON-safe object. */
+/** Serialise the full harness state into an RevTurbineConfig JSON-safe object. */
 export function buildExportedConfig(params: {
   plans: HarnessPlan[];
   entitlements: HarnessEntitlement[];
@@ -868,7 +868,7 @@ export function buildExportedConfig(params: {
   eventName: string;
   entitlementPayloads: HarnessEntitlementPayload[];
   slots: HarnessSlotDescriptor[];
-}): ExportedConfig {
+}): RevTurbineConfig {
   return {
     version: EXPORTED_CONFIG_VERSION,
     exported_at: new Date().toISOString(),
@@ -916,7 +916,7 @@ export function buildExportedConfig(params: {
 }
 
 /**
- * Parse and validate an ExportedConfig JSON object, returning harness-ready
+ * Parse and validate an RevTurbineConfig JSON object, returning harness-ready
  * state slices.  Throws on invalid input.
  */
 export function loadExportedConfig(raw: unknown): {
@@ -941,7 +941,7 @@ export function loadExportedConfig(raw: unknown): {
   slots: HarnessSlotDescriptor[];
 } {
   if (!raw || typeof raw !== 'object') throw new Error('Invalid config: not an object');
-  const cfg = raw as ExportedConfig;
+  const cfg = raw as RevTurbineConfig;
 
   if (!cfg.version) throw new Error('Invalid config: missing version');
   if (!Array.isArray(cfg.plans)) throw new Error('Invalid config: plans must be an array');
@@ -1041,7 +1041,7 @@ export function loadExportedConfig(raw: unknown): {
   }
 
   // Harness-local defaults (user_context, trial, entitlement_payloads are no
-  // longer part of ExportedConfig — they are harness session state).
+  // longer part of RevTurbineConfig — they are harness session state).
   const userId = 'user_harness_01';
   const userName = 'Taylor Harness';
   const planHandle = 'starter';
@@ -1089,7 +1089,7 @@ export function loadExportedConfig(raw: unknown): {
 // ---------------------------------------------------------------------------
 
 /**
- * Attempt to load a previously-saved ExportedConfig from localStorage.
+ * Attempt to load a previously-saved RevTurbineConfig from localStorage.
  * Returns `null` if no config is found or the stored value is invalid.
  */
 export function loadConfigFromLocalStorage(): ReturnType<typeof loadExportedConfig> | null {
@@ -1104,9 +1104,9 @@ export function loadConfigFromLocalStorage(): ReturnType<typeof loadExportedConf
 }
 
 /**
- * Persist an ExportedConfig to localStorage.
+ * Persist an RevTurbineConfig to localStorage.
  */
-export function saveConfigToLocalStorage(config: ExportedConfig): void {
+export function saveConfigToLocalStorage(config: RevTurbineConfig): void {
   try {
     localStorage.setItem(HARNESS_LOCALSTORAGE_KEY, JSON.stringify(config));
   } catch {

@@ -21,7 +21,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RevTurbineCustomerSdk } from './customer-side';
-import type { ExportedConfig, RevTurbineInitOptions } from './customer-side';
+import type { RevTurbineConfig, RevTurbineInitOptions } from './customer-side';
 
 type FetchCall = { url: string; init: RequestInit };
 
@@ -56,7 +56,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function makeConfig(): ExportedConfig {
+function makeConfig(): RevTurbineConfig {
   return {
     version: 'v1',
     exported_at: '2026-01-01T00:00:00Z',
@@ -75,7 +75,7 @@ function makeConfig(): ExportedConfig {
     content_ui_paths: [],
     surface_templates: [],
     placements: [],
-  } as unknown as ExportedConfig;
+  } as unknown as RevTurbineConfig;
 }
 
 function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerSdk {

@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 // Parse the raw JSON with the bare-aliased schema rather than importing
 // PRISM_CONFIG from prism-config.ts: the latter pulls in `@revt-eng/schema/zod`,
 // a subpath the vitest alias does not rewrite (see prism-export-config.test.ts).
-import { ExportedConfigSchema } from '@revt-eng/schema';
+import { RevTurbineConfigSchema } from '@revt-eng/schema';
 import rawConfig from '../config/prism-export-config.json';
 import { DEFAULT_DEMO_STATE, type DemoState } from './demo-state';
 import { activeNudges, gatePlacementForHandle, interpolate } from './active-nudges';
 
-const PRISM_CONFIG = ExportedConfigSchema.parse(rawConfig);
+const PRISM_CONFIG = RevTurbineConfigSchema.parse(rawConfig);
 
 /**
  * Guards plan 81 TASK-3 / AC-2: the playground (standing in for the customer

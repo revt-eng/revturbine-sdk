@@ -475,7 +475,7 @@ export function SdkLocalHarnessApp() {
       const parsed = JSON.parse(configJson);
       const loaded = loadExportedConfig(parsed);
       applyLoadedConfig(loaded);
-      setConfigMessage('Imported ExportedConfig successfully');
+      setConfigMessage('Imported RevTurbineConfig successfully');
       appendLog('Imported config JSON into harness');
     } catch (error) {
       setConfigMessage(error instanceof Error ? error.message : 'Failed to import config');
@@ -485,14 +485,14 @@ export function SdkLocalHarnessApp() {
   const handleDownloadConfig = useCallback(() => {
     const content = JSON.stringify(currentExportedConfig, null, 2);
     downloadTextFile('revturbine-sdk-harness-export.json', content);
-    appendLog('Downloaded ExportedConfig JSON');
+    appendLog('Downloaded RevTurbineConfig JSON');
   }, [appendLog, currentExportedConfig]);
 
   const handleCopyConfig = useCallback(async () => {
     const content = JSON.stringify(currentExportedConfig, null, 2);
     await navigator.clipboard.writeText(content);
-    setConfigMessage('Copied ExportedConfig JSON to clipboard');
-    appendLog('Copied ExportedConfig JSON');
+    setConfigMessage('Copied RevTurbineConfig JSON to clipboard');
+    appendLog('Copied RevTurbineConfig JSON');
   }, [appendLog, currentExportedConfig]);
 
   const matchedSegmentsSet = useMemo(() => new Set(matchedSegmentIds), [matchedSegmentIds]);
@@ -1011,7 +1011,7 @@ export function SdkLocalHarnessApp() {
           <div className="main-header">
             <div>
               <h1>RevTurbine SDK Local-Mode Harness</h1>
-              <p>Editable local-only harness for slots, entitlement state, user context, and ExportedConfig export/import.</p>
+              <p>Editable local-only harness for slots, entitlement state, user context, and RevTurbineConfig export/import.</p>
             </div>
             <div className="meta-pill">runtime_mode: local_only</div>
           </div>

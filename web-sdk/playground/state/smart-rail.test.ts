@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { ExportedConfigSchema } from '@revt-eng/schema';
+import { RevTurbineConfigSchema } from '@revt-eng/schema';
 import rawConfig from '../config/prism-export-config.json';
 import { DEFAULT_DEMO_STATE, type DemoState } from './demo-state';
 import { creditAllowanceFor } from './derived';
 import { pickSmartRail } from './smart-rail';
 
-const PRISM_CONFIG = ExportedConfigSchema.parse(rawConfig);
+const PRISM_CONFIG = RevTurbineConfigSchema.parse(rawConfig);
 const free = (over: Partial<DemoState> = {}): DemoState => ({ ...DEFAULT_DEMO_STATE, planHandle: 'free', ...over });
 const pick = (s: DemoState) => pickSmartRail(PRISM_CONFIG, s);
 

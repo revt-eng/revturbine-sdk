@@ -1,5 +1,5 @@
 import type { RevTurbineSurfaceType, PlacementOutput } from '../customer-side';
-import type { ExportedConfigUiPathActionType, RuntimePromotionSnapshot } from '../generated';
+import type { RevTurbineConfigUiPathActionType, RuntimePromotionSnapshot } from '../generated';
 
 /**
  * Content fields common to most surface templates.
@@ -25,14 +25,14 @@ export type ResolvedContent = PlacementContentFields & Record<string, unknown>; 
  * CTA action types recognized by the SDK.
  *
  * The built-in action types come from the schema's
- * `ExportedConfigUiPathActionType` (the single source of truth). The
+ * `RevTurbineConfigUiPathActionType` (the single source of truth). The
  * `(string & {})` member keeps autocomplete for the built-ins while also
  * admitting **tenant-defined custom action names** — a placement authored
  * with a `custom` (or any unmapped) CTA action flows through the engine as
  * `{ type: <action-name>, ...config }`, and the SDK preserves that name so a
  * {@link CtaResolver} can be registered against it via `registerCtaResolver`.
  */
-export type PlacementUiPathActionType = ExportedConfigUiPathActionType | (string & {});
+export type PlacementUiPathActionType = RevTurbineConfigUiPathActionType | (string & {});
 
 /** UI path action that the CTA triggers. */
 export interface PlacementUiPath {
