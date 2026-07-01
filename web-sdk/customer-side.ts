@@ -3,6 +3,8 @@ import type { AnyDomainProvider } from './providers/types';
 import { isServer, isBrowser } from './env';
 import { redactPii, redactIdentityField } from './pii-redact';
 import { evaluateSegments } from './segments';
+import { buildControlPlaneEvent } from './control-plane-events';
+import type { ControlPlaneEventType } from './control-plane-events';
 import type { RevTurbineStorage } from './storage';
 import { resolvePersistentStorage, resolveSessionStorage } from './storage';
 import type {
@@ -3530,6 +3532,41 @@ export class RevTurbineCustomerSdk {
     if (this.events.length >= this.maxBatchSize) {
       await this.flushEvents();
     }
+  }
+
+  /**
+   * Emit a typed control-plane semantic event (plan 112).
+   *
+   * The dogfood-faithful surface for RevTurbine's own product activity:
+   * `eventType` is constrained to the canonical {@link ControlPlaneEventType}
+   * taxonomy and the `system`/`workflow` source classification is stamped
+   * automatically. Forwards through the same ingest + consumer path as
+   * {@link capture} — so the event lands in clickstream AND any registered
+   * analytics resolver (e.g. a PostHog provider from
+   * {@link createPostHogAnalyticsProvider}).
+   *
+   * Identity comes from the active user context set via {@link identify} /
+   * {@link setUserContext}: the operator is `user_id` and the acting RevTurbine
+   * customer tenant is `account_id`. `tenant_id` is stamped server-side and is
+   * never carried on the event (plan 112 REQ-3/REQ-4).
+   *
+   * @param eventType - A canonical control-plane event type.
+   * @param payload - Optional event-specific properties (e.g. `{ resource, resource_id }`).
+   * @param options - Emit options, e.g. `{ immediate: true }` to bypass batching.
+   *
+   * @example
+   * ```ts
+   * sdk.identify('operator_42', { account_id: 'tn_acme' });
+   * await sdk.trackControlPlaneEvent('changeset_deployed', { change_set_id: 'cs_9' });
+   * ```
+   */
+  async trackControlPlaneEvent(
+    eventType: ControlPlaneEventType,
+    payload: SdkEventProperties = {},
+    options?: RevTurbineEventOptions,
+  ): Promise<void> {
+    const { eventName, properties } = buildControlPlaneEvent(eventType, payload);
+    await this.capture(eventName, properties, options);
   }
 
   /**

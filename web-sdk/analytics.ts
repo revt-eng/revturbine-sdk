@@ -214,3 +214,71 @@ export function createAnalyticsProvider(
     resolve: () => ({ consumers: [consumer] }),
   };
 }
+
+/* ------------------------------------------------------------------ */
+/*  PostHog resolver (plan 112)                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Minimal shape of a PostHog client — satisfied by both `posthog-js`
+ * (browser) and `posthog-node` (server). Only `capture` is used.
+ */
+export interface PostHogLike {
+  capture(event: string, properties?: Record<string, unknown>): void; // sdk-ok: type-definition
+}
+
+/** Configuration for {@link createPostHogAnalyticsProvider}. */
+export interface PostHogAnalyticsProviderOptions {
+  /** The PostHog client instance (`posthog-js` or `posthog-node`). */
+  posthog: PostHogLike;
+
+  /**
+   * When provided, only events whose `type` matches one of these strings are
+   * forwarded to PostHog. Use e.g. the control-plane event types to forward
+   * only semantic control-plane events. All others are silently dropped.
+   */
+  filter?: string[];
+
+  /** Optional transform applied before capture (rename / enrich / drop). */
+  transform?: AnalyticsEventTransformer;
+
+  /**
+   * Human-readable consumer name shown in diagnostics.
+   * @default 'posthog'
+   */
+  name?: string;
+}
+
+/**
+ * Create an analytics resolver that forwards SDK events to PostHog (plan 112).
+ *
+ * A thin PostHog-typed convenience over {@link createAnalyticsProvider}: each
+ * SDK event becomes `posthog.capture(eventName, properties)`. Pass the result
+ * in the `domainProviders` array at init so the same semantic events feed both
+ * the first-party ingest pipeline and PostHog.
+ *
+ * Like {@link createAnalyticsProvider}, a throw from `posthog.capture` is
+ * swallowed — a PostHog failure never crashes the SDK event pipeline.
+ *
+ * @example
+ * ```ts
+ * import posthog from 'posthog-js';
+ * import { createPostHogAnalyticsProvider, initRevTurbine } from '@revt-eng/sdk';
+ *
+ * const analytics = createPostHogAnalyticsProvider({ posthog });
+ * initRevTurbine({ domainProviders: [analytics], ... });
+ * ```
+ */
+export function createPostHogAnalyticsProvider(
+  options: PostHogAnalyticsProviderOptions,
+): EventConsumerProvider {
+  const { posthog, filter, transform, name } = options;
+  return createAnalyticsProvider({
+    name: name ?? 'posthog',
+    filter,
+    transform,
+    handler: (eventName, properties) => {
+      posthog.capture(eventName, properties);
+    },
+  });
+}

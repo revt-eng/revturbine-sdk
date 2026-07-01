@@ -135,13 +135,26 @@ export * from './providers';
 // ── Analytics (event consumer adapter for third-party platforms) ─────────────
 export {
   createAnalyticsProvider,
+  createPostHogAnalyticsProvider,
 } from './analytics';
 export type {
   AnalyticsProviderOptions,
   AnalyticsEventHandler,
   AnalyticsEventTransformer,
   AnalyticsEventProperties,
+  PostHogLike,
+  PostHogAnalyticsProviderOptions,
 } from './analytics';
+
+// ── Control-plane semantic events (plan 112 — dogfood taxonomy) ──────────────
+export {
+  CONTROL_PLANE_EVENT_SOURCE,
+  CONTROL_PLANE_SOURCE_KEY,
+  buildControlPlaneEvent,
+} from './control-plane-events';
+export type {
+  ControlPlaneEmitInput,
+} from './control-plane-events';
 
 // ── Placement types, registry, and resolution (pure TS) ─────────────────────
 export type {
