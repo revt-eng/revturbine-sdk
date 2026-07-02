@@ -1283,6 +1283,15 @@ const TOUCHPOINT_TRANSITION_PATH = '/api/events/interactions';
 const LEGACY_INTERACTIONS_PATH = '/api/placements/interactions';
 const SDK_EVENT_SOURCE = 'revturbine-web-sdk';
 
+/**
+ * Reserved clickstream event name for the user-context field-names signal
+ * (plan 114 TASK-4). Emitted on identify/setUserContext carrying only the NAMES
+ * of the custom fields set (never their values). The tenant-scoped
+ * `user_context_fields` pipe (TASK-5) reads `events_clickstream` filtered on
+ * this name and unnests `properties.context_fields` into per-field last-seen.
+ */
+const USER_CONTEXT_FIELDS_EVENT = 'user_context_observed';
+
 /** Default client-side clickstream batching policy (plan 95 TASK-6). */
 const DEFAULT_EVENT_BATCH_SIZE = 20;
 const DEFAULT_EVENT_FLUSH_INTERVAL_MS = 5_000;
@@ -3267,7 +3276,9 @@ export class RevTurbineCustomerSdk {
         tenant_id: this.tenantId,
         user_id: this.userContext.id || null,
         anonymous_id: this.anonymousId,
-        traits: { ...(this.userContext.custom || {}) },
+        // The field-names signal (plan 114 TASK-4) is names-only: it must never
+        // carry the custom VALUES that other events attach as traits (AC-9).
+        traits: type === USER_CONTEXT_FIELDS_EVENT ? {} : { ...(this.userContext.custom || {}) },
       },
       properties,
     };
@@ -3690,6 +3701,23 @@ export class RevTurbineCustomerSdk {
     }
   }
 
+  /**
+   * Emit the NAMES of the custom user-context fields set in this identify /
+   * setUserContext call — names only, never values (plan 114 TASK-4). `custom`
+   * is `Pii`-classified, so only its keys are recorded (PII-safe, AC-9), under
+   * the reserved {@link USER_CONTEXT_FIELDS_EVENT} clickstream event, giving the
+   * control plane a per-`(tenant_id, field_name)` last-seen signal. Best-effort:
+   * routes through the normal clickstream path and never throws into the app.
+   */
+  private emitObservedContextFields(custom: SdkTraits | undefined): void {
+    const fieldNames = Object.keys(custom ?? {})
+      .filter((name) => name.length > 0)
+      .sort();
+    if (fieldNames.length === 0) return;
+    // context_fields is an array of field NAMES only — no values are included.
+    void this.capture(USER_CONTEXT_FIELDS_EVENT, { context_fields: fieldNames });
+  }
+
   setUserContext(userContext: RevTurbineUserContext): void {
     const previousContext = this.userContext;
     this.userContext = this.mergeUserContext(userContext);
@@ -3697,6 +3725,7 @@ export class RevTurbineCustomerSdk {
     this.markSegmentsDirtyFromContextChange(previousContext, this.userContext);
     this.persistLocalRuntimeState();
     void this.evaluateUserSegmentsAndUsage(userContext, false);
+    this.emitObservedContextFields(userContext.custom);
   }
 
   setPageContext(pageContext: RevTurbinePageContext): void {
@@ -5344,6 +5373,10 @@ export class RevTurbineCustomerSdk {
     // Switch impression history to the new user and re-hydrate retired cache.
     this.impressionHistory.setUserId(userId);
     void this.impressionHistory.hydrate();
+    // In the legacy path the traits object IS the custom map (plan 114 TASK-4).
+    this.emitObservedContextFields(
+      isUserContextInput ? (contextOrTraits as UserContextInput).custom : (contextOrTraits as SdkTraits | undefined),
+    );
   }
 
   resetIdentity(): void {
