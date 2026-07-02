@@ -130,6 +130,30 @@ describe('PlacementController', () => {
       );
     });
 
+    it('auto-tracks impression with the decision presentation context (plan 114 TASK-2)', async () => {
+      sdk.getPlacementDecision.mockResolvedValue({
+        visible: true,
+        placementId: 'pl_slot_1',
+        decisionSource: 'remote',
+        content: { header: 'H', body: 'B', cta_label: 'C' },
+        output: {
+          output_id: 'payload_9',
+          surface: { type: 'banner', slot_id: 'dashboard_promo', template: 'banner_v1' },
+        },
+      });
+      ctrl = new PlacementController(sdk, { surfaceSlot: { id: 'slot_1', name: 'slot_1' } });
+      await ctrl.load();
+
+      expect(sdk.trackTreatmentInteraction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          interactionType: 'impression',
+          surfaceSlotId: 'dashboard_promo',
+          surfaceTemplateId: 'banner_v1',
+          payloadId: 'payload_9',
+        }),
+      );
+    });
+
     it('skips impression tracking when autoTrackImpression is false', async () => {
       ctrl = new PlacementController(sdk, {
         surfaceSlot: { id: 'slot_1', name: 'slot_1' },
@@ -246,6 +270,33 @@ describe('PlacementController', () => {
       expect(sdk.trackTreatmentInteraction).toHaveBeenCalledWith(
         expect.objectContaining({
           metadata: { cooldown_ms: 60_000 },
+        }),
+      );
+    });
+
+    it('cta/dismiss carry the decision presentation context (plan 114 TASK-2)', async () => {
+      sdk.getPlacementDecision.mockResolvedValue({
+        visible: true,
+        placementId: 'pl_slot_1',
+        decisionSource: 'remote',
+        content: { header: 'H', body: 'B', cta_label: 'C' },
+        output: {
+          output_id: 'payload_42',
+          surface: { type: 'modal', slot_id: 'settings_upsell', template: 'modal_v2' },
+        },
+      });
+      ctrl = new PlacementController(sdk, { surfaceSlot: { id: 'slot_1', name: 'slot_1' } });
+      await ctrl.load();
+      sdk.trackTreatmentInteraction.mockClear();
+
+      await ctrl.ctaClick('/upgrade');
+
+      expect(sdk.trackTreatmentInteraction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          interactionType: 'cta_clicked',
+          surfaceSlotId: 'settings_upsell',
+          surfaceTemplateId: 'modal_v2',
+          payloadId: 'payload_42',
         }),
       );
     });

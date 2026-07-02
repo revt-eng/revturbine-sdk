@@ -221,6 +221,10 @@ export class PlacementController {
           userId: resolvedUserId,
           placementId: this._placementId,
           interactionType: 'impression',
+          // Presentation context from the decision → placement_presentations (plan 114).
+          surfaceSlotId: decision.output?.surface?.slot_id,
+          surfaceTemplateId: decision.output?.surface?.template,
+          payloadId: decision.output?.output_id,
           metadata: { decision_source: decision.decisionSource },
         });
       }
@@ -308,6 +312,10 @@ export class PlacementController {
       placementId: this._placementId,
       treatmentId: this._decision?.placementId,
       interactionType,
+      // Presentation context from the decision → placement_presentations (plan 114).
+      surfaceSlotId: this._decision?.output?.surface?.slot_id,
+      surfaceTemplateId: this._decision?.output?.surface?.template,
+      payloadId: this._decision?.output?.output_id,
       metadata,
     });
 

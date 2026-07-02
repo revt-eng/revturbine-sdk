@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.84/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.92/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -377,6 +377,42 @@ class ContentPromotion(BaseModel):
 class TargetBillingPeriod(Enum):
     monthly = "monthly"
     annual = "annual"
+
+
+class ControlPlaneEventSource(Enum):
+    system = "system"
+    workflow = "workflow"
+
+
+class ControlPlaneEventType(Enum):
+    web_signed_up = "web_signed_up"
+    web_signed_in = "web_signed_in"
+    cli_signed_up = "cli_signed_up"
+    cli_signed_in = "cli_signed_in"
+    cli_command_executed = "cli_command_executed"
+    changeset_submitted = "changeset_submitted"
+    changeset_approved = "changeset_approved"
+    changeset_rejected = "changeset_rejected"
+    changeset_deployed = "changeset_deployed"
+    changeset_launched = "changeset_launched"
+    changeset_parked = "changeset_parked"
+    changeset_resumed = "changeset_resumed"
+    changeset_discarded = "changeset_discarded"
+    changeset_archived = "changeset_archived"
+    config_imported = "config_imported"
+    config_exported = "config_exported"
+    entity_created = "entity_created"
+    entity_updated = "entity_updated"
+    entity_deleted = "entity_deleted"
+
+
+class ControlPlaneSemanticEvent(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    event_type: ControlPlaneEventType
+    source: ControlPlaneEventSource
+    payload: dict[str, Any]
 
 
 class CtaActionType(Enum):
@@ -758,194 +794,6 @@ class ExperimentVariant(BaseModel):
     config: dict[str, Any]
 
 
-class ExportedConfigEntitlementsItem(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    unique_handle: constr(min_length=1)
-    name: constr(min_length=1)
-    type: EntitlementType
-    unit: str | None = None
-
-
-class Period(Enum):
-    session = "session"
-    day = "day"
-    week = "week"
-    month = "month"
-    lifetime = "lifetime"
-
-
-class ExportedConfigPeriodCap(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    count: conint(ge=1, le=9007199254740991)
-    period: Period
-
-
-class ExportedConfigPlacementCategory(Enum):
-    fixed = "fixed"
-    gated = "gated"
-    usage_credit_seat = "usage_credit_seat"
-    trials = "trials"
-    other_conversion = "other_conversion"
-    retention = "retention"
-
-
-class SourceMode(Enum):
-    inline = "inline"
-    content_linked = "content_linked"
-
-
-class ContentLink(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    message_block_id: str | None = None
-    ui_path_id: str | None = None
-    promotion_id: str | None = None
-    content_payload_id: str | None = None
-
-
-class ExportedConfigPlacementSlotsItem(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    label: constr(min_length=1)
-    description: str
-    surface_type: str
-    placement_handle: constr(min_length=1)
-    template: str | None = None
-
-
-class ExportedConfigPlacementTrigger1(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    type: Literal["surface_render"]
-    slot_id: constr(min_length=1)
-
-
-class ExportedConfigPlacementTrigger2(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    type: Literal["entitlement_gate"]
-    entitlement_handle: constr(min_length=1)
-    tier_threshold: str | None = None
-
-
-class ExportedConfigPlacementTrigger3(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    type: Literal["usage_threshold"]
-    entitlement_handle: constr(min_length=1)
-    threshold_percent: confloat(ge=1.0, le=100.0)
-
-
-class ExportedConfigPlacementTrigger4(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    type: Literal["credit_threshold"]
-    entitlement_handle: constr(min_length=1)
-    threshold_percent: confloat(ge=1.0, le=100.0)
-
-
-class ExportedConfigPlacementTrigger5(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    type: Literal["seat_threshold"]
-    entitlement_handle: constr(min_length=1)
-    threshold_percent: confloat(ge=1.0, le=100.0)
-
-
-class TrialType(Enum):
-    free = "free"
-    reverse = "reverse"
-
-
-class ExportedConfigPlacementTrigger6(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    type: Literal["trial_started"]
-    trial_type: TrialType | None = None
-
-
-class ExportedConfigPlacementTrigger7(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    type: Literal["trial_progress"]
-    progress_percent: confloat(ge=1.0, le=100.0)
-
-
-class ExportedConfigPlacementTrigger8(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    type: Literal["trial_ending"]
-    days_before_end: conint(ge=0, le=9007199254740991)
-
-
-class ExportedConfigPlacementTrigger9(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    type: Literal["trial_ended"]
-
-
-class ExportedConfigPlacementTrigger10(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    type: Literal["trial_converted"]
-
-
-class ExportedConfigPlacementTrigger11(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    type: Literal["qualifier"]
-    qualifier: constr(min_length=1)
-
-
-class ExportedConfigPlacementTrigger(
-    RootModel[
-        ExportedConfigPlacementTrigger1
-        | ExportedConfigPlacementTrigger2
-        | ExportedConfigPlacementTrigger3
-        | ExportedConfigPlacementTrigger4
-        | ExportedConfigPlacementTrigger5
-        | ExportedConfigPlacementTrigger6
-        | ExportedConfigPlacementTrigger7
-        | ExportedConfigPlacementTrigger8
-        | ExportedConfigPlacementTrigger9
-        | ExportedConfigPlacementTrigger10
-        | ExportedConfigPlacementTrigger11
-    ]
-):
-    root: (
-        ExportedConfigPlacementTrigger1
-        | ExportedConfigPlacementTrigger2
-        | ExportedConfigPlacementTrigger3
-        | ExportedConfigPlacementTrigger4
-        | ExportedConfigPlacementTrigger5
-        | ExportedConfigPlacementTrigger6
-        | ExportedConfigPlacementTrigger7
-        | ExportedConfigPlacementTrigger8
-        | ExportedConfigPlacementTrigger9
-        | ExportedConfigPlacementTrigger10
-        | ExportedConfigPlacementTrigger11
-    )
-
-
 class Operator(Enum):
     eq = "eq"
     neq = "neq"
@@ -964,85 +812,6 @@ class ExportedConfigSegmentsItemPredicatesItem(BaseModel):
     field: constr(min_length=1)
     operator: Operator
     value: str
-
-
-class ExportedConfigSegmentsItem(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    name: constr(min_length=1)
-    handle: constr(min_length=1)
-    predicates: list[ExportedConfigSegmentsItemPredicatesItem] | None = None
-    dimension_id: str | None = None
-
-
-class ExportedConfigSlotConfigsItem(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    slot_id: constr(min_length=1)
-    active: bool
-    triggers: list[str]
-
-
-class ExportedConfigStudioCtaConfig(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    label: str
-    path: CtaActionType
-    config: dict[str, str] | None = None
-
-
-class ExportedConfigStudioPayloadCaps(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    max_per_period: ExportedConfigPeriodCap | None = None
-    cooldown_days: conint(ge=0, le=9007199254740991) | None = None
-
-
-class RecommendationStrategy(Enum):
-    next_tier_up = "next_tier_up"
-    best_value = "best_value"
-    custom = "custom"
-
-
-class ExportedConfigStudioPayloadSurface(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    template_id: constr(min_length=1)
-    fields: dict[str, str]
-    ctas: list[ExportedConfigStudioCtaConfig]
-
-
-class ExportedConfigStudioPayloadTarget(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    plan_ids: list[str]
-    billing_cadences: list[str] | None = None
-    segment_chips: list[str]
-
-
-class ExportedConfigSurfaceTemplatesItemFieldsItem(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    name: constr(min_length=1)
-    type: str | None = None
-    required: bool | None = None
-
-
-class ExportedConfigSurfaceTemplatesItem(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    surface_type: str
-    fields: list[ExportedConfigSurfaceTemplatesItemFieldsItem] | None = None
 
 
 class ExportedConfigUiPathActionType(Enum):
@@ -1547,6 +1316,12 @@ class PlacementCategory(Enum):
     retention = "retention"
 
 
+class RecommendationStrategy(Enum):
+    next_tier_up = "next_tier_up"
+    best_value = "best_value"
+    custom = "custom"
+
+
 class PlacementPerformanceRow(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -1559,6 +1334,11 @@ class PlacementPerformanceRow(BaseModel):
     ctr: confloat(ge=0.0)
     conversion_rate: confloat(ge=0.0)
     revenue_cents: conint(ge=0, le=9007199254740991)
+
+
+class TrialType(Enum):
+    free = "free"
+    reverse = "reverse"
 
 
 class Qualifier(Enum):
@@ -1616,7 +1396,7 @@ class PlacementSettingsCapRuleGroupItem(BaseModel):
     label: constr(min_length=1) | None = None
 
 
-class Period1(Enum):
+class Period(Enum):
     session = "session"
     day = "day"
     week = "week"
@@ -1628,7 +1408,7 @@ class Cap(BaseModel):
         extra="forbid",
     )
     count: conint(ge=1, le=9007199254740991)
-    period: Period1
+    period: Period
 
 
 class PlacementSettingsCapRule(BaseModel):
@@ -1795,6 +1575,315 @@ class PromotionStatus(Enum):
     live = "live"
     expired = "expired"
     archived = "archived"
+
+
+class RevTurbineConfigAddonsItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    unique_handle: constr(min_length=1)
+    name: constr(min_length=1)
+    sort_order: conint(ge=0, le=9007199254740991)
+    visibility: PlanVisibility
+
+
+class RevTurbineConfigEntitlementsItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    unique_handle: constr(min_length=1)
+    name: constr(min_length=1)
+    type: EntitlementType
+    unit: str | None = None
+
+
+class Period1(Enum):
+    session = "session"
+    day = "day"
+    week = "week"
+    month = "month"
+    lifetime = "lifetime"
+
+
+class RevTurbineConfigPeriodCap(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    count: conint(ge=1, le=9007199254740991)
+    period: Period1
+
+
+class RevTurbineConfigPlacementCategory(Enum):
+    fixed = "fixed"
+    gated = "gated"
+    usage_credit_seat = "usage_credit_seat"
+    trials = "trials"
+    other_conversion = "other_conversion"
+    retention = "retention"
+
+
+class SourceMode(Enum):
+    inline = "inline"
+    content_linked = "content_linked"
+
+
+class ContentLink(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    message_block_id: str | None = None
+    ui_path_id: str | None = None
+    promotion_id: str | None = None
+    content_payload_id: str | None = None
+
+
+class RevTurbineConfigPlacementSlotsItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    label: constr(min_length=1)
+    description: str
+    surface_type: str
+    placement_handle: constr(min_length=1)
+    template: str | None = None
+
+
+class RevTurbineConfigPlacementTrigger1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["surface_render"]
+    slot_id: constr(min_length=1)
+
+
+class RevTurbineConfigPlacementTrigger2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["entitlement_gate"]
+    entitlement_handle: constr(min_length=1)
+    tier_threshold: str | None = None
+
+
+class RevTurbineConfigPlacementTrigger3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["usage_threshold"]
+    entitlement_handle: constr(min_length=1)
+    threshold_percent: confloat(ge=1.0, le=100.0)
+
+
+class RevTurbineConfigPlacementTrigger4(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["credit_threshold"]
+    entitlement_handle: constr(min_length=1)
+    threshold_percent: confloat(ge=1.0, le=100.0)
+
+
+class RevTurbineConfigPlacementTrigger5(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["seat_threshold"]
+    entitlement_handle: constr(min_length=1)
+    threshold_percent: confloat(ge=1.0, le=100.0)
+
+
+class RevTurbineConfigPlacementTrigger6(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["trial_started"]
+    trial_type: TrialType | None = None
+
+
+class RevTurbineConfigPlacementTrigger7(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["trial_progress"]
+    progress_percent: confloat(ge=1.0, le=100.0)
+
+
+class RevTurbineConfigPlacementTrigger8(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["trial_ending"]
+    days_before_end: conint(ge=0, le=9007199254740991)
+
+
+class RevTurbineConfigPlacementTrigger9(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["trial_ended"]
+
+
+class RevTurbineConfigPlacementTrigger10(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["trial_converted"]
+
+
+class RevTurbineConfigPlacementTrigger11(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["qualifier"]
+    qualifier: constr(min_length=1)
+
+
+class RevTurbineConfigPlacementTrigger(
+    RootModel[
+        RevTurbineConfigPlacementTrigger1
+        | RevTurbineConfigPlacementTrigger2
+        | RevTurbineConfigPlacementTrigger3
+        | RevTurbineConfigPlacementTrigger4
+        | RevTurbineConfigPlacementTrigger5
+        | RevTurbineConfigPlacementTrigger6
+        | RevTurbineConfigPlacementTrigger7
+        | RevTurbineConfigPlacementTrigger8
+        | RevTurbineConfigPlacementTrigger9
+        | RevTurbineConfigPlacementTrigger10
+        | RevTurbineConfigPlacementTrigger11
+    ]
+):
+    root: (
+        RevTurbineConfigPlacementTrigger1
+        | RevTurbineConfigPlacementTrigger2
+        | RevTurbineConfigPlacementTrigger3
+        | RevTurbineConfigPlacementTrigger4
+        | RevTurbineConfigPlacementTrigger5
+        | RevTurbineConfigPlacementTrigger6
+        | RevTurbineConfigPlacementTrigger7
+        | RevTurbineConfigPlacementTrigger8
+        | RevTurbineConfigPlacementTrigger9
+        | RevTurbineConfigPlacementTrigger10
+        | RevTurbineConfigPlacementTrigger11
+    )
+
+
+class RevTurbineConfigPlansItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    unique_handle: constr(min_length=1)
+    name: constr(min_length=1)
+    tier_position: conint(ge=0, le=9007199254740991)
+    sort_order: conint(ge=0, le=9007199254740991)
+    visibility: PlanVisibility
+
+
+class RevTurbineConfigSegmentsItemPredicatesItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    field: constr(min_length=1)
+    operator: Operator
+    value: str
+
+
+class RevTurbineConfigSegmentsItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    name: constr(min_length=1)
+    handle: constr(min_length=1)
+    predicates: list[RevTurbineConfigSegmentsItemPredicatesItem] | None = None
+    dimension_id: str | None = None
+
+
+class RevTurbineConfigSlotConfigsItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    slot_id: constr(min_length=1)
+    active: bool
+    triggers: list[str]
+
+
+class RevTurbineConfigStudioCtaConfig(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    label: str
+    path: CtaActionType
+    config: dict[str, str] | None = None
+
+
+class RevTurbineConfigStudioPayloadCaps(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    max_per_period: RevTurbineConfigPeriodCap | None = None
+    cooldown_days: conint(ge=0, le=9007199254740991) | None = None
+
+
+class RevTurbineConfigStudioPayloadSurface(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    template_id: constr(min_length=1)
+    fields: dict[str, str]
+    ctas: list[RevTurbineConfigStudioCtaConfig]
+
+
+class RevTurbineConfigStudioPayloadTarget(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    plan_ids: list[str]
+    billing_cadences: list[str] | None = None
+    segment_chips: list[str]
+
+
+class RevTurbineConfigSurfaceTemplatesItemFieldsItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    name: constr(min_length=1)
+    type: str | None = None
+    required: bool | None = None
+
+
+class RevTurbineConfigSurfaceTemplatesItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    surface_type: str
+    fields: list[RevTurbineConfigSurfaceTemplatesItemFieldsItem] | None = None
+
+
+class RevTurbineConfigUiPathActionType(Enum):
+    open_checkout_modal = "open_checkout_modal"
+    navigate_to_plans = "navigate_to_plans"
+    open_upgrade_modal = "open_upgrade_modal"
+    open_placement = "open_placement"
+    book_demo = "book_demo"
+    open_feature_tour = "open_feature_tour"
+    extend_trial = "extend_trial"
+    switch_billing_period = "switch_billing_period"
+    custom_url = "custom_url"
+    dismiss = "dismiss"
+    contact_sales = "contact_sales"
+    complete_onboarding = "complete_onboarding"
+    invite_teammate = "invite_teammate"
+    refer_friend = "refer_friend"
+    verify_work_email = "verify_work_email"
+    update_payment_method = "update_payment_method"
+    enable_auto_renewal = "enable_auto_renewal"
+    manage_subscription = "manage_subscription"
 
 
 class RevenueMetric(BaseModel):
@@ -2416,15 +2505,15 @@ class WebhookEventStatus(Enum):
     skipped = "skipped"
 
 
-class ExportedConfigExtensionRulesItem(RootModel[Any]):
+class RevTurbineConfigExtensionRulesItem(RootModel[Any]):
     root: Any
 
 
-class ExportedConfigFreeTrialRuleItem(RootModel[Any]):
+class RevTurbineConfigFreeTrialRuleItem(RootModel[Any]):
     root: Any
 
 
-class ExportedConfigReverseTrialRuleItem(RootModel[Any]):
+class RevTurbineConfigReverseTrialRuleItem(RootModel[Any]):
     root: Any
 
 
@@ -2606,7 +2695,7 @@ class ContentUiPath(BaseModel):
         extra="forbid",
     )
     name: constr(min_length=1)
-    action_type: ExportedConfigUiPathActionType
+    action_type: RevTurbineConfigUiPathActionType
     plan_handle: str | None = None
     promotion_id: str | None = None
     placement_handle: str | None = None
@@ -2870,70 +2959,15 @@ class Experiment(BaseModel):
     metadata: dict[str, Any]
 
 
-class ExportedConfigAddonsItem(BaseModel):
+class ExportedConfigSegmentsItem(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
     id: constr(min_length=1)
-    unique_handle: constr(min_length=1)
     name: constr(min_length=1)
-    sort_order: conint(ge=0, le=9007199254740991)
-    visibility: PlanVisibility
-
-
-class ExportedConfigEntitlementRulesItem(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    entitlement_id: constr(min_length=1)
-    targets: list[EntitlementRuleTarget] = Field(..., min_length=1)
-    segment_ids: list[str]
-    type_fields: dict[str, Any]
-    current_usage: float
-    allocation: UsageAllocation | None = None
-
-
-class ExportedConfigPlacementPayloadItem(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    payload_id: constr(min_length=1)
-    placement_id: constr(min_length=1)
-    target: ExportedConfigStudioPayloadTarget
-    caps: ExportedConfigStudioPayloadCaps | None = None
-    created_at: str
-    updated_at: AwareDatetime | None = None
-    source_mode: SourceMode
-    surfaces: list[ExportedConfigStudioPayloadSurface] | None = None
-    surface_slot_ids: list[str] | None = None
-    content_link: ContentLink | None = None
-
-
-class ExportedConfigPlansItem(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    unique_handle: constr(min_length=1)
-    name: constr(min_length=1)
-    tier_position: conint(ge=0, le=9007199254740991)
-    sort_order: conint(ge=0, le=9007199254740991)
-    visibility: PlanVisibility
-
-
-class ExportedConfigStudioPayload(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    target: ExportedConfigStudioPayloadTarget
-    surfaces: list[ExportedConfigStudioPayloadSurface]
-    caps: ExportedConfigStudioPayloadCaps | None = None
-    surface_slot_ids: list[str] | None = None
-    created_at: str | None = None
-    recommendation_strategy: RecommendationStrategy
-    recommendation_plan_override: str | None = None
+    handle: constr(min_length=1)
+    predicates: list[RevTurbineConfigSegmentsItemPredicatesItem] | None = None
+    dimension_id: str | None = None
 
 
 class FeatureFlag(BaseModel):
@@ -3173,6 +3207,49 @@ class Promotion(BaseModel):
     metadata: dict[str, Any]
 
 
+class RevTurbineConfigEntitlementRulesItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    entitlement_id: constr(min_length=1)
+    targets: list[EntitlementRuleTarget] = Field(..., min_length=1)
+    segment_ids: list[str]
+    type_fields: dict[str, Any]
+    current_usage: float
+    allocation: UsageAllocation | None = None
+
+
+class RevTurbineConfigPlacementPayloadItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    payload_id: constr(min_length=1)
+    placement_id: constr(min_length=1)
+    target: RevTurbineConfigStudioPayloadTarget
+    caps: RevTurbineConfigStudioPayloadCaps | None = None
+    created_at: str
+    updated_at: AwareDatetime | None = None
+    source_mode: SourceMode
+    surfaces: list[RevTurbineConfigStudioPayloadSurface] | None = None
+    surface_slot_ids: list[str] | None = None
+    content_link: ContentLink | None = None
+
+
+class RevTurbineConfigStudioPayload(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    target: RevTurbineConfigStudioPayloadTarget
+    surfaces: list[RevTurbineConfigStudioPayloadSurface]
+    caps: RevTurbineConfigStudioPayloadCaps | None = None
+    surface_slot_ids: list[str] | None = None
+    created_at: str | None = None
+    recommendation_strategy: RecommendationStrategy
+    recommendation_plan_override: str | None = None
+
+
 class ReverseTrialRule(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -3331,6 +3408,9 @@ class TreatmentInteractionInput(BaseModel):
     user_id: constr(min_length=1)
     placement_id: constr(min_length=1)
     treatment_id: constr(min_length=1) | None = None
+    surface_slot_id: constr(min_length=1) | None = None
+    surface_template_id: constr(min_length=1) | None = None
+    payload_id: constr(min_length=1) | None = None
     interaction_type: TreatmentInteractionType
     interaction_at: AwareDatetime | None = None
     metadata: dict[str, Any] | None = None
@@ -3405,13 +3485,25 @@ class ExportedConfigPlacementItem(BaseModel):
     )
     id: constr(min_length=1)
     name: constr(min_length=1)
-    category: ExportedConfigPlacementCategory
-    trigger: ExportedConfigPlacementTrigger
-    payloads: list[ExportedConfigStudioPayload]
+    category: RevTurbineConfigPlacementCategory
+    trigger: RevTurbineConfigPlacementTrigger
+    payloads: list[RevTurbineConfigStudioPayload]
     order: conint(ge=0, le=9007199254740991)
 
 
-class ExportedConfig(BaseModel):
+class RevTurbineConfigPlacementItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    name: constr(min_length=1)
+    category: RevTurbineConfigPlacementCategory
+    trigger: RevTurbineConfigPlacementTrigger
+    payloads: list[RevTurbineConfigStudioPayload]
+    order: conint(ge=0, le=9007199254740991)
+
+
+class RevTurbineConfig(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -3422,25 +3514,25 @@ class ExportedConfig(BaseModel):
         None
     )
     change_set_id: str | None
-    plans: list[ExportedConfigPlansItem]
-    addons: list[ExportedConfigAddonsItem] | None = None
-    entitlements: list[ExportedConfigEntitlementsItem]
-    entitlement_rules: list[ExportedConfigEntitlementRulesItem]
-    segments: list[ExportedConfigSegmentsItem]
+    plans: list[RevTurbineConfigPlansItem]
+    addons: list[RevTurbineConfigAddonsItem] | None = None
+    entitlements: list[RevTurbineConfigEntitlementsItem]
+    entitlement_rules: list[RevTurbineConfigEntitlementRulesItem]
+    segments: list[RevTurbineConfigSegmentsItem]
     content_ui_paths: list[ContentUiPath]
-    slot_configs: list[ExportedConfigSlotConfigsItem] | None = None
+    slot_configs: list[RevTurbineConfigSlotConfigsItem] | None = None
     content_overrides: dict[str, dict[str, str]] | None = None
     theme: dict[str, Any] | None = None
-    placement_slots: list[ExportedConfigPlacementSlotsItem] | None = None
+    placement_slots: list[RevTurbineConfigPlacementSlotsItem] | None = None
     message_blocks: list[MessageBlock] | None = None
-    placement_payloads: list[ExportedConfigPlacementPayloadItem] | None = None
-    placements: list[ExportedConfigPlacementItem] | None = None
+    placement_payloads: list[RevTurbineConfigPlacementPayloadItem] | None = None
+    placements: list[RevTurbineConfigPlacementItem] | None = None
     content_promotions: list[ContentPromotion] | None = None
     personalization_tokens: list[PersonalizationToken] | None = None
-    surface_templates: list[ExportedConfigSurfaceTemplatesItem] | None = None
-    free_trial_rules: list[ExportedConfigFreeTrialRuleItem] | None = None
-    reverse_trial_rules: list[ExportedConfigReverseTrialRuleItem] | None = None
-    extension_rules: list[ExportedConfigExtensionRulesItem] | None = None
+    surface_templates: list[RevTurbineConfigSurfaceTemplatesItem] | None = None
+    free_trial_rules: list[RevTurbineConfigFreeTrialRuleItem] | None = None
+    reverse_trial_rules: list[RevTurbineConfigReverseTrialRuleItem] | None = None
+    extension_rules: list[RevTurbineConfigExtensionRulesItem] | None = None
 
 
 class ServerEvaluationPayload(BaseModel):
@@ -3482,3 +3574,35 @@ class UserContext(BaseModel):
     derived_config_version: str | None = None
     context_hash: str | None = None
     derived_computed_at: AwareDatetime | None
+
+
+class ExportedConfig(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    version: str
+    exported_at: AwareDatetime | None = None
+    schema_version: str | None = None
+    bundle_schema_version: conint(ge=-9007199254740991, le=9007199254740991) | None = (
+        None
+    )
+    change_set_id: str | None
+    plans: list[RevTurbineConfigPlansItem]
+    addons: list[RevTurbineConfigAddonsItem] | None = None
+    entitlements: list[RevTurbineConfigEntitlementsItem]
+    entitlement_rules: list[RevTurbineConfigEntitlementRulesItem]
+    segments: list[RevTurbineConfigSegmentsItem]
+    content_ui_paths: list[ContentUiPath]
+    slot_configs: list[RevTurbineConfigSlotConfigsItem] | None = None
+    content_overrides: dict[str, dict[str, str]] | None = None
+    theme: dict[str, Any] | None = None
+    placement_slots: list[RevTurbineConfigPlacementSlotsItem] | None = None
+    message_blocks: list[MessageBlock] | None = None
+    placement_payloads: list[RevTurbineConfigPlacementPayloadItem] | None = None
+    placements: list[RevTurbineConfigPlacementItem] | None = None
+    content_promotions: list[ContentPromotion] | None = None
+    personalization_tokens: list[PersonalizationToken] | None = None
+    surface_templates: list[RevTurbineConfigSurfaceTemplatesItem] | None = None
+    free_trial_rules: list[RevTurbineConfigFreeTrialRuleItem] | None = None
+    reverse_trial_rules: list[RevTurbineConfigReverseTrialRuleItem] | None = None
+    extension_rules: list[RevTurbineConfigExtensionRulesItem] | None = None

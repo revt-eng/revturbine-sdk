@@ -1275,7 +1275,11 @@ const INTERACTION_STATE_STORAGE_PREFIX = 'revturbine:interaction-state';
 const PRESENTATION_CAPS_STORAGE_PREFIX = 'revturbine:presentation-caps';
 const INGEST_GATEWAY_PATH = '/api/track';
 const SDK_META_GATEWAY_PATH = '/api/sdk/meta';
-const TOUCHPOINT_TRANSITION_PATH = '/api/touchpoints/transition';
+// Treatment interactions (impression / dismiss / cta) POST here so the control
+// plane can write a `placement_presentations` row (plan 114). The public
+// `touchpointTransition` endpoint-override key is kept for back-compat; the
+// default target is the events interactions route.
+const TOUCHPOINT_TRANSITION_PATH = '/api/events/interactions';
 const LEGACY_INTERACTIONS_PATH = '/api/placements/interactions';
 const SDK_EVENT_SOURCE = 'revturbine-web-sdk';
 
@@ -4462,8 +4466,13 @@ export class RevTurbineCustomerSdk {
     const transitionPayload = pending.map((item) => ({
       user_id: item.userId,
       placement_id: item.placementId,
+      treatment_id: item.treatmentId,
       interaction_type: item.interactionType,
       interaction_at: item.interactionAt,
+      // Presentation context → placement_presentations (plan 114 TASK-2).
+      surface_slot_id: item.surfaceSlotId,
+      surface_template_id: item.surfaceTemplateId,
+      payload_id: item.payloadId,
       metadata: item.metadata ?? {},
       tenant_id: this.tenantId,
     }));
