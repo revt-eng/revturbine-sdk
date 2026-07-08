@@ -53,6 +53,13 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@revt-eng'
 
+      - name: Sync root @revt-eng/* pins from web-sdk (prevents hoist drift)
+        # web-sdk is mirror-synced from revturbine-sdk-internal; the root manifest
+        # is public-owned and drifts. Derive the root pins from web-sdk before the
+        # root install so the hoisted @revt-eng/* can never lag what the SDK builds
+        # against. See scripts/sync-root-pins.mjs (revt-eng/revturbine-sdk#14).
+        run: node scripts/sync-root-pins.mjs
+
       - name: Install root deps (hoists @revt-eng/* for web-sdk resolution)
         run: pnpm install --no-frozen-lockfile --ignore-scripts
         env:
