@@ -73,6 +73,11 @@ jobs:
         run: pnpm build
         env:
           PAGES_BASE: /docs/
+          # Public origin this bundle is served from (marketing site proxies it as
+          # revturbine.com/docs). Sets astro's `site` so the generated sitemap,
+          # llms.txt, and robots.txt emit absolute URLs on the right host instead
+          # of the github.io default. Must stay paired with PAGES_BASE=/docs/.
+          PAGES_SITE: https://revturbine.com
 
       - name: Stage static bundle under /docs for Vercel
         # Vercel serves the deployed dir at the project root; base=/docs means the
