@@ -58,6 +58,13 @@ jobs:
           echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
           echo "Resolved version: ${TAG#v}"
 
+      - name: Sync root @revt-eng/* pins from web-sdk (prevents hoist drift)
+        # web-sdk is mirror-synced from revturbine-sdk-internal; the root manifest
+        # is public-owned and drifts. Derive the root pins from web-sdk before the
+        # root install so the hoisted @revt-eng/* can never lag what the SDK builds
+        # against. See scripts/sync-root-pins.mjs (revt-eng/revturbine-sdk#14).
+        run: node scripts/sync-root-pins.mjs
+
       - name: Install root deps (hoists @revt-eng/* so ../server-node resolves them)
         # tsup bundles web-sdk's headless entry, which imports ../server-node, which
         # imports @revt-eng/core — resolved by walking up to the repo-root
