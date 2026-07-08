@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import react from '@astrojs/react';
 import starlightTypeDoc from 'starlight-typedoc';
+import starlightLlmsTxt from 'starlight-llms-txt';
 import { join, resolve } from 'node:path';
 import { readFile, writeFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -11,6 +12,12 @@ const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? '';
 const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
 const base = process.env.PAGES_BASE
   ?? (isGithubActions && repoName ? `/${repoName}/` : '/');
+
+// PAGES_SITE is the public origin the build is served from. It must match the
+// deployment host so the generated sitemap, llms.txt, and robots.txt emit
+// absolute URLs on the right domain. Defaults to the GitHub Pages origin; the
+// Vercel /docs build sets PAGES_SITE=https://revturbine.com (with PAGES_BASE=/docs).
+const site = process.env.PAGES_SITE ?? 'https://revt-eng.github.io';
 
 // Resolve @revt-eng/* packages from pages-build/node_modules so Vite can find
 // them even when the web-sdk/ workspace dependencies use workspace:* protocol.
@@ -61,7 +68,7 @@ function baseAbsoluteInternalLinks(base) {
 }
 
 export default defineConfig({
-  site: 'https://revt-eng.github.io',
+  site,
   base,
   redirects: {
     '/api/': '/api/readme/',
@@ -105,6 +112,27 @@ export default defineConfig({
         // Pagefind is enabled by default in Starlight; configure ranking
       },
       plugins: [
+        // Auto-generates /llms.txt (curated index), /llms-full.txt (all docs as a
+        // single markdown file), and /llms-small.txt from the actual page content —
+        // so they never drift from the docs the way a hand-maintained file does.
+        starlightLlmsTxt({
+          projectName: 'RevTurbine SDK',
+          description:
+            'Placement decisioning, entitlement checks, and usage tracking for web applications.',
+          details:
+            'RevTurbine is the monetization engine for product-led SaaS: show upgrade ' +
+            'prompts, gate features, enforce usage limits, and run the full decision ' +
+            'engine client-side with no backend.',
+          // Emit the raw markdown source rather than rendering each page through the
+          // plugin's Astro container. Required because ~20 docs pages (components/*,
+          // playground/*) embed slot-gallery / Sandpack React components via
+          // `client:only="react"`, and the plugin's container only registers the
+          // astro:jsx renderer — so rendering them throws NoMatchingRenderer and
+          // fails the whole /llms-full.txt route. rawContent skips that render pass.
+          // Trade-off: llms-full/llms-small carry raw MDX (import lines, JSX tags)
+          // instead of cleaned markdown. See the plugin's rawContent option docs.
+          rawContent: true,
+        }),
         starlightTypeDoc({
           entryPoints: ['../web-sdk/index.ts'],
           tsconfig: './tsconfig.typedoc.json',
