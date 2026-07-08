@@ -67,8 +67,29 @@ export {
   MESSAGE_SURFACE_TEMPLATE_IDS,
 } from './placements/surface-slot-constants';
 
-// Advertised alias (plan 84): the SDK developer-experience spec leads with
-// `<RTSlot id="…" />` as the slot component. RTSlot IS SurfaceSlotComponent —
-// the canonical name is still exported via `export * from './placements'` above.
+// Advertised names (plan 105 Q-4): the customer-facing components are just two —
+// `<Slot>` and `<Gate>`. `Slot` IS `SurfaceSlotComponent`; `Gate` IS
+// `AccessGateSurfaceSlot` (both canonical names remain exported via
+// `export * from './placements'` above).
+
+/**
+ * `<Slot id="…" />` — the general placement slot component. Renders whatever
+ * placement the control plane resolves for the given surface (banner, modal,
+ * toast, meter, …). Advertised name for `SurfaceSlotComponent`.
+ */
+export { SurfaceSlotComponent as Slot } from './placements/SurfaceSlotComponent';
+export type { SurfaceSlotComponentProps as SlotProps } from './placements/SurfaceSlotComponent';
+
+/**
+ * `<Gate check={{ entitlement: "…" }}>` — gates its children behind an
+ * entitlement, rendering the resolved upsell placement when denied. Advertised
+ * name for `AccessGateSurfaceSlot`.
+ */
+export { AccessGateSurfaceSlot as Gate } from './placements/AccessGateSurfaceSlot';
+export type { AccessGateSurfaceSlotProps as GateProps } from './placements/AccessGateSurfaceSlot';
+
+// Deprecated prior name (plan 84): `<RTSlot>` predates the plan-105 `<Slot>`
+// rename. Kept as a back-compat alias of `SurfaceSlotComponent`; prefer `Slot`.
+/** @deprecated Use {@link Slot} instead — `RTSlot` is the pre-plan-105 name. */
 export { SurfaceSlotComponent as RTSlot } from './placements/SurfaceSlotComponent';
 export type { SurfaceSlotComponentProps as RTSlotProps } from './placements/SurfaceSlotComponent';

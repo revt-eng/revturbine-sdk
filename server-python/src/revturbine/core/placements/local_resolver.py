@@ -722,14 +722,18 @@ def create_static_placement_resolver(
         surface_template_id = surface.get("template") if is_record(surface) else None
         if content_provider is not None and surface_template_id:
             segments = providers.get("segments") if is_record(providers) else None
-            raw_segment_ids = segments.get("segment_ids") if is_record(segments) else None
-            segment_ids: list[str] = (
-                [s for s in raw_segment_ids if isinstance(s, str)]
-                if isinstance(raw_segment_ids, list)
+            # Plan 120: segment identity is the handle. Content-override refs
+            # (`segment_value_id`) are handles and the core matches overrides by
+            # handle, so key the user's segment set off `segment_slugs` (handles),
+            # not `segment_ids`.
+            raw_segment_slugs = segments.get("segment_slugs") if is_record(segments) else None
+            segment_slugs: list[str] = (
+                [s for s in raw_segment_slugs if isinstance(s, str)]
+                if isinstance(raw_segment_slugs, list)
                 else []
             )
             resolved_payload = resolve_payload_for_user_with_provider(
-                surface_template_id, {"segment_ids": segment_ids}, content_provider, {}
+                surface_template_id, {"segment_ids": segment_slugs}, content_provider, {}
             )
             if resolved_payload is not None:
                 prev = selected_output.get("content")

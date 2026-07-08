@@ -3,10 +3,10 @@ import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { writeJourneySet } from './dev/journey-writer';
 
-// The playground reads its bundled config from the revturbine-demo-data sibling
-// repo (revt-eng/revturbine-demo-data). That path sits outside the playground
-// root, so widen Vite's filesystem allow-list to the shared `revt-eng` root —
-// which also covers the SDK source the app imports from `../index`.
+// The playground imports the SDK source from `../index`, which sits outside the
+// playground root, so widen Vite's filesystem allow-list to the shared `revt-eng`
+// root. (The Prism config is now authored locally in
+// `config/prism-export-config.json`, no longer read from a sibling repo.)
 const revtEngRoot = resolve(import.meta.dirname, '../../../');
 
 /**

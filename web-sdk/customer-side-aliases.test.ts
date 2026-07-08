@@ -7,8 +7,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { RevTurbineCustomerSdk } from './customer-side';
 import type { EntitlementResult, RevTurbineInitOptions } from './customer-side';
-import { RTSlot } from './index';
+import { RTSlot, Slot, Gate } from './index';
 import { SurfaceSlotComponent } from './placements/SurfaceSlotComponent';
+import { AccessGateSurfaceSlot } from './placements/AccessGateSurfaceSlot';
 
 function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerSdk {
   return new RevTurbineCustomerSdk({
@@ -81,7 +82,16 @@ describe('advertised hero-API aliases (plan 84)', () => {
     expect(spy).toHaveBeenCalledOnce();
   });
 
-  it('RTSlot is the SurfaceSlotComponent (advertised alias)', () => {
+  it('RTSlot is the SurfaceSlotComponent (deprecated alias)', () => {
     expect(RTSlot).toBe(SurfaceSlotComponent);
+  });
+
+  // Plan 105 Q-4: the two customer-facing components are <Slot> and <Gate>.
+  it('Slot is the SurfaceSlotComponent (advertised name)', () => {
+    expect(Slot).toBe(SurfaceSlotComponent);
+  });
+
+  it('Gate is the AccessGateSurfaceSlot (advertised name)', () => {
+    expect(Gate).toBe(AccessGateSurfaceSlot);
   });
 });

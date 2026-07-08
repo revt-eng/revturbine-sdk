@@ -1700,14 +1700,14 @@ export class RevTurbineCustomerSdk {
     const configuredSegments = exportedConfig?.segments ?? [];
 
     for (const segment of configuredSegments) {
-      this.configuredSegmentsById.set(segment.id, segment);
+      this.configuredSegmentsById.set(segment.handle, segment);
       if (!segment.predicates || segment.predicates.length === 0) continue;
 
       for (const predicate of segment.predicates) {
         const field = String(predicate.field || '').trim();
         if (!field) continue;
         const segmentIds = this.segmentIdsByPredicateField.get(field) ?? new Set<string>();
-        segmentIds.add(segment.id);
+        segmentIds.add(segment.handle);
         this.segmentIdsByPredicateField.set(field, segmentIds);
       }
     }
@@ -2236,11 +2236,9 @@ export class RevTurbineCustomerSdk {
     if (!current) return ids;
     ids.add(current);
     for (const plan of exportedConfig.plans ?? []) {
-      const id = typeof plan.id === 'string' ? plan.id.toLowerCase() : '';
       const handle = typeof plan.unique_handle === 'string' ? plan.unique_handle.toLowerCase() : '';
-      if (id === current || handle === current) {
-        if (id) ids.add(id);
-        if (handle) ids.add(handle);
+      if (handle === current) {
+        ids.add(handle);
       }
     }
     return ids;
@@ -2268,9 +2266,8 @@ export class RevTurbineCustomerSdk {
     const entitlementHandleById = new Map<string, string>();
     const entitlements = exportedConfig.entitlements ?? [];
     for (const item of entitlements) {
-      const id = typeof item.id === 'string' ? item.id : '';
       const handle = typeof item.unique_handle === 'string' ? item.unique_handle : '';
-      if (id && handle) entitlementHandleById.set(id, handle);
+      if (handle) entitlementHandleById.set(handle, handle);
     }
 
     const rules = exportedConfig.entitlement_rules ?? [];
@@ -2386,7 +2383,7 @@ export class RevTurbineCustomerSdk {
     const currentPlanHandle = String(currentPlanHandleRaw || '').toLowerCase();
 
     const planIRs = exportedConfig.plans.map((p) => ({
-      source_id: p.id,
+      source_id: p.unique_handle,
       unique_handle: p.unique_handle,
       name: p.name,
       tier_position: p.tier_position ?? 0,
@@ -2658,7 +2655,7 @@ export class RevTurbineCustomerSdk {
     if (configuredSegments.length > 0 && this.dirtySegmentIds.size > 0) {
       for (const segmentId of this.dirtySegmentIds) {
         const segment = this.configuredSegmentsById.get(segmentId)
-          ?? configuredSegments.find((candidate) => candidate.id === segmentId);
+          ?? configuredSegments.find((candidate) => candidate.handle === segmentId);
         if (!segment) {
           this.segmentMembershipBySegmentId.delete(segmentId);
           continue;
@@ -2672,8 +2669,8 @@ export class RevTurbineCustomerSdk {
 
     const segmentIds = configuredSegments.length > 0
       ? configuredSegments
-        .filter((segment) => this.segmentMembershipBySegmentId.get(segment.id) === true)
-        .map((segment) => segment.id)
+        .filter((segment) => this.segmentMembershipBySegmentId.get(segment.handle) === true)
+        .map((segment) => segment.handle)
       : [...(cachedContext?.segmentIds ?? [])];
 
     return {
@@ -2713,10 +2710,10 @@ export class RevTurbineCustomerSdk {
         : [];
       const matched = predicates.length > 0
         ? predicates.every((predicate) => predicate.matched)
-        : segmentSet.has(segment.id);
+        : segmentSet.has(segment.handle);
 
       return {
-        segmentId: segment.id,
+        segmentId: segment.handle,
         ...(segment.name ? { segmentName: segment.name } : {}),
         matched,
         predicates,
@@ -2727,8 +2724,8 @@ export class RevTurbineCustomerSdk {
     const entitlementTypeById = new Map<string, string>();
     if (Array.isArray(exportedConfig?.entitlements)) {
       for (const entitlement of exportedConfig.entitlements) {
-        const entitlementId = firstStringValue(entitlement.id);
-        const entitlementHandle = firstStringValue(entitlement.unique_handle, entitlementId);
+        const entitlementHandle = firstStringValue(entitlement.unique_handle);
+        const entitlementId = entitlementHandle;
         if (entitlementId && entitlementHandle) {
           entitlementHandleById.set(entitlementId, entitlementHandle);
         }
@@ -2742,8 +2739,8 @@ export class RevTurbineCustomerSdk {
     const planHandleById = new Map<string, string>();
     if (Array.isArray(exportedConfig?.plans)) {
       for (const plan of exportedConfig.plans) {
-        const planId = firstStringValue(plan.id);
         const planHandle = firstStringValue(plan.unique_handle);
+        const planId = planHandle;
         if (planId && planHandle) {
           planHandleById.set(planId, planHandle);
         }
@@ -2765,7 +2762,7 @@ export class RevTurbineCustomerSdk {
     const segmentDimensionsById = new Map<string, string>();
     if (Array.isArray(exportedConfig?.segments)) {
       for (const segment of exportedConfig.segments) {
-        const segId = firstStringValue(segment.id);
+        const segId = firstStringValue(segment.handle);
         const dim = firstStringValue(segment.dimension_id);
         if (segId && dim) segmentDimensionsById.set(segId, dim);
       }

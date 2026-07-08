@@ -18,27 +18,18 @@ export function effectivePlanHandle(state: DemoState): PrismPlanHandle {
   return state.planHandle;
 }
 
-const PLAN_ID_BY_HANDLE: Record<PrismPlanHandle, string> = {
-  free: 'plan_prism_free',
-  pro: 'plan_prism_pro',
-  enterprise: 'plan_prism_enterprise',
-};
-
-function entitlementId(config: RevTurbineConfig, handle: string): string | undefined {
-  return config.entitlements.find((e) => e.unique_handle === handle)?.id;
-}
-
 /** Find the `type_fields` of the rule binding `entitlementHandle` to `planHandle`. */
 function ruleTypeFields(
   config: RevTurbineConfig,
   entitlementHandle: string,
   planHandle: PrismPlanHandle,
 ): Record<string, unknown> | undefined {
-  const entId = entitlementId(config, entitlementHandle);
-  if (!entId) return undefined;
-  const planId = PLAN_ID_BY_HANDLE[planHandle];
+  // Plan 120: config identity is the handle — rules reference entitlements/plans
+  // by handle, so match `entitlement_id`/`target.id` against the handles directly.
   const rule = config.entitlement_rules.find(
-    (r) => r.entitlement_id === entId && r.targets.some((t) => t.kind === 'plan' && t.id === planId),
+    (r) =>
+      r.entitlement_id === entitlementHandle &&
+      r.targets.some((t) => t.kind === 'plan' && t.id === planHandle),
   );
   return rule?.type_fields;
 }
@@ -107,8 +98,8 @@ export function recommendedPlanName(
   const strategy = payload.recommendation_strategy ?? 'next_tier_up';
 
   if (strategy === 'custom') {
-    const overrideId = payload.recommendation_plan_override;
-    return config.plans.find((p) => p.id === overrideId || p.unique_handle === overrideId)?.name ?? null;
+    const overrideHandle = payload.recommendation_plan_override;
+    return config.plans.find((p) => p.unique_handle === overrideHandle)?.name ?? null;
   }
   if (strategy === 'best_value') {
     return config.plans.find((p) => p.unique_handle === 'pro')?.name ?? null;

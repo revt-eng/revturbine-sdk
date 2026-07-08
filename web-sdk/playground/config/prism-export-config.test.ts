@@ -1,29 +1,21 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { RevTurbineConfigSchema } from '@revt-eng/schema';
 import bundledConfig from './prism-export-config.json';
 
 /**
- * Guards the Prism playground's bundled config (plan 81 TASK-1, REQ-6/AC-6).
+ * Guards the Prism playground's authored config (plan 81 TASK-1, REQ-6/AC-6).
  *
- * The playground bundles `prism-export-config.json` so it runs with no cross-repo
- * dependency. The canonical source of truth lives in revturbine-demo-data
- * (`customers/prism/export-config.json`). These tests make the contract real:
+ * `prism-export-config.json` is authored directly in this repo — it is no longer
+ * synced from revturbine-demo-data (plan 105). These tests make the contract real:
  *
- *  1. The bundled copy MUST validate against `RevTurbineConfigSchema` — the same
- *     parse `prism-config.ts` does at load time, but as a CI gate so the
- *     playground can't ship an invalid config undetected.
+ *  1. It MUST validate against `RevTurbineConfigSchema` — the same parse
+ *     `prism-config.ts` does at load time, but as a CI gate so the playground
+ *     can't ship an invalid config undetected. `pnpm typecheck:prism-config`
+ *     enforces the same at build time.
  *  2. It MUST keep exercising the breadth of capabilities the demo is for, so a
  *     careless edit can't silently drop a capability.
- *  3. When revturbine-demo-data is checked out as a sibling (the umbrella layout
- *     + pre-commit), the bundled copy MUST byte-match the canonical. In isolated
- *     SDK CI the sibling is absent, so that check is skipped (loudly) — the
- *     schema-validity gate above is the CI-authoritative guard, and the canonical
- *     is independently validated by `revturbine-cli verify prism`.
  */
-describe('Prism playground bundled config', () => {
+describe('Prism playground authored config', () => {
   it('validates against RevTurbineConfigSchema', () => {
     const result = RevTurbineConfigSchema.safeParse(bundledConfig);
     if (!result.success) {
@@ -64,36 +56,4 @@ describe('Prism playground bundled config', () => {
     );
     expect(hasSegmentTargeting, 'no segment-targeted payload — targeting is dark').toBe(true);
   });
-
-  const canonicalPath = path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    '..',
-    '..',
-    '..',
-    '..',
-    'revturbine-demo-data',
-    'customers',
-    'prism',
-    'export-config.json',
-  );
-  const hasCanonical = existsSync(canonicalPath);
-
-  it.skipIf(!hasCanonical)('byte-matches the revturbine-demo-data canonical', () => {
-    const canonical = readFileSync(canonicalPath, 'utf8');
-    const bundled = readFileSync(
-      path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'prism-export-config.json'),
-      'utf8',
-    );
-    expect(bundled, 'bundled config drifted from the demo-data canonical — run `pnpm sync:prism-config`').toBe(canonical);
-  });
-
-  if (!hasCanonical) {
-    // Not a silent skip: name the gap so a green run here isn't mistaken for
-    // canonical-parity coverage (it isn't, in isolated SDK CI).
-    // eslint-disable-next-line no-console
-    console.warn(
-      '[prism-config] revturbine-demo-data sibling not found — skipping bundled↔canonical byte check. ' +
-        'Schema validity is still enforced above; canonical parity is enforced in the umbrella / pre-commit.',
-    );
-  }
 });

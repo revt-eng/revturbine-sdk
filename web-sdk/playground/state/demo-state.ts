@@ -18,8 +18,8 @@ export type TrialKind = 'free' | 'reverse';
  *
  * The Prism config's segment predicates read these exact field names: the
  * scaffold targeting builder spreads `custom` into the flat segment-evaluation
- * traits, so these keys are a contract with
- * `revturbine-demo-data/customers/prism/export-config.json`. Keep them in sync.
+ * traits, so these keys are a contract with the authored
+ * `config/prism-export-config.json`. Keep them in sync.
  */
 export interface PrismCustomTraits {
   email_type: EmailType;

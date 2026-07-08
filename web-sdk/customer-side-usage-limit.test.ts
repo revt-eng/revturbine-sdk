@@ -15,20 +15,20 @@ function makeConfig(): RevTurbineConfig {
     version: 'v1',
     exported_at: '2026-01-01T00:00:00Z',
     plans: [
-      { id: 'plan_free', unique_handle: 'free', name: 'Free', tier_position: 0, sort_order: 0 },
-      { id: 'plan_pro', unique_handle: 'pro', name: 'Pro', tier_position: 1, sort_order: 0 },
-      { id: 'plan_ent', unique_handle: 'enterprise', name: 'Enterprise', tier_position: 2, sort_order: 0 },
+      { unique_handle: 'free', name: 'Free', tier_position: 0, sort_order: 0 },
+      { unique_handle: 'pro', name: 'Pro', tier_position: 1, sort_order: 0 },
+      { unique_handle: 'enterprise', name: 'Enterprise', tier_position: 2, sort_order: 0 },
     ],
     entitlements: [
-      { id: 'ent_gen', unique_handle: 'generations', name: 'Generations', type: 'usage_limit', unit: 'images' },
+      { unique_handle: 'generations', name: 'Generations', type: 'usage_limit', unit: 'images' },
     ],
     // Enterprise LAST — reproduces the last-write-wins overwrite.
     entitlement_rules: [
-      { id: 'r_free', entitlement_id: 'ent_gen', targets: [{ kind: 'plan', id: 'plan_free' }], segment_ids: [],
+      { id: 'r_free', entitlement_id: 'generations', targets: [{ kind: 'plan', id: 'free' }], segment_ids: [],
         type_fields: { kind: 'usage_limit', limit_value: 30, unit: 'images', period: 'per_month', enforcement: 'hard_block' } },
-      { id: 'r_pro', entitlement_id: 'ent_gen', targets: [{ kind: 'plan', id: 'plan_pro' }], segment_ids: [],
+      { id: 'r_pro', entitlement_id: 'generations', targets: [{ kind: 'plan', id: 'pro' }], segment_ids: [],
         type_fields: { kind: 'usage_limit', limit_value: 2000, unit: 'images', period: 'per_month', enforcement: 'allow_overage' } },
-      { id: 'r_ent', entitlement_id: 'ent_gen', targets: [{ kind: 'plan', id: 'plan_ent' }], segment_ids: [],
+      { id: 'r_ent', entitlement_id: 'generations', targets: [{ kind: 'plan', id: 'enterprise' }], segment_ids: [],
         type_fields: { kind: 'usage_limit', limit_value: 999999, unit: 'images', period: 'per_month', enforcement: 'allow_overage' } },
     ],
     segments: [],

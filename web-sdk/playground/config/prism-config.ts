@@ -7,13 +7,12 @@ import prismExportConfigJson from './prism-export-config.json';
  * {@link RevTurbineConfig} the playground drives the SDK against in local-runtime
  * mode.
  *
- * `prism-export-config.json` is a bundled copy that keeps the playground
- * self-contained (no cross-package / checked-out-branch dependency). The
- * canonical source of truth is the revturbine-demo-data repo
- * (`customers/prism/export-config.json`), which is schema-validated via
- * `revt-config verify prism`; keep the two in sync. It is re-parsed through
- * `RevTurbineConfigSchema` here so the playground fails loud if the copy ever
- * drifts from the schema, rather than silently shipping an invalid config.
+ * `prism-export-config.json` is authored directly in this repo (plan 105) — it
+ * keeps the playground self-contained with no cross-package dependency and is no
+ * longer synced from revturbine-demo-data. It is re-parsed through
+ * `RevTurbineConfigSchema` here so the playground fails loud if an edit ever
+ * drifts from the schema; `pnpm typecheck:prism-config` enforces the same at
+ * build time.
  */
 /**
  * Brand theme handed to the SDK via `exportedConfig.theme`. The built-in slot

@@ -13,40 +13,38 @@ import { BrowserRuntime } from './browser-runtime';
 function createTestConfig(overrides: Partial<RevTurbineConfig> = {}): RevTurbineConfig {
   return {
     version: 'v1-test',
-    tenant_id: 'tenant_test',
+    exported_at: '2026-01-01T00:00:00Z',
     plans: [
-      { id: 'plan_starter', unique_handle: 'starter', display_name: 'Starter', status: 'active' },
-      { id: 'plan_pro', unique_handle: 'pro', display_name: 'Pro', status: 'active' },
+      { unique_handle: 'starter', name: 'Starter', tier_position: 0, sort_order: 0 },
+      { unique_handle: 'pro', name: 'Pro', tier_position: 1, sort_order: 0 },
     ],
     entitlements: [
-      { id: 'ent_1', unique_handle: 'feature_dashboard', display_name: 'Dashboard', type: 'boolean' },
+      { unique_handle: 'feature_dashboard', name: 'Dashboard', type: 'feature' },
     ],
     segments: [],
     entitlement_rules: [
       {
         id: 'rule_1',
-        entitlement_id: 'ent_1',
-        targets: [{ kind: 'plan', id: 'plan_pro' }],
+        entitlement_id: 'feature_dashboard',
+        targets: [{ kind: 'plan', id: 'pro' }],
         segment_ids: [],
         type_fields: { kind: 'feature' },
       },
     ],
-    message_blocks: [],
-    personalization_tokens: [],
     surface_templates: [
       { id: 'banner_placement', surface_type: 'banner' },
     ],
     placements: [
       {
         id: 'pl_upgrade_banner',
-        category: 'upsell',
+        category: 'gated',
         order: 1,
         trigger: { entitlement_handle: 'feature_dashboard' },
         payloads: [
           {
             id: 'payload_1',
             status: 'active',
-            target: { plan_ids: ['plan_starter'] },
+            target: { plan_ids: ['starter'] },
             surfaces: [
               {
                 template_id: 'banner_placement',

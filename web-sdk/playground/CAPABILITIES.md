@@ -6,8 +6,8 @@
 > contract actually express?*
 
 The Prism playground (`web-sdk/playground/`) drives the SDK in local-runtime mode
-against a bundled `ExportedConfig` (`config/prism-export-config.json`; canonical
-source in `revturbine-demo-data/customers/prism/`). The demo's goal is **breadth**:
+against an authored `RevTurbineConfig` (`config/prism-export-config.json`, maintained
+directly in this repo). The demo's goal is **breadth**:
 showcase as many RevTurbine capabilities as the published contract supports.
 
 Schema references below point at `revturbine-scaffold/src/config/models/schema.ts`
@@ -73,10 +73,9 @@ concern owned by scaffold (Kent); raise as a dependency if the demo needs them.
   `prism-config.ts` does at load time — now as a PR-gate test.
 - **Capability breadth:** the same test asserts the demonstrated entitlement types
   and placement categories stay present, so an edit can't silently drop a capability.
-- **Canonical parity:** when `revturbine-demo-data` is a sibling, the test asserts the
-  bundled copy byte-matches `customers/prism/export-config.json`; run
-  `pnpm sync:prism-config` to re-sync after editing the canonical. The canonical is
-  independently validated by `npx tsx scripts/revturbine-cli.ts verify prism`.
+- **Build-time format gate:** the config is authored directly here (no longer synced
+  from revturbine-demo-data); `pnpm typecheck:prism-config` parses it through
+  `RevTurbineConfigSchema` at build time so an edit that drifts from the schema fails.
 - **Trace coverage:** `state/capability-trace.test.ts` asserts every config placement
   has a decision trace, so no surface can ship without a "why am I seeing this?"
   explanation.

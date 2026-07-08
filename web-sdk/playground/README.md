@@ -89,17 +89,16 @@ list of capabilities deferred for schema reasons.
 
 ## Editing the demo
 
-- **The config** (`config/prism-export-config.json`) is a **byte-identical copy** of
-  the canonical at `revturbine-demo-data/customers/prism/export-config.json`. Edit the
-  canonical, then re-sync:
+- **The config** (`config/prism-export-config.json`) is **authored directly here** —
+  edit it in place. It is no longer synced from revturbine-demo-data. Validate after
+  editing:
 
   ```bash
-  pnpm sync:prism-config            # copies the canonical → this bundle
-  npx tsx scripts/revturbine-cli.ts verify prism   # (from revturbine-devkit) schema-validate
+  pnpm typecheck:prism-config       # build-time gate: parses it through RevTurbineConfigSchema
   ```
 
-  A test (`config/prism-export-config.test.ts`) validates the bundle against
-  `ExportedConfigSchema` and byte-matches it to the canonical.
+  A test (`config/prism-export-config.test.ts`) also validates it against
+  `RevTurbineConfigSchema` and asserts the demo's capability breadth in CI.
 - **Add a journey** — author it in the Director and **Save** (writes `journeys/<set>.json`),
   or hand-edit a JSON set directly. The model + loader live in `state/journeys.ts`
   (`state/journey-schema.ts` validates a set); the dev-write middleware is
