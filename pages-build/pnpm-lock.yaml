@@ -18,14 +18,14 @@ importers:
         specifier: ^2.20.0
         version: 2.20.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@revt-eng/core':
-        specifier: 0.1.92
-        version: 0.1.92(drizzle-orm@0.45.2)(react@19.2.6)(tailwindcss@4.3.0)
+        specifier: 0.1.100
+        version: 0.1.100(drizzle-orm@0.45.2)(react@19.2.6)(tailwindcss@4.3.0)
       '@revt-eng/schema':
-        specifier: 0.1.92
-        version: 0.1.92(react@19.2.6)(tailwindcss@4.3.0)
+        specifier: 0.1.100
+        version: 0.1.100(react@19.2.6)(tailwindcss@4.3.0)
       '@revt-eng/schema-external':
-        specifier: 0.1.92
-        version: 0.1.92(zod@4.4.3)
+        specifier: 0.1.100
+        version: 0.1.100(zod@4.4.3)
       astro:
         specifier: ^6.1.9
         version: 6.4.2(@types/node@24.12.4)(rollup@4.60.4)(yaml@2.9.0)
@@ -843,29 +843,21 @@ packages:
     peerDependencies:
       react: '>=16.8'
 
-  '@revt-eng/core@0.1.92':
-    resolution: {integrity: sha512-D1q4CA2oOUx3apTktAGmVLzyaHNG9tVe+5Elx9P0sAJtmTmL2kdRgFyPnJWJu/Y1QzrLa+chBh1/PnBhH9ZUyg==, tarball: https://npm.pkg.github.com/download/@revt-eng/core/0.1.92/dd5c459c6bc2cb3dcfae0663aab6b6b9740aa197}
+  '@revt-eng/core@0.1.100':
+    resolution: {integrity: sha512-PkBmduIM1SdrowdVwlIYwFDAvBmQVwpHQcabvqIvsSMyAzTWIG2X9Jj6Rbcml1mK3cIZS1aQEntbeHuqbya7Xw==, tarball: https://npm.pkg.github.com/download/@revt-eng/core/0.1.100/44e9418e181bb53ef61423a524bd8b38ed484e2b}
     peerDependencies:
       drizzle-orm: '>=0.30.0'
-    peerDependenciesMeta:
-      drizzle-orm:
-        optional: true
 
-  '@revt-eng/schema-external@0.1.92':
-    resolution: {integrity: sha512-EyvX1CfOA369WNpVwehAhmnZTkerBNdQ3BpDDvFHJGnifPFONsIIaW2Ag49XsSbnz+HmN6H/ZBtsiz9AAE9qVw==, tarball: https://npm.pkg.github.com/download/@revt-eng/schema-external/0.1.92/4fa36a7e6f829c532c8ec259f567e774b56ba838}
+  '@revt-eng/schema-external@0.1.100':
+    resolution: {integrity: sha512-xeaVf6l28jg7NgZluwNn+HxZyWudDsm4BBAaeZDhVph0u5LM4yTIzuRkNw4P+J+cTIzCsvFOQ8kLrStbwFL4tQ==, tarball: https://npm.pkg.github.com/download/@revt-eng/schema-external/0.1.100/138da87716f47959620d8f9896a5403851969630}
     peerDependencies:
       zod: ^4.0.0
 
-  '@revt-eng/schema@0.1.92':
-    resolution: {integrity: sha512-uEtKzLY4n8LdTgn4nmrSipzFIvoNVCicjQmQngax+kQ5tg4YZBMuBy5AxDh7pSVLMA3GkLifoASIYBbNJkbdCQ==, tarball: https://npm.pkg.github.com/download/@revt-eng/schema/0.1.92/ce39a2cd10fb5c7b15236bce1711b05d795e2e9d}
+  '@revt-eng/schema@0.1.100':
+    resolution: {integrity: sha512-v3jWJw/VEhmSXTZ4uYFA+Qb1MnSKl8oTvu4wkFRwTfeJjLrhJGNr79S3sFhScI0nuCD/3eKUS/kQcdfkgwFFpA==, tarball: https://npm.pkg.github.com/download/@revt-eng/schema/0.1.100/069e2fb3df6d8117aa2dfaf7ec9c2e41c6aa2e50}
     peerDependencies:
       react: '>=19'
       tailwindcss: '>=4'
-    peerDependenciesMeta:
-      react:
-        optional: true
-      tailwindcss:
-        optional: true
 
   '@rolldown/pluginutils@1.0.0-rc.3':
     resolution: {integrity: sha512-eybk3TjzzzV97Dlj5c+XrBFW57eTNhzod66y9HrBlzJ6NsCrWCp/2kaPS3K9wJmurBC0Tdw4yPjXKZqlznim3Q==}
@@ -3540,28 +3532,26 @@ snapshots:
     dependencies:
       react: 19.2.6
 
-  '@revt-eng/core@0.1.92(drizzle-orm@0.45.2)(react@19.2.6)(tailwindcss@4.3.0)':
+  '@revt-eng/core@0.1.100(drizzle-orm@0.45.2)(react@19.2.6)(tailwindcss@4.3.0)':
     dependencies:
-      '@revt-eng/schema': 0.1.92(react@19.2.6)(tailwindcss@4.3.0)
+      '@revt-eng/schema': 0.1.100(react@19.2.6)(tailwindcss@4.3.0)
+      drizzle-orm: 0.45.2
       flatbuffers: 25.9.23
       zod: 4.4.3
-    optionalDependencies:
-      drizzle-orm: 0.45.2
     transitivePeerDependencies:
       - react
       - tailwindcss
 
-  '@revt-eng/schema-external@0.1.92(zod@4.4.3)':
+  '@revt-eng/schema-external@0.1.100(zod@4.4.3)':
     dependencies:
       zod: 4.4.3
 
-  '@revt-eng/schema@0.1.92(react@19.2.6)(tailwindcss@4.3.0)':
+  '@revt-eng/schema@0.1.100(react@19.2.6)(tailwindcss@4.3.0)':
     dependencies:
-      zod: 4.4.3
-      zod-openapi: 5.4.6(zod@4.4.3)
-    optionalDependencies:
       react: 19.2.6
       tailwindcss: 4.3.0
+      zod: 4.4.3
+      zod-openapi: 5.4.6(zod@4.4.3)
 
   '@rolldown/pluginutils@1.0.0-rc.3': {}
 
@@ -4093,8 +4083,7 @@ snapshots:
 
   dotenv@16.6.1: {}
 
-  drizzle-orm@0.45.2:
-    optional: true
+  drizzle-orm@0.45.2: {}
 
   dset@3.1.4: {}
 
@@ -5692,8 +5681,7 @@ snapshots:
       picocolors: 1.1.1
       sax: 1.6.0
 
-  tailwindcss@4.3.0:
-    optional: true
+  tailwindcss@4.3.0: {}
 
   tiny-inflate@1.0.3: {}
 
