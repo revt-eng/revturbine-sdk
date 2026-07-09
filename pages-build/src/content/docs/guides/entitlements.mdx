@@ -66,6 +66,8 @@ import { Gate } from '@revturbine/sdk';
 </Gate>
 ```
 
+**A `<Gate>` is also a placement.** On denial the gate doesn't render hardcoded UI — it resolves a **placement** from your monetization config and renders it in place of the children. So *what a denied user sees* — the upgrade modal or banner, its headline, offer, and CTA — is authored in the studio (or the CLI config), not baked into your app. Your PM, growth, or marketing team can rewrite the denial copy, swap the offer, or A/B-test it with no code deploy. `surfaceTemplateIds` scopes which surface templates can fill the gate; `deniedFallback` is the static backstop shown only when no placement is configured for it.
+
 ### With Auto-Gate
 
 When `autoGate: true`, the hook automatically resolves an upgrade placement if the entitlement is denied:

@@ -73,7 +73,9 @@ import { Gate } from '@revturbine/sdk';
 </Gate>
 ```
 
-If the entitlement is granted, children render normally. If denied, the gate renders an upgrade placement instead.
+If the entitlement is granted, children render normally. If denied, the gate renders an **upgrade placement** in their place.
+
+That denial UI is itself a placement, not hardcoded markup: the decision engine picks the winning placement for the gate (scoped by `surfaceTemplateIds`) and renders its content — modal or banner, headline, offer, and CTA. So *what a denied user sees* is controlled by your monetization config and can be changed, targeted, or A/B-tested in the studio without a code deploy. `deniedFallback` is shown only when no placement matches.
 
 > [Try it live → Data Export Gate](/playground/access-gates/gate-modal/)
 
