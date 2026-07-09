@@ -95,23 +95,17 @@ Or run it without installing:
 npx @revturbine/cli verify ./exported_config.json
 ```
 
-See the [CLI reference](https://www.npmjs.com/package/@revturbine/cli) for the full command surface (`verify`, `diff`, `upload`, `deploy`, `export`, `status`, and the change-set lifecycle).
+### Authenticate
 
-## Environment Variables
+The CLI signs in with a browser device-flow login — there are no API keys or environment variables to set. Authorize it once per machine:
 
-Set these in your environment (`.env`, CI secrets, etc.) — never commit them to source:
-
-| Variable | Description | Required |
-|---|---|---|
-| `REVTURBINE_TENANT_ID` | Your tenant identifier | Yes |
-| `REVTURBINE_API_KEY` | API key (prefixed `rt_live_` or `rt_test_`) | Yes |
-| `REVTURBINE_ENDPOINT` | API endpoint URL | Yes (defaults to `https://api.revturbine.io`) |
-
-```bash title=".env"
-REVTURBINE_TENANT_ID=tenant_abc
-REVTURBINE_API_KEY=rt_live_your_key_here
-REVTURBINE_ENDPOINT=https://api.revturbine.io
+```bash
+revturbine login
 ```
+
+This opens your browser to approve the device, then stores a tenant-scoped token at `~/.revturbine/credentials.json` (file mode `0600`). Run `revturbine status` to confirm you're connected — or `revturbine signup` to create an account from the terminal first. Commands that only read or validate a local file, like `verify`, need no login.
+
+See the [CLI reference](https://www.npmjs.com/package/@revturbine/cli) for the full command surface (`verify`, `diff`, `upload`, `deploy`, `export`, `status`, and the change-set lifecycle).
 
 ## Supported Runtimes
 
