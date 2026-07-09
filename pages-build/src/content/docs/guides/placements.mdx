@@ -67,7 +67,7 @@ import { Gate } from '@revturbine/sdk';
 <Gate
   id="editor_export_action"
   surfaceTemplateIds={['modal_overlay']}
-  check={{ entitlement: 'data_export' }}
+  can="data_export"
 >
   <ExportPanel />
 </Gate>

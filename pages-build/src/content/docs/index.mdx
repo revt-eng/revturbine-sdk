@@ -136,26 +136,26 @@ Wrap your app once, then add **slots** (where placements render) and **gates** (
 
     function BatchExport() {
       return (
-        <Gate id="batch_export_gate" check={{ entitlement: 'batch_export' }}>
+        <Gate id="batch_export_gate" can="batch_export">
           <BatchExportButton />
         </Gate>
       );
     }
     ```
 
-    For custom deny UI, use the `useEntitlement` hook and branch on the result:
+    `can="batch_export"` is shorthand for `check={{ entitlement: 'batch_export' }}`. For custom deny UI, use the `useCan` hook — it returns `{ can, limited, result }`:
 
     ```tsx
-    import { useEntitlement } from '@revturbine/sdk';
+    import { useCan } from '@revturbine/sdk';
 
     function BatchExport() {
-      const { allowed, denied, result } = useEntitlement({ handle: 'batch_export' });
-      if (denied) return <UpgradePrompt reason={result?.reason} />;
-      return <BatchExportButton enabled={allowed} />;
+      const { can, limited, result } = useCan('batch_export');
+      if (!can) return <UpgradePrompt reason={result?.reason} />;
+      return <BatchExportButton warnLowBalance={limited} />;
     }
     ```
 
-    For an imperative check (server-side or in an event handler), call `await rt.can('batch_export')`. See the [Entitlements guide](/guides/entitlements/).
+    `can` is `true` while the user is entitled — including the `limited` (running-low) state, so gate on `!can`, not `!allowed`. For an imperative check (server-side or in an event handler), call `await rt.can('batch_export')`. See the [Entitlements guide](/guides/entitlements/).
 
 </Steps>
 

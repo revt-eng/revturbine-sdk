@@ -22,7 +22,7 @@ import { Gate } from '@revturbine/sdk';
 <Gate
   id="feature_gate_modal"
   surfaceTemplateIds={["modal_overlay"]}
-  check={{ entitlement: "data_export" }}
+  can="data_export"
 >
   <VideoExportPanel />
 </Gate>

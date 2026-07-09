@@ -21,7 +21,23 @@ Entitlements define what users can do based on their plan. The SDK evaluates ent
 
 ## Checking Entitlements
 
-### React Hook
+### React Hook — `useCan`
+
+The simplest reactive check. `useCan(handle)` returns `{ can, limited, result }`. `can` is `true` while the user is entitled — **including** the `limited` (running-low) state — so gate on `!can`, never `!allowed`:
+
+```tsx
+import { useCan } from '@revturbine/sdk';
+
+function ExportButton() {
+  const { can, limited } = useCan('data_export');
+  if (!can) return <button disabled>Upgrade to Export</button>;
+  return <button>Export Video{limited ? ' — running low' : ''}</button>;
+}
+```
+
+### Full surface — `useEntitlement`
+
+For the complete reactive result (`allowed` / `denied` / `limited` / `isLoading` / `error` / `gatedPlacement` / `recheck`), use `useEntitlement`:
 
 ```tsx
 import { useEntitlement } from '@revturbine/sdk';
@@ -36,6 +52,18 @@ function ExportButton() {
 
   return <button>Export Video</button>;
 }
+```
+
+### Declarative gate — `<Gate>`
+
+`<Gate>` gates its children declaratively. `can="handle"` checks an entitlement (shorthand for `check={{ entitlement: 'handle' }}`); children render while entitled, and a configured upgrade placement — or `deniedFallback` — shows on denial. `limitedFallback` renders a soft "running low" state while access is still granted:
+
+```tsx
+import { Gate } from '@revturbine/sdk';
+
+<Gate id="export_gate" can="data_export" limitedFallback={<LowBalanceNotice />}>
+  <ExportButton />
+</Gate>
 ```
 
 ### With Auto-Gate

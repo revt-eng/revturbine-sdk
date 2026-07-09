@@ -111,7 +111,7 @@ A video export button that:
        <Gate
          id="editor_export_action"
          surfaceTemplateIds={['modal_overlay']}
-         check={{ entitlement: 'data_export' }}
+         can="data_export"
        >
          {/* This only renders when the entitlement is granted */}
          <ExportControls />

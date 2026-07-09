@@ -22,7 +22,7 @@ import { Gate } from '@revturbine/sdk';
 <Gate
   id="feature_gate_inline"
   surfaceTemplateIds={["inline_gate_message"]}
-  check={{ entitlement: "advanced_reporting" }}
+  can="advanced_reporting"
 >
   <ReportingDashboard />
 </Gate>
