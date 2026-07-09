@@ -54,7 +54,7 @@ Recommendation by mode:
 ### Server runtime
 
 ```ts
-import { initRevTurbine, createServerRuntimeConfig } from '@revt-eng/sdk';
+import { initRevTurbine, createServerRuntimeConfig } from '@revturbine/sdk';
 
 const sdk = initRevTurbine(
   createServerRuntimeConfig({
@@ -69,7 +69,7 @@ const sdk = initRevTurbine(
 ### Server runtime with provider fallback
 
 ```ts
-import { initRevTurbine, createServerRuntimeConfig } from '@revt-eng/sdk';
+import { initRevTurbine, createServerRuntimeConfig } from '@revturbine/sdk';
 
 const sdk = initRevTurbine({
   ...createServerRuntimeConfig({
@@ -87,7 +87,7 @@ const sdk = initRevTurbine({
 ### Custom endpoints runtime
 
 ```ts
-import { initRevTurbine, createCustomEndpointRuntimeConfig } from '@revt-eng/sdk';
+import { initRevTurbine, createCustomEndpointRuntimeConfig } from '@revturbine/sdk';
 
 const sdk = initRevTurbine(
   createCustomEndpointRuntimeConfig({
@@ -109,7 +109,7 @@ const sdk = initRevTurbine(
 ### Local-only runtime
 
 ```ts
-import { initRevTurbine, createLocalRuntimeConfig } from '@revt-eng/sdk';
+import { initRevTurbine, createLocalRuntimeConfig } from '@revturbine/sdk';
 
 const sdk = initRevTurbine(
   createLocalRuntimeConfig({

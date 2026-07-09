@@ -5,7 +5,7 @@ This guide provides copy-paste patterns for each core surface type and lifecycle
 ## Shared Lifecycle Callback Pattern
 
 ```tsx
-import type { PlacementUiPath } from '@revt-eng/sdk';
+import type { PlacementUiPath } from '@revturbine/sdk';
 
 type PlacementCallbacks = {
   onImpression: (outputId: string) => void;
@@ -15,7 +15,7 @@ type PlacementCallbacks = {
 };
 
 export const createPlacementCallbacks = (
-  sdk: import('@revt-eng/sdk').RevTurbineCustomerSdk,
+  sdk: import('@revturbine/sdk').RevTurbineCustomerSdk,
   placementId: string,
 ): PlacementCallbacks => ({
   onImpression: () => {
@@ -147,7 +147,7 @@ import {
   createSlotPlacementRequest,
   createEntitlementPlacementRequest,
   createChainedPlacementRequest,
-} from '@revt-eng/sdk';
+} from '@revturbine/sdk';
 
 const slotRequest = createSlotPlacementRequest('dashboard_banner', 'banner');
 const entitlementRequest = createEntitlementPlacementRequest('mp4_download', {

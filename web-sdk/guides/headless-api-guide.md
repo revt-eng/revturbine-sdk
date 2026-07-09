@@ -5,7 +5,7 @@ Framework-agnostic SDK controllers for placement decisioning, entitlement gating
 ## Quick Start
 
 ```ts
-import { initRevTurbine } from '@revt-eng/sdk/headless';
+import { initRevTurbine } from '@revturbine/sdk/headless';
 
 const session = await initRevTurbine({
   tenantId: 'tenant_abc',
@@ -198,7 +198,7 @@ await session.trackEvent('button_clicked', { target: 'upgrade_cta' });
 Creates a fully-initialized session. Handles SDK init, user identification, theme resolution, and optional placement bootstrapping.
 
 ```ts
-import { initRevTurbine } from '@revt-eng/sdk/headless';
+import { initRevTurbine } from '@revturbine/sdk/headless';
 
 const session = await initRevTurbine({
   // Required
