@@ -71,10 +71,6 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Bundle vendor SDK for the Sandpack playground
-        working-directory: pages-build
-        run: pnpm bundle:sdk-local
-
       - name: Build static site at base /docs
         working-directory: pages-build
         run: pnpm build
