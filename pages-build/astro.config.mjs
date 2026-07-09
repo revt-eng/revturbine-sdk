@@ -3,6 +3,7 @@ import starlight from '@astrojs/starlight';
 import react from '@astrojs/react';
 import starlightTypeDoc from 'starlight-typedoc';
 import starlightLlmsTxt from 'starlight-llms-txt';
+import remarkGfm from 'remark-gfm';
 import { join, resolve } from 'node:path';
 import { readFile, writeFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -78,6 +79,13 @@ function baseAbsoluteInternalLinks(base) {
 export default defineConfig({
   site,
   base,
+  // MDX does not inherit Astro's `gfm` shorthand, so `.mdx` pages lose GFM
+  // tables (plus strikethrough, task lists, autolinks) that `.md` pages get for
+  // free — which rendered every `.mdx` table as raw `| … |` text. Register
+  // remark-gfm explicitly so it applies to both `.md` and `.mdx`.
+  markdown: {
+    remarkPlugins: [remarkGfm],
+  },
   redirects: {
     '/api/': '/api/readme/',
   },
