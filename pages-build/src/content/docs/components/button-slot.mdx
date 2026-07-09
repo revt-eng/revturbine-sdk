@@ -7,6 +7,36 @@ sidebar:
 ---
 
 import ButtonSlotGallery from '../../../components/galleries/ButtonSlotGallery';
+import CodeExample from '../../../components/CodeExample';
+
+export const code = `import React, { useMemo } from "react";
+import { RevTurbineProvider, Slot } from "@revturbine/sdk";
+import exportedConfig from "./exported_config.json";
+import { demoUsers } from "./demoUsers";
+
+export default function App() {
+  const options = useMemo(
+    () => ({
+      localRuntime: { exportedConfig },
+      // Carol is on Starter with an active trial, so the engine serves her an
+      // upgrade button. Switch to demoUsers.user_eve (Enterprise) and the slot
+      // renders nothing — there's nothing to upsell.
+      user: demoUsers.user_carol.context,
+      uiPathResolvers: {
+        navigate_to_plans: async (ctx) => console.log("navigate_to_plans", ctx),
+        open_checkout_modal: async (ctx) => console.log("open_checkout_modal", ctx),
+      },
+    }),
+    [],
+  );
+
+  return (
+    <RevTurbineProvider options={options}>
+      <Slot id="nav_bar_right" surfaceTemplateIds={["button"]} />
+    </RevTurbineProvider>
+  );
+}
+`;
 
 A standalone CTA button suitable for persistent nav CTAs or inline upgrade prompts.
 
@@ -16,14 +46,9 @@ A standalone CTA button suitable for persistent nav CTAs or inline upgrade promp
 
 ## Usage
 
-```tsx
-import { Slot } from '@revturbine/sdk';
+A live, editable example. The `<Slot>` renders whatever `button` placement the decision engine picks for the current user — or nothing. Edit the code (or switch the demo user) and the preview re-runs:
 
-<Slot
-  id="header_upgrade_cta"
-  surfaceTemplateIds={["button"]}
-/>
-```
+<CodeExample client:only="react" code={code} />
 
 The `ButtonSlot` renders automatically when the decision engine selects a `button` template for the slot. Style variants are controlled via the `style` content field in your placement configuration.
 
