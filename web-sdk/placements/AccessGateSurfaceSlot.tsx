@@ -30,14 +30,22 @@ export type AccessGateSurfaceSlotProps = {
   name?: string;
 
   /**
+   * Shorthand entitlement gate — `can="brand_kit"` is equivalent to
+   * `check={{ entitlement: 'brand_kit' }}`, mirroring the `useCan('brand_kit')`
+   * hook. Merged with `check` when both are supplied. Provide `can` or `check`.
+   */
+  can?: string;
+
+  /**
    * One or more access checks to evaluate before granting access.
    *
    * - `{ entitlement: 'brand_kit' }` — check an entitlement handle.
    * - `{ usage: 'core_credits', threshold: 80 }` — check a usage percentage threshold.
    *
-   * When an array is passed, access is denied if **any** check fails.
+   * When an array is passed, access is denied if **any** check fails. Optional
+   * when `can` is provided.
    */
-  check: AccessGateCheck | AccessGateCheck[];
+  check?: AccessGateCheck | AccessGateCheck[];
 
   /**
    * Placement to display when access is denied.
@@ -45,6 +53,15 @@ export type AccessGateSurfaceSlotProps = {
    * If no placement matches, `deniedFallback` is shown.
    */
   deniedFallback?: React.ReactNode;
+
+  /**
+   * Rendered instead of `children` when the entitlement is `limited` — access is
+   * still granted, the usage/credit balance is just running low. Use it for a soft
+   * "running low" state (e.g. the feature plus a warning). When omitted, `limited`
+   * renders `children` normally, since a `limited` user is still entitled; pass
+   * `null` to render nothing.
+   */
+  limitedFallback?: React.ReactNode;
 
   /** Content to render when access is granted. */
   children: React.ReactNode;
@@ -69,21 +86,38 @@ export type AccessGateSurfaceSlotProps = {
 };
 
 /**
- * Access-gate surface slot — renders children when entitled, or a gated
- * placement when access is denied.
+ * Merge the `can` shorthand and the `check` prop into the effective check list:
+ * `can="x"` becomes `{ entitlement: 'x' }`, and `check` is appended as-is.
+ * Exported for unit testing.
+ */
+export function resolveGateChecks(
+  can: string | undefined,
+  check: AccessGateCheck | AccessGateCheck[] | undefined,
+): AccessGateCheck[] {
+  const checks: AccessGateCheck[] = [];
+  if (can) checks.push({ entitlement: can });
+  if (check) checks.push(...(Array.isArray(check) ? check : [check]));
+  return checks;
+}
+
+/**
+ * Access-gate surface slot — renders children when entitled (allowed *or*
+ * `limited`), or a gated placement when access is `denied`.
  *
- * Checks entitlements and/or usage thresholds. On failure, displays the
- * configured gated placement (or `deniedFallback` if no placement matches).
- * On success, renders `children` unmodified.
+ * Checks entitlements and/or usage thresholds. On denial, displays the configured
+ * gated placement (or `deniedFallback` if no placement matches). On success,
+ * renders `children` — or `limitedFallback` when the entitlement is `limited`.
  *
  * @example
  * ```tsx
- * <AccessGateSurfaceSlot
- *   id="export-gate"
- *   check={{ entitlement: 'mp4_download' }}
- *   deniedFallback={<span>Upgrade to export</span>}
- * >
+ * // `can` shorthand — mirrors useCan('mp4_download')
+ * <AccessGateSurfaceSlot id="export-gate" can="mp4_download" deniedFallback={<span>Upgrade to export</span>}>
  *   <ExportButton />
+ * </AccessGateSurfaceSlot>
+ *
+ * // soft-warn while still granting access when the balance runs low
+ * <AccessGateSurfaceSlot id="credits-gate" can="core_credits" limitedFallback={<LowBalanceNotice />}>
+ *   <RecordButton />
  * </AccessGateSurfaceSlot>
  *
  * <AccessGateSurfaceSlot
@@ -101,15 +135,17 @@ export type AccessGateSurfaceSlotProps = {
 export function AccessGateSurfaceSlot({
   id,
   name,
+  can,
   check,
   children,
   deniedFallback = null,
+  limitedFallback,
   surfaceTemplateIds,
   metadata,
   onDenied,
   ...options
 }: AccessGateSurfaceSlotProps) {
-  const checks = Array.isArray(check) ? check : check ? [check] : [];
+  const checks = resolveGateChecks(can, check);
   const primaryEntitlement = checks.find(
     (c): c is Extract<AccessGateCheck, { entitlement: string }> => 'entitlement' in c,
   );
@@ -140,6 +176,8 @@ export function AccessGateSurfaceSlot({
   // Access is denied when any check fails.
   const entitlementDenied = !!entitlementHandle && entitlementResult?.status === 'denied';
   const denied = entitlementDenied || usageDenied;
+  // Limited — still entitled, but the balance is running low.
+  const limited = !!entitlementHandle && entitlementResult?.status === 'limited';
 
   // Fire denied callback.
   const deniedCallbackRef = React.useRef(onDenied);
@@ -175,8 +213,12 @@ export function AccessGateSurfaceSlot({
   // a flash of children → gate content.
   if (entitlementLoading && entitlementHandle) return null;
 
-  // Granted — render children.
-  if (!denied) return <>{children}</>;
+  // Granted (allowed or limited — both are entitled).
+  if (!denied) {
+    // Limited: still granted, but running low — show the soft-warn slot if given.
+    if (limited && limitedFallback !== undefined) return <>{limitedFallback}</>;
+    return <>{children}</>;
+  }
 
   // Denied — render gated placement or fallback.
   if (gatedVisible && gatedElement) return <>{gatedElement}</>;
