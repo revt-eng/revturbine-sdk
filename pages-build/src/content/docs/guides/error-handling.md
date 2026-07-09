@@ -55,10 +55,10 @@ Most SDK methods fail silently and return sensible defaults:
 
 ```ts
 // Returns allowed on API failure
-await sdk.checkEntitlement('data_export');
+await sdk.can('data_export');
 
 // Silently drops event on delivery failure
-await sdk.trackEvent('page_viewed');
+await sdk.track('page_viewed');
 
 // Returns null decision on failure
 await sdk.getPlacement({ slotId: 'banner' });
@@ -153,13 +153,13 @@ function Dashboard() {
       <DashboardContent />
 
       {/* SDK enhancement — fails gracefully to nothing */}
-      <SurfaceSlotComponent id="dashboard_banner" surfaceType="banner" />
+      <Slot id="dashboard_banner" surfaceType="banner" />
     </div>
   );
 }
 ```
 
-If the SDK is down, `SurfaceSlotComponent` renders nothing and the baseline dashboard continues working.
+If the SDK is down, `<Slot>` renders nothing and the baseline dashboard continues working.
 
 ## Debugging Errors
 

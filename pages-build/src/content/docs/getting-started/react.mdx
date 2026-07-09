@@ -229,19 +229,19 @@ function ThemedCard({ children }) {
 
 ## Drop-In Components
 
-For the simplest integration, use `SurfaceSlotComponent` — it resolves the placement and renders the matching built-in slot:
+For the simplest integration, use `<Slot>` — it resolves the placement and renders the matching built-in slot:
 
 ```tsx
-import { SurfaceSlotComponent } from '@revturbine/sdk';
+import { Slot } from '@revturbine/sdk';
 
 // Banner
-<SurfaceSlotComponent id="hero_banner" surfaceType="banner" />
+<Slot id="hero_banner" surfaceType="banner" />
 
 // Modal gate
-<SurfaceSlotComponent id="export_gate" surfaceType="modal" />
+<Slot id="export_gate" surfaceType="modal" />
 
 // Inline card
-<SurfaceSlotComponent id="pricing_card" surfaceType="in_page" />
+<Slot id="pricing_card" surfaceType="in_page" />
 ```
 
 See the [Component Gallery](/components/) for interactive demos of every built-in slot component.

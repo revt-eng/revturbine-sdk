@@ -25,19 +25,19 @@ You don't need to instrument these — the slot components and hooks handle it.
 
 ## Custom Events
 
-Track any behavioral signal with `trackEvent`:
+Track any behavioral signal with `track`:
 
 ```ts
 const { sdk } = useRevTurbine();
 
 // Track a custom event
-await sdk.trackEvent('feature_explored', {
+await sdk.track('feature_explored', {
   feature: 'advanced_filters',
   source: 'sidebar_menu',
 });
 
 // Track a conversion signal
-await sdk.trackEvent('checkout_completed', {
+await sdk.track('checkout_completed', {
   plan: 'professional',
   billing_cycle: 'annual',
   revenue: 99.00,

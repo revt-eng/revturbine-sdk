@@ -89,7 +89,7 @@ session.identify('user_456', { plan: { id: 'enterprise' } });
 session.setUserContext({ personalization: { company: 'Acme' } });
 const ctx = session.getUserContext();
 session.resetIdentity();
-session.updateUsage({ api_calls: 150 });
+session.update({ api_calls: 150 });
 const fullCtx = await session.fetchUserContext('user_456');
 const trial = await session.getTrialStatus();
 const usage = session.getUsage();
@@ -101,8 +101,8 @@ const usage = session.getUsage();
 const ctrl = session.placement({ surfaceSlot: { id: 'upsell_banner' } });
 const gate = session.entitlement({ handle: 'brand_kit', autoGate: true });
 const decision = await session.getPlacementBySlotId('upsell_banner');
-const result = await session.checkEntitlement('brand_kit');
-await session.trackEvent('feature_used', { feature: 'export_csv' });
+const result = await session.can('brand_kit');
+await session.track('feature_used', { feature: 'export_csv' });
 ```
 
 ## `PlacementController`

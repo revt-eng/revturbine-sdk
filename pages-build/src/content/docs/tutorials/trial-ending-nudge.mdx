@@ -85,7 +85,7 @@ A trial countdown that:
          exportedConfig,
          // In local mode, hydrate trial status synchronously:
          resolvers: {
-           getTrialStatus: () => ({ active: true, daysRemaining: 2, plan: 'pro' }),
+           getTrialStatus: () => ({ in_trial: true, days_remaining: 2 }),
          },
        },
        user: { id: 'user_123', context: { plan_handle: 'trial' } },
@@ -98,13 +98,13 @@ A trial countdown that:
 3. **Render the banner slot**
 
    ```tsx title="src/components/AppHeader.tsx"
-   import { FixedSurfaceSlot } from '@revturbine/sdk';
+   import { Slot } from '@revturbine/sdk';
 
    export function AppHeader() {
      return (
        <header>
          {/* Hidden until the trial enters its final 3 days */}
-         <FixedSurfaceSlot id="app_header_banner" surfaceTemplateIds={['banner_placement']} />
+         <Slot id="app_header_banner" surfaceTemplateIds={['banner_placement']} />
          <nav>{/* ... */}</nav>
        </header>
      );
@@ -116,13 +116,19 @@ A trial countdown that:
    To drive your own UI — a sidebar countdown, a settings notice — read trial status imperatively:
 
    ```tsx
+   import { useEffect, useState } from 'react';
    import { useRevTurbine } from '@revturbine/sdk';
 
    function TrialNotice() {
      const { sdk } = useRevTurbine();
-     const trial = sdk?.getTrialStatus();
-     if (!trial?.active) return null;
-     return <p>{trial.daysRemaining} days left in your trial</p>;
+     const [trial, setTrial] = useState(null);
+
+     useEffect(() => {
+       if (sdk) void Promise.resolve(sdk.getTrialStatus()).then(setTrial);
+     }, [sdk]);
+
+     if (!trial?.in_trial) return null;
+     return <p>{trial.days_remaining} days left in your trial</p>;
    }
    ```
 

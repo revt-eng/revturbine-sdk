@@ -17,15 +17,15 @@ An inline card for feature gates and contextual upgrade prompts. Embeds naturall
 ## Usage
 
 ```tsx
-import { AccessGateSurfaceSlot } from '@revturbine/sdk';
+import { Gate } from '@revturbine/sdk';
 
-<AccessGateSurfaceSlot
+<Gate
   id="feature_gate_inline"
   surfaceTemplateIds={["inline_gate_message"]}
   check={{ entitlement: "advanced_reporting" }}
 >
   <ReportingDashboard />
-</AccessGateSurfaceSlot>
+</Gate>
 ```
 
 The `InlineEmbedSlot` renders automatically when the decision engine selects an `inline_gate_message` template. Inline embeds render in-flow where you place them. When the entitlement is denied, the gate content replaces the protected component.

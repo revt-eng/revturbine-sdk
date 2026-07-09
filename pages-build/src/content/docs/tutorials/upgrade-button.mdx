@@ -110,7 +110,7 @@ An upgrade button in your navigation bar that:
 
    ```tsx
    // src/components/NavBar.tsx
-   import { FixedSurfaceSlot } from '@revturbine/sdk';
+   import { Slot } from '@revturbine/sdk';
 
    export function NavBar() {
      return (
@@ -119,7 +119,7 @@ An upgrade button in your navigation bar that:
          <div style={{ flex: 1 }} />
 
          {/* This slot renders only when targeting matches */}
-         <FixedSurfaceSlot
+         <Slot
            id="nav_upgrade"
            surfaceTemplateIds={['button']}
          />
@@ -152,7 +152,7 @@ An upgrade button in your navigation bar that:
 ## What Just Happened
 
 1. The `RevTurbineProvider` initialized the SDK in `local_only` mode with your ExportedConfig
-2. The `FixedSurfaceSlot` asked the decision engine for a placement at slot `nav_upgrade`
+2. The `<Slot>` asked the decision engine for a placement at slot `nav_upgrade`
 3. The engine evaluated the payload target (`plan_ids: ['plan_starter']`) against the user context
 4. For Starter users, it resolved the `button` template with the "Upgrade to Pro" CTA
 5. For Pro users, no payload matched — the slot rendered nothing

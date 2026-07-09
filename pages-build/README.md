@@ -5,25 +5,19 @@ This app is intentionally scoped to `revturbine-sdk-internal` and does not modif
 ## What It Shows
 
 - A live Sandpack editor + preview
-- A locally bundled RevTurbine SDK artifact injected into Sandpack
+- The public `@revturbine/sdk` package installed into each Sandpack from npm
 - The full sandbox scenario set from the Next app showcase tracker
 - One page file per scenario (no in-preview scenario/user selectors)
 - Next-app `exported_config.json` loaded through `localRuntime.exportedConfig`
-- Easy copy/paste scenario wiring examples for SurfaceSlotComponent + user context
+- Easy copy/paste scenario wiring examples for `Slot` / `Gate` + user context
 
-## Local SDK Bundle
+## SDK in Sandpack
 
-The sandbox bundles the workspace SDK source (`web/src/sdk/customer-side.ts`) into:
-
-- `src/sandpack/vendor/revturbine-sdk.local.js`
-
-Bundle command:
-
-```bash
-pnpm bundle:sdk-local
-```
-
-This runs automatically before `pnpm dev` and `pnpm build`.
+Each sandbox installs the public `@revturbine/sdk` from npm via
+`customSetup.dependencies`. The pinned version is derived at build time from
+`../web-sdk/package.json` (`PUBLIC_SDK_VERSION`, injected in `astro.config.mjs`),
+so the sandboxes always demo the currently-published SDK — there is no vendored
+bundle to rebuild.
 
 Dependency preference during build:
 
@@ -68,5 +62,5 @@ Required one-time repo setting:
 
 ## Notes
 
-- Sandpack imports the generated `vendor/revturbine-sdk.local.js` file directly, so it can run without publishing to npm.
+- Sandpack installs `@revturbine/sdk` from the public npm registry, so the in-sandbox import (`from "@revturbine/sdk"`) is exactly what a builder copies into their own app.
 - The mounted config is `src/sandpack/example-exported_config.json` and is exposed to the Sandpack runtime as `/exported_config.json`.

@@ -15,16 +15,16 @@ RevTurbine is the **authoritative source** for access decisions on gated and usa
 
 | Method | Purpose | Outputs |
 |---|---|---|
-| `rt.init(apiKey)` | Initialize SDK. Call once on startup. | — |
+| `initRevTurbine(config)` | Initialize the SDK. Call once on startup. | — |
 | `rt.identify(userId, context)` | Identify user with plan, usage, and traits. | — |
 | `rt.getPlacement(config)` | Get the winning placement for a slot or entitlement. | `PlacementOutput \| null` |
-| `rt.checkEntitlement(handle, context?)` | Pure access check — feature, usage, credits, seats, tiers. | `{ status, currentTier?, reason? }` |
-| `rt.updateUsage(balances)` | Update cached balances between `identify` calls. | — |
+| `rt.can(handle, context?)` | Pure access check — feature, usage, credits, seats, tiers. | `{ status, currentTier?, reason? }` |
+| `rt.update(balances)` | Update cached balances between `identify` calls. | — |
 | `rt.getTrialStatus()` | Get current trial state. | `{ inTrial, trialType, planHandle, dayNumber, daysRemaining }` |
 | `rt.dismiss(outputId)` | User dismissed a placement. | — |
 | `rt.snooze(outputId)` | User snoozed a placement ("remind me later"). | — |
 | `rt.convert(outputId)` | User completed CTA. | — |
-| `rt.trackEvent(name, data?)` | Behavioral event for propensity scoring. | — |
+| `rt.track(name, data?)` | Behavioral event for propensity scoring. | — |
 
 ## Two Integration Patterns
 
@@ -42,7 +42,7 @@ else renderDefaultButton(); // additive only
 ### 2. Entitlement-Based (Gated, Usage/Credit/Seat)
 
 ```javascript
-const access = rt.checkEntitlement("ai_export");
+const access = await rt.can("ai_export");
 if (access.status === "denied") {
   const p = rt.getPlacement({ entitlementHandle: "ai_export" });
   if (p) showModal(p);
@@ -52,7 +52,7 @@ if (access.status === "denied") {
 }
 ```
 
-## `checkEntitlement` Context by Type
+## `can` Context by Type
 
 | Entitlement Type | Context Parameter | What the App Passes | Response Includes |
 |---|---|---|---|
@@ -68,16 +68,16 @@ if (access.status === "denied") {
 
 ```javascript
 const used = billing.getUsed("ai_credits");
-const access = rt.checkEntitlement("ai_credits", { used });
+const access = await rt.can("ai_credits", { used });
 
 if (access.status === "allowed") {
   executeAction();
   billing.recordUsage("ai_credits", 1);
-  rt.updateUsage({ ai_credits: billing.getUsed("ai_credits") });
+  rt.update({ ai_credits: billing.getUsed("ai_credits") });
 } else if (access.status === "limited") {
   executeAction(); // still allowed — approaching limit
   billing.recordUsage("ai_credits", 1);
-  rt.updateUsage({ ai_credits: billing.getUsed("ai_credits") });
+  rt.update({ ai_credits: billing.getUsed("ai_credits") });
   const p = rt.getPlacement({
     slotId: "usage_warning",
     surfaceType: "banner",

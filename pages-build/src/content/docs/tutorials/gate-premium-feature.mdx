@@ -90,7 +90,7 @@ A video export button that:
 
    ```tsx
    // src/components/ExportPanel.tsx
-   import { AccessGateSurfaceSlot } from '@revturbine/sdk';
+   import { Gate } from '@revturbine/sdk';
 
    function ExportControls() {
      return (
@@ -108,14 +108,14 @@ A video export button that:
 
    export function ExportPanel() {
      return (
-       <AccessGateSurfaceSlot
+       <Gate
          id="editor_export_action"
          surfaceTemplateIds={['modal_overlay']}
-         entitlementHandle="data_export"
+         check={{ entitlement: 'data_export' }}
        >
          {/* This only renders when the entitlement is granted */}
          <ExportControls />
-       </AccessGateSurfaceSlot>
+       </Gate>
      );
    }
    ```
@@ -163,7 +163,7 @@ A video export button that:
 
 ## How It Works
 
-The `AccessGateSurfaceSlot` component:
+The `<Gate>` component:
 
 1. Checks the `data_export` entitlement against the user's plan
 2. If **granted** → renders the children (`ExportControls`)

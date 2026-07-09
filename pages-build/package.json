@@ -4,9 +4,6 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "bundle:sdk-local": "node scripts/bundle-local-sdk.mjs",
-    "predev": "pnpm bundle:sdk-local",
-    "prebuild": "pnpm bundle:sdk-local",
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
@@ -34,7 +31,6 @@
   "devDependencies": {
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "esbuild": "^0.28.0",
     "markdownlint-cli2": "^0.22.1",
     "typedoc": "^0.28.19",
     "typescript": "^6.0.3"

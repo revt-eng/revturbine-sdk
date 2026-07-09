@@ -23,6 +23,14 @@ const site = process.env.PAGES_SITE ?? 'https://revt-eng.github.io';
 // them even when the web-sdk/ workspace dependencies use workspace:* protocol.
 const pagesNodeModules = resolve(import.meta.dirname, 'node_modules');
 
+// The Sandpack playground sandboxes install the real, published `@revturbine/sdk`
+// from npm. Pin them to the same version the sibling web-sdk source declares, so
+// the docs demos always match the SDK the docs describe. Read at config-eval time
+// and expose to client code via Vite `define` (see the vite block below).
+const sdkVersion = JSON.parse(
+  await readFile(resolve(import.meta.dirname, '../web-sdk/package.json'), 'utf8'),
+).version;
+
 // Starlight base-prefixes its own sidebar/asset links, but NOT authored links in
 // markdown content or hero `actions` frontmatter — those stay as raw `/getting-started/…`
 // and break under any subpath mount (GitHub Pages /revturbine-sdk, or the proxied
@@ -74,6 +82,9 @@ export default defineConfig({
     '/api/': '/api/readme/',
   },
   vite: {
+    define: {
+      'import.meta.env.PUBLIC_SDK_VERSION': JSON.stringify(sdkVersion),
+    },
     resolve: {
       alias: {
         '@revt-eng/core': resolve(pagesNodeModules, '@revt-eng/core'),

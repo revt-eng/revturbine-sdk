@@ -11,7 +11,7 @@ In this tutorial, you'll display a user's remaining **credits** and surface a wa
 
 A credits flow that:
 
-- Reports credit consumption to the SDK with `updateUsage()`
+- Reports credit consumption to the SDK with `update()`
 - Reads the remaining balance with `useEntitlement()`
 - Fires a low-credits warning placement when consumption crosses 80%
 
@@ -99,25 +99,30 @@ A credits flow that:
 
      return useCallback((cost: number) => {
        spent.current += cost;
-       sdk?.updateUsage({ credits: spent.current });
+       sdk?.update({ credits: spent.current });
      }, [sdk]);
    }
    ```
 
 3. **Show the remaining balance**
 
-   Read the live balance with `useEntitlement` — `result.remaining` reflects every `updateUsage()` call.
+   Read the live balance with `useUsageSnapshot` — the `credits` entry reflects every `update()` call.
 
    ```tsx title="src/components/CreditBadge.tsx"
-   import { useEntitlement } from '@revturbine/sdk';
+   import { useUsageSnapshot } from '@revturbine/sdk';
 
    export function CreditBadge() {
-     const { result, limited } = useEntitlement({ handle: 'credits' });
-     if (!result) return null;
+     const { usage } = useUsageSnapshot();
+     const credits = usage['credits']; // { current, limit? }
+     if (!credits) return null;
+
+     const remaining =
+       credits.limit != null ? Math.max(0, credits.limit - credits.current) : undefined;
+     const low = credits.limit != null && credits.current / credits.limit >= 0.8;
 
      return (
-       <span style={{ color: limited ? '#b45309' : 'inherit' }}>
-         {result.remaining} / {result.limit} credits
+       <span style={{ color: low ? '#b45309' : 'inherit' }}>
+         {remaining} / {credits.limit} credits
        </span>
      );
    }
@@ -130,12 +135,12 @@ A credits flow that:
    Place the slot where the banner should appear. It stays hidden until consumption crosses 80%, then renders the warning with the balance interpolated into the copy via `{{usage_remaining}}`.
 
    ```tsx title="src/components/AppHeader.tsx"
-   import { FixedSurfaceSlot } from '@revturbine/sdk';
+   import { Slot } from '@revturbine/sdk';
 
    export function AppHeader() {
      return (
        <header>
-         <FixedSurfaceSlot id="app_header_banner" surfaceTemplateIds={['banner_placement']} />
+         <Slot id="app_header_banner" surfaceTemplateIds={['banner_placement']} />
          <nav>{/* ... */}</nav>
        </header>
      );
@@ -146,13 +151,13 @@ A credits flow that:
 
 ## How It Works
 
-1. `updateUsage()` updates the SDK's credit balance and re-evaluates placements.
+1. `update()` updates the SDK's credit balance and re-evaluates placements.
 2. The `credit_threshold` trigger keeps the placement hidden until 80% of the allowance is consumed.
 3. Token expansion fills `{{usage_remaining}}` from the live balance.
 4. The CTA opens your top-up flow through the resolvers from [Quickstart](/getting-started/quickstart/).
 
 <Aside type="caution">
-Credits are revenue-critical. In `local_only` mode the balance is client-side and advisory. Before charging for a top-up or letting a user spend credits they may not have, confirm the balance server-side with `checkEntitlement` — see the [Entitlements guide](/guides/entitlements/).
+Credits are revenue-critical. In `local_only` mode the balance is client-side and advisory. Before charging for a top-up or letting a user spend credits they may not have, confirm the balance server-side with `can` — see the [Entitlements guide](/guides/entitlements/).
 </Aside>
 
 ## Try It Live

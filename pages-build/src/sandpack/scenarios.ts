@@ -23,19 +23,20 @@ export type SandpackScenario = {
   /** Surface template IDs this slot accepts. */
   surfaceTemplateIds: string[];
   /**
-   * Which SurfaceSlot component variant to render.
+   * Which SDK component variant to render.
    *
-   * - `FixedSurfaceSlot` — always-visible inline slot
-   * - `AccessGateSurfaceSlot` — shows gated content on entitlement denial
-   * - `MessageSurfaceSlot` — toast/modal triggered placements
+   * - `Slot` — the general placement slot (fixed inline slots and
+   *   toast/modal/banner message placements); advertised name for
+   *   `SurfaceSlotComponent`
+   * - `Gate` — gates children behind an entitlement, showing the resolved
+   *   upsell placement on denial; advertised name for `AccessGateSurfaceSlot`
    * - `HeadlessPlacement` — headless PlacementController demo
    * - `HeadlessEntitlementGate` — headless EntitlementGate demo
    * - `HeadlessSession` — headless SdkSession one-shot demo
    */
   component:
-    | 'FixedSurfaceSlot'
-    | 'AccessGateSurfaceSlot'
-    | 'MessageSurfaceSlot'
+    | 'Slot'
+    | 'Gate'
     | 'HeadlessPlacement'
     | 'HeadlessEntitlementGate'
     | 'HeadlessSession';
@@ -55,7 +56,7 @@ const fixedScenarios: SandpackScenario[] = [
     templateId: 'button',
     slotId: 'nav_bar_right',
     surfaceTemplateIds: ['button'],
-    component: 'FixedSurfaceSlot',
+    component: 'Slot',
     demoUserId: 'user_carol',
   },
   {
@@ -66,7 +67,7 @@ const fixedScenarios: SandpackScenario[] = [
     templateId: 'in_page_card',
     slotId: 'pricing_main_content',
     surfaceTemplateIds: ['in_page_card'],
-    component: 'FixedSurfaceSlot',
+    component: 'Slot',
     demoUserId: 'user_alice',
   },
   {
@@ -77,7 +78,7 @@ const fixedScenarios: SandpackScenario[] = [
     templateId: 'usage_counter',
     slotId: 'sidebar_usage_widget',
     surfaceTemplateIds: ['usage_counter'],
-    component: 'FixedSurfaceSlot',
+    component: 'Slot',
     demoUserId: 'user_alice',
   },
   {
@@ -88,7 +89,7 @@ const fixedScenarios: SandpackScenario[] = [
     templateId: 'banner_placement',
     slotId: 'dashboard_top_banner',
     surfaceTemplateIds: FIXED_BANNER_TEMPLATE_IDS as string[],
-    component: 'FixedSurfaceSlot',
+    component: 'Slot',
     demoUserId: 'user_bob',
   },
 ];
@@ -104,7 +105,7 @@ const accessGateScenarios: SandpackScenario[] = [
     templateId: 'modal_overlay',
     slotId: 'editor_export_action',
     surfaceTemplateIds: GENERAL_MODAL_TEMPLATE_IDS as string[],
-    component: 'AccessGateSurfaceSlot',
+    component: 'Gate',
     entitlementHandle: 'data_export',
     demoUserId: 'user_dan',
   },
@@ -116,7 +117,7 @@ const accessGateScenarios: SandpackScenario[] = [
     templateId: 'inline_gate_message',
     slotId: 'editor_branding_toggle',
     surfaceTemplateIds: ['inline_gate_message'],
-    component: 'AccessGateSurfaceSlot',
+    component: 'Gate',
     entitlementHandle: 'branding',
     demoUserId: 'user_dan',
   },
@@ -128,7 +129,7 @@ const accessGateScenarios: SandpackScenario[] = [
     templateId: 'in_page_card',
     slotId: 'settings_brand_section',
     surfaceTemplateIds: ['in_page_card'],
-    component: 'AccessGateSurfaceSlot',
+    component: 'Gate',
     entitlementHandle: 'brand_kit',
     demoUserId: 'user_dan',
   },
@@ -145,7 +146,7 @@ const messageScenarios: SandpackScenario[] = [
     templateId: 'banner_placement',
     slotId: 'global_banner',
     surfaceTemplateIds: GENERAL_BANNER_TEMPLATE_IDS as string[],
-    component: 'MessageSurfaceSlot',
+    component: 'Slot',
     demoUserId: 'user_alice',
   },
   {
@@ -156,7 +157,7 @@ const messageScenarios: SandpackScenario[] = [
     templateId: 'modal_overlay',
     slotId: 'global_modal',
     surfaceTemplateIds: GENERAL_MODAL_TEMPLATE_IDS as string[],
-    component: 'MessageSurfaceSlot',
+    component: 'Slot',
     demoUserId: 'user_alice',
   },
   {
@@ -167,7 +168,7 @@ const messageScenarios: SandpackScenario[] = [
     templateId: 'toast_message',
     slotId: 'global_toast',
     surfaceTemplateIds: GENERAL_TOAST_TEMPLATE_IDS as string[],
-    component: 'MessageSurfaceSlot',
+    component: 'Slot',
     demoUserId: 'user_bob',
   },
 ];

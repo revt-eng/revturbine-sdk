@@ -114,36 +114,48 @@ Wrap your app once, then add **slots** (where placements render) and **gates** (
 2. **Add a slot.** Drop a surface slot where you want a placement to appear. It renders the matching placement for the current user — or nothing.
 
     ```tsx title="src/components/Dashboard.tsx"
-    import { FixedSurfaceSlot } from '@revturbine/sdk';
+    import { Slot } from '@revturbine/sdk';
 
     function Dashboard() {
       return (
         <div>
           <h1>Dashboard</h1>
           {/* RevTurbine renders an upgrade banner here — or nothing */}
-          <FixedSurfaceSlot id="dashboard_top_banner" surfaceTemplateIds={["banner_placement"]} />
+          <Slot id="dashboard_top_banner" surfaceTemplateIds={["banner_placement"]} />
         </div>
       );
     }
     ```
 
-    `FixedSurfaceSlot` covers banners, modals, in-page content, and buttons. For event-triggered messages use `MessageSurfaceSlot`, or drive rendering yourself with the [`usePlacement`](/guides/headless-api/) hook.
+    `<Slot>` is the one surface-slot component — it covers banners, modals, in-page content, buttons, and event-triggered messages alike. To drive rendering yourself instead, use the [`usePlacement`](/guides/headless-api/) hook.
 
-3. **Gate a feature.** Use `useEntitlement` to check access by entitlement handle and react to the result. When denied, surface an upgrade prompt.
+3. **Gate a feature.** Wrap gated UI in `<Gate>`. It renders its children when the user is entitled, and automatically shows the configured upgrade placement on denial — no manual check.
 
     ```tsx title="src/components/BatchExport.tsx"
+    import { Gate } from '@revturbine/sdk';
+
+    function BatchExport() {
+      return (
+        <Gate id="batch_export_gate" check={{ entitlement: 'batch_export' }}>
+          <BatchExportButton />
+        </Gate>
+      );
+    }
+    ```
+
+    For custom deny UI, use the `useEntitlement` hook and branch on the result:
+
+    ```tsx
     import { useEntitlement } from '@revturbine/sdk';
 
     function BatchExport() {
-      const { allowed, denied, limited, result } = useEntitlement({ handle: 'batch_export' });
-
+      const { allowed, denied, result } = useEntitlement({ handle: 'batch_export' });
       if (denied) return <UpgradePrompt reason={result?.reason} />;
-      if (limited) return <UsageWarning remaining={result?.remaining} />;
       return <BatchExportButton enabled={allowed} />;
     }
     ```
 
-    To render a configured upgrade placement automatically on denial, use `AccessGateSurfaceSlot` instead — it resolves and renders the deny-state placement for you. For an imperative check (e.g. server-side or in an event handler), call `sdk.checkEntitlement('batch_export')`. See the [Entitlements guide](/guides/entitlements/).
+    For an imperative check (server-side or in an event handler), call `await rt.can('batch_export')`. See the [Entitlements guide](/guides/entitlements/).
 
 </Steps>
 
@@ -184,7 +196,7 @@ revturbine deploy                          # submit → approve → deploy the d
   </Card>
 
   <Card title="Entitlements and placements in one engine, linked to billing">
-    `getPlacement()` surfaces usage warnings, trial nudges, and lifecycle prompts tied to billing state; `checkEntitlement()` confirms or denies feature access. Pair them to gate a feature *and* surface the customer-specific upgrade prompt that converts it. Like RevenueCat for SaaS.
+    A `<Slot>` surfaces usage warnings, trial nudges, and lifecycle prompts tied to billing state; `rt.can()` confirms or denies feature access. Pair them to gate a feature *and* surface the customer-specific upgrade prompt that converts it. Like RevenueCat for SaaS.
   </Card>
 
   <Card title="PM- and marketer-controlled, dev-decoupled">
@@ -194,14 +206,14 @@ revturbine deploy                          # submit → approve → deploy the d
 
 ## What the SDK can do
 
-| Capability | Method | Description |
+| Capability | API | Description |
 |---|---|---|
-| **Placements** | `getPlacement()` | Render upgrade banners, modals, toasts, and buttons based on targeting rules |
-| **Entitlements** | `checkEntitlement()` | Gate features, enforce usage limits, check credits and seats |
-| **Usage tracking** | `updateUsage()` | Track consumption for quota meters and passive placement triggers |
-| **Events** | `trackEvent()` | Behavioral signals for propensity scoring |
+| **Placements** | `Slot` / `usePlacement()` | Render upgrade banners, modals, toasts, and buttons based on targeting rules |
+| **Entitlements** | `Gate` / `rt.can()` | Gate features, enforce usage limits, check credits and seats |
+| **Usage tracking** | `rt.update()` | Track consumption for quota meters and passive placement triggers |
+| **Events** | `rt.track()` | Behavioral signals for propensity scoring |
 | **Interactions** | `dismiss()` / `snooze()` / `convert()` | CTA lifecycle tracking |
-| **Trial status** | `getTrialStatus()` | Current trial state and countdown |
+| **Trial status** | `rt.getTrialStatus()` | Current trial state and countdown |
 
 ## Next steps
 

@@ -11,7 +11,7 @@ In this tutorial, you'll report API usage to the SDK, display a quota meter that
 
 A usage tracking flow that:
 
-- Reports API call counts to the SDK via `updateUsage()`
+- Reports API call counts to the SDK via `update()`
 - Shows a quota meter with current/limit display
 - Triggers a warning banner when usage exceeds 80%
 - Triggers an upgrade modal when usage exceeds 100%
@@ -111,7 +111,7 @@ A usage tracking flow that:
 
    ```tsx
    // src/components/Sidebar.tsx
-   import { FixedSurfaceSlot } from '@revturbine/sdk';
+   import { Slot } from '@revturbine/sdk';
 
    export function Sidebar() {
      return (
@@ -120,7 +120,7 @@ A usage tracking flow that:
          <nav>{/* ... nav links ... */}</nav>
 
          <div style={{ marginTop: 24 }}>
-           <FixedSurfaceSlot
+           <Slot
              id="sidebar_usage"
              surfaceTemplateIds={['usage_counter']}
            />
@@ -134,13 +134,13 @@ A usage tracking flow that:
 
    ```tsx
    // src/components/DashboardLayout.tsx
-   import { MessageSurfaceSlot } from '@revturbine/sdk';
+   import { Slot } from '@revturbine/sdk';
 
    export function DashboardLayout({ children }) {
      return (
        <div>
          {/* Warning banner appears when usage > 80% */}
-         <MessageSurfaceSlot
+         <Slot
            id="dashboard_banner"
            surfaceTemplateIds={['banner_warning']}
          />
@@ -172,7 +172,7 @@ A usage tracking flow that:
 
        // Report usage to the SDK
        callCount.current += 1;
-       sdk?.updateUsage({ api_calls: callCount.current });
+       sdk?.update({ api_calls: callCount.current });
 
        return response;
      }, [sdk]);
@@ -192,7 +192,7 @@ A usage tracking flow that:
 
      const simulateUsage = (count: number) => {
        setCalls(count);
-       sdk?.updateUsage({ api_calls: count });
+       sdk?.update({ api_calls: count });
      };
 
      return (
@@ -223,7 +223,7 @@ A usage tracking flow that:
 
 ## How It Works
 
-1. `updateUsage()` updates the SDK's internal usage balances
+1. `update()` updates the SDK's internal usage balances
 2. The decision engine re-evaluates all active placements
 3. The quota meter refreshes its display (current/limit)
 4. When usage exceeds the targeting threshold (80%), the warning banner becomes visible

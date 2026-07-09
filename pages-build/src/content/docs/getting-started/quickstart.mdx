@@ -49,7 +49,7 @@ This guide walks you through installing the SDK, running in **local-only mode**,
 3. **Wrap your app in `RevTurbineProvider` with local runtime**
 
     ```tsx title="src/App.tsx"
-    import { RevTurbineProvider, FixedSurfaceSlot } from '@revturbine/sdk';
+    import { RevTurbineProvider, Slot } from '@revturbine/sdk';
     import exportedConfig from './exported_config.json';
     import { useMemo } from 'react';
 
@@ -91,10 +91,10 @@ This guide walks you through installing the SDK, running in **local-only mode**,
 
 4. **Add a placement slot**
 
-    Drop a `FixedSurfaceSlot` where you want a placement to appear:
+    Drop a `<Slot>` where you want a placement to appear:
 
     ```tsx title="src/components/Dashboard.tsx"
-    import { FixedSurfaceSlot } from '@revturbine/sdk';
+    import { Slot } from '@revturbine/sdk';
 
     function Dashboard() {
       return (
@@ -102,7 +102,7 @@ This guide walks you through installing the SDK, running in **local-only mode**,
           <h1>Dashboard</h1>
 
           {/* RevTurbine renders an upgrade banner here — or nothing */}
-          <FixedSurfaceSlot
+          <Slot
             id="dashboard_top_banner"
             surfaceTemplateIds={["banner_placement"]}
           />

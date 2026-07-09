@@ -106,13 +106,13 @@ A dunning banner that:
 3. **Render the banner slot**
 
    ```tsx title="src/components/AppHeader.tsx"
-   import { FixedSurfaceSlot } from '@revturbine/sdk';
+   import { Slot } from '@revturbine/sdk';
 
    export function AppHeader() {
      return (
        <header>
          {/* Visible only while billing_status is payment_failed; non-dismissible */}
-         <FixedSurfaceSlot id="app_header_banner" surfaceTemplateIds={['banner_placement']} />
+         <Slot id="app_header_banner" surfaceTemplateIds={['banner_placement']} />
          <nav>{/* ... */}</nav>
        </header>
      );

@@ -45,7 +45,7 @@ const sdk = initRevTurbine({
 });
 
 // Check an entitlement
-const result = await sdk.checkEntitlement('data_export');
+const result = await sdk.can('data_export');
 
 if (!result.allowed) {
   // deny access — user needs to upgrade
@@ -70,7 +70,7 @@ const sdk = initRevTurbine({
 });
 
 // Report current usage
-sdk.updateUsage({ api_calls: req.user.apiCallCount });
+sdk.update({ api_calls: req.user.apiCallCount });
 
 // Resolve a specific slot's placement
 const banner = await sdk.getPlacement({
@@ -91,7 +91,7 @@ For frameworks like Next.js, resolve placements with the local runtime and hydra
 // components/Dashboard.tsx
 'use client';
 
-import { RevTurbineProvider, FixedSurfaceSlot } from '@revturbine/sdk';
+import { RevTurbineProvider, Slot } from '@revturbine/sdk';
 import exportedConfig from './exported_config.json';
 import { useMemo } from 'react';
 
@@ -107,7 +107,7 @@ export default function Dashboard({ user }) {
 
   return (
     <RevTurbineProvider options={options}>
-      <FixedSurfaceSlot
+      <Slot
         id="dashboard_banner"
         surfaceTemplateIds={["banner_placement"]}
       />

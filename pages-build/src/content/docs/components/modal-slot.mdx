@@ -17,15 +17,15 @@ An overlay modal for feature gates, trial expirations, and high-impact upgrade p
 ## Usage
 
 ```tsx
-import { AccessGateSurfaceSlot } from '@revturbine/sdk';
+import { Gate } from '@revturbine/sdk';
 
-<AccessGateSurfaceSlot
+<Gate
   id="feature_gate_modal"
   surfaceTemplateIds={["modal_overlay"]}
   check={{ entitlement: "data_export" }}
 >
   <VideoExportPanel />
-</AccessGateSurfaceSlot>
+</Gate>
 ```
 
 The `ModalSlot` renders automatically when the decision engine selects a `modal_overlay` template. Blocking modals have no dismiss option — the user must take action. Optional modals include a secondary CTA or close button.

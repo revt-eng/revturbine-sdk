@@ -11,8 +11,6 @@ import { DEMO_USER_IDS } from '../sandpack/shared';
 
 // Raw string imports for Sandpack virtual filesystem
 // @ts-expect-error -- Vite raw import
-import sdkBundle from '../sandpack/vendor/revturbine-sdk.local.js?raw';
-// @ts-expect-error -- Vite raw import
 import exportedConfigRaw from '../sandpack/example-exported_config.json?raw';
 // @ts-expect-error -- Vite raw import
 import demoUsersRaw from '../sandpack/demoUsers.ts?raw';
@@ -27,6 +25,10 @@ import { RevTurbineProvider } from '../../../web-sdk/react/RevTurbineProvider';
 import { PlacementDecisionInspector } from '../../../web-sdk/react/PlacementDecisionInspector';
 import { useRevTurbine } from '../../../web-sdk/react/useRevTurbine';
 
+// Published `@revturbine/sdk` version to install in the Sandpack sandboxes.
+// Injected at build time from ../web-sdk/package.json via astro.config.mjs.
+const SDK_VERSION = (import.meta.env.PUBLIC_SDK_VERSION as string) ?? '0.2.21';
+
 function buildSandpackFiles(scenario: SandpackScenario, selectedUserId: string): Record<string, string> {
   const componentName = scenario.component;
   const templateIdsLiteral = JSON.stringify(scenario.surfaceTemplateIds);
@@ -39,14 +41,13 @@ function buildSandpackFiles(scenario: SandpackScenario, selectedUserId: string):
       '/demoUsers.ts': demoUsersRaw as string,
       '/shared.ts': sharedRaw as string,
       '/exported_config.json': exportedConfigRaw as string,
-      '/vendor/revturbine-sdk.local.js': sdkBundle as string,
     };
   }
 
   // Component scenarios use RevTurbineProvider
   let componentJsx: string;
   switch (componentName) {
-    case 'AccessGateSurfaceSlot':
+    case 'Gate':
       componentJsx = `      <${componentName}
           id="${scenario.slotId}"
           surfaceTemplateIds={${templateIdsLiteral}}
@@ -69,7 +70,7 @@ function buildSandpackFiles(scenario: SandpackScenario, selectedUserId: string):
 import {
   RevTurbineProvider,
   ${componentName},
-} from "./vendor/revturbine-sdk.local.js";
+} from "@revturbine/sdk";
 import exportedConfig from "./exported_config.json";
 import { demoUsers } from "./demoUsers";
 
@@ -101,7 +102,6 @@ ${componentJsx}
     '/demoUsers.ts': demoUsersRaw as string,
     '/shared.ts': sharedRaw as string,
     '/exported_config.json': exportedConfigRaw as string,
-    '/vendor/revturbine-sdk.local.js': sdkBundle as string,
   };
 }
 
@@ -114,7 +114,7 @@ function generateHeadlessAppCode(
   switch (componentName) {
     case 'HeadlessPlacement':
       return `import React, { useEffect, useState, useRef } from "react";
-import { initRevTurbine, PlacementController } from "./vendor/revturbine-sdk.local.js";
+import { initRevTurbine, PlacementController } from "@revturbine/sdk/headless";
 import exportedConfig from "./exported_config.json";
 import { demoUsers } from "./demoUsers";
 
@@ -166,7 +166,7 @@ export default function App() {
 
     case 'HeadlessEntitlementGate':
       return `import React, { useEffect, useState } from "react";
-import { initRevTurbine, EntitlementGate } from "./vendor/revturbine-sdk.local.js";
+import { initRevTurbine, EntitlementGate } from "@revturbine/sdk/headless";
 import exportedConfig from "./exported_config.json";
 import { demoUsers } from "./demoUsers";
 
@@ -209,7 +209,7 @@ export default function App() {
 
     case 'HeadlessSession':
       return `import React, { useEffect, useState } from "react";
-import { initRevTurbine, SdkSession } from "./vendor/revturbine-sdk.local.js";
+import { initRevTurbine, SdkSession } from "@revturbine/sdk/headless";
 import exportedConfig from "./exported_config.json";
 import { demoUsers } from "./demoUsers";
 
@@ -559,6 +559,13 @@ export default function SandpackPlayground({ scenarioId }: SandpackPlaygroundPro
         template="react-ts"
         key={`${scenario.id}:${selectedUserId}`}
         files={files}
+        customSetup={{
+          dependencies: {
+            '@revturbine/sdk': SDK_VERSION,
+            react: '^18',
+            'react-dom': '^18',
+          },
+        }}
         options={{
           recompileMode: 'delayed',
           recompileDelay: 250,

@@ -27,7 +27,7 @@ Placements are the SDK's core output — they're the decisions about what conten
 Every slot needs an `id` and optionally a list of accepted `surfaceTemplateIds`:
 
 ```tsx
-<SurfaceSlotComponent
+<Slot
   id="dashboard_banner"
   surfaceTemplateIds={['banner_placement', 'banner_announcement']}
 />
@@ -45,9 +45,9 @@ Every slot needs an `id` and optionally a list of accepted `surfaceTemplateIds`:
 Always-visible inline placements — buttons, cards, meters:
 
 ```tsx
-import { FixedSurfaceSlot } from '@revturbine/sdk';
+import { Slot } from '@revturbine/sdk';
 
-<FixedSurfaceSlot
+<Slot
   id="nav_bar_right"
   surfaceTemplateIds={['button']}
 />
@@ -62,15 +62,15 @@ Fixed slots render nothing if no placement matches — your layout stays intact.
 Wrap premium content and show an upgrade prompt when access is denied:
 
 ```tsx
-import { AccessGateSurfaceSlot } from '@revturbine/sdk';
+import { Gate } from '@revturbine/sdk';
 
-<AccessGateSurfaceSlot
+<Gate
   id="editor_export_action"
   surfaceTemplateIds={['modal_overlay']}
-  entitlementHandle="data_export"
+  check={{ entitlement: 'data_export' }}
 >
   <ExportPanel />
-</AccessGateSurfaceSlot>
+</Gate>
 ```
 
 If the entitlement is granted, children render normally. If denied, the gate renders an upgrade placement instead.
@@ -82,9 +82,9 @@ If the entitlement is granted, children render normally. If denied, the gate ren
 Page-level overlays triggered by targeting rules — toasts, modals, banners:
 
 ```tsx
-import { MessageSurfaceSlot } from '@revturbine/sdk';
+import { Slot } from '@revturbine/sdk';
 
-<MessageSurfaceSlot
+<Slot
   id="global_banner"
   surfaceTemplateIds={['banner_placement', 'banner_warning']}
 />

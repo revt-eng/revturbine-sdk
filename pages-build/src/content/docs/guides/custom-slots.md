@@ -110,10 +110,10 @@ Never narrow the `PlacementSlotProps` interface — only extend it. Custom slots
 
 ## Using the Registry
 
-Pass your registry to `SurfaceSlotComponent`:
+Pass your registry to `<Slot>`:
 
 ```tsx
-<SurfaceSlotComponent
+<Slot
   id="feedback_slot"
   surfaceTemplateIds={['feedback_v1']}
   registry={registry}

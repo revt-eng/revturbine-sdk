@@ -11,7 +11,7 @@ In this tutorial, you'll render a **banner** at the top of your app — a target
 
 A header banner that:
 
-- Renders a placement in a fixed slot via `FixedSurfaceSlot`
+- Renders a placement in a fixed slot via `<Slot>`
 - Shows only to a targeted audience (here, Pro users), and nothing otherwise
 - Has a dismissible CTA that opens your checkout flow
 
@@ -76,16 +76,16 @@ A header banner that:
 
 2. **Drop the slot into your header**
 
-   `FixedSurfaceSlot` renders the matching placement for the current user — or nothing. The `id` matches the placement trigger's `slot_id`.
+   `<Slot>` renders the matching placement for the current user — or nothing. The `id` matches the placement trigger's `slot_id`.
 
    ```tsx title="src/components/AppHeader.tsx"
-   import { FixedSurfaceSlot } from '@revturbine/sdk';
+   import { Slot } from '@revturbine/sdk';
 
    export function AppHeader() {
      return (
        <header>
          {/* Renders the targeted banner, or nothing */}
-         <FixedSurfaceSlot id="app_header_banner" surfaceTemplateIds={['banner_placement']} />
+         <Slot id="app_header_banner" surfaceTemplateIds={['banner_placement']} />
          <nav>{/* ...your nav... */}</nav>
        </header>
      );
@@ -111,7 +111,7 @@ A header banner that:
 
 ## How It Works
 
-1. `FixedSurfaceSlot` asks the decision engine which placement wins for `app_header_banner`.
+1. `<Slot>` asks the decision engine which placement wins for `app_header_banner`.
 2. The engine evaluates the payload's `target` against the current user (plan, segments). If nothing matches, the slot renders nothing — your header is unchanged.
 3. The slot renders the surface's `fields` (header, body) and CTA; clicking the CTA dispatches through your resolvers (see [Quickstart](/getting-started/quickstart/)).
 4. Dismissing the banner records the interaction, so any `caps` (cooldowns, max-per-period) apply on the next render.
