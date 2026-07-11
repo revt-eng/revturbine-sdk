@@ -19,12 +19,9 @@ Each sandbox installs the public `@revturbine/sdk` from npm via
 so the sandboxes always demo the currently-published SDK — there is no vendored
 bundle to rebuild.
 
-Dependency preference during build:
-
-- `pnpm build` first runs `deps:prefer-local`.
-- If sibling `../revturbine-scaffold` exists, local `@revt-eng/schema` is used for `pages-build` and `web-sdk`.
-- If sibling `../revturbine-web` exists, local `@revt-eng/web-api-client` is prepared and used for `web-sdk`.
-- If siblings do not exist, dependencies resolve from GitHub Packages as normal.
+Dependencies resolve from GitHub Packages at their pinned versions (the
+prefer-local sibling resolver was removed 2026-07-11 — publish + bump the pin
+to test unpublished scaffold changes).
 
 ## Run
 
