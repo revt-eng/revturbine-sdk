@@ -7,6 +7,44 @@ sidebar:
 ---
 
 import ModalSlotGallery from '../../../components/galleries/ModalSlotGallery';
+import CodeExample from '../../../components/CodeExample';
+
+export const code = `import React, { useMemo } from "react";
+import { RevTurbineProvider, Gate } from "@revturbine/sdk";
+import exportedConfig from "./exported_config.json";
+import { demoUsers } from "./demoUsers";
+
+export default function App() {
+  const options = useMemo(
+    () => ({
+      localRuntime: { exportedConfig },
+      // Dan lacks the data_export entitlement, so the gate renders the configured
+      // upgrade modal. Switch to demoUsers.user_alice (entitled) and the children
+      // render instead.
+      user: demoUsers.user_dan.context,
+      uiPathResolvers: {
+        navigate_to_plans: async (ctx) => console.log("navigate_to_plans", ctx),
+        open_checkout_modal: async (ctx) => console.log("open_checkout_modal", ctx),
+      },
+    }),
+    [],
+  );
+
+  return (
+    <RevTurbineProvider options={options}>
+      <Gate
+        id="editor_export_action"
+        surfaceTemplateIds={["modal_overlay"]}
+        can="data_export"
+      >
+        <div style={{ padding: 16, background: "#e8f5e9", borderRadius: 8 }}>
+          ✅ Export panel — visible only when entitled
+        </div>
+      </Gate>
+    </RevTurbineProvider>
+  );
+}
+`;
 
 An overlay modal for feature gates, trial expirations, and high-impact upgrade prompts. Supports optional (dismissible) and blocking modes.
 
@@ -16,17 +54,9 @@ An overlay modal for feature gates, trial expirations, and high-impact upgrade p
 
 ## Usage
 
-```tsx
-import { Gate } from '@revturbine/sdk';
+A live, editable example. The user below is **not** entitled, so the gate renders the configured upgrade modal in place of the children — edit the code (or switch to an entitled demo user) and the preview re-runs:
 
-<Gate
-  id="feature_gate_modal"
-  surfaceTemplateIds={["modal_overlay"]}
-  can="data_export"
->
-  <VideoExportPanel />
-</Gate>
-```
+<CodeExample client:only="react" code={code} height={420} />
 
 The `ModalSlot` renders automatically when the decision engine selects a `modal_overlay` template. Blocking modals have no dismiss option — the user must take action. Optional modals include a secondary CTA or close button.
 

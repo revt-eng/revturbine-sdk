@@ -7,6 +7,34 @@ sidebar:
 ---
 
 import ToastSlotGallery from '../../../components/galleries/ToastSlotGallery';
+import CodeExample from '../../../components/CodeExample';
+
+export const code = `import React, { useMemo } from "react";
+import { RevTurbineProvider, Slot } from "@revturbine/sdk";
+import exportedConfig from "./exported_config.json";
+import { demoUsers } from "./demoUsers";
+
+export default function App() {
+  const options = useMemo(
+    () => ({
+      localRuntime: { exportedConfig },
+      // Bob is on Professional — the engine serves him a trial-welcome toast.
+      user: demoUsers.user_bob.context,
+      uiPathResolvers: {
+        navigate_to_plans: async (ctx) => console.log("navigate_to_plans", ctx),
+        open_checkout_modal: async (ctx) => console.log("open_checkout_modal", ctx),
+      },
+    }),
+    [],
+  );
+
+  return (
+    <RevTurbineProvider options={options}>
+      <Slot id="global_toast" surfaceTemplateIds={["toast_message"]} />
+    </RevTurbineProvider>
+  );
+}
+`;
 
 A non-blocking toast notification for usage alerts, feature announcements, and success confirmations. Supports multiple positions and optional CTA.
 
@@ -16,14 +44,9 @@ A non-blocking toast notification for usage alerts, feature announcements, and s
 
 ## Usage
 
-```tsx
-import { Slot } from '@revturbine/sdk';
+A live, editable example — edit the code (or switch the demo user) and the preview re-runs:
 
-<Slot
-  id="global_toast"
-  surfaceTemplateIds={["toast_message"]}
-/>
-```
+<CodeExample client:only="react" code={code} />
 
 The `ToastSlot` renders automatically when the decision engine selects a `toast_message` template. Toasts auto-dismiss after `duration` milliseconds (set to `0` to disable auto-dismiss). Position is controlled by the `position` content field.
 

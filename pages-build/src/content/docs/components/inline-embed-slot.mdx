@@ -7,6 +7,44 @@ sidebar:
 ---
 
 import InlineEmbedSlotGallery from '../../../components/galleries/InlineEmbedSlotGallery';
+import CodeExample from '../../../components/CodeExample';
+
+export const code = `import React, { useMemo } from "react";
+import { RevTurbineProvider, Gate } from "@revturbine/sdk";
+import exportedConfig from "./exported_config.json";
+import { demoUsers } from "./demoUsers";
+
+export default function App() {
+  const options = useMemo(
+    () => ({
+      localRuntime: { exportedConfig },
+      // Dan lacks the branding entitlement, so the gate renders the configured
+      // inline upgrade card. Switch to demoUsers.user_alice (entitled) and the
+      // children render instead.
+      user: demoUsers.user_dan.context,
+      uiPathResolvers: {
+        navigate_to_plans: async (ctx) => console.log("navigate_to_plans", ctx),
+        open_checkout_modal: async (ctx) => console.log("open_checkout_modal", ctx),
+      },
+    }),
+    [],
+  );
+
+  return (
+    <RevTurbineProvider options={options}>
+      <Gate
+        id="editor_branding_toggle"
+        surfaceTemplateIds={["inline_gate_message"]}
+        can="branding"
+      >
+        <div style={{ padding: 16, background: "#e8f5e9", borderRadius: 8 }}>
+          ✅ Branding controls — visible only when entitled
+        </div>
+      </Gate>
+    </RevTurbineProvider>
+  );
+}
+`;
 
 An inline card for feature gates and contextual upgrade prompts. Embeds naturally in the page flow alongside content.
 
@@ -16,17 +54,9 @@ An inline card for feature gates and contextual upgrade prompts. Embeds naturall
 
 ## Usage
 
-```tsx
-import { Gate } from '@revturbine/sdk';
+A live, editable example. The user below is **not** entitled, so the gate renders the configured inline upgrade card in place of the children — edit the code (or switch to an entitled demo user) and the preview re-runs:
 
-<Gate
-  id="feature_gate_inline"
-  surfaceTemplateIds={["inline_gate_message"]}
-  can="advanced_reporting"
->
-  <ReportingDashboard />
-</Gate>
-```
+<CodeExample client:only="react" code={code} />
 
 The `InlineEmbedSlot` renders automatically when the decision engine selects an `inline_gate_message` template. Inline embeds render in-flow where you place them. When the entitlement is denied, the gate content replaces the protected component.
 
