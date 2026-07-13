@@ -9,39 +9,24 @@ sidebar:
 import ModalSlotGallery from '../../../components/galleries/ModalSlotGallery';
 import CodeExample from '../../../components/CodeExample';
 
-export const code = `import React, { useMemo } from "react";
-import { RevTurbineProvider, Gate } from "@revturbine/sdk";
-import exportedConfig from "./exported_config.json";
-import { demoUsers } from "./demoUsers";
+export const code = `import { Gate } from "@revturbine/sdk";
+import { DemoApp } from "./DemoApp";
 
+// Dan lacks the data_export entitlement, so the gate renders the configured
+// upgrade modal. Switch to user="user_alice" (entitled) to see the children.
 export default function App() {
-  const options = useMemo(
-    () => ({
-      localRuntime: { exportedConfig },
-      // Dan lacks the data_export entitlement, so the gate renders the configured
-      // upgrade modal. Switch to demoUsers.user_alice (entitled) and the children
-      // render instead.
-      user: demoUsers.user_dan.context,
-      uiPathResolvers: {
-        navigate_to_plans: async (ctx) => console.log("navigate_to_plans", ctx),
-        open_checkout_modal: async (ctx) => console.log("open_checkout_modal", ctx),
-      },
-    }),
-    [],
-  );
-
   return (
-    <RevTurbineProvider options={options}>
+    <DemoApp user="user_dan">
       <Gate
         id="editor_export_action"
         surfaceTemplateIds={["modal_overlay"]}
         can="data_export"
       >
         <div style={{ padding: 16, background: "#e8f5e9", borderRadius: 8 }}>
-          ✅ Export panel — visible only when entitled
+          Export panel — visible only when entitled
         </div>
       </Gate>
-    </RevTurbineProvider>
+    </DemoApp>
   );
 }
 `;

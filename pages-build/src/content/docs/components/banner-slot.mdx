@@ -9,29 +9,15 @@ sidebar:
 import BannerSlotGallery from '../../../components/galleries/BannerSlotGallery';
 import CodeExample from '../../../components/CodeExample';
 
-export const code = `import React, { useMemo } from "react";
-import { RevTurbineProvider, Slot } from "@revturbine/sdk";
-import exportedConfig from "./exported_config.json";
-import { demoUsers } from "./demoUsers";
+export const code = `import { Slot } from "@revturbine/sdk";
+import { DemoApp } from "./DemoApp";
 
+// Bob is on Professional — the engine serves him an annual-upgrade banner.
 export default function App() {
-  const options = useMemo(
-    () => ({
-      localRuntime: { exportedConfig },
-      // Bob is on Professional — the engine serves him an annual-upgrade banner.
-      user: demoUsers.user_bob.context,
-      uiPathResolvers: {
-        navigate_to_plans: async (ctx) => console.log("navigate_to_plans", ctx),
-        open_checkout_modal: async (ctx) => console.log("open_checkout_modal", ctx),
-      },
-    }),
-    [],
-  );
-
   return (
-    <RevTurbineProvider options={options}>
+    <DemoApp user="user_bob">
       <Slot id="dashboard_top_banner" surfaceTemplateIds={["banner_placement"]} />
-    </RevTurbineProvider>
+    </DemoApp>
   );
 }
 `;

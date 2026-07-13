@@ -9,39 +9,24 @@ sidebar:
 import InlineEmbedSlotGallery from '../../../components/galleries/InlineEmbedSlotGallery';
 import CodeExample from '../../../components/CodeExample';
 
-export const code = `import React, { useMemo } from "react";
-import { RevTurbineProvider, Gate } from "@revturbine/sdk";
-import exportedConfig from "./exported_config.json";
-import { demoUsers } from "./demoUsers";
+export const code = `import { Gate } from "@revturbine/sdk";
+import { DemoApp } from "./DemoApp";
 
+// Dan lacks the branding entitlement, so the gate renders the configured inline
+// upgrade card. Switch to user="user_alice" (entitled) to see the children.
 export default function App() {
-  const options = useMemo(
-    () => ({
-      localRuntime: { exportedConfig },
-      // Dan lacks the branding entitlement, so the gate renders the configured
-      // inline upgrade card. Switch to demoUsers.user_alice (entitled) and the
-      // children render instead.
-      user: demoUsers.user_dan.context,
-      uiPathResolvers: {
-        navigate_to_plans: async (ctx) => console.log("navigate_to_plans", ctx),
-        open_checkout_modal: async (ctx) => console.log("open_checkout_modal", ctx),
-      },
-    }),
-    [],
-  );
-
   return (
-    <RevTurbineProvider options={options}>
+    <DemoApp user="user_dan">
       <Gate
         id="editor_branding_toggle"
         surfaceTemplateIds={["inline_gate_message"]}
         can="branding"
       >
         <div style={{ padding: 16, background: "#e8f5e9", borderRadius: 8 }}>
-          ✅ Branding controls — visible only when entitled
+          Branding controls — visible only when entitled
         </div>
       </Gate>
-    </RevTurbineProvider>
+    </DemoApp>
   );
 }
 `;

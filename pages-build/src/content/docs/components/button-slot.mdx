@@ -9,31 +9,17 @@ sidebar:
 import ButtonSlotGallery from '../../../components/galleries/ButtonSlotGallery';
 import CodeExample from '../../../components/CodeExample';
 
-export const code = `import React, { useMemo } from "react";
-import { RevTurbineProvider, Slot } from "@revturbine/sdk";
-import exportedConfig from "./exported_config.json";
-import { demoUsers } from "./demoUsers";
+export const code = `import { Slot } from "@revturbine/sdk";
+import { DemoApp } from "./DemoApp";
 
+// Carol is on Starter with an active trial, so the engine serves her an upgrade
+// button. Switch to user="user_eve" (Enterprise) and the slot renders nothing —
+// there's nothing to upsell.
 export default function App() {
-  const options = useMemo(
-    () => ({
-      localRuntime: { exportedConfig },
-      // Carol is on Starter with an active trial, so the engine serves her an
-      // upgrade button. Switch to demoUsers.user_eve (Enterprise) and the slot
-      // renders nothing — there's nothing to upsell.
-      user: demoUsers.user_carol.context,
-      uiPathResolvers: {
-        navigate_to_plans: async (ctx) => console.log("navigate_to_plans", ctx),
-        open_checkout_modal: async (ctx) => console.log("open_checkout_modal", ctx),
-      },
-    }),
-    [],
-  );
-
   return (
-    <RevTurbineProvider options={options}>
+    <DemoApp user="user_carol">
       <Slot id="nav_bar_right" surfaceTemplateIds={["button"]} />
-    </RevTurbineProvider>
+    </DemoApp>
   );
 }
 `;
