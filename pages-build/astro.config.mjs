@@ -20,8 +20,8 @@ const base = process.env.PAGES_BASE
 // Vercel /docs build sets PAGES_SITE=https://revturbine.com (with PAGES_BASE=/docs).
 const site = process.env.PAGES_SITE ?? 'https://revt-eng.github.io';
 
-// Resolve @revt-eng/* packages from pages-build/node_modules so Vite can find
-// them even when the web-sdk/ workspace dependencies use workspace:* protocol.
+// Resolve @revt-eng/* packages from the isolated pages-build install so Vite
+// uses this docs workspace's exact registry pins, not an outer workspace tree.
 const pagesNodeModules = resolve(import.meta.dirname, 'node_modules');
 
 // The Sandpack playground sandboxes install the real, published `@revturbine/sdk`

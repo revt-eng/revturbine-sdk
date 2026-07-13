@@ -11,6 +11,15 @@ The SDK follows [Semantic Versioning](https://semver.org/):
 - **Minor** — new features, backward-compatible
 - **Patch** — bug fixes, backward-compatible
 
+## Unreleased
+
+### Breaking changes
+
+- JavaScript package installation and Node-based tooling now require Node.js
+  22.13 or newer. Node.js 20 is no longer supported.
+
+---
+
 ## 0.1.x (Current)
 
 ### 0.1.0 — Initial Release
@@ -37,7 +46,7 @@ The SDK follows [Semantic Versioning](https://semver.org/):
 **Runtime compatibility:**
 
 - React 18+
-- Node.js 20+ (server SDK)
+- Node.js 20+ (server SDK, at initial release)
 - Chrome/Firefox/Safari/Edge 90+
 
 ---

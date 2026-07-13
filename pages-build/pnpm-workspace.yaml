@@ -1,0 +1,7 @@
+packages: []
+nodeLinker: hoisted
+enablePrePostScripts: true
+allowBuilds:
+  es5-ext: true
+  esbuild: true
+  sharp: true
