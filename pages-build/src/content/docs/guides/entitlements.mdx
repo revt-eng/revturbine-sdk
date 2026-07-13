@@ -6,6 +6,47 @@ sidebar:
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import CodeExample from '../../../components/CodeExample';
+
+export const canCode = `import { useCan } from "@revturbine/sdk";
+import { DemoApp } from "./DemoApp";
+
+function ExportButton() {
+  const { can, limited } = useCan("data_export");
+  if (!can) return <button disabled>Upgrade to Export</button>;
+  return <button>Export Video{limited ? " — running low" : ""}</button>;
+}
+
+// Dan is not entitled to data_export, so \`can\` is false and the button is
+// disabled. Switch to user="user_alice" (entitled) and it enables.
+export default function App() {
+  return (
+    <DemoApp user="user_dan">
+      <ExportButton />
+    </DemoApp>
+  );
+}
+`;
+
+export const gateCode = `import { Gate } from "@revturbine/sdk";
+import { DemoApp } from "./DemoApp";
+
+// Dan lacks data_export, so the gate renders the configured upgrade placement
+// in place of the children. Switch to user="user_alice" to see the children.
+export default function App() {
+  return (
+    <DemoApp user="user_dan">
+      <Gate
+        id="editor_export_action"
+        surfaceTemplateIds={["modal_overlay"]}
+        can="data_export"
+      >
+        <button>Export Video</button>
+      </Gate>
+    </DemoApp>
+  );
+}
+`;
 
 Entitlements define what users can do based on their plan. The SDK evaluates entitlements locally (in `local_only` mode) or via the RevTurbine API, and provides React hooks and imperative APIs for access control.
 
@@ -25,15 +66,7 @@ Entitlements define what users can do based on their plan. The SDK evaluates ent
 
 The simplest reactive check. `useCan(handle)` returns `{ can, limited, result }`. `can` is `true` while the user is entitled — **including** the `limited` (running-low) state — so gate on `!can`, never `!allowed`:
 
-```tsx
-import { useCan } from '@revturbine/sdk';
-
-function ExportButton() {
-  const { can, limited } = useCan('data_export');
-  if (!can) return <button disabled>Upgrade to Export</button>;
-  return <button>Export Video{limited ? ' — running low' : ''}</button>;
-}
-```
+<CodeExample client:only="react" code={canCode} />
 
 ### Full surface — `useEntitlement`
 
@@ -58,13 +91,7 @@ function ExportButton() {
 
 `<Gate>` gates its children declaratively. `can="handle"` checks an entitlement (shorthand for `check={{ entitlement: 'handle' }}`); children render while entitled, and a configured upgrade placement — or `deniedFallback` — shows on denial. `limitedFallback` renders a soft "running low" state while access is still granted:
 
-```tsx
-import { Gate } from '@revturbine/sdk';
-
-<Gate id="export_gate" can="data_export" limitedFallback={<LowBalanceNotice />}>
-  <ExportButton />
-</Gate>
-```
+<CodeExample client:only="react" code={gateCode} height={420} />
 
 **A `<Gate>` is also a placement.** On denial the gate doesn't render hardcoded UI — it resolves a **placement** from your monetization config and renders it in place of the children. So *what a denied user sees* — the upgrade modal or banner, its headline, offer, and CTA — is authored in the studio (or the CLI config), not baked into your app. Your PM, growth, or marketing team can rewrite the denial copy, swap the offer, or A/B-test it with no code deploy. `surfaceTemplateIds` scopes which surface templates can fill the gate; `deniedFallback` is the static backstop shown only when no placement is configured for it.
 

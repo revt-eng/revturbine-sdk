@@ -6,6 +6,55 @@ sidebar:
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import CodeExample from '../../../components/CodeExample';
+
+export const fixedCode = `import { Slot } from "@revturbine/sdk";
+import { DemoApp } from "./DemoApp";
+
+// Carol is on Starter with an active trial — the engine serves her an upgrade
+// button in this slot. Switch to user="user_eve" and it renders nothing.
+export default function App() {
+  return (
+    <DemoApp user="user_carol">
+      <Slot id="nav_bar_right" surfaceTemplateIds={["button"]} />
+    </DemoApp>
+  );
+}
+`;
+
+export const gateCode = `import { Gate } from "@revturbine/sdk";
+import { DemoApp } from "./DemoApp";
+
+// Dan lacks data_export, so the gate renders the configured upgrade placement
+// in place of the children. Switch to user="user_alice" to see the children.
+export default function App() {
+  return (
+    <DemoApp user="user_dan">
+      <Gate
+        id="editor_export_action"
+        surfaceTemplateIds={["modal_overlay"]}
+        can="data_export"
+      >
+        <button>Export Video</button>
+      </Gate>
+    </DemoApp>
+  );
+}
+`;
+
+export const messageCode = `import { Slot } from "@revturbine/sdk";
+import { DemoApp } from "./DemoApp";
+
+// A message slot renders nothing until a targeting rule fires. Alice's usage
+// trips the warning rule, so the engine serves her a banner here.
+export default function App() {
+  return (
+    <DemoApp user="user_alice">
+      <Slot id="global_banner" surfaceTemplateIds={["banner_placement"]} />
+    </DemoApp>
+  );
+}
+`;
 
 <Aside type="tip" title="Visual gallery">
 Each built-in slot component has a co-located Storybook story with 3-5 variants.
@@ -44,14 +93,7 @@ Every slot needs an `id` and optionally a list of accepted `surfaceTemplateIds`:
 
 Always-visible inline placements — buttons, cards, meters:
 
-```tsx
-import { Slot } from '@revturbine/sdk';
-
-<Slot
-  id="nav_bar_right"
-  surfaceTemplateIds={['button']}
-/>
-```
+<CodeExample client:only="react" code={fixedCode} />
 
 Fixed slots render nothing if no placement matches — your layout stays intact.
 
@@ -61,17 +103,7 @@ Fixed slots render nothing if no placement matches — your layout stays intact.
 
 Wrap premium content and show an upgrade prompt when access is denied:
 
-```tsx
-import { Gate } from '@revturbine/sdk';
-
-<Gate
-  id="editor_export_action"
-  surfaceTemplateIds={['modal_overlay']}
-  can="data_export"
->
-  <ExportPanel />
-</Gate>
-```
+<CodeExample client:only="react" code={gateCode} height={420} />
 
 If the entitlement is granted, children render normally. If denied, the gate renders an **upgrade placement** in their place.
 
@@ -83,14 +115,7 @@ That denial UI is itself a placement, not hardcoded markup: the decision engine 
 
 Page-level overlays triggered by targeting rules — toasts, modals, banners:
 
-```tsx
-import { Slot } from '@revturbine/sdk';
-
-<Slot
-  id="global_banner"
-  surfaceTemplateIds={['banner_placement', 'banner_warning']}
-/>
-```
+<CodeExample client:only="react" code={messageCode} />
 
 Message slots render nothing until a targeting rule triggers. Place them at the top level of your layout.
 
