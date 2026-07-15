@@ -22,6 +22,11 @@ const groupSlugs: Record<SandpackScenarioGroup, string> = {
 };
 
 export default function ScenarioIndex() {
+  // This component renders client-only, so the build-time rehype plugin that
+  // base-prefixes authored links never touches these hrefs. Prefix the base
+  // ('' at root, '/docs' when mounted under revturbine.com/docs) ourselves.
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
       {groupOrder.map((group) => {
@@ -44,7 +49,7 @@ export default function ScenarioIndex() {
               {scenarios.map((s) => (
                 <a
                   key={s.id}
-                  href={`/playground/${groupSlug}/${s.id}/`}
+                  href={`${base}/playground/${groupSlug}/${s.id}/`}
                   style={{
                     display: 'block',
                     padding: '12px 16px',
