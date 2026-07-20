@@ -6,6 +6,6 @@ allowBuilds:
   esbuild: true
   sharp: true
 minimumReleaseAgeExclude:
-  - '@revt-eng/core@0.1.127'
-  - '@revt-eng/schema-external@0.1.127'
-  - '@revt-eng/schema@0.1.127'
+  - '@revt-eng/core@0.1.127 || 0.1.131'
+  - '@revt-eng/schema-external@0.1.127 || 0.1.131'
+  - '@revt-eng/schema@0.1.127 || 0.1.131'
