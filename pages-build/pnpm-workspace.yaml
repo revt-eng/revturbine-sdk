@@ -5,3 +5,7 @@ allowBuilds:
   es5-ext: true
   esbuild: true
   sharp: true
+minimumReleaseAgeExclude:
+  - '@revt-eng/core@0.1.127'
+  - '@revt-eng/schema-external@0.1.127'
+  - '@revt-eng/schema@0.1.127'
