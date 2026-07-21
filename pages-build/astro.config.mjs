@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm';
 import { join, resolve } from 'node:path';
 import { readFile, writeFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { resolveSdkVersion } from './scripts/resolve-sdk-version.mjs';
 
 // PAGES_BASE can be set by the deploy workflow.
 const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? '';
@@ -25,12 +26,12 @@ const site = process.env.PAGES_SITE ?? 'https://revt-eng.github.io';
 const pagesNodeModules = resolve(import.meta.dirname, 'node_modules');
 
 // The Sandpack playground sandboxes install the real, published `@revturbine/sdk`
-// from npm. Pin them to the same version the sibling web-sdk source declares, so
-// the docs demos always match the SDK the docs describe. Read at config-eval time
-// and expose to client code via Vite `define` (see the vite block below).
-const sdkVersion = JSON.parse(
-  await readFile(resolve(import.meta.dirname, '../web-sdk/package.json'), 'utf8'),
-).version;
+// from npm. Prefer the version the sibling web-sdk source declares — so the docs
+// demos match the SDK the docs describe — but fall back to npm's latest published
+// version when that declared version isn't on npm yet, so a failed release can't
+// pin a 404ing version and blank every embed. Resolved at config-eval time and
+// exposed to client code via Vite `define` (see the vite block below).
+const sdkVersion = await resolveSdkVersion();
 
 // Starlight base-prefixes its own sidebar/asset links, but NOT authored links in
 // markdown content or hero `actions` frontmatter — those stay as raw `/getting-started/…`
