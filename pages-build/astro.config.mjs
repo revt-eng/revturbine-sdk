@@ -213,6 +213,7 @@ export default defineConfig({
           label: 'Concepts',
           items: [
             { label: 'Client vs Server Enforcement', slug: 'concepts/enforcement' },
+            { label: 'What Owns What', slug: 'concepts/source-of-truth' },
             { label: 'Provider Architecture', slug: 'concepts/providers' },
           ],
         },

@@ -1,0 +1,43 @@
+---
+title: What Owns What
+description: The source-of-truth map across RevTurbine, your app, and Stripe — who owns plan definitions, prices, subscription status, feature-access policy, usage, checkout, and billing-critical enforcement.
+sidebar:
+  order: 3
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+RevTurbine sits between your app and Stripe, and the single biggest question a technical evaluator has is *"where does each piece of truth actually live?"* Here's the map.
+
+## The map
+
+| Concern | RevTurbine | Your app | Stripe |
+|---|---|---|---|
+| **Plan catalog** — which plans/tiers exist | ✅ **Authoritative** (the Playbook) | — | mirrors as products |
+| **Prices** | mirror (UI helper) | — | ✅ **Authoritative** |
+| **Subscription status** — active / plan / canceled | reads it from user context | relays Stripe → RevTurbine | ✅ **Authoritative** |
+| **Feature-access policy** — what each plan entitles | ✅ **Authoritative** (entitlement rules) | — | — |
+| **Usage counts** | evaluates them against limits | ✅ **reports** usage (`rt.update`) | — |
+| **Checkout & payment** | starts it (a CTA opens checkout) | hosts the flow | ✅ **Processes** payment |
+| **When to show a placement / upsell** | ✅ **Decides** (decision engine) | renders the `<Slot>` | — |
+| **Billing-critical enforcement** — actually granting a paid action | advises (policy) | ✅ **Enforces** (server-side) | — |
+
+## Reading the map
+
+- **RevTurbine owns *policy*, not money.** The plan catalog, what each plan entitles, and when a placement shows are all RevTurbine's — a PM edits them in the studio and republishes, with no code deploy. RevTurbine never charges anyone.
+- **Stripe owns *money and subscription state*.** Prices, who is subscribed, and payment processing are Stripe's. RevTurbine mirrors prices into the Playbook as a **UI helper** for rendering — but Stripe is the price authority. Your app tells RevTurbine the user's current plan (from Stripe) via `rt.identify(userId, { plan })`.
+- **Your app owns *enforcement and usage*.** You report usage, you host checkout, and — critically — **you enforce billing-critical actions on your server.** See [Client vs Server Enforcement](/concepts/enforcement/).
+
+<Aside type="note" title="Why prices live in Stripe, not the Playbook">
+The Playbook carries `price_amount` / `stripe_price_id` so the SDK can render a pricing card without a round-trip. That copy is denormalized for display only — Stripe remains the authority, and the mirror is kept fresh from Stripe. Never treat the Playbook's price as the number you charge.
+</Aside>
+
+## What this buys you
+
+Because your app only ever knows **slots and entitlements** — never plan names or prices hard-coded in code — cascading monetization changes stay out of your codebase. Launch a new plan, run a discount, restructure tiers: the catalog and policy change in RevTurbine, the numbers change in Stripe, and your app keeps rendering the same slots and checking the same entitlements. The first monetization strategy is never the last — and this split is what keeps your code from having to change every time it moves.
+
+## Related
+
+- [Client vs Server Enforcement](/concepts/enforcement/) — the policy-vs-enforcement split in detail
+- [Integration Points](/concepts/integration-points/) — the SDK ↔ app contract
+- [Entitlements](/guides/entitlements/) — the entitlement rules RevTurbine owns
