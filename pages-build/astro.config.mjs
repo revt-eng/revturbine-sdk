@@ -212,6 +212,7 @@ export default defineConfig({
         {
           label: 'Concepts',
           items: [
+            { label: 'Client vs Server Enforcement', slug: 'concepts/enforcement' },
             { label: 'Provider Architecture', slug: 'concepts/providers' },
           ],
         },

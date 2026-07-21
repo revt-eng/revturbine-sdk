@@ -9,7 +9,7 @@ sidebar:
 
 RevTurbine is **additive** — it enhances the customer's app but is never required for baseline UX. The customer's app must look and function correctly without a placement payload. Surface slots return "nothing to show" by default; the app renders its standard UI. Placements layer conversion, expansion, and retention experiences on top.
 
-RevTurbine is the **authoritative source** for access decisions on gated and usage-limited features. The customer's app delegates entitlement checks to RT and enforces the result — no hard-coded access logic. Plan changes, entitlement updates, and placement configurations take effect immediately without code deploys.
+RevTurbine is the **authoritative source for monetization policy** — which plans exist, what each entitles, and when a placement shows. The customer's app **owns enforcement**: it reads the entitlement result and acts on it, with no hard-coded plan logic. Plan changes, entitlement updates, and placement configurations take effect immediately without code deploys. For billing-critical or abuse-sensitive actions, re-check entitlement on your server — the client check is a UX convenience. See [Client vs Server Enforcement](/concepts/enforcement/).
 
 ## Key SDK Methods
 

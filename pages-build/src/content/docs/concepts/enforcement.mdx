@@ -1,0 +1,79 @@
+---
+title: Client vs Server Enforcement
+description: How RevTurbine splits responsibility — RevTurbine owns monetization policy, your app owns enforcement, the UI fails open, and billing-critical actions are re-checked on your server. Plus the difference between <Gate>, gate(), and can().
+sidebar:
+  order: 2
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Every team evaluating RevTurbine asks the same question: *"If entitlements are checked in the browser, what stops a user from bypassing them?"* This page is the one answer — the division of responsibility, and which tool to use where.
+
+## The model, stated once
+
+- **RevTurbine is authoritative for monetization *policy*.** Which plans exist, what each plan entitles, when a placement shows — that lives in your [Playbook](/getting-started/api-overview/#the-vocabulary-slot--gate--playbook) and the control plane, and a PM changes it with no code deploy.
+- **Your app owns *enforcement*.** RevTurbine tells you the policy answer; your app is what actually allows or blocks the action.
+- **The UI fails open.** If RevTurbine is paused, misconfigured, or unreachable, slots render nothing and entitlement checks resolve permissively — so our downtime can't break your product.
+- **Money-safe decisions belong on your server.** A browser check can be tampered with. For anything that costs money or invites abuse, re-run the check server-side before you grant access.
+
+<Aside type="tip" title="Additive by design — it can't break your app">
+Failing open is deliberate. RevTurbine is an *additive* layer: your product must look and work correctly with every placement paused and the SDK offline. A monetization layer should never be able to take your product down — so when in doubt, it does nothing.
+</Aside>
+
+## Three tools, and where each runs
+
+The SDK gives you three ways to act on an entitlement. They sound alike; they are not the same.
+
+| Tool | Kind | Runs | Use it for |
+|---|---|---|---|
+| `<Gate>` | React component | Client (UI) | Show/hide a subtree and render an upsell when denied |
+| `rt.gate(action, fn)` | Imperative verb | Client | Run `fn` only if entitled; get the entitlement back to open a paywall |
+| `rt.can(handle)` · `useCan` · `checkEntitlement` | Check | Client **or** server | Ask "is this allowed?" and get the full result — the one you re-run server-side |
+
+`<Gate>` and `gate()` are convenience wrappers around a `can()`/`checkEntitlement()` call. All three run in the browser and **fail open**. The check itself — `checkEntitlement` / `can` — is also what you run on your server (via the server SDK or your own logic) when the decision has to be trusted.
+
+## When do I need the server?
+
+| Action | Client check enough? |
+|---|---|
+| Show or hide a button, badge, or menu item | ✅ Yes |
+| Render an upgrade prompt or paywall | ✅ Yes |
+| Branch UI copy or messaging | ✅ Yes |
+| Start a paid export, consume credits, provision a seat | ❌ Re-check on your server |
+| Anything a user could profit from by faking | ❌ Re-check on your server |
+
+The rule: **the client check drives the UI; your server makes the money-safe decision.** They use the same entitlement — you're just not trusting the browser for the part that matters.
+
+## In practice
+
+Use the client check for a fast, friendly UX:
+
+```tsx
+import { Gate } from '@revturbine/sdk';
+
+// Client: instant show/hide + upsell when denied. Fails open.
+<Gate id="editor_export" can="data_export">
+  <ExportButton />
+</Gate>
+```
+
+Then verify again on your server before doing the paid work:
+
+```ts
+// Server: the trusted decision. Re-run the same entitlement check
+// (via the RevTurbine server SDK, or your own logic) before granting.
+async function handleExport(req, res) {
+  const entitled = await userIsEntitled(req.userId, 'data_export'); // your server check
+  if (!entitled) return res.status(402).json({ error: 'upgrade_required' });
+  await runExport(req);
+}
+```
+
+The client `<Gate>` keeps the UI honest and fast; the server check keeps the revenue safe. If RevTurbine is down, the client fails open (the button shows), and your server check is still the backstop for the billing-critical step.
+
+## Related
+
+- [Recommended API Path](/getting-started/api-overview/) — when to reach for `can()` vs `gate()` vs `<Gate>`
+- [Server-Side Integration](/getting-started/server-side/) — running entitlement checks on your backend
+- [Entitlements](/guides/entitlements/) — the entitlement model behind every check
+- [Error Handling](/guides/error-handling/) — the additive / fail-open behavior in detail
