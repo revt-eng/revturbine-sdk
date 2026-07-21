@@ -98,10 +98,22 @@ jobs:
       - name: Build SDK bundle (tsup + declarations)
         # Invoke the build directly — `pnpm build` would fire the prebuild hook,
         # which references internal-only ../scripts that are not in the public repo.
+        #
+        # Call the binaries out of node_modules/.bin rather than through
+        # `pnpm exec`. web-sdk/package.json pins pnpm@11, whose `exec` first
+        # verifies the lockfile against the supply-chain (minimum-release-age)
+        # policy and re-runs `pnpm install` when that check trips — which it does
+        # here, because the @revt-eng/* pins are always fresher than the age gate.
+        # The deps are already installed by the step above, so that implicit
+        # install is pure risk. NODE_AUTH_TOKEN is supplied anyway so any pnpm
+        # subprocess that does reach GitHub Packages authenticates; without it the
+        # step inherits setup-node's XXXXX-XXXXX placeholder and 401s.
         working-directory: web-sdk
         run: |
-          pnpm exec tsup
-          pnpm exec tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir dist/types
+          ./node_modules/.bin/tsup
+          ./node_modules/.bin/tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir dist/types
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prepare public package manifest
         working-directory: web-sdk
