@@ -1,0 +1,94 @@
+---
+title: Recommended API Path
+description: The small, blessed surface to reach for first — can() and gate() to check and protect, <Slot> and <Gate> to render, and the Slot / Gate / Playbook vocabulary. Everything else is Advanced.
+sidebar:
+  order: 2
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The SDK has a large surface, but most integrations only need a handful of calls. Reach for these first; everything else is **Advanced**.
+
+## Two questions, two verbs
+
+Almost every monetization decision is one of two questions:
+
+- **"Can this user do X?"** → *check* it with `can()` (or the `useEntitlement` hook).
+- **"Only let them do X if they're entitled — and show an upsell if not."** → *protect* it with `gate()` (imperative) or `<Gate>` (declarative React).
+
+And when you just want to render whatever the control plane decides for a spot in your UI, drop in a **`<Slot>`**.
+
+## What to reach for
+
+| You want to… | Use | Kind |
+|---|---|---|
+| Check access imperatively | `rt.can(handle)` → `EntitlementResult` | verb |
+| Check access in React | `useEntitlement({ handle })` / `useCan(handle)` | hook |
+| Run an action only if entitled | `rt.gate(action, fn)` → `{ ran, entitlement }` | verb |
+| Gate a React subtree + show an upsell | `<Gate can="…">…</Gate>` | component |
+| Render a control-plane placement | `<Slot id="…" />` | component |
+| Track an event | `rt.track(name, data)` | verb |
+| Report usage | `rt.update({ usage })` | verb |
+
+## `can()` vs `gate()` vs `<Gate>`
+
+They sound alike but do different jobs:
+
+- **`can()`** *asks* — it returns the answer and does nothing else.
+
+  ```ts
+  const access = await rt.can('data_export');
+  if (!access.allowed) showUpgrade();
+  ```
+
+  It returns the rich `EntitlementResult` (`allowed`, `status`, `reason`, and — for limit-bearing entitlements — `limit` / `used` / `remaining`). `can()` is asynchronous by design, so custom resolvers can be injected.
+
+- **`gate(action, fn)`** *asks and acts* — it runs `fn` only when the user is entitled, and hands back the entitlement so you can open a paywall otherwise.
+
+  ```ts
+  const gated = await rt.gate('export_pdf', () => exportPdf());
+  if (!gated.ran) openPaywall(gated.entitlement);
+  ```
+
+- **`<Gate>`** is the declarative React version — it renders its children when access is granted and the resolved upsell placement when it isn't.
+
+  ```tsx
+  <Gate id="editor_export" can="data_export">
+    <ExportControls />
+  </Gate>
+  ```
+
+<Aside type="caution" title="The client check is convenient, not authoritative">
+`can()`, `gate()`, and `<Gate>` run in the browser, where a determined user can tamper with the result. For **billing-critical or abuse-sensitive** actions, treat the client check as a UX convenience and **re-run the same entitlement check on your server** (or via a server SDK) before you actually grant access. The UI failing open keeps RevTurbine downtime from breaking your app; your server owns the money-safe decision.
+</Aside>
+
+## The vocabulary: Slot · Gate · Playbook
+
+Three names cover the customer-facing surface:
+
+- **`<Slot>`** — the general placement slot. It renders whatever placement the control plane resolves for a spot (banner, modal, toast, meter, …).
+
+  ```tsx
+  <Slot id="pricing_banner" />
+  ```
+
+- **`<Gate>`** — the entitlement gate (above): render children when entitled, an upsell when not.
+- **`Playbook`** — the portable monetization config the SDK evaluates against: plans, entitlements, segments, and placements. In local mode you load it (typically `exported_config.json`) at init; in live mode the SDK fetches it.
+
+Each has an older name that stays exported — prefer the canonical one:
+
+| Canonical | Also exported as | What it is |
+|---|---|---|
+| `<Slot>` | `SurfaceSlotComponent`, `RTSlot` | general placement slot component |
+| `<Gate>` | `AccessGateSurfaceSlot` | entitlement-gate component |
+| `Playbook` | `ExportedConfig`, `RevTurbineConfig` | the portable monetization config |
+
+## Everything else is Advanced
+
+Provider architecture, custom slot types, headless controllers (`usePlacement` and the imperative controllers), theming internals, and the generated object detail are all still available — they're just not the first thing you reach for. See the **Guides** and the **API Reference** when you need them.
+
+## Related
+
+- [Quickstart](/getting-started/quickstart/) — gate one action end to end
+- [Entitlements](/guides/entitlements/) — the full entitlement model behind `can()` / `gate()`
+- [Placements](/guides/placements/) — what `<Slot>` renders and how decisions resolve

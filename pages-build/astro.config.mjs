@@ -176,6 +176,7 @@ export default defineConfig({
           label: 'Getting Started',
           items: [
             { label: 'Quickstart', slug: 'getting-started/quickstart' },
+            { label: 'Recommended API Path', slug: 'getting-started/api-overview' },
             { label: 'Installation', slug: 'getting-started/installation' },
             { label: 'React Integration', slug: 'getting-started/react' },
             { label: 'Server-Side Integration', slug: 'getting-started/server-side' },
