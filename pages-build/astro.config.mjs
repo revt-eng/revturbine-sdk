@@ -220,6 +220,13 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Operate',
+          items: [
+            { label: 'Production Readiness', slug: 'operate/production-readiness' },
+            { label: 'Debugging Decisions', slug: 'operate/debugging' },
+          ],
+        },
+        {
           label: 'Reference',
           items: [
             { label: 'Configuration', slug: 'reference/configuration' },

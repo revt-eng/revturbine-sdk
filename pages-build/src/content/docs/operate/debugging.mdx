@@ -1,0 +1,38 @@
+---
+title: Debugging Decisions
+description: Use explainPlacementDecision() to see exactly why a placement was or wasn't shown — segment predicate pass/fail, entitlement-rule matching, and decision metadata.
+sidebar:
+  order: 2
+---
+
+"Why isn't my upgrade prompt showing?" is the most common integration question, and RevTurbine answers it directly. `explainPlacementDecision()` returns the same decision the engine made, plus the full reasoning behind it.
+
+## explainPlacementDecision()
+
+Call it with the same input you pass to `getPlacementDecision()`:
+
+```ts
+const explanation = await rt.explainPlacementDecision(decisionInput);
+```
+
+The result is a structured diagnostic covering three things:
+
+- **Segment membership** — each configured segment, whether the user matched, and **predicate-level pass/fail** (which trait comparison succeeded or failed). This is where a mistyped trait or a missing user-context field shows up.
+- **Entitlement-rule matching** — which entitlement rules applied to the current targeting context and their outcomes.
+- **Decision metadata** — the `rule_id` that won, reason codes, and any **suppression** (e.g. a frequency cap or cooldown that hid an otherwise-eligible placement).
+
+## Reading it
+
+When a placement doesn't show, walk the explanation top-down:
+
+1. **Did the user match the segment?** If a predicate failed, check the trait you set in user context against the segment's `field` / `operator` / `value`.
+2. **Did an entitlement rule apply?** A gate that grants access won't render an upsell — denial is what triggers the prompt.
+3. **Was it suppressed?** Reason codes will name a cap, cooldown, or priority loss to a competing placement.
+
+Because the explanation is plain data, wire it into your own QA tooling or a customer-facing "why am I seeing this?" panel — it's the same payload the engine used, so it never drifts from the real decision.
+
+## Related
+
+- [Placements](/guides/placements/) — the decision input and how placements resolve
+- [Run an Experiment with Segments](/guides/experiments/) — segment predicates in practice
+- [Production Readiness](/operate/production-readiness/) — the rest of the pre-launch checklist

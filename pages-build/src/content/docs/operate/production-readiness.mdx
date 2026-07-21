@@ -1,0 +1,65 @@
+---
+title: Production Readiness
+description: The pre-launch checklist for a billing-adjacent SDK — keys, failure behavior, local-only limits, caching, config versioning, and testing plan changes before you deploy.
+sidebar:
+  order: 1
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+RevTurbine is designed to be safe to run in production from day one — it's additive and fails open. This page is the checklist for the rest.
+
+## Client vs server
+
+The one decision that matters most: **the client check drives the UI; your server makes the money-safe decision.** Read [Client vs Server Enforcement](/concepts/enforcement/) before shipping anything billing-critical.
+
+## Keys
+
+| Key | Where it runs | Scope |
+|---|---|---|
+| `apiKey` (`rt_live_…`) | Client | Authenticates the SDK. Client-scoped — treat it like a publishable key. |
+| `ingestPublicKey` | Client | `ingest:write` only — a public token safe to embed. Mint it under **Settings → Ingest keys**; set it for any integration that emits events. |
+| Server / management tokens | **Server only** | Higher-privilege, role-scoped tokens for server-side checks, the CLI, and config management. **Never ship these in client code.** |
+
+Stamp `environmentId` (`'prod'` / `'staging'`) so analytics stays separated by deployment.
+
+## Failure behavior
+
+RevTurbine is **additive**: if it's paused, misconfigured, or unreachable, slots render nothing and entitlement checks fail open — your product keeps working. Tune what a slot renders on provider failure with `providerFailureSlotBehavior` (default: render nothing). See [Error Handling](/guides/error-handling/).
+
+<Aside type="caution" title="Fail-open cuts both ways">
+Failing open means a user briefly sees a gated feature if RevTurbine is unreachable. That's the right trade-off for UI — but it's exactly why billing-critical actions are re-checked on your server, which does *not* fail open.
+</Aside>
+
+## Local-only limits
+
+In `local_only` mode the SDK evaluates entirely from the bundled Playbook — no network. That's great for tests and no-backend demos, but be aware:
+
+- Usage is **client-reported and client-only** — not authoritative. Don't meter billing off it.
+- There are **no real-time config updates** — you ship a Playbook snapshot.
+- Events go to `localStorage`, not the ingest pipeline.
+
+See [Runtime Modes](/guides/runtime-modes/) to choose between `local_only`, `revturbine_server`, and `custom_endpoints`.
+
+## Caching
+
+The SDK caches placement decisions and interaction state per user and persists them, so repeat checks are instant and dismiss/snooze survive reloads. The cache clears on identity change (`identify` / `reset`) and when the config updates. If you see a stale decision after a config change, confirm the user context was re-identified.
+
+## Config versioning
+
+Every placement decision carries the `config_version` it was evaluated against, so you can trace a decision back to the exact Playbook that produced it. The Playbook moves through a lifecycle — **draft → submit → approve → deploy** — so a change is reviewed and versioned before it goes live.
+
+## Test plan changes before you deploy
+
+Because monetization changes ship as config, you can verify them without touching app code:
+
+- **CLI:** `revturbine verify` / `preview` / `evaluate` a candidate Playbook against real inputs before deploying it — the same config a green run produces is what you ship.
+- **`local_only`:** load a candidate `exported_config.json` in a test build and exercise the gates and placements against fixture users.
+- **[Debugging Decisions](/operate/debugging/):** use `explainPlacementDecision()` to see exactly why a decision resolved the way it did.
+
+## Related
+
+- [Client vs Server Enforcement](/concepts/enforcement/)
+- [What Owns What](/concepts/source-of-truth/)
+- [Debugging Decisions](/operate/debugging/)
+- [Error Handling](/guides/error-handling/)
