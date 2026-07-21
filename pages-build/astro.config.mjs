@@ -198,6 +198,7 @@ export default defineConfig({
         {
           label: 'Guides',
           items: [
+            { label: 'Replace Plan Checks', slug: 'guides/migrate-plan-checks' },
             { label: 'Runtime Modes', slug: 'guides/runtime-modes' },
             { label: 'Entitlements', slug: 'guides/entitlements' },
             { label: 'Placements', slug: 'guides/placements' },

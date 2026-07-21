@@ -1,0 +1,130 @@
+---
+title: Replace Hard-Coded Plan Checks
+description: Watch a single `if (user.plan === 'pro')` grow into a tangle of business exceptions — beta overrides, comps, segmented copy, usage limits, grandfathered plans — then collapse it to one gate() call plus config.
+sidebar:
+  order: 10
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+You already have a check like `if (user.plan === 'pro')` somewhere. It works — until the requirements arrive. Here's that one check growing up, and where it lands.
+
+## The check that grows
+
+### 1. The naive check
+
+```tsx
+function ExportButton({ user }) {
+  if (user.plan !== 'pro') return <UpgradePrompt />;
+  return <button onClick={exportData}>Export</button>;
+}
+```
+
+Fine on day one.
+
+### 2. …plus a beta list and a comp window
+
+Sales comped a few accounts; beta users get everything:
+
+```tsx
+const BETA_ACCOUNTS = ['acct_123', 'acct_456'];
+
+function ExportButton({ user }) {
+  const entitled =
+    user.plan === 'pro' ||
+    BETA_ACCOUNTS.includes(user.accountId) ||
+    (user.compedUntil && user.compedUntil > Date.now());
+  if (!entitled) return <UpgradePrompt />;
+  return <button onClick={exportData}>Export</button>;
+}
+```
+
+### 3. …plus segmented upgrade copy
+
+Marketing wants different messaging by plan cadence and region:
+
+```tsx
+function ExportButton({ user }) {
+  const entitled =
+    user.plan === 'pro' ||
+    BETA_ACCOUNTS.includes(user.accountId) ||
+    (user.compedUntil && user.compedUntil > Date.now());
+  if (!entitled) {
+    const message =
+      user.billing === 'annual' ? 'Unlock exports on your annual plan' :
+      user.region === 'EU' ? 'Passez au plan Pro pour exporter' :
+      'Unlock exports — upgrade to Pro';
+    return <UpgradePrompt message={message} />;
+  }
+  return <button onClick={exportData}>Export</button>;
+}
+```
+
+### 4. …plus a usage limit and a grandfathered plan
+
+Free users get 3 exports a month; the retired `starter_2022` plan keeps unlimited:
+
+```tsx
+function ExportButton({ user }) {
+  const isLegacy = user.plan === 'starter_2022';
+  const entitled =
+    user.plan === 'pro' || isLegacy ||
+    BETA_ACCOUNTS.includes(user.accountId) ||
+    (user.compedUntil && user.compedUntil > Date.now());
+  const overLimit = !entitled && user.exportsThisMonth >= 3;
+  // ...and now the copy branch has to know about isLegacy and overLimit too.
+}
+```
+
+By step 4 it's a knot of business exceptions living in your component — and changing the beta list, the copy, or the limit is a code change, a deploy, and an eng ticket.
+
+## The after
+
+```tsx
+import { Gate } from '@revturbine/sdk';
+
+function ExportButton() {
+  return (
+    <Gate id="export" can="data_export">
+      <button onClick={exportData}>Export</button>
+    </Gate>
+  );
+}
+```
+
+The beta list, the comp window, the segmented copy, the usage limit, and the grandfathered plan all move into the **Playbook** — entitlement rules, segments, and the placement copy. Your component asks one question: *can this user export?*
+
+## Still your job: the server check and the CTA
+
+The `after` is not a magic one-liner — your app still owns two things:
+
+```ts
+// 1. The money-safe decision, on your server, before the paid work runs.
+async function handleExport(req, res) {
+  if (!(await userIsEntitled(req.userId, 'data_export'))) {
+    return res.status(402).json({ error: 'upgrade_required' });
+  }
+  await runExport(req);
+}
+```
+
+```tsx
+// 2. The upgrade navigation, wired to the placement the <Gate> renders when denied.
+<Gate id="export" can="data_export" onCtaClick={(path) => router.push(path.href ?? '/pricing')}>
+  <button onClick={exportData}>Export</button>
+</Gate>
+```
+
+See [Client vs Server Enforcement](/concepts/enforcement/) for why the server check stays.
+
+## The real difference
+
+<Aside type="tip" title="It's not about line count">
+In the **before**, changing the beta list or the upgrade copy is a code change + deploy + eng ticket, and your app has to *know about plans*. In the **after**, your app knows only **slots and entitlements** — a PM edits the targeting and copy in the studio, and nothing ships. The first monetization strategy is never the last; this is what keeps your code from changing every time it moves.
+</Aside>
+
+## Related
+
+- [Recommended API Path](/getting-started/api-overview/) — `can()` vs `gate()` vs `<Gate>`
+- [Entitlements](/guides/entitlements/) — feature / usage-limit / credits / seats rules
+- [Run an Experiment with Segments](/guides/experiments/) — the segmented-copy branch, done in config
