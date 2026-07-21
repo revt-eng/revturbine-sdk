@@ -76,8 +76,8 @@ async function main() {
       resolveJsonModule: true,
       types: ['react'],
       paths: {
-        '@revt-eng/sdk': ['../../web-sdk/index.ts'],
-        '@revt-eng/sdk/*': ['../../web-sdk/*'],
+        '@revturbine/sdk': ['../../web-sdk/index.ts'],
+        '@revturbine/sdk/*': ['../../web-sdk/*'],
       },
     },
     include: ['*.tsx'],

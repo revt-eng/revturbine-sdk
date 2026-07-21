@@ -46,7 +46,7 @@ The SDK uses React hooks (`useState`, `useEffect`, `useContext`, `useRef`). Reac
 | Package | Runtime | Minimum Version |
 |---|---|---|
 | `@revturbine/sdk` (web) | Browser | — |
-| `@revt-eng/server-node` | Node.js | 20.0 |
+| Server SDK (Node.js) | Node.js | 20.0 |
 
 ## Build Tool Compatibility
 
@@ -99,7 +99,7 @@ The SDK ships with `.d.ts` type declarations. All public APIs are fully typed.
 |---|---|
 | `@revturbine/sdk` (full) | ~45 KB |
 | `@revturbine/sdk` (headless only) | ~15 KB |
-| `@revt-eng/server-node` | ~8 KB |
+| Server SDK (Node.js) | ~8 KB |
 
 Tree-shakeable — unused slot components are excluded from the bundle.
 

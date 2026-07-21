@@ -11,7 +11,8 @@
     "lint:links": "node scripts/check-links.mjs",
     "lint:snippets": "node scripts/check-snippets.mjs",
     "lint:config": "node scripts/check-config-examples.mjs",
-    "check": "pnpm lint:md && pnpm lint:config && pnpm build && pnpm lint:links"
+    "lint:no-internal-pkg": "node scripts/check-no-internal-pkg.mjs",
+    "check": "pnpm lint:no-internal-pkg && pnpm lint:md && pnpm lint:config && pnpm build && pnpm lint:links"
   },
   "packageManager": "pnpm@11.12.0",
   "engines": {
