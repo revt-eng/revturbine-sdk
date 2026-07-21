@@ -30,7 +30,10 @@ import type {
   AnyDomainProvider,
   RevTurbineStorage,
 } from '@revt-eng/core';
-import type { RevTurbineConfig } from '@revt-eng/schema';
+import {
+  configArtifactForRuntime,
+  type ConfigArtifact,
+} from '../web-sdk/config-artifact';
 
 import type {
   ServerEvaluationPayload,
@@ -50,7 +53,9 @@ export interface LocalEvaluationServerOptions {
   /** Pre-built domain providers (from createStaticProviders, createDrizzleProviders, etc.) */
   providers: AnyDomainProvider[];
   /** RevTurbineConfig for local placement resolution. */
-  exportedConfig?: RevTurbineConfig;
+  exportedConfig?: ConfigArtifact;
+  /** Target fallback for legacy configs that predate environment stamping. */
+  environmentId?: string;
   /** Optional storage for interaction state (defaults to in-memory). */
   storage?: RevTurbineStorage;
   /** Default TTL for evaluation payloads (seconds). Default: 60. */
@@ -80,14 +85,22 @@ export class LocalEvaluationServer {
     this.tenantId = options.tenantId;
     this.defaultTtlSeconds = options.defaultTtlSeconds ?? 60;
 
-    if (!options.exportedConfig) {
+    const exportedConfig = configArtifactForRuntime(
+      options.exportedConfig,
+      'LocalEvaluationServer.exportedConfig',
+      {
+        tenantId: options.tenantId,
+        environmentId: options.environmentId ?? 'default',
+      },
+    );
+    if (!exportedConfig) {
       throw new Error('LocalEvaluationServer requires exportedConfig');
     }
 
     this.runtime = new LocalRuntime({
       tenantId: options.tenantId,
       userId: '__server__',
-      exportedConfig: options.exportedConfig,
+      exportedConfig,
       providers: options.providers,
       storage: options.storage,
     });

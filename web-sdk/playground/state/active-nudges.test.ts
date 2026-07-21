@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-// Parse the raw JSON with the bare-aliased schema rather than importing
-// PRISM_CONFIG from prism-config.ts: the latter pulls in `@revt-eng/schema/zod`,
-// a subpath the vitest alias does not rewrite (see prism-export-config.test.ts).
+// Parse the raw JSON with the package's public schema export rather than
+// importing the playground's configured singleton.
 import { RevTurbineConfigSchema } from '@revt-eng/schema';
 import rawConfig from '../config/prism-export-config.json';
 import { DEFAULT_DEMO_STATE, type DemoState } from './demo-state';

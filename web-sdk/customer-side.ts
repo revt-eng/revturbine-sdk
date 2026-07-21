@@ -1,5 +1,7 @@
 import { DomainProviderRegistry } from './providers/registry';
 import type { AnyDomainProvider } from './providers/types';
+import { resolveBranding, type ResolvedBranding } from './branding';
+import type { BrandingConfig } from './generated';
 import { isServer, isBrowser } from './env';
 import { redactPii, redactIdentityField } from './pii-redact';
 import { evaluateSegments } from './segments';
@@ -12,6 +14,7 @@ import type {
   PlacementDecisionOutput,
   EntitlementStatus as SchemaEntitlementStatus,
   EntitlementCheckResult,
+  Playbook,
   RevTurbineConfig,
   RevTurbineConfigPlacementItem,
   RevTurbineConfigSegmentsItem,
@@ -19,6 +22,7 @@ import type {
   ContentUiPath,
   UserContext,
   UserTrialStatus,
+  TrialInstance,
   UserUsageEntry,
   UserPlanContext,
   SurfaceType,
@@ -67,7 +71,6 @@ import {
   looksGenericUsageUnit,
   usageAmountsFromEntries,
   configuredPlanNameFromExportedConfig,
-  parseExportedConfigOrThrow,
   categoryBucket,
   placementScore,
   placementPriority,
@@ -104,7 +107,13 @@ import {
   recalculateDerivedUsageTokens,
   getPersonalizationTokens as coreGetPersonalizationTokens,
   getUsage as coreGetUsage,
+  evaluateTrialStatus as coreEvaluateTrialStatus,
 } from '@revt-eng/core';
+import {
+  configArtifactForRuntime,
+  type ConfigArtifact,
+  type LegacyConfigTargetDefaults,
+} from './config-artifact';
 import { PlacementTypeRegistry } from './placements/registry';
 import { registerBuiltinSlotTypes } from './placements/builtin';
 import {
@@ -167,7 +176,7 @@ export type RevTurbineLocalOnlyMinimalInitOptions = Omit<
   mode?: RevTurbineSdkMode;
   runtimeMode?: 'local_only';
   localRuntime: RevTurbineLocalRuntimeOptions & {
-    exportedConfig: RevTurbineConfig;
+    exportedConfig: ConfigArtifact;
   };
 };
 
@@ -535,10 +544,10 @@ export interface RevTurbineUiPathResolverValidationOptions {
  * Other modes can provide custom or REST-backed resolvers via `refresh()`.
  */
 export interface RevTurbineConfigProvider {
-  /** Return the latest available RevTurbineConfig snapshot. */
-  getExportedConfig(): RevTurbineConfig | undefined;
+  /** Return the latest available Playbook or deprecated RevTurbineConfig snapshot. */
+  getExportedConfig(): ConfigArtifact | undefined;
   /** Optionally refresh the snapshot (for example, from a REST API). */
-  refresh?(): Promise<RevTurbineConfig | undefined>;
+  refresh?(): Promise<ConfigArtifact | undefined>;
 }
 
 /**
@@ -679,6 +688,21 @@ export interface RevTurbineInitOptions {
    * Browser default: `sessionStorage`. Server default: in-memory.
    */
   sessionStorage?: RevTurbineStorage;
+  /**
+   * Explicit branding — theme tokens, workspace name, logo, support email — the
+   * top rung of the branding resolution ladder (plan 118). Branding is a display
+   * concern only: it never affects placement decisions or entitlement checks and
+   * is not part of the compiled Bundle. When omitted, {@link getBranding} falls
+   * back to the config's legacy embedded `theme` (deprecated), then
+   * {@link apiBranding}, then {@link DEFAULT_BRANDING}. See {@link resolveBranding}.
+   */
+  branding?: BrandingConfig;
+  /**
+   * Branding fetched from the RevTurbine Branding API or a workspace-settings
+   * source, supplied by the host. The third rung of the branding ladder — used
+   * when no explicit {@link branding} and no legacy config-embedded theme apply.
+   */
+  apiBranding?: BrandingConfig;
 }
 
 /** Base init options shared by all runtime mode helper builders. */
@@ -740,7 +764,7 @@ export interface RevTurbineLocalRuntimeResolvers {
   fetchUserContext?: (userId: string) => UserTargetingContext | Promise<UserTargetingContext>;
   getTrialStatus?: () => RevTurbineTrialContext | Promise<RevTurbineTrialContext>;
   /** Optional RevTurbineConfig resolver for provider-backed config access in any mode. */
-  resolveExportedConfig?: () => RevTurbineConfig | Promise<RevTurbineConfig>;
+  resolveExportedConfig?: () => ConfigArtifact | Promise<ConfigArtifact>;
 }
 
 export interface RevTurbineLocalRuntimeOptions {
@@ -750,7 +774,7 @@ export interface RevTurbineLocalRuntimeOptions {
    * surface templates, trial, and theme. Providers and resolvers can read
    * this to hydrate domain state without a server.
    */
-  exportedConfig?: RevTurbineConfig;
+  exportedConfig?: ConfigArtifact;
   /** Optional static placements dataset used by the SDK's built-in local resolver. */
   placements?: LocalPlacementDataset;
   /**
@@ -787,7 +811,7 @@ export type RevTurbineInitOptionsStrict =
   | (RevTurbineBaseInitWithoutRuntimeSpecifics & {
       runtimeMode: 'local_only';
       localRuntime: RevTurbineLocalRuntimeOptions & {
-        exportedConfig: RevTurbineConfig;
+        exportedConfig: ConfigArtifact;
       };
       uiPathResolvers: RevTurbineUiPathResolverMap;
     })
@@ -837,7 +861,9 @@ export function createCustomEndpointRuntimeConfig(
 export function createLocalRuntimeConfig<const TUiPaths extends readonly unknown[]>(
   options: RevTurbineInitBaseOptions & {
     localRuntime: RevTurbineLocalRuntimeOptions & {
-      exportedConfig: Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths };
+      exportedConfig:
+        | (Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths })
+        | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
     };
     uiPathResolvers: RevTurbineRequiredUiPathResolvers<TUiPaths> & RevTurbineUiPathResolverMap;
   },
@@ -877,7 +903,9 @@ export function createLocalRuntimeConfig(
 export function createStrictLocalRuntimeConfig<const TUiPaths extends readonly unknown[]>(
   options: RevTurbineInitBaseOptions & {
     localRuntime: RevTurbineLocalRuntimeOptions & {
-      exportedConfig: Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths };
+      exportedConfig:
+        | (Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths })
+        | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
     };
     uiPathResolvers: RevTurbineRequiredUiPathResolvers<TUiPaths> & RevTurbineUiPathResolverMap;
   },
@@ -1429,7 +1457,12 @@ function matchesEntitlementRuleSegmentsForDiagnostics(
   return true;
 }
 
-class StaticExportedConfigProvider implements RevTurbineConfigProvider {
+interface RuntimeConfigProvider {
+  getExportedConfig(): RevTurbineConfig | undefined;
+  refresh?(): Promise<RevTurbineConfig | undefined>;
+}
+
+class StaticExportedConfigProvider implements RuntimeConfigProvider {
   private readonly exportedConfig?: RevTurbineConfig;
 
   constructor(exportedConfig?: RevTurbineConfig) {
@@ -1441,16 +1474,19 @@ class StaticExportedConfigProvider implements RevTurbineConfigProvider {
   }
 }
 
-class ResolverBackedExportedConfigProvider implements RevTurbineConfigProvider {
+class ResolverBackedExportedConfigProvider implements RuntimeConfigProvider {
   private cached?: RevTurbineConfig;
-  private readonly resolver: () => RevTurbineConfig | Promise<RevTurbineConfig>;
+  private readonly resolver: () => ConfigArtifact | Promise<ConfigArtifact>;
+  private readonly legacyTargetDefaults: LegacyConfigTargetDefaults;
 
   constructor(
-    resolver: () => RevTurbineConfig | Promise<RevTurbineConfig>,
+    resolver: () => ConfigArtifact | Promise<ConfigArtifact>,
+    legacyTargetDefaults: LegacyConfigTargetDefaults,
     initialConfig?: RevTurbineConfig,
   ) {
     this.resolver = resolver;
     this.cached = initialConfig;
+    this.legacyTargetDefaults = legacyTargetDefaults;
   }
 
   getExportedConfig(): RevTurbineConfig | undefined {
@@ -1458,14 +1494,45 @@ class ResolverBackedExportedConfigProvider implements RevTurbineConfigProvider {
   }
 
   async refresh(): Promise<RevTurbineConfig | undefined> {
-    const next = parseExportedConfigOrThrow(
+    const next = configArtifactForRuntime(
       await this.resolver(),
       'localRuntime.resolvers.resolveExportedConfig()',
+      this.legacyTargetDefaults,
     );
     if (next) {
       this.cached = next;
     }
     return this.cached;
+  }
+}
+
+class ExternalRuntimeConfigProvider implements RuntimeConfigProvider {
+  private readonly source: RevTurbineConfigProvider;
+  private readonly legacyTargetDefaults: LegacyConfigTargetDefaults;
+
+  constructor(
+    source: RevTurbineConfigProvider,
+    legacyTargetDefaults: LegacyConfigTargetDefaults,
+  ) {
+    this.source = source;
+    this.legacyTargetDefaults = legacyTargetDefaults;
+  }
+
+  getExportedConfig(): RevTurbineConfig | undefined {
+    return configArtifactForRuntime(
+      this.source.getExportedConfig(),
+      'configProvider.getExportedConfig()',
+      this.legacyTargetDefaults,
+    );
+  }
+
+  async refresh(): Promise<RevTurbineConfig | undefined> {
+    const refreshed = await this.source.refresh?.();
+    return configArtifactForRuntime(
+      refreshed ?? this.source.getExportedConfig(),
+      'configProvider.refresh()',
+      this.legacyTargetDefaults,
+    );
   }
 }
 
@@ -1550,7 +1617,9 @@ export class RevTurbineCustomerSdk {
   private readonly segmentMembershipBySegmentId = new Map<string, boolean>();
   private segmentMembershipUserId?: string;
   private lastTrialTriggerStage: 'none' | 'midpoint' | 'expiring' | 'expired' = 'none';
-  private readonly configProvider?: RevTurbineConfigProvider;
+  private readonly configProvider?: RuntimeConfigProvider;
+  private readonly branding?: BrandingConfig;
+  private readonly apiBranding?: BrandingConfig;
   private readonly defaultLocalPlacementDecisionResolver?: NonNullable<RevTurbineLocalRuntimeResolvers['getPlacementDecision']>;
   private sdkDisabledByProviderFailure = false;
   private sdkDisabledReason?: string;
@@ -1571,6 +1640,8 @@ export class RevTurbineCustomerSdk {
     this.runtimeMode = options.runtimeMode ?? 'revturbine_server';
     this.endpointOverrides = options.endpointOverrides ?? {};
     this.localRuntime = options.localRuntime;
+    this.branding = options.branding;
+    this.apiBranding = options.apiBranding;
     this.configProvider = this.resolveConfigProvider(options);
     this.localStorageKey =
       options.localRuntime?.storageKey ?? `revturbine:${this.tenantId}:local-runtime`;
@@ -1657,19 +1728,29 @@ export class RevTurbineCustomerSdk {
     return this.runtimeMode === 'local_only';
   }
 
-  private resolveConfigProvider(options: RevTurbineInitOptions): RevTurbineConfigProvider | undefined {
+  private resolveConfigProvider(options: RevTurbineInitOptions): RuntimeConfigProvider | undefined {
+    const legacyTargetDefaults: LegacyConfigTargetDefaults = {
+      tenantId: options.tenantId,
+      environmentId: options.environmentId ?? 'default',
+    };
+
     if (options.configProvider) {
-      return options.configProvider;
+      return new ExternalRuntimeConfigProvider(options.configProvider, legacyTargetDefaults);
     }
 
-    const initialConfig = parseExportedConfigOrThrow(
+    const initialConfig = configArtifactForRuntime(
       options.localRuntime?.exportedConfig,
       'localRuntime.exportedConfig',
+      legacyTargetDefaults,
     );
     const configResolver = options.localRuntime?.resolvers?.resolveExportedConfig;
 
     if (configResolver) {
-      return new ResolverBackedExportedConfigProvider(configResolver, initialConfig);
+      return new ResolverBackedExportedConfigProvider(
+        configResolver,
+        legacyTargetDefaults,
+        initialConfig,
+      );
     }
 
     if (initialConfig) {
@@ -2513,6 +2594,26 @@ export class RevTurbineCustomerSdk {
       runtimeMode: this.runtimeMode,
       ...(typeof exportedConfig?.version === 'string' ? { exportedConfigVersion: exportedConfig.version } : {}),
     };
+  }
+
+  /**
+   * Resolve the branding to render with, down the four-rung ladder (plan 118):
+   * the explicit `branding` init option → the config's deprecated embedded
+   * `theme` (dev-warns) → the `apiBranding` init option → {@link DEFAULT_BRANDING}.
+   *
+   * Branding is a display concern only — it never affects placement decisions or
+   * entitlement checks. The result is always complete, so callers can render
+   * unconditionally even when no branding was supplied.
+   *
+   * @returns The merged branding and the ladder rung it came from.
+   * @public
+   */
+  getBranding(): ResolvedBranding {
+    return resolveBranding({
+      explicit: this.branding,
+      legacyConfigTheme: this.getConfiguredExportedConfig()?.theme,
+      apiBranding: this.apiBranding,
+    });
   }
 
   private deriveLocalEntitlementFromConfiguredRules(
@@ -5118,8 +5219,56 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
-   * Returns the RevTurbineConfig snapshot loaded at initialization, if any.
-   * Available only in `local_only` mode when `exportedConfig` was provided.
+   * Derive and push the user's trial status from their {@link TrialInstance}
+   * records, resolving the matching free/reverse trial rule straight from the
+   * initialized RevTurbineConfig's `free_trial_rules` / `reverse_trial_rules`.
+   *
+   * The config-driven counterpart to {@link setTrialStatus}: instead of the
+   * host app pre-deriving a `UserTrialStatus`, the SDK evaluates the tenant's
+   * trial rules against the supplied instances via `@revt-eng/core`'s
+   * `evaluateTrialStatus` and pushes the result into the local trial context
+   * that gates `trial_progress` / `trial_ending` / `trial_ended` /
+   * `trial_converted` placements. The same evaluator runs in the Python server
+   * SDK, so both decide identically.
+   *
+   * Requires an initialized exported config (static mode, or any mode with a
+   * config provider). Returns the derived status, or `{ in_trial: false }`
+   * when no active trial instance applies.
+   *
+   * @param instances - The user's trial instance records.
+   * @param options - Optional `nowIso` clock pin (defaults to the current
+   *   time) and `basePlanHandle` (the base plan a reverse-trial user reverts
+   *   to, surfaced as `plan_handle`).
+   */
+  async setTrialInstances(
+    instances: readonly TrialInstance[],
+    options?: { nowIso?: string; basePlanHandle?: string },
+  ): Promise<RevTurbineTrialContext> {
+    const exportedConfig = this.getConfiguredExportedConfig();
+    const nowIso = options?.nowIso ?? new Date().toISOString();
+    const { trial } = coreEvaluateTrialStatus({
+      ...(exportedConfig?.free_trial_rules !== undefined
+        ? { freeTrialRules: exportedConfig.free_trial_rules }
+        : {}),
+      ...(exportedConfig?.reverse_trial_rules !== undefined
+        ? { reverseTrialRules: exportedConfig.reverse_trial_rules }
+        : {}),
+      instances,
+      nowIso,
+      usageBalances: this.usageBalances,
+      ...(options?.basePlanHandle !== undefined ? { basePlanHandle: options.basePlanHandle } : {}),
+    });
+    const status: RevTurbineTrialContext = trial ?? { in_trial: false };
+    this.localTrialStatus = status;
+    await this.evaluateTrialLifecycleTriggers(status);
+    this.persistLocalRuntimeState();
+    return status;
+  }
+
+  /**
+   * Returns the legacy-compatible evaluator snapshot loaded at initialization.
+   * Canonical consumers should retain their Playbook or use
+   * {@link normalizeConfigArtifactOrThrow} at their ingestion boundary.
    */
   getExportedConfig(): RevTurbineConfig | undefined {
     return this.getConfiguredExportedConfig();

@@ -33,12 +33,25 @@ import { LocalRuntime, StorageImpressionStore } from '@revt-eng/core';
 import type { LocalRuntimeOptions } from '@revt-eng/core';
 import { resolvePersistentStorage } from './storage';
 import type { RevTurbineStorage } from './storage';
+import {
+  configArtifactForRuntime,
+  type ConfigArtifact,
+} from './config-artifact';
 
 /* ------------------------------------------------------------------ */
 /*  Options                                                            */
 /* ------------------------------------------------------------------ */
 
-export interface BrowserRuntimeOptions extends Omit<LocalRuntimeOptions, 'storage' | 'impressionStore'> {
+export interface BrowserRuntimeOptions extends Omit<
+  LocalRuntimeOptions,
+  'storage' | 'impressionStore' | 'exportedConfig'
+> {
+  /** Canonical Playbook or deprecated RevTurbineConfig input. */
+  exportedConfig: ConfigArtifact;
+
+  /** Target fallback for legacy configs that predate environment stamping. */
+  environmentId?: string;
+
   /**
    * Override the storage backend. When omitted, `localStorage` is used
    * in the browser, falling back to in-memory storage otherwise.
@@ -68,6 +81,22 @@ export class BrowserRuntime extends LocalRuntime {
   private readonly _hydratePromise: Promise<void> | null;
 
   constructor(options: BrowserRuntimeOptions) {
+    const {
+      exportedConfig: rawConfig,
+      environmentId,
+      ...runtimeOptions
+    } = options;
+    const exportedConfig = configArtifactForRuntime(
+      rawConfig,
+      'BrowserRuntime.exportedConfig',
+      {
+        tenantId: options.tenantId,
+        environmentId: environmentId ?? 'default',
+      },
+    );
+    if (!exportedConfig) {
+      throw new Error('BrowserRuntime requires exportedConfig');
+    }
     const storage = resolvePersistentStorage(options.storage);
 
     const impressionStore = new StorageImpressionStore({
@@ -77,7 +106,8 @@ export class BrowserRuntime extends LocalRuntime {
     });
 
     super({
-      ...options,
+      ...runtimeOptions,
+      exportedConfig,
       storage,
       impressionStore,
     });

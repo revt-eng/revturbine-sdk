@@ -12,7 +12,7 @@ import { BrowserRuntime } from './browser-runtime';
 
 function createTestConfig(overrides: Partial<RevTurbineConfig> = {}): RevTurbineConfig {
   return {
-    version: 'v1-test',
+    version: '1.0.0',
     exported_at: '2026-01-01T00:00:00Z',
     plans: [
       { unique_handle: 'starter', name: 'Starter', tier_position: 0, sort_order: 0 },
@@ -31,6 +31,7 @@ function createTestConfig(overrides: Partial<RevTurbineConfig> = {}): RevTurbine
         type_fields: { kind: 'feature' },
       },
     ],
+    content_ui_paths: [],
     surface_templates: [
       { id: 'banner_placement', surface_type: 'banner' },
     ],

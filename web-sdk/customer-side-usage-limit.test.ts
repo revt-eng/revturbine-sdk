@@ -12,7 +12,7 @@ import type { RevTurbineConfig } from '@revt-eng/schema';
  */
 function makeConfig(): RevTurbineConfig {
   return {
-    version: 'v1',
+    version: '1.0.0',
     exported_at: '2026-01-01T00:00:00Z',
     plans: [
       { unique_handle: 'free', name: 'Free', tier_position: 0, sort_order: 0 },

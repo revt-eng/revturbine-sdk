@@ -20,6 +20,7 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Any, TypedDict, TypeVar
 
 from revturbine.core.entitlements.segment_matching import matches_rule_segments
+from revturbine.core.entitlements.unlimited import resolve_limit_value
 from revturbine.core.providers.types import (
     EntitlementRuleSnapshot,
     RuleProviderState,
@@ -55,6 +56,7 @@ class RuleEvaluationContext(_RuleEvaluationContextRequired, total=False):
     """
 
     current_plan_id: str
+    current_plan_handle: str
     current_plan_variation_id: str
     addon_ids: list[str]
     addon_variation_ids: list[str]
@@ -69,7 +71,13 @@ def _target_matches(t: dict[str, Any], ctx: RuleEvaluationContext) -> bool:
     """
     kind = t.get("kind")
     if kind == "plan":
-        return ctx.get("current_plan_id") is not None and t.get("id") == ctx.get("current_plan_id")
+        # Plan 120 TASK-3.5: match the plan target by id OR handle.
+        return (
+            ctx.get("current_plan_id") is not None and t.get("id") == ctx.get("current_plan_id")
+        ) or (
+            ctx.get("current_plan_handle") is not None
+            and t.get("id") == ctx.get("current_plan_handle")
+        )
     if kind == "plan_variation":
         return ctx.get("current_plan_variation_id") is not None and t.get("id") == ctx.get(
             "current_plan_variation_id"
@@ -112,8 +120,12 @@ def evaluate_entitlement_rules(
         if targets is not None and len(targets) > 0:
             matches_plan = any(_target_matches(t, context) for t in targets)
         else:
+            # Legacy `plan_ids` path — plan 120 TASK-3.5: match by id OR handle.
             cpid = context.get("current_plan_id")
-            matches_plan = cpid is not None and cpid in rule["plan_ids"]
+            cph = context.get("current_plan_handle")
+            matches_plan = (cpid is not None and cpid in rule["plan_ids"]) or (
+                cph is not None and cph in rule["plan_ids"]
+            )
 
         rule_segment_ids = rule.get("segment_ids")
         matches_segment = matches_rule_segments(
@@ -167,24 +179,23 @@ def rule_permissiveness(rule: Mapping[str, Any]) -> float:
     """
     f: dict[str, Any] = rule.get("fields") or {}
 
-    def num(v: Any) -> float | None:
-        if v == "unlimited":
-            return math.inf
-        if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v):
-            return float(v)
-        return None
-
+    # `resolve_limit_value` maps unlimited (None/'unlimited'/999999/absent)
+    # → +inf and a finite number to itself (plan 72 — single-sourced in
+    # ./unlimited, mirroring rules.ts which delegates to resolveLimitValue).
     kind = rule["kind"]
     if kind == "usage_limit":
-        n = num(f.get("limit_value"))
+        n = resolve_limit_value(f.get("limit_value"))
         return n if n is not None else 0
     if kind == "credits":
-        n = num(f.get("allowance_value"))
-        if n is None:
-            n = num(f.get("allowance"))
+        # prefer `allowance_value`, fall back to the legacy `allowance` key;
+        # pick the source field by presence BEFORE resolving (an absent value
+        # resolves to +inf, which would otherwise swallow the fallback).
+        n = resolve_limit_value(
+            f["allowance_value"] if "allowance_value" in f else f.get("allowance")
+        )
         return n if n is not None else 0
     if kind == "seat":
-        n = num(f.get("included_count"))
+        n = resolve_limit_value(f.get("included_count"))
         return n if n is not None else 0
     if kind == "feature":
         return 1 if f.get("enabled") is True else 0
@@ -242,5 +253,12 @@ def find_matching_entitlement_rule(
     rules = rule_state["entitlement_rules"].get(entitlement_id)
     if not rules:
         return None
+    # TS passes ruleState.segmentDimensions as the third argument; the
+    # Python evaluator reads it from the context, so thread the state's
+    # lookup through when the caller didn't supply one (plan 133).
+    state_dims = rule_state.get("segment_dimensions")
+    if state_dims is not None and context.get("segment_dimensions") is None:
+        context = context.copy()
+        context["segment_dimensions"] = state_dims
     evaluations = evaluate_entitlement_rules(rules, context)
     return _select_most_permissive([e for e in evaluations if e["matched"]])

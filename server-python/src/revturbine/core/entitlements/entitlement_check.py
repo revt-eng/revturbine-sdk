@@ -28,6 +28,7 @@ from revturbine.core.entitlements.rules import (
     rule_permissiveness,
 )
 from revturbine.core.entitlements.segment_matching import matches_rule_segments
+from revturbine.core.entitlements.unlimited import resolve_limit_value
 from revturbine.core.helpers import is_record
 
 __all__ = ["derive_local_entitlement_from_configured_rules"]
@@ -248,7 +249,6 @@ def derive_local_entitlement_from_configured_rules(
     chosen = pick_most_permissive(matching_rules, _score)
     selected_rule = chosen if chosen is not None else matching_rules[0]
     type_fields = _type_fields_of(selected_rule)
-    kind = type_fields["kind"] if isinstance(type_fields.get("kind"), str) else None
 
     def _usage_amount_for(key: str) -> float | None:
         entry = (user_usage or {}).get(key)
@@ -289,6 +289,53 @@ def derive_local_entitlement_from_configured_rules(
         else:
             used = 0.0
 
+    return derive_result_from_rule_type_fields(type_fields, used)
+
+
+def is_rule_shaped_kind(kind: Any) -> bool:
+    """Rule kinds ``derive_result_from_rule_type_fields`` gives dedicated
+    semantics. The DecisionEngine uses this to decide whether a matched rule
+    fully shapes the result; a matched rule of any OTHER kind (e.g. legacy
+    ``metered``) proves the plan assignment exists but falls through to the
+    provider entry/usage logic instead of the shaper's unknown-kind default.
+
+    Source: entitlement-check.ts (isRuleShapedKind)
+    """
+    return kind in ("feature", "usage_limit", "limit", "credits", "capability_tier")
+
+
+def _int_if_integral(value: float) -> float | int:
+    """JSON-parity guard: JS serializes integral numbers without a decimal
+    point (``100``), Python floats as ``100.0`` — emit ``int`` when whole."""
+    return int(value) if isinstance(value, float) and value.is_integer() else value
+
+
+def _with_limit_fields(
+    base: EntitlementCheckResult, limit: float, used: float
+) -> EntitlementCheckResult:
+    """Enrich a limit-bearing outcome so the result carries the numbers
+    (plan 133). Source: entitlement-check.ts (withLimitFields)."""
+    enriched = dict(base)
+    enriched["limit"] = _int_if_integral(limit)
+    enriched["used"] = _int_if_integral(used)
+    enriched["remaining"] = _int_if_integral(max(0.0, limit - used))
+    return enriched  # type: ignore[return-value]
+
+
+def derive_result_from_rule_type_fields(
+    type_fields: dict[str, Any],
+    used: float,
+) -> EntitlementCheckResult:
+    """Shape an EntitlementCheckResult from a matched rule's ``type_fields``
+    (plan 133). Single-sourced for BOTH evaluators — the ExportedConfig path
+    above and the DecisionEngine's provider-snapshot path (decisions/engine.py)
+    — so a matched rule yields identical results on every surface.
+    Limit-bearing outcomes carry ``limit`` / ``used`` / ``remaining``.
+
+    Source: entitlement-check.ts (deriveResultFromRuleTypeFields)
+    """
+    kind = type_fields["kind"] if isinstance(type_fields.get("kind"), str) else None
+
     if kind == "feature":
         enabled = type_fields.get("enabled") is not False
         if enabled:
@@ -299,29 +346,51 @@ def derive_local_entitlement_from_configured_rules(
             "reason": "feature_not_enabled_for_plan",
         }
 
-    if kind == "usage_limit":
-        ul_limit = _js_number(type_fields.get("limit_value"))
-        if math.isfinite(ul_limit) and ul_limit >= 0:
-            return _apply_usage_enforcement(
-                used >= ul_limit, type_fields.get("enforcement"), "usage_limit_reached"
+    # `usage_limit` is the bundle-canonical kind; `limit` is the accepted
+    # config-authoring shorthand (`type_fields` is an open record — the
+    # schema does not discriminate the kind) — treat them identically.
+    if kind in ("usage_limit", "limit"):
+        # plan 72: unlimited (None/'unlimited'/999999/absent) → +inf → not
+        # finite → allowed; a finite limit enforces. Mirrors the TS shaper's
+        # resolveLimitValue exactly (a numeric STRING is junk → allowed, it
+        # is never coerced and enforced).
+        ul_limit = resolve_limit_value(type_fields.get("limit_value"))
+        if ul_limit is not None and math.isfinite(ul_limit) and ul_limit >= 0:
+            return _with_limit_fields(
+                _apply_usage_enforcement(
+                    used >= ul_limit, type_fields.get("enforcement"), "usage_limit_reached"
+                ),
+                ul_limit,
+                used,
             )
         return {"status": "allowed", "allowed": True}
 
     if kind == "credits":
-        allowance = _js_number(type_fields.get("allowance"))
+        # An *explicit* allowance (incl. None/'unlimited'/999999 → +inf,
+        # plan 72) wins; only a *truly absent* allowance falls through to
+        # initial_grant. Source: entitlement-check.ts credits branch.
+        allowance = (
+            resolve_limit_value(type_fields.get("allowance"))
+            if "allowance" in type_fields
+            else None
+        )
         initial_grant = _js_number(type_fields.get("initial_grant"))
         cr_limit: float | None
-        if math.isfinite(allowance) and allowance >= 0:
+        if allowance is not None and allowance >= 0:
             cr_limit = allowance
         elif math.isfinite(initial_grant) and initial_grant >= 0:
             cr_limit = initial_grant
         else:
             cr_limit = None
-        if cr_limit is not None:
-            return _apply_usage_enforcement(
-                used >= cr_limit,
-                type_fields.get("enforcement"),
-                "credit_balance_exhausted",
+        if cr_limit is not None and math.isfinite(cr_limit):
+            return _with_limit_fields(
+                _apply_usage_enforcement(
+                    used >= cr_limit,
+                    type_fields.get("enforcement"),
+                    "credit_balance_exhausted",
+                ),
+                cr_limit,
+                used,
             )
         return {"status": "allowed", "allowed": True}
 

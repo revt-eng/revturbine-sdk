@@ -27,6 +27,11 @@ from revturbine.core.decisions.types import (
     PlacementRecord,
     PlacementResolver,
 )
+from revturbine.core.entitlements.entitlement_check import (
+    derive_result_from_rule_type_fields,
+    is_rule_shaped_kind,
+)
+from revturbine.core.entitlements.rules import RuleEvaluationContext, find_matching_entitlement_rule
 from revturbine.core.providers.registry import DomainProviderRegistry
 from revturbine.core.providers.types import ResolvedProviderContext
 from revturbine.core.state.cap_enforcer import CapEnforcer
@@ -244,6 +249,57 @@ class DecisionEngine:
             )
 
         usage = (entitlements.get("usage") or {}).get(handle)
+
+        # Plan 133: a configured entitlement rule is authoritative over the
+        # provider entry's default-policy status. Consult the rules provider
+        # with the single-sourced §2.6.5 matcher; a matched rule's
+        # `type_fields` shape the result (kind semantics + limit/used/
+        # remaining) via the same shaper the ExportedConfig evaluator uses.
+        rules = providers.get("rules")
+        if rules is not None:
+            plan = providers.get("plan")
+            segments = providers.get("segments")
+            rule_context: RuleEvaluationContext = {
+                "segment_ids": list(segments["segment_ids"]) if segments is not None else [],
+            }
+            plan_handle = plan.get("current_plan_handle") if plan is not None else None
+            if plan_handle is not None:
+                rule_context["current_plan_handle"] = plan_handle
+            billing_period = plan.get("billing_period") if plan is not None else None
+            if billing_period is not None:
+                rule_context["billing_period"] = billing_period
+            matched = find_matching_entitlement_rule(rules, handle, rule_context)
+            if matched is not None:
+                # Snapshot `kind` seeds the shaper for providers whose
+                # `fields` omit it; a `fields.kind` wins via merge order —
+                # the two agree wherever both exist.
+                type_fields: dict[str, Any] = {"kind": matched["kind"]}
+                type_fields.update(matched.get("fields") or {})
+                if is_rule_shaped_kind(type_fields.get("kind")):
+                    ctx_used = context.get("used") if context is not None else None
+                    if ctx_used is None and usage is not None:
+                        ctx_used = usage.get("used")
+                    return derive_result_from_rule_type_fields(
+                        type_fields,
+                        float(ctx_used) if ctx_used is not None else 0.0,
+                    )
+                # A matched rule of a kind the shaper doesn't model (e.g.
+                # legacy 'metered') proves the plan assignment exists — fall
+                # through to the provider entry/usage logic below.
+            else:
+                # Kent's 2026-07-13 ruling (supersedes the initial plan-133
+                # fail-open stance): a CONFIGURED entitlement with no rule
+                # assigning it to the user's plan is DENIED — aligned with
+                # the ExportedConfig evaluator's plan-#39 posture and reason
+                # string. Unknown handles (no entry, handled above) and
+                # engines without a rules provider keep the default-policy
+                # behavior.
+                return EntitlementCheckResult(
+                    status="denied",
+                    allowed=False,
+                    reason="no_matching_entitlement_rule",
+                )
+
         if usage is not None and context is not None and "used" in context:
             used = context["used"]
             limit = usage.get("limit", 0)

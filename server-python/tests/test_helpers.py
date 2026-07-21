@@ -734,8 +734,10 @@ class TestParseExportedConfigOrThrow:
     @pytest.fixture
     def valid_config(self) -> dict[str, Any]:
         return {
-            "version": "0.1.0",
+            "version": "1.0.0",
             "exported_at": "2026-05-14T00:00:00Z",
+            "tenant_id": "tenant_test",
+            "environment_id": "default",
             "plans": [],
             "entitlements": [],
             "entitlement_rules": [],
@@ -745,7 +747,11 @@ class TestParseExportedConfigOrThrow:
         }
 
     def test_valid_passes(self, valid_config: dict[str, Any]) -> None:
-        assert parse_exported_config_or_throw(valid_config, "test") is valid_config
+        parsed = parse_exported_config_or_throw(valid_config, "test")
+        assert parsed is not None
+        assert parsed["artifact_type"] == "playbook"
+        assert parsed["format_version"] == "1.0.0"
+        assert "version" not in parsed
 
     def test_none_returns_none(self) -> None:
         assert parse_exported_config_or_throw(None, "test") is None
@@ -756,18 +762,17 @@ class TestParseExportedConfigOrThrow:
 
     def test_missing_version_raises(self, valid_config: dict[str, Any]) -> None:
         del valid_config["version"]
-        with pytest.raises(ValueError, match='missing string "version"'):
+        with pytest.raises(ValueError, match='unsupported legacy "version"'):
             parse_exported_config_or_throw(valid_config, "test")
 
     def test_non_string_version_raises(self, valid_config: dict[str, Any]) -> None:
         valid_config["version"] = 1
-        with pytest.raises(ValueError, match='missing string "version"'):
+        with pytest.raises(ValueError, match='unsupported legacy "version"'):
             parse_exported_config_or_throw(valid_config, "test")
 
-    def test_missing_exported_at_raises(self, valid_config: dict[str, Any]) -> None:
+    def test_missing_exported_at_is_allowed(self, valid_config: dict[str, Any]) -> None:
         del valid_config["exported_at"]
-        with pytest.raises(ValueError, match='missing string "exported_at"'):
-            parse_exported_config_or_throw(valid_config, "test")
+        assert parse_exported_config_or_throw(valid_config, "test") is not None
 
     @pytest.mark.parametrize(
         "missing_field",
@@ -777,7 +782,6 @@ class TestParseExportedConfigOrThrow:
             "entitlement_rules",
             "segments",
             "content_ui_paths",
-            "surface_templates",
         ],
     )
     def test_missing_array_field_raises(
@@ -790,6 +794,38 @@ class TestParseExportedConfigOrThrow:
     def test_source_name_in_error(self) -> None:
         with pytest.raises(ValueError, match="Invalid bootstrap-config"):
             parse_exported_config_or_throw("bad", "bootstrap-config")
+
+    def test_canonical_playbook_passes(self, valid_config: dict[str, Any]) -> None:
+        del valid_config["version"]
+        valid_config.update(
+            {
+                "artifact_type": "playbook",
+                "format_version": "1.0.0",
+                "playbook_handle": "default",
+                "playbook_version_id": None,
+                "project_id": "project_test",
+                "experiments": [],
+            }
+        )
+        assert parse_exported_config_or_throw(valid_config, "test") == valid_config
+
+    def test_future_canonical_version_rejects_without_legacy_fallback(
+        self, valid_config: dict[str, Any]
+    ) -> None:
+        valid_config.update(
+            {
+                "artifact_type": "playbook",
+                "format_version": "2.0.0",
+            }
+        )
+        with pytest.raises(ValueError, match='unsupported "format_version"'):
+            parse_exported_config_or_throw(valid_config, "test")
+
+    def test_legacy_projection_warning(self, valid_config: dict[str, Any]) -> None:
+        valid_config.update({"slot_configs": [], "content_overrides": {}})
+
+        with pytest.warns(DeprecationWarning, match="slot_configs, content_overrides"):
+            parse_exported_config_or_throw(valid_config, "test")
 
 
 # ── placement_score / placement_priority / proximity_score / server_order ───

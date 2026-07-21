@@ -33,8 +33,21 @@
 // ── Schema types (canonical, from @revt-eng/schema) ─────────────────────────
 export * from './generated';
 
+// ── Portable config dual-read boundary ─────────────────────────────────────
+export {
+  normalizeConfigArtifactOrThrow,
+} from './config-artifact';
+export type {
+  ConfigArtifact,
+  LegacyConfigTargetDefaults,
+} from './config-artifact';
+
 // ── Core SDK class + init + config builders ─────────────────────────────────
 export * from './customer-side';
+// Branding resolution (plan 118 TASK-20). Named re-exports so the @internal
+// test-reset helper stays out of the public surface.
+export { DEFAULT_BRANDING, resolveBranding } from './branding';
+export type { BrandingSource, BrandingResolutionInput, ResolvedBranding } from './branding';
 
 // ── Trial-status helpers (plan 43 — re-exported from @revt-eng/core) ────────
 //
@@ -70,9 +83,15 @@ export * from './customer-side';
 export {
   deriveLocalTrialStatusFromInstance,
   findActiveTrialInstance,
+  findLatestStartedTrialInstance,
   deriveReverseTrialGrants,
+  evaluateTrialStatus,
 } from '@revt-eng/core';
-export type { DeriveTrialStatusInput } from '@revt-eng/core';
+export type {
+  DeriveTrialStatusInput,
+  EvaluateTrialStatusInput,
+  EvaluateTrialStatusResult,
+} from '@revt-eng/core';
 
 // Resolve ambiguous re-exports — prefer SDK-local definitions over schema
 export type {

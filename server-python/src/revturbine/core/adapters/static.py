@@ -62,6 +62,9 @@ def create_static_providers(
     plan_handle: str | None = None,
     plan_name: str | None = None,
     usage: dict[str, dict[str, float]] | None = None,
+    payment_failed: bool | None = None,
+    payment_at_risk: bool | None = None,
+    tiers: dict[str, str] | None = None,
     default_entitlement_policy: Literal["allow", "deny"] = "allow",
     cache_ttl_ms: int | None = None,
 ) -> list[DomainProvider]:
@@ -81,10 +84,17 @@ def create_static_providers(
         resolved_plan_name = plan_name if plan_name is not None else plan_handle
 
         def _plan() -> dict[str, Any]:
-            return {
+            state: dict[str, Any] = {
                 "current_plan_handle": resolved_plan_handle,
                 "current_plan_name": resolved_plan_name,
             }
+            # Billing-recovery signals for the Retention qualifier triggers
+            # (§3.7). Omitted when not supplied, matching static.ts.
+            if payment_failed is not None:
+                state["payment_failed"] = payment_failed
+            if payment_at_risk is not None:
+                state["payment_at_risk"] = payment_at_risk
+            return state
 
         providers.append(_StaticProvider("plan", _plan, cache_ttl_ms))
 
@@ -116,7 +126,13 @@ def create_static_providers(
                     if ent.get("unit") is not None:
                         entry["unit"] = ent["unit"]
                     usage_out[handle] = entry
-            return {"entries": entries, "usage": usage_out}
+            state: dict[str, Any] = {"entries": entries, "usage": usage_out}
+            # The user's current tier per capability_tier entitlement, for the
+            # entitlement_gate.tier_threshold gate (plan 138 TASK-4). Omitted
+            # when not supplied, matching static.ts.
+            if tiers is not None:
+                state["tiers"] = tiers
+            return state
 
         providers.append(_StaticProvider("entitlements", _entitlements, cache_ttl_ms))
 
@@ -146,14 +162,22 @@ def create_static_providers(
                 by_ent.setdefault(ent_id, [])
                 type_fields = rule.get("type_fields") or {}
                 targets = rule.get("targets") or []
+                # Legacy configs carry a flat `plan_ids` array instead of the
+                # kind-discriminated `targets`. Mirror static.ts (plan 133):
+                # under the fail-closed ruling an unmapped legacy rule would
+                # silently DENY the entitlement instead of merely not
+                # enriching it.
+                legacy_plan_ids = [p for p in (rule.get("plan_ids") or []) if isinstance(p, str)]
                 snapshot: dict[str, Any] = {
                     "rule_id": rule["id"],
                     "entitlement_id": ent_id,
                     # Runtime snapshot keeps the plan-level fast path
                     # (`plan_ids`); the kind-discriminated evaluator that
                     # consumes `targets` is plan 33 TASK-13. Faithful to
-                    # static.ts:120 (filter kind==='plan').
-                    "plan_ids": [t["id"] for t in targets if t.get("kind") == "plan"],
+                    # static.ts (filter kind==='plan', legacy fallback).
+                    "plan_ids": [t["id"] for t in targets if t.get("kind") == "plan"]
+                    if targets
+                    else legacy_plan_ids,
                     "kind": type_fields.get("kind", "feature"),
                     "fields": type_fields,
                 }

@@ -1327,7 +1327,7 @@
       "category": "other_conversion",
       "trigger": {
         "type": "qualifier",
-        "qualifier": "annual_available"
+        "qualifier": "none_always_on"
       },
       "payloads": [
         {
@@ -1335,6 +1335,9 @@
           "target": {
             "plan_ids": [
               "pro"
+            ],
+            "billing_cadences": [
+              "monthly"
             ],
             "segment_chips": [
               "seg_plan_nudge_annual"

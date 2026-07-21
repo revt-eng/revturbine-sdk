@@ -14,8 +14,28 @@ dual-mode ``runtime_mode`` dispatch is superseded by the
 headless-server scope decision).
 """
 
+from revturbine.config import (
+    PLAYBOOK_FORMAT_VERSION,
+    ConfigArtifact,
+    LegacyRevTurbineConfig,
+    Playbook,
+    PlaybookHeader,
+    RevTurbineConfig,
+    parse_playbook_or_throw,
+)
 from revturbine.sdk import RevTurbineCustomerSdk, UserContext
 
 __version__ = "0.2.2"
 
-__all__ = ["RevTurbineCustomerSdk", "UserContext", "__version__"]
+__all__ = [
+    "PLAYBOOK_FORMAT_VERSION",
+    "ConfigArtifact",
+    "LegacyRevTurbineConfig",
+    "Playbook",
+    "PlaybookHeader",
+    "RevTurbineConfig",
+    "RevTurbineCustomerSdk",
+    "UserContext",
+    "__version__",
+    "parse_playbook_or_throw",
+]

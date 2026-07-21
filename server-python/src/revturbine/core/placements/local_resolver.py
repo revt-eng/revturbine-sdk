@@ -35,10 +35,22 @@ from revturbine.core.decisions.types import (
     PlacementResolver,
 )
 from revturbine.core.helpers import PlacementOutput, is_record
+from revturbine.core.placements.entitlement_gate_gating import (
+    EntitlementGateTriggerShape,
+    matches_entitlement_gate_trigger,
+)
 from revturbine.core.placements.payload_resolution import (
     PlacementContentLookupProvider,
     create_static_placement_content_lookup_provider,
     resolve_payload_for_user_with_provider,
+)
+from revturbine.core.placements.qualifier_gating import (
+    QualifierTriggerShape,
+    matches_qualifier_trigger,
+)
+from revturbine.core.placements.threshold_gating import (
+    ThresholdTriggerShape,
+    matches_threshold_trigger,
 )
 from revturbine.core.placements.trial_gating import (
     TrialCandidate,
@@ -87,6 +99,9 @@ class _CandidateOutput(TypedDict):
     trigger_entitlement_handle: str | None
     trigger_slot_id: str | None
     trial_trigger: Any  # TrialTriggerShape | None — see trial_gating.py
+    threshold_trigger: Any  # ThresholdTriggerShape | None — see threshold_gating.py
+    qualifier_trigger: Any  # QualifierTriggerShape | None — see qualifier_gating.py
+    entitlement_gate_trigger: Any  # EntitlementGateTriggerShape | None
 
 
 # Source: local-resolver.ts:51-60
@@ -116,6 +131,58 @@ def _read_slot_id_from_trigger(trigger: Any) -> str | None:
         return None
     value = trigger["slot_id"]
     return value if isinstance(value, str) else None
+
+
+def _read_json_threshold_trigger(
+    trigger: Any, entitlement_handle: str | None
+) -> ThresholdTriggerShape | None:
+    """Normalize a usage/credit/seat threshold trigger from a JSON entry.
+    Source: local-resolver.ts readJsonThresholdTrigger.
+    """
+    if not is_record(trigger):
+        return None
+    kind = trigger.get("type")
+    if kind not in ("usage_threshold", "credit_threshold", "seat_threshold"):
+        return None
+    if not isinstance(entitlement_handle, str) or not entitlement_handle:
+        return None
+    percent = trigger.get("threshold_percent")
+    if isinstance(percent, bool) or not isinstance(percent, (int, float)):
+        return None
+    return {"kind": kind, "entitlement_handle": entitlement_handle, "threshold_percent": percent}
+
+
+def _read_json_qualifier_trigger(trigger: Any) -> QualifierTriggerShape | None:
+    """Normalize a qualifier trigger from a JSON entry.
+    Source: local-resolver.ts readJsonQualifierTrigger.
+    """
+    if not is_record(trigger) or trigger.get("type") != "qualifier":
+        return None
+    qualifier = trigger.get("qualifier")
+    if not isinstance(qualifier, str) or not qualifier:
+        return None
+    return {"kind": "qualifier", "qualifier": qualifier}
+
+
+def _read_json_entitlement_gate_trigger(
+    trigger: Any, entitlement_handle: str | None
+) -> EntitlementGateTriggerShape | None:
+    """Normalize an entitlement_gate trigger from a JSON entry. A blank /
+    absent ``tier_threshold`` yields a non-tier gate (``tier_threshold=None``),
+    which passes through the gate. Source: local-resolver.ts
+    readJsonEntitlementGateTrigger.
+    """
+    if not is_record(trigger) or trigger.get("type") != "entitlement_gate":
+        return None
+    if not isinstance(entitlement_handle, str) or not entitlement_handle:
+        return None
+    tier_threshold = trigger.get("tier_threshold")
+    threshold = tier_threshold if isinstance(tier_threshold, str) and tier_threshold else None
+    return {
+        "kind": "entitlement_gate",
+        "entitlement_handle": entitlement_handle,
+        "tier_threshold": threshold,
+    }
 
 
 def _js_string(value: Any) -> str:
@@ -364,7 +431,22 @@ def create_static_placement_resolver(
         if is_record(plan):
             plan_handle_to_id[plan["unique_handle"]] = plan["id"]
 
-    config_version = exported_config.get("version")
+    # Plan 138 TASK-4: ordered tier ladder per entitlement handle, from the
+    # authored ``tier_definitions`` (array order = rank). Handles only — the
+    # gate ranks by handle. Source: local-resolver.ts readJsonCandidates.
+    tier_ladders_by_handle: dict[str, list[str]] = {}
+    for ent in exported_config.get("entitlements") or []:
+        if not is_record(ent):
+            continue
+        defs = ent.get("tier_definitions")
+        if isinstance(defs, list) and defs:
+            handles = [
+                t["handle"] for t in defs if is_record(t) and isinstance(t.get("handle"), str)
+            ]
+            if handles:
+                tier_ladders_by_handle[ent["unique_handle"]] = handles
+
+    config_version = exported_config.get("format_version") or exported_config.get("version")
 
     # Content-linked content provider (plan 77). Built once per resolver from
     # the config's content-linked payloads + message blocks. When present, the
@@ -448,6 +530,11 @@ def create_static_placement_resolver(
 
         trigger_slot_id = _read_slot_id_from_trigger(trigger)
         trial_trigger = normalize_json_trigger(trigger)
+        threshold_trigger = _read_json_threshold_trigger(trigger, trigger_entitlement_handle)
+        qualifier_trigger = _read_json_qualifier_trigger(trigger)
+        entitlement_gate_trigger = _read_json_entitlement_gate_trigger(
+            trigger, trigger_entitlement_handle
+        )
 
         if trial_trigger:
             trigger_kind = trial_trigger.get("kind") if is_record(trial_trigger) else None
@@ -465,6 +552,9 @@ def create_static_placement_resolver(
             "trigger_entitlement_handle": trigger_entitlement_handle,
             "trigger_slot_id": trigger_slot_id,
             "trial_trigger": trial_trigger,
+            "threshold_trigger": threshold_trigger,
+            "qualifier_trigger": qualifier_trigger,
+            "entitlement_gate_trigger": entitlement_gate_trigger,
         }
         outputs_by_template.setdefault(template_id, []).append(candidate)
 
@@ -513,6 +603,7 @@ def create_static_placement_resolver(
 
         providers = context.get("__providers") if is_record(context) else None
         plan = providers.get("plan") if is_record(providers) else None
+        entitlements_state = providers.get("entitlements") if is_record(providers) else None
         plan_handle = plan.get("current_plan_handle") if is_record(plan) else None
         billing_period = plan.get("billing_period") if is_record(plan) else None
         current_plan_id = plan_handle_to_id.get(plan_handle) if plan_handle else None
@@ -602,6 +693,37 @@ def create_static_placement_resolver(
             # ``trial-gating.ts``).
             filtered = [c for c in filtered if matches_trial_trigger(c.get("trial_trigger"), plan)]
 
+            # Usage / credit / seat threshold gating (plan 138) — parity with
+            # the TS resolver via threshold_gating.py.
+            filtered = [
+                c
+                for c in filtered
+                if matches_threshold_trigger(c.get("threshold_trigger"), entitlements_state)
+            ]
+
+            # Qualifier gating (plan 138) — parity via qualifier_gating.py.
+            filtered = [
+                c
+                for c in filtered
+                if matches_qualifier_trigger(
+                    c.get("qualifier_trigger"), c.get("entry_category"), plan
+                )
+            ]
+
+            # Entitlement-gate tier gating (plan 138 TASK-4) — parity via
+            # entitlement_gate_gating.py. A tier-scoped gate fires only when the
+            # user's current tier ranks below the trigger's ``tier_threshold`` on
+            # the entitlement's ordered ladder; non-tier gates pass through.
+            filtered = [
+                c
+                for c in filtered
+                if matches_entitlement_gate_trigger(
+                    c.get("entitlement_gate_trigger"),
+                    tier_ladders_by_handle,
+                    entitlements_state,
+                )
+            ]
+
             supersession_winner: TrialCandidate | None = None
             superseded_ids: list[str] = []
             user_elapsed_percent = compute_user_elapsed_percent(plan)
@@ -690,6 +812,31 @@ def create_static_placement_resolver(
             ):
                 # Plan 43 TASK-12: symmetric with the slot-based path.
                 reason_codes = ["trial_trigger_unmet"]
+            elif direct_output and not matches_threshold_trigger(
+                direct_candidate.get("threshold_trigger") if direct_candidate else None,
+                entitlements_state,
+            ):
+                # Plan 138: threshold gating on direct lookup too.
+                reason_codes = ["threshold_trigger_unmet"]
+            elif direct_output and not matches_qualifier_trigger(
+                direct_candidate.get("qualifier_trigger") if direct_candidate else None,
+                str(
+                    (direct_candidate.get("entry_category") if direct_candidate else None)
+                    or direct_output.get("category")
+                    or ""
+                ),
+                plan,
+            ):
+                # Plan 138: qualifier gating on direct lookup too.
+                reason_codes = ["qualifier_trigger_unmet"]
+            elif direct_output and not matches_entitlement_gate_trigger(
+                direct_candidate.get("entitlement_gate_trigger") if direct_candidate else None,
+                tier_ladders_by_handle,
+                entitlements_state,
+            ):
+                # Plan 138 TASK-4: entitlement-gate tier gating on direct lookup
+                # too — symmetric with the trial/threshold/qualifier gates.
+                reason_codes = ["entitlement_gate_unmet"]
             elif direct_output and _is_eligible_for_plan(
                 direct_output, current_plan_id, plan_handle, billing_period
             ):

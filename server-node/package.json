@@ -3,10 +3,13 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
   "description": "RevTurbine Node.js server-side SDK — server evaluation, placement decisions, and entitlement checks.",
   "main": "index.ts",
   "dependencies": {
-    "@revt-eng/schema": "workspace:*",
-    "@revt-eng/core": "workspace:*"
+    "@revt-eng/schema": "0.1.131",
+    "@revt-eng/core": "0.1.131"
   }
 }

@@ -264,6 +264,9 @@ class RuleProviderState(_RuleProviderStateRequired, total=False):
     """Source: types.ts:303-310 (RuleProviderState)"""
 
     plan_rules: dict[str, list[dict[str, Any]]]
+    # Plan #39 REQ-28: segment_id -> dimension_id lookup for §2.5
+    # intra-OR / cross-AND matching. Optional during the cascade.
+    segment_dimensions: dict[str, str]
 
 
 # ── Content provider state ──────────────────────────────────────────────────

@@ -1,8 +1,12 @@
 {
   "name": "@revt-eng/sdk",
-  "version": "0.2.24",
+  "version": "0.2.25",
   "description": "RevTurbine customer-facing SDK — placement decisioning, entitlement checks, and usage tracking.",
   "type": "module",
+  "packageManager": "pnpm@11.12.0",
+  "engines": {
+    "node": ">=22.13"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -20,13 +24,10 @@
   ],
   "scripts": {
     "build": "tsup && tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir dist/types",
-    "verify": "npm run deps:prefer-local && cd ../revturbine-web && npm run typecheck",
-    "typecheck:sdk-api": "npx tsx ../scripts/check-sdk-types.ts",
-    "deps:prefer-local": "node ../scripts/prefer-local-deps.mjs",
+    "verify": "cd ../revturbine-web && npm run typecheck",
+    "typecheck:sdk-api": "pnpm exec tsx ../scripts/check-sdk-types.ts",
     "playground": "vite --config playground/vite.config.ts",
-    "predev": "npm run deps:prefer-local",
-    "prebuild": "npm run deps:prefer-local",
-    "harness:headless": "npx tsx ../scripts/headless-harness.ts"
+    "harness:headless": "pnpm exec tsx ../scripts/headless-harness.ts"
   },
   "peerDependencies": {
     "react": ">=18",
@@ -41,15 +42,15 @@
     }
   },
   "devDependencies": {
-    "@revt-eng/schema": "0.1.100",
-    "@revt-eng/schema-external": "0.1.100",
-    "@revt-eng/core": "0.1.100",
+    "@revt-eng/schema": "0.1.131",
+    "@revt-eng/schema-external": "0.1.131",
+    "@revt-eng/core": "0.1.131",
     "openapi-fetch": "^0.17.0",
-    "@types/react": "^19.1.2",
-    "@types/react-dom": "^19.1.2",
-    "playwright": "^1.59.1",
-    "tsup": "^8.5.0",
-    "typescript": "^6.0.2"
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "playwright": "^1.61.1",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com",

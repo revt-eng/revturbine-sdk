@@ -106,6 +106,9 @@ class TestUsageEnforcement:
         assert _derive(self._ul("hard_block"), "u", context={"used": 3}) == {
             "status": "allowed",
             "allowed": True,
+            "limit": 10,
+            "used": 3,
+            "remaining": 7,
         }
 
     def test_hard_block(self) -> None:
@@ -113,6 +116,9 @@ class TestUsageEnforcement:
             "status": "denied",
             "allowed": False,
             "reason": "usage_limit_reached",
+            "limit": 10,
+            "used": 12,
+            "remaining": 0,
         }
 
     def test_soft_block(self) -> None:
@@ -126,6 +132,9 @@ class TestUsageEnforcement:
             "status": "limited",
             "allowed": True,
             "reason": "usage_limit_reached_degraded",
+            "limit": 10,
+            "used": 12,
+            "remaining": 0,
         }
 
     def test_allow_overage(self) -> None:
@@ -134,6 +143,9 @@ class TestUsageEnforcement:
             "status": "allowed",
             "allowed": True,
             "reason": "usage_limit_reached_overage",
+            "limit": 10,
+            "used": 12,
+            "remaining": 0,
         }
 
     def test_unset_default_limited_not_allowed(self) -> None:
@@ -142,6 +154,9 @@ class TestUsageEnforcement:
             "status": "limited",
             "allowed": False,
             "reason": "usage_limit_reached",
+            "limit": 10,
+            "used": 12,
+            "remaining": 0,
         }
 
 
@@ -156,6 +171,9 @@ class TestCredits:
         assert _derive(cfg, "c", context={"used": 1}) == {
             "status": "allowed",
             "allowed": True,
+            "limit": 3,
+            "used": 1,
+            "remaining": 2,
         }
 
 

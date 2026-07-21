@@ -16,6 +16,8 @@ import math
 import re
 from typing import Any, Literal, TypedDict, TypeGuard
 
+from revturbine.config import parse_playbook_or_throw
+
 __all__ = [
     "is_record",
     "ensure_array",
@@ -652,38 +654,9 @@ def configured_plan_name_from_exported_config(
 # ── Config validation ───────────────────────────────────────────────────────
 
 
-_REQUIRED_EXPORTED_CONFIG_ARRAY_FIELDS: tuple[str, ...] = (
-    "plans",
-    "entitlements",
-    "entitlement_rules",
-    "segments",
-    "content_ui_paths",
-    "surface_templates",
-)
-
-
 def parse_exported_config_or_throw(raw: Any, source: str) -> JsonObject | None:
-    """Validate an ``ExportedConfig`` shape; raise ``ValueError`` on bad input.
-
-    Mirrors the TS helper that throws at the SDK boundary when the input is
-    not undefined but malformed. ``None`` (the TS ``undefined`` analog)
-    passes through silently — used by callers that treat missing config as
-    "remote mode" rather than an error.
-
-    Source: helpers.ts:289-306
-    """
-    if raw is None:
-        return None
-    if not is_record(raw):
-        raise ValueError(f"Invalid {source}: expected top-level object")
-    if not isinstance(raw.get("version"), str):
-        raise ValueError(f'Invalid {source}: missing string "version"')
-    if not isinstance(raw.get("exported_at"), str):
-        raise ValueError(f'Invalid {source}: missing string "exported_at"')
-    for key in _REQUIRED_EXPORTED_CONFIG_ARRAY_FIELDS:
-        if not isinstance(raw.get(key), list):
-            raise ValueError(f'Invalid {source}: missing array "{key}"')
-    return raw
+    """Deprecated config parser; normalize to the canonical Playbook shape."""
+    return parse_playbook_or_throw(raw, source)
 
 
 # ── Placement scoring ───────────────────────────────────────────────────────

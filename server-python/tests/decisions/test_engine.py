@@ -394,6 +394,178 @@ class TestCheckEntitlement:
         assert result["remaining"] == 70
 
 
+# ── Entitlement rule surfacing (plan 133) ───────────────────────────────────
+
+
+def _rules_provider(rules_by_handle: dict[str, list[dict[str, Any]]]) -> _Provider:
+    return _Provider(
+        domain="rules",
+        value={"entitlement_rules": rules_by_handle, "config_version": "v1"},
+    )
+
+
+def _plan_provider(handle: str) -> _Provider:
+    return _Provider(domain="plan", value={"current_plan_handle": handle})
+
+
+class TestEntitlementRuleSurfacing:
+    """Mirrors 'Entitlement rule surfacing (plan 133)' in e2e.test.ts —
+    a matched configured rule is authoritative over the provider entry's
+    default-policy status, and limit-bearing outcomes carry the numbers."""
+
+    def _registry(self) -> DomainProviderRegistry:
+        reg = _registry_with_entitlements(
+            entries={"api_calls": {"status": "allowed", "allowed": True}},
+        )
+        reg.register(_plan_provider("pro"))
+        reg.register(
+            _rules_provider(
+                {
+                    "api_calls": [
+                        {
+                            "rule_id": "rule_limit",
+                            "entitlement_id": "api_calls",
+                            "plan_ids": ["pro"],
+                            "segment_ids": [],
+                            "kind": "usage_limit",
+                            "fields": {
+                                "kind": "usage_limit",
+                                "limit_value": 5,
+                                "enforcement": "hard_block",
+                            },
+                        }
+                    ]
+                }
+            )
+        )
+        return reg
+
+    def test_matched_rule_surfaces_limit_fields_under_limit(self) -> None:
+        engine = DecisionEngine(registry=self._registry())
+        result = engine.check_entitlement("api_calls", context={"used": 3})
+        assert result == {
+            "status": "allowed",
+            "allowed": True,
+            "limit": 5,
+            "used": 3,
+            "remaining": 2,
+        }
+
+    def test_matched_rule_enforces_at_limit(self) -> None:
+        engine = DecisionEngine(registry=self._registry())
+        result = engine.check_entitlement("api_calls", context={"used": 7})
+        assert result == {
+            "status": "denied",
+            "allowed": False,
+            "reason": "usage_limit_reached",
+            "limit": 5,
+            "used": 7,
+            "remaining": 0,
+        }
+
+    def test_no_matching_rule_fails_closed(self) -> None:
+        # Kent's 2026-07-13 ruling: a configured entitlement with no rule
+        # assigning it to the user's plan is DENIED (plan-#39 alignment,
+        # same reason string as the ExportedConfig evaluator).
+        reg = _registry_with_entitlements(
+            entries={"api_calls": {"status": "allowed", "allowed": True}},
+        )
+        reg.register(_plan_provider("starter"))  # rule targets 'pro' only
+        reg.register(
+            _rules_provider(
+                {
+                    "api_calls": [
+                        {
+                            "rule_id": "rule_limit",
+                            "entitlement_id": "api_calls",
+                            "plan_ids": ["pro"],
+                            "segment_ids": [],
+                            "kind": "usage_limit",
+                            "fields": {"kind": "usage_limit", "limit_value": 5},
+                        }
+                    ]
+                }
+            )
+        )
+        engine = DecisionEngine(registry=reg)
+        assert engine.check_entitlement("api_calls") == {
+            "status": "denied",
+            "allowed": False,
+            "reason": "no_matching_entitlement_rule",
+        }
+
+    def test_unknown_handle_keeps_default_policy_despite_rules_provider(self) -> None:
+        # Fail-closed judges rule assignments for configured entitlements; a
+        # handle with no entry at all keeps default-policy behavior.
+        reg = _registry_with_entitlements(
+            entries={"api_calls": {"status": "allowed", "allowed": True}},
+        )
+        reg.register(_plan_provider("pro"))
+        reg.register(_rules_provider({"api_calls": []}))
+        engine = DecisionEngine(registry=reg)
+        result = engine.check_entitlement("never_configured")
+        assert result["allowed"] is True
+        assert result["reason"] == "entitlement_not_found_default_allow"
+
+    def test_matched_unshaped_kind_falls_through_to_usage_logic(self) -> None:
+        # Legacy kinds (e.g. 'metered') prove the plan assignment without the
+        # shaper modeling them — usage-snapshot enforcement still applies and
+        # the result is NOT the fail-closed denial.
+        reg = _registry_with_entitlements(
+            entries={"api_calls": {"status": "allowed", "allowed": True}},
+            usage={"api_calls": {"used": 1000, "limit": 1000, "remaining": 0}},
+        )
+        reg.register(_plan_provider("pro"))
+        reg.register(
+            _rules_provider(
+                {
+                    "api_calls": [
+                        {
+                            "rule_id": "rule_metered",
+                            "entitlement_id": "api_calls",
+                            "plan_ids": ["pro"],
+                            "segment_ids": [],
+                            "kind": "metered",
+                            "fields": {"kind": "metered", "limit": 1000},
+                        }
+                    ]
+                }
+            )
+        )
+        engine = DecisionEngine(registry=reg)
+        result = engine.check_entitlement("api_calls", context={"used": 1000})
+        assert result["allowed"] is False
+        assert result["reason"] == "usage_limit_exceeded"
+
+    def test_matched_disabled_feature_rule_overrides_default_allow(self) -> None:
+        reg = _registry_with_entitlements(
+            entries={"dashboard": {"status": "allowed", "allowed": True}},
+        )
+        reg.register(_plan_provider("pro"))
+        reg.register(
+            _rules_provider(
+                {
+                    "dashboard": [
+                        {
+                            "rule_id": "rule_off",
+                            "entitlement_id": "dashboard",
+                            "plan_ids": ["pro"],
+                            "segment_ids": [],
+                            "kind": "feature",
+                            "fields": {"kind": "feature", "enabled": False},
+                        }
+                    ]
+                }
+            )
+        )
+        engine = DecisionEngine(registry=reg)
+        assert engine.check_entitlement("dashboard") == {
+            "status": "denied",
+            "allowed": False,
+            "reason": "feature_not_enabled_for_plan",
+        }
+
+
 # ── Convenience APIs ────────────────────────────────────────────────────────
 
 

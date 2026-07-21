@@ -44,17 +44,19 @@ as tests/parity/{ts_runner.ts,py_runner.py} compose it.
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from typing import Any, TypedDict
 
+from revturbine.config import ConfigArtifact, parse_playbook_or_throw
 from revturbine.core.adapters import create_static_providers
 from revturbine.core.decisions import (
     EntitlementCheckResult,
     PlacementDecision,
     PlacementDecisionInput,
 )
-from revturbine.core.placements import ExportedConfig
 from revturbine.core.providers.types import DomainProvider, DomainProviderName
 from revturbine.core.runtime import LocalRuntime
+from revturbine.core.trials import evaluate_trial_status as _evaluate_trial_status
 
 __all__ = ["RevTurbineCustomerSdk", "UserContext"]
 
@@ -97,6 +99,12 @@ class UserContext(_UserContextRequired, total=False):
     plan_name: str | None
     usage: dict[str, dict[str, float]] | None
     trial_status: dict[str, Any] | None
+    # Billing-recovery signals for the Retention qualifier triggers (§3.7).
+    payment_failed: bool | None
+    payment_at_risk: bool | None
+    # Current tier per capability_tier entitlement handle, for the
+    # entitlement_gate.tier_threshold gate (plan 138 TASK-4).
+    tiers: dict[str, str] | None
 
 
 class RevTurbineCustomerSdk:
@@ -118,7 +126,7 @@ class RevTurbineCustomerSdk:
         self,
         *,
         user_context: UserContext,
-        exported_config: ExportedConfig,
+        exported_config: ConfigArtifact,
     ) -> None:
         """Compose the parity-locked substrate for one user context.
 
@@ -134,11 +142,31 @@ class RevTurbineCustomerSdk:
         if not tenant_id or not user_id:
             raise ValueError("user_context requires non-empty 'tenant_id' and 'user_id'")
 
+        playbook = parse_playbook_or_throw(
+            exported_config,
+            "exported_config",
+            {
+                "tenant_id": tenant_id,
+                "environment_id": "default",
+            },
+        )
+        if playbook is None:
+            raise ValueError("exported_config is required")
+
+        # Trial-rule arrays for config-driven trial evaluation
+        # (:meth:`evaluate_trial_status`). The Playbook carries them as
+        # plain dict records; the derivation reads them by field.
+        self._free_trial_rules: list[Any] = playbook.get("free_trial_rules") or []
+        self._reverse_trial_rules: list[Any] = playbook.get("reverse_trial_rules") or []
+
         providers = create_static_providers(
-            config=exported_config,
+            config=playbook,
             plan_handle=user_context.get("plan_handle"),
             plan_name=user_context.get("plan_name"),
             usage=user_context.get("usage"),
+            payment_failed=user_context.get("payment_failed"),
+            payment_at_risk=user_context.get("payment_at_risk"),
+            tiers=user_context.get("tiers"),
         )
 
         # Plan 43 TASK-12 — overlay PlanProvider trial fields when
@@ -157,7 +185,7 @@ class RevTurbineCustomerSdk:
         self._runtime = LocalRuntime(
             tenant_id=tenant_id,
             user_id=user_id,
-            exported_config=exported_config,
+            exported_config=playbook,
             providers=providers,
         )
 
@@ -202,6 +230,38 @@ class RevTurbineCustomerSdk:
         Source: local-runtime.ts getPlacementDecisions (parity-locked).
         """
         return self._runtime.get_placement_decisions(inputs)
+
+    def evaluate_trial_status(
+        self,
+        *,
+        instances: Sequence[Mapping[str, Any]],
+        now_iso: str,
+        base_plan_handle: str | None = None,
+        usage_balances: Mapping[str, float] | None = None,
+    ) -> dict[str, Any]:
+        """Evaluate this tenant's ``free_trial_rules`` /
+        ``reverse_trial_rules`` against a customer's trial instances →
+        the runtime ``UserTrialStatus``.
+
+        Reads the trial-rule arrays from the exported config this SDK was
+        constructed with, resolves the matching rule for the active
+        trial instance, and derives the status. Returns
+        ``{"trial": <UserTrialStatus dict> | None, "reverse_grants": ...}``.
+
+        Pure + deterministic (caller supplies ``now_iso``); the same
+        evaluator runs in the TS core (``@revt-eng/core``'s
+        ``evaluateTrialStatus``), so both decide identically.
+
+        Source: trial-status.ts evaluateTrialStatus (parity-locked).
+        """
+        return _evaluate_trial_status(
+            instances=instances,
+            now_iso=now_iso,
+            free_trial_rules=self._free_trial_rules,
+            reverse_trial_rules=self._reverse_trial_rules,
+            base_plan_handle=base_plan_handle,
+            usage_balances=usage_balances,
+        )
 
 
 # ── Trial-status PlanProvider overlay (plan 43 TASK-12) ────────────────────

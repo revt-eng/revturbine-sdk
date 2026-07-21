@@ -24,7 +24,7 @@ type RawUiPath = Record<string, unknown>;
 
 function makeConfig(contentUiPaths: RawUiPath[]): RevTurbineConfig {
   return {
-    version: 'v1',
+    version: '1.0.0',
     exported_at: '2026-01-01T00:00:00Z',
     plans: [],
     entitlements: [],

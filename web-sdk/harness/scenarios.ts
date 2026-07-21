@@ -285,9 +285,117 @@ function slotPlacement(slot: HarnessSlotDescriptor): PlacementOutput {
   }
 }
 
+type HarnessPlacementCategory = Playbook['placements'][number]['category'];
+type HarnessAuthoredCta = Playbook['placements'][number]['payloads'][number]['surfaces'][number]['ctas'][number];
+
+interface HarnessCanonicalCta {
+  authored: Omit<HarnessAuthoredCta, 'label'>;
+  runtime: PlacementOutput['cta_path'];
+}
+
+/**
+ * Project the old scenario labels onto the portable Playbook category model.
+ * This helper is shared by the local runtime and the exported Playbook so the
+ * harness cannot silently exercise a different decision category.
+ */
+function canonicalPlacementCategory(slot: HarnessSlotDescriptor): HarnessPlacementCategory {
+  switch (slot.id) {
+    case 'slot_inline':
+      return 'gated';
+    case 'slot_modal':
+      return 'trials';
+    case 'slot_banner':
+    case 'slot_toast':
+    case 'slot_cli':
+    case 'slot_quota_meter':
+    case 'slot_credit_balance':
+      return 'usage_credit_seat';
+    case 'slot_button':
+    case 'slot_full_page':
+      return 'other_conversion';
+    default:
+      return 'fixed';
+  }
+}
+
+/**
+ * Keep authored Playbook CTA actions and their normalized SDK runtime shape in
+ * one table. The runtime values mirror core's Playbook/Bundle normalization.
+ */
+function canonicalPlacementCta(slot: HarnessSlotDescriptor): HarnessCanonicalCta {
+  switch (slot.id) {
+    case 'slot_banner':
+    case 'slot_modal':
+      return {
+        authored: { path: 'open_checkout', config: { purchase: 'pro' } },
+        runtime: { type: 'open_checkout_modal', plan_handle: 'pro' },
+      };
+    case 'slot_inline':
+      return {
+        authored: { path: 'open_rt_placement', config: { placement_handle: 'modal_trial_expiring' } },
+        runtime: { type: 'open_rt_placement', placement_handle: 'modal_trial_expiring' },
+      };
+    case 'slot_toast':
+      return {
+        authored: { path: 'custom', config: { url: '/app/monetization/customer-overrides' } },
+        runtime: { type: 'custom', url: '/app/monetization/customer-overrides' },
+      };
+    case 'slot_button':
+    case 'slot_full_page':
+      return {
+        authored: { path: 'view_plans' },
+        runtime: { type: 'navigate_to_plans' },
+      };
+    case 'slot_cli':
+      return {
+        authored: { path: 'custom', config: { command: 'open billing' } },
+        runtime: { type: 'custom', command: 'open billing' },
+      };
+    case 'slot_quota_meter':
+      return {
+        authored: { path: 'custom', config: { purchase_credits_pack: 'standard' } },
+        runtime: { type: 'custom', purchase_credits_pack: 'standard' },
+      };
+    case 'slot_credit_balance':
+      return {
+        authored: { path: 'custom', config: { purchase_credits_pack: 'priority' } },
+        runtime: { type: 'custom', purchase_credits_pack: 'priority' },
+      };
+    default:
+      return {
+        authored: { path: 'dismiss' },
+        runtime: { type: 'dismiss' },
+      };
+  }
+}
+
+/** Match the Message Block bundle representation: extras are portable strings. */
+function toCanonicalPlacementContent(content: Record<string, unknown>): Record<string, string> {
+  const canonical: Record<string, string> = {};
+  for (const [field, value] of Object.entries(content)) {
+    const key = field === 'title' ? 'header' : field;
+    if (typeof value === 'string') {
+      canonical[key] = value;
+      continue;
+    }
+    if (value == null) {
+      canonical[key] = '';
+      continue;
+    }
+    const serialized = JSON.stringify(value);
+    if (serialized !== undefined) canonical[key] = serialized;
+  }
+  return canonical;
+}
+
 export function buildHarnessPlacementMap(slots: HarnessSlotDescriptor[] = HARNESS_SLOTS): Record<HarnessSlotId, PlacementOutput> {
   return slots.reduce<Record<HarnessSlotId, PlacementOutput>>((acc, slot) => {
-    acc[slot.id] = slotPlacement(slot);
+    const placement = slotPlacement(slot);
+    acc[slot.id] = {
+      ...placement,
+      category: canonicalPlacementCategory(slot),
+      cta_path: canonicalPlacementCta(slot).runtime,
+    };
     return acc;
   }, {} as Record<HarnessSlotId, PlacementOutput>);
 }
@@ -310,11 +418,41 @@ export function buildDefaultContentOverrides(slots: HarnessSlotDescriptor[] = HA
     const content = map[slot.id].content;
     acc[slot.id] = {} as Record<EditableContentField, string>;
     for (const field of EDITABLE_CONTENT_FIELDS) {
-      const val = content[field];
+      const val = field === 'title' ? content.header ?? content.title : content[field];
       acc[slot.id][field] = typeof val === 'string' ? val : '';
     }
     return acc;
   }, {} as Record<HarnessSlotId, Record<EditableContentField, string>>);
+}
+
+/** Build the harness runtime placement catalog with editable Message Block content applied. */
+export function buildHarnessPlacementCatalog(
+  slots: HarnessSlotDescriptor[] = HARNESS_SLOTS,
+  contentOverrides: Record<HarnessSlotId, Record<string, string>> = buildDefaultContentOverrides(slots),
+): Record<HarnessSlotId, PlacementOutput> {
+  const basePlacements = buildHarnessPlacementMap(slots);
+  return slots.reduce<Record<HarnessSlotId, PlacementOutput>>((acc, slot) => {
+    const placement = basePlacements[slot.id];
+    const overrides = contentOverrides[slot.id] ?? {};
+    const content: Record<string, string> = toCanonicalPlacementContent(placement.content);
+    for (const field of EDITABLE_CONTENT_FIELDS) {
+      const value = overrides[field];
+      if (typeof value === 'string' && value.trim().length > 0) {
+        content[field === 'title' ? 'header' : field] = value;
+      }
+    }
+    acc[slot.id] = {
+      ...placement,
+      surface: {
+        ...placement.surface,
+        template: slot.template,
+        slot_id: slot.id,
+        type: slot.surfaceType,
+      },
+      content,
+    };
+    return acc;
+  }, {} as Record<HarnessSlotId, PlacementOutput>);
 }
 
 export function buildLookupConfigKey(config: RevTurbinePlacementRequestConfig): string {
@@ -364,8 +502,9 @@ export function createLocalRuntimeData(
   entitlementPayloads: HarnessEntitlementPayload[],
   slots: HarnessSlotDescriptor[] = HARNESS_SLOTS,
   matchedSegmentIds: string[] = [],
+  contentOverrides: Record<HarnessSlotId, Record<string, string>> = buildDefaultContentOverrides(slots),
 ): RevTurbineLocalRuntimeData {
-  const placements = buildHarnessPlacementMap(slots);
+  const placements = buildHarnessPlacementCatalog(slots, contentOverrides);
   const placementsByLookupKey: Record<string, PlacementOutput | null> = {};
 
   for (const slot of slots) {
@@ -807,101 +946,156 @@ export const DEFAULT_THEME: HarnessTheme = {
 // ---------------------------------------------------------------------------
 
 import type {
+  Playbook,
   RevTurbineConfig,
   Theme,
 } from '@revt-eng/schema';
+import {
+  normalizeConfigArtifactOrThrow,
+  type ConfigArtifact,
+} from '../config-artifact';
 
-export type { RevTurbineConfig };
+export type { Playbook, RevTurbineConfig };
 
 export const EXPORTED_CONFIG_VERSION = '1.0.0';
 
 /** localStorage key for auto-persisted harness state. */
 export const HARNESS_LOCALSTORAGE_KEY = 'revturbine:harness-config';
 
+/** localStorage key for activation and trigger state that is not part of a Playbook. */
+export const HARNESS_LOCALSTATE_STORAGE_KEY = 'revturbine:harness-local-state';
+
+/** Harness-local activation and trigger state, intentionally separate from Playbook strategy. */
+export interface HarnessLocalState {
+  activeSlots: Record<HarnessSlotId, boolean>;
+  slotTriggers: Record<HarnessSlotId, Set<string>>;
+}
+
 const HARNESS_THEME_ID = '00000000-0000-0000-0000-000000000001';
 
+function isRecord(value: unknown): value is Record<string, unknown> { // sdk-ok: boundary-parse
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function harnessTemplateId(slot: HarnessSlotDescriptor): string {
+  return slot.template ?? `harness_template_${slot.id}`;
+}
+
+function harnessPlacementId(slot: HarnessSlotDescriptor): string {
+  return `harness_placement_${slot.id}`;
+}
+
+function harnessMessageBlockId(slot: HarnessSlotDescriptor): string {
+  return `harness_message_${slot.id}`;
+}
+
+function toMessageBlockContent(placement: PlacementOutput): Record<string, unknown> {
+  return toCanonicalPlacementContent(placement.content);
+}
+
+function toPlacementCtas(slot: HarnessSlotDescriptor, placement: PlacementOutput): HarnessAuthoredCta[] {
+  const cta = canonicalPlacementCta(slot);
+  const primaryLabel = placement.content.cta_label;
+  const secondaryLabel = placement.content.secondary_cta_label;
+  const ctas: HarnessAuthoredCta[] = [{
+    label: typeof primaryLabel === 'string' ? primaryLabel : 'Take action',
+    ...cta.authored,
+  }];
+  if (typeof secondaryLabel === 'string' && secondaryLabel.length > 0) {
+    ctas.push({ label: secondaryLabel, path: 'dismiss' });
+  }
+  return ctas;
+}
+
 function toExportedTheme(theme: HarnessTheme): Theme {
-  const nowIso = new Date().toISOString();
   return {
-    theme_id: HARNESS_THEME_ID,
-    tenant_id: 'tenant_harness',
+    id: HARNESS_THEME_ID,
     name: 'Harness Theme',
-    version: EXPORTED_CONFIG_VERSION,
-    active: true,
-    colors: {
-      primary: theme.primary_color,
-      accent: theme.accent_color,
-      text: '#212121',
-      text_secondary: '#616161',
-      surface: '#ffffff',
-      surface_border: '#e5e7eb',
-    },
-    typography: {
+    mode: theme.dark_mode ? 'dark' : 'light',
+    tokens: {
+      primary_color: theme.primary_color,
+      accent_color: theme.accent_color,
       font_family: theme.font_family,
-    },
-    shape: {
       border_radius: theme.border_radius,
     },
-    created_at: nowIso,
-    updated_at: nowIso,
   };
 }
 
-/** Serialise the full harness state into an RevTurbineConfig JSON-safe object. */
+function toPortableEntitlementType(type: EntitlementType): Playbook['entitlements'][number]['type'] {
+  if (type === 'usage_pricing') return 'price_per_unit';
+  if (type === 'usage_rate') return 'rate_limit';
+  return type;
+}
+
+/** Serialise the full harness state into a canonical Playbook JSON-safe object. */
 export function buildExportedConfig(params: {
   plans: HarnessPlan[];
   entitlements: HarnessEntitlement[];
   entitlementRules: HarnessEntitlementRule[];
   segments: HarnessSegment[];
-  activeSlots: Record<HarnessSlotId, boolean>;
-  slotTriggers: Record<HarnessSlotId, Set<string>>;
   contentOverrides: Record<HarnessSlotId, Record<string, string>>;
   theme: HarnessTheme;
-  userId: string;
-  userName: string;
-  planHandle: string;
-  usagePercent: number;
-  entitlementAllowed: boolean;
-  traitsInput: string;
-  selectedSegmentId: string;
-  rulesPlanFilter: string;
-  eventName: string;
-  entitlementPayloads: HarnessEntitlementPayload[];
   slots: HarnessSlotDescriptor[];
-}): RevTurbineConfig {
+}): Playbook {
+  const nowIso = new Date().toISOString();
+  const placementCatalog = buildHarnessPlacementCatalog(params.slots, params.contentOverrides);
+  const planHandleById = new Map(params.plans.map((plan) => [plan.id, plan.unique_handle]));
+  const entitlementHandleById = new Map(
+    params.entitlements.map((entitlement) => [entitlement.id, entitlement.unique_handle]),
+  );
+  const segmentHandleById = new Map(params.segments.map((segment) => [segment.id, segment.handle]));
+  const surfaceTemplates = [...new Map(params.slots.map((slot) => [
+    harnessTemplateId(slot),
+    {
+      id: harnessTemplateId(slot),
+      surface_type: slot.surfaceType,
+      fields: Object.keys(placementCatalog[slot.id].content).sort().map((field) => ({
+        name: field,
+        type: 'string',
+        required: false,
+      })),
+    },
+  ])).values()];
+
   return {
-    version: EXPORTED_CONFIG_VERSION,
-    exported_at: new Date().toISOString(),
-    plans: params.plans.map((p) => ({ id: p.id, unique_handle: p.unique_handle, name: p.name })),
+    artifact_type: 'playbook',
+    format_version: EXPORTED_CONFIG_VERSION,
+    playbook_handle: 'default',
+    playbook_version_id: null,
+    tenant_id: 'tenant_harness',
+    environment_id: 'default',
+    exported_at: nowIso,
+    plans: params.plans.map((p, index) => ({
+      unique_handle: p.unique_handle,
+      name: p.name,
+      tier_position: index,
+      sort_order: index,
+      visibility: 'public',
+    })),
     entitlements: params.entitlements.map((e) => ({
-      id: e.id,
       unique_handle: e.unique_handle,
       name: e.name,
-      type: e.type,
+      type: toPortableEntitlementType(e.type),
       ...(e.unit ? { unit: e.unit } : {}),
     })),
     entitlement_rules: params.entitlementRules.map((r) => ({
       id: r.id,
-      entitlement_id: r.entitlement_id,
-      targets: r.targets,
-      segment_ids: r.segment_ids,
+      entitlement_id: entitlementHandleById.get(r.entitlement_id) ?? r.entitlement_id,
+      targets: r.targets.map((target) => ({
+        ...target,
+        id: target.kind === 'plan'
+          ? planHandleById.get(target.id) ?? target.id
+          : target.id,
+      })),
+      segment_ids: r.segment_ids.map((segmentId) => segmentHandleById.get(segmentId) ?? segmentId),
       type_fields: r.type_fields as Record<string, unknown>,
       current_usage: r.current_usage,
     })),
     segments: params.segments.map((s) => ({
-      id: s.id,
       name: s.name,
       handle: s.handle,
       ...(s.predicates && s.predicates.length > 0 ? { predicates: s.predicates } : {}),
     })),
-    slot_configs: params.slots.map((slot) => ({
-      slot_id: slot.id,
-      active: params.activeSlots[slot.id] ?? false,
-      triggers: [...(params.slotTriggers[slot.id] ?? [])],
-    })),
-    content_overrides: Object.fromEntries(
-      params.slots.map((slot) => [slot.id, { ...(params.contentOverrides[slot.id] ?? {}) }]),
-    ),
     theme: toExportedTheme(params.theme),
     placement_slots: params.slots.map((s) => ({
       id: s.id,
@@ -911,12 +1105,150 @@ export function buildExportedConfig(params: {
       placement_handle: s.placementHandle,
       ...(s.template ? { template: s.template } : {}),
     })),
+    surface_templates: surfaceTemplates,
+    placements: params.slots.map((slot, order) => ({
+      id: harnessPlacementId(slot),
+      name: slot.label,
+      category: canonicalPlacementCategory(slot),
+      trigger: { type: 'surface_render', slot_id: slot.id },
+      order,
+      payloads: [{
+        id: `harness_inline_${slot.id}`,
+        target: { plan_ids: [], segment_chips: [] },
+        surfaces: [{
+          template_id: harnessTemplateId(slot),
+          fields: {},
+          ctas: toPlacementCtas(slot, placementCatalog[slot.id]),
+        }],
+        surface_slot_ids: [slot.id],
+        recommendation_strategy: 'next_tier_up',
+      }],
+    })),
+    message_blocks: params.slots.map((slot) => ({
+      block_id: harnessMessageBlockId(slot),
+      tenant_id: 'tenant_harness',
+      name: `${slot.label} content`,
+      surface_template_id: harnessTemplateId(slot),
+      default_content: toMessageBlockContent(placementCatalog[slot.id]),
+      status: 'active',
+      created_at: nowIso,
+      updated_at: nowIso,
+    })),
+    placement_payloads: params.slots.map((slot) => ({
+      payload_id: `harness_content_${slot.id}`,
+      placement_id: harnessPlacementId(slot),
+      target: { plan_ids: [], segment_chips: [] },
+      created_at: nowIso,
+      updated_at: nowIso,
+      source_mode: 'content_linked',
+      surface_slot_ids: [slot.id],
+      content_link: { message_block_id: harnessMessageBlockId(slot) },
+    })),
     content_ui_paths: [],
   };
 }
 
+function defaultLegacyLocalState(slots: HarnessSlotDescriptor[]): HarnessLocalState {
+  const activeSlots = slots.reduce<Record<HarnessSlotId, boolean>>((acc, slot) => {
+    acc[slot.id] = false;
+    return acc;
+  }, {} as Record<HarnessSlotId, boolean>);
+  const slotTriggers = slots.reduce<Record<HarnessSlotId, Set<string>>>((acc, slot) => {
+    acc[slot.id] = new Set(DEFAULT_SLOT_TRIGGERS[slot.id] ?? []);
+    return acc;
+  }, {} as Record<HarnessSlotId, Set<string>>);
+  return { activeSlots, slotTriggers };
+}
+
+function readLegacyLocalState(raw: unknown, slots: HarnessSlotDescriptor[]): HarnessLocalState | undefined { // sdk-ok: boundary-parse
+  if (!isRecord(raw) || !Array.isArray(raw.slot_configs)) return undefined;
+
+  const localState = defaultLegacyLocalState(slots);
+  const knownSlotIds = new Set(slots.map((slot) => slot.id));
+  for (const slotConfig of raw.slot_configs) {
+    if (!isRecord(slotConfig) || typeof slotConfig.slot_id !== 'string') continue;
+    if (!knownSlotIds.has(slotConfig.slot_id) || typeof slotConfig.active !== 'boolean') continue;
+
+    localState.activeSlots[slotConfig.slot_id] = slotConfig.active;
+    if (Array.isArray(slotConfig.triggers)) {
+      localState.slotTriggers[slotConfig.slot_id] = new Set(
+        slotConfig.triggers.filter((trigger): trigger is string => typeof trigger === 'string'),
+      );
+    }
+  }
+  return localState;
+}
+
+function applyMessageBlockContent(
+  target: Record<EditableContentField, string>,
+  content: Record<string, unknown>, // sdk-ok: boundary-parse
+): void {
+  for (const field of EDITABLE_CONTENT_FIELDS) {
+    const value = field === 'title' ? content.header ?? content.title : content[field];
+    if (typeof value === 'string') target[field] = value;
+  }
+}
+
+function loadCanonicalContent(
+  cfg: Playbook,
+  slots: HarnessSlotDescriptor[],
+): {
+  contentOverrides: Record<HarnessSlotId, Record<EditableContentField, string>>;
+  canonicalSlotIds: Set<string>;
+} {
+  const contentOverrides = buildDefaultContentOverrides(slots);
+  const canonicalSlotIds = new Set<string>();
+  const knownSlotIds = new Set(slots.map((slot) => slot.id));
+  const blocksById = new Map((cfg.message_blocks ?? []).map((block) => [block.block_id, block]));
+  const slotByPlacementId = new Map<string, string>();
+  for (const placement of cfg.placements ?? []) {
+    if (placement.trigger.type === 'surface_render') {
+      slotByPlacementId.set(placement.id, placement.trigger.slot_id);
+    }
+  }
+
+  for (const payload of cfg.placement_payloads ?? []) {
+    const blockId = payload.content_link?.message_block_id;
+    if (!blockId) continue;
+    const block = blocksById.get(blockId);
+    if (!block) continue;
+
+    const explicitSlotId = payload.surface_slot_ids?.find((slotId) => knownSlotIds.has(slotId));
+    const slotId = explicitSlotId ?? slotByPlacementId.get(payload.placement_id);
+    if (!slotId || !knownSlotIds.has(slotId)) continue;
+
+    applyMessageBlockContent(contentOverrides[slotId], block.default_content);
+    canonicalSlotIds.add(slotId);
+  }
+
+  return { contentOverrides, canonicalSlotIds };
+}
+
+function applyLegacyContentOverrides(
+  raw: unknown, // sdk-ok: boundary-parse
+  contentOverrides: Record<HarnessSlotId, Record<EditableContentField, string>>,
+  canonicalSlotIds: Set<string>,
+): void {
+  if (!isRecord(raw) || !isRecord(raw.content_overrides)) return;
+
+  for (const [slotId, fields] of Object.entries(raw.content_overrides)) {
+    if (canonicalSlotIds.has(slotId) || !(slotId in contentOverrides) || !isRecord(fields)) continue;
+    applyMessageBlockContent(contentOverrides[slotId], fields);
+  }
+}
+
+function legacyItemId(value: unknown, fallback: string): string { // sdk-ok: boundary-parse
+  return isRecord(value) && typeof value.id === 'string' ? value.id : fallback;
+}
+
+function toHarnessEntitlementType(type: Playbook['entitlements'][number]['type']): EntitlementType {
+  if (type === 'price_per_unit') return 'usage_pricing';
+  if (type === 'rate_limit') return 'usage_rate';
+  return type;
+}
+
 /**
- * Parse and validate an RevTurbineConfig JSON object, returning harness-ready
+ * Parse and validate a Playbook or legacy RevTurbineConfig, returning harness-ready
  * state slices.  Throws on invalid input.
  */
 export function loadExportedConfig(raw: unknown): {
@@ -924,8 +1256,7 @@ export function loadExportedConfig(raw: unknown): {
   entitlements: HarnessEntitlement[];
   entitlementRules: HarnessEntitlementRule[];
   segments: HarnessSegment[];
-  activeSlots: Record<HarnessSlotId, boolean>;
-  slotTriggers: Record<HarnessSlotId, Set<string>>;
+  legacyLocalState?: HarnessLocalState;
   contentOverrides: Record<HarnessSlotId, Record<string, string>>;
   theme: HarnessTheme;
   userId: string;
@@ -940,26 +1271,27 @@ export function loadExportedConfig(raw: unknown): {
   entitlementPayloads: HarnessEntitlementPayload[];
   slots: HarnessSlotDescriptor[];
 } {
-  if (!raw || typeof raw !== 'object') throw new Error('Invalid config: not an object');
-  const cfg = raw as RevTurbineConfig;
-
-  if (!cfg.version) throw new Error('Invalid config: missing version');
+  const cfg = normalizeConfigArtifactOrThrow(raw, 'harness config', {
+    tenantId: 'tenant_harness',
+    environmentId: 'default',
+  });
+  if (!cfg) throw new Error('Invalid config: not an object');
   if (!Array.isArray(cfg.plans)) throw new Error('Invalid config: plans must be an array');
   if (!Array.isArray(cfg.entitlements)) throw new Error('Invalid config: entitlements must be an array');
   if (!Array.isArray(cfg.entitlement_rules)) throw new Error('Invalid config: entitlement_rules must be an array');
   if (!Array.isArray(cfg.segments)) throw new Error('Invalid config: segments must be an array');
 
   const plans: HarnessPlan[] = cfg.plans.map((p) => ({
-    id: String(p.id),
+    id: legacyItemId(p, p.unique_handle),
     unique_handle: String(p.unique_handle),
     name: String(p.name),
   }));
 
   const entitlements: HarnessEntitlement[] = cfg.entitlements.map((e) => ({
-    id: String(e.id),
+    id: legacyItemId(e, e.unique_handle),
     unique_handle: String(e.unique_handle),
     name: String(e.name),
-    type: e.type as EntitlementType,
+    type: toHarnessEntitlementType(e.type),
     ...(e.unit ? { unit: String(e.unit) } : {}),
   }));
 
@@ -973,7 +1305,7 @@ export function loadExportedConfig(raw: unknown): {
   }));
 
   const segments: HarnessSegment[] = cfg.segments.map((s) => ({
-    id: String(s.id),
+    id: legacyItemId(s, s.handle),
     name: String(s.name),
     handle: String(s.handle),
     ...(Array.isArray(s.predicates) && s.predicates.length > 0
@@ -999,41 +1331,27 @@ export function loadExportedConfig(raw: unknown): {
       }))
     : [...HARNESS_SLOTS];
 
-  // Slot configs — merge onto slot list
-  const activeSlots: Record<HarnessSlotId, boolean> = {} as Record<HarnessSlotId, boolean>;
-  const slotTriggers: Record<HarnessSlotId, Set<string>> = {} as Record<HarnessSlotId, Set<string>>;
-  for (const slot of slots) {
-    activeSlots[slot.id] = false;
-    slotTriggers[slot.id] = new Set(DEFAULT_SLOT_TRIGGERS[slot.id] ?? []);
-  }
-  if (Array.isArray(cfg.slot_configs)) {
-    for (const sc of cfg.slot_configs) {
-      const slotId = sc.slot_id as HarnessSlotId;
-      activeSlots[slotId] = sc.active;
-      slotTriggers[slotId] = new Set(sc.triggers ?? []);
-    }
-  }
-
-  // Content overrides
-  const contentOverrides = buildDefaultContentOverrides(slots);
-  if (cfg.content_overrides && typeof cfg.content_overrides === 'object') {
-    for (const [slotId, fields] of Object.entries(cfg.content_overrides)) {
-      if (slotId in contentOverrides && fields && typeof fields === 'object') {
-        contentOverrides[slotId as HarnessSlotId] = {
-          ...contentOverrides[slotId as HarnessSlotId],
-          ...fields,
-        } as Record<EditableContentField, string>;
-      }
-    }
-  }
+  const legacyLocalState = readLegacyLocalState(raw, slots);
+  const canonicalContent = loadCanonicalContent(cfg, slots);
+  const contentOverrides = canonicalContent.contentOverrides;
+  applyLegacyContentOverrides(raw, contentOverrides, canonicalContent.canonicalSlotIds);
 
   // Theme
   const theme: HarnessTheme = { ...DEFAULT_THEME };
-  if (cfg.theme && typeof cfg.theme === 'object') {
-    const colors = cfg.theme.colors;
-    const typography = cfg.theme.typography;
-    const shape = cfg.theme.shape;
+  if (isRecord(cfg.theme)) {
+    const tokens = isRecord(cfg.theme.tokens) ? cfg.theme.tokens : undefined;
+    if (typeof tokens?.primary_color === 'string') theme.primary_color = tokens.primary_color;
+    if (typeof tokens?.accent_color === 'string') theme.accent_color = tokens.accent_color;
+    if (typeof tokens?.font_family === 'string') theme.font_family = tokens.font_family;
+    if (typeof tokens?.border_radius === 'string') theme.border_radius = tokens.border_radius;
+    if (cfg.theme.mode === 'dark' || cfg.theme.mode === 'light') {
+      theme.dark_mode = cfg.theme.mode === 'dark';
+    }
 
+    // One-window compatibility for harness files written before canonical Theme tokens.
+    const colors = isRecord(cfg.theme.colors) ? cfg.theme.colors : undefined;
+    const typography = isRecord(cfg.theme.typography) ? cfg.theme.typography : undefined;
+    const shape = isRecord(cfg.theme.shape) ? cfg.theme.shape : undefined;
     if (typeof colors?.primary === 'string') theme.primary_color = colors.primary;
     if (typeof colors?.accent === 'string') theme.accent_color = colors.accent;
     if (typeof typography?.font_family === 'string') theme.font_family = typography.font_family;
@@ -1066,8 +1384,7 @@ export function loadExportedConfig(raw: unknown): {
     entitlements,
     entitlementRules,
     segments,
-    activeSlots,
-    slotTriggers,
+    ...(legacyLocalState ? { legacyLocalState } : {}),
     contentOverrides,
     theme,
     userId,
@@ -1089,7 +1406,7 @@ export function loadExportedConfig(raw: unknown): {
 // ---------------------------------------------------------------------------
 
 /**
- * Attempt to load a previously-saved RevTurbineConfig from localStorage.
+ * Attempt to load a previously-saved Playbook or RevTurbineConfig from localStorage.
  * Returns `null` if no config is found or the stored value is invalid.
  */
 export function loadConfigFromLocalStorage(): ReturnType<typeof loadExportedConfig> | null {
@@ -1104,11 +1421,62 @@ export function loadConfigFromLocalStorage(): ReturnType<typeof loadExportedConf
 }
 
 /**
- * Persist an RevTurbineConfig to localStorage.
+ * Persist a Playbook or deprecated RevTurbineConfig to localStorage.
  */
-export function saveConfigToLocalStorage(config: RevTurbineConfig): void {
+export function saveConfigToLocalStorage(config: ConfigArtifact): void {
   try {
     localStorage.setItem(HARNESS_LOCALSTORAGE_KEY, JSON.stringify(config));
+  } catch {
+    // Silently ignore quota errors
+  }
+}
+
+/** Load activation and trigger state independently from the portable Playbook. */
+export function loadHarnessLocalState(defaults: HarnessLocalState): HarnessLocalState | null {
+  try {
+    const raw = localStorage.getItem(HARNESS_LOCALSTATE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return null;
+
+    const activeSlots = { ...defaults.activeSlots };
+    if (isRecord(parsed.activeSlots)) {
+      for (const [slotId, active] of Object.entries(parsed.activeSlots)) {
+        if (slotId in activeSlots && typeof active === 'boolean') activeSlots[slotId] = active;
+      }
+    }
+
+    const slotTriggers = Object.entries(defaults.slotTriggers).reduce<Record<HarnessSlotId, Set<string>>>(
+      (acc, [slotId, triggers]) => {
+        acc[slotId] = new Set(triggers);
+        return acc;
+      },
+      {} as Record<HarnessSlotId, Set<string>>,
+    );
+    if (isRecord(parsed.slotTriggers)) {
+      for (const [slotId, triggers] of Object.entries(parsed.slotTriggers)) {
+        if (!(slotId in slotTriggers) || !Array.isArray(triggers)) continue;
+        slotTriggers[slotId] = new Set(
+          triggers.filter((trigger): trigger is string => typeof trigger === 'string'),
+        );
+      }
+    }
+    return { activeSlots, slotTriggers };
+  } catch {
+    return null;
+  }
+}
+
+/** Persist activation and trigger state outside the portable Playbook. */
+export function saveHarnessLocalState(state: HarnessLocalState): void {
+  try {
+    localStorage.setItem(HARNESS_LOCALSTATE_STORAGE_KEY, JSON.stringify({
+      version: 1,
+      activeSlots: state.activeSlots,
+      slotTriggers: Object.fromEntries(
+        Object.entries(state.slotTriggers).map(([slotId, triggers]) => [slotId, [...triggers].sort()]),
+      ),
+    }));
   } catch {
     // Silently ignore quota errors
   }

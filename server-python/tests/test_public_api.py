@@ -41,11 +41,15 @@ def _config() -> dict[str, Any]:
     placement. No network, no persistence — the headless model.
     """
     return {
-        "version": "0.1.0",
+        "version": "1.0.0",
+        "plans": [],
         "entitlements": [
             {"unique_handle": "feat_x", "unit": None},
             {"unique_handle": "credits", "unit": "credit"},
         ],
+        "entitlement_rules": [],
+        "segments": [],
+        "content_ui_paths": [],
         "placements": [{"placement_id": "pl_known", "name": "Known"}],
     }
 
@@ -121,6 +125,21 @@ class TestPublicSurface:
         for p in params.values():
             assert p.kind is inspect.Parameter.KEYWORD_ONLY
         assert "storage" not in params and "impression_store" not in params
+
+    def test_future_playbook_format_rejects_before_evaluation(self) -> None:
+        cfg = _config()
+        cfg.update(
+            {
+                "artifact_type": "playbook",
+                "format_version": "2.0.0",
+                "playbook_handle": "default",
+                "playbook_version_id": None,
+                "tenant_id": "tenant_t",
+                "environment_id": "default",
+            }
+        )
+        with pytest.raises(ValueError, match='unsupported "format_version"'):
+            RevTurbineCustomerSdk(user_context=_user_ctx(), exported_config=cfg)
 
 
 class TestOutputTransparency:

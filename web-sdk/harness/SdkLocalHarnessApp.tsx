@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  buildLookupConfigKey,
   buildDefaultContentOverrides,
   buildExportedConfig,
-  buildHarnessPlacementMap,
   createLocalRuntimeData,
   DEFAULT_ENTITLEMENT_RULES,
   DEFAULT_ENTITLEMENT_PAYLOADS,
@@ -18,10 +16,12 @@ import {
   HARNESS_SLOTS,
   loadConfigFromLocalStorage,
   loadExportedConfig,
+  loadHarnessLocalState,
   nextRuleId,
   resolveEntitlementPayloads,
   ruleLimit,
   saveConfigToLocalStorage,
+  saveHarnessLocalState,
   SEGMENT_PREDICATE_OPERATORS,
   SURFACE_TYPES,
   type EditableContentField,
@@ -173,6 +173,7 @@ export function SdkLocalHarnessApp() {
   const [activityLog, setActivityLog] = useState<string[]>([]);
   const [configJson, setConfigJson] = useState('');
   const [configMessage, setConfigMessage] = useState('');
+  const [storageHydrated, setStorageHydrated] = useState(false);
   const [newPlanName, setNewPlanName] = useState('');
   const [newEntitlementName, setNewEntitlementName] = useState('');
   const [newEntitlementType, setNewEntitlementType] = useState<(typeof ENTITLEMENT_TYPES)[number]>('feature');
@@ -206,34 +207,8 @@ export function SdkLocalHarnessApp() {
       : [...matchedSegmentIds, selectedSegmentId];
   }, [matchedSegmentIds, selectedSegmentId]);
 
-  const placementCatalog = useMemo(() => {
-    const basePlacements = buildHarnessPlacementMap(slots);
-    return slots.reduce<Record<HarnessSlotId, PlacementOutput>>((acc, slot) => {
-      const placement = basePlacements[slot.id];
-      const overrides = contentOverrides[slot.id] ?? ({} as Record<EditableContentField, string>);
-      const content = { ...placement.content } as Record<string, unknown>;
-      for (const field of EDITABLE_CONTENT_FIELDS) {
-        const value = overrides[field];
-        if (typeof value === 'string' && value.trim().length > 0) {
-          content[field] = value;
-        }
-      }
-      acc[slot.id] = {
-        ...placement,
-        surface: {
-          ...placement.surface,
-          template: slot.template,
-          slot_id: slot.id,
-          type: slot.surfaceType,
-        },
-        content,
-      };
-      return acc;
-    }, {} as Record<HarnessSlotId, PlacementOutput>);
-  }, [contentOverrides, slots]);
-
   const runtimeData = useMemo(() => {
-    const base = createLocalRuntimeData(
+    return createLocalRuntimeData(
       activeSlots,
       userId,
       userName,
@@ -241,58 +216,26 @@ export function SdkLocalHarnessApp() {
       entitlementPayloads,
       slots,
       effectiveSegmentIds,
+      contentOverrides,
     );
-    const placementsByLookupKey = { ...(base.placementsByLookupKey ?? {}) };
-    for (const slot of slots) {
-      const lookupKey = buildLookupConfigKey(slotRequest(slot, planHandle));
-      placementsByLookupKey[lookupKey] = activeSlots[slot.id] ? placementCatalog[slot.id] : null;
-    }
-    return {
-      ...base,
-      placementsByLookupKey,
-    };
-  }, [activeSlots, effectiveSegmentIds, entitlementPayloads, placementCatalog, planHandle, slots, userId, userName]);
+  }, [activeSlots, contentOverrides, effectiveSegmentIds, entitlementPayloads, planHandle, slots, userId, userName]);
 
   const currentExportedConfig = useMemo(() => buildExportedConfig({
     plans,
     entitlements,
     entitlementRules,
     segments,
-    activeSlots,
-    slotTriggers,
     contentOverrides,
     theme,
-    userId,
-    userName,
-    planHandle,
-    usagePercent,
-    entitlementAllowed,
-    traitsInput,
-    selectedSegmentId,
-    rulesPlanFilter,
-    eventName,
-    entitlementPayloads,
     slots,
   }), [
-    activeSlots,
     contentOverrides,
-    entitlementAllowed,
-    entitlementPayloads,
     entitlementRules,
     entitlements,
-    eventName,
-    planHandle,
     plans,
-    rulesPlanFilter,
     segments,
-    selectedSegmentId,
-    slotTriggers,
     slots,
     theme,
-    traitsInput,
-    usagePercent,
-    userId,
-    userName,
   ]);
 
   const storageKey = useMemo(() => {
@@ -328,8 +271,10 @@ export function SdkLocalHarnessApp() {
     setEntitlementRules(loaded.entitlementRules);
     setSegments(loaded.segments);
     setSlots(loaded.slots);
-    setActiveSlots(loaded.activeSlots);
-    setSlotTriggers(loaded.slotTriggers);
+    if (loaded.legacyLocalState) {
+      setActiveSlots(loaded.legacyLocalState.activeSlots);
+      setSlotTriggers(loaded.legacyLocalState.slotTriggers);
+    }
     setContentOverrides(mergeContentOverrides(cloneContentOverrides(loaded.slots), loaded.contentOverrides));
     setTheme(loaded.theme);
     setUserId(loaded.userId);
@@ -347,18 +292,36 @@ export function SdkLocalHarnessApp() {
 
   useEffect(() => {
     const loaded = loadConfigFromLocalStorage();
-    if (!loaded) {
+    const nextSlots = loaded?.slots ?? HARNESS_SLOTS;
+    if (loaded) {
+      applyLoadedConfig(loaded);
+      appendLog('Loaded saved harness Playbook from local storage');
+    } else {
       setConfigJson(JSON.stringify(currentExportedConfig, null, 2));
-      return;
     }
-    applyLoadedConfig(loaded);
-    appendLog('Loaded saved harness config from local storage');
+
+    const localState = loadHarnessLocalState({
+      activeSlots: defaultActiveState(nextSlots),
+      slotTriggers: defaultTriggerState(nextSlots),
+    });
+    if (localState) {
+      setActiveSlots(localState.activeSlots);
+      setSlotTriggers(localState.slotTriggers);
+      appendLog('Loaded harness-local activation and trigger state');
+    }
+    setStorageHydrated(true);
   }, [appendLog, applyLoadedConfig]);
 
   useEffect(() => {
+    if (!storageHydrated) return;
     saveConfigToLocalStorage(currentExportedConfig);
     setConfigJson(JSON.stringify(currentExportedConfig, null, 2));
-  }, [currentExportedConfig]);
+  }, [currentExportedConfig, storageHydrated]);
+
+  useEffect(() => {
+    if (!storageHydrated) return;
+    saveHarnessLocalState({ activeSlots, slotTriggers });
+  }, [activeSlots, slotTriggers, storageHydrated]);
 
   const resolvePlacements = useCallback(async () => {
     setBusy(true);
@@ -441,7 +404,7 @@ export function SdkLocalHarnessApp() {
     appendLog(`CTA clicked: ${slot.id} (${uiPath.type})`);
     setPlacementsBySlot((prev) => ({ ...prev, [slot.id]: null }));
 
-    if (uiPath.type !== 'open_placement') {
+    if (uiPath.type !== 'open_rt_placement' && uiPath.type !== 'open_placement') {
       return;
     }
 
@@ -475,7 +438,7 @@ export function SdkLocalHarnessApp() {
       const parsed = JSON.parse(configJson);
       const loaded = loadExportedConfig(parsed);
       applyLoadedConfig(loaded);
-      setConfigMessage('Imported RevTurbineConfig successfully');
+      setConfigMessage('Imported Playbook successfully');
       appendLog('Imported config JSON into harness');
     } catch (error) {
       setConfigMessage(error instanceof Error ? error.message : 'Failed to import config');
@@ -485,14 +448,14 @@ export function SdkLocalHarnessApp() {
   const handleDownloadConfig = useCallback(() => {
     const content = JSON.stringify(currentExportedConfig, null, 2);
     downloadTextFile('revturbine-sdk-harness-export.json', content);
-    appendLog('Downloaded RevTurbineConfig JSON');
+    appendLog('Downloaded Playbook JSON');
   }, [appendLog, currentExportedConfig]);
 
   const handleCopyConfig = useCallback(async () => {
     const content = JSON.stringify(currentExportedConfig, null, 2);
     await navigator.clipboard.writeText(content);
-    setConfigMessage('Copied RevTurbineConfig JSON to clipboard');
-    appendLog('Copied RevTurbineConfig JSON');
+    setConfigMessage('Copied Playbook JSON to clipboard');
+    appendLog('Copied Playbook JSON');
   }, [appendLog, currentExportedConfig]);
 
   const matchedSegmentsSet = useMemo(() => new Set(matchedSegmentIds), [matchedSegmentIds]);
@@ -566,7 +529,7 @@ export function SdkLocalHarnessApp() {
           </div>
 
           <div className="panel-section config-io-actions">
-            <h2>Exported Config</h2>
+            <h2>Playbook</h2>
             <div className="actions">
               <button onClick={handleDownloadConfig}>Download JSON</button>
               <button onClick={() => void handleCopyConfig()}>Copy JSON</button>
@@ -575,11 +538,11 @@ export function SdkLocalHarnessApp() {
                 onClick={() => {
                   const loaded = loadConfigFromLocalStorage();
                   if (!loaded) {
-                    setConfigMessage('No saved config found');
+                    setConfigMessage('No saved Playbook found');
                     return;
                   }
                   applyLoadedConfig(loaded);
-                  setConfigMessage('Loaded saved config from local storage');
+                  setConfigMessage('Loaded saved Playbook from local storage');
                 }}
               >
                 Load Saved
@@ -587,7 +550,7 @@ export function SdkLocalHarnessApp() {
             </div>
             <div className="control-grid" style={{ marginTop: '0.55rem' }}>
               <label>
-                ExportConfig JSON
+                Playbook JSON
                 <textarea
                   data-testid="config-json-input"
                   value={configJson}
@@ -1011,7 +974,7 @@ export function SdkLocalHarnessApp() {
           <div className="main-header">
             <div>
               <h1>RevTurbine SDK Local-Mode Harness</h1>
-              <p>Editable local-only harness for slots, entitlement state, user context, and RevTurbineConfig export/import.</p>
+              <p>Editable local-only harness for slots, entitlement state, user context, and Playbook export/import.</p>
             </div>
             <div className="meta-pill">runtime_mode: local_only</div>
           </div>

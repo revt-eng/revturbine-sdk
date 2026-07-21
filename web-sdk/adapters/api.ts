@@ -1,7 +1,7 @@
 /**
  * API adapter — creates domain providers that fetch data from the RevTurbine REST API.
  *
- * Works everywhere with `fetch` (Node 18+, edge runtimes, browsers).
+ * Works everywhere with `fetch` (Node 22.13+, edge runtimes, browsers).
  * This adapter lives in the SDK (not core) because core is pure in-memory
  * evaluation with no network dependencies.
  */

@@ -33,7 +33,7 @@ afterEach(() => {
 
 function makeExportedConfig(): RevTurbineConfig {
   return {
-    version: 'v1',
+    version: '1.0.0',
     exported_at: '2026-01-01T00:00:00Z',
     plans: [
       { id: 'plan_starter', unique_handle: 'starter', name: 'Starter', tier_position: 0, sort_order: 0 },
