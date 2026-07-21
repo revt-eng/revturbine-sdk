@@ -47,6 +47,22 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
 
+      - name: Authenticate GitHub Packages for every project dir
+        # setup-node writes an npmjs-only auth line into NPM_CONFIG_USERCONFIG. The
+        # GitHub Packages token lives in the repo-root .npmrc — but the web-sdk
+        # install below runs with `working-directory: web-sdk`, so pnpm treats
+        # web-sdk as the project root and reads web-sdk/.npmrc (registry mapping
+        # only, no token) instead. That install then 401s on @revt-eng/*, which is
+        # how v0.2.25 and v0.2.26 both failed to publish while their PyPI
+        # counterparts shipped. web-sdk/ is mirror-owned by
+        # revturbine-sdk-internal, so the token line cannot be added there from
+        # here; writing it into the user config applies it no matter which
+        # directory pnpm runs in. The value is an env placeholder, not a secret —
+        # NODE_AUTH_TOKEN is supplied per-step below.
+        run: |
+          echo '@revt-eng:registry=https://npm.pkg.github.com' >> "$NPM_CONFIG_USERCONFIG"
+          echo '//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}' >> "$NPM_CONFIG_USERCONFIG"
+
       - name: Resolve version
         id: version
         run: |
