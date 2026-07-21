@@ -1,5 +1,5 @@
 /**
- * @module @revt-eng/sdk
+ * @module @revturbine/sdk
  *
  * The RevTurbine customer-facing SDK — React integration.
  *
@@ -9,7 +9,7 @@
  * ## Quick Start
  *
  * ```ts
- * import { initRevTurbine } from '@revt-eng/sdk';
+ * import { initRevTurbine } from '@revturbine/sdk';
  *
  * const sdk = initRevTurbine({
  *   tenantId: 'tenant_abc',
@@ -93,3 +93,17 @@ export type { AccessGateSurfaceSlotProps as GateProps } from './placements/Acces
 /** @deprecated Use {@link Slot} instead — `RTSlot` is the pre-plan-105 name. */
 export { SurfaceSlotComponent as RTSlot } from './placements/SurfaceSlotComponent';
 export type { SurfaceSlotComponentProps as RTSlotProps } from './placements/SurfaceSlotComponent';
+
+// Advertised config type (plan 139 / Q-2): the customer-facing vocabulary is
+// `Slot` · `Gate` · `Playbook`. `Playbook` is the canonical name for the config
+// artifact the SDK evaluates against. `ExportedConfig` / `RevTurbineConfig` stay
+// exported as legacy aliases (via the schema re-export above); prefer `Playbook`.
+/**
+ * The portable RevTurbine monetization config the SDK evaluates against —
+ * plans, entitlements, entitlement rules, segments, content UI paths, surface
+ * templates, and placements. `Playbook` is the canonical name for this config
+ * artifact (typically distributed as `exported_config.json`); `ExportedConfig`
+ * and `RevTurbineConfig` remain exported as legacy type aliases — prefer
+ * `Playbook`.
+ */
+export type { Playbook } from './generated';

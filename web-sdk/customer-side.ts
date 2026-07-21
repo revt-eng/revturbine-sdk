@@ -562,7 +562,7 @@ export type ExportedConfigProvider = RevTurbineConfigProvider;
  *
  * @example
  * ```ts
- * import { initRevTurbine } from '@revt-eng/sdk';
+ * import { initRevTurbine } from '@revturbine/sdk';
  *
  * const sdk = initRevTurbine({
  *   tenantId: 'tenant_abc',
@@ -1825,7 +1825,15 @@ export class RevTurbineCustomerSdk {
     const plan = this.userContext.plan;
     const usage = this.userContext.usage;
     const trial = this.localTrialStatus;
-    if (!plan && !usage) return undefined;
+    // Billing-recovery signals (plan 138) → PlanProviderState for the Retention
+    // `qualifier` triggers; the user's current tiers (plan 138 TASK-4) →
+    // EntitlementProviderState for the `entitlement_gate.tier_threshold` gate.
+    // Both are read straight off the user context, mirroring plan/usage/trial.
+    const paymentFailed = this.userContext.payment_failed;
+    const paymentAtRisk = this.userContext.payment_at_risk;
+    const tiers = this.userContext.tiers;
+    const hasTiers = tiers !== undefined && Object.keys(tiers).length > 0;
+    if (!plan && !usage && !hasTiers) return undefined;
 
     const usageEntries: Record<string, { used: number; limit: number; remaining: number; unit?: string; reset_date?: string }> = {};
     if (usage && typeof usage === 'object') {
@@ -1877,12 +1885,15 @@ export class RevTurbineCustomerSdk {
           currentPlanHandle: plan.id ?? plan.name ?? '',
           currentPlanName: plan.name,
           ...planTrialFields,
+          ...(paymentFailed !== undefined ? { paymentFailed } : {}),
+          ...(paymentAtRisk !== undefined ? { paymentAtRisk } : {}),
         },
       } : {}),
-      ...(Object.keys(usageEntries).length > 0 ? {
+      ...(Object.keys(usageEntries).length > 0 || hasTiers ? {
         entitlements: {
           entries: {},
           usage: usageEntries,
+          ...(hasTiers ? { tiers } : {}),
         },
       } : {}),
     };
@@ -5677,7 +5688,7 @@ export class RevTurbineCustomerSdk {
  *
  * @example
  * ```ts
- * import { initRevTurbine } from '@revt-eng/sdk';
+ * import { initRevTurbine } from '@revturbine/sdk';
  *
  * const sdk = initRevTurbine({
  *   tenantId: 'tenant_abc',

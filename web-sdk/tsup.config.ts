@@ -54,7 +54,7 @@ export default defineConfig({
     'react/jsx-runtime',
     'react/jsx-dev-runtime',
   ],
-  // Bundle all internal deps — customers install only @revt-eng/sdk + react
+  // Bundle all internal deps — customers install only @revturbine/sdk + react
   noExternal: [
     '@revt-eng/schema',
     '@revt-eng/schema-external',

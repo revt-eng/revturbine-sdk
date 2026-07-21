@@ -38,11 +38,15 @@ import json
 from revturbine import RevTurbineCustomerSdk, UserContext  # noqa: F401
 
 cfg = {
-    "version": "0.1.0",
+    "version": "1.0.0",
+    "plans": [],
     "entitlements": [
         {"unique_handle": "feat_x", "unit": None},
         {"unique_handle": "credits", "unit": "credit"},
     ],
+    "entitlement_rules": [],
+    "segments": [],
+    "content_ui_paths": [],
     "placements": [{"placement_id": "pl_known", "name": "Known"}],
 }
 sdk = RevTurbineCustomerSdk(

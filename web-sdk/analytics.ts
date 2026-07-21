@@ -7,7 +7,7 @@
  *
  * @example
  * ```ts
- * import { createAnalyticsProvider } from '@revt-eng/sdk';
+ * import { createAnalyticsProvider } from '@revturbine/sdk';
  *
  * const analytics = createAnalyticsProvider({
  *   handler: (eventName, properties) => {
@@ -263,7 +263,7 @@ export interface PostHogAnalyticsProviderOptions {
  * @example
  * ```ts
  * import posthog from 'posthog-js';
- * import { createPostHogAnalyticsProvider, initRevTurbine } from '@revt-eng/sdk';
+ * import { createPostHogAnalyticsProvider, initRevTurbine } from '@revturbine/sdk';
  *
  * const analytics = createPostHogAnalyticsProvider({ posthog });
  * initRevTurbine({ domainProviders: [analytics], ... });

@@ -60,7 +60,7 @@ export type { BrandingSource, BrandingResolutionInput, ResolvedBranding } from '
 //   import {
 //     deriveLocalTrialStatusFromInstance,
 //     findActiveTrialInstance,
-//   } from '@revt-eng/sdk/headless';
+//   } from '@revturbine/sdk/headless';
 //
 //   const active = findActiveTrialInstance(myInstances, new Date().toISOString());
 //   const status = active && deriveLocalTrialStatusFromInstance({
