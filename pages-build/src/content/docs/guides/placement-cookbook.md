@@ -30,7 +30,7 @@ This guide provides ready-to-use patterns for each surface type supported by the
 />
 ```
 
-> [Try it live → Usage Warning Banner](/playground/global-slots/msg-banner/)
+> [Try it live → Usage Warning Banner](/guides/placements/#msg-banner)
 
 ## Modal
 
@@ -41,7 +41,7 @@ This guide provides ready-to-use patterns for each surface type supported by the
 />
 ```
 
-> [Try it live → Data Export Gate](/playground/access-gates/gate-modal/)
+> [Try it live → Data Export Gate](/guides/entitlements/#gate-modal)
 
 :::caution[Modal safety rule]
 Only request a modal at **safe moments**: after a user action (clicked a button, hit a feature gate), completed a task, or reached a natural transition. Never on passive page render.
@@ -74,7 +74,7 @@ Only request a modal at **safe moments**: after a user action (clicked a button,
 />
 ```
 
-> [Try it live → Upgrade Button](/playground/fixed-slots/fixed-button/)
+> [Try it live → Upgrade Button](/guides/placements/#fixed-button)
 
 ## Full-Page
 
@@ -103,7 +103,7 @@ Only request a modal at **safe moments**: after a user action (clicked a button,
 />
 ```
 
-> [Try it live → Quota Meter](/playground/fixed-slots/fixed-usage-counter/)
+> [Try it live → Quota Meter](/guides/placements/#fixed-usage-counter)
 
 ## Credit Balance (In-Page)
 

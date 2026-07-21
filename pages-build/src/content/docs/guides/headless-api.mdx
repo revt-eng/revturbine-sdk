@@ -6,6 +6,7 @@ sidebar:
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
+import SandpackPlayground from '../../../components/SandpackPlayground';
 
 The headless API provides three controllers and a factory function:
 
@@ -308,10 +309,24 @@ export function createPlacementStore(slotId: string) {
 
 The React hooks (`usePlacement`, `useEntitlement`) delegate to the headless controllers internally — they share the same business logic.
 
-## Try It Live
+## Live examples
 
-Explore headless scenarios in the interactive playground:
+Edit the code in any of these — all run in `local_only` mode with no backend.
 
-- [H-1: PlacementController](/playground/headless/headless-placement/)
-- [H-2: EntitlementGate](/playground/headless/headless-gate/)
-- [H-3: SdkSession One-Shot](/playground/headless/headless-session/)
+<a id="headless-placement"></a>
+
+**PlacementController** — driving a placement imperatively.
+
+<SandpackPlayground scenarioId="headless-placement" client:only="react" />
+
+<a id="headless-gate"></a>
+
+**EntitlementGate** — an entitlement check without React.
+
+<SandpackPlayground scenarioId="headless-gate" client:only="react" />
+
+<a id="headless-session"></a>
+
+**SdkSession one-shot** — a one-shot session evaluation.
+
+<SandpackPlayground scenarioId="headless-session" client:only="react" />

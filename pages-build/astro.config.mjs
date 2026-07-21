@@ -184,15 +184,12 @@ export default defineConfig({
           ],
         },
         {
-          label: 'Tutorials',
+          label: 'Concepts',
           items: [
-            { label: 'Add an Upgrade Button', slug: 'tutorials/upgrade-button' },
-            { label: 'Show a Banner Placement', slug: 'tutorials/banner-placement' },
-            { label: 'Gate a Premium Feature', slug: 'tutorials/gate-premium-feature' },
-            { label: 'Track Usage & Quota Meter', slug: 'tutorials/usage-quota-meter' },
-            { label: 'Warn About Low Credits', slug: 'tutorials/low-credits-warning' },
-            { label: 'Trial-Ending Countdown', slug: 'tutorials/trial-ending-nudge' },
-            { label: 'Recover a Failed Payment', slug: 'tutorials/payment-recovery' },
+            { label: 'Core Concepts', slug: 'concepts/core-concepts' },
+            { label: 'Client vs Server Enforcement', slug: 'concepts/enforcement' },
+            { label: 'What Owns What', slug: 'concepts/source-of-truth' },
+            { label: 'Provider Architecture', slug: 'concepts/providers' },
           ],
         },
         {
@@ -210,15 +207,14 @@ export default defineConfig({
             { label: 'Add RevTurbine with a Coding Agent', slug: 'guides/coding-agent' },
             { label: 'Error Handling', slug: 'guides/error-handling' },
             { label: 'Headless API', slug: 'guides/headless-api' },
-          ],
-        },
-        {
-          label: 'Concepts',
-          items: [
-            { label: 'Core Concepts', slug: 'concepts/core-concepts' },
-            { label: 'Client vs Server Enforcement', slug: 'concepts/enforcement' },
-            { label: 'What Owns What', slug: 'concepts/source-of-truth' },
-            { label: 'Provider Architecture', slug: 'concepts/providers' },
+            // Tutorials (step-by-step) folded in from the former standalone Tutorials section.
+            { label: 'Tutorial: Add an Upgrade Button', slug: 'tutorials/upgrade-button' },
+            { label: 'Tutorial: Show a Banner Placement', slug: 'tutorials/banner-placement' },
+            { label: 'Tutorial: Gate a Premium Feature', slug: 'tutorials/gate-premium-feature' },
+            { label: 'Tutorial: Track Usage & Quota Meter', slug: 'tutorials/usage-quota-meter' },
+            { label: 'Tutorial: Warn About Low Credits', slug: 'tutorials/low-credits-warning' },
+            { label: 'Tutorial: Trial-Ending Countdown', slug: 'tutorials/trial-ending-nudge' },
+            { label: 'Tutorial: Recover a Failed Payment', slug: 'tutorials/payment-recovery' },
           ],
         },
         {
@@ -252,44 +248,7 @@ export default defineConfig({
         {
           label: 'Playground',
           items: [
-            { label: 'Overview', slug: 'playground' },
-            {
-              label: 'Fixed Slots',
-              items: [
-                { label: 'F-1: Upgrade Button', slug: 'playground/fixed-slots/fixed-button' },
-                { label: 'F-2: Plans & Pricing', slug: 'playground/fixed-slots/fixed-in-page' },
-                { label: 'F-3: Quota Meter', slug: 'playground/fixed-slots/fixed-usage-counter' },
-                { label: 'F-4: Annual Banner', slug: 'playground/fixed-slots/fixed-banner' },
-              ],
-              collapsed: true,
-            },
-            {
-              label: 'Access Gates',
-              items: [
-                { label: 'G-1: Data Export Gate', slug: 'playground/access-gates/gate-modal' },
-                { label: 'G-2: Branding Gate', slug: 'playground/access-gates/gate-inline' },
-                { label: 'G-3: Brand Kit Gate', slug: 'playground/access-gates/gate-card' },
-              ],
-              collapsed: true,
-            },
-            {
-              label: 'Global Slots',
-              items: [
-                { label: 'M-1: Usage Warning', slug: 'playground/global-slots/msg-banner' },
-                { label: 'M-2: Usage Exhausted', slug: 'playground/global-slots/msg-modal' },
-                { label: 'M-3: Trial Toast', slug: 'playground/global-slots/msg-toast' },
-              ],
-              collapsed: true,
-            },
-            {
-              label: 'Headless API',
-              items: [
-                { label: 'H-1: PlacementController', slug: 'playground/headless/headless-placement' },
-                { label: 'H-2: EntitlementGate', slug: 'playground/headless/headless-gate' },
-                { label: 'H-3: SdkSession', slug: 'playground/headless/headless-session' },
-              ],
-              collapsed: true,
-            },
+            { label: 'All Examples', slug: 'playground' },
           ],
         },
       ],

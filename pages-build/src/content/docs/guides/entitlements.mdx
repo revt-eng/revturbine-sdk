@@ -7,6 +7,7 @@ sidebar:
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 import CodeExample from '../../../components/CodeExample';
+import SandpackPlayground from '../../../components/SandpackPlayground';
 
 export const canCode = `import { useCan } from "@revturbine/sdk";
 import { DemoApp } from "./DemoApp";
@@ -94,6 +95,28 @@ function ExportButton() {
 <CodeExample client:only="react" code={gateCode} height={420} />
 
 **A `<Gate>` is also a placement.** On denial the gate doesn't render hardcoded UI — it resolves a **placement** from your monetization config and renders it in place of the children. So *what a denied user sees* — the upgrade modal or banner, its headline, offer, and CTA — is authored in the studio (or the CLI config), not baked into your app. Your PM, growth, or marketing team can rewrite the denial copy, swap the offer, or A/B-test it with no code deploy. `surfaceTemplateIds` scopes which surface templates can fill the gate; `deniedFallback` is the static backstop shown only when no placement is configured for it.
+
+#### Live gate examples
+
+Edit the code in any of these to see the gate respond to different demo users — all run in `local_only` mode with no backend.
+
+<a id="gate-modal"></a>
+
+**Data Export gate** — a blocking modal gate on a paid feature.
+
+<SandpackPlayground scenarioId="gate-modal" client:only="react" />
+
+<a id="gate-inline"></a>
+
+**Branding gate** — an inline gate on a branding feature.
+
+<SandpackPlayground scenarioId="gate-inline" client:only="react" />
+
+<a id="gate-card"></a>
+
+**Brand Kit gate** — a card gate on a brand-kit feature.
+
+<SandpackPlayground scenarioId="gate-card" client:only="react" />
 
 ### With Auto-Gate
 
@@ -250,4 +273,4 @@ In `local_only` mode, all entitlement checks are resolved instantly from the Exp
 - [Placements Guide](/guides/placements/) — render upgrade prompts for denied entitlements
 - [Events & Analytics](/guides/events/) — track entitlement check outcomes
 - [Error Handling](/guides/error-handling/) — fail-open behavior and recovery patterns
-- [Try it live → Data Export Gate](/playground/access-gates/gate-modal/)
+- [Try it live → Data Export Gate](/guides/entitlements/#gate-modal)

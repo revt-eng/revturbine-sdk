@@ -7,6 +7,7 @@ sidebar:
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 import CodeExample from '../../../components/CodeExample';
+import SandpackPlayground from '../../../components/SandpackPlayground';
 
 export const fixedCode = `import { Slot } from "@revturbine/sdk";
 import { DemoApp } from "./DemoApp";
@@ -97,7 +98,7 @@ Always-visible inline placements — buttons, cards, meters:
 
 Fixed slots render nothing if no placement matches — your layout stays intact.
 
-> [Try it live → Upgrade Button](/playground/fixed-slots/fixed-button/)
+> [Try it live → Upgrade Button](/guides/placements/#fixed-button)
 
 ### Access Gate Slots
 
@@ -109,7 +110,7 @@ If the entitlement is granted, children render normally. If denied, the gate ren
 
 That denial UI is itself a placement, not hardcoded markup: the decision engine picks the winning placement for the gate (scoped by `surfaceTemplateIds`) and renders its content — modal or banner, headline, offer, and CTA. So *what a denied user sees* is controlled by your monetization config and can be changed, targeted, or A/B-tested in the studio without a code deploy. `deniedFallback` is shown only when no placement matches.
 
-> [Try it live → Data Export Gate](/playground/access-gates/gate-modal/)
+> [Try it live → Data Export Gate](/guides/entitlements/#gate-modal)
 
 ### Message Slots
 
@@ -119,7 +120,7 @@ Page-level overlays triggered by targeting rules — toasts, modals, banners:
 
 Message slots render nothing until a targeting rule triggers. Place them at the top level of your layout.
 
-> [Try it live → Usage Warning Banner](/playground/global-slots/msg-banner/)
+> [Try it live → Usage Warning Banner](/guides/placements/#msg-banner)
 
 ## Placement Output
 
@@ -277,6 +278,56 @@ const {
   autoLoad: true,    // Load on mount
 });
 ```
+
+## Live examples
+
+Every built-in slot type, running live in `local_only` mode — edit the code and switch demo users to see the engine respond.
+
+### Fixed slots
+
+<a id="fixed-button"></a>
+
+**Upgrade Button** — an always-visible CTA in a nav slot.
+
+<SandpackPlayground scenarioId="fixed-button" client:only="react" />
+
+<a id="fixed-in-page"></a>
+
+**Plans & Pricing Card** — an inline pricing/plans card.
+
+<SandpackPlayground scenarioId="fixed-in-page" client:only="react" />
+
+<a id="fixed-usage-counter"></a>
+
+**Quota Meter** — a usage meter with progress bar and counter.
+
+<SandpackPlayground scenarioId="fixed-usage-counter" client:only="react" />
+
+<a id="fixed-banner"></a>
+
+**Annual Nudge Banner** — an annual-plan nudge banner.
+
+<SandpackPlayground scenarioId="fixed-banner" client:only="react" />
+
+### Global slots
+
+<a id="msg-banner"></a>
+
+**Usage Warning Banner** — a "running low" usage banner.
+
+<SandpackPlayground scenarioId="msg-banner" client:only="react" />
+
+<a id="msg-modal"></a>
+
+**Usage Exhausted Modal** — a limit-reached modal.
+
+<SandpackPlayground scenarioId="msg-modal" client:only="react" />
+
+<a id="msg-toast"></a>
+
+**Trial Welcome Toast** — a trial-welcome toast.
+
+<SandpackPlayground scenarioId="msg-toast" client:only="react" />
 
 ## Next Steps
 

@@ -1,25 +1,58 @@
 ---
 title: Interactive Playground
-description: Explore RevTurbine SDK scenarios with live, editable code — all running in local_only mode.
+description: An index of every live, editable SDK example — each runs in local_only mode with a demo exported_config.json. Follow a link to open the scenario and edit its code.
 ---
 
-import ScenarioIndex from '../../../components/ScenarioIndex';
+Every scenario below is a live, editable SDK demo running entirely in `local_only` mode — a bundled `exported_config.json` with plans, entitlements, placements, and targeting, no network calls. This page is the index; follow a link to open a scenario and edit its code alongside a live preview.
 
-The playground embeds live SDK demos running entirely in `local_only` mode. Each scenario shows editable code alongside a live preview — edit the code and see the output update in real time.
+## Fixed Slots
 
-All examples use the bundled SDK with a demo `exported_config.json` containing plans, entitlements, placements, and targeting rules.
+Always-visible inline placements.
 
-## Scenarios
+| Scenario | Slot | What it shows |
+|---|---|---|
+| [F-1: Upgrade Button](/guides/placements/#fixed-button) | `button` | An always-visible upgrade CTA in a nav slot |
+| [F-2: Plans & Pricing Card](/guides/placements/#fixed-in-page) | `in_page` | An inline pricing/plans card |
+| [F-3: Quota Meter](/guides/placements/#fixed-usage-counter) | `in_page` | A usage meter with progress bar and counter |
+| [F-4: Annual Nudge Banner](/guides/placements/#fixed-banner) | `banner` | An annual-plan nudge banner |
 
-<ScenarioIndex client:only="react" />
+## Access Gates
 
-## How It Works
+Entitlement gates that render an upsell when access is denied.
 
-Each playground scenario runs the SDK in an isolated Sandpack environment:
+| Scenario | Slot | What it shows |
+|---|---|---|
+| [G-1: Data Export Gate](/guides/entitlements/#gate-modal) | `modal` | A blocking modal gate on a paid feature |
+| [G-2: Branding Gate](/guides/entitlements/#gate-inline) | `in_page` | An inline gate on a branding feature |
+| [G-3: Brand Kit Gate](/guides/entitlements/#gate-card) | `in_page` | A card gate on a brand-kit feature |
 
-1. **`exported_config.json`** provides plans, entitlements, placements, surface templates, and targeting rules
-2. **`RevTurbineProvider`** initializes the SDK in `local_only` mode — no network calls
-3. **Demo users** (Alice, Bob, Carol, Dan, Eve, Frank) have different plans, usage, and entitlements
-4. **Targeting rules** evaluate against the user context to decide which placements to show
+## Global Slots
 
-Try switching demo users in the code to see how the SDK renders different placements for different user segments.
+Ephemeral, moment-driven messages.
+
+| Scenario | Slot | What it shows |
+|---|---|---|
+| [M-1: Usage Warning Banner](/guides/placements/#msg-banner) | `banner` | A "running low" usage banner |
+| [M-2: Usage Exhausted Modal](/guides/placements/#msg-modal) | `modal` | A limit-reached modal |
+| [M-3: Trial Welcome Toast](/guides/placements/#msg-toast) | `toast` | A trial-welcome toast |
+
+## Headless API
+
+The imperative SDK, no slot components.
+
+| Scenario | What it shows |
+|---|---|
+| [H-1: PlacementController](/guides/headless-api/#headless-placement) | Driving a placement imperatively |
+| [H-2: EntitlementGate](/guides/headless-api/#headless-gate) | An entitlement check without React |
+| [H-3: SdkSession One-Shot](/guides/headless-api/#headless-session) | A one-shot session evaluation |
+
+## How it works
+
+Each scenario runs the SDK in an isolated Sandpack environment:
+
+1. **`exported_config.json`** provides plans, entitlements, placements, surface templates, and targeting rules.
+2. **`RevTurbineProvider`** initializes the SDK in `local_only` mode — no network calls.
+3. **Demo users** (Alice, Bob, Carol, Dan, Eve, Frank) have different plans, usage, and entitlements.
+4. **Targeting rules** evaluate against the user context to decide which placements to show.
+
+Switch demo users in a scenario's code to see how the SDK renders different placements for different segments.
