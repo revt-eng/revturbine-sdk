@@ -1,0 +1,162 @@
+---
+title: Run an Experiment with Segments
+description: Consume variant assignment from Optimizely, Statsig, or LaunchDarkly and use a RevTurbine Segment to give each variant a different entitlement, price, or upgrade message — no code deploy.
+sidebar:
+  order: 9
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+RevTurbine doesn't assign experiment variants — your experimentation platform does that. What RevTurbine does is **act on the assignment**: you bring a variant in as a user trait, a **Segment** matches it, and each variant gets a different entitlement, price, or upgrade message — all edited from the studio with **no code deploy**.
+
+This is the shipped path for experimentation today: **bring-your-own-assignment + Segment matching**, measured with the SDK's engagement signals (events, entitlement-checks-as-usage, last-touch attribution).
+
+<Aside type="note" title="What's shipped vs. roadmap">
+Segment-driven experimentation — consuming an external assignment and branching the monetization response on it — works today and is what this guide covers. **ML-scored auto-optimization** (RevTurbine picking the winning variant for you) is on the roadmap, not shipped.
+</Aside>
+
+## The flow
+
+<Steps>
+
+1. Your experimentation platform (Optimizely, Statsig, LaunchDarkly, …) assigns the user to a variant and gives you an `experimentId` + the assigned variant.
+2. You write the variant into the RevTurbine **user context** as a custom trait.
+3. A **Segment** predicate matches that trait — this is the "who is in variant B?" rule.
+4. The Segment is referenced by an entitlement rule (`segment_ids`) or a placement payload (`segment_chips`), so the variant gets a different entitlement, price, or message.
+5. You measure the outcome with `rt.track(...)` events.
+
+</Steps>
+
+## 1. Pass the variant as a user trait
+
+Read the assignment from your experimentation provider and hand it to RevTurbine as a trait on the user context. The trait key (`pricing_experiment` here) is yours to choose — the Segment in step 2 matches on it.
+
+```tsx
+import { initRevTurbine } from '@revturbine/sdk';
+
+// Your experimentation platform assigns the variant (Optimizely / Statsig / LaunchDarkly).
+// `experimentClient` is whatever SDK you already use.
+declare const experimentClient: { getVariant(experimentId: string, userId: string): string };
+
+const userId = 'user_123';
+const variant = experimentClient.getVariant('pricing_experiment', userId); // e.g. 'variant_a' | 'variant_b'
+
+const rt = initRevTurbine({ tenantId: 'tenant_abc', apiKey: 'rt_live_xxx', mode: 'react' });
+
+// The variant rides along as a custom trait on the user context.
+rt.identify(userId, { plan_handle: 'free', pricing_experiment: variant });
+```
+
+In React, set the same trait on the provider's user context:
+
+```tsx
+import { RevTurbineProvider } from '@revturbine/sdk';
+
+export function App({ userId, variant }: { userId: string; variant: string }) {
+  return (
+    <RevTurbineProvider
+      options={{
+        tenantId: 'tenant_abc',
+        apiKey: 'rt_live_xxx',
+        user: { id: userId, context: { plan_handle: 'free', pricing_experiment: variant } },
+      }}
+    >
+      {/* your app */}
+    </RevTurbineProvider>
+  );
+}
+```
+
+## 2. Define a Segment that matches the variant
+
+A Segment is a named rule over user-context traits. This one matches everyone whose `pricing_experiment` trait equals `variant_b`:
+
+```json
+{
+  "id": "seg_pricing_exp_b",
+  "handle": "pricing_exp_variant_b",
+  "name": "Pricing experiment - variant B",
+  "predicates": [
+    { "field": "pricing_experiment", "operator": "eq", "value": "variant_b" }
+  ]
+}
+```
+
+The `field` is the trait you set in step 1. Predicates combine with the same intra-dimension OR / cross-dimension AND semantics used everywhere else Segments appear, so you can match on the variant plus any other trait (region, plan, tenure, …).
+
+## 3. Point the config at the Segment
+
+This is the payoff. Reference the Segment from a placement payload's `segment_chips`, and give that payload different copy. Variant-B users match the Segment and get the variant-B payload; everyone else falls through to the default. A PM edits either payload in the studio and re-publishes the config — **your app code never changes.**
+
+```json title="exported_config.json"
+{
+  "version": "v1",
+  "plans": [
+    { "id": "plan_free", "unique_handle": "free", "name": "Free", "tier_position": 0, "sort_order": 0 },
+    { "id": "plan_pro", "unique_handle": "professional", "name": "Professional", "tier_position": 1, "sort_order": 1 }
+  ],
+  "entitlements": [
+    { "id": "ent_export", "unique_handle": "data_export", "name": "Data Export", "type": "feature" }
+  ],
+  "entitlement_rules": [
+    { "id": "er_export_pro", "entitlement_id": "ent_export", "targets": [{ "kind": "plan", "id": "plan_pro" }], "segment_ids": [], "type_fields": { "kind": "feature", "enabled": true } }
+  ],
+  "segments": [
+    { "id": "seg_pricing_exp_b", "handle": "pricing_exp_variant_b", "name": "Pricing experiment - variant B", "predicates": [ { "field": "pricing_experiment", "operator": "eq", "value": "variant_b" } ] }
+  ],
+  "content_ui_paths": [],
+  "surface_templates": [
+    { "id": "modal_overlay", "surface_type": "modal", "fields": [] }
+  ],
+  "placements": [
+    {
+      "id": "pl_export_gate", "name": "Export gate", "category": "gated",
+      "trigger": { "type": "entitlement_gate", "entitlement_handle": "data_export" },
+      "payloads": [
+        {
+          "id": "pl_variant_b",
+          "target": { "plan_ids": ["plan_free"], "segment_chips": ["seg_pricing_exp_b"] },
+          "surfaces": [ { "template_id": "modal_overlay", "fields": { "modal_type": "Blocking", "header": "Unlock Data Export - 20% off this week", "body": "Variant B: limited-time upgrade discount." }, "ctas": [ { "label": "Claim discount", "path": "open_checkout", "config": { "purchase": "professional" } }, { "label": "Maybe later", "path": "dismiss" } ] } ],
+          "caps": {}, "status": "active"
+        },
+        {
+          "id": "pl_default",
+          "target": { "plan_ids": ["plan_free"], "segment_chips": [] },
+          "surfaces": [ { "template_id": "modal_overlay", "fields": { "modal_type": "Blocking", "header": "Unlock Data Export", "body": "Upgrade to Professional to export your data." }, "ctas": [ { "label": "View plans", "path": "open_checkout", "config": { "purchase": "professional" } }, { "label": "Maybe later", "path": "dismiss" } ] } ],
+          "caps": {}, "status": "active"
+        }
+      ],
+      "order": 0
+    }
+  ]
+}
+```
+
+The segment-scoped payload (`pl_variant_b`) is more specific than the default (`pl_default`), so a variant-B user matches it; users in any other variant get `pl_default`.
+
+## 4. Measure the outcome
+
+Track the conversion event you care about. Variant attribution comes from the trait you already set, and RevTurbine's V1 engagement signals — SDK events, entitlement-checks-as-usage, and last-touch attribution — tie the outcome back to the variant that was shown.
+
+```tsx
+import { initRevTurbine } from '@revturbine/sdk';
+
+const rt = initRevTurbine({ tenantId: 'tenant_abc', apiKey: 'rt_live_xxx', mode: 'react' });
+
+// After the user upgrades:
+rt.track('upgrade_completed', { plan: 'professional', source: 'export_gate' });
+```
+
+## Experiment on entitlements, not just copy
+
+The same Segment works on **entitlement rules** via `segment_ids` instead of on placement copy. Point a usage-limit rule at `seg_pricing_exp_b` to test whether a more generous limit lifts conversion — variant-B users get the segment-scoped rule; everyone else gets the default. A segment-scoped rule takes precedence over an unscoped one for the users it matches.
+
+## Roadmap
+
+Today you bring the assignment and RevTurbine acts on it. On the roadmap: **ML-scored auto-optimization**, where RevTurbine scores propensity and shifts traffic toward the winning variant for you. Until then, keep the winner-picking in your experimentation platform.
+
+## Related
+
+- [Placements](/guides/placements/) — how placement payloads, targeting, and priority resolve
+- [Entitlements](/guides/entitlements/) — entitlement rules, `segment_ids`, and precedence
+- [Events & Analytics](/guides/events/) — the engagement signals that measure the experiment

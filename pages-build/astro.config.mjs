@@ -203,6 +203,7 @@ export default defineConfig({
             { label: 'Custom Slot Types', slug: 'guides/custom-slots' },
             { label: 'Theming', slug: 'guides/theming' },
             { label: 'Events & Analytics', slug: 'guides/events' },
+            { label: 'Run an Experiment', slug: 'guides/experiments' },
             { label: 'Error Handling', slug: 'guides/error-handling' },
             { label: 'Headless API', slug: 'guides/headless-api' },
           ],
