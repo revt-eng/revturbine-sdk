@@ -1,0 +1,57 @@
+---
+title: Core Concepts
+description: The smallest mental model for RevTurbine — three primitives (entitlements, gates, placements), the Playbook that configures them, user context, and the additive principle.
+sidebar:
+  order: 1
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+RevTurbine has a small vocabulary. Learn three primitives and you can read the rest of the docs.
+
+## The three primitives
+
+- **Entitlements — *who can do what*.** An entitlement answers "is this user allowed to do X, and how much is left?" Feature access, usage limits, credits, and seats are all entitlements. You check them with [`can()`](/getting-started/api-overview/) / `checkEntitlement`.
+
+- **Gates — *where your app asks*.** A gate is the checkpoint in your code or UI where you consult an entitlement before letting something happen — a `<Gate>` around a subtree, a `gate('export', …)` around an action, or a bare `can()` check. Same question, different shapes.
+
+- **Placements — *what to show when it matters*.** A placement is the UI the control plane decides to render at the right moment: an upgrade prompt when a gate denies, a "running low" banner near a limit, a trial-ending toast. You render one with a [`<Slot>`](/getting-started/api-overview/).
+
+That's the whole loop: an **entitlement** defines the policy, a **gate** asks the question in your app, and a **placement** is what RevTurbine shows when the answer should change behavior.
+
+## What configures them: the Playbook
+
+All three primitives are driven by your **Playbook** — the portable config RevTurbine evaluates. It holds the plans, entitlement rules (feature / usage-limit / credits / seats), trials, segments (targeting), and placements. A PM edits the Playbook in the studio and republishes; your app code doesn't change.
+
+## User context
+
+RevTurbine decides for a *specific* user, so you tell it who's asking: an id, the user's current plan, reported usage, and any custom traits. You set this with `rt.identify(userId, { plan, usage, …})` or the `<RevTurbineProvider>` `user` prop. Entitlement checks and [segment targeting](/guides/experiments/) both read from it.
+
+## Runtime modes
+
+The same primitives work whether RevTurbine runs entirely in the browser from a bundled Playbook (`local_only`), calls the control plane (`revturbine_server`), or uses your own endpoints (`custom_endpoints`). See [Runtime Modes](/guides/runtime-modes/).
+
+## The additive principle
+
+<Aside type="tip" title="Additive — it can't break your app">
+RevTurbine is an *additive* layer. Your product must look and work correctly with every placement paused and the SDK offline — slots simply render nothing, and entitlement checks fail open. A monetization layer should never be able to take your product down, so when it can't reach a decision, it does nothing. (For the money-safe exception, see [Client vs Server Enforcement](/concepts/enforcement/).)
+</Aside>
+
+## Glossary
+
+| Term | Meaning |
+|---|---|
+| **Entitlement** | What a user is allowed to do / how much is left (feature, usage limit, credits, seats) |
+| **Gate** | A checkpoint where your app consults an entitlement (`<Gate>`, `gate()`, `can()`) |
+| **Placement** | The UI the decision engine shows at the right moment (rendered by `<Slot>`) |
+| **Playbook** | The portable config RevTurbine evaluates (plans, entitlements, segments, placements) |
+| **Segment** | A named rule over user traits used for targeting and experiments |
+| **Slot** | The component that renders a placement (`<Slot>`) |
+
+For the component/config name aliases (`SurfaceSlotComponent`, `ExportedConfig`, …), see the [Recommended API Path](/getting-started/api-overview/#the-vocabulary-slot--gate--playbook).
+
+## Related
+
+- [Recommended API Path](/getting-started/api-overview/) — which call to reach for
+- [Client vs Server Enforcement](/concepts/enforcement/) — policy vs enforcement
+- [Entitlements](/guides/entitlements/) · [Placements](/guides/placements/) — the primitives in depth
