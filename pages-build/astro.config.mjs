@@ -206,6 +206,8 @@ export default defineConfig({
             { label: 'Theming', slug: 'guides/theming' },
             { label: 'Events & Analytics', slug: 'guides/events' },
             { label: 'Run an Experiment', slug: 'guides/experiments' },
+            { label: 'Beyond Gating', slug: 'guides/beyond-gating' },
+            { label: 'Add RevTurbine with a Coding Agent', slug: 'guides/coding-agent' },
             { label: 'Error Handling', slug: 'guides/error-handling' },
             { label: 'Headless API', slug: 'guides/headless-api' },
           ],

@@ -1,0 +1,52 @@
+---
+title: Beyond Gating
+description: Gating one feature is the on-ramp. The control plane also does targeting, priority across competing placements, lifecycle triggers, and explainability — all editable without a deploy.
+sidebar:
+  order: 11
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Gating one feature is the first thing you'll do. It's also the smallest thing RevTurbine does. One layer in, the control plane is deciding *what to show, to whom, and when* — and all of it moves in config, not code.
+
+## Targeting
+
+Every entitlement rule and placement can be scoped to a **segment** — a rule over user-context traits. That's how one placement shows different copy to different users, and how you [run experiments](/guides/experiments/) by matching a variant assignment. Your app sets the traits; RevTurbine does the matching.
+
+## Priority across competing placements
+
+Multiple placements can be eligible for the same moment. `getPlacementDecision()` picks **one winner** using eligibility, presentation caps, cooldowns, and priority — so a user never gets three upsells stacked on top of each other. You render the winner with a `<Slot>`; the arbitration happens in the engine.
+
+## Lifecycle triggers
+
+Beyond "is this allowed?", you can tell the engine *what just happened* with `emitTrigger()` — canonical lifecycle events it recognizes and can respond to with the right placement:
+
+```ts
+await rt.emitTrigger('usage_limit_approaching', { usage_percent: 85, threshold: 80 });
+await rt.emitTrigger('trial_expiring', { days_remaining: 2 });
+await rt.emitTrigger('feature_gated', { feature: 'advanced_automation' });
+```
+
+The engine attaches standard context (user, plan, timestamp) and decides whether — and which — placement to surface, so a "trial ending" nudge or a "running low" banner appears at the right moment without you hard-coding the timing.
+
+## Explainability
+
+When you need to know *why* a decision resolved the way it did, [`explainPlacementDecision()`](/operate/debugging/) returns the full reasoning — segment matches, entitlement outcomes, and suppression. It's the same payload the engine used, so you can build QA tooling or a "why am I seeing this?" panel on it.
+
+## Experimentation
+
+Segment-driven experimentation is shipped today: bring a variant assignment from your experimentation platform and RevTurbine branches the monetization response on it — see [Run an Experiment with Segments](/guides/experiments/).
+
+<Aside type="note" title="Roadmap: ML-scored optimization">
+Today you decide the strategy and RevTurbine executes it deterministically. **ML-scored propensity and auto-optimization** — RevTurbine choosing the winning variant or the best next offer for you — are on the roadmap, not shipped.
+</Aside>
+
+## Automate it
+
+Because everything above is config, a coding agent can drive it on a cadence with deterministic guardrails — see [Add RevTurbine with a Coding Agent](/guides/coding-agent/).
+
+## Related
+
+- [Placements](/guides/placements/) — decision inputs, caps, and priority in depth
+- [Run an Experiment with Segments](/guides/experiments/)
+- [Debugging Decisions](/operate/debugging/)

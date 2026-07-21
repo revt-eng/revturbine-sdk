@@ -1,0 +1,65 @@
+---
+title: Add RevTurbine with a Coding Agent
+description: A paste-in prompt to integrate RevTurbine with Claude Code, Cursor, or your agent of choice — plus how to automate the recurring config loop through the CLI with deterministic guardrails.
+sidebar:
+  order: 12
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+If you integrate through a coding agent, you don't have to hand-wire the first gate. Point the agent at your app with the prompt below — it does the inspection and the edit, and you review the diff.
+
+## Paste-in prompt
+
+```text
+You're adding RevTurbine (@revturbine/sdk) to this app to gate one paid feature.
+
+1. Inspect the app and find ONE non-critical feature currently gated by a
+   hard-coded plan check (e.g. `user.plan === 'pro'`). Pick the safest one.
+2. Install @revturbine/sdk and wrap the app in <RevTurbineProvider> if it isn't
+   already. Use local_only mode with a bundled exported_config.json fixture so it
+   runs with no account.
+3. Add a minimal exported_config.json fixture with: a free and a pro plan, one
+   entitlement for the feature, and a gate placement (upgrade modal) for free users.
+4. Replace the hard-coded check with <Gate id="..." can="<entitlement>">, keeping
+   the existing UI as the gated children and letting the placement render the upsell.
+5. Do NOT touch any billing-critical or server-side enforcement path. Leave those
+   checks in place — the client Gate is UI only.
+6. Run the type checker, then explain the diff: what moved into config, what stayed
+   in code, and why the server-side check (if any) was left alone.
+```
+
+<Aside type="tip" title="Why 'one non-critical feature'">
+The prompt deliberately scopes the agent to a single, safe feature and forbids touching enforcement paths. RevTurbine is additive — the first change should be reversible and low-stakes. See [Client vs Server Enforcement](/concepts/enforcement/).
+</Aside>
+
+## Automate the config loop with the CLI
+
+Everything RevTurbine decides lives in the Playbook, and the CLI (`@revturbine/cli`, command `revturbine`) manages the Playbook lifecycle from the terminal — so a customer's own agent can enhance monetization on a cadence with deterministic guardrails. Anything you can do in the studio UI, you can do through the CLI.
+
+A recurring loop looks like:
+
+```bash
+# 1. Your agent proposes a config change (new segment, adjusted limit, new copy).
+# 2. Verify it against the schema before anything ships.
+revturbine verify ./exported_config.json
+
+# 3. Preview / evaluate the candidate against real inputs.
+revturbine preview ./exported_config.json
+revturbine evaluate ./exported_config.json --handle data_export
+
+# 4. Stage it through the review lifecycle (draft -> submit -> approve -> deploy).
+revturbine deploy ./exported_config.json
+```
+
+The guardrails are the point: the agent proposes, the CLI **verifies against the real schema** and lets you **preview the impact** before deploy, and the change moves through the same draft → submit → approve → deploy lifecycle a human would use. Your app code never changes — the agent only ever edits config.
+
+<Aside type="note" title="Command surface">
+The exact command set and flags live in the CLI's own reference (`@revturbine/cli`). The lifecycle above — verify, preview/evaluate, then deploy through review — is the stable shape; treat specific flags as authoritative from `revturbine --help`.
+</Aside>
+
+## Related
+
+- [Replace Hard-Coded Plan Checks](/guides/migrate-plan-checks/) — the before/after the agent produces
+- [Beyond Gating](/guides/beyond-gating/) — what the config can express
+- [Client vs Server Enforcement](/concepts/enforcement/) — the paths the agent must not touch
