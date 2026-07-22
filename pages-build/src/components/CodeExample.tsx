@@ -131,7 +131,15 @@ export default function CodeExample({
             ...dependencies,
           },
         }}
-        options={{ recompileMode: 'delayed', recompileDelay: 300 }}
+        options={{
+          recompileMode: 'delayed',
+          recompileDelay: 300,
+          // Each example is a separate iframe + bundler, so a page carrying
+          // several of them can exhaust memory and crash the frames. These are
+          // inline in the prose and small, so they still autorun — but only once
+          // the reader actually scrolls to them, rather than all at page load.
+          initMode: 'user-visible',
+        }}
       >
         <SandpackLayout>
           {showEditor && (

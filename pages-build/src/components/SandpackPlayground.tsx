@@ -2,6 +2,8 @@ import {
   SandpackProvider,
   SandpackCodeEditor,
   SandpackPreview,
+  RunButton,
+  useSandpack,
 } from '@codesandbox/sandpack-react';
 import React, { useMemo, useState, useEffect } from 'react';
 import type { SandpackScenario } from '../sandpack/scenarios';
@@ -288,11 +290,52 @@ const playgroundCSS = `
 
 /* Top-left: preview */
 .rt-panel-preview {
+  position: relative; /* positioning context for .rt-run-overlay */
   min-width: 0;
   height: 100%;
   overflow: hidden;
   border-right: 1px solid var(--rt-border);
   border-bottom: 1px solid var(--rt-border);
+}
+
+/* ── Dormant-preview overlay (autorun: false) ───────────────────────── */
+.rt-run-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  background: var(--rt-surface-alt);
+  color: var(--rt-text);
+}
+.rt-run-overlay-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.rt-run-overlay-body {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--rt-text-muted);
+}
+/* Sandpack's RunButton is absolutely positioned for its in-editor corner slot;
+   inside the overlay it needs to sit in normal flow. */
+.rt-run-overlay button {
+  position: static !important;
+  margin-top: 4px;
+}
+/* Sandpack's own "Open Sandbox" action floats above the overlay and gets clipped
+   by the panel edge. Hide it while the sandbox is dormant — it reappears with
+   the preview once the reader presses Run. */
+.rt-panel-preview:has(.rt-run-overlay) .sp-preview-actions {
+  display: none;
 }
 .rt-panel-preview .sp-preview-container,
 .rt-panel-preview .sp-preview-iframe {
@@ -438,6 +481,36 @@ const playgroundCSS = `
 }
 `;
 
+/**
+ * Cover the dormant preview with the reason it is dormant, plus the control that
+ * starts it.
+ *
+ * With `autorun: false` Sandpack only renders its own Run button in the code
+ * editor's bottom-right corner — far from the empty preview the reader is
+ * actually looking at, and with nothing explaining why that panel is blank. This
+ * overlay puts the affordance where the eye already is and disappears the moment
+ * the sandbox starts.
+ */
+function PreviewRunOverlay() {
+  const { sandpack } = useSandpack();
+  // Only cover a sandbox that has never been started. Deliberately an allowlist
+  // rather than `!== 'running'`: on `timeout` (the bundler failing to connect)
+  // Sandpack renders its own error UI with a retry, and an overlay drawn over
+  // that would hide the failure instead of reporting it.
+  if (sandpack.status !== 'idle' && sandpack.status !== 'initial') return null;
+
+  return (
+    <div className="rt-run-overlay">
+      <p className="rt-run-overlay-title">Live preview</p>
+      <p className="rt-run-overlay-body">
+        The decision on the right is already live. Run the example to render it in
+        a real React sandbox.
+      </p>
+      <RunButton />
+    </div>
+  );
+}
+
 /** Host-side inspector panel — runs the real SDK outside Sandpack's iframe */
 function InspectorPanel({
   scenario,
@@ -569,10 +642,25 @@ export default function SandpackPlayground({ scenarioId }: SandpackPlaygroundPro
         options={{
           recompileMode: 'delayed',
           recompileDelay: 250,
+          // Every SandpackProvider is its own iframe running its own bundler —
+          // there is no shared-bundler mode. A guide page that stacks the whole
+          // scenario gallery (the Placements guide mounts seven of these plus
+          // three inline CodeExamples) therefore boots ~10 bundlers at once,
+          // which is enough to OOM individual frames: readers see Chrome's
+          // crashed-frame icon in every preview.
+          //
+          // `user-visible` keeps a sandbox dormant until it is actually scrolled
+          // into view, and `autorun: false` means even then it only bundles when
+          // the reader presses Run. The decision inspector beside it is
+          // host-side, so each example still shows a live, real-SDK decision
+          // before anything is bundled — the Run button buys the preview only.
+          initMode: 'user-visible',
+          autorun: false,
         }}
       >
-        {/* Top-left — live preview */}
+        {/* Top-left — live preview (dormant until the reader presses Run) */}
         <div className="rt-panel-preview">
+          <PreviewRunOverlay />
           <SandpackPreview />
         </div>
 
