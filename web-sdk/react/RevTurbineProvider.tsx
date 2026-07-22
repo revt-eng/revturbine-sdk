@@ -7,6 +7,7 @@ import {
   type RevTurbinePlacementDecisionInput,
   type RevTurbineUserContext,
   type UserContextInput,
+  resolveLocalPlaybook,
 } from '../customer-side';
 import type { RevTurbineTheme, RevTurbineThemeInput } from '../theme/types';
 import { DEFAULT_THEME, mergeTheme } from '../theme/defaults';
@@ -101,9 +102,12 @@ export function RevTurbineProvider({ options, bootstrapPlacements, children }: R
           );
         }
 
-        // Load theme — prefer RevTurbineConfig snapshot, fall back to API fetch.
-        const exportedConfig = options.localRuntime?.exportedConfig;
-        const configTheme = exportedConfig?.theme;
+        // Load theme — prefer the Playbook snapshot, fall back to API fetch.
+        // Must read via resolveLocalPlaybook so a caller using the canonical
+        // `playbook` key still gets the no-network theme shortcut instead of an
+        // API round-trip that can hang.
+        const playbook = resolveLocalPlaybook(options.localRuntime);
+        const configTheme = playbook?.theme;
 
         if (configTheme && typeof configTheme === 'object') {
           // RevTurbineConfig supplies the theme — merge with defaults (no API call).

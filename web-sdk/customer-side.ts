@@ -5903,8 +5903,12 @@ function hasValue(input: unknown): input is string { // sdk-ok: boundary-parse
  * `localRuntime.exportedConfig` without requiring transport credentials.
  */
 function normalizeInitOptions(options: RevTurbineInitInputOptions): RevTurbineInitWithProviderOptions {
-  const hasExportedConfig = options.localRuntime?.exportedConfig !== undefined;
-  if (!hasExportedConfig) {
+  // Either config key counts: a Playbook supplied via the canonical `playbook`
+  // key (or the legacy `exportedConfig`) is what makes this a local-only init.
+  // Reading only `exportedConfig` here meant a `playbook`-only caller never got
+  // the local-only defaults, so the SDK stayed in server mode and hung on init.
+  const hasPlaybook = resolveLocalPlaybook(options.localRuntime) !== undefined;
+  if (!hasPlaybook) {
     return options as RevTurbineInitWithProviderOptions;
   }
 
