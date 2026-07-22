@@ -107,9 +107,40 @@ interface EventEnvelopeLike {
   identity: { traits: Record<string, unknown> }; // sdk-ok: type-definition
 }
 
-/** Flatten an envelope into a simple properties bag. */
+/**
+ * Envelope-owned keys in the flattened bag. A customer property using one of
+ * these names is relocated rather than allowed to overwrite system context.
+ */
+const CANONICAL_KEYS = new Set([
+  'tenant_id',
+  'user_id',
+  'anonymous_id',
+  'session_id',
+  'url',
+  'path',
+  'page_title',
+  'event_time',
+]);
+
+/**
+ * Flatten an envelope into a simple properties bag.
+ *
+ * Canonical envelope fields win over customer properties. Flattening used to
+ * spread `env.properties` last, so an event carrying a property literally named
+ * `tenant_id` or `user_id` replaced the system value on its way to PostHog —
+ * silently corrupting identity in the destination while RevTurbine's own
+ * pipeline (which nests the property bag instead of spreading it) stayed
+ * correct. The displaced customer value is preserved under an `rt_prop_`
+ * prefix so nothing is lost.
+ */
 function flattenEnvelope(env: EventEnvelopeLike): AnalyticsEventProperties {
+  const properties: AnalyticsEventProperties = {};
+  for (const [key, value] of Object.entries(env.properties)) {
+    properties[CANONICAL_KEYS.has(key) ? `rt_prop_${key}` : key] = value;
+  }
+
   return {
+    ...properties,
     tenant_id: env.tenant_id,
     user_id: env.user_id,
     anonymous_id: env.anonymous_id,
@@ -118,7 +149,6 @@ function flattenEnvelope(env: EventEnvelopeLike): AnalyticsEventProperties {
     path: env.path,
     page_title: env.page_title,
     event_time: env.event_time,
-    ...env.properties,
   };
 }
 

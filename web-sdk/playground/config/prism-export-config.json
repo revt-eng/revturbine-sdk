@@ -271,7 +271,7 @@
         "allowance": 1000,
         "period": "per_month",
         "rollover": true,
-        "max_rollover": 3000,
+        "max_balance": 3000,
         "top_up_available": true,
         "unit": "credits"
       },

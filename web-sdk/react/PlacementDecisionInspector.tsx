@@ -9,6 +9,7 @@ import type {
   RevTurbineSurfaceSlotConfig,
 } from '../customer-side';
 import { useRevTurbine } from './useRevTurbine';
+import { useRevTurbineTheme } from '../theme/ThemeContext';
 import { UserProfile } from './UserProfile';
 
 function groupRulesByPlanScope(
@@ -79,6 +80,16 @@ export function PlacementDecisionInspector({
   showRawJson = false,
 }: PlacementDecisionInspectorProps) {
   const { sdk, isReady } = useRevTurbine();
+  // Every other placement component reads its colours from the theme; this one
+  // hardcoded a light palette, so it rendered as a white card in dark hosts.
+  const theme = useRevTurbineTheme();
+  const c = theme.colors;
+  // Semantic surfaces (a "matched"/"eligible" card) have no dedicated token, so
+  // derive them by tinting the semantic colour into the card background — that
+  // keeps the green reading in light themes and turns into a dark-green wash in
+  // dark ones, without widening the public theme token set.
+  const tint = (colour: string, pct: number) =>
+    `color-mix(in srgb, ${colour} ${pct}%, ${c.background})`;
   const [placementId, setPlacementId] = useState('');
   const [explanation, setExplanation] = useState<RevTurbinePlacementDecisionExplanation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -179,12 +190,12 @@ export function PlacementDecisionInspector({
     <section
       className={className}
       style={{
-        border: '1px solid #e2e8f0',
+        border: `1px solid ${c.surfaceBorder}`,
         borderRadius: 10,
         padding: 14,
-        background: '#ffffff',
-        fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-        color: '#0f172a',
+        background: c.background,
+        fontFamily: theme.typography.fontFamily,
+        color: c.text,
         ...style,
       }}
       data-rt-inspector="placement-decision"
@@ -192,7 +203,7 @@ export function PlacementDecisionInspector({
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
         <div>
           <h3 style={{ margin: 0, fontSize: 16 }}>Placement Decision Inspector</h3>
-          <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+          <div style={{ fontSize: 12, color: c.textMuted, marginTop: 2 }}>
             {surfaceSlot ? `Slot: ${surfaceSlot.id}` : placement ? `Placement: ${placement.name}` : '(no target)'} | User: {resolvedUserId || '(missing)'}
           </div>
         </div>
@@ -202,14 +213,14 @@ export function PlacementDecisionInspector({
       </header>
 
       {!resolvedUserId && (
-        <p style={{ marginTop: 12, color: '#b45309' }}>
+        <p style={{ marginTop: 12, color: c.warning }}>
           No userId is available. Provide `userId` or set `user.id` in RevTurbineProvider options.
         </p>
       )}
 
-      {error && <p style={{ marginTop: 12, color: '#b91c1c' }}>{error}</p>}
+      {error && <p style={{ marginTop: 12, color: c.danger }}>{error}</p>}
       {!explanation && !error && resolvedUserId && (
-        <p style={{ marginTop: 12, color: '#64748b' }}>{isLoading ? 'Loading explanation...' : 'No explanation loaded yet.'}</p>
+        <p style={{ marginTop: 12, color: c.textMuted }}>{isLoading ? 'Loading explanation...' : 'No explanation loaded yet.'}</p>
       )}
 
       {explanation && (
@@ -237,7 +248,7 @@ export function PlacementDecisionInspector({
 
           <section style={{ marginTop: 14 }}>
             <h4 style={{ margin: '0 0 8px 0', fontSize: 14 }}>Segments</h4>
-            <div style={{ fontSize: 13, color: '#334155', marginBottom: 6 }}>
+            <div style={{ fontSize: 13, color: c.textSecondary, marginBottom: 6 }}>
               matched IDs: {explanation.targeting.segmentIds.length > 0
                 ? explanation.targeting.segmentIds.join(', ')
                 : 'none'}
@@ -247,10 +258,10 @@ export function PlacementDecisionInspector({
                 <div
                   key={segment.segmentId}
                   style={{
-                    border: '1px solid #e2e8f0',
+                    border: `1px solid ${c.surfaceBorder}`,
                     borderRadius: 8,
                     padding: 8,
-                    background: '#f0fdf4',
+                    background: tint(c.success, 8),
                   }}
                 >
                   <div style={{ fontSize: 13 }}>
@@ -281,10 +292,10 @@ export function PlacementDecisionInspector({
                       <div
                         key={segment.segmentId}
                         style={{
-                          border: '1px solid #e2e8f0',
+                          border: `1px solid ${c.surfaceBorder}`,
                           borderRadius: 8,
                           padding: 8,
-                          background: '#f8fafc',
+                          background: c.surface,
                         }}
                       >
                         <div style={{ fontSize: 13 }}>
@@ -313,12 +324,12 @@ export function PlacementDecisionInspector({
           <section style={{ marginTop: 14 }}>
             <h4 style={{ margin: '0 0 8px 0', fontSize: 14 }}>Entitlement Rules</h4>
             {explanation.entitlementRules.length === 0 ? (
-              <div style={{ fontSize: 13, color: '#64748b' }}>No entitlement rules found in exported config.</div>
+              <div style={{ fontSize: 13, color: c.textMuted }}>No entitlement rules found in exported config.</div>
             ) : (
               <div style={{ display: 'grid', gap: 8 }}>
                 {matchedEntitlementRulesByPlan.map((group) => (
-                  <section key={`matched-${group.planScope}`} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: 8 }}>
-                    <div style={{ fontSize: 12, color: '#334155', marginBottom: 6 }}>
+                  <section key={`matched-${group.planScope}`} style={{ border: `1px solid ${c.surfaceBorder}`, borderRadius: 8, padding: 8 }}>
+                    <div style={{ fontSize: 12, color: c.textSecondary, marginBottom: 6 }}>
                       <strong>Plan scope:</strong> {group.planScope}
                     </div>
                     <div style={{ display: 'grid', gap: 6 }}>
@@ -326,22 +337,22 @@ export function PlacementDecisionInspector({
                         <div
                           key={rule.ruleId}
                           style={{
-                            border: '1px solid #bbf7d0',
+                            border: `1px solid ${tint(c.success, 35)}`,
                             borderRadius: 8,
                             padding: 8,
-                            background: '#f0fdf4',
+                            background: tint(c.success, 8),
                           }}
                         >
                           <div style={{ fontSize: 13 }}>
                             <strong>{rule.entitlementHandle ?? rule.entitlementId ?? rule.ruleId}</strong>
-                            {rule.kind ? <span style={{ color: '#64748b' }}>{` (${rule.kind})`}</span> : ''}
+                            {rule.kind ? <span style={{ color: c.textMuted }}>{` (${rule.kind})`}</span> : ''}
                             {' '}→{' '}
-                            <span style={{ color: rule.outcome === 'denied' ? '#b91c1c' : '#15803d' }}>
+                            <span style={{ color: rule.outcome === 'denied' ? c.danger : c.success }}>
                               {rule.outcomeDescription ?? rule.outcome}
                             </span>
                           </div>
                           {rule.reason && (
-                            <div style={{ fontSize: 12, color: '#475569', marginTop: 2 }}>
+                            <div style={{ fontSize: 12, color: c.textSecondary, marginTop: 2 }}>
                               reason: {rule.reason}
                             </div>
                           )}
@@ -353,16 +364,16 @@ export function PlacementDecisionInspector({
 
                 {unmatchedEntitlementRules.length > 0 && (
                   <details>
-                    <summary style={{ cursor: 'pointer', fontSize: 13, color: '#64748b' }}>
+                    <summary style={{ cursor: 'pointer', fontSize: 13, color: c.textMuted }}>
                       {unmatchedEntitlementRules.length} rule{unmatchedEntitlementRules.length === 1 ? '' : 's'} for other plans
                     </summary>
                     <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
                       {unmatchedEntitlementRulesByPlan.map((group) => (
-                        <section key={`unmatched-${group.planScope}`} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: 8 }}>
-                          <div style={{ fontSize: 12, color: '#334155', marginBottom: 4 }}>
+                        <section key={`unmatched-${group.planScope}`} style={{ border: `1px solid ${c.surfaceBorder}`, borderRadius: 8, padding: 8 }}>
+                          <div style={{ fontSize: 12, color: c.textSecondary, marginBottom: 4 }}>
                             <strong>Plan scope:</strong> {group.planScope}
                           </div>
-                          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#64748b' }}>
+                          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: c.textMuted }}>
                             {group.rules.map((rule) => (
                               <li key={rule.ruleId}>
                                 {rule.entitlementHandle ?? rule.entitlementId ?? rule.ruleId}
@@ -401,12 +412,12 @@ export function PlacementDecisionInspector({
           <section style={{ marginTop: 14 }}>
             <h4 style={{ margin: '0 0 8px 0', fontSize: 14 }}>Eligible Placement Payloads</h4>
             {eligiblePayloads.length === 0 ? (
-              <div style={{ fontSize: 13, color: '#64748b' }}>
+              <div style={{ fontSize: 13, color: c.textMuted }}>
                 No payload records found for this placement in exported config.
               </div>
             ) : (
               <>
-                <div style={{ fontSize: 13, color: '#334155', marginBottom: 8 }}>
+                <div style={{ fontSize: 13, color: c.textSecondary, marginBottom: 8 }}>
                   selected payload: {selectedPayload ? selectedPayload.payloadId : 'none'}
                 </div>
                 <div style={{ display: 'grid', gap: 8 }}>
@@ -414,23 +425,23 @@ export function PlacementDecisionInspector({
                     <div
                       key={selectedPayload.payloadId}
                       style={{
-                        border: '2px solid #16a34a',
+                        border: `2px solid ${c.success}`,
                         borderRadius: 8,
                         padding: 8,
-                        background: '#dcfce7',
+                        background: tint(c.success, 16),
                       }}
                     >
                       <div style={{ fontSize: 13 }}>
                         <strong>{selectedPayload.payloadId}</strong>
                         {' '}→ {selectedPayload.eligible ? 'eligible' : 'not eligible'} (selected)
                       </div>
-                      <div style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>
+                      <div style={{ fontSize: 12, color: c.textSecondary, marginTop: 4 }}>
                         status: {selectedPayload.status} |
                         plan scopes: {selectedPayload.planScopes.length > 0 ? selectedPayload.planScopes.join(', ') : 'all plans'} |
                         segment chips: {selectedPayload.segmentChips.length > 0 ? selectedPayload.segmentChips.join(', ') : 'none'} |
                         templates: {selectedPayload.surfaceTemplateIds.length > 0 ? selectedPayload.surfaceTemplateIds.join(', ') : 'none'}
                       </div>
-                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                      <div style={{ fontSize: 12, color: c.textMuted, marginTop: 4 }}>
                         gate checks → planMatch: {String(selectedPayload.matchesPlan)} | segmentMatch: {String(selectedPayload.matchesSegment)}
                       </div>
                     </div>
@@ -446,23 +457,23 @@ export function PlacementDecisionInspector({
                           <div
                             key={payload.payloadId}
                             style={{
-                              border: '1px solid #e2e8f0',
+                              border: `1px solid ${c.surfaceBorder}`,
                               borderRadius: 8,
                               padding: 8,
-                              background: payload.eligible ? '#f0fdf4' : '#f8fafc',
+                              background: payload.eligible ? tint(c.success, 8) : c.surface,
                             }}
                           >
                             <div style={{ fontSize: 13 }}>
                               <strong>{payload.payloadId}</strong>
                               {' '}→ {payload.eligible ? 'eligible' : 'not eligible'}
                             </div>
-                            <div style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>
+                            <div style={{ fontSize: 12, color: c.textSecondary, marginTop: 4 }}>
                               status: {payload.status} |
                               plan scopes: {payload.planScopes.length > 0 ? payload.planScopes.join(', ') : 'all plans'} |
                               segment chips: {payload.segmentChips.length > 0 ? payload.segmentChips.join(', ') : 'none'} |
                               templates: {payload.surfaceTemplateIds.length > 0 ? payload.surfaceTemplateIds.join(', ') : 'none'}
                             </div>
-                            <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                            <div style={{ fontSize: 12, color: c.textMuted, marginTop: 4 }}>
                               gate checks → planMatch: {String(payload.matchesPlan)} | segmentMatch: {String(payload.matchesSegment)}
                             </div>
                           </div>
@@ -482,8 +493,8 @@ export function PlacementDecisionInspector({
                 <pre
                   style={{
                     marginTop: 8,
-                    background: '#0f172a',
-                    color: '#e2e8f0',
+                    background: c.cliBackground,
+                    color: c.cliText,
                     borderRadius: 8,
                     padding: 10,
                     overflowX: 'auto',

@@ -146,6 +146,70 @@ export function redactIdentityField(value: string): { value: string; redacted: b
   return { value, redacted: false };
 }
 
+/**
+ * Redact a whole event envelope — the property bag, the identity traits, and
+ * the email-shaped `user_id` — returning a sanitized copy plus the redaction
+ * count.
+ *
+ * This exists so redaction can run **once, before fan-out**, rather than only
+ * on the `/api/track` path. Registered {@link RevTurbineEventConsumer} adapters
+ * (a PostHog mirror, a Segment bridge) receive the envelope too, so redacting
+ * only on the ingest path let raw values reach a third party that RevTurbine's
+ * own pipeline would never have stored.
+ *
+ * Envelope fields the SDK itself generates — `type`, `level`, `message`,
+ * `event_time`, `session_id`, `anonymous_id`, `tenant_id` — are not walked:
+ * they never carry customer-supplied values. `url`, `path`, and `page_title`
+ * are walked because a host app can put anything in a URL or document title.
+ *
+ * @param event - The event envelope to sanitize. Not mutated.
+ * @returns The sanitized copy plus a count of redacted values.
+ */
+export function redactEnvelope<T extends RedactableEnvelope>(event: T): RedactionResult<T> {
+  const identity = redactIdentityField(event.user_id ?? '');
+  const walked = redactPii({
+    url: event.url,
+    path: event.path,
+    page_title: event.page_title,
+    tags: event.tags,
+    traits: event.identity?.traits ?? null,
+    properties: event.properties,
+  });
+
+  return {
+    value: {
+      ...event,
+      url: walked.value.url,
+      path: walked.value.path,
+      page_title: walked.value.page_title,
+      tags: walked.value.tags,
+      user_id: event.user_id === null || event.user_id === undefined
+        ? event.user_id
+        : identity.value,
+      identity: event.identity
+        ? { ...event.identity, traits: walked.value.traits ?? undefined }
+        : event.identity,
+      properties: walked.value.properties,
+    },
+    redactions: walked.redactions + (identity.redacted ? 1 : 0),
+  };
+}
+
+/**
+ * The envelope surface {@link redactEnvelope} touches. Structural rather than a
+ * concrete import so the redactor stays dependency-free and independently
+ * testable; `RevTurbineEventEnvelope` satisfies it.
+ */
+export interface RedactableEnvelope {
+  url?: string;
+  path?: string;
+  page_title?: string;
+  tags?: unknown; // sdk-ok: boundary-parse — host-supplied page tags
+  user_id?: string | null;
+  identity?: { traits?: unknown } & Record<string, unknown>; // sdk-ok: boundary-parse
+  properties?: unknown; // sdk-ok: boundary-parse — arbitrary customer event data
+}
+
 // --- bundled synchronous SHA-256 (FIPS 180-4) -----------------------------
 // Self-contained so the redactor stays a pure sync function with no
 // secure-context / crypto.subtle dependency and a digest identical to the

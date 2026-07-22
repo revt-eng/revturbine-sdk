@@ -3,7 +3,7 @@ import type { AnyDomainProvider } from './providers/types';
 import { resolveBranding, type ResolvedBranding } from './branding';
 import type { BrandingConfig } from './generated';
 import { isServer, isBrowser } from './env';
-import { redactPii, redactIdentityField } from './pii-redact';
+import { redactPii, redactIdentityField, redactEnvelope } from './pii-redact';
 import { evaluateSegments } from './segments';
 import { buildControlPlaneEvent } from './control-plane-events';
 import type { ControlPlaneEventType } from './control-plane-events';
@@ -3522,8 +3522,29 @@ export class RevTurbineCustomerSdk {
   private async sendEvents(events: RevTurbineEventEnvelope[]): Promise<void> {
     if (events.length === 0) return;
 
+    // Redact BEFORE fan-out, not just before the ingest call. Consumers get
+    // the envelope too, so redacting only inside the /api/track mapping let a
+    // third-party mirror receive raw emails/cards that RevTurbine's own
+    // pipeline would have scrubbed. One pass, one sanitized envelope, every
+    // destination.
+    let valuesRedacted = 0;
+    const sanitized = events.map((event) => {
+      const result = redactEnvelope(event);
+      valuesRedacted += result.redactions;
+      return result.value;
+    });
+
+    // Warn only when the event actually had somewhere to go. Redaction now
+    // runs even with the clickstream disabled (consumers still receive the
+    // envelope), so warning unconditionally would fire for events that never
+    // left the browser — keeping plan 106 AC-7's "opted out, stayed quiet"
+    // while still warning the consumer-only integration that used to leak.
+    const hasDestination =
+      this.providerRegistry.has('events') || (!this.isLocalOnlyMode() && this.analyticsEnabled);
+    if (valuesRedacted > 0 && hasDestination) this.warnPiiRedactedOnce();
+
     // Fan out to registered EventConsumer providers (analytics adapters, etc.)
-    this.dispatchToEventConsumers(events);
+    this.dispatchToEventConsumers(sanitized);
 
     if (this.isLocalOnlyMode()) {
       this.persistLocalRuntimeState();
@@ -3533,11 +3554,11 @@ export class RevTurbineCustomerSdk {
     // Analytics opt-out (plan 106 REQ-8): when disabled, emit NOTHING to
     // /api/track across every path. Consumer dispatch + local state above
     // are intentionally unaffected — this flag governs only the RevTurbine
-    // ingest network call.
+    // ingest network call. Use `telemetry.consent: 'denied'` to stop every
+    // destination.
     if (!this.analyticsEnabled) return;
 
     const rid = requestId();
-    let valuesRedacted = 0;
     // Map each envelope to the canonical scaffold `TrackEvent`
     // (`@revt-eng/schema`). The SDK has no first-class environment /
     // account concept, so: `environment_id` comes from the init option
@@ -3547,15 +3568,15 @@ export class RevTurbineCustomerSdk {
     // bag (level/message/url/traits/raw payload) is preserved as the
     // optional `properties` JSON string; `experiment_id`/`variant_key`
     // are lifted out so they survive end-to-end (plan 41 REQ-7).
-    const trackEvents: TrackEvent[] = events.map((event) => {
-      const rawUserId = event.user_id || event.anonymous_id;
-      const rawAccountId = this.userContext.account_id || rawUserId;
-      // Best-effort redaction BEFORE the value leaves the browser (plan 106
-      // REQ-6): scrub obvious PII out of the property bag and hash
-      // email-shaped identity ids. The server-side scrub at /api/track is
-      // the authoritative gate; this is defense-in-depth.
-      const userId = redactIdentityField(rawUserId);
-      const accountId = redactIdentityField(rawAccountId);
+    const trackEvents: TrackEvent[] = sanitized.map((event) => {
+      // `user_id` and the property bag were already scrubbed by
+      // `redactEnvelope` above. `account_id` is not carried on the envelope,
+      // so it is the one identity field redacted here.
+      const userId = event.user_id || event.anonymous_id;
+      const accountId = redactIdentityField(this.userContext.account_id || userId);
+      // Idempotent second pass: the envelope is already clean, so this only
+      // covers the SDK-generated fields assembled here. Already-redacted
+      // values no longer match, so the count does not double up.
       const redactedProps = redactPii({
         level: event.level,
         message: event.message,
@@ -3569,11 +3590,10 @@ export class RevTurbineCustomerSdk {
         payload: event.properties,
         source: SDK_EVENT_SOURCE,
       });
-      valuesRedacted +=
-        redactedProps.redactions + (userId.redacted ? 1 : 0) + (accountId.redacted ? 1 : 0);
+      valuesRedacted += redactedProps.redactions + (accountId.redacted ? 1 : 0);
       return {
         environment_id: this.environmentId,
-        user_id: userId.value,
+        user_id: userId,
         account_id: accountId.value,
         event_name: normalizeEventType(event.type).slice(0, 120),
         event_ts: event.event_time,
@@ -5598,8 +5618,10 @@ export class RevTurbineCustomerSdk {
   /**
    * Check whether the user can do something — the advertised alias of
    * {@link checkEntitlement}. Returns the rich {@link EntitlementResult}
-   * (`allowed`, `status`, `reason`, limits, `enforcement`). For billing-critical
-   * entitlements, confirm `enforcement === 'server_required'` on your backend.
+   * (`allowed`, `status`, `reason`, and `limit`/`used`/`remaining` for
+   * limit-bearing entitlements). This client check is a UX convenience — for
+   * billing-critical or abuse-sensitive actions, re-run the same check on your
+   * server before granting access.
    *
    * @example
    * const access = await rt.can('generate_image');
