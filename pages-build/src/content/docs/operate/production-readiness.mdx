@@ -7,7 +7,7 @@ sidebar:
 
 import { Aside } from '@astrojs/starlight/components';
 
-RevTurbine is designed to be safe to run in production from day one — it's additive and fails open. This page is the checklist for the rest.
+RevTurbine is designed to be safe to run in production from day one — it's additive (placements can't break your app) and entitlement checks fail closed (an outage can't leak paid access). This page is the checklist for the rest.
 
 ## Client vs server
 
@@ -25,10 +25,10 @@ Stamp `environmentId` (`'prod'` / `'staging'`) so analytics stays separated by d
 
 ## Failure behavior
 
-RevTurbine is **additive**: if it's paused, misconfigured, or unreachable, slots render nothing and entitlement checks fail open — your product keeps working. Tune what a slot renders on provider failure with `providerFailureSlotBehavior` (default: render nothing). See [Error Handling](/guides/error-handling/).
+RevTurbine is **additive**: if it's paused, misconfigured, or unreachable, slots render nothing — your product keeps working. Entitlement checks are **fail-closed**, so an outage denies rather than leaking a paid feature. Tune what a slot renders on provider failure with `providerFailureSlotBehavior` (default: render nothing). See [Error Handling](/guides/error-handling/).
 
-<Aside type="caution" title="Fail-open cuts both ways">
-Failing open means a user briefly sees a gated feature if RevTurbine is unreachable. That's the right trade-off for UI — but it's exactly why billing-critical actions are re-checked on your server, which does *not* fail open.
+<Aside type="tip" title="Fail-closed, with a server backstop">
+An entitlement check that can't reach a decision denies, so an outage never leaks a paid feature. This is safe because the Playbook is cached locally — real answers need no round-trip — and billing-critical actions are still re-checked on your server before value is granted.
 </Aside>
 
 ## Local-only limits

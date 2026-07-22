@@ -26,7 +26,7 @@ A header banner that:
 
 1. **Add a banner placement to your config**
 
-   This is a minimal but complete `ExportedConfig` — author the same shape in the [studio](https://revturbine.com/app) or with the CLI. The banner is a `fixed` placement bound to a named slot, targeted at the Pro plan.
+   This is a minimal but complete `Playbook` — author the same shape in the [studio](https://revturbine.com/app) or with the CLI. The banner is a `fixed` placement bound to a named slot, targeted at the Pro plan.
 
    ```json title="exported_config.json"
    {
@@ -99,7 +99,7 @@ A header banner that:
    ```tsx title="src/App.tsx"
    <RevTurbineProvider
      options={{
-       localRuntime: { exportedConfig },
+       localRuntime: { playbook },
        user: { id: 'user_123', context: { plan_handle: 'pro' } },
      }}
    >

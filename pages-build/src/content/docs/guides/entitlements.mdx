@@ -255,22 +255,22 @@ if (denied) {
 }
 ```
 
-## Fail-Open Semantics
+## Fail-Closed Semantics
 
-The SDK uses **fail-open** behavior — if the entitlement service is unreachable, `can` returns `allowed: true` with reason `'entitlement_service_unavailable'`. This ensures your app's baseline UX is never blocked by RevTurbine downtime.
+Entitlement checks are **fail-closed** — if a check can't produce an affirmative grant, `can` returns `allowed: false` rather than granting access. When the entitlement service is unreachable the reason is `'entitlement_service_unavailable'`, so you can still tell an outage apart from a real denial.
 
 ```ts
-// If API is down:
-// { status: 'allowed', allowed: true, reason: 'entitlement_service_unavailable' }
+// If the entitlement service is unreachable:
+// { status: 'denied', allowed: false, reason: 'entitlement_service_unavailable' }
 ```
 
 :::tip
-In `local_only` mode, all entitlement checks are resolved instantly from the ExportedConfig — no network calls, no failure scenarios.
+In `local_only` mode, all entitlement checks resolve instantly from the cached Playbook — no network calls. A configured Playbook gives real allow/deny answers, so the fail-closed fallback only fires when there's genuinely no config to evaluate against.
 :::
 
 ## Next Steps
 
 - [Placements Guide](/guides/placements/) — render upgrade prompts for denied entitlements
 - [Events & Analytics](/guides/events/) — track entitlement check outcomes
-- [Error Handling](/guides/error-handling/) — fail-open behavior and recovery patterns
+- [Error Handling](/guides/error-handling/) — fail-closed checks and recovery patterns
 - [Try it live → Data Export Gate](/guides/entitlements/#gate-modal)

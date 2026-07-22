@@ -27,7 +27,7 @@ A dunning banner that:
 
 1. **Add a billing-failed segment and a recovery placement**
 
-   A segment matches users whose `billing_status` is `payment_failed`; the `retention` placement targets that segment and is non-dismissible. This is a complete, valid `ExportedConfig`.
+   A segment matches users whose `billing_status` is `payment_failed`; the `retention` placement targets that segment and is non-dismissible. This is a complete, valid `Playbook`.
 
    ```json title="exported_config.json"
    {
@@ -89,7 +89,7 @@ A dunning banner that:
    ```tsx title="src/App.tsx"
    <RevTurbineProvider
      options={{
-       localRuntime: { exportedConfig },
+       localRuntime: { playbook },
        user: {
          id: 'user_123',
          context: {

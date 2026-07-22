@@ -15,12 +15,12 @@ Wrap your app (or a subtree) with the provider:
 
 ```tsx
 import { RevTurbineProvider } from '@revturbine/sdk';
-import exportedConfig from './exported_config.json';
+import playbook from './exported_config.json';
 import { useMemo } from 'react';
 
 export default function App() {
   const options = useMemo(() => ({
-    localRuntime: { exportedConfig },
+    localRuntime: { playbook },
     user: {
       id: 'user_123',
       context: { plan_handle: 'starter' },

@@ -26,7 +26,7 @@ A trial countdown that:
 
 1. **Add a trial-ending placement to your config**
 
-   The `trial_ending` trigger fires when a trial enters its closing window. This is a complete, valid `ExportedConfig`.
+   The `trial_ending` trigger fires when a trial enters its closing window. This is a complete, valid `Playbook`.
 
    ```json title="exported_config.json"
    {
@@ -82,7 +82,7 @@ A trial countdown that:
    <RevTurbineProvider
      options={{
        localRuntime: {
-         exportedConfig,
+         playbook,
          // In local mode, hydrate trial status synchronously:
          resolvers: {
            getTrialStatus: () => ({ in_trial: true, days_remaining: 2 }),

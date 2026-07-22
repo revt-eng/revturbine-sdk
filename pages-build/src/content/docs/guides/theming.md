@@ -73,7 +73,7 @@ interface RevTurbineTheme {
 
 ## Applying a Custom Theme
 
-Pass your theme through the ExportedConfig or provider:
+Pass your theme through the Playbook or provider:
 
 ```tsx
 const customTheme = {
@@ -151,11 +151,11 @@ function MySlot({ content, theme }: PlacementSlotProps) {
 
 The theme is resolved from multiple sources, in priority order:
 
-1. **ExportedConfig snapshot** — theme bundled in the config (no network call)
+1. **Playbook snapshot** — theme bundled in the config (no network call)
 2. **API / localStorage** — fetched from the RevTurbine API or cached
 3. **Default theme** — built-in defaults
 
-In `local_only` mode, the theme always comes from the ExportedConfig.
+In `local_only` mode, the theme always comes from the Playbook.
 
 ## Next Steps
 

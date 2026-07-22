@@ -22,7 +22,7 @@ Complete reference for `RevTurbineInitOptions` and related configuration types.
 |---|---|---|---|
 | `runtimeMode` | `'revturbine_server' \| 'custom_endpoints' \| 'local_only'` | `'revturbine_server'` | How the SDK resolves decisions |
 | `endpointOverrides` | `Partial<RevTurbineEndpointOverrides>` | — | Custom endpoint URLs (for `custom_endpoints` mode) |
-| `configProvider` | `RevTurbineConfigProvider` | — | Custom provider for ExportedConfig |
+| `configProvider` | `RevTurbineConfigProvider` | — | Custom provider for Playbook |
 | `localRuntime` | `RevTurbineLocalRuntimeOptions` | — | Local-only mode configuration |
 
 ### Provider Configuration
@@ -77,7 +77,7 @@ Complete reference for `RevTurbineInitOptions` and related configuration types.
 
 | Field | Type | Description |
 |---|---|---|
-| `exportedConfig` | `ExportedConfig` | Full ExportedConfig snapshot for local execution |
+| `playbook` | `Playbook` | Full Playbook snapshot for local execution |
 | `placements` | `LocalPlacementDataset` | Optional static placements dataset |
 | `initialData` | `object` | Static data for local decisions (see below) |
 | `resolvers` | `object` | Optional resolver callbacks (see below) |
@@ -103,7 +103,7 @@ Complete reference for `RevTurbineInitOptions` and related configuration types.
 | `checkEntitlement` | `(handle, context?) => Promise<EntitlementResult>` |
 | `fetchUserContext` | `(userId) => Promise<UserTargetingContext>` |
 | `getTrialStatus` | `() => Promise<RevTurbineTrialContext>` |
-| `resolveExportedConfig` | `() => Promise<ExportedConfig>` |
+| `resolveExportedConfig` | `() => Promise<Playbook>` |
 
 ---
 
@@ -174,7 +174,7 @@ interface RevTurbineStorage {
   mode: string;                       // ✅ Required
   runtimeMode: 'local_only';         // ✅ Required
   localRuntime: {
-    exportedConfig: ExportedConfig;   // ✅ Required
+    playbook: Playbook;   // ✅ Required
   };
 }
 ```

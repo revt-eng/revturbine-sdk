@@ -15,7 +15,7 @@ Returned in `decision.reason_codes[]` to explain why a placement was or wasn't s
 | `suppressed` | User recently dismissed, snoozed, or completed CTA | Wait for cooldown to expire |
 | `plan_mismatch` | User's plan doesn't match placement targeting | Verify targeting rules or user context |
 | `segment_mismatch` | User doesn't match the required segment | Check segment definitions |
-| `config_not_loaded` | ExportedConfig not yet available | Ensure provider initialized before rendering slots |
+| `config_not_loaded` | Playbook not yet available | Ensure provider initialized before rendering slots |
 | `api_error` | API returned non-200 response | Check endpoint URL, API key, and network connectivity |
 | `network_error` | Network timeout or unreachable endpoint | Verify endpoint is accessible from client |
 | `fallback_content` | Using fallback placeholder content | Provider failure — check API connectivity |
@@ -28,9 +28,9 @@ Returned in `result.reason` to explain the entitlement check outcome.
 
 | Code | Meaning | Fix |
 |---|---|---|
-| `entitlement_service_unavailable` | API unreachable — defaulted to `allowed` | Check network connectivity; this is fail-open by design |
-| `entitlement_check_error` | Parse or exception error — defaulted to `allowed` | Check entitlement handle spelling and context format |
-| `local_runtime_default_allow` | Local mode with no matching entitlement data | Add entitlement to ExportedConfig fixture |
+| `entitlement_service_unavailable` | API unreachable — check **denied** (fail-closed) | Check network connectivity; the reason distinguishes an outage from a real denial |
+| `entitlement_check_error` | Parse or exception error — check **denied** (fail-closed) | Check entitlement handle spelling and context format |
+| `local_runtime_default_allow` | Local mode with no matching entitlement data | Add entitlement to Playbook fixture |
 | `denied_feature_gate` | Feature not included in user's plan | Upgrade plan or adjust entitlement config |
 | `denied_usage_limit` | Usage limit exceeded | Report accurate usage via `updateUsage()` |
 | `denied_tier_mismatch` | User's plan tier insufficient | `result.tier` indicates minimum tier |
@@ -40,7 +40,7 @@ Returned in `result.reason` to explain the entitlement check outcome.
 | Error | Source | Meaning |
 |---|---|---|
 | `provider_chain_exhausted` | All providers failed | Check API keys, endpoints, and network |
-| `config_fetch_failed` | ExportedConfig could not be loaded | Verify `configProvider` or API endpoint |
+| `config_fetch_failed` | Playbook could not be loaded | Verify `configProvider` or API endpoint |
 | `invalid_api_key` | API returned 401 | Check `apiKey` value and key status |
 | `tenant_not_found` | API returned 404 | Verify `tenantId` value |
 

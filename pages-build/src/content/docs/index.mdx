@@ -85,12 +85,12 @@ Wrap your app once, then add **slots** (where placements render) and **gates** (
 
     ```tsx title="src/App.tsx"
     import { RevTurbineProvider } from '@revturbine/sdk';
-    import exportedConfig from './exported_config.json';
+    import playbook from './exported_config.json';
     import { useMemo } from 'react';
 
     function App() {
       const options = useMemo(() => ({
-        localRuntime: { exportedConfig },
+        localRuntime: { playbook },
         user: { id: 'user_123', context: { plan_handle: 'starter' } },
         // UI path resolvers connect placement CTAs to your app's navigation.
         uiPathResolvers: {
@@ -161,7 +161,7 @@ Wrap your app once, then add **slots** (where placements render) and **gates** (
 
 ## 4. Manage your Exported Config
 
-Your monetization model — **plans, entitlements, entitlement rules, segments, surface templates, and placements** — is a single portable snapshot called an **ExportedConfig**. It's what the SDK reads (bundled in local mode, or served live), and you can author it two ways.
+Your monetization model — **plans, entitlements, entitlement rules, segments, surface templates, and placements** — is a single portable snapshot called an **Playbook**. It's what the SDK reads (bundled in local mode, or served live), and you can author it two ways.
 
 <CardGrid>
   <Card title="RevTurbine UI (studio)" icon="laptop">

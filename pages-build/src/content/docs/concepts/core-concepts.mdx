@@ -34,7 +34,7 @@ The same primitives work whether RevTurbine runs entirely in the browser from a 
 ## The additive principle
 
 <Aside type="tip" title="Additive — it can't break your app">
-RevTurbine is an *additive* layer. Your product must look and work correctly with every placement paused and the SDK offline — slots simply render nothing, and entitlement checks fail open. A monetization layer should never be able to take your product down, so when it can't reach a decision, it does nothing. (For the money-safe exception, see [Client vs Server Enforcement](/concepts/enforcement/).)
+RevTurbine is an *additive* layer. Your product must look and work correctly with every placement paused and the SDK offline — slots simply render nothing. A monetization layer should never be able to take your product down. Entitlement *checks*, though, fail **closed** — a check that can't produce an affirmative grant denies rather than leaking access. (For the money-safe exception, see [Client vs Server Enforcement](/concepts/enforcement/).)
 </Aside>
 
 ## Glossary
@@ -48,7 +48,7 @@ RevTurbine is an *additive* layer. Your product must look and work correctly wit
 | **Segment** | A named rule over user traits used for targeting and experiments |
 | **Slot** | The component that renders a placement (`<Slot>`) |
 
-For the component/config name aliases (`SurfaceSlotComponent`, `ExportedConfig`, …), see the [Recommended API Path](/getting-started/api-overview/#the-vocabulary-slot--gate--playbook).
+For the component/config name aliases (`SurfaceSlotComponent`, `Playbook`, …), see the [Recommended API Path](/getting-started/api-overview/#the-vocabulary-slot--gate--playbook).
 
 ## Related
 

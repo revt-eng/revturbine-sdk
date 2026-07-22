@@ -112,7 +112,7 @@ Pass your provider via the `provider` option:
 
 ```tsx
 import { RevTurbineProvider } from '@revturbine/sdk';
-import exportedConfig from './exported_config.json';
+import playbook from './exported_config.json';
 import { useMemo } from 'react';
 
 const myProvider = {
@@ -130,7 +130,7 @@ const myProvider = {
 
 function App() {
   const options = useMemo(() => ({
-    localRuntime: { exportedConfig },
+    localRuntime: { playbook },
     provider: myProvider,
   }), []);
 
@@ -155,7 +155,7 @@ const myProviderFactory = (options) => ({
 });
 
 const options = {
-  localRuntime: { exportedConfig },
+  localRuntime: { playbook },
   provider: myProviderFactory,
 };
 ```
@@ -166,7 +166,7 @@ The SDK supports a chain of providers. If the primary provider returns `null` or
 
 ```tsx
 const options = useMemo(() => ({
-  localRuntime: { exportedConfig },
+  localRuntime: { playbook },
   provider: apiProvider,
   providerFallbacks: [cachedProvider, staticFallback],
 }), []);
@@ -179,7 +179,7 @@ If all providers fail:
 | `'invisible'` (default) | Slots render nothing |
 | `'placeholder'` | Slots show fallback content |
 
-Entitlement checks always fail-open to `{ allowed: true }` to avoid blocking users.
+Entitlement checks are **fail-closed**: a check that can't produce an affirmative grant denies (`{ allowed: false }`). This governs `<Slot>`/placement rendering-on-failure separately — slots still render nothing.
 
 ## Analytics Provider
 
@@ -189,7 +189,7 @@ The SDK can forward all impressions, interactions, and lifecycle events to your 
 
 ```tsx
 import { RevTurbineProvider, createAnalyticsProvider } from '@revturbine/sdk';
-import exportedConfig from './exported_config.json';
+import playbook from './exported_config.json';
 import { useMemo } from 'react';
 
 function App() {
@@ -202,7 +202,7 @@ function App() {
     });
 
     return {
-      localRuntime: { exportedConfig },
+      localRuntime: { playbook },
       domainProviders: [analytics],
     };
   }, []);

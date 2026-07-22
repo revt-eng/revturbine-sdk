@@ -73,7 +73,7 @@ type SandpackFile = { code: string; active?: boolean; hidden?: boolean };
  */
 const APP_TSX = `import React, { useMemo } from "react";
 import { RevTurbineProvider } from "@revturbine/sdk";
-import exportedConfig from "./exported_config.json";
+import playbook from "./exported_config.json";
 import { demoUsers } from "./demoUsers";
 import { selectedUserId } from "./demoUser";
 import { Example } from "./Example";
@@ -83,7 +83,7 @@ const activeUser = demoUsers[selectedUserId] ?? demoUsers.user_alice;
 export default function App() {
   const options = useMemo(
     () => ({
-      localRuntime: { exportedConfig },
+      localRuntime: { playbook },
       user: activeUser.context,
       uiPathResolvers: {
         navigate_to_plans: async (ctx) => { console.log("[uiPath] navigate_to_plans", ctx); },
@@ -204,7 +204,7 @@ function generateHeadlessExampleCode(
     case 'HeadlessPlacement':
       return `import React, { useEffect, useState, useRef } from "react";
 import { initRevTurbine, PlacementController } from "@revturbine/sdk/headless";
-import exportedConfig from "./exported_config.json";
+import playbook from "./exported_config.json";
 import { demoUsers } from "./demoUsers";
 import { selectedUserId } from "./demoUser";
 
@@ -217,7 +217,7 @@ export function Example() {
   useEffect(() => {
     (async () => {
       const session = await initRevTurbine({
-        localRuntime: { exportedConfig },
+        localRuntime: { playbook },
         user: activeUser.context,
         uiPathResolvers: {
           navigate_to_plans: async (ctx) => { console.log("[uiPath] navigate_to_plans", ctx); },
@@ -256,7 +256,7 @@ export function Example() {
     case 'HeadlessEntitlementGate':
       return `import React, { useEffect, useState } from "react";
 import { initRevTurbine, EntitlementGate } from "@revturbine/sdk/headless";
-import exportedConfig from "./exported_config.json";
+import playbook from "./exported_config.json";
 import { demoUsers } from "./demoUsers";
 import { selectedUserId } from "./demoUser";
 
@@ -269,7 +269,7 @@ export function Example() {
   useEffect(() => {
     (async () => {
       const session = await initRevTurbine({
-        localRuntime: { exportedConfig },
+        localRuntime: { playbook },
         user: activeUser.context,
         uiPathResolvers: {},
       });
@@ -299,7 +299,7 @@ export function Example() {
     case 'HeadlessSession':
       return `import React, { useEffect, useState } from "react";
 import { initRevTurbine, SdkSession } from "@revturbine/sdk/headless";
-import exportedConfig from "./exported_config.json";
+import playbook from "./exported_config.json";
 import { demoUsers } from "./demoUsers";
 import { selectedUserId } from "./demoUser";
 
@@ -312,7 +312,7 @@ export function Example() {
   useEffect(() => {
     (async () => {
       const session = await initRevTurbine({
-        localRuntime: { exportedConfig },
+        localRuntime: { playbook },
         user: activeUser.context,
         uiPathResolvers: {},
       });
@@ -805,7 +805,7 @@ function PlaygroundRuntime(props: {
 }) {
   const options = useMemo(
     () => ({
-      localRuntime: { exportedConfig: exportedConfigJson },
+      localRuntime: { playbook: exportedConfigJson },
       uiPathResolvers: {
         navigate_to_plans: async () => {},
         open_upgrade_modal: async () => {},

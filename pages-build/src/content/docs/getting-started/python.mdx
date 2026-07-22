@@ -9,7 +9,7 @@ import { Aside } from '@astrojs/starlight/components';
 
 The Python SDK is a **headless *server* library**: it decides entitlements and
 placements **in-process**, with no network call and no persistence beyond
-memory. The server holds the user context and an `ExportedConfig` snapshot and
+memory. The server holds the user context and an `Playbook` snapshot and
 passes both to the SDK; the SDK decides locally.
 
 It is intentionally a small surface — the same decision core as the TypeScript
@@ -32,8 +32,8 @@ The `revturbine` package (requires Python ≥ 3.10) is published to **PyPI**:
 pip install revturbine
 ```
 
-Pin to a version whose schema matches the `ExportedConfig` you deploy — see
-[Refreshing the ExportedConfig](#refreshing-the-exportedconfig):
+Pin to a version whose schema matches the `Playbook` you deploy — see
+[Refreshing the Playbook](#refreshing-the-playbook):
 
 ```bash
 pip install "revturbine==<version>"
@@ -116,21 +116,21 @@ There is no runtime-mode switch and no network path:
 
 | | Python `RevTurbineCustomerSdk` |
 |---|---|
-| Network | None — decides from the supplied `ExportedConfig` |
+| Network | None — decides from the supplied `Playbook` |
 | Persistence | None — `InMemoryStorage` only; no file/db, no decision cache |
 | State | None across calls; no interaction/suppression hydration |
-| Inputs | `user_context` + `ExportedConfig`, both supplied by the server |
+| Inputs | `user_context` + `Playbook`, both supplied by the server |
 
 This makes it safe on a request hot path: an entitlement gate is a pure
 in-process computation, with no decision-API round-trip and no shared mutable
 state between requests.
 
-## Refreshing the ExportedConfig
+## Refreshing the Playbook
 
-The `ExportedConfig` is a snapshot exported from the RevTurbine control plane.
+The `Playbook` is a snapshot exported from the RevTurbine control plane.
 The SDK never fetches or caches it — your service owns its lifecycle:
 
-1. Fetch/export the latest `ExportedConfig` JSON (on boot, on a timer, or on a
+1. Fetch/export the latest `Playbook` JSON (on boot, on a timer, or on a
    webhook from the control plane).
 2. Construct a **new** `RevTurbineCustomerSdk` with the new snapshot. Because
    the instance is stateless, "refresh" is just "rebuild" — atomically swap
@@ -142,7 +142,7 @@ _sdk = RevTurbineCustomerSdk(user_context=ctx, exported_config=load_config())
 ```
 
 Pin the installed SDK tag to a version whose schema matches the
-`ExportedConfig` you deploy; a snapshot newer than the SDK's schema can decide
+`Playbook` you deploy; a snapshot newer than the SDK's schema can decide
 differently than your TypeScript frontend.
 
 ## Non-goals

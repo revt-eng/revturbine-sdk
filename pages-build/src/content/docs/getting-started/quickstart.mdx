@@ -50,12 +50,12 @@ This guide walks you through installing the SDK, running in **local-only mode**,
 
     ```tsx title="src/App.tsx"
     import { RevTurbineProvider, Slot } from '@revturbine/sdk';
-    import exportedConfig from './exported_config.json';
+    import playbook from './exported_config.json';
     import { useMemo } from 'react';
 
     function App() {
       const options = useMemo(() => ({
-        localRuntime: { exportedConfig },
+        localRuntime: { playbook },
         user: {
           id: 'user_123',
           context: { plan_handle: 'starter' },

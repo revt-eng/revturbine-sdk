@@ -31,7 +31,7 @@ An upgrade button in your navigation bar that:
    pnpm add @revturbine/sdk
    ```
 
-2. **Create an ExportedConfig fixture**
+2. **Create an Playbook fixture**
 
    For local development, you need a config file with plans, entitlements, and placements. Create `src/fixtures/exported_config.json`:
 
@@ -83,7 +83,7 @@ An upgrade button in your navigation bar that:
    ```tsx
    // src/App.tsx
    import { RevTurbineProvider } from '@revturbine/sdk';
-   import exportedConfig from './fixtures/exported_config.json';
+   import playbook from './fixtures/exported_config.json';
 
    export default function App() {
      return (
@@ -94,7 +94,7 @@ An upgrade button in your navigation bar that:
            endpoint: 'http://localhost',
            mode: 'react',
            runtimeMode: 'local_only',
-           localRuntime: { exportedConfig },
+           localRuntime: { playbook },
            // The button's CTA fires the action you configured; wire CTA
            // handling to your navigation — see the Quickstart.
          }}
@@ -151,15 +151,19 @@ An upgrade button in your navigation bar that:
 
 ## What Just Happened
 
-1. The `RevTurbineProvider` initialized the SDK in `local_only` mode with your ExportedConfig
+1. The `RevTurbineProvider` initialized the SDK in `local_only` mode with your Playbook
 2. The `<Slot>` asked the decision engine for a placement at slot `nav_upgrade`
 3. The engine evaluated the payload target (`plan_ids: ['plan_starter']`) against the user context
 4. For Starter users, it resolved the `button` template with the "Upgrade to Pro" CTA
 5. For Pro users, no payload matched — the slot rendered nothing
 
-## Moving to Production
+## Local mode is production-ready
 
-When you're ready for real decisions from the RevTurbine API:
+`local_only` is not a demo mode you graduate out of. It evaluates the full Playbook client-side and is a valid production runtime on its own — ship it as-is when a bundled Playbook, client-side decisioning, and `localStorage` events are enough for you.
+
+Switch to the RevTurbine **server** runtime when you want what it *adds*, not because local mode isn't "real": live Playbook updates without a redeploy, server-authoritative usage and metering, A/B experiments, and centralized analytics through the ingest pipeline. See [Runtime Modes](/guides/runtime-modes/) for the full comparison.
+
+To switch, point the provider at your tenant and drop the local runtime:
 
 ```diff
   <RevTurbineProvider
@@ -172,7 +176,7 @@ When you're ready for real decisions from the RevTurbine API:
 +     endpoint: process.env.NEXT_PUBLIC_RT_ENDPOINT!,
       mode: 'react',
 -     runtimeMode: 'local_only',
--     localRuntime: { exportedConfig },
+-     localRuntime: { playbook },
 +     runtimeMode: 'revturbine_server',
     }}
   >

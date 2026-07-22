@@ -1,23 +1,25 @@
 ---
 title: Error Handling
-description: SDK error model, fail-open semantics, provider failure cascade, and graceful degradation patterns.
+description: SDK error model, additive placements, fail-closed entitlement checks, provider failure cascade, and graceful degradation patterns.
 sidebar:
   order: 11
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-The SDK is designed with **fail-open semantics** — when RevTurbine is unreachable, your app's baseline UX continues unaffected. Placements disappear gracefully and entitlement checks default to `allowed`.
+The SDK never throws into your app and never blocks your render. But *placements* and *entitlement checks* degrade in opposite directions, on purpose: a placement that can't resolve **renders nothing**, while an entitlement check that can't resolve **denies**.
 
-## Core Principle: Fail-Open
+## Two degradation modes
 
-RevTurbine is an enhancement layer, not a critical dependency. The SDK never blocks your app from functioning:
+**Placements are additive.** If RevTurbine is paused, misconfigured, or unreachable, a slot renders nothing (or your configured fallback) — it can never take your product down.
+
+**Entitlement checks are fail-closed.** If a check can't produce an affirmative grant, it returns `{ status: 'denied', allowed: false }` rather than granting access. The Playbook is cached and persisted locally, so a configured runtime evaluates real allow/deny answers with no network round-trip; the failure fallback only fires when the SDK has *no basis to answer at all* — no config, no cache, nothing reachable — which is exactly where denying is the safe, non-leaking default. The `reason` code is preserved so you can still tell an outage apart from a real denial.
 
 | API failure scenario | SDK behavior |
 |---|---|
 | API unreachable | Placements return `visible: false` |
-| Entitlement check fails | Returns `{ allowed: true, reason: 'entitlement_service_unavailable' }` |
-| Config fetch fails | Falls back to cached config or empty state |
+| Entitlement check fails | Returns `{ status: 'denied', allowed: false, reason: 'entitlement_service_unavailable' }` |
+| Config fetch fails | Falls back to cached Playbook; with none, entitlement checks deny |
 | Event delivery fails | Events are buffered and retried silently |
 
 ## Error Surface
@@ -98,7 +100,7 @@ Placement decisions include `reason_codes` that explain why a placement was hidd
 | `suppressed` | User recently dismissed/snoozed |
 | `plan_mismatch` | User's plan doesn't match targeting |
 | `segment_mismatch` | User doesn't match targeting segment |
-| `config_not_loaded` | ExportedConfig not yet available |
+| `config_not_loaded` | Playbook not yet available |
 | `api_error` | API returned non-200 |
 | `network_error` | Network/timeout failure |
 | `fallback_content` | Using fallback placeholder |

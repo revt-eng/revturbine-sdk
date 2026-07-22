@@ -1,6 +1,6 @@
 ---
 title: Client vs Server Enforcement
-description: How RevTurbine splits responsibility — RevTurbine owns monetization policy, your app owns enforcement, the UI fails open, and billing-critical actions are re-checked on your server. Plus the difference between <Gate>, gate(), and can().
+description: How RevTurbine splits responsibility — RevTurbine owns monetization policy, your app owns enforcement, placements are additive while entitlement checks fail closed, and billing-critical actions are re-checked on your server. Plus the difference between <Gate>, gate(), and can().
 sidebar:
   order: 2
 ---
@@ -13,11 +13,11 @@ Every team evaluating RevTurbine asks the same question: *"If entitlements are c
 
 - **RevTurbine is authoritative for monetization *policy*.** Which plans exist, what each plan entitles, when a placement shows — that lives in your [Playbook](/getting-started/api-overview/#the-vocabulary-slot--gate--playbook) and the control plane, and a PM changes it with no code deploy.
 - **Your app owns *enforcement*.** RevTurbine tells you the policy answer; your app is what actually allows or blocks the action.
-- **The UI fails open.** If RevTurbine is paused, misconfigured, or unreachable, slots render nothing and entitlement checks resolve permissively — so our downtime can't break your product.
+- **Placements are additive; checks are fail-closed.** If RevTurbine is paused, misconfigured, or unreachable, slots render nothing — so our downtime can't break your product. Entitlement checks, by contrast, deny when they can't produce an affirmative grant, so an outage never *leaks* a paid feature.
 - **Money-safe decisions belong on your server.** A browser check can be tampered with. For anything that costs money or invites abuse, re-run the check server-side before you grant access.
 
 <Aside type="tip" title="Additive by design — it can't break your app">
-Failing open is deliberate. RevTurbine is an *additive* layer: your product must look and work correctly with every placement paused and the SDK offline. A monetization layer should never be able to take your product down — so when in doubt, it does nothing.
+RevTurbine is an *additive* layer: your product must look and work correctly with every placement paused and the SDK offline. A monetization layer should never be able to take your product *down* — placements render nothing. It should also never let downtime *leak* paid access — so entitlement checks deny when they can't affirm a grant.
 </Aside>
 
 ## Three tools, and where each runs
@@ -30,7 +30,7 @@ The SDK gives you three ways to act on an entitlement. They sound alike; they ar
 | `rt.gate(action, fn)` | Imperative verb | Client | Run `fn` only if entitled; get the entitlement back to open a paywall |
 | `rt.can(handle)` · `useCan` · `checkEntitlement` | Check | Client **or** server | Ask "is this allowed?" and get the full result — the one you re-run server-side |
 
-`<Gate>` and `gate()` are convenience wrappers around a `can()`/`checkEntitlement()` call. All three run in the browser and **fail open**. The check itself — `checkEntitlement` / `can` — is also what you run on your server (via the server SDK or your own logic) when the decision has to be trusted.
+`<Gate>` and `gate()` are convenience wrappers around a `can()`/`checkEntitlement()` call. All three run in the browser and are **fail-closed** — a check that can't affirm a grant denies. The check itself — `checkEntitlement` / `can` — is also what you run on your server (via the server SDK or your own logic) when the decision has to be trusted.
 
 ## When do I need the server?
 
@@ -69,11 +69,11 @@ async function handleExport(req, res) {
 }
 ```
 
-The client `<Gate>` keeps the UI honest and fast; the server check keeps the revenue safe. If RevTurbine is down, the client fails open (the button shows), and your server check is still the backstop for the billing-critical step.
+The client `<Gate>` keeps the UI honest and fast; the server check keeps the revenue safe. If RevTurbine is down, the client denies (the gated UI stays gated rather than leaking), and your server check is still the backstop for the billing-critical step.
 
 ## Related
 
 - [Recommended API Path](/getting-started/api-overview/) — when to reach for `can()` vs `gate()` vs `<Gate>`
 - [Server-Side Integration](/getting-started/server-side/) — running entitlement checks on your backend
 - [Entitlements](/guides/entitlements/) — the entitlement model behind every check
-- [Error Handling](/guides/error-handling/) — the additive / fail-open behavior in detail
+- [Error Handling](/guides/error-handling/) — additive placements and fail-closed checks in detail

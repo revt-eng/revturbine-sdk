@@ -32,7 +32,7 @@ The SDK follows [Semantic Versioning](https://semver.org/):
 - `FixedSurfaceSlot`, `AccessGateSurfaceSlot`, `MessageSurfaceSlot` component variants
 - `PlacementController`, `EntitlementGate`, `SdkSession` headless controllers
 - Three runtime modes: `revturbine_server`, `local_only`, `custom_endpoints`
-- ExportedConfig-based local runtime
+- Playbook-based local runtime
 - Theme system with color, typography, shape, and shadow tokens
 - `PlacementTypeRegistry` for custom slot registration
 - Event tracking: `trackEvent()`, `emitTrigger()`, `trackTreatmentInteraction()`
@@ -59,7 +59,7 @@ See [Runtime Modes → Migrating from Local to Server Mode](/guides/runtime-mode
 
 ### Schema Version Compatibility
 
-The SDK version is tied to the RevTurbine schema version it bundles. When upgrading the SDK, ensure your ExportedConfig fixture is compatible:
+The SDK version is tied to the RevTurbine schema version it bundles. When upgrading the SDK, ensure your Playbook fixture is compatible:
 
 ```bash
 # Regenerate types after SDK upgrade

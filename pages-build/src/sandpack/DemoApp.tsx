@@ -2,7 +2,7 @@
  * The shared standalone app shell every docs example runs inside.
  *
  * It wires up the one-time setup a real app does once — a `RevTurbineProvider`
- * bound to the demo `exportedConfig`, a demo user, and the UI-path resolvers that
+ * bound to the demo `playbook`, a demo user, and the UI-path resolvers that
  * handle placement CTAs — so each example only has to show the part that matters:
  * the component (or hook) being demonstrated.
  *
@@ -15,7 +15,7 @@
  */
 import React, { useMemo } from 'react';
 import { RevTurbineProvider } from '@revturbine/sdk';
-import exportedConfig from './exported_config.json';
+import playbook from './exported_config.json';
 import { demoUsers } from './demoUsers';
 
 export type DemoUserKey = keyof typeof demoUsers;
@@ -30,7 +30,7 @@ export function DemoApp({
 }) {
   const options = useMemo(
     () => ({
-      localRuntime: { exportedConfig },
+      localRuntime: { playbook },
       user: demoUsers[user].context,
       // Placement CTAs call back into your app's navigation. Here we just log.
       uiPathResolvers: {

@@ -7,7 +7,7 @@ sidebar:
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
-The SDK supports three runtime modes. **Start with `local_only`** to get up and running without any backend, then switch to a server mode when you're ready for live decisioning.
+The SDK supports three runtime modes. **Start with `local_only`** to get up and running without any backend. It evaluates the full Playbook client-side and is production-capable on its own — a server mode is not a prerequisite for "real" decisions, it adds live config updates, server-authoritative usage, experiments, and centralized analytics.
 
 ## Decision Tree
 
@@ -22,7 +22,7 @@ The SDK supports three runtime modes. **Start with `local_only`** to get up and 
 
 | Mode | Best for | Network dependency | Required config |
 |---|---|---|---|
-| **`local_only`** | Getting started, demos, offline | **None** | `localRuntime: { exportedConfig }` |
+| **`local_only`** | Getting started, offline, **and production** when a bundled Playbook is enough | **None** | `localRuntime: { playbook }` |
 | `revturbine_server` | Production with live A/B testing | RevTurbine edge endpoints | `tenantId`, `apiKey`, `endpoint` |
 | `custom_endpoints` | Customer proxy/service boundaries | Customer endpoints | Base config + `endpointOverrides` |
 
@@ -33,7 +33,7 @@ The SDK supports three runtime modes. **Start with `local_only`** to get up and 
 
 ```ts
 import { initRevTurbine, createLocalRuntimeConfig } from '@revturbine/sdk';
-import exportedConfig from './exported_config.json';
+import playbook from './exported_config.json';
 
 const sdk = initRevTurbine(
   createLocalRuntimeConfig({
@@ -42,7 +42,7 @@ const sdk = initRevTurbine(
     endpoint: 'http://localhost',
     mode: 'react',
     localRuntime: {
-      exportedConfig,
+      playbook,
       storageKey: 'my-app:revturbine-local-runtime',
     },
   }),
@@ -106,7 +106,7 @@ When you're ready for production, the change is a single config swap. Your compo
 -     apiKey: 'local',
 -     endpoint: 'http://localhost',
 -     runtimeMode: 'local_only',
--     localRuntime: { exportedConfig },
+-     localRuntime: { playbook },
 +     tenantId: process.env.REVTURBINE_TENANT_ID!,
 +     apiKey: process.env.REVTURBINE_API_KEY!,
 +     endpoint: 'https://api.revturbine.io',
