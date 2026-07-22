@@ -31,52 +31,24 @@ import { useRevTurbine } from '../../../web-sdk/react/useRevTurbine';
 // Injected at build time from ../web-sdk/package.json via astro.config.mjs.
 const SDK_VERSION = (import.meta.env.PUBLIC_SDK_VERSION as string) ?? '0.2.21';
 
-function buildSandpackFiles(scenario: SandpackScenario, selectedUserId: string): Record<string, string> {
-  const componentName = scenario.component;
-  const templateIdsLiteral = JSON.stringify(scenario.surfaceTemplateIds);
+type SandpackFile = { code: string; active?: boolean; hidden?: boolean };
 
-  // Headless scenarios use imperative SDK API
-  if (componentName === 'HeadlessPlacement' || componentName === 'HeadlessEntitlementGate' || componentName === 'HeadlessSession') {
-    const appCode = generateHeadlessAppCode(scenario, selectedUserId, componentName, templateIdsLiteral);
-    return {
-      '/App.tsx': appCode,
-      '/demoUsers.ts': demoUsersRaw as string,
-      '/shared.ts': sharedRaw as string,
-      '/exported_config.json': exportedConfigRaw as string,
-    };
-  }
-
-  // Component scenarios use RevTurbineProvider
-  let componentJsx: string;
-  switch (componentName) {
-    case 'Gate':
-      componentJsx = `      <${componentName}
-          id="${scenario.slotId}"
-          surfaceTemplateIds={${templateIdsLiteral}}
-          check={{ entitlement: "${scenario.entitlementHandle}" }}
-        >
-          <div style={{ padding: 16, background: "#e8f5e9", borderRadius: 8, border: "1px solid #a5d6a7" }}>
-            ✅ Access granted — premium content visible
-          </div>
-        </${componentName}>`;
-      break;
-    default:
-      componentJsx = `      <${componentName}
-          id="${scenario.slotId}"
-          surfaceTemplateIds={${templateIdsLiteral}}
-        />`;
-  }
-
-  return {
-    '/App.tsx': `import React, { useMemo } from "react";
-import {
-  RevTurbineProvider,
-  ${componentName},
-} from "@revturbine/sdk";
+/**
+ * `App.tsx` for every component scenario — byte-identical across all of them.
+ *
+ * It owns only the one-time wiring a real app does once (provider, demo config,
+ * demo user, CTA resolvers) and renders `<Example />`. Because the scenario and
+ * the selected demo user both live in other files, switching either one leaves
+ * this file untouched, so readers can learn the setup once and then read only
+ * `Example.tsx` from example to example.
+ */
+const APP_TSX = `import React, { useMemo } from "react";
+import { RevTurbineProvider } from "@revturbine/sdk";
 import exportedConfig from "./exported_config.json";
 import { demoUsers } from "./demoUsers";
+import { selectedUserId } from "./demoUser";
+import { Example } from "./Example";
 
-const selectedUserId = ${JSON.stringify(selectedUserId)};
 const activeUser = demoUsers[selectedUserId] ?? demoUsers.user_alice;
 
 export default function App() {
@@ -96,20 +68,106 @@ export default function App() {
 
   return (
     <RevTurbineProvider options={options}>
-${componentJsx}
+      <Example />
     </RevTurbineProvider>
   );
 }
-`,
-    '/demoUsers.ts': demoUsersRaw as string,
-    '/shared.ts': sharedRaw as string,
-    '/exported_config.json': exportedConfigRaw as string,
+`;
+
+/**
+ * `App.tsx` for headless scenarios. The imperative API builds its own session
+ * inside the example, so there is no provider to set up — but the shape still
+ * matches: boilerplate here, the interesting code in `Example.tsx`.
+ */
+const HEADLESS_APP_TSX = `import React from "react";
+import { Example } from "./Example";
+
+// The headless API creates its own session, so there is no provider to mount —
+// all of the interesting code lives in Example.tsx.
+export default function App() {
+  return <Example />;
+}
+`;
+
+/** The one file that differs per demo user, so App.tsx never has to. */
+const demoUserFile = (selectedUserId: string) =>
+  `// Set by the User dropdown above — the playground rewrites this file.
+export const selectedUserId = ${JSON.stringify(selectedUserId)};
+`;
+
+function buildSandpackFiles(
+  scenario: SandpackScenario,
+  selectedUserId: string,
+): Record<string, SandpackFile> {
+  const componentName = scenario.component;
+  const templateIdsLiteral = JSON.stringify(scenario.surfaceTemplateIds);
+  const isHeadless =
+    componentName === 'HeadlessPlacement' ||
+    componentName === 'HeadlessEntitlementGate' ||
+    componentName === 'HeadlessSession';
+
+  const exampleCode = isHeadless
+    ? generateHeadlessExampleCode(scenario, componentName, templateIdsLiteral)
+    : generateComponentExampleCode(scenario, componentName, templateIdsLiteral);
+
+  return {
+    // The focal file — opened by default so the scenario's code is what a reader
+    // lands on, rather than the provider boilerplate they have already seen.
+    '/Example.tsx': { code: exampleCode, active: true },
+    '/App.tsx': { code: isHeadless ? HEADLESS_APP_TSX : APP_TSX },
+    '/demoUser.ts': { code: demoUserFile(selectedUserId) },
+    // Fixtures — importable, but not worth a tab.
+    '/demoUsers.ts': { code: demoUsersRaw as string, hidden: true },
+    '/shared.ts': { code: sharedRaw as string, hidden: true },
+    '/exported_config.json': { code: exportedConfigRaw as string, hidden: true },
   };
 }
 
-function generateHeadlessAppCode(
+/** The scenario's actual slot usage — the code the example exists to show. */
+function generateComponentExampleCode(
   scenario: SandpackScenario,
-  selectedUserId: string,
+  componentName: string,
+  templateIdsLiteral: string,
+): string {
+  if (componentName === 'Gate') {
+    return `import { ${componentName} } from "@revturbine/sdk";
+
+export function Example() {
+  return (
+    <${componentName}
+      id="${scenario.slotId}"
+      surfaceTemplateIds={${templateIdsLiteral}}
+      check={{ entitlement: "${scenario.entitlementHandle}" }}
+    >
+      <div style={{ padding: 16, background: "#e8f5e9", borderRadius: 8, border: "1px solid #a5d6a7" }}>
+        ✅ Access granted — premium content visible
+      </div>
+    </${componentName}>
+  );
+}
+`;
+  }
+
+  return `import { ${componentName} } from "@revturbine/sdk";
+
+export function Example() {
+  return (
+    <${componentName}
+      id="${scenario.slotId}"
+      surfaceTemplateIds={${templateIdsLiteral}}
+    />
+  );
+}
+`;
+}
+
+/**
+ * Headless scenarios, same shape as the component ones: the imperative SDK code
+ * lives in `Example.tsx` and exports `Example`, so App.tsx stays boilerplate.
+ * The active demo user comes from `./demoUser`, not a baked-in literal.
+ */
+function generateHeadlessExampleCode(
+  scenario: SandpackScenario,
   componentName: string,
   templateIdsLiteral: string,
 ): string {
@@ -119,11 +177,11 @@ function generateHeadlessAppCode(
 import { initRevTurbine, PlacementController } from "@revturbine/sdk/headless";
 import exportedConfig from "./exported_config.json";
 import { demoUsers } from "./demoUsers";
+import { selectedUserId } from "./demoUser";
 
-const selectedUserId = ${JSON.stringify(selectedUserId)};
 const activeUser = demoUsers[selectedUserId] ?? demoUsers.user_alice;
 
-export default function App() {
+export function Example() {
   const [state, setState] = useState({ isLoading: true, error: "", visible: false, content: null, placementId: "" });
   const ctrlRef = useRef(null);
 
@@ -171,11 +229,11 @@ export default function App() {
 import { initRevTurbine, EntitlementGate } from "@revturbine/sdk/headless";
 import exportedConfig from "./exported_config.json";
 import { demoUsers } from "./demoUsers";
+import { selectedUserId } from "./demoUser";
 
-const selectedUserId = ${JSON.stringify(selectedUserId)};
 const activeUser = demoUsers[selectedUserId] ?? demoUsers.user_alice;
 
-export default function App() {
+export function Example() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
@@ -214,11 +272,11 @@ export default function App() {
 import { initRevTurbine, SdkSession } from "@revturbine/sdk/headless";
 import exportedConfig from "./exported_config.json";
 import { demoUsers } from "./demoUsers";
+import { selectedUserId } from "./demoUser";
 
-const selectedUserId = ${JSON.stringify(selectedUserId)};
 const activeUser = demoUsers[selectedUserId] ?? demoUsers.user_alice;
 
-export default function App() {
+export function Example() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
@@ -281,16 +339,29 @@ const playgroundCSS = `
   --rt-text-muted: #94a3b8;
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
-/* SandpackProvider renders a wrapper div — make it a 2-row grid */
+/* SandpackProvider renders a wrapper div — make it the playground grid.
+ *
+ * Left column stacks preview over editor; the inspector takes the right column
+ * across BOTH rows. The three panels have very different appetites: the preview
+ * renders one small component (a button, a banner), the editor holds ~20 short
+ * lines, and the inspector is the dense one — decision summary, user context,
+ * raw JSON. The old layout gave preview and inspector an identical 520px row
+ * and then handed the editor the full width, so the preview was mostly empty,
+ * the inspector scrolled inside its half, and the editor wasted its right side.
+ * Spanning the inspector fixes all three and drops the widget from 1018px to
+ * ~700px — worth a lot on a page that stacks seven of them.
+ */
 .rt-playground > .sp-wrapper {
   display: grid !important;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 520px auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: 300px 400px; /* preview, editor */
 }
 
 /* Top-left: preview */
 .rt-panel-preview {
   position: relative; /* positioning context for .rt-run-overlay */
+  grid-column: 1;
+  grid-row: 1;
   min-width: 0;
   height: 100%;
   overflow: hidden;
@@ -337,22 +408,23 @@ const playgroundCSS = `
 .rt-panel-preview:has(.rt-run-overlay) .sp-preview-actions {
   display: none;
 }
+/* Must not carry a min-height taller than its grid row, or the iframe overflows
+   the panel it is supposed to sit inside. */
 .rt-panel-preview .sp-preview-container,
 .rt-panel-preview .sp-preview-iframe {
   height: 100% !important;
-  min-height: 520px !important;
+  min-height: 0 !important;
 }
 
-/* Top-right: inspector (placed outside SandpackProvider, see below) */
-
-/* Bottom: code editor — spans full width */
+/* Bottom-left: code editor — beside the inspector, not under it */
 .rt-panel-editor {
-  grid-column: 1 / -1;
+  grid-column: 1;
+  grid-row: 2;
   min-width: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  height: 480px;
+  border-right: 1px solid var(--rt-border);
 }
 .rt-panel-editor .sp-editor,
 .rt-panel-editor .sp-stack {
@@ -366,14 +438,16 @@ const playgroundCSS = `
   min-height: 0 !important;
 }
 
-/* ── Inspector panel (top-right, beside preview) ────────────────────── */
+/* ── Inspector panel (right column, full height) ─────────────────────── */
 .rt-inspector-wrap {
+  grid-column: 2;
+  grid-row: 1 / -1; /* span preview + editor rows — this is the dense panel */
   display: flex;
   flex-direction: column;
   background: var(--rt-surface-alt);
   overflow: hidden;
-  border-bottom: 1px solid var(--rt-border);
   height: 100%;
+  min-width: 0;
 }
 /* Hide the inner inspector header — the outer wrapper already has one */
 .rt-inspector-iso > section[data-rt-inspector] > header {
@@ -425,6 +499,40 @@ const playgroundCSS = `
   padding: 16px;
   flex: 1 1 0;
   overflow-y: auto;
+}
+
+/* ── Narrow viewports ────────────────────────────────────────────────────
+ * Starlight's content column tracks the viewport, so below roughly this width
+ * two columns leave the editor too narrow for its code and the inspector too
+ * narrow for placement ids and raw JSON. Stack instead: preview, inspector,
+ * editor — each full width. Rows are assigned explicitly, so this does not
+ * depend on DOM order.
+ */
+@media (max-width: 1200px) {
+  .rt-playground > .sp-wrapper {
+    grid-template-columns: minmax(0, 1fr);
+    /* The inspector's content is ~1100px tall almost regardless of width — extra
+       width barely compresses it — so it always scrolls. Give it a row tall
+       enough to show the decision summary AND the user context together, which
+       is the part worth reading; a shorter row here was strictly worse than the
+       two-column layout it replaces. */
+    grid-template-rows: 280px 520px 380px;
+  }
+  .rt-panel-preview {
+    grid-column: 1;
+    grid-row: 1;
+    border-right: none;
+  }
+  .rt-inspector-wrap {
+    grid-column: 1;
+    grid-row: 2;
+    border-bottom: 1px solid var(--rt-border);
+  }
+  .rt-panel-editor {
+    grid-column: 1;
+    grid-row: 3;
+    border-right: none;
+  }
 }
 
 /* ── Inspector element isolation (prevents Starlight dark-mode bleed) ── */
@@ -630,6 +738,11 @@ export default function SandpackPlayground({ scenarioId }: SandpackPlaygroundPro
       <style dangerouslySetInnerHTML={{ __html: playgroundCSS }} />
       <SandpackProvider
         template="react-ts"
+        // Follow the site's light/dark setting, matching CodeExample. Without
+        // this Sandpack defaults to its light theme, so on a dark docs page the
+        // preview and editor rendered as white panels inside the playground's
+        // dark chrome.
+        theme="auto"
         key={`${scenario.id}:${selectedUserId}`}
         files={files}
         customSetup={{
@@ -673,7 +786,11 @@ export default function SandpackPlayground({ scenarioId }: SandpackPlaygroundPro
 
         {/* Bottom — code editor (full width) */}
         <div className="rt-panel-editor">
-          <SandpackCodeEditor showLineNumbers showTabs />
+          {/* Wrap rather than scroll: the generated App.tsx wants ~750px for its
+              longest line, but the playground only ever gets about half the
+              viewport, so an unwrapped editor scrolls sideways at every
+              realistic width. */}
+          <SandpackCodeEditor showLineNumbers showTabs wrapContent />
         </div>
       </SandpackProvider>
     </div>
