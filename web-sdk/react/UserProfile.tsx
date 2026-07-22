@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRevTurbineTheme } from '../theme/ThemeContext';
 import type { RevTurbineTargeting } from '../customer-side';
 
 /**
@@ -29,6 +30,7 @@ export function UserProfile({
   className,
   style,
 }: UserProfileProps) {
+  const c = useRevTurbineTheme().colors;
   const usageEntries = Object.entries(targeting.usage ?? {}).sort(([left], [right]) => left.localeCompare(right));
   const traitEntries = Object.entries(targeting.traits ?? {}).sort(([left], [right]) => left.localeCompare(right));
 
@@ -36,10 +38,14 @@ export function UserProfile({
     <section
       className={className}
       style={{
-        border: '1px solid #e2e8f0',
+        border: `1px solid ${c.surfaceBorder}`,
         borderRadius: 8,
         padding: 10,
-        background: '#f8fafc',
+        background: c.surface,
+        // Set explicitly rather than inherited: this card sets its own surface,
+        // so inheriting a caller's text colour is how it ended up light-on-light
+        // the moment the inspector around it went dark.
+        color: c.text,
         ...style,
       }}
       data-rt-inspector="user-profile"

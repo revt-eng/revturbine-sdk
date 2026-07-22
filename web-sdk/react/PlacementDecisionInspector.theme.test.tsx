@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { PlacementDecisionInspector } from './PlacementDecisionInspector';
+import { UserProfile } from './UserProfile';
 import { RevTurbineThemeProvider } from '../theme/ThemeContext';
 import { DEFAULT_THEME, mergeTheme } from '../theme/defaults';
 
@@ -65,5 +66,32 @@ describe('PlacementDecisionInspector theming', () => {
       </RevTurbineThemeProvider>,
     );
     expect(html).toContain('background:rebeccapurple');
+  });
+
+  // Regression: UserProfile sets its own surface but used to inherit its text
+  // colour. Inside a dark-themed inspector that produced light text on a
+  // near-white card — unreadable, and invisible to a test that only checked the
+  // outer card. Any nested component that paints a surface must also set text.
+  it('themes the nested user-profile card, text included', () => {
+    const html = renderToStaticMarkup(
+      <RevTurbineThemeProvider theme={DARK}>
+        <UserProfile
+          targeting={{
+            userId: 'user_carol',
+            plan: 'starter',
+            segmentIds: [],
+            configuredSegments: [],
+            configuredTraitFields: [],
+          }}
+        />
+      </RevTurbineThemeProvider>,
+    );
+    expect(html).toContain(`background:${DARK.colors.surface}`);
+    expect(html).toContain(`color:${DARK.colors.text}`);
+    // Only the old SURFACE literals must be gone. Do not assert on the raw
+    // border hex here: #e2e8f0 was the old border, but it is also this dark
+    // theme's text colour, so a blanket check would fail on correct output.
+    expect(html).not.toContain('#f8fafc');
+    expect(html).not.toContain('1px solid #e2e8f0');
   });
 });
