@@ -9,4 +9,4 @@ minimumReleaseAgeExclude:
   - '@revt-eng/core@0.1.127 || 0.1.131'
   - '@revt-eng/schema-external@0.1.127 || 0.1.131'
   - '@revt-eng/schema@0.1.127 || 0.1.131'
-  - '@revturbine/sdk@0.2.26'
+  - '@revturbine/sdk@0.2.26 || 0.2.27 || 0.2.28'

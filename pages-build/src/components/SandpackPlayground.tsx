@@ -28,9 +28,33 @@ import {
   RevTurbineProvider,
   PlacementDecisionInspector,
   useRevTurbine,
+  RevTurbineThemeProvider,
+  mergeTheme,
+  DEFAULT_THEME,
   Slot,
   Gate,
 } from '@revturbine/sdk';
+
+/**
+ * The inspector's palette, matched to the playground chrome.
+ *
+ * Scoped deliberately to the inspector: the rendered-output panel keeps the demo
+ * config's own theme, because that panel is showing what a customer's placement
+ * looks like with their branding — recolouring it would misrepresent the demo.
+ * The playground chrome is dark in both site themes, so this is unconditional
+ * rather than tied to Starlight's light/dark toggle.
+ */
+const INSPECTOR_THEME = mergeTheme({
+  colors: {
+    ...DEFAULT_THEME.colors,
+    background: '#0f172a',
+    surface: '#1e293b',
+    surfaceBorder: '#334155',
+    text: '#e2e8f0',
+    textSecondary: '#cbd5e1',
+    textMuted: '#94a3b8',
+  },
+});
 
 // Published `@revturbine/sdk` version to install in the Sandpack sandboxes.
 // Injected at build time from ../web-sdk/package.json via astro.config.mjs.
@@ -571,58 +595,36 @@ const playgroundCSS = `
   }
 }
 
-/* ── Inspector element isolation (prevents Starlight dark-mode bleed) ── */
-.rt-inspector-iso,
-.rt-inspector-iso *:not(pre) {
-  color: inherit;
-}
+/* ── Inspector element neutralisation ────────────────────────────────────
+ * The inspector paints itself from the SDK theme now (see INSPECTOR_THEME), so
+ * this no longer forces a light palette — it only neutralises Starlight's
+ * GLOBAL element styling for the few tags the SDK does not style inline
+ * (code chips, summary markers). Everything inherits its colour from the
+ * themed card, so it follows whatever theme the inspector is given.
+ */
 .rt-inspector-iso code {
-  background: #f1f5f9 !important;
-  color: #0f172a !important;
-  padding: 1px 5px !important;
-  border-radius: 4px !important;
-  font-size: 0.9em !important;
-  border: none !important;
-}
-.rt-inspector-iso pre {
-  background: #0f172a !important;
-  color: #e2e8f0 !important;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: inherit;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  border: none;
 }
 .rt-inspector-iso pre code {
-  background: transparent !important;
-  color: inherit !important;
-  padding: 0 !important;
-  border-radius: 0 !important;
-  font-size: inherit !important;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
 }
 .rt-inspector-iso h3,
 .rt-inspector-iso h4 {
-  color: #0f172a !important;
-  border: none !important;
-  margin-top: 0 !important;
-}
-.rt-inspector-iso button {
-  background: #f1f5f9 !important;
-  color: #334155 !important;
-  border: 1px solid #cbd5e1 !important;
-  border-radius: 6px !important;
-  padding: 4px 12px !important;
-  cursor: pointer !important;
-  font-size: 13px !important;
-}
-.rt-inspector-iso button:hover {
-  background: #e2e8f0 !important;
+  border: none;
+  margin-top: 0;
 }
 .rt-inspector-iso summary {
-  color: #64748b !important;
-  cursor: pointer !important;
+  cursor: pointer;
 }
-.rt-inspector-iso strong {
-  color: inherit !important;
-}
-.rt-inspector-iso section[data-rt-inspector] {
-  color: #0f172a !important;
-}
+
 `;
 
 function isHeadlessScenario(component: string) {
@@ -773,15 +775,17 @@ function PlaygroundPanels({
         </div>
         <div className="rt-panel-body rt-inspector-body rt-inspector-iso">
           {isReady ? (
-            <PlacementDecisionInspector
-              key={`${scenario.id}:${selectedUserId}:${revision}`}
-              surfaceSlot={{
-                id: scenario.slotId,
-                surfaceTemplateIds: scenario.surfaceTemplateIds,
-              }}
-              userId={selectedUser.context.id}
-              showRawJson
-            />
+            <RevTurbineThemeProvider theme={INSPECTOR_THEME}>
+              <PlacementDecisionInspector
+                key={`${scenario.id}:${selectedUserId}:${revision}`}
+                surfaceSlot={{
+                  id: scenario.slotId,
+                  surfaceTemplateIds: scenario.surfaceTemplateIds,
+                }}
+                userId={selectedUser.context.id}
+                showRawJson
+              />
+            </RevTurbineThemeProvider>
           ) : (
             <div className="rt-output-note">Preparing decision inspector…</div>
           )}
