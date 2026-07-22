@@ -767,12 +767,34 @@ export interface RevTurbineLocalRuntimeResolvers {
   resolveExportedConfig?: () => ConfigArtifact | Promise<ConfigArtifact>;
 }
 
+/**
+ * Resolve the local-mode Playbook from either accepted key.
+ *
+ * `playbook` is canonical; `exportedConfig` is the legacy alias kept for
+ * backwards compatibility. Both are optional at the type level, so this is the
+ * one place that decides precedence — consumers must not read either key
+ * directly or they will disagree about which one wins.
+ */
+export function resolveLocalPlaybook(
+  localRuntime?: Pick<RevTurbineLocalRuntimeOptions, 'playbook' | 'exportedConfig'> | null,
+): ConfigArtifact | undefined {
+  return localRuntime?.playbook ?? localRuntime?.exportedConfig;
+}
+
 export interface RevTurbineLocalRuntimeOptions {
   /**
-   * Full RevTurbineConfig snapshot loaded at initialization for local-only execution.
-   * Contains plans, entitlements, entitlement rules, segments, ui paths,
-   * surface templates, trial, and theme. Providers and resolvers can read
-   * this to hydrate domain state without a server.
+   * The {@link Playbook} the SDK evaluates against in local-only execution —
+   * plans, entitlements, entitlement rules, segments, ui paths, surface
+   * templates, trial, and theme. Providers and resolvers read this to hydrate
+   * domain state without a server.
+   *
+   * Typically distributed as `exported_config.json`.
+   */
+  playbook?: ConfigArtifact;
+  /**
+   * @deprecated Legacy alias for {@link RevTurbineLocalRuntimeOptions.playbook}.
+   * Still fully supported — pass either one. When both are supplied `playbook`
+   * wins. Prefer `playbook`: it matches the canonical type name.
    */
   exportedConfig?: ConfigArtifact;
   /** Optional static placements dataset used by the SDK's built-in local resolver. */
@@ -804,20 +826,24 @@ type RevTurbineBaseInitWithoutRuntimeSpecifics = Omit<
 
 /**
  * Strict initialization mode for compile-time safety:
- * when using `local_only` runtime with `localRuntime.exportedConfig`,
+ * when using `local_only` runtime with a Playbook (`localRuntime.playbook`, or
+ * the legacy `localRuntime.exportedConfig`),
  * `uiPathResolvers` is required.
  */
 export type RevTurbineInitOptionsStrict =
   | (RevTurbineBaseInitWithoutRuntimeSpecifics & {
       runtimeMode: 'local_only';
-      localRuntime: RevTurbineLocalRuntimeOptions & {
-        exportedConfig: ConfigArtifact;
-      };
+      localRuntime: RevTurbineLocalRuntimeOptions &
+        (
+          | { playbook: ConfigArtifact }
+          | { exportedConfig: ConfigArtifact }
+        );
       uiPathResolvers: RevTurbineUiPathResolverMap;
     })
   | (RevTurbineBaseInitWithoutRuntimeSpecifics & {
       runtimeMode: 'local_only';
       localRuntime: RevTurbineLocalRuntimeOptions & {
+        playbook?: undefined;
         exportedConfig?: undefined;
       };
       uiPathResolvers?: RevTurbineUiPathResolverMap;
@@ -860,11 +886,19 @@ export function createCustomEndpointRuntimeConfig(
  */
 export function createLocalRuntimeConfig<const TUiPaths extends readonly unknown[]>(
   options: RevTurbineInitBaseOptions & {
-    localRuntime: RevTurbineLocalRuntimeOptions & {
-      exportedConfig:
-        | (Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths })
-        | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
-    };
+    localRuntime: RevTurbineLocalRuntimeOptions &
+      (
+        | {
+            playbook:
+              | (Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths })
+              | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
+          }
+        | {
+            exportedConfig:
+              | (Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths })
+              | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
+          }
+      );
     uiPathResolvers: RevTurbineRequiredUiPathResolvers<TUiPaths> & RevTurbineUiPathResolverMap;
   },
 ): RevTurbineInitOptions;
@@ -902,11 +936,19 @@ export function createLocalRuntimeConfig(
  */
 export function createStrictLocalRuntimeConfig<const TUiPaths extends readonly unknown[]>(
   options: RevTurbineInitBaseOptions & {
-    localRuntime: RevTurbineLocalRuntimeOptions & {
-      exportedConfig:
-        | (Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths })
-        | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
-    };
+    localRuntime: RevTurbineLocalRuntimeOptions &
+      (
+        | {
+            playbook:
+              | (Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths })
+              | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
+          }
+        | {
+            exportedConfig:
+              | (Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths })
+              | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
+          }
+      );
     uiPathResolvers: RevTurbineRequiredUiPathResolvers<TUiPaths> & RevTurbineUiPathResolverMap;
   },
 ): RevTurbineInitOptions {
@@ -1739,8 +1781,8 @@ export class RevTurbineCustomerSdk {
     }
 
     const initialConfig = configArtifactForRuntime(
-      options.localRuntime?.exportedConfig,
-      'localRuntime.exportedConfig',
+      resolveLocalPlaybook(options.localRuntime),
+      'localRuntime.playbook',
       legacyTargetDefaults,
     );
     const configResolver = options.localRuntime?.resolvers?.resolveExportedConfig;

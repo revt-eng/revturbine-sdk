@@ -49,7 +49,7 @@ import type {
   UsageBalances,
   JsonObject,
 } from './customer-side';
-import { initRevTurbine as initRevTurbineCore } from './customer-side';
+import { initRevTurbine as initRevTurbineCore, resolveLocalPlaybook } from './customer-side';
 import type { RevTurbineTheme, RevTurbineThemeInput } from './theme/types';
 import { DEFAULT_THEME, mergeTheme } from './theme/defaults';
 import { loadTheme } from './theme/theme-loader';
@@ -717,8 +717,8 @@ export async function initRevTurbine(options: SdkSessionOptions): Promise<SdkSes
 
   // Resolve theme
   let theme: RevTurbineTheme = DEFAULT_THEME;
-  const exportedConfig = initOptions.localRuntime?.exportedConfig;
-  const configTheme = exportedConfig?.theme;
+  const playbook = resolveLocalPlaybook(initOptions.localRuntime);
+  const configTheme = playbook?.theme;
 
   if (configTheme && typeof configTheme === 'object') {
     theme = mergeTheme(configTheme as RevTurbineThemeInput);
