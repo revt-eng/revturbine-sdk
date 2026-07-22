@@ -4963,7 +4963,10 @@ export class RevTurbineCustomerSdk {
 
   async checkEntitlement(handle: string, context?: RevTurbineEntitlementContext): Promise<EntitlementResult> {
     if (this.isDisabledByProviderFailure()) {
-      return { status: 'allowed', allowed: true, reason: this.sdkDisabledReason ?? 'sdk_disabled_provider_failure' };
+      // Fail-closed: a disabled SDK cannot affirm the grant, so it must not
+      // leak access. The reason is preserved so callers can distinguish this
+      // from a rule-based denial.
+      return { status: 'denied', allowed: false, reason: this.sdkDisabledReason ?? 'sdk_disabled_provider_failure' };
     }
 
     const effectiveUsage = context?.used !== undefined
@@ -4991,7 +4994,11 @@ export class RevTurbineCustomerSdk {
 
       const existing = this.localEntitlementsByHandle.get(handle);
       if (existing) return existing;
-      return { status: 'allowed', allowed: true, reason: 'local_runtime_default_allow' };
+      // Fail-closed: local mode with no Playbook loaded and nothing cached has
+      // no basis to grant anything. A configured Playbook produces a real
+      // allow/deny above; this default only fires when there is genuinely no
+      // config, where denying is the safe answer.
+      return { status: 'denied', allowed: false, reason: 'local_runtime_default_allow' };
     }
 
     try {
@@ -5015,17 +5022,18 @@ export class RevTurbineCustomerSdk {
           },
         }),
       });
-      // Fail-open: when RT is unavailable the spec requires baseline UX to continue unaffected.
-      // Non-ok responses include an explicit reason so callers can distinguish "RT said no" vs "RT unreachable".
-      if (!response.ok) return { status: 'allowed', allowed: true, reason: 'entitlement_service_unavailable' };
+      // Fail-closed: an unreachable entitlement service cannot affirm the grant,
+      // so deny rather than leak access. The explicit reason still lets callers
+      // distinguish "RT said no" (a rule denial) from "RT unreachable".
+      if (!response.ok) return { status: 'denied', allowed: false, reason: 'entitlement_service_unavailable' };
       const data = await response.json();
       const normalized = this.normalizeEntitlementResult(data);
       this.localEntitlementsByHandle.set(handle, normalized);
       this.persistLocalRuntimeState();
       return normalized;
     } catch {
-      // Network/parse failures also fail open so a RT outage never blocks user actions.
-      return { status: 'allowed', allowed: true, reason: 'entitlement_check_error' };
+      // Fail-closed: a network/parse failure is not an affirmative grant.
+      return { status: 'denied', allowed: false, reason: 'entitlement_check_error' };
     }
   }
 

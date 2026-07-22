@@ -1,6 +1,6 @@
 {
   "name": "@revt-eng/sdk",
-  "version": "0.2.29",
+  "version": "0.2.30",
   "description": "RevTurbine customer-facing SDK — placement decisioning, entitlement checks, and usage tracking.",
   "type": "module",
   "packageManager": "pnpm@11.12.0",
@@ -42,9 +42,9 @@
     }
   },
   "devDependencies": {
-    "@revt-eng/schema": "0.1.131",
-    "@revt-eng/schema-external": "0.1.131",
-    "@revt-eng/core": "0.1.131",
+    "@revt-eng/schema": "0.1.139",
+    "@revt-eng/schema-external": "0.1.139",
+    "@revt-eng/core": "0.1.139",
     "openapi-fetch": "^0.17.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
