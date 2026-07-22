@@ -2,8 +2,6 @@ import {
   SandpackProvider,
   SandpackCodeEditor,
   SandpackPreview,
-  RunButton,
-  useSandpack,
 } from '@codesandbox/sandpack-react';
 import React, { useMemo, useState, useEffect } from 'react';
 import type { SandpackScenario } from '../sandpack/scenarios';
@@ -22,10 +20,17 @@ import sharedRaw from '../sandpack/shared.ts?raw';
 // Typed import for host-side inspector usage
 import exportedConfigJson from '../sandpack/example-exported_config.json';
 
-// Host-side SDK imports — rendered outside Sandpack's iframe for decision inspection
-import { RevTurbineProvider } from '../../../web-sdk/react/RevTurbineProvider';
-import { PlacementDecisionInspector } from '../../../web-sdk/react/PlacementDecisionInspector';
-import { useRevTurbine } from '../../../web-sdk/react/useRevTurbine';
+// Host-side SDK — the PUBLISHED package, not the sibling source tree. The docs
+// should demonstrate exactly what a customer installs, so the rendered output and
+// the decision inspector on this page run the same artifact readers get from npm.
+// (Sibling-source imports also silently drifted ahead of the published SDK.)
+import {
+  RevTurbineProvider,
+  PlacementDecisionInspector,
+  useRevTurbine,
+  Slot,
+  Gate,
+} from '@revturbine/sdk';
 
 // Published `@revturbine/sdk` version to install in the Sandpack sandboxes.
 // Injected at build time from ../web-sdk/package.json via astro.config.mjs.
@@ -357,59 +362,99 @@ const playgroundCSS = `
   grid-template-rows: 300px 400px; /* preview, editor */
 }
 
-/* Top-left: preview */
+/* Top-left: rendered output */
 .rt-panel-preview {
-  position: relative; /* positioning context for .rt-run-overlay */
+  position: relative;
   grid-column: 1;
   grid-row: 1;
   min-width: 0;
   height: 100%;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   border-right: 1px solid var(--rt-border);
   border-bottom: 1px solid var(--rt-border);
 }
 
-/* ── Dormant-preview overlay (autorun: false) ───────────────────────── */
-.rt-run-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
+/* ── Shared panel header ─────────────────────────────────────────────────
+ * Both top panels wear the SAME fixed-height header, so their titles and
+ * controls sit on one line across the widget. Previously only the inspector had
+ * one, and it was a two-line title-plus-meta block whose height changed with its
+ * content — so it read as a banner floating beside a header-less preview.
+ */
+.rt-panel-header {
+  flex: 0 0 auto;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 40px;
+  padding: 0 12px;
+  background: var(--rt-surface);
+  border-bottom: 1px solid var(--rt-border);
+}
+.rt-panel-header-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--rt-text-muted);
+  white-space: nowrap;
+}
+.rt-panel-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* The rendered example itself — centred, with room to breathe. */
+.rt-output-body {
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 24px;
-  text-align: center;
+  padding: 16px;
   background: var(--rt-surface-alt);
-  color: var(--rt-text);
 }
-.rt-run-overlay-title {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
+.rt-sandbox-body {
+  padding: 0;
+  background: var(--rt-surface-alt);
+  overflow: hidden;
 }
-.rt-run-overlay-body {
-  margin: 0;
-  max-width: 34ch;
+.rt-output-note {
+  max-width: 38ch;
+  text-align: center;
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--rt-text-muted);
 }
-/* Sandpack's RunButton is absolutely positioned for its in-editor corner slot;
-   inside the overlay it needs to sit in normal flow. */
-.rt-run-overlay button {
-  position: static !important;
-  margin-top: 4px;
+.rt-output-granted {
+  padding: 16px;
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  border-radius: 8px;
+  color: #14532d;
+  font-size: 13px;
 }
-/* Sandpack's own "Open Sandbox" action floats above the overlay and gets clipped
-   by the panel edge. Hide it while the sandbox is dormant — it reappears with
-   the preview once the reader presses Run. */
-.rt-panel-preview:has(.rt-run-overlay) .sp-preview-actions {
-  display: none;
+.rt-open-sandbox-btn {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--rt-text);
+  background: transparent;
+  border: 1px solid var(--rt-border);
+  border-radius: 6px;
+  cursor: pointer;
 }
-/* Must not carry a min-height taller than its grid row, or the iframe overflows
-   the panel it is supposed to sit inside. */
+.rt-open-sandbox-btn:hover {
+  background: #334155;
+}
+.rt-open-sandbox-btn:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 1px;
+}
+/* When the sandbox takes over, its preview fills the body. */
 .rt-panel-preview .sp-preview-container,
 .rt-panel-preview .sp-preview-iframe {
   height: 100% !important;
@@ -449,29 +494,17 @@ const playgroundCSS = `
   height: 100%;
   min-width: 0;
 }
-/* Hide the inner inspector header — the outer wrapper already has one */
-.rt-inspector-iso > section[data-rt-inspector] > header {
+/* The SDK component ships its own header — title, slot/user meta, and a Refresh
+ * button. The panel header above already gives the title and the user control,
+ * so hide only the DUPLICATED title block and keep Refresh. The previous rule
+ * hid the whole header element, which silently took Refresh with it; it was also a
+ * direct-child selector that would stop matching if the card were ever wrapped. */
+.rt-inspector-iso section[data-rt-inspector] > header > div:first-child {
   display: none !important;
 }
-.rt-inspector-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 16px;
-  background: var(--rt-surface);
-  border-bottom: 1px solid var(--rt-border);
-  flex-wrap: wrap;
-}
-.rt-inspector-title {
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--rt-text);
-  margin: 0;
-}
-.rt-inspector-meta {
-  font-size: 12px;
-  color: var(--rt-text-muted);
+.rt-inspector-iso section[data-rt-inspector] > header {
+  justify-content: flex-end !important;
+  margin-bottom: 4px;
 }
 .rt-inspector-controls {
   display: flex;
@@ -495,10 +528,13 @@ const playgroundCSS = `
   outline: 2px solid #6366f1;
   outline-offset: 1px;
 }
+/* Match the output panel's padding so the two bodies line up, and let the card
+ * fill the panel instead of floating in a wide dark gutter. */
 .rt-inspector-body {
-  padding: 16px;
-  flex: 1 1 0;
-  overflow-y: auto;
+  padding: 12px;
+}
+.rt-inspector-body > section[data-rt-inspector] {
+  margin: 0;
 }
 
 /* ── Narrow viewports ────────────────────────────────────────────────────
@@ -589,45 +625,99 @@ const playgroundCSS = `
 }
 `;
 
-/**
- * Cover the dormant preview with the reason it is dormant, plus the control that
- * starts it.
- *
- * With `autorun: false` Sandpack only renders its own Run button in the code
- * editor's bottom-right corner — far from the empty preview the reader is
- * actually looking at, and with nothing explaining why that panel is blank. This
- * overlay puts the affordance where the eye already is and disappears the moment
- * the sandbox starts.
- */
-function PreviewRunOverlay() {
-  const { sandpack } = useSandpack();
-  // Only cover a sandbox that has never been started. Deliberately an allowlist
-  // rather than `!== 'running'`: on `timeout` (the bundler failing to connect)
-  // Sandpack renders its own error UI with a retry, and an overlay drawn over
-  // that would hide the failure instead of reporting it.
-  if (sandpack.status !== 'idle' && sandpack.status !== 'initial') return null;
-
+function isHeadlessScenario(component: string) {
   return (
-    <div className="rt-run-overlay">
-      <p className="rt-run-overlay-title">Live preview</p>
-      <p className="rt-run-overlay-body">
-        The decision on the right is already live. Run the example to render it in
-        a real React sandbox.
-      </p>
-      <RunButton />
-    </div>
+    component === 'HeadlessPlacement' ||
+    component === 'HeadlessEntitlementGate' ||
+    component === 'HeadlessSession'
   );
 }
 
-/** Host-side inspector panel — runs the real SDK outside Sandpack's iframe */
-function InspectorPanel({
+/**
+ * The example, actually rendered — host-side, with the published SDK.
+ *
+ * This is what the preview panel shows by default. It is the real component
+ * resolving a real decision against the demo config, so it needs no bundler,
+ * appears instantly, and cannot show a crashed frame. Sandpack is now reserved
+ * for readers who want to *edit* the example (see `SandboxPane`).
+ */
+function LiveOutput({ scenario }: { scenario: SandpackScenario }) {
+  const { isReady } = useRevTurbine();
+
+  if (!isReady) {
+    return <div className="rt-output-note">Resolving decision…</div>;
+  }
+
+  // Headless examples drive the imperative API and have no rendered component —
+  // say so rather than inventing output that the example does not produce.
+  if (isHeadlessScenario(scenario.component)) {
+    return (
+      <div className="rt-output-note">
+        This example uses the imperative headless API, so it has no rendered
+        component. The resolved decision is on the right — open it in Sandpack to
+        run the code.
+      </div>
+    );
+  }
+
+  if (scenario.component === 'Gate') {
+    return (
+      <Gate
+        id={scenario.slotId}
+        surfaceTemplateIds={scenario.surfaceTemplateIds}
+        check={{ entitlement: scenario.entitlementHandle as string }}
+      >
+        <div className="rt-output-granted">✅ Access granted — premium content visible</div>
+      </Gate>
+    );
+  }
+
+  return <Slot id={scenario.slotId} surfaceTemplateIds={scenario.surfaceTemplateIds} />;
+}
+
+/**
+ * The editable sandbox, mounted only once the reader asks for it.
+ *
+ * Mounting is the trigger: with no `SandpackPreview` on the page there is no
+ * client, so nothing bundles until this renders — and once it does, Sandpack's
+ * default autorun starts it. Leaving `autorun: false` on instead would have put
+ * a Run button in the code editor that did nothing visible, because the panel
+ * beside it shows the host-side output rather than the sandbox.
+ */
+function SandboxPane() {
+  return <SandpackPreview />;
+}
+
+/** Opens the editable sandbox. Separate so it can reach Sandpack's context. */
+function OpenInSandpackButton({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button type="button" className="rt-open-sandbox-btn" onClick={onOpen}>
+      Open in Sandpack
+    </button>
+  );
+}
+
+/**
+ * Both live panels, sharing ONE SDK session.
+ *
+ * The rendered output and the decision inspector previously could not have
+ * disagreed only by luck — they now read the same session, so what the reader
+ * sees rendered is provably the decision the inspector explains. Returns a
+ * fragment: RevTurbineProvider emits no DOM, so both panels stay direct grid
+ * children of the playground wrapper.
+ */
+function PlaygroundPanels({
   scenario,
   selectedUserId,
   onUserChange,
+  sandboxOpen,
+  onOpenSandbox,
 }: {
   scenario: SandpackScenario;
   selectedUserId: string;
   onUserChange: (userId: string) => void;
+  sandboxOpen: boolean;
+  onOpenSandbox: () => void;
 }) {
   const { sdk, isReady } = useRevTurbine();
   const selectedUser = demoUsers[selectedUserId] ?? demoUsers[scenario.demoUserId];
@@ -641,59 +731,73 @@ function InspectorPanel({
   }, [sdk, isReady, selectedUser]);
 
   return (
-    <div className="rt-inspector-wrap">
-      <div className="rt-inspector-header">
-        <div>
-          <div className="rt-inspector-title">Placement Decision Inspector</div>
-          <div className="rt-inspector-meta">
-            {scenario.slotId} · {selectedUser.label}
-          </div>
+    <>
+      {/* Top-left — the example, rendered for real */}
+      <div className="rt-panel-preview">
+        <div className="rt-panel-header">
+          <p className="rt-panel-header-title">
+            {sandboxOpen ? 'Sandbox' : 'Rendered output'}
+          </p>
+          {!sandboxOpen && <OpenInSandpackButton onOpen={onOpenSandbox} />}
         </div>
-        <div className="rt-inspector-controls">
-          <label htmlFor="rt-user-select">User:</label>
-          <select
-            id="rt-user-select"
-            className="rt-user-select"
-            value={selectedUserId}
-            onChange={(e) => onUserChange(e.target.value)}
-          >
-            {DEMO_USER_IDS.map((id) => (
-              <option key={id} value={id}>
-                {demoUsers[id].label}
-              </option>
-            ))}
-          </select>
+        {/* The centring/padding is for a small rendered component; the sandbox
+            iframe should fill the panel edge to edge instead. */}
+        <div className={`rt-panel-body ${sandboxOpen ? 'rt-sandbox-body' : 'rt-output-body'}`}>
+          {sandboxOpen ? (
+            <SandboxPane />
+          ) : (
+            <LiveOutput key={`${scenario.id}:${selectedUserId}:${revision}`} scenario={scenario} />
+          )}
         </div>
       </div>
-      <div className="rt-inspector-body rt-inspector-iso">
-        {isReady ? (
-          <PlacementDecisionInspector
-            key={`${scenario.id}:${selectedUserId}:${revision}`}
-            surfaceSlot={{
-              id: scenario.slotId,
-              surfaceTemplateIds: scenario.surfaceTemplateIds,
-            }}
-            userId={selectedUser.context.id}
-            showRawJson
-          />
-        ) : (
-          <div style={{ fontSize: 13, color: '#94a3b8' }}>
-            Preparing decision inspector…
+
+      {/* Top-right — why that output happened */}
+      <div className="rt-inspector-wrap">
+        <div className="rt-panel-header">
+          <p className="rt-panel-header-title">Decision inspector</p>
+          <div className="rt-inspector-controls">
+            <label htmlFor={`rt-user-${scenario.id}`}>User</label>
+            <select
+              id={`rt-user-${scenario.id}`}
+              className="rt-user-select"
+              value={selectedUserId}
+              onChange={(e) => onUserChange(e.target.value)}
+            >
+              {DEMO_USER_IDS.map((id) => (
+                <option key={id} value={id}>
+                  {demoUsers[id].label}
+                </option>
+              ))}
+            </select>
           </div>
-        )}
+        </div>
+        <div className="rt-panel-body rt-inspector-body rt-inspector-iso">
+          {isReady ? (
+            <PlacementDecisionInspector
+              key={`${scenario.id}:${selectedUserId}:${revision}`}
+              surfaceSlot={{
+                id: scenario.slotId,
+                surfaceTemplateIds: scenario.surfaceTemplateIds,
+              }}
+              userId={selectedUser.context.id}
+              showRawJson
+            />
+          ) : (
+            <div className="rt-output-note">Preparing decision inspector…</div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
-function InspectorRoot({
-  scenario,
-  selectedUserId,
-  onUserChange,
-}: {
+/** Host-side SDK session shared by the output and the inspector. */
+function PlaygroundRuntime(props: {
   scenario: SandpackScenario;
   selectedUserId: string;
   onUserChange: (userId: string) => void;
+  sandboxOpen: boolean;
+  onOpenSandbox: () => void;
 }) {
   const options = useMemo(
     () => ({
@@ -714,14 +818,18 @@ function InspectorRoot({
 
   return (
     <RevTurbineProvider options={options}>
-      <InspectorPanel scenario={scenario} selectedUserId={selectedUserId} onUserChange={onUserChange} />
+      <PlaygroundPanels {...props} />
     </RevTurbineProvider>
   );
 }
 
+
 export default function SandpackPlayground({ scenarioId }: SandpackPlaygroundProps) {
   const scenario = sandpackScenarios.find((s) => s.id === scenarioId);
   const [selectedUserId, setSelectedUserId] = useState(scenario?.demoUserId ?? 'user_alice');
+  // Sandpack now mounts only on request, so a page full of examples costs no
+  // bundlers at all until a reader actually wants to edit one.
+  const [sandboxOpen, setSandboxOpen] = useState(false);
 
   if (!scenario) {
     return (
@@ -734,7 +842,12 @@ export default function SandpackPlayground({ scenarioId }: SandpackPlaygroundPro
   const files = useMemo(() => buildSandpackFiles(scenario, selectedUserId), [scenario, selectedUserId]);
 
   return (
-    <div className="rt-playground">
+    // `not-content` opts the whole widget out of Starlight's prose styling.
+    // Without it Starlight's "adjacent siblings get margin-top: 1rem" rule lands
+    // on the grid items themselves: the inspector was pushed 16px below the
+    // preview it is supposed to sit level with, and the editor lost 16px of its
+    // row. That is the misaligned banner, not anything in this component's CSS.
+    <div className="rt-playground not-content">
       <style dangerouslySetInnerHTML={{ __html: playgroundCSS }} />
       <SandpackProvider
         template="react-ts"
@@ -762,26 +875,20 @@ export default function SandpackPlayground({ scenarioId }: SandpackPlaygroundPro
           // which is enough to OOM individual frames: readers see Chrome's
           // crashed-frame icon in every preview.
           //
-          // `user-visible` keeps a sandbox dormant until it is actually scrolled
-          // into view, and `autorun: false` means even then it only bundles when
-          // the reader presses Run. The decision inspector beside it is
-          // host-side, so each example still shows a live, real-SDK decision
-          // before anything is bundled — the Run button buys the preview only.
+          // Belt and braces: SandpackPreview is not mounted until the reader
+          // presses "Open in Sandpack", so nothing bundles on load regardless.
+          // `user-visible` also keeps the code editor from initialising until
+          // the widget is actually scrolled to.
           initMode: 'user-visible',
-          autorun: false,
         }}
       >
-        {/* Top-left — live preview (dormant until the reader presses Run) */}
-        <div className="rt-panel-preview">
-          <PreviewRunOverlay />
-          <SandpackPreview />
-        </div>
-
-        {/* Top-right — decision inspector */}
-        <InspectorRoot
+        {/* Rendered output + decision inspector, sharing one host-side session */}
+        <PlaygroundRuntime
           scenario={scenario}
           selectedUserId={selectedUserId}
           onUserChange={setSelectedUserId}
+          sandboxOpen={sandboxOpen}
+          onOpenSandbox={() => setSandboxOpen(true)}
         />
 
         {/* Bottom — code editor (full width) */}

@@ -25,6 +25,7 @@
     "@revt-eng/core": "0.1.131",
     "@revt-eng/schema": "0.1.131",
     "@revt-eng/schema-external": "0.1.131",
+    "@revturbine/sdk": "0.2.26",
     "astro": "^6.1.9",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

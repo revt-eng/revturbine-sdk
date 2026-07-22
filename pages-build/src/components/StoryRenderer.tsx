@@ -1,7 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { RevTurbineThemeProvider } from '../../../web-sdk/theme/ThemeContext';
-import { DEFAULT_THEME, mergeTheme } from '../../../web-sdk/theme/defaults';
-import type { RevTurbineTheme, RevTurbineThemeColors } from '../../../web-sdk/theme/types';
+import {
+  RevTurbineThemeProvider,
+  DEFAULT_THEME,
+  mergeTheme,
+  type RevTurbineTheme,
+  type RevTurbineThemeColors,
+} from '@revturbine/sdk';
 
 /* ── Theme presets (matching Storybook config) ─────────────────────── */
 

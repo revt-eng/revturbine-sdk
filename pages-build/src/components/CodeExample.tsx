@@ -117,7 +117,7 @@ export default function CodeExample({
   };
 
   return (
-    <div className="rt-code-example">
+    <div className="rt-code-example not-content">
       <style dangerouslySetInnerHTML={{ __html: css }} />
       <SandpackProvider
         template="react-ts"

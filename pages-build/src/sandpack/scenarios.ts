@@ -4,7 +4,7 @@ import {
   GENERAL_BANNER_TEMPLATE_IDS,
   GENERAL_MODAL_TEMPLATE_IDS,
   GENERAL_TOAST_TEMPLATE_IDS,
-} from '../../../web-sdk/placements/surface-template-defaults';
+} from '@revturbine/sdk';
 
 /**
  * Top-level sidebar groups — one per SurfaceSlot component type.
