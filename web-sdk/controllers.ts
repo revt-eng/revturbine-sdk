@@ -50,6 +50,7 @@ import type {
   JsonObject,
 } from './customer-side';
 import { initRevTurbine as initRevTurbineCore, resolveLocalPlaybook } from './customer-side';
+import { exposureManager } from './telemetry';
 import type { ExposureBasis } from './telemetry';
 import type { RevTurbineTheme, RevTurbineThemeInput } from './theme/types';
 import { DEFAULT_THEME, mergeTheme } from './theme/defaults';
@@ -82,7 +83,35 @@ export interface PlacementControllerOptions {
   ttlMs?: number;
   /** Whether to track an impression automatically when the decision is visible. Default `true`. */
   autoTrackImpression?: boolean;
+  /**
+   * When the presentation-writing `impression` fires (plan 144 TASK-11 / REQ-17).
+   * - `legacy_resolution` (default) — at decision resolution, exactly as today.
+   * - `render` — when the placement's visual root renders.
+   * - `viewport` — when the root scrolls into the viewport; if
+   *   `IntersectionObserver` is unavailable it falls back to resolution
+   *   (Q-8 ruling), tagged `render_fallback`.
+   *
+   * Only `viewport` (with `IntersectionObserver` present) moves the
+   * `placement_presentations` denominator — a deliberate metric-definition
+   * change (see the plan's Q-8 / REQ-17b). The default keeps the denominator and
+   * its history unchanged.
+   */
+  placementExposure?: PlacementExposureMode;
 }
+
+/**
+ * When the presentation-writing `impression` fires relative to a placement's
+ * lifecycle (plan 144 TASK-11). See {@link PlacementControllerOptions.placementExposure}.
+ */
+export type PlacementExposureMode = 'legacy_resolution' | 'render' | 'viewport';
+
+/**
+ * The lifecycle point an `impression` was credited to, recorded on the
+ * presentation row's `exposure_basis` (plan 144 TASK-11). `render_fallback` marks
+ * a `viewport`-mode impression that fell back to resolution because
+ * `IntersectionObserver` was unavailable (AC-10).
+ */
+export type PresentationBasis = 'legacy_resolution' | 'render' | 'viewport' | 'render_fallback';
 
 /**
  * Read-only snapshot of a {@link PlacementController}'s state.
@@ -129,6 +158,7 @@ export class PlacementController {
   private _error = '';
   private _impressionTracked = false;
   private _loadSeq = 0;
+  private _rendered = false;
   private _exposed = false;
   private _exposureBasis: ExposureBasis | null = null;
 
@@ -150,15 +180,31 @@ export class PlacementController {
     };
   }
 
+  /** The configured exposure mode (plan 144 TASK-11). Defaults to `legacy_resolution`. */
+  private get exposureMode(): PlacementExposureMode {
+    return this.options.placementExposure ?? 'legacy_resolution';
+  }
+
+  /**
+   * Called when the placement's visual root renders (plan 144 TASK-11). Emits
+   * `placement_rendered` once, and under `placementExposure: 'render'` credits
+   * the presentation now. Idempotent.
+   */
+  markRendered(): void {
+    if (this._rendered) return;
+    this._rendered = true;
+    this.emitPlacementLifecycle('placement_rendered', null);
+    if (this.exposureMode === 'render') this.fireImpression('render');
+    this.notify();
+  }
+
   /**
    * Called by the viewport-exposure substrate when the placement's visual root
    * first enters the viewport — or immediately with `'render_fallback'` when
-   * `IntersectionObserver` is unavailable (plan 144 TASK-9 / AC-10). Records the
-   * exposure and its basis; idempotent (only the first call takes effect).
-   *
-   * This is the seam the viewport-exposure opt-in builds on: under
-   * `placementExposure: 'viewport'` (TASK-11) the resolution-time impression
-   * moves here. In TASK-9 it records state without emitting an event.
+   * `IntersectionObserver` is unavailable (plan 144 TASK-9/11 / AC-9, AC-10).
+   * Emits `placement_exposed` once with the basis, and under
+   * `placementExposure: 'viewport'` a viewport exposure credits the presentation
+   * here (Q-8). Idempotent.
    *
    * @param basis - how exposure was established; defaults to `'viewport'`
    */
@@ -166,7 +212,60 @@ export class PlacementController {
     if (this._exposed) return;
     this._exposed = true;
     this._exposureBasis = basis;
+    this.emitPlacementLifecycle('placement_exposed', basis);
+    // A true viewport exposure moves the impression here (Q-8); a
+    // `render_fallback` does not — the resolution-time fallback already fired it.
+    if (this.exposureMode === 'viewport' && basis === 'viewport') {
+      this.fireImpression('viewport');
+    }
     this.notify();
+  }
+
+  /**
+   * Fire the presentation-writing `impression` (→ `placement_presentations`)
+   * once, tagged with the lifecycle basis it was credited at (plan 144 TASK-11).
+   * Honors `autoTrackImpression: false` and only fires for a visible decision.
+   * Best-effort — telemetry never breaks a placement.
+   */
+  private fireImpression(basis: PresentationBasis): void {
+    const decision = this._decision;
+    if (!decision?.visible || this._impressionTracked) return;
+    if (this.options.autoTrackImpression === false) return;
+    const userId = this.options.userId || this.sdk.getUserContext().user_id;
+    if (!userId) return;
+    this._impressionTracked = true;
+    void this.sdk.trackTreatmentInteraction({
+      userId,
+      placementId: this._placementId,
+      interactionType: 'impression',
+      // Presentation context from the decision → placement_presentations (plan 114).
+      surfaceSlotId: decision.output?.surface?.slot_id,
+      surfaceTemplateId: decision.output?.surface?.template,
+      payloadId: decision.output?.output_id,
+      metadata: { decision_source: decision.decisionSource, exposure_basis: basis },
+    });
+  }
+
+  /**
+   * Emit a placement lifecycle signal (`placement_rendered` / `placement_exposed`)
+   * with decision provenance (plan 144 TASK-11). Best-effort.
+   */
+  private emitPlacementLifecycle(
+    event: 'placement_rendered' | 'placement_exposed',
+    basis: ExposureBasis | null,
+  ): void {
+    const decision = this._decision;
+    try {
+      void this.sdk.emitSemantic(event, {
+        placement_id: this._placementId,
+        surface_slot_id: decision?.output?.surface?.slot_id ?? null,
+        payload_id: decision?.output?.output_id ?? null,
+        decision_source: decision?.decisionSource ?? null,
+        ...(basis ? { exposure_basis: basis } : {}),
+      }, { immediate: false });
+    } catch {
+      // Best-effort telemetry — never surface a placement error from this.
+    }
   }
 
   /** Convenience: `true` when the current decision says the placement is visible. */
@@ -239,23 +338,17 @@ export class PlacementController {
 
       this._decision = decision;
 
-      // Auto-track impression
-      if (
-        decision.visible
-        && !this._impressionTracked
-        && (opts.autoTrackImpression ?? true)
-      ) {
-        this._impressionTracked = true;
-        await this.sdk.trackTreatmentInteraction({
-          userId: resolvedUserId,
-          placementId: this._placementId,
-          interactionType: 'impression',
-          // Presentation context from the decision → placement_presentations (plan 114).
-          surfaceSlotId: decision.output?.surface?.slot_id,
-          surfaceTemplateId: decision.output?.surface?.template,
-          payloadId: decision.output?.output_id,
-          metadata: { decision_source: decision.decisionSource },
-        });
+      // Fire the resolution-time impression only for the modes that credit a
+      // presentation at resolution (plan 144 TASK-11). `legacy_resolution` (the
+      // default) always does — today's behavior, unchanged. `viewport` does too
+      // ONLY when IntersectionObserver is unavailable (Q-8 fallback: emit as we
+      // do today), tagged `render_fallback`. `render` and viewport-with-observer
+      // defer to markRendered / markVisible.
+      const mode = this.exposureMode;
+      if (mode === 'legacy_resolution') {
+        this.fireImpression('legacy_resolution');
+      } else if (mode === 'viewport' && !exposureManager.supported) {
+        this.fireImpression('render_fallback');
       }
 
       return decision;
@@ -272,9 +365,10 @@ export class PlacementController {
     }
   }
 
-  /** Re-fetch the placement decision (clears impression + exposure tracking). */
+  /** Re-fetch the placement decision (clears impression + render + exposure tracking). */
   async refresh(): Promise<RevTurbinePlacementDecision | null> {
     this._impressionTracked = false;
+    this._rendered = false;
     this._exposed = false;
     this._exposureBasis = null;
     return this.load();
@@ -327,6 +421,7 @@ export class PlacementController {
     this._isLoading = false;
     this._error = '';
     this._impressionTracked = false;
+    this._rendered = false;
     this._exposed = false;
     this._exposureBasis = null;
     this._loadSeq++;

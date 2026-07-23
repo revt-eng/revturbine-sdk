@@ -222,14 +222,34 @@ def derive_local_entitlement_from_configured_rules(
             "reason": "no_matching_entitlement_rule",
         }
 
+    # Plan 147 (OQ-6): the wire is flat — the rule IS the type-fields bag, and
+    # `kind` is derived from the parent entitlement's type (the deleted
+    # `type_fields.kind` no longer carries it). A legacy nested `type_fields` /
+    # camel `typeFields` bag is tolerated for the migration window, merged under
+    # the flat fields (flat wins). Mirrors entitlement-check.ts.
+    _entitlement_type_by_handle: dict[str, str] = {}
+    for _e in entitlements:
+        if (
+            is_record(_e)
+            and isinstance(_e.get("unique_handle"), str)
+            and isinstance(_e.get("type"), str)
+        ):
+            _entitlement_type_by_handle[_e["unique_handle"]] = _e["type"]
+
     def _type_fields_of(r: dict[str, Any]) -> dict[str, Any]:
-        tf = r.get("type_fields")
-        if is_record(tf):
-            return tf
-        tf_camel = r.get("typeFields")
-        if is_record(tf_camel):
-            return tf_camel
-        return {}
+        flat = r if is_record(r) else {}
+        nested = flat.get("type_fields")
+        if not is_record(nested):
+            nested = flat.get("typeFields")
+        if not is_record(nested):
+            nested = {}
+        merged: dict[str, Any] = {**nested, **flat}
+        if not isinstance(merged.get("kind"), str):
+            ent_id = flat.get("entitlement_id")
+            derived = _entitlement_type_by_handle.get(ent_id) if isinstance(ent_id, str) else None
+            if derived:
+                merged["kind"] = derived
+        return merged
 
     # §2.6.5 (plan 34 REQ-1): when multiple rules match, the MOST
     # PERMISSIVE wins — NOT array order. Reuses the single-sourced
@@ -369,11 +389,13 @@ def derive_result_from_rule_type_fields(
         # An *explicit* allowance (incl. None/'unlimited'/999999 → +inf,
         # plan 72) wins; only a *truly absent* allowance falls through to
         # initial_grant. Source: entitlement-check.ts credits branch.
-        allowance = (
-            resolve_limit_value(type_fields.get("allowance"))
-            if "allowance" in type_fields
-            else None
-        )
+        # Plan 147 REQ-2: canonical `allowance_value`, legacy `allowance` tolerated.
+        if "allowance_value" in type_fields:
+            allowance = resolve_limit_value(type_fields.get("allowance_value"))
+        elif "allowance" in type_fields:
+            allowance = resolve_limit_value(type_fields.get("allowance"))
+        else:
+            allowance = None
         initial_grant = _js_number(type_fields.get("initial_grant"))
         cr_limit: float | None
         if allowance is not None and allowance >= 0:

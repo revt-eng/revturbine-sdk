@@ -157,10 +157,28 @@ def create_static_providers(
 
         def _rules() -> dict[str, Any]:
             by_ent: dict[str, list[dict[str, Any]]] = {}
+            # Plan 147 (OQ-6): flat wire — `kind` is derived from the parent
+            # entitlement's type. Index it by handle so each snapshot resolves
+            # without the deleted `type_fields.kind`. Mirrors static.ts.
+            ent_type_by_handle: dict[str, str] = {}
+            for ent in config.get("entitlements") or []:
+                if isinstance(ent.get("unique_handle"), str) and isinstance(ent.get("type"), str):
+                    ent_type_by_handle[ent["unique_handle"]] = ent["type"]
             for rule in config.get("entitlement_rules") or []:
                 ent_id = rule["entitlement_id"]
                 by_ent.setdefault(ent_id, [])
-                type_fields = rule.get("type_fields") or {}
+                # Flat wire: the rule IS the type-fields bag; tolerate a legacy
+                # nested `type_fields` bag (merged under the flat fields).
+                nested = rule.get("type_fields")
+                if not isinstance(nested, dict):
+                    nested = {}
+                fields = {**nested, **rule}
+                kind = (
+                    rule.get("kind")
+                    or nested.get("kind")
+                    or ent_type_by_handle.get(ent_id)
+                    or "feature"
+                )
                 targets = rule.get("targets") or []
                 # Legacy configs carry a flat `plan_ids` array instead of the
                 # kind-discriminated `targets`. Mirror static.ts (plan 133):
@@ -178,8 +196,8 @@ def create_static_providers(
                     "plan_ids": [t["id"] for t in targets if t.get("kind") == "plan"]
                     if targets
                     else legacy_plan_ids,
-                    "kind": type_fields.get("kind", "feature"),
-                    "fields": type_fields,
+                    "kind": kind,
+                    "fields": fields,
                 }
                 rule_segment_ids = rule.get("segment_ids")
                 if isinstance(rule_segment_ids, list):

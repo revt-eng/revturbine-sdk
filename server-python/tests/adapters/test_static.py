@@ -73,9 +73,14 @@ def test_segments_provider() -> None:
     assert state == {"segment_ids": ["s1", "s2"], "segment_slugs": ["free", "pro"]}
 
 
-def test_rules_provider_filters_plan_targets() -> None:
+def test_rules_provider_flat_wire() -> None:
+    # Plan 147 (OQ-6): flat wire — the rule carries its per-kind fields at the
+    # top level, `kind` derives from the parent entitlement's type, and `fields`
+    # is the flat rule (extra keys are harmless; the evaluator reads specific
+    # ones). Mirrors static.ts.
     config = {
         "version": "1.0.0",
+        "entitlements": [{"unique_handle": "ent_a", "name": "A", "type": "credits"}],
         "entitlement_rules": [
             {
                 "id": "r1",
@@ -85,7 +90,7 @@ def test_rules_provider_filters_plan_targets() -> None:
                     {"kind": "addon", "id": "pack"},
                 ],
                 "segment_ids": ["seg1"],
-                "type_fields": {"kind": "credits", "allowance": 5},
+                "allowance_value": 5,
             }
         ],
     }
@@ -95,8 +100,30 @@ def test_rules_provider_filters_plan_targets() -> None:
     assert snap["rule_id"] == "r1"
     assert snap["plan_ids"] == ["starter"]  # addon target filtered out
     assert snap["segment_ids"] == ["seg1"]
+    assert snap["kind"] == "credits"  # derived from the entitlement's type
+    assert snap["fields"]["allowance_value"] == 5
+
+
+def test_rules_provider_tolerates_legacy_nested_type_fields() -> None:
+    # Migration-window tolerance: a legacy nested `type_fields` bag still resolves
+    # (kind from the nested bag, its fields merged under the flat rule).
+    config = {
+        "version": "1.0.0",
+        "entitlement_rules": [
+            {
+                "id": "r1",
+                "entitlement_id": "ent_a",
+                "targets": [{"kind": "plan", "id": "starter"}],
+                "segment_ids": [],
+                "type_fields": {"kind": "credits", "allowance": 5},
+            }
+        ],
+    }
+    snap = _by_domain(create_static_providers(config=config))["rules"].resolve()[
+        "entitlement_rules"
+    ]["ent_a"][0]
     assert snap["kind"] == "credits"
-    assert snap["fields"] == {"kind": "credits", "allowance": 5}
+    assert snap["fields"].get("allowance") == 5
 
 
 def test_content_provider_message_blocks() -> None:

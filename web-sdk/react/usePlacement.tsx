@@ -8,6 +8,7 @@ import {
   type RevTurbineContextMode,
 } from '../customer-side';
 import { PlacementController } from '../controllers';
+import type { PlacementExposureMode } from '../controllers';
 import { exposureManager, type ExposureBasis } from '../telemetry';
 import { useRevTurbine } from './useRevTurbine';
 
@@ -38,6 +39,15 @@ export type UsePlacementOptions = {
    * exposure instead (plan 144 TASK-9 / REQ-15). Read at mount.
    */
   autoTrackImpression?: boolean;
+  /**
+   * When the presentation-writing `impression` fires (plan 144 TASK-11 / REQ-17).
+   * `legacy_resolution` (default) fires at resolution as today; `render` at
+   * render; `viewport` on viewport exposure (falling back to resolution when
+   * `IntersectionObserver` is unavailable). Only `viewport` moves the dashboard
+   * denominator — attach {@link UsePlacementResult.exposureRef} to the visual
+   * root to use it. Read at mount.
+   */
+  placementExposure?: PlacementExposureMode;
 };
 
 /**
@@ -105,6 +115,7 @@ export function usePlacement({
   ttlMs,
   autoLoad = true,
   autoTrackImpression,
+  placementExposure,
 }: UsePlacementOptions): UsePlacementResult {
   const { sdk, isReady } = useRevTurbine();
   const [, forceUpdate] = useState(0);
@@ -133,6 +144,7 @@ export function usePlacement({
       traits,
       ttlMs,
       autoTrackImpression,
+      placementExposure,
     });
 
     controllerRef.current = ctrl;
@@ -176,6 +188,10 @@ export function usePlacement({
     exposureCleanupRef.current?.();
     exposureCleanupRef.current = null;
     if (!element) return;
+    // The root rendered → `placement_rendered` (and, in `render` mode, the
+    // impression). Then observe for viewport exposure → `placement_exposed`
+    // (and, in `viewport` mode, the impression).
+    controllerRef.current?.markRendered();
     exposureCleanupRef.current = exposureManager.observe(element, {}, (basis) => {
       controllerRef.current?.markVisible(basis);
     });
