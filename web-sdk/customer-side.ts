@@ -124,6 +124,7 @@ import {
   createStaticPlacementResolver,
   type LocalPlacementDataset,
 } from './placements/local-resolver';
+import { eventIds, deliverWithRetry } from './telemetry';
 
 // ── Semantic type aliases ─────────────────────────────────────────────────────
 // These replace raw `Record<string, unknown>` and `unknown` with named types
@@ -788,7 +789,7 @@ export interface RevTurbineLocalRuntimeOptions {
    * templates, trial, and theme. Providers and resolvers read this to hydrate
    * domain state without a server.
    *
-   * Typically distributed as `exported_config.json`.
+   * Typically distributed as `playbook.json`.
    */
   playbook?: ConfigArtifact;
   /**
@@ -1402,12 +1403,59 @@ function pickClickstreamField(
 ): string | null {
   const top = properties[key];
   if (typeof top === 'string' && top.trim().length > 0) return top;
-  const semantic = properties.payload;
-  if (isRecord(semantic)) {
+  const semantic = semanticBagOf(properties);
+  if (semantic) {
     const nested = semantic[key];
     if (typeof nested === 'string' && nested.trim().length > 0) return nested;
   }
   return null;
+}
+
+// ── Canonical event-property extraction (plan 144 TASK-6) ────────────────────
+//
+// An event's customer properties arrive in one of two shapes: flat at the top
+// level (`capture(name, { … })`), or under a nested `payload` sub-object — the
+// form `emitSemantic` produces (`{ semantic: true, payload: { … } }`) and that
+// some `capture` callers pass directly (`{ payload: { … } }`). Both are
+// preserved on the wire unchanged; the nested `payload` form is the CANONICAL
+// carrier and the flat form is the compatibility projection.
+//
+// The two helpers below are the single extraction path. Read a lifted/semantic
+// field through `pickClickstreamField` (per-key: top-level wins, else nested)
+// or the nested bag through `semanticBagOf` — never re-implement the unwrap
+// inline, so a new lifted field (e.g. the plan-144 decision provenance) has ONE
+// place to be added, not two.
+
+/** The nested semantic `payload` bag when present, else `null`. */
+function semanticBagOf(
+  properties: Record<string, unknown>, // sdk-ok: boundary-parse
+): Record<string, unknown> | null { // sdk-ok: boundary-parse
+  return isRecord(properties.payload) ? properties.payload : null;
+}
+
+/**
+ * Fields lifted from an event's properties to named `TrackEvent` columns so
+ * analytics can group by them (plan 41 / plan 144). Single source of truth: the
+ * wire mapping lifts exactly this set via {@link liftClickstreamFields}, so a
+ * new lifted field is added here once rather than hand-written into the mapping.
+ */
+const CLICKSTREAM_LIFTED_FIELDS = [
+  'surface_slot_id',
+  'placement_id',
+  'payload_id',
+  'experiment_id',
+  'variant_key',
+] as const;
+
+type ClickstreamLiftedField = (typeof CLICKSTREAM_LIFTED_FIELDS)[number];
+
+/** Resolve every {@link CLICKSTREAM_LIFTED_FIELDS} value from an event's properties. */
+function liftClickstreamFields(
+  properties: Record<string, unknown>, // sdk-ok: boundary-parse
+): Record<ClickstreamLiftedField, string | null> {
+  const out = {} as Record<ClickstreamLiftedField, string | null>;
+  for (const field of CLICKSTREAM_LIFTED_FIELDS) out[field] = pickClickstreamField(properties, field);
+  return out;
 }
 
 /** Wraps core sanitizeSlug with a browser-secure random fallback suffix. */
@@ -3360,7 +3408,7 @@ export class RevTurbineCustomerSdk {
       return issues;
     }
 
-    const semanticPayload = isRecord(payload.payload) ? payload.payload : null;
+    const semanticPayload = semanticBagOf(payload);
     const placementId = (typeof payload.placement_id === 'string' && payload.placement_id.trim())
       ? payload.placement_id
       : (typeof semanticPayload?.placement_id === 'string' ? semanticPayload.placement_id : null);
@@ -3640,12 +3688,18 @@ export class RevTurbineCustomerSdk {
         event_name: normalizeEventType(event.type).slice(0, 120),
         event_ts: event.event_time,
         properties: JSON.stringify(redactedProps.value),
-        surface_slot_id: pickClickstreamField(event.properties, 'surface_slot_id'),
-        placement_id: pickClickstreamField(event.properties, 'placement_id'),
-        payload_id: pickClickstreamField(event.properties, 'payload_id'),
+        // Lifted to named columns from the single CLICKSTREAM_LIFTED_FIELDS
+        // source of truth (plan 144 TASK-6). Same per-field resolution as
+        // before — top-level wins, else the nested `payload` bag.
+        ...liftClickstreamFields(event.properties),
+        // Sortable, unique id minted here at the wire boundary (plan 144
+        // TASK-7 / REQ-7). It lives on the flat `TrackEvent`, not the
+        // in-memory `RevTurbineEventEnvelope` (a closed core interface) —
+        // matching TASK-1's ruling that the queryable contract is the wire
+        // row. Minted exactly once per event (each envelope is sent once) and
+        // captured inside the built row below, so a retry resends the same id.
+        event_id: eventIds.next(),
         request_id: requestId(),
-        experiment_id: pickClickstreamField(event.properties, 'experiment_id'),
-        variant_key: pickClickstreamField(event.properties, 'variant_key'),
         tenant_id: event.tenant_id,
       };
     });
@@ -3660,22 +3714,27 @@ export class RevTurbineCustomerSdk {
     // so no `x-tenant-id` is sent. Best-effort: ingest failures must
     // never throw into the customer app, and there is no legacy fallback
     // sink (plan 41 Q-3 — `/api/telemetry` retired in TASK-4b).
-    try {
-      await fetch(this.endpointFor('ingestEvents', INGEST_GATEWAY_PATH), {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${this.ingestPublicKey ?? this.apiKey}`,
-          'x-request-id': rid,
-        },
-        body: JSON.stringify({ events: trackEvents }),
-        // keepalive lets a page-unload flush (pagehide / visibilitychange)
-        // complete after the document starts tearing down (plan 95 TASK-6).
-        keepalive: true,
-      });
-    } catch {
-      // Swallow — telemetry delivery is best-effort and non-fatal.
-    }
+    //
+    // The body is serialized ONCE here; `deliverWithRetry` re-sends these exact
+    // bytes on a transient failure rather than rebuilding them (plan 144 TASK-7
+    // / REQ-4). Each row's `request_id` is fixed in that body, so a retry
+    // collapses into a single `events_clickstream` row via the storage-layer
+    // ReplacingMergeTree instead of manufacturing a duplicate (AC-23). Delivery
+    // never throws — a failed send can't crash the app or block a mirror.
+    const url = this.endpointFor('ingestEvents', INGEST_GATEWAY_PATH);
+    const init: RequestInit = {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${this.ingestPublicKey ?? this.apiKey}`,
+        'x-request-id': rid,
+      },
+      body: JSON.stringify({ events: trackEvents }),
+      // keepalive lets a page-unload flush (pagehide / visibilitychange)
+      // complete after the document starts tearing down (plan 95 TASK-6).
+      keepalive: true,
+    };
+    await deliverWithRetry(() => fetch(url, init));
   }
 
   private dispatchToEventConsumers(events: RevTurbineEventEnvelope[]): void {
@@ -3685,7 +3744,11 @@ export class RevTurbineCustomerSdk {
       if (!consumers || consumers.length === 0) return;
       for (const consumer of consumers) {
         try {
-          consumer.consume(events);
+          // Isolate BOTH a synchronous throw and a rejected async `consume`:
+          // a throwing consumer/integration must never block RevTurbine ingest
+          // (plan 144 TASK-7 / AC-17), and it runs before the ingest call so
+          // an ingest failure likewise can't stop a mirror.
+          Promise.resolve(consumer.consume(events)).catch(() => {});
         } catch {
           // Never let a consumer error crash the SDK event pipeline.
         }

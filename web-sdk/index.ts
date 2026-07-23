@@ -102,7 +102,7 @@ export type { SurfaceSlotComponentProps as RTSlotProps } from './placements/Surf
  * The portable RevTurbine monetization config the SDK evaluates against —
  * plans, entitlements, entitlement rules, segments, content UI paths, surface
  * templates, and placements. `Playbook` is the canonical name for this config
- * artifact (typically distributed as `exported_config.json`); `ExportedConfig`
+ * artifact (typically distributed as `playbook.json`); `ExportedConfig`
  * and `RevTurbineConfig` remain exported as legacy type aliases — prefer
  * `Playbook`.
  */

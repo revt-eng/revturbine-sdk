@@ -58,7 +58,7 @@ path and put whatever your handler needs in `config` — the keys are free-form 
 pass through to the decision verbatim:
 
 ```jsonc
-// in the placement payload's surface (exported_config.json)
+// in the placement payload's surface (playbook.json)
 "ctas": [{
   "label": "Connect CRM",
   "path": "custom",

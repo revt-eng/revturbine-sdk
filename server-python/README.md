@@ -34,7 +34,7 @@ editable install under [Local development](#local-development) instead.)
 import json
 from revturbine import RevTurbineCustomerSdk
 
-with open("exported_config.json") as f:
+with open("playbook.json") as f:
     exported_config = json.load(f)
 
 sdk = RevTurbineCustomerSdk(

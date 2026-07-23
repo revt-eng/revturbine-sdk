@@ -21,7 +21,7 @@ The sandbox preview is generated as virtual files for Sandpack:
 - `/pages/<scenario-id>.tsx` — one page per scenario (thin wrappers)
 - `/scenarios.ts` — scenario catalog
 - `/demoUsers.ts` — user presets
-- `/exported_config.json` — exported config source for local mode
+- `/playbook.json` — exported config source for local mode
 
 ## Scenario Page Contract
 
@@ -94,7 +94,7 @@ const options = {
 - Scenario catalog: `revturbine-sdk-internal/pages-build/src/sandpack/scenarios.ts`
 - User presets: `revturbine-sdk-internal/pages-build/src/sandpack/demoUsers.ts`
 - Exported config copy source:
-  - `revturbine-sdk-internal/pages-build/src/sandpack/example-exported_config.json`
+  - `revturbine-sdk-internal/pages-build/src/sandpack/example-playbook.json`
 
 ## Run
 
