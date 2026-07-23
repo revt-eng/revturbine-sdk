@@ -1,9 +1,9 @@
 ---
 title: Interactive Playground
-description: An index of every live, editable SDK example — each runs in local_only mode with a demo exported_config.json. Follow a link to open the scenario and edit its code.
+description: An index of every live, editable SDK example — each runs in local_only mode with a demo playbook.json. Follow a link to open the scenario and edit its code.
 ---
 
-Every scenario below is a live, editable SDK demo running entirely in `local_only` mode — a bundled `exported_config.json` with plans, entitlements, placements, and targeting, no network calls. This page is the index; follow a link to open a scenario and edit its code alongside a live preview.
+Every scenario below is a live, editable SDK demo running entirely in `local_only` mode — a bundled `playbook.json` with plans, entitlements, placements, and targeting, no network calls. This page is the index; follow a link to open a scenario and edit its code alongside a live preview.
 
 ## Fixed Slots
 
@@ -50,7 +50,7 @@ The imperative SDK, no slot components.
 
 Each scenario runs the SDK in an isolated Sandpack environment:
 
-1. **`exported_config.json`** provides plans, entitlements, placements, surface templates, and targeting rules.
+1. **`playbook.json`** provides plans, entitlements, placements, surface templates, and targeting rules.
 2. **`RevTurbineProvider`** initializes the SDK in `local_only` mode — no network calls.
 3. **Demo users** (Alice, Bob, Carol, Dan, Eve, Frank) have different plans, usage, and entitlements.
 4. **Targeting rules** evaluate against the user context to decide which placements to show.

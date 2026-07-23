@@ -1,11 +1,11 @@
 // check-config-examples.mjs — CI guard for ExportedConfig examples in the docs.
 //
-// Every fenced code block tagged `json title="exported_config.json"` in the docs
+// Every fenced code block tagged `json title="playbook.json"` in the docs
 // is parsed and validated against `ExportedConfigSchema` from @revt-eng/schema.
 // A docs example that no longer matches the real schema fails the build, so the
 // config JSON readers copy is always valid (run `revturbine verify`-able).
 //
-// Convention: tag any ExportedConfig example with ```json title="exported_config.json".
+// Convention: tag any ExportedConfig example with ```json title="playbook.json".
 // Other JSON blocks (decision outputs, partial snippets) are ignored.
 //
 // Usage: node scripts/check-config-examples.mjs   (run from pages-build/)
@@ -32,8 +32,8 @@ function walk(dir) {
   return out;
 }
 
-// Match ```json ... ``` blocks whose info string carries title="exported_config.json".
-const BLOCK = /```json[^\n]*\btitle="exported_config\.json"[^\n]*\n([\s\S]*?)```/g;
+// Match ```json ... ``` blocks whose info string carries title="playbook.json".
+const BLOCK = /```json[^\n]*\btitle="playbook\.json"[^\n]*\n([\s\S]*?)```/g;
 
 let total = 0;
 const failures = [];
@@ -45,7 +45,7 @@ for (const file of walk(DOCS)) {
   let i = 0;
   while ((m = BLOCK.exec(src)) !== null) {
     total += 1;
-    const where = `${rel} [exported_config.json block ${i++}]`;
+    const where = `${rel} [playbook.json block ${i++}]`;
     let parsed;
     try {
       parsed = JSON.parse(m[1]);
@@ -67,7 +67,7 @@ for (const file of walk(DOCS)) {
 if (failures.length > 0) {
   console.error(`\n✗ ${failures.length} invalid ExportedConfig example(s):\n`);
   for (const f of failures) console.error('  • ' + f);
-  console.error(`\nFix the JSON so it validates, or drop the title="exported_config.json" tag if it isn't a full config.\n`);
+  console.error(`\nFix the JSON so it validates, or drop the title="playbook.json" tag if it isn't a full config.\n`);
   process.exit(1);
 }
 

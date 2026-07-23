@@ -112,7 +112,7 @@ Pass your provider via the `provider` option:
 
 ```tsx
 import { RevTurbineProvider } from '@revturbine/sdk';
-import playbook from './exported_config.json';
+import playbook from './playbook.json';
 import { useMemo } from 'react';
 
 const myProvider = {
@@ -189,7 +189,7 @@ The SDK can forward all impressions, interactions, and lifecycle events to your 
 
 ```tsx
 import { RevTurbineProvider, createAnalyticsProvider } from '@revturbine/sdk';
-import playbook from './exported_config.json';
+import playbook from './playbook.json';
 import { useMemo } from 'react';
 
 function App() {

@@ -11,14 +11,14 @@ import { DEMO_USER_IDS } from '../sandpack/shared';
 
 // Raw string imports for Sandpack virtual filesystem
 // @ts-expect-error -- Vite raw import
-import exportedConfigRaw from '../sandpack/example-exported_config.json?raw';
+import exportedConfigRaw from '../sandpack/example-playbook.json?raw';
 // @ts-expect-error -- Vite raw import
 import demoUsersRaw from '../sandpack/demoUsers.ts?raw';
 // @ts-expect-error -- Vite raw import
 import sharedRaw from '../sandpack/shared.ts?raw';
 
 // Typed import for host-side inspector usage
-import exportedConfigJson from '../sandpack/example-exported_config.json';
+import exportedConfigJson from '../sandpack/example-playbook.json';
 
 // Host-side SDK — the PUBLISHED package, not the sibling source tree. The docs
 // should demonstrate exactly what a customer installs, so the rendered output and
@@ -73,7 +73,7 @@ type SandpackFile = { code: string; active?: boolean; hidden?: boolean };
  */
 const APP_TSX = `import React, { useMemo } from "react";
 import { RevTurbineProvider } from "@revturbine/sdk";
-import playbook from "./exported_config.json";
+import playbook from "./playbook.json";
 import { demoUsers } from "./demoUsers";
 import { selectedUserId } from "./demoUser";
 import { Example } from "./Example";
@@ -148,7 +148,7 @@ function buildSandpackFiles(
     // Fixtures — importable, but not worth a tab.
     '/demoUsers.ts': { code: demoUsersRaw as string, hidden: true },
     '/shared.ts': { code: sharedRaw as string, hidden: true },
-    '/exported_config.json': { code: exportedConfigRaw as string, hidden: true },
+    '/playbook.json': { code: exportedConfigRaw as string, hidden: true },
   };
 }
 
@@ -204,7 +204,7 @@ function generateHeadlessExampleCode(
     case 'HeadlessPlacement':
       return `import React, { useEffect, useState, useRef } from "react";
 import { initRevTurbine, PlacementController } from "@revturbine/sdk/headless";
-import playbook from "./exported_config.json";
+import playbook from "./playbook.json";
 import { demoUsers } from "./demoUsers";
 import { selectedUserId } from "./demoUser";
 
@@ -256,7 +256,7 @@ export function Example() {
     case 'HeadlessEntitlementGate':
       return `import React, { useEffect, useState } from "react";
 import { initRevTurbine, EntitlementGate } from "@revturbine/sdk/headless";
-import playbook from "./exported_config.json";
+import playbook from "./playbook.json";
 import { demoUsers } from "./demoUsers";
 import { selectedUserId } from "./demoUser";
 
@@ -299,7 +299,7 @@ export function Example() {
     case 'HeadlessSession':
       return `import React, { useEffect, useState } from "react";
 import { initRevTurbine, SdkSession } from "@revturbine/sdk/headless";
-import playbook from "./exported_config.json";
+import playbook from "./playbook.json";
 import { demoUsers } from "./demoUsers";
 import { selectedUserId } from "./demoUser";
 

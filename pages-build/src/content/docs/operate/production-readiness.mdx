@@ -54,7 +54,7 @@ Every placement decision carries the `config_version` it was evaluated against, 
 Because monetization changes ship as config, you can verify them without touching app code:
 
 - **CLI:** `revturbine verify` / `preview` / `evaluate` a candidate Playbook against real inputs before deploying it — the same config a green run produces is what you ship.
-- **`local_only`:** load a candidate `exported_config.json` in a test build and exercise the gates and placements against fixture users.
+- **`local_only`:** load a candidate `playbook.json` in a test build and exercise the gates and placements against fixture users.
 - **[Debugging Decisions](/operate/debugging/):** use `explainPlacementDecision()` to see exactly why a decision resolved the way it did.
 
 ## Related

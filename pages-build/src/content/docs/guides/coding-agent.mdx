@@ -17,9 +17,9 @@ You're adding RevTurbine (@revturbine/sdk) to this app to gate one paid feature.
 1. Inspect the app and find ONE non-critical feature currently gated by a
    hard-coded plan check (e.g. `user.plan === 'pro'`). Pick the safest one.
 2. Install @revturbine/sdk and wrap the app in <RevTurbineProvider> if it isn't
-   already. Use local_only mode with a bundled exported_config.json fixture so it
+   already. Use local_only mode with a bundled playbook.json fixture so it
    runs with no account.
-3. Add a minimal exported_config.json fixture with: a free and a pro plan, one
+3. Add a minimal playbook.json fixture with: a free and a pro plan, one
    entitlement for the feature, and a gate placement (upgrade modal) for free users.
 4. Replace the hard-coded check with <Gate id="..." can="<entitlement>">, keeping
    the existing UI as the gated children and letting the placement render the upsell.
@@ -42,14 +42,14 @@ A recurring loop looks like:
 ```bash
 # 1. Your agent proposes a config change (new segment, adjusted limit, new copy).
 # 2. Verify it against the schema before anything ships.
-revturbine verify ./exported_config.json
+revturbine verify ./playbook.json
 
 # 3. Preview / evaluate the candidate against real inputs.
-revturbine preview ./exported_config.json
-revturbine evaluate ./exported_config.json --handle data_export
+revturbine preview ./playbook.json
+revturbine evaluate ./playbook.json --handle data_export
 
 # 4. Stage it through the review lifecycle (draft -> submit -> approve -> deploy).
-revturbine deploy ./exported_config.json
+revturbine deploy ./playbook.json
 ```
 
 The guardrails are the point: the agent proposes, the CLI **verifies against the real schema** and lets you **preview the impact** before deploy, and the change moves through the same draft → submit → approve → deploy lifecycle a human would use. Your app code never changes — the agent only ever edits config.

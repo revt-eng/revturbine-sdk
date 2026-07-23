@@ -81,11 +81,11 @@ Wrap your app once, then add **slots** (where placements render) and **gates** (
 
 <Steps>
 
-1. **Wrap your app in `RevTurbineProvider`.** This example runs in `local_only` mode — no backend, no network calls — from an `exported_config.json` you ship with your app (see step 4 for where it comes from).
+1. **Wrap your app in `RevTurbineProvider`.** This example runs in `local_only` mode — no backend, no network calls — from an `playbook.json` you ship with your app (see step 4 for where it comes from).
 
     ```tsx title="src/App.tsx"
     import { RevTurbineProvider } from '@revturbine/sdk';
-    import playbook from './exported_config.json';
+    import playbook from './playbook.json';
     import { useMemo } from 'react';
 
     function App() {
@@ -165,7 +165,7 @@ Your monetization model — **plans, entitlements, entitlement rules, segments, 
 
 <CardGrid>
   <Card title="RevTurbine UI (studio)" icon="laptop">
-    Edit visually at [**revturbine.com/app**](https://revturbine.com/app) — define plans, entitlements, targeting rules, and placements, preview their impact, and deploy. Export an `exported_config.json` snapshot anytime for local mode.
+    Edit visually at [**revturbine.com/app**](https://revturbine.com/app) — define plans, entitlements, targeting rules, and placements, preview their impact, and deploy. Export an `playbook.json` snapshot anytime for local mode.
   </Card>
 
   <Card title="RevTurbine CLI + Agent" icon="setting">
@@ -176,14 +176,14 @@ Your monetization model — **plans, entitlements, entitlement rules, segments, 
 The CLI ships config through reviewable **change sets** (`draft → submit → approve → deploy`):
 
 ```bash
-revturbine verify ./exported_config.json   # schema-validate locally, no writes
+revturbine verify ./playbook.json   # schema-validate locally, no writes
 revturbine diff                            # compare your file against the live config
-revturbine upload ./exported_config.json   # stage a draft change set
+revturbine upload ./playbook.json   # stage a draft change set
 revturbine deploy                          # submit → approve → deploy the draft
 ```
 
 <Aside type="tip">
-`revturbine export --save exported_config.json` pulls your live config back down — handy for bundling into the SDK's `local_only` mode.
+`revturbine export --save playbook.json` pulls your live config back down — handy for bundling into the SDK's `local_only` mode.
 </Aside>
 
 ---

@@ -8,7 +8,7 @@ This app is intentionally scoped to `revturbine-sdk-internal` and does not modif
 - The public `@revturbine/sdk` package installed into each Sandpack from npm
 - The full sandbox scenario set from the Next app showcase tracker
 - One page file per scenario (no in-preview scenario/user selectors)
-- Next-app `exported_config.json` loaded through `localRuntime.exportedConfig`
+- Next-app `playbook.json` loaded through `localRuntime.exportedConfig`
 - Easy copy/paste scenario wiring examples for `Slot` / `Gate` + user context
 
 ## SDK in Sandpack
@@ -50,7 +50,7 @@ Required one-time repo setting:
 - Scenario catalog file: `src/sandpack/scenarios.ts`
 - User presets: `src/sandpack/demoUsers.ts`
 - Exported config source copied from:
-	- `revturbine-sdk-internal/pages-build/src/sandpack/example-exported_config.json`
+	- `revturbine-sdk-internal/pages-build/src/sandpack/example-playbook.json`
 
 ## SDK Docs Integration
 
@@ -60,4 +60,4 @@ Required one-time repo setting:
 ## Notes
 
 - Sandpack installs `@revturbine/sdk` from the public npm registry, so the in-sandbox import (`from "@revturbine/sdk"`) is exactly what a builder copies into their own app.
-- The mounted config is `src/sandpack/example-exported_config.json` and is exposed to the Sandpack runtime as `/exported_config.json`.
+- The mounted config is `src/sandpack/example-playbook.json` and is exposed to the Sandpack runtime as `/playbook.json`.

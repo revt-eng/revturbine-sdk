@@ -10,12 +10,12 @@
  * usage, and entitlements.
  *
  * NOTE: this file is mounted into the Sandpack sandbox by `CodeExample.tsx` and is
- * only ever `?raw`-imported. Its imports (`@revturbine/sdk`, `./exported_config.json`)
+ * only ever `?raw`-imported. Its imports (`@revturbine/sdk`, `./playbook.json`)
  * resolve inside the sandbox, not in this repo.
  */
 import React, { useMemo } from 'react';
 import { RevTurbineProvider } from '@revturbine/sdk';
-import playbook from './exported_config.json';
+import playbook from './playbook.json';
 import { demoUsers } from './demoUsers';
 
 export type DemoUserKey = keyof typeof demoUsers;
