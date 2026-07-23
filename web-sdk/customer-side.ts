@@ -5663,28 +5663,38 @@ export class RevTurbineCustomerSdk {
     throw new Error(`[RevTurbine] SDK initialization failed: ${details.join('; ')}.`);
   }
 
+  // Plan 144 TASK-10 — `placement_interaction` is the ONE canonical placement
+  // event, discriminated by `interaction_type`. These three convenience methods
+  // used to emit standalone `placement_dismissed`/`_snoozed`/`_converted`
+  // events, which had no consumer anywhere (plan 144 Q-3). They now route
+  // through the canonical event with the mapped interaction type; the standalone
+  // names are retired.
+
   async dismiss(outputId: string): Promise<void> {
-    await this.emitSemantic('placement_dismissed', {
-      output_id: outputId,
+    await this.emitSemantic('placement_interaction', {
+      interaction_type: 'dismiss',
+      payload_id: outputId,
       user_id: this.userContext.id ?? null,
-      dismissed_at: new Date().toISOString(),
+      interaction_at: new Date().toISOString(),
     }, { immediate: false });
   }
 
   async snooze(outputId: string, seconds = 3600): Promise<void> {
-    await this.emitSemantic('placement_snoozed', {
-      output_id: outputId,
+    await this.emitSemantic('placement_interaction', {
+      interaction_type: 'remind_me_later',
+      payload_id: outputId,
       user_id: this.userContext.id ?? null,
-      snoozed_at: new Date().toISOString(),
+      interaction_at: new Date().toISOString(),
       remind_after_seconds: seconds,
     }, { immediate: false });
   }
 
   async convert(outputId: string): Promise<void> {
-    await this.emitSemantic('placement_converted', {
-      output_id: outputId,
+    await this.emitSemantic('placement_interaction', {
+      interaction_type: 'cta_completed',
+      payload_id: outputId,
       user_id: this.userContext.id ?? null,
-      converted_at: new Date().toISOString(),
+      interaction_at: new Date().toISOString(),
     }, { immediate: false });
   }
 

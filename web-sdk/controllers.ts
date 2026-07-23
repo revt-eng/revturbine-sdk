@@ -430,6 +430,9 @@ export class EntitlementGate {
   private _error: string | null = null;
   private _result: EntitlementResult | null = null;
   private _gatedPlacement: PlacementOutput | null = null;
+  // Dedup key for the passive gate_evaluated signal (plan 144 TASK-10). Re-emits
+  // only when the evaluated outcome actually changes, not on every recheck.
+  private _lastEvaluatedKey: string | null = null;
 
   constructor(sdk: RevTurbineCustomerSdk, options: EntitlementGateOptions) {
     this.sdk = sdk;
@@ -474,6 +477,15 @@ export class EntitlementGate {
       const res = await this.sdk.checkEntitlement(handle, context);
       this._result = res;
 
+      // Passive evaluation → `gate_evaluated` (plan 144 TASK-10 / REQ-20, AC-11).
+      // NEVER `gate_attempted` — that names an active, user-invoked gate run
+      // (useGatedAction, TASK-14). `gate_limited` / `gate_denied` are not
+      // separate emissions: the outcome field carries the status, which the
+      // existing `limited` state and `onDenied` callback already surface.
+      // Deduped so a recheck with an unchanged outcome stays quiet; best-effort
+      // so a telemetry hiccup never breaks the gate.
+      this.emitGateEvaluated(handle, res);
+
       if (!autoGate || res.status !== 'denied') {
         this._gatedPlacement = null;
       } else if (res.placement) {
@@ -501,6 +513,30 @@ export class EntitlementGate {
   /** Re-run the entitlement check (alias of {@link check}). */
   async recheck(): Promise<EntitlementResult | null> {
     return this.check();
+  }
+
+  /**
+   * Emit the passive `gate_evaluated` signal for a resolved entitlement result
+   * (plan 144 TASK-10). Deduped on handle+outcome for the gate's lifetime, and
+   * best-effort — telemetry must never break a gate check.
+   */
+  private emitGateEvaluated(handle: string, res: EntitlementResult): void {
+    const key = `${handle}|${res.status}`;
+    if (this._lastEvaluatedKey === key) return;
+    this._lastEvaluatedKey = key;
+    try {
+      void this.sdk.emitSemantic('gate_evaluated', {
+        entitlement_handle: handle,
+        outcome: res.status, // 'allowed' | 'limited' | 'denied'
+        gated: res.status === 'denied',
+        reason: res.reason ?? null,
+        limit: res.limit ?? null,
+        used: res.used ?? null,
+        remaining: res.remaining ?? null,
+      }, { immediate: false });
+    } catch {
+      // Best-effort telemetry — never surface a gate error from this.
+    }
   }
 
   /** Subscribe to state changes. Returns an unsubscribe function. */
