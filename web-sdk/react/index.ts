@@ -6,6 +6,8 @@ export * from './SurfaceTypes';
 export * from './PlacementDecisionInspector';
 export * from './UserProfile';
 export * from './useEntitlement';
+export * from './TelemetryScope';
+export * from './useTrack';
 export * from './useCan';
 export * from './useUsageSnapshot';
 export { useRevTurbineTheme } from '../theme/ThemeContext';
