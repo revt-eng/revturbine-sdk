@@ -8,6 +8,8 @@ export * from './UserProfile';
 export * from './useEntitlement';
 export * from './TelemetryScope';
 export * from './useTrack';
+export * from './TrackOnView';
+export * from './EngagementArea';
 export * from './useCan';
 export * from './useUsageSnapshot';
 export { useRevTurbineTheme } from '../theme/ThemeContext';
