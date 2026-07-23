@@ -8,6 +8,7 @@ import {
   type RevTurbineContextMode,
 } from '../customer-side';
 import { PlacementController } from '../controllers';
+import { exposureManager, type ExposureBasis } from '../telemetry';
 import { useRevTurbine } from './useRevTurbine';
 
 /**
@@ -30,6 +31,13 @@ export type UsePlacementOptions = {
   ttlMs?: number;
   /** Automatically load a decision on mount. Default `true`. */
   autoLoad?: boolean;
+  /**
+   * Whether a visible decision auto-tracks a resolution-time impression. Default
+   * `true`. Set `false` to suppress it — e.g. when you attach {@link
+   * UsePlacementResult.exposureRef} and want the impression to fire on viewport
+   * exposure instead (plan 144 TASK-9 / REQ-15). Read at mount.
+   */
+  autoTrackImpression?: boolean;
 };
 
 /**
@@ -48,6 +56,21 @@ export type UsePlacementResult = {
   remindMeLater: (seconds?: number) => Promise<void>;
   ctaClick: (ctaTarget?: string) => Promise<void>;
   ctaComplete: (ctaTarget?: string) => Promise<void>;
+  /**
+   * Ref callback to attach to the placement's true visual root (plan 144
+   * TASK-9). RevTurbine observes when that element enters the viewport for
+   * viewport-qualified exposure; when `IntersectionObserver` is unavailable it
+   * falls back to render (`exposure_basis: 'render_fallback'`, AC-10). Attaching
+   * it is optional and never adds a wrapper element (REQ-18/REQ-19).
+   */
+  exposureRef: (element: Element | null) => void;
+  /**
+   * How the placement's visual root was exposed, or `null` before it enters the
+   * viewport (plan 144 TASK-9). `'render_fallback'` when `IntersectionObserver`
+   * is unavailable (AC-10). Only meaningful once {@link
+   * UsePlacementResult.exposureRef} is attached.
+   */
+  exposureBasis: ExposureBasis | null;
 };
 
 /**
@@ -81,10 +104,12 @@ export function usePlacement({
   traits,
   ttlMs,
   autoLoad = true,
+  autoTrackImpression,
 }: UsePlacementOptions): UsePlacementResult {
   const { sdk, isReady } = useRevTurbine();
   const [, forceUpdate] = useState(0);
   const controllerRef = useRef<PlacementController | null>(null);
+  const exposureCleanupRef = useRef<(() => void) | null>(null);
 
   const resolvedUserId = userId || (sdk ? sdk.getUserContext().user_id : '');
   const placementKey = useMemo(
@@ -107,6 +132,7 @@ export function usePlacement({
       overrides,
       traits,
       ttlMs,
+      autoTrackImpression,
     });
 
     controllerRef.current = ctrl;
@@ -143,6 +169,26 @@ export function usePlacement({
     void loadDecision();
   }, [autoLoad, loadDecision]);
 
+  // Ref callback for the placement's true visual root. Observe when it enters
+  // the viewport and hand the exposure basis to the controller (plan 144
+  // TASK-9). Stable identity (refs + module singleton), so it never re-attaches.
+  const exposureRef = useCallback((element: Element | null) => {
+    exposureCleanupRef.current?.();
+    exposureCleanupRef.current = null;
+    if (!element) return;
+    exposureCleanupRef.current = exposureManager.observe(element, {}, (basis) => {
+      controllerRef.current?.markVisible(basis);
+    });
+  }, []);
+
+  // Stop observing when the hook unmounts.
+  useEffect(() => {
+    return () => {
+      exposureCleanupRef.current?.();
+      exposureCleanupRef.current = null;
+    };
+  }, []);
+
   const ctrl = controllerRef.current;
   const state = ctrl?.state;
 
@@ -159,5 +205,7 @@ export function usePlacement({
     remindMeLater: async (seconds = 3600) => { await ctrl?.remindMeLater(seconds); },
     ctaClick: async (ctaTarget) => { await ctrl?.ctaClick(ctaTarget); },
     ctaComplete: async (ctaTarget) => { await ctrl?.ctaComplete(ctaTarget); },
+    exposureRef,
+    exposureBasis: state?.exposureBasis ?? null,
   };
 }

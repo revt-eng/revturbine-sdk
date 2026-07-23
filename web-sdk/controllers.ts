@@ -50,6 +50,7 @@ import type {
   JsonObject,
 } from './customer-side';
 import { initRevTurbine as initRevTurbineCore, resolveLocalPlaybook } from './customer-side';
+import type { ExposureBasis } from './telemetry';
 import type { RevTurbineTheme, RevTurbineThemeInput } from './theme/types';
 import { DEFAULT_THEME, mergeTheme } from './theme/defaults';
 import { loadTheme } from './theme/theme-loader';
@@ -93,6 +94,12 @@ export interface PlacementControllerState {
   readonly visible: boolean;
   readonly decision: RevTurbinePlacementDecision | null;
   readonly content: RevTurbinePlacementContent['content'] | null;
+  /**
+   * How the placement's visual root came to be considered exposed, or `null`
+   * before {@link PlacementController.markVisible} is called (plan 144 TASK-9).
+   * `'render_fallback'` when `IntersectionObserver` was unavailable (AC-10).
+   */
+  readonly exposureBasis: ExposureBasis | null;
 }
 
 /**
@@ -122,6 +129,8 @@ export class PlacementController {
   private _error = '';
   private _impressionTracked = false;
   private _loadSeq = 0;
+  private _exposed = false;
+  private _exposureBasis: ExposureBasis | null = null;
 
   constructor(sdk: RevTurbineCustomerSdk, options: PlacementControllerOptions) {
     this.sdk = sdk;
@@ -137,7 +146,27 @@ export class PlacementController {
       visible: Boolean(this._decision?.visible),
       decision: this._decision,
       content: this._decision?.content ?? null,
+      exposureBasis: this._exposureBasis,
     };
+  }
+
+  /**
+   * Called by the viewport-exposure substrate when the placement's visual root
+   * first enters the viewport — or immediately with `'render_fallback'` when
+   * `IntersectionObserver` is unavailable (plan 144 TASK-9 / AC-10). Records the
+   * exposure and its basis; idempotent (only the first call takes effect).
+   *
+   * This is the seam the viewport-exposure opt-in builds on: under
+   * `placementExposure: 'viewport'` (TASK-11) the resolution-time impression
+   * moves here. In TASK-9 it records state without emitting an event.
+   *
+   * @param basis - how exposure was established; defaults to `'viewport'`
+   */
+  markVisible(basis: ExposureBasis = 'viewport'): void {
+    if (this._exposed) return;
+    this._exposed = true;
+    this._exposureBasis = basis;
+    this.notify();
   }
 
   /** Convenience: `true` when the current decision says the placement is visible. */
@@ -243,9 +272,11 @@ export class PlacementController {
     }
   }
 
-  /** Re-fetch the placement decision (clears impression tracking). */
+  /** Re-fetch the placement decision (clears impression + exposure tracking). */
   async refresh(): Promise<RevTurbinePlacementDecision | null> {
     this._impressionTracked = false;
+    this._exposed = false;
+    this._exposureBasis = null;
     return this.load();
   }
 
@@ -296,6 +327,8 @@ export class PlacementController {
     this._isLoading = false;
     this._error = '';
     this._impressionTracked = false;
+    this._exposed = false;
+    this._exposureBasis = null;
     this._loadSeq++;
     this.notify();
   }

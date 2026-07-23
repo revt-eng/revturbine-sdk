@@ -12,3 +12,5 @@ export { deliverWithRetry } from './delivery';
 export type { DeliverOptions, DeliveryOutcome } from './delivery';
 export { createTelemetryCounters } from './counters';
 export type { TelemetryCounters } from './counters';
+export { createExposureManager, exposureManager } from './visibility';
+export type { ExposureBasis, ExposureManager, ExposureObserveOptions } from './visibility';

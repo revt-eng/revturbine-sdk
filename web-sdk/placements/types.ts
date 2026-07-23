@@ -119,6 +119,15 @@ export interface PlacementSlotProps<C extends ResolvedContent = ResolvedContent>
   className?: string;
   /** Custom inline styles. */
   style?: React.CSSProperties;
+  /**
+   * Optional exposure ref (plan 144 TASK-9 / REQ-18). Attach it to the slot's
+   * true visual root so RevTurbine can observe when the placement actually
+   * enters the viewport for viewport-qualified exposure; when
+   * `IntersectionObserver` is unavailable it falls back to render
+   * (`exposure_basis: 'render_fallback'`). **Additive and optional** — omitting
+   * it changes nothing, and it never requires a wrapper element (REQ-18/REQ-19).
+   */
+  exposureRef?: (element: Element | null) => void;
 }
 
 /**

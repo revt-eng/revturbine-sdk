@@ -57,6 +57,7 @@ describe('PlacementController', () => {
         visible: false,
         decision: null,
         content: null,
+        exposureBasis: null,
       });
       expect(ctrl.visible).toBe(false);
       expect(ctrl.content).toBeNull();
@@ -195,6 +196,34 @@ describe('PlacementController', () => {
 
       expect(sdk.trackTreatmentInteraction).not.toHaveBeenCalled();
       expect(ctrl.visible).toBe(false);
+    });
+
+    // Plan 144 TASK-9 — the exposure seam the visibility substrate calls.
+    it('markVisible records the exposure basis (default viewport) and is idempotent', () => {
+      ctrl = new PlacementController(sdk, { surfaceSlot: { id: 'slot_1', name: 'slot_1' } });
+      expect(ctrl.state.exposureBasis).toBeNull();
+
+      ctrl.markVisible();
+      expect(ctrl.state.exposureBasis).toBe('viewport');
+
+      // First call wins — a later basis never overwrites.
+      ctrl.markVisible('render_fallback');
+      expect(ctrl.state.exposureBasis).toBe('viewport');
+    });
+
+    it('markVisible records render_fallback when the substrate has no IntersectionObserver (AC-10)', () => {
+      ctrl = new PlacementController(sdk, { surfaceSlot: { id: 'slot_1', name: 'slot_1' } });
+      ctrl.markVisible('render_fallback');
+      expect(ctrl.state.exposureBasis).toBe('render_fallback');
+    });
+
+    it('refresh re-arms exposure so a re-fetch can be exposed again', async () => {
+      ctrl = new PlacementController(sdk, { surfaceSlot: { id: 'slot_1', name: 'slot_1' } });
+      ctrl.markVisible('viewport');
+      expect(ctrl.state.exposureBasis).toBe('viewport');
+
+      await ctrl.refresh();
+      expect(ctrl.state.exposureBasis).toBeNull();
     });
 
     it('passes contextMode, overrides, traits, and ttlMs to decision request', async () => {
@@ -406,6 +435,7 @@ describe('PlacementController', () => {
         visible: false,
         decision: null,
         content: null,
+        exposureBasis: null,
       });
     });
 
