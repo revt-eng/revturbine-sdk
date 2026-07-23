@@ -10,3 +10,5 @@ export { createEventIdGenerator, eventIds } from './event-id';
 export type { EventIdGenerator } from './event-id';
 export { deliverWithRetry } from './delivery';
 export type { DeliverOptions, DeliveryOutcome } from './delivery';
+export { createTelemetryCounters } from './counters';
+export type { TelemetryCounters } from './counters';

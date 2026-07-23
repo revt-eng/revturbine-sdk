@@ -124,7 +124,8 @@ import {
   createStaticPlacementResolver,
   type LocalPlacementDataset,
 } from './placements/local-resolver';
-import { eventIds, deliverWithRetry } from './telemetry';
+import { eventIds, deliverWithRetry, createTelemetryCounters } from './telemetry';
+import type { TelemetryCounters } from './telemetry';
 
 // ── Semantic type aliases ─────────────────────────────────────────────────────
 // These replace raw `Record<string, unknown>` and `unknown` with named types
@@ -573,6 +574,31 @@ export type ExportedConfigProvider = RevTurbineConfigProvider;
  * });
  * ```
  */
+
+/**
+ * Behavior-telemetry consent state (plan 144 TASK-8 / REQ-11).
+ *
+ * - `granted` — emit normally (the default when the `telemetry` option is omitted).
+ * - `denied` — prevent event **creation**; nothing reaches ingest, consumers, or
+ *   integrations.
+ * - `pending` — like `denied` in MVP: events are dropped and never persisted.
+ */
+export type TelemetryConsent = 'granted' | 'denied' | 'pending';
+
+/** Behavior-telemetry configuration (plan 144). */
+export interface RevTurbineTelemetryOptions {
+  /**
+   * Consent gate for behavior telemetry. Defaults to `granted`. `denied` and
+   * `pending` both stop event creation, so no clickstream event reaches ingest,
+   * a registered {@link RevTurbineEventConsumer}, or an integration. Change it at
+   * runtime with {@link RevTurbineCustomerSdk.setTelemetryConsent} — no provider
+   * remount is needed (REQ-12). Independent of
+   * {@link RevTurbineInitOptions.anonymousTelemetry}, which governs the keyless
+   * SDK-init beacon (REQ-13).
+   */
+  consent?: TelemetryConsent;
+}
+
 export interface RevTurbineInitOptions {
   /** Your RevTurbine tenant identifier. */
   tenantId: string;
@@ -629,6 +655,13 @@ export interface RevTurbineInitOptions {
    * `local_only` runtime mode.
    */
   anonymousTelemetry?: boolean;
+  /**
+   * Behavior-telemetry configuration (plan 144). Currently carries
+   * {@link RevTurbineTelemetryOptions.consent}, the granted/denied/pending gate
+   * over event creation. Omit it entirely to keep the default `granted`
+   * behavior — no change from prior versions.
+   */
+  telemetry?: RevTurbineTelemetryOptions;
   /**
    * Client-side clickstream batching policy (plan 95). Events are buffered and
    * flushed to `POST /api/track` on whichever comes first: the batch reaching
@@ -1658,6 +1691,10 @@ export class RevTurbineCustomerSdk {
   private readonly environmentId: string;
   private readonly analyticsEnabled: boolean;
   private readonly anonymousTelemetryEnabled: boolean;
+  // Behavior-telemetry consent (plan 144 TASK-8). Mutable — `setTelemetryConsent`
+  // flips it at runtime with no remount (REQ-12).
+  private telemetryConsent: TelemetryConsent;
+  private readonly telemetryCounters: TelemetryCounters = createTelemetryCounters();
   private readonly maxBatchSize: number;
   private readonly flushIntervalMs: number;
   private flushTimer?: ReturnType<typeof setInterval>;
@@ -1724,6 +1761,9 @@ export class RevTurbineCustomerSdk {
     this.environmentId = options.environmentId?.trim() || 'default';
     this.analyticsEnabled = options.analytics !== false;
     this.anonymousTelemetryEnabled = options.anonymousTelemetry !== false;
+    // Default `granted` so an integration with no `telemetry` option is
+    // unchanged (AC-21). `anonymousTelemetry` above stays separate (REQ-13).
+    this.telemetryConsent = options.telemetry?.consent ?? 'granted';
     this.maxBatchSize = Math.max(1, options.eventBatching?.maxBatchSize ?? DEFAULT_EVENT_BATCH_SIZE);
     this.flushIntervalMs = Math.max(0, options.eventBatching?.flushIntervalMs ?? DEFAULT_EVENT_FLUSH_INTERVAL_MS);
     this.endpoint = options.endpoint.replace(/\/$/, '');
@@ -3612,6 +3652,16 @@ export class RevTurbineCustomerSdk {
   private async sendEvents(events: RevTurbineEventEnvelope[]): Promise<void> {
     if (events.length === 0) return;
 
+    // Consent safety net (plan 144 TASK-8 / AC-3): `capture` already gates
+    // the common path, but a direct-send path (e.g. a placement validation
+    // warning built outside `capture`) also funnels here. Returning before
+    // redaction, fan-out, and the ingest call guarantees a `denied` / `pending`
+    // consent lets NOTHING reach a consumer, an integration, or ingest.
+    if (!this.telemetryConsented()) {
+      this.telemetryCounters.dropped += events.length;
+      return;
+    }
+
     // Redact BEFORE fan-out, not just before the ingest call. Consumers get
     // the envelope too, so redacting only inside the /api/track mapping let a
     // third-party mirror receive raw emails/cards that RevTurbine's own
@@ -3632,6 +3682,7 @@ export class RevTurbineCustomerSdk {
     const hasDestination =
       this.providerRegistry.has('events') || (!this.isLocalOnlyMode() && this.analyticsEnabled);
     if (valuesRedacted > 0 && hasDestination) this.warnPiiRedactedOnce();
+    this.telemetryCounters.redacted += valuesRedacted;
 
     // Fan out to registered EventConsumer providers (analytics adapters, etc.)
     this.dispatchToEventConsumers(sanitized);
@@ -3734,7 +3785,10 @@ export class RevTurbineCustomerSdk {
       // complete after the document starts tearing down (plan 95 TASK-6).
       keepalive: true,
     };
-    await deliverWithRetry(() => fetch(url, init));
+    const outcome = await deliverWithRetry(() => fetch(url, init));
+    // Diagnostic tallies (plan 144 TASK-8) — one per delivered/failed row.
+    if (outcome.delivered) this.telemetryCounters.sent += trackEvents.length;
+    else this.telemetryCounters.failed += trackEvents.length;
   }
 
   private dispatchToEventConsumers(events: RevTurbineEventEnvelope[]): void {
@@ -3758,7 +3812,55 @@ export class RevTurbineCustomerSdk {
     });
   }
 
+  /**
+   * True when behavior telemetry may be created and delivered — i.e. consent is
+   * `granted` (plan 144 TASK-8 / REQ-11). `denied` and `pending` both return
+   * false; `pending` drops rather than persists in MVP.
+   */
+  private telemetryConsented(): boolean {
+    return this.telemetryConsent === 'granted';
+  }
+
+  /**
+   * Update behavior-telemetry consent at runtime (plan 144 TASK-8 / REQ-12).
+   *
+   * Takes effect on the next event with **no** provider remount: `denied` /
+   * `pending` stop event creation immediately, so nothing reaches ingest,
+   * registered consumers, or integrations; `granted` resumes emission. Does not
+   * affect the keyless anonymous SDK-init beacon, which has its own
+   * {@link RevTurbineInitOptions.anonymousTelemetry} switch (REQ-13).
+   *
+   * @param consent - the new consent state
+   */
+  setTelemetryConsent(consent: TelemetryConsent): void {
+    this.telemetryConsent = consent;
+  }
+
+  /** The current behavior-telemetry consent state (plan 144 TASK-8). */
+  getTelemetryConsent(): TelemetryConsent {
+    return this.telemetryConsent;
+  }
+
+  /**
+   * A snapshot of the telemetry pipeline counters (plan 144 TASK-8) —
+   * created / dropped / redacted / sampled / deduped / queued / sent / failed.
+   * A cheap diagnostic for "why did my events not arrive?". Returns a copy, so
+   * mutating it never touches the SDK's live tallies.
+   */
+  getTelemetryCounters(): TelemetryCounters {
+    return { ...this.telemetryCounters };
+  }
+
   async capture(eventName: string, properties: SdkEventProperties, options?: RevTurbineEventOptions): Promise<void> {
+    // Consent gate (plan 144 TASK-8 / REQ-11, AC-3): `denied` / `pending`
+    // prevent event CREATION — no envelope is built, buffered, or delivered to
+    // any destination. Checked live, so a `setTelemetryConsent('granted')`
+    // resumes emission on the very next call without a remount (REQ-12).
+    if (!this.telemetryConsented()) {
+      this.telemetryCounters.dropped += 1;
+      return;
+    }
+
     const normalizedEventType = normalizeEventType(eventName);
     const primaryEnvelope = this.toEventEnvelope(normalizedEventType, properties);
 
@@ -3771,6 +3873,7 @@ export class RevTurbineCustomerSdk {
     if (issues.length > 0) {
       envelopesToQueue.push(this.buildValidationWarningEvent(normalizedEventType, issues, properties));
     }
+    this.telemetryCounters.created += envelopesToQueue.length;
 
     if (options?.immediate) {
       await this.sendEvents(envelopesToQueue);
@@ -3778,6 +3881,7 @@ export class RevTurbineCustomerSdk {
     }
 
     this.events.push(...envelopesToQueue);
+    this.telemetryCounters.queued += envelopesToQueue.length;
     if (this.events.length >= this.maxBatchSize) {
       await this.flushEvents();
     }
