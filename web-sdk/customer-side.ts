@@ -5873,11 +5873,22 @@ export class RevTurbineCustomerSdk {
     fn: () => T | Promise<T>,
     context?: RevTurbineEntitlementContext,
   ): Promise<RevTurbineGateResult<T>> {
+    // Active gate sequence (plan 144 TASK-10/14): a user-invoked gate emits
+    // `gate_attempted`, then `gate_allowed` or `gate_denied` — distinct from the
+    // passive `gate_evaluated` a rendered <Gate> emits. The React `useGatedAction`
+    // delegates here rather than forking this sequence. Best-effort.
+    void this.emitSemantic('gate_attempted', { entitlement_handle: action }, { immediate: false });
     const entitlement = await this.checkEntitlement(action, context);
     if (entitlement.allowed) {
+      void this.emitSemantic('gate_allowed', { entitlement_handle: action }, { immediate: false });
       const result = await fn();
       return { ran: true, result, entitlement };
     }
+    void this.emitSemantic(
+      'gate_denied',
+      { entitlement_handle: action, reason: entitlement.reason ?? null },
+      { immediate: false },
+    );
     return { ran: false, entitlement };
   }
 
