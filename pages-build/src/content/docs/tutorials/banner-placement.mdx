@@ -99,6 +99,7 @@ A header banner that:
    ```tsx title="src/App.tsx"
    <RevTurbineProvider
      options={{
+       runtimeMode: RuntimeMode.LocalOnly,
        localRuntime: { playbook },
        user: { id: 'user_123', context: { plan_handle: 'pro' } },
      }}

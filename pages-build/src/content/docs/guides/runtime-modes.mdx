@@ -26,6 +26,15 @@ The SDK supports three runtime modes. **Start with `local_only`** to get up and 
 | `revturbine_server` | Production with live A/B testing | RevTurbine edge endpoints | `tenantId`, `apiKey`, `endpoint` |
 | `custom_endpoints` | Customer proxy/service boundaries | Customer endpoints | Base config + `endpointOverrides` |
 
+Set the mode with the typed **`RuntimeMode`** constant rather than a raw string:
+
+```ts
+import { RuntimeMode } from '@revturbine/sdk';
+// runtimeMode: RuntimeMode.LocalOnly | RuntimeMode.Server | RuntimeMode.CustomEndpoints
+```
+
+`local_only` makes **no server calls at all** — no config fetches and **no telemetry** (neither the `/api/track` clickstream nor the keyless SDK-init beacon). That makes it the right mode for demos, examples, and tests, which must never report events.
+
 ## Copy-Paste Setup
 
 <Tabs>
@@ -63,7 +72,7 @@ const sdk = initRevTurbine(
   createServerRuntimeConfig({
     tenantId: 'tenant_abc',
     apiKey: 'rt_live_xxx',
-    endpoint: 'https://api.revturbine.io',
+    endpoint: 'https://revturbine.com/app',
     mode: 'react',
   }),
 );
@@ -105,12 +114,12 @@ When you're ready for production, the change is a single config swap. Your compo
 -     tenantId: 'my-app',
 -     apiKey: 'local',
 -     endpoint: 'http://localhost',
--     runtimeMode: 'local_only',
+-     runtimeMode: RuntimeMode.LocalOnly,
 -     localRuntime: { playbook },
 +     tenantId: process.env.REVTURBINE_TENANT_ID!,
 +     apiKey: process.env.REVTURBINE_API_KEY!,
-+     endpoint: 'https://api.revturbine.io',
-+     runtimeMode: 'revturbine_server',
++     endpoint: 'https://revturbine.com/app',
++     runtimeMode: RuntimeMode.Server,
     }}
     defaultUserId="user_123"
   >
@@ -148,7 +157,7 @@ const sdk = initRevTurbine({
   ...createServerRuntimeConfig({
     tenantId: 'tenant_abc',
     apiKey: 'rt_live_xxx',
-    endpoint: 'https://api.revturbine.io',
+    endpoint: 'https://revturbine.com/app',
     mode: 'react',
   }),
   provider: primaryProvider,
@@ -160,7 +169,7 @@ const sdk = initRevTurbine({
 ## Production Checklist
 
 1. Start with `local_only` to validate your integration and placement slots.
-2. When ready, switch to `runtimeMode: 'revturbine_server'` and provide real credentials.
+2. When ready, switch to `RuntimeMode.Server` and provide real credentials.
 3. Configure a primary RT provider first in the chain.
 4. Add at least one fallback provider in `providerFallbacks`.
 5. Keep fallback providers ordered by trust and operational readiness.

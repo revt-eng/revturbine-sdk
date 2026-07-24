@@ -33,7 +33,7 @@ import { initRevTurbine } from '@revturbine/sdk/headless';
 const session = await initRevTurbine({
   tenantId: 'tenant_abc',
   apiKey: 'rt_live_xxx',
-  endpoint: 'https://api.revturbine.io',
+  endpoint: 'https://revturbine.com/app',
   user: { id: 'user_123', plan: { id: 'pro' } },
 });
 
@@ -60,9 +60,9 @@ Creates a fully-initialized session. Handles SDK initialization, user identifica
 const session = await initRevTurbine({
   tenantId: 'tenant_abc',
   apiKey: 'rt_live_xxx',
-  endpoint: 'https://api.revturbine.io',
+  endpoint: 'https://revturbine.com/app',
   user: { id: 'user_123', plan: { id: 'pro' } },
-  runtimeMode: 'revturbine_server',
+  runtimeMode: RuntimeMode.Server,
   bootstrapPlacements: [
     { placement: { name: 'pricing_banner' } },
   ],

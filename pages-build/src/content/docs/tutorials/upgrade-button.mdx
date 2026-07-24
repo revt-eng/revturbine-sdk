@@ -82,7 +82,7 @@ An upgrade button in your navigation bar that:
 
    ```tsx
    // src/App.tsx
-   import { RevTurbineProvider } from '@revturbine/sdk';
+   import { RevTurbineProvider, RuntimeMode } from '@revturbine/sdk';
    import playbook from './fixtures/playbook.json';
 
    export default function App() {
@@ -93,7 +93,7 @@ An upgrade button in your navigation bar that:
            apiKey: 'local',
            endpoint: 'http://localhost',
            mode: 'react',
-           runtimeMode: 'local_only',
+           runtimeMode: RuntimeMode.LocalOnly,
            localRuntime: { playbook },
            // The button's CTA fires the action you configured; wire CTA
            // handling to your navigation — see the Quickstart.
@@ -175,9 +175,9 @@ To switch, point the provider at your tenant and drop the local runtime:
 +     apiKey: process.env.NEXT_PUBLIC_RT_API_KEY!,
 +     endpoint: process.env.NEXT_PUBLIC_RT_ENDPOINT!,
       mode: 'react',
--     runtimeMode: 'local_only',
+-     runtimeMode: RuntimeMode.LocalOnly,
 -     localRuntime: { playbook },
-+     runtimeMode: 'revturbine_server',
++     runtimeMode: RuntimeMode.Server,
     }}
   >
 ```

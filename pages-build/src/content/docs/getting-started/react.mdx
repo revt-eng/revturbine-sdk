@@ -14,12 +14,13 @@ The React integration provides a provider, hooks, and drop-in components for pla
 Wrap your app (or a subtree) with the provider:
 
 ```tsx
-import { RevTurbineProvider } from '@revturbine/sdk';
+import { RevTurbineProvider, RuntimeMode } from '@revturbine/sdk';
 import playbook from './playbook.json';
 import { useMemo } from 'react';
 
 export default function App() {
   const options = useMemo(() => ({
+    runtimeMode: RuntimeMode.LocalOnly, // evaluate the bundled playbook client-side; no network, no telemetry
     localRuntime: { playbook },
     user: {
       id: 'user_123',

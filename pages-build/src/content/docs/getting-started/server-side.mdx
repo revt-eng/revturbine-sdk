@@ -32,10 +32,11 @@ pnpm add @revturbine/sdk
 ### Entitlement Checks
 
 ```ts
-import { initRevTurbine } from '@revturbine/sdk';
+import { initRevTurbine, RuntimeMode } from '@revturbine/sdk';
 import playbook from './playbook.json';
 
 const sdk = initRevTurbine({
+  runtimeMode: RuntimeMode.LocalOnly,
   localRuntime: { playbook },
   user: {
     id: 'user_123',
@@ -58,10 +59,11 @@ if (!result.allowed) {
 Resolve placements server-side for SSR or email templates:
 
 ```ts
-import { initRevTurbine } from '@revturbine/sdk';
+import { initRevTurbine, RuntimeMode } from '@revturbine/sdk';
 import playbook from './playbook.json';
 
 const sdk = initRevTurbine({
+  runtimeMode: RuntimeMode.LocalOnly,
   localRuntime: { playbook },
   user: {
     id: req.user.id,
@@ -91,12 +93,13 @@ For frameworks like Next.js, resolve placements with the local runtime and hydra
 // components/Dashboard.tsx
 'use client';
 
-import { RevTurbineProvider, Slot } from '@revturbine/sdk';
+import { RevTurbineProvider, Slot, RuntimeMode } from '@revturbine/sdk';
 import playbook from './playbook.json';
 import { useMemo } from 'react';
 
 export default function Dashboard({ user }) {
   const options = useMemo(() => ({
+    runtimeMode: RuntimeMode.LocalOnly,
     localRuntime: { playbook },
     user: {
       id: user.id,

@@ -111,7 +111,7 @@ const identityProvider: RevTurbineSdkProvider = {
 Pass your provider via the `provider` option:
 
 ```tsx
-import { RevTurbineProvider } from '@revturbine/sdk';
+import { RevTurbineProvider, RuntimeMode } from '@revturbine/sdk';
 import playbook from './playbook.json';
 import { useMemo } from 'react';
 
@@ -130,6 +130,7 @@ const myProvider = {
 
 function App() {
   const options = useMemo(() => ({
+    runtimeMode: RuntimeMode.LocalOnly,
     localRuntime: { playbook },
     provider: myProvider,
   }), []);
@@ -155,6 +156,7 @@ const myProviderFactory = (options) => ({
 });
 
 const options = {
+  runtimeMode: RuntimeMode.LocalOnly,
   localRuntime: { playbook },
   provider: myProviderFactory,
 };
@@ -166,6 +168,7 @@ The SDK supports a chain of providers. If the primary provider returns `null` or
 
 ```tsx
 const options = useMemo(() => ({
+  runtimeMode: RuntimeMode.LocalOnly,
   localRuntime: { playbook },
   provider: apiProvider,
   providerFallbacks: [cachedProvider, staticFallback],
@@ -188,7 +191,7 @@ The SDK can forward all impressions, interactions, and lifecycle events to your 
 ### Basic Setup
 
 ```tsx
-import { RevTurbineProvider, createAnalyticsProvider } from '@revturbine/sdk';
+import { RevTurbineProvider, createAnalyticsProvider, RuntimeMode } from '@revturbine/sdk';
 import playbook from './playbook.json';
 import { useMemo } from 'react';
 
@@ -202,6 +205,7 @@ function App() {
     });
 
     return {
+      runtimeMode: RuntimeMode.LocalOnly,
       localRuntime: { playbook },
       domainProviders: [analytics],
     };
