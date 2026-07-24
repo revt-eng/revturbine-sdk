@@ -48,6 +48,7 @@ import type {
   RevTurbineTrialContext,
   UsageBalances,
   JsonObject,
+  SdkEventProperties,
 } from './customer-side';
 import { initRevTurbine as initRevTurbineCore, resolveLocalPlaybook } from './customer-side';
 import { exposureManager } from './telemetry';
@@ -114,6 +115,19 @@ export type PlacementExposureMode = 'legacy_resolution' | 'render' | 'viewport';
 export type PresentationBasis = 'legacy_resolution' | 'render' | 'viewport' | 'render_fallback';
 
 /**
+ * The slot delivery-diagnostics lifecycle (plan 144 TASK-10 / spec §10.1).
+ * `slot_evaluated` fires on every resolution; then exactly one terminal —
+ * `slot_filled` / `slot_empty` / `slot_suppressed` — or `slot_error` when
+ * resolution fails. These are funnel-denominator signals, not engagement.
+ */
+export type SlotLifecycleEvent =
+  | 'slot_evaluated'
+  | 'slot_filled'
+  | 'slot_empty'
+  | 'slot_suppressed'
+  | 'slot_error';
+
+/**
  * Read-only snapshot of a {@link PlacementController}'s state.
  */
 export interface PlacementControllerState {
@@ -161,6 +175,10 @@ export class PlacementController {
   private _rendered = false;
   private _exposed = false;
   private _exposureBasis: ExposureBasis | null = null;
+  // Dedup key for the slot lifecycle diagnostics (plan 144 TASK-10 / spec §10.1).
+  // Re-emits only when the resolved decision identity or outcome changes, so a
+  // re-render against the same cached decision stays silent.
+  private _lastSlotKey: string | null = null;
 
   constructor(sdk: RevTurbineCustomerSdk, options: PlacementControllerOptions) {
     this.sdk = sdk;
@@ -275,6 +293,99 @@ export class PlacementController {
     }
   }
 
+  /**
+   * Shared slot-lifecycle context (plan 144 TASK-10 / spec §10.1): the slot
+   * identity, resolved decision facts, and the lifted `decision_id`. Best-effort
+   * fields default to `null` before a decision resolves.
+   */
+  private slotContext(): SdkEventProperties {
+    const decision = this._decision;
+    const slot = this.options.surfaceSlot;
+    return {
+      surface_slot_id: decision?.output?.surface?.slot_id ?? slot?.id ?? null,
+      slot_name: slot?.name ?? null,
+      template_ids: slot?.surfaceTemplateIds ?? null,
+      template_id: decision?.output?.surface?.template ?? null,
+      surface_type: decision?.output?.surface?.type ?? null,
+      category: decision?.output?.category ?? null,
+      decision_source: decision?.decisionSource ?? null,
+      reason_codes: decision?.reasonCodes ?? [],
+      // Lifted → wire `decision_id` column so slot diagnostics correlate to the
+      // decision that produced them (plan 144 TASK-10 / REQ-8).
+      decision_id: decision?.output?.decision_id ?? null,
+    };
+  }
+
+  /**
+   * Emit the slot resolution diagnostics (plan 144 TASK-10 / spec §10.1): always
+   * `slot_evaluated`, then exactly one terminal — `slot_filled` (visible),
+   * `slot_suppressed` (a cap/cooldown/explicit suppression), or `slot_empty`
+   * (nothing matched). Deduped for the decision-cache lifetime and best-effort:
+   * these are funnel-denominator signals, not engagement, and must never break a
+   * placement. `slot_error` is emitted separately from `load()`'s catch.
+   */
+  private emitSlotResolution(): void {
+    const decision = this._decision;
+    const terminal: SlotLifecycleEvent = decision?.visible
+      ? 'slot_filled'
+      : decision?.suppressionReason
+        ? 'slot_suppressed'
+        : 'slot_empty';
+    // Dedup on slot + resolved-decision identity + outcome, so re-loading the
+    // same cached decision (same requestId) stays silent, but a fresh decision
+    // or a changed outcome re-emits (spec §10.1 dedup-within-cache-lifetime).
+    const key = `${this._placementId}|${decision?.output?.decision_id ?? decision?.requestId ?? ''}|${terminal}`;
+    if (this._lastSlotKey === key) return;
+    this._lastSlotKey = key;
+    const context = this.slotContext();
+    this.emitSlotEvent('slot_evaluated', context);
+    this.emitSlotEvent(terminal, context);
+  }
+
+  /**
+   * Emit `slot_error` when resolution fails and the additive fallback is used
+   * (plan 144 TASK-10 / spec §10.1). Deduped per slot so a retrying loop does not
+   * flood. Best-effort.
+   */
+  private emitSlotError(message: string): void {
+    const key = `${this._placementId}|slot_error`;
+    if (this._lastSlotKey === key) return;
+    this._lastSlotKey = key;
+    this.emitSlotEvent('slot_error', { ...this.slotContext(), error: message });
+  }
+
+  /** Emit one slot lifecycle event with the shared context. Best-effort. */
+  private emitSlotEvent(event: SlotLifecycleEvent, context: SdkEventProperties): void {
+    try {
+      void this.sdk.emitSemantic(event, context, { immediate: false });
+    } catch {
+      // Best-effort diagnostics — never surface a placement error from this.
+    }
+  }
+
+  /**
+   * Emit `placement_outcome` — the intended CTA outcome completed (plan 144
+   * TASK-10 / spec §10.3). A treatment-attribution signal distinct from the
+   * `cta_completed` interaction: it marks the terminal funnel step with decision
+   * provenance. Best-effort.
+   */
+  private emitPlacementOutcome(ctaTarget: string | null): void {
+    const decision = this._decision;
+    try {
+      void this.sdk.emitSemantic('placement_outcome', {
+        placement_id: this._placementId,
+        surface_slot_id: decision?.output?.surface?.slot_id ?? null,
+        payload_id: decision?.output?.output_id ?? null,
+        decision_id: decision?.output?.decision_id ?? null,
+        decision_source: decision?.decisionSource ?? null,
+        outcome: 'cta_completed',
+        cta_target: ctaTarget,
+      }, { immediate: false });
+    } catch {
+      // Best-effort telemetry — never surface a placement error from this.
+    }
+  }
+
   /** Convenience: `true` when the current decision says the placement is visible. */
   get visible(): boolean {
     return Boolean(this._decision?.visible);
@@ -348,6 +459,9 @@ export class PlacementController {
       // A decision resolved — emit the lifecycle marker once per load, with
       // decision provenance, regardless of visibility (plan 144 TASK-10).
       this.emitPlacementLifecycle('placement_resolved', null);
+      // Slot delivery diagnostics: slot_evaluated + the terminal outcome
+      // (filled / empty / suppressed), deduped for the cache lifetime (spec §10.1).
+      this.emitSlotResolution();
 
       // Fire the resolution-time impression only for the modes that credit a
       // presentation at resolution (plan 144 TASK-11). `legacy_resolution` (the
@@ -366,6 +480,8 @@ export class PlacementController {
     } catch (err) {
       if (seq === this._loadSeq) {
         this._error = err instanceof Error ? err.message : 'Failed to load placement decision.';
+        // Resolution failed and the additive fallback is used → slot_error (spec §10.1).
+        this.emitSlotError(this._error);
       }
       return null;
     } finally {
@@ -408,6 +524,9 @@ export class PlacementController {
   /** Record a CTA completion interaction and hide the placement. */
   async ctaComplete(ctaTarget?: string): Promise<void> {
     await this.trackInteraction('cta_completed', { cta_target: ctaTarget || null });
+    // The intended CTA outcome completed → terminal treatment-attribution signal
+    // (plan 144 TASK-10 / spec §10.3), distinct from the cta_completed interaction.
+    this.emitPlacementOutcome(ctaTarget || null);
   }
 
   /**
@@ -435,6 +554,7 @@ export class PlacementController {
     this._rendered = false;
     this._exposed = false;
     this._exposureBasis = null;
+    this._lastSlotKey = null;
     this._loadSeq++;
     this.notify();
   }
