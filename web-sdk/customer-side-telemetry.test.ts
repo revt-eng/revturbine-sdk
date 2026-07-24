@@ -216,14 +216,33 @@ describe('TASK-7 — keyless anonymous init telemetry', () => {
     expect(metaCalls()).toHaveLength(0);
   });
 
-  it('does NOT emit keyless telemetry in local_only mode', async () => {
+  it('emits keyless telemetry in local_only mode (a bundled-Playbook install is still an install)', async () => {
     makeSdk({
       ingestPublicKey: undefined,
       runtimeMode: 'local_only',
       localRuntime: { exportedConfig: makeConfig() },
     });
+
+    await vi.waitFor(() => expect(metaCalls().length).toBe(1));
+    const ev = metaBody().events[0];
+    expect(ev.event_type).toBe('sdk_init');
+    expect(ev.runtime_mode).toBe('local_only');
+  });
+
+  it('does NOT emit keyless telemetry when previewMode is true (docs/playground render)', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    makeSdk({
+      ingestPublicKey: undefined,
+      previewMode: true,
+      runtimeMode: 'local_only',
+      localRuntime: { exportedConfig: makeConfig() },
+    });
+
+    // Give any stray async beacon a chance to (not) fire.
     await Promise.resolve();
     await Promise.resolve();
     expect(metaCalls()).toHaveLength(0);
+    // The one-time notice must stay silent too — nothing was sent.
+    expect(info).not.toHaveBeenCalled();
   });
 });

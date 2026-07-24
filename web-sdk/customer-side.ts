@@ -651,10 +651,28 @@ export interface RevTurbineInitOptions {
    * On by default (`true`). Set to `false` to opt out entirely; the SDK then
    * sends no keyless telemetry. When active, the SDK logs a one-time info
    * console notice naming this flag. Has no effect once an `ingestPublicKey`
-   * is present (that path uses the authed clickstream instead), nor in
-   * `local_only` runtime mode.
+   * is present (that path uses the authed clickstream instead). This beacon
+   * fires in every runtime mode, `local_only` included — a bundled-Playbook
+   * install is still a real install worth counting. To silence it for a
+   * non-install render (a docs example, a component preview), use
+   * {@link previewMode} instead of this customer-facing opt-out.
    */
   anonymousTelemetry?: boolean;
+  /**
+   * Preview / example render marker.
+   *
+   * Set to `true` when this SDK instance is **not** a real installation but a
+   * throwaway render — a documentation example, a live playground, a component
+   * preview, a screenshot harness. The only current effect is that the keyless
+   * anonymous `sdk_init` beacon (see {@link anonymousTelemetry}) is suppressed,
+   * so these renders never inflate SDK-adoption metrics. Unlike
+   * `anonymousTelemetry: false`, this reads as "this isn't an install" rather
+   * than a customer opting out of telemetry, and it is reserved for future
+   * preview-only behavior.
+   *
+   * Off by default (`false`).
+   */
+  previewMode?: boolean;
   /**
    * Behavior-telemetry configuration (plan 144). Currently carries
    * {@link RevTurbineTelemetryOptions.consent}, the granted/denied/pending gate
@@ -1754,6 +1772,8 @@ export class RevTurbineCustomerSdk {
   private readonly environmentId: string;
   private readonly analyticsEnabled: boolean;
   private readonly anonymousTelemetryEnabled: boolean;
+  // Preview/example render (docs, playground) — suppresses the keyless init beacon.
+  private readonly previewMode: boolean;
   // Behavior-telemetry consent (plan 144 TASK-8). Mutable — `setTelemetryConsent`
   // flips it at runtime with no remount (REQ-12).
   private telemetryConsent: TelemetryConsent;
@@ -1824,6 +1844,7 @@ export class RevTurbineCustomerSdk {
     this.environmentId = options.environmentId?.trim() || 'default';
     this.analyticsEnabled = options.analytics !== false;
     this.anonymousTelemetryEnabled = options.anonymousTelemetry !== false;
+    this.previewMode = options.previewMode === true;
     // Default `granted` so an integration with no `telemetry` option is
     // unchanged (AC-21). `anonymousTelemetry` above stays separate (REQ-13).
     this.telemetryConsent = options.telemetry?.consent ?? 'granted';
@@ -3594,14 +3615,17 @@ export class RevTurbineCustomerSdk {
   // config-shape COUNTS only + a one-way hashed config id, never any user
   // context or PII (REQ-6/REQ-7/REQ-9). On by default, opt out via
   // `anonymousTelemetry: false` (REQ-8); a one-time console notice names the
-  // flag (REQ-8b).
+  // flag (REQ-8b). It fires in every runtime mode — `local_only` included,
+  // since a bundled-Playbook install is still a real install — and is
+  // suppressed only for non-install `previewMode` renders (docs examples,
+  // playground) so those never inflate adoption counts.
 
   /** True when keyless anonymous telemetry should fire (REQ-4 conditions). */
   private anonymousTelemetryActive(): boolean {
     return (
       !this.ingestPublicKey && // keyless only — a keyed install uses /api/track
       this.anonymousTelemetryEnabled &&
-      !this.isLocalOnlyMode() &&
+      !this.previewMode && // docs/playground renders are not installs
       isBrowser()
     );
   }

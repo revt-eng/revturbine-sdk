@@ -259,6 +259,10 @@ export function SdkLocalHarnessApp() {
     apiKey: 'local_only',
     endpoint: 'http://localhost:3000',
     mode: 'react',
+    // Playground render, not a real install — suppress the keyless init beacon.
+    // (This SDK re-inits on every harness edit, so it would otherwise fire the
+    // adoption beacon repeatedly.)
+    previewMode: true,
     localRuntime: {
       storageKey,
       initialData: runtimeData,
