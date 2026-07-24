@@ -1511,6 +1511,49 @@ function liftClickstreamFields(
   return out;
 }
 
+/** The lifted event origin (plan 144 TASK-10). Matches scaffold's `EventOriginSchema`. */
+type EventOrigin = 'explicit' | 'automatic' | 'derived' | 'raw';
+
+// Event names the SDK emits on its own behalf (auto-tracked lifecycle + derived
+// signals), as opposed to a customer `track()` call. Prefix families cover the
+// placement / gate / slot / engagement lifecycle; the set covers the rest.
+const SDK_AUTOMATIC_EVENT_PREFIXES = ['placement_', 'gate_', 'slot_', 'engagement_'] as const;
+const SDK_AUTOMATIC_EVENT_NAMES = new Set<string>([
+  'impression',
+  'segment_enrolled',
+  'segment_unenrolled',
+  USER_CONTEXT_FIELDS_EVENT,
+]);
+
+/**
+ * Classify an event's `origin` for the lifted column (plan 144 TASK-10 / REQ-8).
+ * `derived` = an SDK-synthesized diagnostic; `automatic` = SDK-emitted lifecycle;
+ * `explicit` = a customer `track()` / trigger. (`raw` is reserved for a future
+ * unclassified-passthrough lane.)
+ */
+function classifyEventOrigin(eventType: string): EventOrigin {
+  const type = normalizeEventType(eventType);
+  if (type === SDK_WARNING_EVENT_TYPE) return 'derived';
+  if (SDK_AUTOMATIC_EVENT_NAMES.has(type)) return 'automatic';
+  if (SDK_AUTOMATIC_EVENT_PREFIXES.some((prefix) => type.startsWith(prefix))) return 'automatic';
+  return 'explicit';
+}
+
+// Decision provenance lifted to named columns from the same nested payload the
+// clickstream fields use (plan 144 TASK-10 / REQ-8). `decision_id` correlates
+// every event caused by one decision; it's emitted by the placement lifecycle.
+const PROVENANCE_LIFTED_FIELDS = ['decision_id'] as const;
+type ProvenanceLiftedField = (typeof PROVENANCE_LIFTED_FIELDS)[number];
+
+/** Resolve decision provenance from an event's properties (top-level, else nested). */
+function liftProvenanceFields(
+  properties: Record<string, unknown>, // sdk-ok: boundary-parse
+): Record<ProvenanceLiftedField, string | null> {
+  const out = {} as Record<ProvenanceLiftedField, string | null>;
+  for (const field of PROVENANCE_LIFTED_FIELDS) out[field] = pickClickstreamField(properties, field);
+  return out;
+}
+
 /** Wraps core sanitizeSlug with a browser-secure random fallback suffix. */
 function sanitizeSlug(input: string): string {
   return coreSanitizeSlug(input, secureRandomHex(8));
@@ -3716,6 +3759,12 @@ export class RevTurbineCustomerSdk {
     // bag (level/message/url/traits/raw payload) is preserved as the
     // optional `properties` JSON string; `experiment_id`/`variant_key`
     // are lifted out so they survive end-to-end (plan 41 REQ-7).
+    // The Playbook version that produced the current experience — the same for
+    // every event in this batch, resolved once (plan 144 TASK-10 / REQ-8). This
+    // is the config *release* id (`change_set_id` / `playbook_version_id`), NOT
+    // the immutable `version` format-version constant — the latter would stamp
+    // the same value on every event forever and correlate nothing.
+    const playbookVersion = this.getConfiguredExportedConfig()?.change_set_id;
     const trackEvents: TrackEvent[] = sanitized.map((event) => {
       // `user_id` and the property bag were already scrubbed by
       // `redactEnvelope` above. `account_id` is not carried on the envelope,
@@ -3750,6 +3799,14 @@ export class RevTurbineCustomerSdk {
         // source of truth (plan 144 TASK-6). Same per-field resolution as
         // before — top-level wins, else the nested `payload` bag.
         ...liftClickstreamFields(event.properties),
+        // Decision + Playbook provenance (plan 144 TASK-10 / REQ-8): `decision_id`
+        // is lifted from the event's payload (the placement lifecycle emits it);
+        // `origin` is classified from the event name; `playbook_version` is the
+        // config that produced the experience. Values left null when absent.
+        ...liftProvenanceFields(event.properties),
+        origin: classifyEventOrigin(event.type),
+        playbook_version:
+          typeof playbookVersion === 'string' && playbookVersion.length > 0 ? playbookVersion : null,
         // Sortable, unique id minted here at the wire boundary (plan 144
         // TASK-7 / REQ-7). It lives on the flat `TrackEvent`, not the
         // in-memory `RevTurbineEventEnvelope` (a closed core interface) —
@@ -4919,13 +4976,18 @@ export class RevTurbineCustomerSdk {
       );
     }
 
+    const interactionMeta = (normalized.metadata ?? {}) as Record<string, JsonValue>;
+    // Hoist `decision_id` from the caller's metadata to the top level so it
+    // lifts to the wire `decision_id` column (plan 144 TASK-10 / REQ-8).
+    const decisionId = typeof interactionMeta.decision_id === 'string' ? interactionMeta.decision_id : null;
     await this.emitSemantic('placement_interaction', {
       user_id: normalized.userId,
       placement_id: normalized.placementId,
       treatment_id: normalized.treatmentId ?? null,
       interaction_type: normalized.interactionType,
       interaction_at: normalized.interactionAt ?? null,
-      metadata: (normalized.metadata ?? {}) as Record<string, JsonValue>,
+      ...(decisionId ? { decision_id: decisionId } : {}),
+      metadata: interactionMeta,
     }, { immediate: false });
   }
 

@@ -155,3 +155,49 @@ describe('autoTrackImpression:false suppresses the impression in every mode', ()
     expect(semantic(sdk, 'placement_exposed')).toHaveLength(1);
   });
 });
+
+describe('plan 144 TASK-10 — placement_resolved + decision_id provenance', () => {
+  // A decision that carries the decision_id the SDK lifts onto every event it
+  // causes (REQ-8). mkSdk's default decision has none, exercising the null path.
+  function mkSdkWithDecisionId(decisionId: string): AnySdk {
+    const sdk = mkSdk();
+    sdk.getPlacementDecision.mockResolvedValue({
+      visible: true,
+      placementId: 'pl_1',
+      decisionSource: 'remote',
+      content: { header: 'Hi' },
+      output: { decision_id: decisionId, surface: { slot_id: 'slot_1', template: 'tpl_1' }, output_id: 'pay_1' },
+    });
+    return sdk;
+  }
+
+  it('emits placement_resolved once on load with decision provenance', async () => {
+    const sdk = mkSdkWithDecisionId('dec_9');
+    await loadCtrl(sdk, {});
+    const resolved = semantic(sdk, 'placement_resolved');
+    expect(resolved).toHaveLength(1);
+    expect(resolved[0][1]).toMatchObject({
+      placement_id: 'pl_1',
+      decision_id: 'dec_9',
+      decision_source: 'remote',
+    });
+  });
+
+  it('emits placement_resolved with decision_id null when the decision carries none', async () => {
+    const sdk = mkSdk(); // default decision — no decision_id
+    await loadCtrl(sdk, {});
+    const resolved = semantic(sdk, 'placement_resolved');
+    expect(resolved).toHaveLength(1);
+    expect(resolved[0][1]).toMatchObject({ decision_id: null });
+  });
+
+  it('threads decision_id onto placement_rendered, placement_exposed, and the impression', async () => {
+    const sdk = mkSdkWithDecisionId('dec_9');
+    const ctrl = await loadCtrl(sdk, { placementExposure: 'viewport' });
+    ctrl.markRendered();
+    ctrl.markVisible('viewport');
+    expect(semantic(sdk, 'placement_rendered')[0][1]).toMatchObject({ decision_id: 'dec_9' });
+    expect(semantic(sdk, 'placement_exposed')[0][1]).toMatchObject({ decision_id: 'dec_9' });
+    expect((impressions(sdk)[0][0] as { metadata?: { decision_id?: string } }).metadata?.decision_id).toBe('dec_9');
+  });
+});

@@ -242,7 +242,11 @@ export class PlacementController {
       surfaceSlotId: decision.output?.surface?.slot_id,
       surfaceTemplateId: decision.output?.surface?.template,
       payloadId: decision.output?.output_id,
-      metadata: { decision_source: decision.decisionSource, exposure_basis: basis },
+      metadata: {
+        decision_source: decision.decisionSource,
+        exposure_basis: basis,
+        decision_id: decision.output?.decision_id ?? null,
+      },
     });
   }
 
@@ -251,7 +255,7 @@ export class PlacementController {
    * with decision provenance (plan 144 TASK-11). Best-effort.
    */
   private emitPlacementLifecycle(
-    event: 'placement_rendered' | 'placement_exposed',
+    event: 'placement_resolved' | 'placement_rendered' | 'placement_exposed',
     basis: ExposureBasis | null,
   ): void {
     const decision = this._decision;
@@ -260,6 +264,9 @@ export class PlacementController {
         placement_id: this._placementId,
         surface_slot_id: decision?.output?.surface?.slot_id ?? null,
         payload_id: decision?.output?.output_id ?? null,
+        // Lifted to the wire `decision_id` column so every event caused by one
+        // decision correlates (plan 144 TASK-10 / REQ-8).
+        decision_id: decision?.output?.decision_id ?? null,
         decision_source: decision?.decisionSource ?? null,
         ...(basis ? { exposure_basis: basis } : {}),
       }, { immediate: false });
@@ -337,6 +344,10 @@ export class PlacementController {
       if (seq !== this._loadSeq) return this._decision;
 
       this._decision = decision;
+
+      // A decision resolved — emit the lifecycle marker once per load, with
+      // decision provenance, regardless of visibility (plan 144 TASK-10).
+      this.emitPlacementLifecycle('placement_resolved', null);
 
       // Fire the resolution-time impression only for the modes that credit a
       // presentation at resolution (plan 144 TASK-11). `legacy_resolution` (the
@@ -435,6 +446,11 @@ export class PlacementController {
     const resolvedUserId = this.options.userId || this.sdk.getUserContext().user_id;
     if (!this._placementId || !resolvedUserId) return;
 
+    // decision_id correlates the interaction to its decision → wire provenance
+    // column (plan 144 TASK-10). Added only when the decision carries one, so
+    // interactions without a decision keep their bare metadata shape.
+    const decisionId = this._decision?.output?.decision_id ?? null;
+
     await this.sdk.trackTreatmentInteraction({
       userId: resolvedUserId,
       placementId: this._placementId,
@@ -444,7 +460,7 @@ export class PlacementController {
       surfaceSlotId: this._decision?.output?.surface?.slot_id,
       surfaceTemplateId: this._decision?.output?.surface?.template,
       payloadId: this._decision?.output?.output_id,
-      metadata,
+      metadata: decisionId ? { ...metadata, decision_id: decisionId } : metadata,
     });
 
     // Hide after dismiss/snooze/complete (same as React hook behavior)
