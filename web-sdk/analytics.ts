@@ -25,6 +25,7 @@ import type {
   EventConsumer,
   EventConsumerProvider,
   EventConsumerProviderState,
+  RevTurbineEventEnvelope,
 } from '@revt-eng/core';
 
 /* ------------------------------------------------------------------ */
@@ -251,10 +252,19 @@ export function createAnalyticsProvider(
 
 /**
  * Minimal shape of a PostHog client — satisfied by both `posthog-js`
- * (browser) and `posthog-node` (server). Only `capture` is used.
+ * (browser) and `posthog-node` (server). `capture` is always used; the identity
+ * lifecycle methods are optional and only called by {@link createPostHogIntegration}
+ * when the matching sync flag is on. This is a structural interface — no PostHog
+ * package is imported or bundled (the client is injected).
  */
 export interface PostHogLike {
   capture(event: string, properties?: Record<string, unknown>): void; // sdk-ok: type-definition
+  /** Optional — mirrors a RevTurbine identify when `syncIdentity` is on. */
+  identify?(distinctId: string, properties?: Record<string, unknown>): void; // sdk-ok: type-definition
+  /** Optional — mirrors an account group when `syncAccountGroup` is on. */
+  group?(groupType: string, groupKey: string, properties?: Record<string, unknown>): void; // sdk-ok: type-definition
+  /** Optional — called when the identity is cleared (logout) under `syncIdentity`. */
+  reset?(): void;
 }
 
 /** Configuration for {@link createPostHogAnalyticsProvider}. */
@@ -311,4 +321,100 @@ export function createPostHogAnalyticsProvider(
       posthog.capture(eventName, properties);
     },
   });
+}
+
+/** Configuration for {@link createPostHogIntegration}. */
+export interface PostHogIntegrationOptions extends PostHogAnalyticsProviderOptions {
+  /**
+   * Mirror RevTurbine identify / logout to `posthog.identify` / `posthog.reset`.
+   * The distinct id is RevTurbine's already-redacted (hashed) user id — never a
+   * raw email. Default `false`.
+   */
+  syncIdentity?: boolean;
+  /**
+   * Mirror the `account_id` trait to a PostHog group (`group('account', id)`)
+   * when it changes. Default `false`.
+   */
+  syncAccountGroup?: boolean;
+  /**
+   * Mirror `page_view` events to a native PostHog `$pageview`. Default `false`.
+   */
+  mirrorNavigation?: boolean;
+}
+
+/**
+ * Create a PostHog integration with an optional identity lifecycle (plan 144
+ * TASK-17 / REQ-26).
+ *
+ * A superset of {@link createPostHogAnalyticsProvider}: every event is still
+ * `posthog.capture(name, properties)` with the **same `filter` / `transform`
+ * semantics** (REQ-27), and — when the matching flag is on — RevTurbine's
+ * identify/logout, account grouping, and navigation are mirrored to PostHog's
+ * native `identify` / `reset` / `group` / `$pageview`. All sync flags default
+ * `false`, so by default this behaves exactly like the capture-only provider.
+ *
+ * No PostHog package is imported or bundled — the client is injected — so this
+ * code is tree-shakable and only pulled in when you import it (AC-20). A throw
+ * from any PostHog call is swallowed and never blocks RevTurbine ingest (AC-17).
+ *
+ * `createPostHogAnalyticsProvider` remains exported for existing integrations.
+ */
+export function createPostHogIntegration(options: PostHogIntegrationOptions): EventConsumerProvider {
+  const {
+    posthog,
+    filter,
+    transform,
+    name,
+    syncIdentity = false,
+    syncAccountGroup = false,
+    mirrorNavigation = false,
+  } = options;
+  const displayName = name ?? 'posthog';
+  const base = createPostHogAnalyticsProvider({ posthog, filter, transform, name: displayName });
+
+  let lastUserId: string | null = null;
+  let lastGroup: string | null = null;
+
+  const mirrorLifecycle = (event: RevTurbineEventEnvelope): void => {
+    try {
+      if (syncIdentity) {
+        const userId = event.user_id;
+        if (userId && userId !== lastUserId) {
+          posthog.identify?.(userId, event.identity.traits);
+          lastUserId = userId;
+        } else if (!userId && lastUserId !== null) {
+          posthog.reset?.();
+          lastUserId = null;
+        }
+      }
+      if (syncAccountGroup) {
+        const accountId = event.identity.traits.account_id;
+        if (typeof accountId === 'string' && accountId && accountId !== lastGroup) {
+          posthog.group?.('account', accountId);
+          lastGroup = accountId;
+        }
+      }
+      if (mirrorNavigation && event.type === 'page_view') {
+        posthog.capture('$pageview', { $current_url: event.url });
+      }
+    } catch {
+      // Best-effort — a PostHog lifecycle error never breaks the event pipeline.
+    }
+  };
+
+  return {
+    domain: 'events',
+    async resolve(): Promise<EventConsumerProviderState> {
+      const baseState = await base.resolve();
+      const baseConsumers = baseState?.consumers ?? [];
+      const consumer: EventConsumer = {
+        name: displayName,
+        consume(events) {
+          for (const event of events) mirrorLifecycle(event);
+          for (const baseConsumer of baseConsumers) baseConsumer.consume(events);
+        },
+      };
+      return { consumers: [consumer] };
+    },
+  };
 }
