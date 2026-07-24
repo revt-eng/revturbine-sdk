@@ -13,6 +13,7 @@ import type { RevTurbineTheme, RevTurbineThemeInput } from '../theme/types';
 import { DEFAULT_THEME, mergeTheme } from '../theme/defaults';
 import { loadTheme } from '../theme/theme-loader';
 import { RevTurbineThemeProvider } from '../theme/ThemeContext';
+import { installAnnotatedCapture, type AnnotatedCaptureOptions } from '../telemetry';
 import { RevTurbineContext } from './useRevTurbine';
 
 type BootstrapPlacementInput = Omit<RevTurbinePlacementDecisionInput, 'placementId'> & {
@@ -24,6 +25,16 @@ export type RevTurbineProviderProps = {
   options: RevTurbineInitInputOptions;
   /** Placements to bootstrap (preload decisions) on mount. */
   bootstrapPlacements?: BootstrapPlacementInput[];
+  /**
+   * Opt into annotated DOM capture (plan 144 TASK-15). When set, one delegated
+   * listener per event is installed at the document root; a click on an element
+   * with `data-rt-event` emits that event with its allowlisted `data-rt-prop-*`
+   * / `data-rt-ref` values — never text, input values, hrefs, or selectors, and
+   * never a password / file / hidden / payment control (REQ-14). `true` uses the
+   * defaults; pass {@link AnnotatedCaptureOptions} to configure events/caps.
+   * Omit to disable. Memoize an object value to avoid re-installing.
+   */
+  domCapture?: boolean | AnnotatedCaptureOptions;
   /** React children. */
   children: React.ReactNode;
 };
@@ -55,7 +66,7 @@ function isProductionBuild(): boolean {
  * </RevTurbineProvider>
  * ```
  */
-export function RevTurbineProvider({ options, bootstrapPlacements, children }: RevTurbineProviderProps) {
+export function RevTurbineProvider({ options, bootstrapPlacements, domCapture, children }: RevTurbineProviderProps) {
   const stableBootstrap = bootstrapPlacements ?? EMPTY_BOOTSTRAP;
   const [sdk, setSdk] = useState<RevTurbineCustomerSdk | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -83,6 +94,19 @@ export function RevTurbineProvider({ options, bootstrapPlacements, children }: R
     previousOptionsRef.current = options;
     previousBootstrapRef.current = stableBootstrap;
   }, [options, stableBootstrap]);
+
+  // Annotated DOM capture (plan 144 TASK-15). One delegated listener per event
+  // at the document root; emits only allowlisted `data-rt-*` values, redacted by
+  // `capture`. Off unless `domCapture` is set.
+  useEffect(() => {
+    if (!sdk || !domCapture || typeof document === 'undefined') return;
+    const captureOptions = typeof domCapture === 'object' ? domCapture : {};
+    return installAnnotatedCapture(document, (eventName, props) => {
+      void sdk.capture(eventName, props).catch(() => {
+        // Best-effort — a capture failure must never surface to host UI.
+      });
+    }, captureOptions);
+  }, [sdk, domCapture]);
 
   useEffect(() => {
     let mounted = true;

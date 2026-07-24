@@ -12,6 +12,7 @@ export * from './TrackOnView';
 export * from './EngagementArea';
 export * from './useTrackedAction';
 export * from './useGatedAction';
+export * from './Track';
 export * from './useCan';
 export * from './useUsageSnapshot';
 export { useRevTurbineTheme } from '../theme/ThemeContext';

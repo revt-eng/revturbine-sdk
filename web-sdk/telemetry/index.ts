@@ -14,3 +14,5 @@ export { createTelemetryCounters } from './counters';
 export type { TelemetryCounters } from './counters';
 export { createExposureManager, exposureManager } from './visibility';
 export type { ExposureBasis, ExposureManager, ExposureObserveOptions } from './visibility';
+export { installAnnotatedCapture } from './dom-capture';
+export type { AnnotatedCaptureOptions } from './dom-capture';
