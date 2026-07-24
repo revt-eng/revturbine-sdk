@@ -745,7 +745,27 @@ export type RevTurbineInitBaseOptions = Omit<
   'runtimeMode' | 'endpointOverrides' | 'localRuntime'
 >;
 
-export type RevTurbineRuntimeMode = 'revturbine_server' | 'custom_endpoints' | 'local_only';
+/**
+ * Runtime-mode values (plan 144). Reference these constants instead of raw
+ * string literals when setting {@link RevTurbineInitOptions.runtimeMode} — e.g.
+ * `runtimeMode: RuntimeMode.LocalOnly`.
+ */
+export const RuntimeMode = {
+  /** Standard RevTurbine-hosted endpoints (the default). */
+  Server: 'revturbine_server',
+  /** Customer-provided endpoint replacements. */
+  CustomEndpoints: 'custom_endpoints',
+  /**
+   * No server calls — runtime data is initialized locally from
+   * {@link RevTurbineInitOptions.localRuntime}. Emits **no telemetry** (neither
+   * the `/api/track` clickstream nor the keyless `/api/sdk/meta` beacon), which
+   * makes it the correct mode for demos and examples so they never report events.
+   */
+  LocalOnly: 'local_only',
+} as const;
+
+/** The set of valid runtime modes (plan 144), derived from {@link RuntimeMode}. */
+export type RevTurbineRuntimeMode = (typeof RuntimeMode)[keyof typeof RuntimeMode];
 
 /**
  * Per-operation endpoint path/URL overrides for `custom_endpoints` mode.
@@ -1767,7 +1787,7 @@ export class RevTurbineCustomerSdk {
     this.maxBatchSize = Math.max(1, options.eventBatching?.maxBatchSize ?? DEFAULT_EVENT_BATCH_SIZE);
     this.flushIntervalMs = Math.max(0, options.eventBatching?.flushIntervalMs ?? DEFAULT_EVENT_FLUSH_INTERVAL_MS);
     this.endpoint = options.endpoint.replace(/\/$/, '');
-    this.runtimeMode = options.runtimeMode ?? 'revturbine_server';
+    this.runtimeMode = options.runtimeMode ?? RuntimeMode.Server;
     this.endpointOverrides = options.endpointOverrides ?? {};
     this.localRuntime = options.localRuntime;
     this.branding = options.branding;
@@ -1855,7 +1875,7 @@ export class RevTurbineCustomerSdk {
   }
 
   private isLocalOnlyMode(): boolean {
-    return this.runtimeMode === 'local_only';
+    return this.runtimeMode === RuntimeMode.LocalOnly;
   }
 
   private resolveConfigProvider(options: RevTurbineInitOptions): RuntimeConfigProvider | undefined {
