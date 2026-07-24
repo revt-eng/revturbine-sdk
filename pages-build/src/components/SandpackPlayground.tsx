@@ -72,7 +72,7 @@ type SandpackFile = { code: string; active?: boolean; hidden?: boolean };
  * `Example.tsx` from example to example.
  */
 const APP_TSX = `import React, { useMemo } from "react";
-import { RevTurbineProvider } from "@revturbine/sdk";
+import { RevTurbineProvider, RuntimeMode } from "@revturbine/sdk";
 import playbook from "./playbook.json";
 import { demoUsers } from "./demoUsers";
 import { selectedUserId } from "./demoUser";
@@ -83,6 +83,9 @@ const activeUser = demoUsers[selectedUserId] ?? demoUsers.user_alice;
 export default function App() {
   const options = useMemo(
     () => ({
+      // local_only runs entirely against the bundled playbook — no network, no
+      // telemetry. Always use it for a demo so examples never emit real events.
+      runtimeMode: RuntimeMode.LocalOnly,
       localRuntime: { playbook },
       user: activeUser.context,
       uiPathResolvers: {
@@ -203,7 +206,7 @@ function generateHeadlessExampleCode(
   switch (componentName) {
     case 'HeadlessPlacement':
       return `import React, { useEffect, useState, useRef } from "react";
-import { initRevTurbine, PlacementController } from "@revturbine/sdk/headless";
+import { initRevTurbine, PlacementController, RuntimeMode } from "@revturbine/sdk/headless";
 import playbook from "./playbook.json";
 import { demoUsers } from "./demoUsers";
 import { selectedUserId } from "./demoUser";
@@ -217,6 +220,8 @@ export function Example() {
   useEffect(() => {
     (async () => {
       const session = await initRevTurbine({
+        // local_only: no network, no telemetry — always use it for a demo.
+        runtimeMode: RuntimeMode.LocalOnly,
         localRuntime: { playbook },
         user: activeUser.context,
         uiPathResolvers: {
@@ -255,7 +260,7 @@ export function Example() {
 
     case 'HeadlessEntitlementGate':
       return `import React, { useEffect, useState } from "react";
-import { initRevTurbine, EntitlementGate } from "@revturbine/sdk/headless";
+import { initRevTurbine, EntitlementGate, RuntimeMode } from "@revturbine/sdk/headless";
 import playbook from "./playbook.json";
 import { demoUsers } from "./demoUsers";
 import { selectedUserId } from "./demoUser";
@@ -269,6 +274,8 @@ export function Example() {
   useEffect(() => {
     (async () => {
       const session = await initRevTurbine({
+        // local_only: no network, no telemetry — always use it for a demo.
+        runtimeMode: RuntimeMode.LocalOnly,
         localRuntime: { playbook },
         user: activeUser.context,
         uiPathResolvers: {},
@@ -312,6 +319,8 @@ export function Example() {
   useEffect(() => {
     (async () => {
       const session = await initRevTurbine({
+        // local_only: no network, no telemetry — always use it for a demo.
+        runtimeMode: RuntimeMode.LocalOnly,
         localRuntime: { playbook },
         user: activeUser.context,
         uiPathResolvers: {},

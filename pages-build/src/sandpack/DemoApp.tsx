@@ -14,7 +14,7 @@
  * resolve inside the sandbox, not in this repo.
  */
 import React, { useMemo } from 'react';
-import { RevTurbineProvider } from '@revturbine/sdk';
+import { RevTurbineProvider, RuntimeMode } from '@revturbine/sdk';
 import playbook from './playbook.json';
 import { demoUsers } from './demoUsers';
 
@@ -30,6 +30,11 @@ export function DemoApp({
 }) {
   const options = useMemo(
     () => ({
+      // local_only runs the demo entirely against the bundled playbook — no
+      // server calls, so an example NEVER emits telemetry to RevTurbine (neither
+      // the /api/track clickstream nor the keyless /api/sdk/meta beacon). Demos
+      // must not pollute real analytics.
+      runtimeMode: RuntimeMode.LocalOnly,
       localRuntime: { playbook },
       user: demoUsers[user].context,
       // Placement CTAs call back into your app's navigation. Here we just log.
