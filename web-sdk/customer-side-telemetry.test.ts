@@ -69,7 +69,7 @@ function makeConfig(): RevTurbineConfig {
     ],
     entitlement_rules: [
       { id: 'r_free', entitlement_id: 'ent_gen', targets: [{ kind: 'plan', id: 'plan_free' }], segment_ids: [],
-        type_fields: { kind: 'usage_limit', limit_value: 30, unit: 'images', period: 'per_month', enforcement: 'hard_block' } },
+        kind: 'usage_limit', limit_value: 30, unit: 'images', period_scope: 'per_month', enforcement: 'hard_block' },
     ],
     segments: [],
     content_ui_paths: [],

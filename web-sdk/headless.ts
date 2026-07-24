@@ -21,7 +21,7 @@
  * const sdk = initRevTurbine({
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
- *   endpoint: 'https://api.revturbine.io',
+ *   endpoint: 'https://edge.example.com',
  * });
  *
  * sdk.identify('user_123', { plan: 'pro' });
@@ -271,12 +271,6 @@ export {
   createStaticProviders,
   createHydrationProviders,
 } from '@revt-eng/core';
-export {
-  createApiProviders,
-} from './adapters/api';
-export type {
-  ApiAdapterOptions,
-} from './adapters/api';
 export type {
   DecisionEngineOptions,
   EvaluationContext,

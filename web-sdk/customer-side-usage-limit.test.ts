@@ -25,11 +25,11 @@ function makeConfig(): RevTurbineConfig {
     // Enterprise LAST — reproduces the last-write-wins overwrite.
     entitlement_rules: [
       { id: 'r_free', entitlement_id: 'generations', targets: [{ kind: 'plan', id: 'free' }], segment_ids: [],
-        type_fields: { kind: 'usage_limit', limit_value: 30, unit: 'images', period: 'per_month', enforcement: 'hard_block' } },
+        kind: 'usage_limit', limit_value: 30, unit: 'images', period_scope: 'per_month', enforcement: 'hard_block' },
       { id: 'r_pro', entitlement_id: 'generations', targets: [{ kind: 'plan', id: 'pro' }], segment_ids: [],
-        type_fields: { kind: 'usage_limit', limit_value: 2000, unit: 'images', period: 'per_month', enforcement: 'allow_overage' } },
+        kind: 'usage_limit', limit_value: 2000, unit: 'images', period_scope: 'per_month', enforcement: 'allow_overage' },
       { id: 'r_ent', entitlement_id: 'generations', targets: [{ kind: 'plan', id: 'enterprise' }], segment_ids: [],
-        type_fields: { kind: 'usage_limit', limit_value: 999999, unit: 'images', period: 'per_month', enforcement: 'allow_overage' } },
+        kind: 'usage_limit', limit_value: 999999, unit: 'images', period_scope: 'per_month', enforcement: 'allow_overage' },
     ],
     segments: [],
     content_ui_paths: [],

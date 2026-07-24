@@ -82,10 +82,8 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "feature",
-        "enabled": true
-      },
+      "kind": "feature",
+      "enabled": true,
       "current_usage": 0
     },
     {
@@ -102,10 +100,8 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "feature",
-        "enabled": true
-      },
+      "kind": "feature",
+      "enabled": true,
       "current_usage": 0
     },
     {
@@ -118,10 +114,8 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "feature",
-        "enabled": false
-      },
+      "kind": "feature",
+      "enabled": false,
       "current_usage": 0
     },
     {
@@ -134,10 +128,8 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "feature",
-        "enabled": false
-      },
+      "kind": "feature",
+      "enabled": false,
       "current_usage": 0
     },
     {
@@ -150,13 +142,11 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 30,
-        "unit": "images",
-        "period": "per_month",
-        "enforcement": "hard_block"
-      },
+      "kind": "usage_limit",
+      "limit_value": 30,
+      "unit": "images",
+      "period_scope": "per_month",
+      "enforcement": "hard_block",
       "current_usage": 0
     },
     {
@@ -169,13 +159,11 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 2000,
-        "unit": "images",
-        "period": "per_month",
-        "enforcement": "allow_overage"
-      },
+      "kind": "usage_limit",
+      "limit_value": 2000,
+      "unit": "images",
+      "period_scope": "per_month",
+      "enforcement": "allow_overage",
       "current_usage": 0
     },
     {
@@ -188,13 +176,11 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 999999,
-        "unit": "images",
-        "period": "per_month",
-        "enforcement": "allow_overage"
-      },
+      "kind": "usage_limit",
+      "limit_value": 999999,
+      "unit": "images",
+      "period_scope": "per_month",
+      "enforcement": "allow_overage",
       "current_usage": 0
     },
     {
@@ -207,13 +193,11 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "price_per_unit",
-        "amount_cents": 5,
-        "currency": "usd",
-        "unit": "image",
-        "period": "per_month"
-      },
+      "kind": "price_per_unit",
+      "amount_cents": 5,
+      "currency": "usd",
+      "unit": "image",
+      "period_scope": "per_month",
       "current_usage": 0
     },
     {
@@ -226,13 +210,11 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "price_per_unit",
-        "amount_cents": 3,
-        "currency": "usd",
-        "unit": "image",
-        "period": "per_month"
-      },
+      "kind": "price_per_unit",
+      "amount_cents": 3,
+      "currency": "usd",
+      "unit": "image",
+      "period_scope": "per_month",
       "current_usage": 0
     },
     {
@@ -245,15 +227,12 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "credits",
-        "initial_grant": 20,
-        "allowance": 0,
-        "period": "per_month",
-        "rollover": false,
-        "top_up_available": true,
-        "unit": "credits"
-      },
+      "kind": "credits",
+      "initial_grant": 20,
+      "allowance_value": 0,
+      "reset_period": "month",
+      "rollover_enabled": false,
+      "unit": "credits",
       "current_usage": 0
     },
     {
@@ -266,15 +245,12 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "credits",
-        "allowance": 1000,
-        "period": "per_month",
-        "rollover": true,
-        "max_balance": 3000,
-        "top_up_available": true,
-        "unit": "credits"
-      },
+      "kind": "credits",
+      "allowance_value": 1000,
+      "reset_period": "month",
+      "rollover_enabled": true,
+      "max_balance": 3000,
+      "unit": "credits",
       "current_usage": 0
     },
     {
@@ -287,14 +263,11 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "credits",
-        "allowance": 999999,
-        "period": "per_month",
-        "rollover": false,
-        "top_up_available": true,
-        "unit": "credits"
-      },
+      "kind": "credits",
+      "allowance_value": 999999,
+      "reset_period": "month",
+      "rollover_enabled": false,
+      "unit": "credits",
       "current_usage": 0
     },
     {
@@ -307,12 +280,10 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "rate_limit",
-        "rate_value": 3,
-        "period_scope": "per_minute",
-        "enforcement": "hard_block"
-      },
+      "kind": "rate_limit",
+      "rate_value": 3,
+      "period_scope": "per_minute",
+      "enforcement": "hard_block",
       "current_usage": 0
     },
     {
@@ -325,12 +296,10 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "rate_limit",
-        "rate_value": 30,
-        "period_scope": "per_minute",
-        "enforcement": "soft_block"
-      },
+      "kind": "rate_limit",
+      "rate_value": 30,
+      "period_scope": "per_minute",
+      "enforcement": "soft_block",
       "current_usage": 0
     },
     {
@@ -343,12 +312,10 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "rate_limit",
-        "rate_value": 999999,
-        "period_scope": "per_minute",
-        "enforcement": "allow_overage"
-      },
+      "kind": "rate_limit",
+      "rate_value": 999999,
+      "period_scope": "per_minute",
+      "enforcement": "allow_overage",
       "current_usage": 0
     },
     {
@@ -361,11 +328,9 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "capability_tier",
-        "tier_name": "Watermarked 720p",
-        "tier_description": "Outputs carry a Prism watermark at up to 720p."
-      },
+      "kind": "capability_tier",
+      "tier_name": "Watermarked 720p",
+      "tier_description": "Outputs carry a Prism watermark at up to 720p.",
       "current_usage": 0
     },
     {
@@ -382,11 +347,9 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "capability_tier",
-        "tier_name": "Clean 4K",
-        "tier_description": "Watermark-free exports at up to 4K resolution."
-      },
+      "kind": "capability_tier",
+      "tier_name": "Clean 4K",
+      "tier_description": "Watermark-free exports at up to 4K resolution.",
       "current_usage": 0
     },
     {
@@ -399,12 +362,10 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "seat",
-        "included_seats": 1,
-        "max_seats": 1,
-        "seat_type": "user"
-      },
+      "kind": "seat",
+      "included_count": 1,
+      "max_seats": 1,
+      "seat_type_id": "user",
       "current_usage": 0
     },
     {
@@ -417,12 +378,10 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "seat",
-        "included_seats": 5,
-        "max_seats": 5,
-        "seat_type": "user"
-      },
+      "kind": "seat",
+      "included_count": 5,
+      "max_seats": 5,
+      "seat_type_id": "user",
       "current_usage": 0
     },
     {
@@ -435,12 +394,10 @@
         }
       ],
       "segment_ids": [],
-      "type_fields": {
-        "kind": "seat",
-        "included_seats": 999999,
-        "max_seats": 999999,
-        "seat_type": "user"
-      },
+      "kind": "seat",
+      "included_count": 999999,
+      "max_seats": 999999,
+      "seat_type_id": "user",
       "current_usage": 0
     }
   ],

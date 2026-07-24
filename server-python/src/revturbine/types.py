@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.127/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.142/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -21,34 +21,12 @@ from pydantic import (
     conint,
     constr,
 )
-from typing import Any, Literal
 from enum import Enum
+from typing import Any, Literal
 
 
 class RevTurbineSchemas(BaseModel):
     pass
-
-
-class AddOn(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-    tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
-    anchor_id: constr(min_length=1)
-    name: constr(min_length=1, max_length=200)
-    handle: constr(min_length=1, max_length=100)
-    sort_order: conint(ge=-9007199254740991, le=9007199254740991)
-    metadata: dict[str, Any]
 
 
 class BillingPeriod(Enum):
@@ -1271,14 +1249,27 @@ class PersonalizationToken(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    token: constr(pattern=r"^[a-z][a-z0-9_]*$")
+    id: constr(min_length=1)
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    tenant_id: constr(min_length=1)
+    environment_id: constr(min_length=1)
+    playbook_version_id: str | None
+    is_current: bool
+    is_deleted: bool
+    delete_date: AwareDatetime | None
+    sequence: conint(ge=1, le=9007199254740991)
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    anchor_id: constr(min_length=1)
+    handle: constr(min_length=1, max_length=100)
     label: constr(min_length=1)
-    description: str | None = None
+    description: str | None
     category: Category
-    data_source: str | None = None
-    example_value: str | None = None
-    value_map: dict[str, str] | None = None
-    format: Format | None = None
+    data_source: str | None
+    example_value: str | None
+    value_map: dict[str, str]
+    format: Format | None
+    metadata: dict[str, Any]
 
 
 class PlacementCapRule(BaseModel):
@@ -1483,27 +1474,17 @@ class PlacementVariant(BaseModel):
     status: Status3
 
 
-class Plan(BaseModel):
+class PlacementWarningCode(Enum):
+    threshold_not_emitted = "threshold_not_emitted"
+
+
+class PlacementWarning(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    id: constr(min_length=1)
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-    tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
-    anchor_id: constr(min_length=1)
-    name: constr(min_length=1, max_length=200)
-    handle: constr(min_length=1, max_length=100)
-    tier_position: conint(ge=0, le=9007199254740991)
-    sort_order: conint(ge=-9007199254740991, le=9007199254740991)
-    metadata: dict[str, Any]
+    code: PlacementWarningCode
+    message: constr(min_length=1)
+    path: list[str | conint(ge=-9007199254740991, le=9007199254740991)] | None = None
 
 
 class PlanVisibility(Enum):
@@ -1656,6 +1637,7 @@ class RevTurbineConfigEntitlementsItem(BaseModel):
     name: constr(min_length=1)
     type: EntitlementType
     unit: str | None = None
+    tier_definitions: list[TierDefinition] | None = None
 
 
 class RevTurbineConfigMeterBindingsItem(BaseModel):
@@ -1683,6 +1665,20 @@ class RevTurbineConfigPeriodCap(BaseModel):
     )
     count: conint(ge=1, le=9007199254740991)
     period: Period1
+
+
+class RevTurbineConfigPersonalizationTokensItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    token: constr(pattern=r"^[a-z][a-z0-9_]*$")
+    label: constr(min_length=1)
+    description: str | None = None
+    category: Category
+    data_source: str | None = None
+    example_value: str | None = None
+    value_map: dict[str, str] | None = None
+    format: Format | None = None
 
 
 class RevTurbineConfigPlacementCategory(Enum):
@@ -2410,32 +2406,6 @@ class Theme(BaseModel):
     tokens: dict[str, str]
 
 
-class TrackEvent(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    environment_id: constr(min_length=1)
-    user_id: constr(min_length=1)
-    account_id: constr(min_length=1)
-    event_name: constr(min_length=1, max_length=120)
-    event_ts: AwareDatetime
-    properties: str | None = None
-    surface_slot_id: str | None = None
-    placement_id: str | None = None
-    payload_id: str | None = None
-    request_id: str | None = None
-    experiment_id: str | None = None
-    variant_key: str | None = None
-    tenant_id: str | None = None
-
-
-class TrackIngestBatch(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    events: list[TrackEvent] = Field(..., max_length=500, min_length=1)
-
-
 class TreatmentInteractionType(Enum):
     impression = "impression"
     dismiss = "dismiss"
@@ -2652,6 +2622,10 @@ class WebhookEventStatus(Enum):
     skipped = "skipped"
 
 
+class EventOrigin(RootModel[Any]):
+    root: Any
+
+
 class RevTurbineConfigExtensionRulesItem(RootModel[Any]):
     root: Any
 
@@ -2666,6 +2640,29 @@ class RevTurbineConfigReverseTrialRuleItem(RootModel[Any]):
 
 class TrialLimitType(RootModel[Any]):
     root: Any
+
+
+class AddOn(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    tenant_id: constr(min_length=1)
+    environment_id: constr(min_length=1)
+    playbook_version_id: str | None
+    is_current: bool
+    is_deleted: bool
+    delete_date: AwareDatetime | None
+    sequence: conint(ge=1, le=9007199254740991)
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    anchor_id: constr(min_length=1)
+    name: constr(min_length=1, max_length=200)
+    handle: constr(min_length=1, max_length=100)
+    sort_order: conint(ge=-9007199254740991, le=9007199254740991)
+    visibility: PlanVisibility
+    metadata: dict[str, Any]
 
 
 class AddOnVariation(BaseModel):
@@ -2919,6 +2916,7 @@ class EntitlementRule(BaseModel):
     reset_period: EntitlementRulePeriodUnit | None = None
     limit_value: float | Literal["unlimited"] | None = None
     enforcement: EnforcementMode | None = None
+    warning_threshold_percent: conint(ge=10, le=100, multiple_of=10) | None = None
     overage_price_ref: str | None = None
     grace_period_hours: conint(ge=0, le=9007199254740991) | None = None
     tier_value: str | None = None
@@ -2933,6 +2931,11 @@ class EntitlementRule(BaseModel):
     ) = None
     at_limit_behavior: AtLimitBehavior | None = None
     stripe_metered_price_id: str | None = None
+    enabled: bool | None = None
+    allocation: UsageAllocation | None = None
+    max_seats: float | Literal["unlimited"] | None = None
+    amount_cents: conint(ge=-9007199254740991, le=9007199254740991) | None = None
+    currency: str | None = None
 
 
 class EntitlementRuleValidated(RootModel[EntitlementRule]):
@@ -3250,6 +3253,30 @@ class PlacementSettings(BaseModel):
     priority_collision_strategy: PriorityCollisionStrategy
 
 
+class Plan(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    tenant_id: constr(min_length=1)
+    environment_id: constr(min_length=1)
+    playbook_version_id: str | None
+    is_current: bool
+    is_deleted: bool
+    delete_date: AwareDatetime | None
+    sequence: conint(ge=1, le=9007199254740991)
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    anchor_id: constr(min_length=1)
+    name: constr(min_length=1, max_length=200)
+    handle: constr(min_length=1, max_length=100)
+    tier_position: conint(ge=0, le=9007199254740991)
+    sort_order: conint(ge=-9007199254740991, le=9007199254740991)
+    visibility: PlanVisibility
+    metadata: dict[str, Any]
+
+
 class PlanVariation(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -3365,7 +3392,28 @@ class RevTurbineConfigEntitlementRulesItem(BaseModel):
     entitlement_id: constr(min_length=1)
     targets: list[EntitlementRuleTarget] = Field(..., min_length=1)
     segment_ids: list[str]
-    type_fields: dict[str, Any]
+    kind: EntitlementType | None = None
+    unit: str | None = None
+    tier_name: str | None = None
+    tier_description: str | None = None
+    enabled: bool | None = None
+    limit_value: float | Literal["unlimited"] | None = None
+    enforcement: EnforcementMode | None = None
+    tier_value: str | None = None
+    period_scope: UsagePeriodScope | None = None
+    included_count: (
+        conint(ge=-9007199254740991, le=9007199254740991) | Literal["unlimited"] | None
+    ) = None
+    seat_type_id: str | None = None
+    initial_grant: float | None = None
+    allowance_value: float | Literal["unlimited"] | None = None
+    rollover_enabled: bool | None = None
+    max_balance: float | Literal["unlimited"] | None
+    reset_period: EntitlementRulePeriodUnit | None = None
+    max_seats: float | Literal["unlimited"] | None = None
+    rate_value: float | None = None
+    amount_cents: conint(ge=-9007199254740991, le=9007199254740991) | None = None
+    currency: str | None = None
     current_usage: float
     allocation: UsageAllocation | None = None
 
@@ -3573,6 +3621,36 @@ class Tenant(BaseModel):
     metadata: dict[str, Any]
 
 
+class TrackEvent(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    environment_id: constr(min_length=1)
+    user_id: constr(min_length=1)
+    account_id: constr(min_length=1)
+    event_name: constr(min_length=1, max_length=120)
+    event_ts: AwareDatetime
+    properties: str | None = None
+    surface_slot_id: str | None = None
+    placement_id: str | None = None
+    payload_id: str | None = None
+    request_id: str | None = None
+    experiment_id: str | None = None
+    variant_key: str | None = None
+    tenant_id: str | None = None
+    event_id: str | None = None
+    origin: EventOrigin | None = None
+    playbook_version: str | None = None
+    decision_id: str | None = None
+
+
+class TrackIngestBatch(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    events: list[TrackEvent] = Field(..., max_length=500, min_length=1)
+
+
 class TreatmentInteractionInput(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -3707,10 +3785,14 @@ class RevTurbineConfig(BaseModel):
     placement_payloads: list[RevTurbineConfigPlacementPayloadItem] | None = None
     placements: list[RevTurbineConfigPlacementItem] | None = None
     content_promotions: list[ContentPromotion] | None = None
-    personalization_tokens: list[PersonalizationToken] | None = None
+    personalization_tokens: list[RevTurbineConfigPersonalizationTokensItem] | None = (
+        None
+    )
     surface_templates: list[RevTurbineConfigSurfaceTemplatesItem] | None = None
     free_trial_rules: list[RevTurbineConfigFreeTrialRuleItem] | None = None
     reverse_trial_rules: list[RevTurbineConfigReverseTrialRuleItem] | None = None
+    plan_variations: list[RevTurbineConfigPlanVariationsItem] | None = None
+    addon_variations: list[RevTurbineConfigAddonVariationsItem] | None = None
     extension_rules: list[RevTurbineConfigExtensionRulesItem] | None = None
     seat_types: list[RevTurbineConfigSeatTypesItem] | None = None
     enforcement_defaults: list[RevTurbineConfigEnforcementDefaultsItem] | None = None
@@ -3753,6 +3835,7 @@ class UserContext(BaseModel):
     trial: UserTrialStatus | None = None
     payment_failed: bool | None = None
     payment_at_risk: bool | None = None
+    tiers: dict[str, str] | None = None
     entitlements: dict[str, bool | EntitlementGrant]
     instances: list[UserInstanceContext] | None = None
     custom: dict[str, str | float | bool | None]
@@ -3791,10 +3874,14 @@ class ExportedConfig(BaseModel):
     placement_payloads: list[RevTurbineConfigPlacementPayloadItem] | None = None
     placements: list[RevTurbineConfigPlacementItem] | None = None
     content_promotions: list[ContentPromotion] | None = None
-    personalization_tokens: list[PersonalizationToken] | None = None
+    personalization_tokens: list[RevTurbineConfigPersonalizationTokensItem] | None = (
+        None
+    )
     surface_templates: list[RevTurbineConfigSurfaceTemplatesItem] | None = None
     free_trial_rules: list[RevTurbineConfigFreeTrialRuleItem] | None = None
     reverse_trial_rules: list[RevTurbineConfigReverseTrialRuleItem] | None = None
+    plan_variations: list[RevTurbineConfigPlanVariationsItem] | None = None
+    addon_variations: list[RevTurbineConfigAddonVariationsItem] | None = None
     extension_rules: list[RevTurbineConfigExtensionRulesItem] | None = None
     seat_types: list[RevTurbineConfigSeatTypesItem] | None = None
     enforcement_defaults: list[RevTurbineConfigEnforcementDefaultsItem] | None = None
@@ -3832,10 +3919,14 @@ class LegacyRevTurbineConfig(BaseModel):
     placement_payloads: list[RevTurbineConfigPlacementPayloadItem] | None = None
     placements: list[RevTurbineConfigPlacementItem] | None = None
     content_promotions: list[ContentPromotion] | None = None
-    personalization_tokens: list[PersonalizationToken] | None = None
+    personalization_tokens: list[RevTurbineConfigPersonalizationTokensItem] | None = (
+        None
+    )
     surface_templates: list[RevTurbineConfigSurfaceTemplatesItem] | None = None
     free_trial_rules: list[RevTurbineConfigFreeTrialRuleItem] | None = None
     reverse_trial_rules: list[RevTurbineConfigReverseTrialRuleItem] | None = None
+    plan_variations: list[RevTurbineConfigPlanVariationsItem] | None = None
+    addon_variations: list[RevTurbineConfigAddonVariationsItem] | None = None
     extension_rules: list[RevTurbineConfigExtensionRulesItem] | None = None
     seat_types: list[RevTurbineConfigSeatTypesItem] | None = None
     enforcement_defaults: list[RevTurbineConfigEnforcementDefaultsItem] | None = None
@@ -3864,10 +3955,14 @@ class PlaybookBody(BaseModel):
     placement_payloads: list[RevTurbineConfigPlacementPayloadItem] | None = None
     placements: list[RevTurbineConfigPlacementItem] | None = None
     content_promotions: list[ContentPromotion] | None = None
-    personalization_tokens: list[PersonalizationToken] | None = None
+    personalization_tokens: list[RevTurbineConfigPersonalizationTokensItem] | None = (
+        None
+    )
     surface_templates: list[RevTurbineConfigSurfaceTemplatesItem] | None = None
     free_trial_rules: list[RevTurbineConfigFreeTrialRuleItem] | None = None
     reverse_trial_rules: list[RevTurbineConfigReverseTrialRuleItem] | None = None
+    plan_variations: list[RevTurbineConfigPlanVariationsItem] | None = None
+    addon_variations: list[RevTurbineConfigAddonVariationsItem] | None = None
     extension_rules: list[RevTurbineConfigExtensionRulesItem] | None = None
     seat_types: list[RevTurbineConfigSeatTypesItem] | None = None
     enforcement_defaults: list[RevTurbineConfigEnforcementDefaultsItem] | None = None
@@ -3875,8 +3970,7 @@ class PlaybookBody(BaseModel):
     segment_dimensions: list[RevTurbineConfigSegmentDimensionsItem] | None = None
     meter_bindings: list[RevTurbineConfigMeterBindingsItem] | None = None
     experiments: list[Any] | None = Field(None, max_length=0)
-    plan_variations: list[RevTurbineConfigPlanVariationsItem] | None = None
-    addon_variations: list[RevTurbineConfigAddonVariationsItem] | None = None
+    signal_catalog: dict[str, Any] | None = None
 
 
 class Playbook(BaseModel):
@@ -3909,10 +4003,14 @@ class Playbook(BaseModel):
     placement_payloads: list[RevTurbineConfigPlacementPayloadItem] | None = None
     placements: list[RevTurbineConfigPlacementItem] | None = None
     content_promotions: list[ContentPromotion] | None = None
-    personalization_tokens: list[PersonalizationToken] | None = None
+    personalization_tokens: list[RevTurbineConfigPersonalizationTokensItem] | None = (
+        None
+    )
     surface_templates: list[RevTurbineConfigSurfaceTemplatesItem] | None = None
     free_trial_rules: list[RevTurbineConfigFreeTrialRuleItem] | None = None
     reverse_trial_rules: list[RevTurbineConfigReverseTrialRuleItem] | None = None
+    plan_variations: list[RevTurbineConfigPlanVariationsItem] | None = None
+    addon_variations: list[RevTurbineConfigAddonVariationsItem] | None = None
     extension_rules: list[RevTurbineConfigExtensionRulesItem] | None = None
     seat_types: list[RevTurbineConfigSeatTypesItem] | None = None
     enforcement_defaults: list[RevTurbineConfigEnforcementDefaultsItem] | None = None
@@ -3920,5 +4018,4 @@ class Playbook(BaseModel):
     segment_dimensions: list[RevTurbineConfigSegmentDimensionsItem] | None = None
     meter_bindings: list[RevTurbineConfigMeterBindingsItem] | None = None
     experiments: list[Any] | None = Field(None, max_length=0)
-    plan_variations: list[RevTurbineConfigPlanVariationsItem] | None = None
-    addon_variations: list[RevTurbineConfigAddonVariationsItem] | None = None
+    signal_catalog: dict[str, Any] | None = None

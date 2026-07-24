@@ -7,7 +7,7 @@
  * @example
  * ```ts
  * const client = createRevTurbineApiClient({
- *   baseUrl: 'https://api.revturbine.io',
+ *   baseUrl: 'https://edge.example.com',
  *   token: 'rt_live_xxx',
  *   tenantId: 'tenant_abc',
  * });

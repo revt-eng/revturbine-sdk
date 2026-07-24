@@ -569,7 +569,7 @@ export type ExportedConfigProvider = RevTurbineConfigProvider;
  * const sdk = initRevTurbine({
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
- *   endpoint: 'https://api.revturbine.io',
+ *   endpoint: 'https://edge.example.com',
  *   mode: 'react',
  * });
  * ```
@@ -1676,7 +1676,7 @@ class ExternalRuntimeConfigProvider implements RuntimeConfigProvider {
  * const sdk = initRevTurbine({
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
- *   endpoint: 'https://api.revturbine.io',
+ *   endpoint: 'https://edge.example.com',
  *   mode: 'react',
  * });
  *
@@ -2496,29 +2496,19 @@ export class RevTurbineCustomerSdk {
 
     for (const rule of rules) {
       if (!isRecord(rule)) continue;
-      const entitlementId = typeof rule.entitlement_id === 'string'
-        ? rule.entitlement_id
-        : typeof rule.entitlementId === 'string'
-          ? rule.entitlementId
-          : '';
+      const entitlementId = typeof rule.entitlement_id === 'string' ? rule.entitlement_id : '';
       if (!entitlementId) continue;
 
-      const typeFields = isRecord(rule.type_fields)
-        ? rule.type_fields
-        : isRecord(rule.typeFields)
-          ? rule.typeFields
-          : {};
-      const kind = typeof typeFields.kind === 'string' ? typeFields.kind : '';
+      // Plan 147 (OQ-6): the wire is flat — read the rule's per-kind fields
+      // directly (typed). `kind` / `unit` are derived fields exported configs
+      // carry; no nested `type_fields` bag any more.
+      const kind = typeof rule.kind === 'string' ? rule.kind : '';
       const supportsUsageThreshold = kind === 'usage_limit' || kind === 'credits' || kind === 'seat';
       if (!supportsUsageThreshold) continue;
 
       const entitlementHandle = entitlementHandleById.get(entitlementId) ?? '';
 
-      const rawUsageUnit = typeof typeFields.usage_unit === 'string'
-        ? typeFields.usage_unit
-        : typeof typeFields.usageUnit === 'string'
-          ? typeFields.usageUnit
-          : '';
+      const rawUsageUnit = typeof rule.unit === 'string' ? rule.unit : '';
 
       const normalizedUsageUnit = sanitizeUsageTokenPrefix(rawUsageUnit);
       const prefix = normalizedUsageUnit && !looksGenericUsageUnit(normalizedUsageUnit)
@@ -2531,22 +2521,16 @@ export class RevTurbineCustomerSdk {
         }
       }
 
-      const limit = Number(typeFields.limit_value ?? typeFields.allowance ?? typeFields.limit);
+      const limit = Number(rule.limit_value ?? rule.allowance_value);
       if (!Number.isFinite(limit) || limit <= 0) continue;
 
       // Only record the limit when the rule applies to the user's current plan.
       // (The usage-unit prefix above is plan-agnostic and stays unconditional.)
       if (!this.ruleTargetsActivePlan(rule, activePlanIds)) continue;
 
-      const warningPercentRaw = Number(
-        rule.warning_threshold_percent
-        ?? rule.warning_percentage
-        ?? typeFields.warning_threshold_percent
-        ?? typeFields.warning_percentage,
-      );
-      const warningPercent = Number.isFinite(warningPercentRaw) && warningPercentRaw > 0
-        ? Math.min(100, warningPercentRaw)
-        : this.defaultUsageWarningPercent;
+      // The rule-level warning threshold is not carried on the flat wire (it
+      // never was), so it defaults.
+      const warningPercent = this.defaultUsageWarningPercent;
 
       this.usageLimitByEntitlement.set(entitlementId, { limit, warningPercent });
       if (entitlementHandle) {
@@ -3030,8 +3014,9 @@ export class RevTurbineCustomerSdk {
           const segmentIds = Array.isArray(rule.segment_ids)
             ? rule.segment_ids.filter((s): s is string => typeof s === 'string')
             : [];
-          const typeFields = isRecord(rule.type_fields) ? rule.type_fields : {};
-          const kind = firstStringValue(typeFields.kind);
+          // Plan 147 (OQ-6): the wire is flat — read the rule's fields directly
+          // (typed); `kind` is the derived field exported configs carry.
+          const kind = firstStringValue(rule.kind);
 
           // Canonical targeting is explicit (plan 34 REQ-9 dropped the
           // implicit "empty ⇒ all plans" branch from both scaffold
@@ -3056,27 +3041,27 @@ export class RevTurbineCustomerSdk {
             : 'unknown';
 
           // Build human-readable outcome description based on the rule's kind
-          // and type_fields so the inspector shows *what* this rule grants
-          // instead of a raw status string.
+          // and its flat per-kind fields so the inspector shows *what* this rule
+          // grants instead of a raw status string.
           let outcomeDescription: string | undefined;
           if (matched) {
             switch (kind) {
               case 'feature':
-                outcomeDescription = typeFields.enabled === false
+                outcomeDescription = rule.enabled === false
                   ? 'disables feature'
                   : 'grants access';
                 break;
               case 'capability_tier': {
-                const tierName = firstStringValue(typeFields.tier_name);
+                const tierName = firstStringValue(rule.tier_name);
                 outcomeDescription = tierName
                   ? `unlocks ${tierName} tier`
                   : 'unlocks capability tier';
                 break;
               }
               case 'usage_limit': {
-                const limitVal = typeof typeFields.limit_value === 'number' ? typeFields.limit_value : undefined;
-                const unit = firstStringValue(typeFields.unit) ?? '';
-                const period = firstStringValue(typeFields.period) ?? '';
+                const limitVal = typeof rule.limit_value === 'number' ? rule.limit_value : undefined;
+                const unit = firstStringValue(rule.unit) ?? '';
+                const period = firstStringValue(rule.period_scope) ?? '';
                 const periodLabel = period ? ` / ${period.replace('per_', '')}` : '';
                 outcomeDescription = limitVal != null
                   ? `sets limit to ${limitVal.toLocaleString()}${unit ? ` ${unit}` : ''}${periodLabel}`
@@ -3084,9 +3069,10 @@ export class RevTurbineCustomerSdk {
                 break;
               }
               case 'credits': {
-                const allowance = typeof typeFields.allowance === 'number' ? typeFields.allowance : undefined;
-                const creditUnit = firstStringValue(typeFields.unit) ?? 'credits';
-                const creditPeriod = firstStringValue(typeFields.period) ?? '';
+                const allowanceRaw = rule.allowance_value;
+                const allowance = typeof allowanceRaw === 'number' ? allowanceRaw : undefined;
+                const creditUnit = firstStringValue(rule.unit) ?? 'credits';
+                const creditPeriod = firstStringValue(rule.reset_period) ?? '';
                 const creditPeriodLabel = creditPeriod ? ` / ${creditPeriod.replace('per_', '')}` : '';
                 outcomeDescription = allowance != null
                   ? `grants ${allowance.toLocaleString()} ${creditUnit}${creditPeriodLabel}`
@@ -3094,7 +3080,8 @@ export class RevTurbineCustomerSdk {
                 break;
               }
               case 'seat': {
-                const seats = typeof typeFields.included_seats === 'number' ? typeFields.included_seats : undefined;
+                const seatsRaw = rule.included_count;
+                const seats = typeof seatsRaw === 'number' ? seatsRaw : undefined;
                 outcomeDescription = seats != null
                   ? `includes ${seats} seat${seats === 1 ? '' : 's'}`
                   : 'includes seats';
@@ -5953,7 +5940,7 @@ export class RevTurbineCustomerSdk {
  * const sdk = initRevTurbine({
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
- *   endpoint: 'https://api.revturbine.io',
+ *   endpoint: 'https://edge.example.com',
  *   mode: 'snippet',
  * });
  * ```

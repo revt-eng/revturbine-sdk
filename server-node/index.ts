@@ -15,7 +15,7 @@
  * const server = new RevTurbineServer({
  *   tenantId: 'tenant_abc',
  *   apiKey: process.env.REVTURBINE_SECRET_KEY!,
- *   endpoint: 'https://api.revturbine.io',
+ *   endpoint: 'https://edge.example.com',
  * });
  *
  * const payload = await server.evaluate({
@@ -57,12 +57,6 @@ export {
   CapEnforcer,
   InMemoryStorage,
 } from '@revt-eng/core';
-export {
-  createApiProviders,
-} from '../web-sdk/adapters/api';
-export type {
-  ApiAdapterOptions,
-} from '../web-sdk/adapters/api';
 export type {
   LocalRuntimeOptions,
   AdapterBaseOptions,

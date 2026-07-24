@@ -14,7 +14,7 @@
  * const sdk = initRevTurbine({
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
- *   endpoint: 'https://api.revturbine.io',
+ *   endpoint: 'https://edge.example.com',
  *   mode: 'react',
  * });
  *

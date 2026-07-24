@@ -12,7 +12,7 @@
  * const session = await initRevTurbine({
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
- *   endpoint: 'https://api.revturbine.io',
+ *   endpoint: 'https://edge.example.com',
  *   user: { id: 'user_123', plan: { id: 'pro' } },
  * });
  *
@@ -677,7 +677,7 @@ export type SdkSessionOptions = RevTurbineInitInputOptions & {
  * const session = await initRevTurbine({
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
- *   endpoint: 'https://api.revturbine.io',
+ *   endpoint: 'https://edge.example.com',
  *   user: { id: 'user_123', plan: { id: 'pro' } },
  * });
  *
@@ -860,7 +860,7 @@ export class SdkSession {
  * const session = await initRevTurbine({
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
- *   endpoint: 'https://api.revturbine.io',
+ *   endpoint: 'https://edge.example.com',
  *   user: { id: 'user_123', plan: { id: 'pro' } },
  *   bootstrapPlacements: [
  *     { placement: { name: 'pricing_banner' } },

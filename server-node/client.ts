@@ -17,7 +17,7 @@
  * const server = new RevTurbineServer({
  *   tenantId: 'tenant_abc',
  *   apiKey: process.env.REVTURBINE_SECRET_KEY!,
- *   endpoint: 'https://api.revturbine.io',
+ *   endpoint: 'https://edge.example.com',
  * });
  *
  * // In getServerSideProps:

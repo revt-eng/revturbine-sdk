@@ -18,7 +18,7 @@ export function effectivePlanHandle(state: DemoState): PrismPlanHandle {
   return state.planHandle;
 }
 
-/** Find the `type_fields` of the rule binding `entitlementHandle` to `planHandle`. */
+/** The per-kind fields of the rule binding `entitlementHandle` to `planHandle`. */
 function ruleTypeFields(
   config: RevTurbineConfig,
   entitlementHandle: string,
@@ -31,7 +31,14 @@ function ruleTypeFields(
       r.entitlement_id === entitlementHandle &&
       r.targets.some((t) => t.kind === 'plan' && t.id === planHandle),
   );
-  return rule?.type_fields;
+  if (!rule) return undefined;
+  // Plan 147 (OQ-6): the wire is flat — the rule IS the type-fields bag. A legacy
+  // nested `type_fields` bag is tolerated (merged under the flat fields).
+  const r = rule as unknown as Record<string, unknown>;
+  const nested = r.type_fields && typeof r.type_fields === 'object'
+    ? (r.type_fields as Record<string, unknown>)
+    : {};
+  return { ...nested, ...r };
 }
 
 function numberField(fields: Record<string, unknown> | undefined, key: string): number | undefined {
@@ -52,7 +59,10 @@ export function generationsLimitFor(config: RevTurbineConfig, planHandle: PrismP
 /** Style-credit allowance for a plan, derived from the config rule. */
 export function creditAllowanceFor(config: RevTurbineConfig, planHandle: PrismPlanHandle): number {
   const fields = ruleTypeFields(config, 'credits', planHandle);
-  return numberField(fields, 'initial_grant') ?? numberField(fields, 'allowance') ?? 0;
+  return numberField(fields, 'initial_grant')
+    ?? numberField(fields, 'allowance_value')
+    ?? numberField(fields, 'allowance')
+    ?? 0;
 }
 
 /** Generations-per-minute burst limit for a plan, derived from the config rule. */
