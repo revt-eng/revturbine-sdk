@@ -31,10 +31,12 @@ export function DemoApp({
   const options = useMemo(
     () => ({
       // local_only runs the demo entirely against the bundled playbook — no
-      // server calls, so an example NEVER emits telemetry to RevTurbine (neither
-      // the /api/track clickstream nor the keyless /api/sdk/meta beacon). Demos
-      // must not pollute real analytics.
+      // server calls, so the /api/track clickstream never fires. The keyless
+      // /api/sdk/meta init beacon DOES fire in local_only now (a bundled-Playbook
+      // install is a real install), so `previewMode` is what keeps a docs
+      // example out of SDK adoption telemetry. Demos must not pollute analytics.
       runtimeMode: RuntimeMode.LocalOnly,
+      previewMode: true,
       localRuntime: { playbook },
       user: demoUsers[user].context,
       // Placement CTAs call back into your app's navigation. Here we just log.

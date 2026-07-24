@@ -18,6 +18,22 @@ The SDK follows [Semantic Versioning](https://semver.org/):
 - JavaScript package installation and Node-based tooling now require Node.js
   22.13 or newer. Node.js 20 is no longer supported.
 
+### Added
+
+- `previewMode` init option. Set `previewMode: true` when an SDK instance is a
+  non-install render — a docs example, a live playground, a component preview —
+  to keep it out of SDK-adoption telemetry. Its only current effect is to
+  suppress the keyless anonymous `sdk_init` beacon.
+
+### Changed
+
+- The keyless anonymous `sdk_init` beacon now fires in **`local_only`** runtime
+  mode as well (a bundled-Playbook install is still a real install worth
+  counting). It remains keyless, PII-free, config-shape counts only, and off
+  when `anonymousTelemetry: false` or `previewMode: true`. The authed
+  `/api/track` clickstream is unchanged and still makes no network call in
+  `local_only`.
+
 ---
 
 ## 0.1.x (Current)

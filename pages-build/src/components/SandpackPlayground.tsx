@@ -83,9 +83,11 @@ const activeUser = demoUsers[selectedUserId] ?? demoUsers.user_alice;
 export default function App() {
   const options = useMemo(
     () => ({
-      // local_only runs entirely against the bundled playbook — no network, no
-      // telemetry. Always use it for a demo so examples never emit real events.
+      // local_only runs entirely against the bundled playbook — no network for
+      // decisions. previewMode keeps this docs demo out of SDK adoption
+      // telemetry; omit it in your own app.
       runtimeMode: RuntimeMode.LocalOnly,
+      previewMode: true,
       localRuntime: { playbook },
       user: activeUser.context,
       uiPathResolvers: {
@@ -220,8 +222,11 @@ export function Example() {
   useEffect(() => {
     (async () => {
       const session = await initRevTurbine({
-        // local_only: no network, no telemetry — always use it for a demo.
+        // local_only runs against the bundled playbook — no network for
+        // decisions. previewMode keeps this docs demo out of adoption
+        // telemetry; omit it in your own app.
         runtimeMode: RuntimeMode.LocalOnly,
+        previewMode: true,
         localRuntime: { playbook },
         user: activeUser.context,
         uiPathResolvers: {
@@ -274,8 +279,11 @@ export function Example() {
   useEffect(() => {
     (async () => {
       const session = await initRevTurbine({
-        // local_only: no network, no telemetry — always use it for a demo.
+        // local_only runs against the bundled playbook — no network for
+        // decisions. previewMode keeps this docs demo out of adoption
+        // telemetry; omit it in your own app.
         runtimeMode: RuntimeMode.LocalOnly,
+        previewMode: true,
         localRuntime: { playbook },
         user: activeUser.context,
         uiPathResolvers: {},
@@ -319,8 +327,11 @@ export function Example() {
   useEffect(() => {
     (async () => {
       const session = await initRevTurbine({
-        // local_only: no network, no telemetry — always use it for a demo.
+        // local_only runs against the bundled playbook — no network for
+        // decisions. previewMode keeps this docs demo out of adoption
+        // telemetry; omit it in your own app.
         runtimeMode: RuntimeMode.LocalOnly,
+        previewMode: true,
         localRuntime: { playbook },
         user: activeUser.context,
         uiPathResolvers: {},
@@ -815,6 +826,8 @@ function PlaygroundRuntime(props: {
   const options = useMemo(
     () => ({
       localRuntime: { playbook: exportedConfigJson },
+      // Live docs playground render — keep it out of SDK adoption telemetry.
+      previewMode: true,
       uiPathResolvers: {
         navigate_to_plans: async () => {},
         open_upgrade_modal: async () => {},
