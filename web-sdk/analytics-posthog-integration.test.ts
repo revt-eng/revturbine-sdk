@@ -116,3 +116,17 @@ describe('createPostHogIntegration', () => {
     expect(posthog.capture).toHaveBeenCalled();
   });
 });
+
+describe('public export surface (barrel regression)', () => {
+  // Guards the exact gap that let createPostHogIntegration ship invisible in
+  // 0.2.45/46: the function was written and unit-tested via './analytics' but
+  // never re-exported from the package barrel, so `@revt-eng/sdk` consumers
+  // could not import it. Import through './index' — the same path SDK consumers
+  // resolve — so a dropped barrel re-export fails CI here, not silently downstream.
+  it('re-exports createPostHogIntegration through the package barrel', async () => {
+    const barrel = await import('./index');
+    expect(typeof barrel.createPostHogIntegration).toBe('function');
+    expect(typeof barrel.createPostHogAnalyticsProvider).toBe('function');
+    expect(typeof barrel.createAnalyticsProvider).toBe('function');
+  });
+});

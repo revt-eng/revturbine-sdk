@@ -155,6 +155,7 @@ export * from './providers';
 export {
   createAnalyticsProvider,
   createPostHogAnalyticsProvider,
+  createPostHogIntegration,
 } from './analytics';
 export type {
   AnalyticsProviderOptions,
@@ -163,6 +164,7 @@ export type {
   AnalyticsEventProperties,
   PostHogLike,
   PostHogAnalyticsProviderOptions,
+  PostHogIntegrationOptions,
 } from './analytics';
 
 // ── Control-plane semantic events (plan 112 — dogfood taxonomy) ──────────────
