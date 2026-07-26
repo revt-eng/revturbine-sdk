@@ -115,6 +115,7 @@ export default defineConfig({
       favicon: '/favicon.png',
       customCss: ['./src/styles/custom.css'],
       social: [
+        { icon: 'external', label: 'revturbine.com', href: 'https://revturbine.com' },
         { icon: 'github', label: 'GitHub', href: 'https://github.com/revt-eng/revturbine-external' },
       ],
       editLink: {
