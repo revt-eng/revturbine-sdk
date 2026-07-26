@@ -481,6 +481,73 @@ class TestResolverCandidatePath:
         )
         assert decision["output"]["output_id"] == "pay1"  # pl_x, order 0
 
+    def test_fixed_only_filters_to_fixed_category(self) -> None:
+        # §4 fixedOnly (plan 147 TASK-16): only Fixed-category candidates
+        # survive. A non-Fixed candidate with a *lower* order is suppressed
+        # even though it would otherwise win. Source: local-resolver.ts:767-774.
+        resolver = self._resolver(
+            [
+                _entry(
+                    entry_id="pl_usage",
+                    order=0,
+                    category="usage_credit_seat",
+                    payloads=[_payload(payload_id="pu")],
+                ),
+                _entry(
+                    entry_id="pl_fixed",
+                    order=1,
+                    category="fixed",
+                    payloads=[_payload(payload_id="pf")],
+                ),
+            ]
+        )
+        decision = resolver(
+            {"placement_id": "p1", "user_id": "u"},
+            {"metadata": {"surface_template_ids": ["modal_overlay"], "fixed_only": True}},
+            _ctx(),
+        )
+        assert decision["output"]["output_id"] == "pf"
+
+    def test_fixed_only_can_leave_nothing(self) -> None:
+        # Hard filter: if no Fixed candidate survives, the slot renders
+        # nothing (fallback) rather than an RT-initiated nudge.
+        resolver = self._resolver(
+            [_entry(entry_id="pl_usage", order=0, category="usage_credit_seat")]
+        )
+        decision = resolver(
+            {"placement_id": "p1", "user_id": "u"},
+            {"metadata": {"surface_template_ids": ["modal_overlay"], "fixed_only": True}},
+            _ctx(),
+        )
+        assert decision["visible"] is False
+        assert decision["reason_codes"] == ["no_eligible_candidate"]
+
+    def test_fixed_only_absent_keeps_all_categories(self) -> None:
+        # Without the flag the non-Fixed lower-order candidate wins — proving
+        # the filter is gated on ``fixed_only is True``, not always applied.
+        resolver = self._resolver(
+            [
+                _entry(
+                    entry_id="pl_usage",
+                    order=0,
+                    category="usage_credit_seat",
+                    payloads=[_payload(payload_id="pu")],
+                ),
+                _entry(
+                    entry_id="pl_fixed",
+                    order=1,
+                    category="fixed",
+                    payloads=[_payload(payload_id="pf")],
+                ),
+            ]
+        )
+        decision = resolver(
+            {"placement_id": "p1", "user_id": "u"},
+            {"metadata": {"surface_template_ids": ["modal_overlay"]}},
+            _ctx(),
+        )
+        assert decision["output"]["output_id"] == "pu"
+
     def test_impression_history_filters_hidden(self) -> None:
         history = _impression_history()
         history.record_dismissal("pl_hidden")

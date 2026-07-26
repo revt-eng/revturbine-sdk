@@ -89,6 +89,43 @@ export interface ServerEvaluationRequest {
 }
 
 // ---------------------------------------------------------------------------
+// Client-session minting (plan 157) — server-only capability
+// ---------------------------------------------------------------------------
+
+/**
+ * Input for minting a short-lived, per-user client-session token.
+ *
+ * The customer backend attests the end user, then mints a browser-safe token
+ * scoped to exactly that subject. Tenant / application / environment are derived
+ * server-side from the mint secret — never from this input.
+ */
+export interface CreateClientSessionInput {
+  /** The end-user subject the token is minted for (opaque to RevTurbine). */
+  subject: string;
+  /** Optional surface / session scope hint (e.g. a page or feature area). */
+  surface?: string;
+  /**
+   * Client-facing capabilities the token is scoped to. Defaults to
+   * `['context:read']` (fetch the user's client-safe context).
+   */
+  capabilities?: string[];
+}
+
+/**
+ * Result of minting a client session — a short-lived, opaque browser token.
+ *
+ * Hand `client_token` to the frontend; it authenticates
+ * `GET /api/sdk/client-context`. It carries no user id in the request (the token
+ * determines the subject), and expires at `expires_at`.
+ */
+export interface ClientSessionResult {
+  /** The opaque `rt_client_` token to return to the browser. */
+  client_token: string;
+  /** ISO-8601 timestamp at which the token expires. */
+  expires_at: string;
+}
+
+// ---------------------------------------------------------------------------
 // Server SDK configuration
 // ---------------------------------------------------------------------------
 

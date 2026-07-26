@@ -149,32 +149,18 @@ export function normalizeConfigArtifactOrThrow(
 }
 
 /**
- * Adapt a canonical Playbook to the temporary legacy-typed evaluator seam.
+ * Normalize a raw config artifact to the canonical Playbook the runtime
+ * evaluator consumes.
  *
- * @internal SDK runtime plumbing only. Public normalization always returns a
- * canonical Playbook and never re-emits legacy header keys.
+ * @internal SDK runtime plumbing only. Plan 147 flattened the config schema, so
+ * the evaluator consumes the canonical Playbook directly — the former
+ * legacy-typed seam that re-emitted `version` / `change_set_id` is retired
+ * (callers now read `format_version` / `playbook_version_id`).
  */
 export function configArtifactForRuntime(
   raw: unknown, // sdk-ok: boundary-parse
   source: string,
   legacyTargetDefaults?: LegacyConfigTargetDefaults,
 ): RevTurbineConfig | undefined {
-  const playbook = normalizeConfigArtifactOrThrow(raw, source, legacyTargetDefaults);
-  if (!playbook) return undefined;
-
-  const {
-    artifact_type: _artifactType,
-    format_version: formatVersion,
-    playbook_handle: _playbookHandle,
-    playbook_version_id: playbookVersionId,
-    project_id: _projectId,
-    experiments: _experiments,
-    ...sharedHeaderAndBody
-  } = playbook;
-
-  return {
-    ...sharedHeaderAndBody,
-    version: formatVersion,
-    change_set_id: playbookVersionId,
-  };
+  return normalizeConfigArtifactOrThrow(raw, source, legacyTargetDefaults);
 }

@@ -675,6 +675,17 @@ def create_static_placement_resolver(
                 if slot_filtered:
                     filtered = slot_filtered
 
+            # §4 ``fixed_only``: a slot reserved for PM-wired content renders
+            # only Fixed-category candidates — RT-initiated placements (Usage /
+            # Trial / Conversion / Retention) are filtered out even if they
+            # would match. A hard filter (may leave nothing) so the slot never
+            # renders an RT-initiated nudge. The record built by
+            # ``_slot_record_for_config`` keys this snake_case (``fixed_only``)
+            # to match the resolver's other ``meta.get`` reads; the TS metadata
+            # key is ``fixedOnly``. Source: local-resolver.ts:767-774
+            if meta.get("fixed_only") is True:
+                filtered = [c for c in filtered if c["entry_category"] == "fixed"]
+
             if preferred_categories and slot_category != "fixed" and len(filtered) > 1:
                 cat_filtered = [c for c in filtered if c["entry_category"] in preferred_categories]
                 if cat_filtered:

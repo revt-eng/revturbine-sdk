@@ -112,6 +112,102 @@ class TestLocalPlacementDecision:
         assert [d["placement_id"] for d in decisions] == ["a", "b"]
 
 
+SLOT_CONFIG: dict[str, Any] = {
+    "placements": [],
+    "placement_slots": [
+        {
+            "id": "slot_banner",
+            "surface_type": "banner",
+            "placement_handle": "banner_h",
+            "template": "banner_placement",
+        },
+        {
+            "id": "slot_modal",
+            "surface_type": "modal",
+            "placement_handle": "modal_h",
+        },
+    ],
+}
+
+
+class TestGetPlacementBySlot:
+    """Surface-keyed ``get_placement`` (plan 147 TASK-16): the slot record is
+    resolved from the config's ``placement_slots`` registry and fed to the
+    same resolver pipeline. Mirrors local-runtime.ts getPlacement /
+    slotRecordForConfig — snake_case config keys per the parity harness bridge.
+    """
+
+    def test_slot_record_derived_by_slot_id(self) -> None:
+        runtime = _make_runtime(exported_config=SLOT_CONFIG)
+        record = runtime._slot_record_for_config({"slot_id": "slot_banner"})
+        assert record is not None
+        assert record["placement_id"] == "slot_banner"
+        assert record["name"] == "banner_h"
+        assert record["route"] == ""
+        assert record["metadata"] == {
+            "surface_slot_id": "slot_banner",
+            "surface_type": "banner",
+            "surface_template_ids": ["banner_placement"],
+        }
+
+    def test_slot_record_by_surface_type(self) -> None:
+        runtime = _make_runtime(exported_config=SLOT_CONFIG)
+        record = runtime._slot_record_for_config({"surface_type": "modal"})
+        assert record is not None
+        assert record["placement_id"] == "slot_modal"
+        # Slot carries no ``template`` → empty surface_template_ids.
+        assert record["metadata"]["surface_template_ids"] == []
+
+    def test_slot_record_none_when_no_match(self) -> None:
+        runtime = _make_runtime(exported_config=SLOT_CONFIG)
+        assert runtime._slot_record_for_config({"slot_id": "nope"}) is None
+        assert runtime._slot_record_for_config({"surface_type": "toast"}) is None
+        assert runtime._slot_record_for_config({}) is None
+
+    def test_slot_record_fixed_only_and_entitlement_metadata(self) -> None:
+        runtime = _make_runtime(exported_config=SLOT_CONFIG)
+        record = runtime._slot_record_for_config(
+            {
+                "slot_id": "slot_banner",
+                "fixed_only": True,
+                "entitlement_handle": "core_credits",
+            }
+        )
+        assert record is not None
+        # Snake_case metadata keys so the resolver's ``meta.get`` reads match
+        # (the TS record's lone camelCase key ``fixedOnly`` is ``fixed_only``).
+        assert record["metadata"]["fixed_only"] is True
+        assert record["metadata"]["entitlement_handle"] == "core_credits"
+
+    def test_slot_record_placement_handle_override(self) -> None:
+        runtime = _make_runtime(exported_config=SLOT_CONFIG)
+        record = runtime._slot_record_for_config(
+            {"slot_id": "slot_banner", "placement_handle": "override_h"}
+        )
+        assert record is not None
+        assert record["name"] == "override_h"
+
+    def test_slot_record_prefers_registered(self) -> None:
+        runtime = _make_runtime(exported_config=SLOT_CONFIG)
+        pre = PlacementRecord(placement_id="slot_banner", name="pre-registered")
+        runtime.register_placement(pre)
+        # A prior registration short-circuits derivation (TS parity:
+        # registeredPlacements.get(slotId) wins).
+        assert runtime._slot_record_for_config({"slot_id": "slot_banner"}) is pre
+
+    def test_get_placement_registers_and_evaluates(self) -> None:
+        runtime = _make_runtime(exported_config=SLOT_CONFIG, custom_resolver=_stub_resolver_visible)
+        decision = runtime.get_placement({"slot_id": "slot_banner"})
+        assert decision is not None
+        assert decision["visible"] is True
+        assert decision["placement_id"] == "slot_banner"
+        assert "slot_banner" in runtime._registered_placements
+
+    def test_get_placement_none_when_no_slot(self) -> None:
+        runtime = _make_runtime(exported_config=SLOT_CONFIG, custom_resolver=_stub_resolver_visible)
+        assert runtime.get_placement({"slot_id": "nope"}) is None
+
+
 class TestComposition:
     def test_default_storage_is_in_memory(self) -> None:
         runtime = _make_runtime()

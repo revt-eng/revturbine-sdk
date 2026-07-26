@@ -1,5 +1,7 @@
 {
   "version": "1.0.0",
+  "tenant_id": "prism",
+  "environment_id": "default",
   "exported_at": "2026-06-12T00:00:00.000Z",
   "plans": [
     {

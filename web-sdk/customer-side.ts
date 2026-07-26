@@ -796,6 +796,8 @@ export interface RevTurbineEndpointOverrides {
   getPlacement: string;
   checkEntitlement: string;
   userContext: string;
+  /** Secure per-user client-safe context read (`GET /api/sdk/client-context`, plan 157). */
+  clientContext?: string;
   trialStatus: string;
   ingestEvents: string;
   /** Keyless anonymous SDK telemetry endpoint (`POST /api/sdk/meta`). */
@@ -1812,6 +1814,13 @@ export class RevTurbineCustomerSdk {
   private readonly syncedSurfaceSlotIds = new Set<string>();
   private userContext: RevTurbineUserContext;
   private pageContext: RevTurbinePageContext;
+  /**
+   * Secure per-user client token (`rt_client_`, plan 157). Minted by the
+   * customer's backend and handed to the SDK; used ONLY as a Bearer for
+   * `GET /api/sdk/client-context`. Held in memory only — never persisted to
+   * storage, never placed in a URL, never logged.
+   */
+  private clientContextToken?: string;
   private usageBalances: UsageBalances = {};
   private localDecisionsByPlacementId = new Map<string, RevTurbinePlacementDecision>();
   private localPlacementsByLookupKey = new Map<string, PlacementOutput | null>();
@@ -2801,7 +2810,7 @@ export class RevTurbineCustomerSdk {
       contextPolicy: this.policy,
       placementBehavior: this.placementBehavior,
       runtimeMode: this.runtimeMode,
-      ...(typeof exportedConfig?.version === 'string' ? { exportedConfigVersion: exportedConfig.version } : {}),
+      ...(typeof exportedConfig?.format_version === 'string' ? { exportedConfigVersion: exportedConfig.format_version } : {}),
     };
   }
 
@@ -3677,7 +3686,7 @@ export class RevTurbineCustomerSdk {
     // never throw into the host app (REQ-3/REQ-4).
     try {
       const cfg = this.getConfiguredExportedConfig();
-      const bundleVersion = cfg?.version != null ? String(cfg.version) : undefined;
+      const bundleVersion = cfg?.format_version != null ? String(cfg.format_version) : undefined;
       // One-way, non-reversible attribution so distinct deployments can be
       // counted without exposing the real id (REQ-7). The tenant handle is an
       // explicitly-sanctioned, non-secret input; hashing it is the point.
@@ -3785,10 +3794,10 @@ export class RevTurbineCustomerSdk {
     // are lifted out so they survive end-to-end (plan 41 REQ-7).
     // The Playbook version that produced the current experience — the same for
     // every event in this batch, resolved once (plan 144 TASK-10 / REQ-8). This
-    // is the config *release* id (`change_set_id` / `playbook_version_id`), NOT
-    // the immutable `version` format-version constant — the latter would stamp
-    // the same value on every event forever and correlate nothing.
-    const playbookVersion = this.getConfiguredExportedConfig()?.change_set_id;
+    // is the config *release* id (`playbook_version_id`), NOT the immutable
+    // `format_version` constant — the latter would stamp the same value on
+    // every event forever and correlate nothing.
+    const playbookVersion = this.getConfiguredExportedConfig()?.playbook_version_id;
     const trackEvents: TrackEvent[] = sanitized.map((event) => {
       // `user_id` and the property bag were already scrubbed by
       // `redactEnvelope` above. `account_id` is not carried on the envelope,
@@ -5404,6 +5413,89 @@ export class RevTurbineCustomerSdk {
     } catch {
       return { userId, segmentIds: [], traits: {} };
     }
+  }
+
+  /**
+   * Enrich the held UserContext with the user's server-known CLIENT-SAFE context
+   * (plan 157). Fetches `GET /api/sdk/client-context` with the provided client
+   * token (`rt_client_`, minted by the customer's backend via the server SDK's
+   * `clientSessions.create`), maps the client-safe fields (trial state, coarse
+   * billing health) into the UserContext, and merges them in — these fields are
+   * RevTurbine-authoritative, so they refresh the held context.
+   *
+   * The token is held in memory only (never storage / URL / logs). Enrichment is
+   * best-effort: a network error or non-200 never throws into the app; on 401
+   * (expired / revoked) the held token is cleared. Server-side entitlement checks
+   * remain authoritative regardless of what the browser sees.
+   *
+   * @param clientToken the `rt_client_` token; when omitted, reuses the last one.
+   */
+  async fetchClientContext(clientToken?: string): Promise<void> {
+    if (typeof clientToken === 'string' && clientToken.length > 0) {
+      this.clientContextToken = clientToken;
+    }
+    const token = this.clientContextToken;
+    if (!token) return;
+
+    try {
+      const response = await fetch(this.endpointFor('clientContext', '/api/sdk/client-context'), {
+        method: 'GET',
+        headers: { authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        if (response.status === 401) this.clientContextToken = undefined;
+        return;
+      }
+      const data = (await response.json()) as Record<string, unknown>; // sdk-ok: boundary-parse — client-context response
+      const patch = this.mapClientSafeContext(data);
+      if (Object.keys(patch).length > 0) this.applyServerContextPatch(patch);
+    } catch {
+      // Best-effort enrichment — never surface to the app.
+    }
+  }
+
+  /** Map the client-safe context response into a UserContext patch (plan 157). */
+  private mapClientSafeContext(data: Record<string, unknown>): Partial<RevTurbineUserContext> {
+    const patch: Partial<RevTurbineUserContext> = {};
+
+    const trial = isRecord(data.trial) ? data.trial : undefined;
+    if (trial) {
+      const states = ['active', 'running_out', 'expired', 'converted', 'none'] as const;
+      const state = states.find((s) => s === trial.status);
+      if (state) {
+        patch.trial = {
+          in_trial: state === 'active' || state === 'running_out',
+          state,
+          ...(typeof trial.days_remaining === 'number'
+            ? { days_remaining: trial.days_remaining }
+            : {}),
+        };
+      }
+    }
+
+    const billing = isRecord(data.billing) ? data.billing : undefined;
+    if (billing && billing.health === 'attention_required') {
+      // Coarse signal → the soft retention trigger. Raw failed-payment detail is
+      // server_only and never crosses the boundary, so the SDK sees only this.
+      patch.payment_at_risk = true;
+    }
+
+    return patch;
+  }
+
+  /**
+   * Apply a server-derived UserContext patch (plan 157) — mirrors setUserContext
+   * but accepts a partial. The patch's RevTurbine-authoritative fields (trial,
+   * billing signals) overlay the held context; undefined fields are skipped by
+   * the merge, so app-set values are never nulled.
+   */
+  private applyServerContextPatch(patch: Partial<RevTurbineUserContext>): void {
+    const previousContext = this.userContext;
+    this.userContext = this.mergeUserContext(patch);
+    this.recalculateDerivedUsageTraits();
+    this.markSegmentsDirtyFromContextChange(previousContext, this.userContext);
+    this.persistLocalRuntimeState();
+    void this.evaluateUserSegmentsAndUsage(this.userContext, false);
   }
 
   /**

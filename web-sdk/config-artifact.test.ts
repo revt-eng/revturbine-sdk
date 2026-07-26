@@ -76,7 +76,11 @@ describe('config artifact dual-read normalization', () => {
     }, 'fixture')).toThrow('Invalid fixture');
   });
 
-  it('keeps the evaluator legacy adapter private from canonical output', () => {
+  it('returns the canonical Playbook for the runtime evaluator (no legacy header re-emit)', () => {
+    // Plan 147 flattened the config schema: the evaluator consumes the canonical
+    // Playbook directly, so the former legacy-typed seam (which re-emitted
+    // `version` / `change_set_id`) is retired — callers read `format_version` /
+    // `playbook_version_id`.
     const runtime = configArtifactForRuntime({
       artifact_type: 'playbook',
       format_version: '1.0.0',
@@ -88,9 +92,11 @@ describe('config artifact dual-read normalization', () => {
     }, 'fixture');
 
     expect(runtime).toMatchObject({
-      version: '1.0.0',
-      change_set_id: 'pbv_123',
+      format_version: '1.0.0',
+      playbook_version_id: 'pbv_123',
     });
+    expect(runtime).not.toHaveProperty('version');
+    expect(runtime).not.toHaveProperty('change_set_id');
   });
 
   it('warns in development when legacy projections are normalized', () => {

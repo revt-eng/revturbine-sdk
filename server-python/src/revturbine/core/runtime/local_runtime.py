@@ -215,6 +215,31 @@ class LocalRuntime:
         """
         return self.engine.evaluate_batch(inputs)
 
+    def get_placement(
+        self,
+        config: dict[str, Any],
+    ) -> PlacementDecision | None:
+        """Resolve the winning placement for a surface slot + user context
+        (plan 147 REQ-11) — the surface-keyed counterpart to
+        :meth:`get_placement_decision`. The slot is resolved from the
+        config's ``placement_slots`` registry into a placement record whose
+        ``surface_template_ids`` drive candidate gathering, then the same
+        resolver pipeline runs. Returns ``None`` when no slot matches.
+
+        Config keys arrive snake_case (the parity harness snake-cases the
+        canonical camelCase fixture args): ``slot_id`` / ``surface_type`` /
+        ``entitlement_handle`` / ``placement_handle`` / ``fixed_only``.
+
+        Source: local-runtime.ts:195-225
+        """
+        record = self._slot_record_for_config(config)
+        if record is None:
+            return None
+        self.register_placement(record)
+        return self.get_placement_decision(
+            {"placement_id": record["placement_id"], "user_id": self._user_id}
+        )
+
     # ── Entitlement checking ──────────────────────────────────────────────
 
     def check_entitlement(
@@ -389,6 +414,67 @@ class LocalRuntime:
             self.registry.register(provider)
 
     # ── Internal ──────────────────────────────────────────────────────────
+
+    def _slot_record_for_config(
+        self,
+        config: dict[str, Any],
+    ) -> PlacementRecord | None:
+        """Resolve the placement record for a surface-keyed request. Prefers
+        a slot already registered by the caller; otherwise derives it from
+        the config's ``placement_slots`` registry — the headless server/CLI
+        path, where there is no mounted ``<Slot>`` to self-register. Returns
+        ``None`` when no slot matches the config.
+
+        The derived record carries the metadata the resolver's slot branch
+        reads: ``surface_template_ids`` (from the slot's ``template``) drives
+        candidate gathering; ``surface_slot_id`` / ``entitlement_handle`` /
+        ``fixed_only`` narrow it. Metadata keys are snake_case to match the
+        resolver's ``meta.get(...)`` reads — the TS record's one camelCase
+        key (``fixedOnly``) is ``fixed_only`` here.
+
+        Source: local-runtime.ts:375-416
+        """
+        slot_id = config.get("slot_id")
+        if slot_id:
+            existing = self._registered_placements.get(slot_id)
+            if existing is not None:
+                return existing
+
+        surface_type = config.get("surface_type")
+        slots = self._exported_config.get("placement_slots") or []
+
+        def _matches(s: dict[str, Any]) -> bool:
+            if slot_id:
+                return bool(s.get("id") == slot_id)
+            if surface_type:
+                return bool(s.get("surface_type") == surface_type)
+            return False
+
+        slot = next((s for s in slots if _matches(s)), None)
+        if slot is None:
+            return None
+
+        template = slot.get("template")
+        metadata: dict[str, Any] = {
+            "surface_slot_id": slot["id"],
+            "surface_type": slot["surface_type"],
+            "surface_template_ids": [template] if template else [],
+        }
+        entitlement_handle = config.get("entitlement_handle")
+        if entitlement_handle:
+            metadata["entitlement_handle"] = entitlement_handle
+        if config.get("fixed_only"):
+            metadata["fixed_only"] = True
+
+        placement_handle = config.get("placement_handle")
+        name = placement_handle if placement_handle is not None else slot.get("placement_handle")
+        record: PlacementRecord = {
+            "placement_id": slot["id"],
+            "name": name,
+            "route": "",
+            "metadata": metadata,
+        }
+        return record
 
     def _build_placement_resolver(
         self,

@@ -231,6 +231,22 @@ class RevTurbineCustomerSdk:
         """
         return self._runtime.get_placement_decisions(inputs)
 
+    def get_placement(
+        self,
+        config: dict[str, Any],
+    ) -> PlacementDecision | None:
+        """Resolve the winning placement for a surface slot (plan 147
+        REQ-11) — the surface-keyed counterpart to
+        :meth:`get_placement_decision`. Pure delegation to
+        ``LocalRuntime.get_placement``: the slot is resolved from the
+        config's ``placement_slots`` registry into a placement record, then
+        the same resolver pipeline decides. Returns ``None`` when no slot
+        matches.
+
+        Source: local-runtime.ts getPlacement (parity-locked).
+        """
+        return self._runtime.get_placement(config)
+
     def evaluate_trial_status(
         self,
         *,
