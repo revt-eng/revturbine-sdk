@@ -418,6 +418,20 @@ export interface RevTurbineUserContext
   personalization?: SdkTraits;
 }
 
+/**
+ * The client-safe shape returned by `GET /api/sdk/client-context` (plan 157).
+ * Only `client_safe` fields cross the boundary — `server_only` / `decision_only`
+ * leaves are stripped server-side, so this response never carries raw provider
+ * ids or failed-payment detail.
+ */
+interface ClientSafeContextResponse {
+  subject?: string;
+  context_version?: string;
+  trial?: { status?: string; days_remaining?: number; ends_at?: string };
+  billing?: { health?: string };
+  capabilities?: { can_upgrade?: boolean; can_manage_billing?: boolean };
+}
+
 /** Page-level context automatically inferred or manually set. */
 export interface RevTurbinePageContext {
   /** Fully qualified page URL. */
@@ -5446,7 +5460,7 @@ export class RevTurbineCustomerSdk {
         if (response.status === 401) this.clientContextToken = undefined;
         return;
       }
-      const data = (await response.json()) as Record<string, unknown>; // sdk-ok: boundary-parse — client-context response
+      const data = (await response.json()) as ClientSafeContextResponse; // sdk-ok: boundary-parse — client-context response
       const patch = this.mapClientSafeContext(data);
       if (Object.keys(patch).length > 0) this.applyServerContextPatch(patch);
     } catch {
@@ -5455,26 +5469,22 @@ export class RevTurbineCustomerSdk {
   }
 
   /** Map the client-safe context response into a UserContext patch (plan 157). */
-  private mapClientSafeContext(data: Record<string, unknown>): Partial<RevTurbineUserContext> {
+  private mapClientSafeContext(data: ClientSafeContextResponse): Partial<RevTurbineUserContext> {
     const patch: Partial<RevTurbineUserContext> = {};
 
-    const trial = isRecord(data.trial) ? data.trial : undefined;
-    if (trial) {
-      const states = ['active', 'running_out', 'expired', 'converted', 'none'] as const;
-      const state = states.find((s) => s === trial.status);
-      if (state) {
-        patch.trial = {
-          in_trial: state === 'active' || state === 'running_out',
-          state,
-          ...(typeof trial.days_remaining === 'number'
-            ? { days_remaining: trial.days_remaining }
-            : {}),
-        };
-      }
+    const states = ['active', 'running_out', 'expired', 'converted', 'none'] as const;
+    const state = states.find((s) => s === data.trial?.status);
+    if (state) {
+      patch.trial = {
+        in_trial: state === 'active' || state === 'running_out',
+        state,
+        ...(typeof data.trial?.days_remaining === 'number'
+          ? { days_remaining: data.trial.days_remaining }
+          : {}),
+      };
     }
 
-    const billing = isRecord(data.billing) ? data.billing : undefined;
-    if (billing && billing.health === 'attention_required') {
+    if (data.billing?.health === 'attention_required') {
       // Coarse signal → the soft retention trigger. Raw failed-payment detail is
       // server_only and never crosses the boundary, so the SDK sees only this.
       patch.payment_at_risk = true;
