@@ -41,3 +41,9 @@
 	--sl-color-gray-7: #f8fafc;
 	--sl-color-black: #ffffff;
 }
+
+/* Logo: match the site nav's treatment of the same square tile (rounded + subtle ring). */
+.site-title img {
+	border-radius: 0.5rem;
+	box-shadow: 0 0 0 1px rgba(100, 116, 139, 0.7);
+}
