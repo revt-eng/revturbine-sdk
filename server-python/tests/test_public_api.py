@@ -104,6 +104,7 @@ class TestPublicSurface:
             "check_entitlement",
             "get_placement_decision",
             "get_placement_decisions",
+            "get_placement",
         ):
             assert callable(getattr(sdk, name))
 

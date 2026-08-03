@@ -26,7 +26,7 @@
  * });
  * ```
  */
-export { RevTurbineServer } from './client';
+export { RevTurbineServer, RevTurbineClientSessionError } from './client';
 export type {
   RevTurbineServerOptions,
   ServerEvaluationPayload,
@@ -40,6 +40,8 @@ export type {
   ServerPlacementDecision,
   ServerEntitlementResult,
   ServerUserContext,
+  CreateClientSessionInput,
+  ClientSessionResult,
 } from './types';
 
 // Local evaluation using core DecisionEngine

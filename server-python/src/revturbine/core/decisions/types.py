@@ -105,6 +105,12 @@ class PlacementRecord(_PlacementRecordRequired, total=False):
 
     surface_template_ids: list[str]
     entitlement_handle: str
+    # A surface-derived record (``LocalRuntime._slot_record_for_config``,
+    # plan 147) nests its narrowing hints under ``metadata`` — the same
+    # shape the resolver's slot branch reads (``placement.get("metadata")``)
+    # — and carries the TS record's ``route`` (``''`` for surface slots).
+    route: str
+    metadata: dict[str, Any]
 
 
 class _PlacementDecisionRequired(TypedDict):
