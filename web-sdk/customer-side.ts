@@ -100,7 +100,6 @@ import {
   interactionStateKey as coreInteractionStateKey,
   suppressionForState as coreSuppression,
   deriveLocalEntitlementFromConfiguredRules as coreDeriveLocalEntitlement,
-  normalizeEntitlementResult as coreNormalizeEntitlementResult,
   usageThresholdForEntitlement as coreUsageThreshold,
   evaluateUsageThresholdCrossings as coreEvaluateUsageCrossings,
   deriveTrialTriggerStage as coreDeriveTrialStage,
@@ -1694,6 +1693,66 @@ class StaticExportedConfigProvider implements RuntimeConfigProvider {
   }
 }
 
+/**
+ * Server-mode launched-config provider (plan 159). Fetches the tenant's active
+ * launched Playbook from the control plane (`GET /api/sdk/config`) so the SDK
+ * can evaluate entitlements LOCALLY in Server mode — the integrator never
+ * passes the Playbook. Polled with `refresh()` (TTL-gated, ETag revalidation)
+ * so a new release is picked up without a per-check round-trip. Authenticated
+ * with the public ingest token (the same key as `/api/track`); the launched
+ * Playbook carries no per-user/PII data (that is `/api/sdk/client-context`).
+ */
+class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
+  private cached?: RevTurbineConfig;
+  private etag?: string;
+  private lastFetchedAt = 0;
+  private static readonly REFRESH_TTL_MS = 60_000;
+
+  constructor(
+    private readonly endpoint: string,
+    private readonly tenantId: string,
+    private readonly token: string,
+    private readonly legacyTargetDefaults: LegacyConfigTargetDefaults,
+  ) {}
+
+  getExportedConfig(): RevTurbineConfig | undefined {
+    return this.cached;
+  }
+
+  async refresh(): Promise<RevTurbineConfig | undefined> {
+    const now = Date.now();
+    // Poll no more than once per TTL — a launched Playbook is immutable per
+    // version, so intra-TTL re-fetching only wastes requests.
+    if (this.cached && now - this.lastFetchedAt < ServerLaunchedConfigProvider.REFRESH_TTL_MS) {
+      return this.cached;
+    }
+    try {
+      const response = await fetch(`${this.endpoint}/api/sdk/config`, {
+        method: 'GET',
+        headers: {
+          authorization: `Bearer ${this.token}`,
+          'x-tenant-id': this.tenantId,
+          ...(this.etag ? { 'if-none-match': this.etag } : {}),
+        },
+      });
+      this.lastFetchedAt = now;
+      // 304 (unchanged) or any non-2xx: keep the last-known-good config. A
+      // caller with no config at all fails closed at the check site.
+      if (response.status === 304 || !response.ok) return this.cached;
+      const raw = await response.json();
+      const next = configArtifactForRuntime(raw, 'GET /api/sdk/config', this.legacyTargetDefaults);
+      if (next) {
+        this.cached = next;
+        this.etag = response.headers.get('etag') ?? undefined;
+      }
+      return this.cached;
+    } catch {
+      // Network/parse failure — keep last-known-good; never throw.
+      return this.cached;
+    }
+  }
+}
+
 class ResolverBackedExportedConfigProvider implements RuntimeConfigProvider {
   private cached?: RevTurbineConfig;
   private readonly resolver: () => ConfigArtifact | Promise<ConfigArtifact>;
@@ -1992,6 +2051,19 @@ export class RevTurbineCustomerSdk {
 
     if (initialConfig) {
       return new StaticExportedConfigProvider(initialConfig);
+    }
+
+    // Server mode with no customer-supplied config: fetch the launched Playbook
+    // from the control-plane cache (plan 159) so entitlements evaluate locally.
+    const runtimeMode = options.runtimeMode ?? RuntimeMode.Server;
+    const configToken = options.ingestPublicKey ?? options.apiKey;
+    if (runtimeMode !== RuntimeMode.LocalOnly && options.endpoint && configToken) {
+      return new ServerLaunchedConfigProvider(
+        options.endpoint,
+        options.tenantId,
+        configToken,
+        legacyTargetDefaults,
+      );
     }
 
     return undefined;
@@ -5159,10 +5231,6 @@ export class RevTurbineCustomerSdk {
     return result;
   }
 
-  private normalizeEntitlementResult(data: unknown): EntitlementResult { // sdk-ok: boundary-parse
-    return coreNormalizeEntitlementResult(data, requestId);
-  }
-
   private validateTrialStatusShape(data: unknown): RevTurbineTrialContext { // sdk-ok: boundary-parse
     return validateTrialStatusShape(data) as RevTurbineTrialContext;
   }
@@ -5252,13 +5320,7 @@ export class RevTurbineCustomerSdk {
       return { status: 'denied', allowed: false, reason: this.sdkDisabledReason ?? 'sdk_disabled_provider_failure' };
     }
 
-    const effectiveUsage = context?.used !== undefined
-      ? { used: context.used }
-      : context?.balance !== undefined
-        ? { balance: context.balance }
-        : (this.usageBalances[handle] !== undefined ? { used: this.usageBalances[handle] } : undefined);
-    const rid = requestId();
-
+    // local_only: a custom resolver takes precedence.
     if (this.isLocalOnlyMode()) {
       const resolver = this.localRuntime?.resolvers?.checkEntitlement;
       if (resolver) {
@@ -5267,57 +5329,31 @@ export class RevTurbineCustomerSdk {
         this.persistLocalRuntimeState();
         return result;
       }
-
-      const derived = this.deriveLocalEntitlementFromConfiguredRules(handle, context);
-      if (derived) {
-        this.localEntitlementsByHandle.set(handle, derived);
-        this.persistLocalRuntimeState();
-        return derived;
-      }
-
-      const existing = this.localEntitlementsByHandle.get(handle);
-      if (existing) return existing;
-      // Fail-closed: local mode with no Playbook loaded and nothing cached has
-      // no basis to grant anything. A configured Playbook produces a real
-      // allow/deny above; this default only fires when there is genuinely no
-      // config, where denying is the safe answer.
-      return { status: 'denied', allowed: false, reason: 'local_runtime_default_allow' };
+    } else if (!this.getConfiguredExportedConfig()) {
+      // Server mode (plan 159): fetch the launched Playbook from the control
+      // plane so entitlements evaluate LOCALLY — no per-check round-trip. The
+      // config provider is TTL-gated + ETag-revalidated, so this is a cheap poll.
+      await this.refreshExportedConfigSnapshot();
     }
 
-    try {
-      const response = await fetch(this.endpointFor('checkEntitlement', '/api/sdk/check-entitlement'), {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${this.apiKey}`,
-          'x-tenant-id': this.tenantId,
-          'x-request-id': rid,
-        },
-        body: JSON.stringify({
-          request_id: rid,
-          tenant_id: this.tenantId,
-          handle,
-          user_id: this.userContext.id,
-          usage: effectiveUsage,
-          required_tier: context?.requiredTier,
-          context: {
-            user: this.userContext,
-          },
-        }),
-      });
-      // Fail-closed: an unreachable entitlement service cannot affirm the grant,
-      // so deny rather than leak access. The explicit reason still lets callers
-      // distinguish "RT said no" (a rule denial) from "RT unreachable".
-      if (!response.ok) return { status: 'denied', allowed: false, reason: 'entitlement_service_unavailable' };
-      const data = await response.json();
-      const normalized = this.normalizeEntitlementResult(data);
-      this.localEntitlementsByHandle.set(handle, normalized);
+    // Proven local evaluation against the configured Playbook (both modes).
+    const derived = this.deriveLocalEntitlementFromConfiguredRules(handle, context);
+    if (derived) {
+      this.localEntitlementsByHandle.set(handle, derived);
       this.persistLocalRuntimeState();
-      return normalized;
-    } catch {
-      // Fail-closed: a network/parse failure is not an affirmative grant.
-      return { status: 'denied', allowed: false, reason: 'entitlement_check_error' };
+      return derived;
     }
+
+    const existing = this.localEntitlementsByHandle.get(handle);
+    if (existing) return existing;
+
+    // Fail-closed: no configured Playbook means no basis to grant access. In
+    // Server mode this fires only when the launched config could not be fetched.
+    return {
+      status: 'denied',
+      allowed: false,
+      reason: this.isLocalOnlyMode() ? 'local_runtime_default_allow' : 'config_unavailable',
+    };
   }
 
   updateUsage(balances: UsageBalances): void {
