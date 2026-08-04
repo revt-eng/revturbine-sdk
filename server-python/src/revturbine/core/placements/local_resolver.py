@@ -429,7 +429,10 @@ def create_static_placement_resolver(
     plan_handle_to_id: dict[str, str] = {}
     for plan in exported_config.get("plans") or []:
         if is_record(plan):
-            plan_handle_to_id[plan["unique_handle"]] = plan["id"]
+            # Resolve by handle: the canonical Playbook (post plan-120, and every
+            # `bundle_to_playbook` output) is handle-only — no separate `id`. Fall
+            # back to `id` for legacy id-bearing configs.
+            plan_handle_to_id[plan["unique_handle"]] = plan.get("id") or plan["unique_handle"]
 
     # Plan 138 TASK-4: ordered tier ladder per entitlement handle, from the
     # authored ``tier_definitions`` (array order = rank). Handles only — the

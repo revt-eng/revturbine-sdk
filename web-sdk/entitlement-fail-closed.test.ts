@@ -15,6 +15,7 @@
  * and the happy path: server mode fetches the Playbook and grants locally.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { encodeBundle, lowerToIR } from '@revt-eng/core/bundle';
 import { RevTurbineCustomerSdk } from './customer-side';
 import type { RevTurbineInitOptions } from './customer-side';
 
@@ -103,6 +104,44 @@ describe('entitlement checks fail closed', () => {
     expect(result.status).not.toBe('denied');
     // The decision came from the fetched launched config — not a per-check call.
     expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/sdk/config'))).toBe(true);
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/sdk/check-entitlement'))).toBe(false);
+  });
+
+  it('server mode: decodes a compact .rvtb bundle response and grants via LOCAL eval (plan 160)', async () => {
+    // Compile the same launched Playbook to the compact `.rvtb` the control
+    // plane serves under `Accept: application/octet-stream` (plan 160 TASK-5).
+    // The `.rvtb`→Playbook decoder emits a CANONICAL Playbook, which the SDK
+    // parses without a legacy target fallback — so the bundle must carry the
+    // Playbook header identity (`format_version`/`environment_id`/
+    // `playbook_handle`), exactly as web's `buildExportedConfig` stamps it.
+    const bundle = encodeBundle(
+      lowerToIR(
+        { ...LAUNCHED_CONFIG, format_version: '1.0.0', environment_id: 'env_live', playbook_handle: 'default' },
+        { tenantId: 'tenant_fc', clock: () => 1_700_000_000_000 },
+      ).ir,
+    );
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      if (String(url).includes('/api/sdk/config')) {
+        return new Response(bundle, {
+          status: 200,
+          headers: { 'content-type': 'application/octet-stream', ETag: '"b1"' },
+        });
+      }
+      return new Response('{}', { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await serverSdk().checkEntitlement('generations');
+    // The SDK downloaded the bundle, decoded it client-side (BundleHandle.
+    // toPlaybook), and evaluated locally — identical grant to the JSON path.
+    expect(result.allowed).toBe(true);
+    expect(result.status).not.toBe('denied');
+
+    const configCall = fetchMock.mock.calls.find(([u]) => String(u).includes('/api/sdk/config'));
+    expect(configCall).toBeTruthy();
+    // It asked for the bundle (content negotiation) and never round-tripped a check.
+    const sentHeaders = (configCall![1] as RequestInit).headers as Record<string, string>;
+    expect(sentHeaders.accept).toContain('application/octet-stream');
     expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/sdk/check-entitlement'))).toBe(false);
   });
 });

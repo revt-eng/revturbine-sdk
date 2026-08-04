@@ -49,6 +49,8 @@ import type {
   JsonObject,
   PredicateEvaluationResult,
 } from '@revt-eng/core';
+// Plan 160 TASK-5: decode the compact `.rvtb` bundle client-side in Server mode.
+import { BundleHandle } from '@revt-eng/core/bundle';
 import {
   ImpressionHistory,
   StorageImpressionStore,
@@ -1730,6 +1732,9 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
       const response = await fetch(`${this.endpoint}/api/sdk/config`, {
         method: 'GET',
         headers: {
+          // Prefer the compact `.rvtb` bundle (plan 160); fall back to JSON so an
+          // older control plane that ignores the header still serves a usable body.
+          accept: 'application/octet-stream, application/json',
           authorization: `Bearer ${this.token}`,
           'x-tenant-id': this.tenantId,
           ...(this.etag ? { 'if-none-match': this.etag } : {}),
@@ -1739,7 +1744,13 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
       // 304 (unchanged) or any non-2xx: keep the last-known-good config. A
       // caller with no config at all fails closed at the check site.
       if (response.status === 304 || !response.ok) return this.cached;
-      const raw = await response.json();
+      // Content negotiation: an octet-stream body is the compact bundle — decode
+      // it client-side to the launched Playbook (BundleHandle.toPlaybook), the
+      // same shape the JSON path yields. Anything else is JSON.
+      const contentType = response.headers.get('content-type') ?? '';
+      const raw = contentType.includes('application/octet-stream')
+        ? new BundleHandle(new Uint8Array(await response.arrayBuffer())).toPlaybook()
+        : await response.json();
       const next = configArtifactForRuntime(raw, 'GET /api/sdk/config', this.legacyTargetDefaults);
       if (next) {
         this.cached = next;
