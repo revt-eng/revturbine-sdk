@@ -166,8 +166,10 @@ export type RevTurbineInitWithProviderOptions = RevTurbineInitOptions & RevTurbi
 /**
  * Minimal initialization options for local-only mode.
  *
- * When `localRuntime.exportedConfig` is provided, core transport options can be
- * omitted and the SDK will inject safe local defaults.
+ * When `localRuntime.playbook` (or the deprecated `exportedConfig` alias) is
+ * provided, core transport options can be omitted and the SDK will inject
+ * safe local defaults. `playbook` is the canonical key; the runtime resolves
+ * both through {@link resolveLocalPlaybook}.
  */
 export type RevTurbineLocalOnlyMinimalInitOptions = Omit<
   RevTurbineInitOptions,
@@ -178,16 +180,22 @@ export type RevTurbineLocalOnlyMinimalInitOptions = Omit<
   endpoint?: string;
   mode?: RevTurbineSdkMode;
   runtimeMode?: 'local_only';
-  localRuntime: RevTurbineLocalRuntimeOptions & {
-    exportedConfig: ConfigArtifact;
-  };
+  localRuntime: RevTurbineLocalRuntimeOptions &
+    (
+      | { playbook: ConfigArtifact }
+      | {
+          /** @deprecated Use `playbook` — the canonical key for the same artifact. */
+          exportedConfig: ConfigArtifact;
+        }
+    );
 };
 
 /**
  * Public SDK initialization input.
  *
  * Accepts either full options for any runtime mode, or local-only minimal
- * options when `localRuntime.exportedConfig` is provided.
+ * options when `localRuntime.playbook` (or the deprecated `exportedConfig`
+ * alias) is provided.
  */
 export type RevTurbineInitInputOptions =
   | RevTurbineInitWithProviderOptions
@@ -544,7 +552,7 @@ export interface RevTurbineUiPathResolverValidationReport {
 }
 
 export interface RevTurbineUiPathResolverValidationOptions {
-  /** Optional explicit UI path definitions to validate. Defaults to exportedConfig.content_ui_paths. */
+  /** Optional explicit UI path definitions to validate. Defaults to the local Playbook's content_ui_paths. */
   uiPaths?: ContentUiPath[];
   /** Additional action resolver map to validate against for this invocation. */
   resolvers?: RevTurbineUiPathResolverMap;
@@ -557,7 +565,7 @@ export interface RevTurbineUiPathResolverValidationOptions {
 /**
  * Provider abstraction for RevTurbineConfig access inside the SDK.
  *
- * Local mode typically uses a static provider backed by `localRuntime.exportedConfig`.
+ * Local mode typically uses a static provider backed by `localRuntime.playbook` (or its deprecated `exportedConfig` alias).
  * Other modes can provide custom or REST-backed resolvers via `refresh()`.
  */
 export interface RevTurbineConfigProvider {
