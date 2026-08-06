@@ -648,6 +648,23 @@ export interface RevTurbineInitOptions {
    */
   environmentId?: string;
   /**
+   * Test-traffic marker (plan 164).
+   *
+   * Set to `true` when this SDK instance generates **test traffic** — a
+   * staging deploy, an integration test, a QA walkthrough. Every emitted
+   * event (clickstream via `POST /api/track` and treatment interactions via
+   * `POST /api/events/interactions`) is then stamped `test: true`, and
+   * RevTurbine analytics **exclude those events by default** from every
+   * metric, rollup, and denominator; an `include_test` toggle reveals them.
+   *
+   * This is a deliberate, code-passed decision: pass it explicitly from your
+   * own configuration. The SDK never infers it from the environment (no
+   * `NODE_ENV` sniffing) — whether traffic is test traffic is your call, not
+   * a deployment artifact. Off by default (`false`); omitted or `false`
+   * emits events unchanged.
+   */
+  test?: boolean;
+  /**
    * Analytics/clickstream telemetry opt-out.
    *
    * Analytics is **on by default** (`true`). Set to `false` to opt out:
@@ -1864,6 +1881,9 @@ export class RevTurbineCustomerSdk {
   private readonly apiKey: string;
   private readonly ingestPublicKey?: string;
   private readonly environmentId: string;
+  // Caller-declared test traffic (plan 164) — stamps `test: true` on every
+  // emitted event; analytics default-exclude those rows.
+  private readonly testTraffic: boolean;
   private readonly analyticsEnabled: boolean;
   private readonly anonymousTelemetryEnabled: boolean;
   // Preview/example render (docs, playground) — suppresses the keyless init beacon.
@@ -1943,6 +1963,7 @@ export class RevTurbineCustomerSdk {
     this.apiKey = options.apiKey;
     this.ingestPublicKey = options.ingestPublicKey;
     this.environmentId = options.environmentId?.trim() || 'default';
+    this.testTraffic = options.test === true;
     this.analyticsEnabled = options.analytics !== false;
     this.anonymousTelemetryEnabled = options.anonymousTelemetry !== false;
     this.previewMode = options.previewMode === true;
@@ -3954,6 +3975,10 @@ export class RevTurbineCustomerSdk {
         event_id: eventIds.next(),
         request_id: requestId(),
         tenant_id: event.tenant_id,
+        // Caller-declared test traffic (plan 164): stamped only when the
+        // integration passed `test: true` at init — omitted otherwise, so a
+        // production instance's wire shape is unchanged.
+        ...(this.testTraffic ? { test: true } : {}),
       };
     });
 
@@ -5044,6 +5069,9 @@ export class RevTurbineCustomerSdk {
       payload_id: item.payloadId,
       metadata: item.metadata ?? {},
       tenant_id: this.tenantId,
+      // Caller-declared test traffic (plan 164): stamped only when the
+      // integration passed `test: true` at init — omitted otherwise.
+      ...(this.testTraffic ? { test: true } : {}),
     }));
 
     try {
