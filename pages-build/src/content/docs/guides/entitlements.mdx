@@ -94,6 +94,10 @@ function ExportButton() {
 
 <CodeExample client:only="react" code={gateCode} height={420} />
 
+:::caution[`<Gate>` must render inside a client boundary]
+In App-Router apps, `<Gate>` (and every SDK component/hook) must be used **inside a `'use client'` component**. The SDK creates its React context at module scope, so importing it from a Server Component fails the build with `createContext is not a function`. Keep the page shell a Server Component if you like — but the subtree that renders `<Gate>` needs the `'use client'` directive at its top. Server-side enforcement belongs to `checkEntitlement` on your API routes (see the client-vs-server section below), not to rendering `<Gate>` on the server.
+:::
+
 **A `<Gate>` is also a placement.** On denial the gate doesn't render hardcoded UI — it resolves a **placement** from your monetization config and renders it in place of the children. So *what a denied user sees* — the upgrade modal or banner, its headline, offer, and CTA — is authored in the studio (or the CLI config), not baked into your app. Your PM, growth, or marketing team can rewrite the denial copy, swap the offer, or A/B-test it with no code deploy. `surfaceTemplateIds` scopes which surface templates can fill the gate; `deniedFallback` is the static backstop shown only when no placement is configured for it.
 
 #### Live gate examples

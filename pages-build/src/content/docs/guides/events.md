@@ -177,6 +177,26 @@ Built-in triggers: `trial_started` · `trial_expiring` · `trial_expired` · `us
 Triggers are the primary way to activate message-type placements (toasts, banners, modals). Dashboard targeting rules reference them to decide when to show a placement.
 :::
 
+## Marking test traffic
+
+Set `test: true` at init when an SDK instance generates **test traffic** — a staging deploy, an integration test, a QA walkthrough:
+
+```ts
+const rt = initRevTurbine({
+  tenantId: 'your-tenant',
+  ingestPublicKey: 'pub_…',
+  test: true, // this instance's events are test traffic
+});
+```
+
+Every emitted event (clickstream and treatment interactions) is then stamped `test: true`, and RevTurbine analytics **exclude those events by default** from every metric, rollup, and denominator. An `include_test=1` toggle on the analytics pipes reveals them when you want to inspect test traffic.
+
+This is a deliberate, code-passed decision: pass it explicitly from your own configuration. The SDK never infers it from the environment — no `NODE_ENV` sniffing. Whether traffic is test traffic is your call, not a deployment artifact. Omitted or `false`, events are emitted unchanged (byte-identical to earlier SDK versions).
+
+:::note[Not the same as placement "Test Mode"]
+Placement **Test Mode** (`off / test_users / all_traffic` on a placement's settings) is a *server-side decisioning* control — it governs **who is eligible to see** a placement, and stamps its own marker on decision responses. The `test` init option is a *caller-declared* marker on **emitted events**. A production user in a placement's test audience is not test traffic; a staging deploy emitting real-looking events is. The two are independent.
+:::
+
 ## Privacy & delivery
 
 - **Redaction.** Email- and card-shaped values in properties and traits are scrubbed to `[REDACTED]` before any destination — one sanitized envelope, every mirror. Best-effort, not a guarantee: don't put PII in event data.
