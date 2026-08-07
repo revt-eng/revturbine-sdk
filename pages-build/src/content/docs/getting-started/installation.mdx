@@ -7,6 +7,14 @@ sidebar:
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
+## One-Command Setup
+
+```bash
+npx revturbine create
+```
+
+Scaffolds everything on this page in one step: detects your stack and package manager, installs `@revturbine/sdk`, pins `@revturbine/cli` into the repo, adds a starter Playbook (local mode, no account needed), and installs the Agent Skills. The sections below install each piece manually.
+
 ## Web SDK (React)
 
 ### Install
@@ -82,7 +90,7 @@ Both server SDKs are published — `@revturbine/sdk` (npm) and `revturbine` (PyP
 
 ## CLI
 
-The **`@revturbine/cli`** package manages your RevTurbine configuration (plans, entitlements, placements) and change sets from the terminal — verify, diff, upload, and deploy an `Playbook`.
+The **`@revturbine/cli`** package manages your RevTurbine configuration (plans, entitlements, placements) and change sets from the terminal — verify, diff, upload, and deploy a `Playbook`.
 
 ```bash
 npm install -g @revturbine/cli

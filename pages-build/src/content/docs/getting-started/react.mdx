@@ -20,7 +20,7 @@ import { useMemo } from 'react';
 
 export default function App() {
   const options = useMemo(() => ({
-    runtimeMode: RuntimeMode.LocalOnly, // evaluate the bundled playbook client-side; no network, no telemetry
+    runtimeMode: RuntimeMode.LocalOnly, // evaluate the bundled playbook client-side; no network calls for decisioning
     localRuntime: { playbook },
     user: {
       id: 'user_123',

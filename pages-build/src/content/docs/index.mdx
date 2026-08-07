@@ -11,7 +11,15 @@ It's **additive** — if RevTurbine is disconnected, misconfigured, or every pla
 
 ## 1. Install the CLI and SDK
 
-Two packages, both on the public npm registry — no auth token or registry config.
+**Fastest path — one command:**
+
+```bash
+npx revturbine create
+```
+
+`npx revturbine create` scaffolds RevTurbine into your app: it detects your package manager and stack, installs `@revturbine/sdk`, pins `@revturbine/cli` into the repo, adds a starter Playbook that runs in local mode with no account, and installs the Agent Skills — then points you at the `revturbine-start-here` skill, which walks the rest. If you start this way, skip to step 3 and register an account whenever you want hosted features.
+
+**Manual install** — two packages, both on the public npm registry; no auth token or registry config.
 
 - **`@revturbine/cli`** — manage your monetization config (plans, entitlements, placements) and change sets from the terminal.
 - **`@revturbine/sdk`** — render placements and check entitlements in your app.
@@ -45,7 +53,7 @@ Add the SDK to your React app:
 
 ## 2. Register a RevTurbine account
 
-Create an account in the studio, then connect the CLI to it.
+Create an account in the studio, then connect the CLI to it. Local mode stays free, and hosted is free through your first $20K/month in new revenue — see [pricing](https://revturbine.com/pricing).
 
 <Steps>
 
@@ -81,7 +89,7 @@ Wrap your app once, then add **slots** (where placements render) and **gates** (
 
 <Steps>
 
-1. **Wrap your app in `RevTurbineProvider`.** This example runs in `local_only` mode — no backend, no network calls — from an `playbook.json` you ship with your app (see step 4 for where it comes from).
+1. **Wrap your app in `RevTurbineProvider`.** This example runs in `local_only` mode — no backend and no network calls for decisioning — from a `playbook.json` you ship with your app (see step 4 for where it comes from).
 
     ```tsx title="src/App.tsx"
     import { RevTurbineProvider } from '@revturbine/sdk';
@@ -165,7 +173,7 @@ Your monetization model — **plans, entitlements, entitlement rules, segments, 
 
 <CardGrid>
   <Card title="RevTurbine UI (studio)" icon="laptop">
-    Edit visually at [**revturbine.com/app**](https://revturbine.com/app) — define plans, entitlements, targeting rules, and placements, preview their impact, and deploy. Export an `playbook.json` snapshot anytime for local mode.
+    Edit visually at [**revturbine.com/app**](https://revturbine.com/app) — define plans, entitlements, targeting rules, and placements, preview their impact, and deploy. Export a `playbook.json` snapshot anytime for local mode.
   </Card>
 
   <Card title="RevTurbine CLI + Agent" icon="setting">

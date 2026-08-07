@@ -33,7 +33,7 @@ An entitlement check that can't reach a decision denies, so an outage never leak
 
 ## Local-only limits
 
-In `local_only` mode the SDK evaluates entirely from the bundled Playbook — no network. That's great for tests and no-backend demos, but be aware:
+In `local_only` mode the SDK evaluates entirely from the bundled Playbook — no network for decisioning; the one exception is the anonymous `sdk_init` beacon described in the runtime modes guide (opt out with `anonymousTelemetry: false`). That's great for tests and no-backend demos, but be aware:
 
 - Usage is **client-reported and client-only** — not authoritative. Don't meter billing off it.
 - There are **no real-time config updates** — you ship a Playbook snapshot.
