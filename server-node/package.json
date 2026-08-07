@@ -6,10 +6,10 @@
   "engines": {
     "node": ">=22.13"
   },
-  "description": "RevTurbine Node.js server-side SDK — server evaluation, placement decisions, and entitlement checks.",
+  "description": "RevTurbine Node.js server-side SDK \u2014 server evaluation, placement decisions, and entitlement checks.",
   "main": "index.ts",
   "dependencies": {
-    "@revt-eng/schema": "0.1.153",
-    "@revt-eng/core": "0.1.153"
+    "@revt-eng/schema": "0.1.156",
+    "@revt-eng/core": "0.1.156"
   }
 }
