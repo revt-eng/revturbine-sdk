@@ -112,6 +112,7 @@ jobs:
         run: |
           ./node_modules/.bin/tsup
           ./node_modules/.bin/tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir dist/types
+          ./node_modules/.bin/rollup -c rollup.dts.config.mjs
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
