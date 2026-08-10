@@ -1918,6 +1918,13 @@ export class RevTurbineCustomerSdk {
   private readonly interactionQueue: RevTurbineTreatmentInteractionInput[] = [];
   private readonly defaultDecisionTtlMs = 60_000;
   private readonly defaultDismissCooldownMs = 24 * 60 * 60 * 1000;
+  /**
+   * Default dismiss cooldown window — 7 days, matching the engine's
+   * `cooldown_after_dismiss_days` default. Applied to `dismiss` and bare
+   * `cta_clicked` when the payload supplies no explicit `cooldown_ms`
+   * (plan 167 REQ-3 / Q-1). Replaces the legacy 24h dismiss window.
+   */
+  private readonly dismissCooldownDefaultMs = 7 * 24 * 60 * 60 * 1000;
   private readonly defaultRemindLaterMs = 60 * 60 * 1000;
   private readonly defaultUsageWarningPercent = 80;
   private readonly defaultTrialExpiringDays = 3;
@@ -4937,8 +4944,11 @@ export class RevTurbineCustomerSdk {
     };
 
     if (input.interactionType === 'dismiss') {
+      // Resolve from the payload's cooldown_after_dismiss_days (via cooldown_ms);
+      // default 7 days — NOT the legacy 24h. This window equals the one written
+      // to the impression history below, so the two stores agree (plan 167 AC-3).
       const cooldownMs = Number(metadata.cooldown_ms);
-      next.suppressedUntil = now + (Number.isFinite(cooldownMs) && cooldownMs > 0 ? cooldownMs : this.defaultDismissCooldownMs);
+      next.suppressedUntil = now + (Number.isFinite(cooldownMs) && cooldownMs > 0 ? cooldownMs : this.dismissCooldownDefaultMs);
     }
 
     if (input.interactionType === 'remind_me_later') {
@@ -4948,7 +4958,17 @@ export class RevTurbineCustomerSdk {
         : this.defaultRemindLaterMs);
     }
 
-    if (input.interactionType === 'cta_clicked' || input.interactionType === 'cta_completed') {
+    if (input.interactionType === 'cta_clicked') {
+      // Bare click — clicked but not confirmed complete (e.g. abandoned checkout).
+      // Treated as a dismiss cooldown; the placement may return (plan 167 Q-1).
+      const cooldownMs = Number(metadata.cooldown_ms);
+      next.suppressedUntil = now + (Number.isFinite(cooldownMs) && cooldownMs > 0 ? cooldownMs : this.dismissCooldownDefaultMs);
+    }
+
+    if (input.interactionType === 'cta_completed') {
+      // Confirmed conversion — permanent retirement is owned by the impression
+      // history (recordConversion). Keep a short transient window here to cover
+      // the in-flight action so it doesn't flicker back mid-conversion.
       next.suppressedUntil = now + 5 * 60 * 1000;
     }
 
@@ -5034,20 +5054,25 @@ export class RevTurbineCustomerSdk {
     this.interactionQueue.push(normalized);
     void this.flushInteractionQueue();
 
-    // Record interactions into the impression history.
-    // Dismissed and clicked placements are permanently retired.
-    // Suppressed placements are hidden for a configurable duration.
+    // Record interactions into the impression history (plan 167 Q-1):
+    // - dismiss / bare cta_clicked → time-boxed cooldown (re-shows after it).
+    // - cta_completed (confirmed conversion) → permanent retirement.
+    // - suppress → hidden for a configurable duration.
     const placementId = normalized.placementId;
     const treatmentId = normalized.treatmentId;
     const meta = normalized.metadata ?? {};
+    const dismissCooldownMs = Number(meta.cooldown_ms);
+    const resolvedCooldownMs =
+      Number.isFinite(dismissCooldownMs) && dismissCooldownMs > 0 ? dismissCooldownMs : undefined;
 
     if (normalized.interactionType === 'dismiss') {
-      void this.impressionHistory.recordDismissal(placementId, treatmentId);
-    } else if (
-      normalized.interactionType === 'cta_clicked' ||
-      normalized.interactionType === 'cta_completed'
-    ) {
-      void this.impressionHistory.recordClickThru(placementId, treatmentId);
+      void this.impressionHistory.recordDismissal(placementId, treatmentId, undefined, undefined, resolvedCooldownMs);
+    } else if (normalized.interactionType === 'cta_completed') {
+      // Confirmed conversion → permanent retirement.
+      void this.impressionHistory.recordConversion(placementId, treatmentId);
+    } else if (normalized.interactionType === 'cta_clicked') {
+      // Bare click → dismiss-style cooldown, not permanent.
+      void this.impressionHistory.recordClickThru(placementId, treatmentId, undefined, undefined, resolvedCooldownMs);
     } else if (normalized.interactionType === 'suppress') {
       const durationMs = Number(meta.suppress_duration_ms);
       void this.impressionHistory.recordSuppression(
@@ -5503,45 +5528,79 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
-   * Record a placement dismissal — the user explicitly closed it.
-   * The placement is permanently retired for this user; subsequent
-   * `getPlacementDecision` calls return `visible: false`.
+   * Record a placement dismissal — the user explicitly closed it ("No thanks").
+   * Time-boxed: the placement is hidden for the dismiss cooldown
+   * (`cooldown_after_dismiss_days`, default 7 days) and re-shows once it elapses
+   * (plan 167). NOT permanent — for a confirmed conversion use
+   * {@link recordConversion}.
    *
    * @param placementId - The placement's stable rule_id.
    * @param payloadId - Optional payload variant id.
    * @param surfaceTemplateId - Optional surface template id.
    * @param metadata - Optional metadata persisted with the record.
+   * @param cooldownMs - Optional explicit cooldown window (ms). Defaults to 7 days.
    */
   async recordDismissal(
     placementId: string,
     payloadId?: string,
     surfaceTemplateId?: string,
     metadata?: RevTurbineImpressionMetadata,
+    cooldownMs?: number,
   ): Promise<void> {
     await this.impressionHistory.recordDismissal(
       placementId,
       payloadId,
       surfaceTemplateId,
       metadata,
+      cooldownMs,
     );
   }
 
   /**
-   * Record a placement click-through — the user engaged with the CTA.
-   * The placement is permanently retired for this user.
+   * Record a bare placement click-through — the user clicked the CTA but did
+   * not confirm the conversion (e.g. abandoned checkout). Time-boxed like a
+   * dismiss; the placement may return (plan 167). For a confirmed conversion
+   * use {@link recordConversion}.
    *
    * @param placementId - The placement's stable rule_id.
    * @param payloadId - Optional payload variant id.
    * @param surfaceTemplateId - Optional surface template id.
    * @param metadata - Optional metadata persisted with the record.
+   * @param cooldownMs - Optional explicit cooldown window (ms). Defaults to 7 days.
    */
   async recordClickThru(
     placementId: string,
     payloadId?: string,
     surfaceTemplateId?: string,
     metadata?: RevTurbineImpressionMetadata,
+    cooldownMs?: number,
   ): Promise<void> {
     await this.impressionHistory.recordClickThru(
+      placementId,
+      payloadId,
+      surfaceTemplateId,
+      metadata,
+      cooldownMs,
+    );
+  }
+
+  /**
+   * Record a confirmed conversion — the user completed the CTA action. The
+   * placement is **permanently** retired for this user; subsequent
+   * `getPlacementDecision` calls return `visible: false` for good (plan 167).
+   *
+   * @param placementId - The placement's stable rule_id.
+   * @param payloadId - Optional payload variant id.
+   * @param surfaceTemplateId - Optional surface template id.
+   * @param metadata - Optional metadata persisted with the record.
+   */
+  async recordConversion(
+    placementId: string,
+    payloadId?: string,
+    surfaceTemplateId?: string,
+    metadata?: RevTurbineImpressionMetadata,
+  ): Promise<void> {
+    await this.impressionHistory.recordConversion(
       placementId,
       payloadId,
       surfaceTemplateId,

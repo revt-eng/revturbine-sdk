@@ -405,4 +405,79 @@ describe('BrowserRuntime', () => {
       expect(d3.visible).toBe(false);
     });
   });
+
+  describe('Dismiss is a cooldown, not permanent (plan 167)', () => {
+    const T0 = 1_700_000_000_000;
+    const DAY_MS = 24 * 60 * 60 * 1000;
+
+    function buildRuntime() {
+      const runtime = new BrowserRuntime({
+        tenantId: 'tenant_test',
+        userId: 'user_1',
+        exportedConfig: config,
+        providers: createStaticProviders({ config, planHandle: 'starter' }),
+        storage: new InMemoryStorage(),
+      });
+      return runtime;
+    }
+    const decide = (runtime: BrowserRuntime) =>
+      runtime.getPlacementDecision({ placementId: 'slot_upgrade', userId: 'user_1' });
+    const register = (runtime: BrowserRuntime) =>
+      runtime.registerPlacement({
+        id: 'slot_upgrade',
+        name: 'upgrade_banner',
+        route: '/',
+        metadata: {
+          surface_template_ids: ['banner_placement'],
+          entitlement_handle: 'feature_dashboard',
+        },
+      });
+
+    it('re-shows a dismissed placement after the 7-day dismiss cooldown elapses', async () => {
+      const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(T0);
+      try {
+        const runtime = buildRuntime();
+        await runtime.ready();
+        register(runtime);
+
+        expect((await decide(runtime)).visible).toBe(true);
+
+        runtime.trackInteraction({ userId: 'user_1', placementId: 'slot_upgrade', interactionType: 'dismiss' });
+        await Promise.resolve();
+
+        // Within the cooldown window: suppressed.
+        expect((await decide(runtime)).visible).toBe(false);
+
+        // Past the 7-day cooldown: eligible again — dismiss is NOT permanent.
+        nowSpy.mockReturnValue(T0 + 7 * DAY_MS + 60_000);
+        expect((await decide(runtime)).visible).toBe(true);
+      } finally {
+        nowSpy.mockRestore();
+      }
+    });
+
+    it('honors an explicit per-payload cooldown_ms shorter than the default', async () => {
+      const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(T0);
+      try {
+        const runtime = buildRuntime();
+        await runtime.ready();
+        register(runtime);
+
+        runtime.trackInteraction({
+          userId: 'user_1',
+          placementId: 'slot_upgrade',
+          interactionType: 'dismiss',
+          metadata: { cooldown_ms: DAY_MS },
+        });
+        await Promise.resolve();
+
+        expect((await decide(runtime)).visible).toBe(false);
+        // Just over one day (the explicit override), not seven.
+        nowSpy.mockReturnValue(T0 + DAY_MS + 60_000);
+        expect((await decide(runtime)).visible).toBe(true);
+      } finally {
+        nowSpy.mockRestore();
+      }
+    });
+  });
 });
