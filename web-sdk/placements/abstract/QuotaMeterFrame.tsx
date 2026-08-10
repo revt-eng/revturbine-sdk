@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import type { PlacementSlotProps, ResolvedContent } from '../types';

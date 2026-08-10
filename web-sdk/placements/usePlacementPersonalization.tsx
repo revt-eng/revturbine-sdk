@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useMemo, useState } from 'react';
 import { useRevTurbine } from '../react/useRevTurbine';
 import { derivePlacementPersonalizationTokens } from './token-derivation';

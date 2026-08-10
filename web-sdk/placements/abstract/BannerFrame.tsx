@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useCallback, useMemo, useState } from 'react';
 import type { PlacementSlotProps, ResolvedContent } from '../types';
 import { useRevTurbineTheme } from '../../theme/ThemeContext';

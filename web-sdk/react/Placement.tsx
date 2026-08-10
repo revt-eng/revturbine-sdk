@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { type RevTurbinePlacementDecisionOverrides, type RevTurbineContextMode, type RevTurbinePlacementConfig } from '../customer-side';
 import { usePlacement } from './usePlacement';

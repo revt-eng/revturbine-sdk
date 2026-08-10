@@ -1,3 +1,5 @@
+'use client';
+
 import type { CSSProperties } from 'react';
 import type { PlacementSlotProps, ResolvedContent } from '../types';
 import { useRevTurbineTheme } from '../../theme/ThemeContext';

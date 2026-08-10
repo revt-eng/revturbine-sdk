@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { PlacementOutput } from '../customer-side';
 import type {

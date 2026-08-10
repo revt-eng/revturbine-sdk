@@ -1,3 +1,5 @@
+'use client';
+
 import type { InlineEmbedSlotProps } from './InlineEmbedSlot';
 import { InlineEmbedSlot } from './InlineEmbedSlot';
 

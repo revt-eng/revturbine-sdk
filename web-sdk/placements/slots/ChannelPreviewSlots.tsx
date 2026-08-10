@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useMemo } from 'react';
 import type { PlacementSlotProps } from '../types';
 import { useRevTurbineTheme } from '../../theme/ThemeContext';
