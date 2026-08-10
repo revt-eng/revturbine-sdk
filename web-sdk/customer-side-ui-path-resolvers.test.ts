@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   RevTurbineCustomerSdk,
   defineUiPathResolvers,
@@ -9,9 +9,9 @@ import type { RevTurbineConfig } from '@revt-eng/schema';
 
 /**
  * Coverage for the `uiPathResolvers` validation surface — the init-time guard
- * (`assertUiPathResolverCoverageOrThrow`), the public `validateUiPathResolvers`
- * report API, and the `defineUiPathResolvers` / `sanitizeUiPathResolverMap`
- * authoring helpers. The CTA resolver *registry* (a different mechanism) is
+ * (`warnOnUiPathResolverCoverageGaps` — warns, never throws, per plan 174 Q-2),
+ * the public `validateUiPathResolvers` report API, and the
+ * `defineUiPathResolvers` / `sanitizeUiPathResolverMap` authoring helpers. The CTA resolver *registry* (a different mechanism) is
  * covered by `placements/cta-resolvers.test.ts`; this file does not touch it.
  *
  * Plan: docs/dev-lifecycle/inprogress/105-ui-path-resolver-test-coverage.md
@@ -157,21 +157,28 @@ describe('validateUiPathResolvers()', () => {
   });
 });
 
-describe('SDK init-time uiPathResolver coverage guard', () => {
-  it('throws when a content_ui_paths action_type has no resolver', () => {
-    expect(() => makeSdk([CHECKOUT])).toThrow(/open_checkout_modal/);
+describe('SDK init-time uiPathResolver coverage guard (warns, never throws — plan 174 Q-2)', () => {
+  it('warns naming the uncovered action_type and still constructs', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(() => makeSdk([CHECKOUT])).not.toThrow();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('open_checkout_modal'));
+    warn.mockRestore();
   });
 
-  it('throws when a content_ui_paths entry has a blank action_type', () => {
-    expect(() => makeSdk([{ id: 'u3', name: 'broken', action_type: '   ' }])).toThrow(
-      /missing action_type/,
-    );
+  it('warns about a blank action_type and still constructs', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(() => makeSdk([{ id: 'u3', name: 'broken', action_type: '   ' }])).not.toThrow();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('missing action_type'));
+    warn.mockRestore();
   });
 
-  it('constructs when every action_type is covered', () => {
+  it('constructs with no coverage warning when every action_type is covered', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(() =>
       makeSdk([CHECKOUT, PLANS], { open_checkout_modal: noop, navigate_to_plans: noop }),
     ).not.toThrow();
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('coverage gap'));
+    warn.mockRestore();
   });
 
   it('constructs with empty content_ui_paths and no resolvers', () => {

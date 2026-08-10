@@ -178,9 +178,13 @@ export function RevTurbineProvider({ options, bootstrapPlacements, domCapture, c
         if (!mounted) return;
         setSdk(nextSdk);
         setIsReady(true);
-      } catch {
+      } catch (error) {
         if (!mounted) return;
-        setError('Failed to initialize RevTurbine SDK provider.');
+        // Plan 174 TASK-4 (F-69b): propagate the cause — the constant string
+        // alone hid the real failure from useRevTurbine().error.
+        console.error('[RevTurbine] SDK provider initialization failed:', error);
+        const cause = error instanceof Error ? error.message : String(error);
+        setError(`Failed to initialize RevTurbine SDK provider: ${cause}`);
         setIsReady(false);
       }
     }

@@ -2051,7 +2051,7 @@ export class RevTurbineCustomerSdk {
         this.providerRegistry.register(p);
       }
     }
-    this.assertUiPathResolverCoverageOrThrow();
+    this.warnOnUiPathResolverCoverageGaps();
     // Plan 174 TASK-1 (F-70): init-supplied resolvers drive runtime CTA
     // dispatch; explicit registerCtaResolver() registrations keep precedence.
     this.unbridgeUiPathCtaResolvers = bridgeUiPathResolversIntoRegistry(this.uiPathResolvers);
@@ -5865,7 +5865,15 @@ export class RevTurbineCustomerSdk {
     return report;
   }
 
-  private assertUiPathResolverCoverageOrThrow(): void {
+  /**
+   * Init-time `uiPathResolvers` coverage check. A gap used to throw and take
+   * the whole app down for what is, in effect, an unwired button; per plan 174
+   * Q-2 (= plan 168 Q-2, decided 2026-08-10) it now warns and leaves the
+   * affected CTAs on the no-op path — the click is tracked and falls back to
+   * `onCtaClick`, nothing else happens. `validateUiPathResolvers({
+   * throwOnMissing: true })` remains the strict opt-in.
+   */
+  private warnOnUiPathResolverCoverageGaps(): void {
     const exportedConfig = this.getConfiguredExportedConfig();
     const uiPaths = isRecord(exportedConfig) && Array.isArray(exportedConfig.content_ui_paths)
       ? exportedConfig.content_ui_paths
@@ -5908,7 +5916,10 @@ export class RevTurbineCustomerSdk {
       details.push(`content_ui_paths with missing action_type: ${missingActionTypeCount}`);
     }
 
-    throw new Error(`[RevTurbine] SDK initialization failed: ${details.join('; ')}.`);
+    console.warn(
+      `[RevTurbine] uiPathResolvers coverage gap: ${details.join('; ')}. ` +
+        'Affected CTAs will track the click and fall back to onCtaClick until a resolver is supplied.',
+    );
   }
 
   // Plan 144 TASK-10 — `placement_interaction` is the ONE canonical placement

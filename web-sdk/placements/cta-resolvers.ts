@@ -97,8 +97,8 @@ export function unregisterCtaResolver(type: string): boolean {
 /**
  * Bridge an SDK-init `uiPathResolvers` map into a {@link CtaResolverRegistry}
  * so resolvers supplied at init actually dispatch on CTA clicks (plan 174
- * TASK-1 / F-70). Called by the SDK constructor after init-time coverage
- * validation succeeds.
+ * TASK-1 / F-70). Called by the SDK constructor after the init-time coverage
+ * check runs.
  *
  * Explicit registrations take precedence: an action type already present in
  * the registry (via {@link registerCtaResolver} or a direct `register`) is
