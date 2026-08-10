@@ -117,6 +117,7 @@ import {
 } from './config-artifact';
 import { PlacementTypeRegistry } from './placements/registry';
 import { registerBuiltinSlotTypes } from './placements/builtin';
+import { bridgeUiPathResolversIntoRegistry } from './placements/cta-resolvers';
 import {
   resolveRecommendedPlanTokens,
   type RecommendationStrategy,
@@ -1909,6 +1910,7 @@ export class RevTurbineCustomerSdk {
   private readonly placementBehavior: RevTurbinePlacementBehaviorFlags;
   private readonly providerFailureSlotBehavior: RevTurbineProviderFailureSlotBehavior;
   private readonly uiPathResolvers: RevTurbineUiPathResolverMap;
+  private unbridgeUiPathCtaResolvers: () => void = () => {};
   private readonly persistentStore: RevTurbineStorage;
   private readonly sessionStore: RevTurbineStorage;
   private readonly anonymousId: string;
@@ -2037,6 +2039,9 @@ export class RevTurbineCustomerSdk {
       }
     }
     this.assertUiPathResolverCoverageOrThrow();
+    // Plan 174 TASK-1 (F-70): init-supplied resolvers drive runtime CTA
+    // dispatch; explicit registerCtaResolver() registrations keep precedence.
+    this.unbridgeUiPathCtaResolvers = bridgeUiPathResolversIntoRegistry(this.uiPathResolvers);
     this.hydrateDecisionCache();
     this.hydrateInteractionState();
     this.hydratePresentationCaps();
@@ -4227,6 +4232,7 @@ export class RevTurbineCustomerSdk {
    * instance (e.g. SPA unmount) to avoid a dangling interval/listeners.
    */
   dispose(): void {
+    this.unbridgeUiPathCtaResolvers();
     if (this.flushTimer !== undefined) {
       clearInterval(this.flushTimer);
       this.flushTimer = undefined;

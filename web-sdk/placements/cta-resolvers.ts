@@ -1,3 +1,4 @@
+import type { JsonObject } from '../customer-side';
 import type { CtaResolver, CtaResolverContext, PlacementUiPath } from './types';
 
 /**
@@ -91,6 +92,50 @@ export function registerCtaResolver(type: string, resolver: CtaResolver): void {
  */
 export function unregisterCtaResolver(type: string): boolean {
   return getDefaultCtaResolverRegistry().unregister(type);
+}
+
+/**
+ * Bridge an SDK-init `uiPathResolvers` map into a {@link CtaResolverRegistry}
+ * so resolvers supplied at init actually dispatch on CTA clicks (plan 174
+ * TASK-1 / F-70). Called by the SDK constructor after init-time coverage
+ * validation succeeds.
+ *
+ * Explicit registrations take precedence: an action type already present in
+ * the registry (via {@link registerCtaResolver} or a direct `register`) is
+ * left untouched, and a later explicit registration replaces the bridged
+ * entry through the registry's normal override semantics. Each bridged
+ * resolver receives the placement's raw authored `cta_path` record — the same
+ * shape init-time validation checked. A rejected async resolver is logged,
+ * never thrown into the click handler.
+ *
+ * Returns a cleanup function that unregisters exactly the entries this call
+ * bridged, skipping any the customer has since replaced.
+ */
+export function bridgeUiPathResolversIntoRegistry(
+  resolvers: Record<string, (uiPath: JsonObject) => void | Promise<void>>,
+  registry: CtaResolverRegistry = getDefaultCtaResolverRegistry(),
+): () => void {
+  const bridged = new Map<string, CtaResolver>();
+  for (const [type, resolver] of Object.entries(resolvers)) {
+    if (registry.has(type)) continue;
+    const wrapped: CtaResolver = (_uiPath, context) => {
+      const raw = context.placement.cta_path ?? context.placement.ui_path ?? {};
+      void Promise.resolve()
+        .then(() => resolver(raw as JsonObject)) // sdk-ok: boundary-parse — authored cta_path record
+        .catch((error) => {
+          console.error(`[RevTurbine] uiPathResolvers.${type} failed:`, error);
+        });
+    };
+    registry.register(type, wrapped);
+    bridged.set(type, wrapped);
+  }
+  return () => {
+    for (const [type, wrapped] of bridged) {
+      if (registry.get(type) === wrapped) {
+        registry.unregister(type);
+      }
+    }
+  };
 }
 
 /**
