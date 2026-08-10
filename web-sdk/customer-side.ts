@@ -470,7 +470,15 @@ export interface RevTurbineContextPolicy {
 /**
  * Feature flags for placement pipeline behavior that may alter decision semantics.
  *
- * All flags default to `false` to preserve backward compatibility.
+ * Each flag defaults to what the loaded Playbook authors (plan 174 TASK-2 /
+ * F-72): authored payload caps (`caps.max_per_period` / `caps.cooldown_days`
+ * or a `remind_later_minutes` window) turn on client caps enforcement; a
+ * `gated`-category placement turns on auto gated placement; a
+ * `trials`-category placement turns on trial auto-triggers. A Playbook that
+ * authors none of these leaves every flag `false` — existing integrations
+ * whose config authors nothing are unchanged. An explicit
+ * {@link RevTurbineInitOptions.placementBehavior} value (true or false)
+ * always overrides the derived default.
  */
 export interface RevTurbinePlacementBehaviorFlags {
   /** Enable client-side payload cap enforcement (max-per-period + cooldown precedence). */
@@ -761,10 +769,13 @@ export interface RevTurbineInitOptions {
   page?: RevTurbinePageContext;
   contextPolicy?: RevTurbineContextPolicy;
   /**
-   * Opt-in flags for placement decision behavior changes.
+   * Explicit overrides for placement decision behavior flags.
    *
-   * Defaults are conservative (`false`) so existing integrations do not change behavior
-   * until explicitly enabled.
+   * When omitted, each flag derives from what the loaded Playbook authors —
+   * caps authored → enforcement on; gated placements authored → auto-gating
+   * on; trial placements authored → trial triggers on (plan 174 TASK-2 /
+   * F-72). Set a flag here (true or false) to pin it regardless of the
+   * Playbook.
    */
   placementBehavior?: Partial<RevTurbinePlacementBehaviorFlags>;
   extension?: {
@@ -1907,7 +1918,11 @@ export class RevTurbineCustomerSdk {
   private readonly mode: RevTurbineSdkMode;
   private readonly policy: Required<RevTurbineContextPolicy>;
   private readonly extensionEnabled: boolean;
-  private readonly placementBehavior: RevTurbinePlacementBehaviorFlags;
+  private readonly placementBehaviorOverrides: Partial<RevTurbinePlacementBehaviorFlags>;
+  private derivedPlacementBehaviorMemo: {
+    config: RevTurbineConfig | undefined;
+    flags: RevTurbinePlacementBehaviorFlags;
+  } | null = null;
   private readonly providerFailureSlotBehavior: RevTurbineProviderFailureSlotBehavior;
   private readonly uiPathResolvers: RevTurbineUiPathResolverMap;
   private unbridgeUiPathCtaResolvers: () => void = () => {};
@@ -2002,11 +2017,9 @@ export class RevTurbineCustomerSdk {
       routerAutoTrack: options.contextPolicy?.routerAutoTrack ?? true,
     };
     this.extensionEnabled = Boolean(options.extension?.enabled);
-    this.placementBehavior = {
-      enableClientCapsEnforcement: options.placementBehavior?.enableClientCapsEnforcement ?? false,
-      enableAutoGatedPlacement: options.placementBehavior?.enableAutoGatedPlacement ?? false,
-      enableTrialAutoTriggers: options.placementBehavior?.enableTrialAutoTriggers ?? false,
-    };
+    // Plan 174 TASK-2 (F-72): flags derive from the loaded Playbook at read
+    // time (see the placementBehavior getter); only explicit options pin them.
+    this.placementBehaviorOverrides = { ...options.placementBehavior };
     this.providerFailureSlotBehavior = options.providerFailureSlotBehavior ?? 'invisible';
     this.uiPathResolvers = sanitizeUiPathResolverMap(options.uiPathResolvers, 'RevTurbineInitOptions.uiPathResolvers');
     this.persistentStore = resolvePersistentStorage(options.persistentStorage);
@@ -2136,6 +2149,50 @@ export class RevTurbineCustomerSdk {
 
   private getConfiguredExportedConfig(): RevTurbineConfig | undefined {
     return this.configProvider?.getExportedConfig();
+  }
+
+  /**
+   * Effective placement-behavior flags: an explicit init override wins;
+   * otherwise each flag derives from what the loaded Playbook authors
+   * (plan 174 TASK-2 / F-72). Resolved at read time so hosted modes pick up
+   * the derivation once the config snapshot loads — every consumer reads
+   * through this one resolver.
+   */
+  private get placementBehavior(): RevTurbinePlacementBehaviorFlags {
+    const derived = this.derivePlacementBehaviorFromPlaybook();
+    return {
+      enableClientCapsEnforcement:
+        this.placementBehaviorOverrides.enableClientCapsEnforcement ?? derived.enableClientCapsEnforcement,
+      enableAutoGatedPlacement:
+        this.placementBehaviorOverrides.enableAutoGatedPlacement ?? derived.enableAutoGatedPlacement,
+      enableTrialAutoTriggers:
+        this.placementBehaviorOverrides.enableTrialAutoTriggers ?? derived.enableTrialAutoTriggers,
+    };
+  }
+
+  private derivePlacementBehaviorFromPlaybook(): RevTurbinePlacementBehaviorFlags {
+    const config = this.getConfiguredExportedConfig();
+    if (this.derivedPlacementBehaviorMemo && this.derivedPlacementBehaviorMemo.config === config) {
+      return this.derivedPlacementBehaviorMemo.flags;
+    }
+    const placements = config?.placements ?? [];
+    const authoredPayloads = [
+      ...placements.flatMap((placement) => placement.payloads ?? []),
+      ...(config?.placement_payloads ?? []),
+    ];
+    const hasAuthoredCaps = authoredPayloads.some(
+      (payload) =>
+        payload.caps?.max_per_period !== undefined ||
+        payload.caps?.cooldown_days !== undefined ||
+        (payload.remind_later_minutes !== undefined && payload.remind_later_minutes !== null),
+    );
+    const flags: RevTurbinePlacementBehaviorFlags = {
+      enableClientCapsEnforcement: hasAuthoredCaps,
+      enableAutoGatedPlacement: placements.some((placement) => placement.category === 'gated'),
+      enableTrialAutoTriggers: placements.some((placement) => placement.category === 'trials'),
+    };
+    this.derivedPlacementBehaviorMemo = { config, flags };
+    return flags;
   }
 
   private rebuildSegmentPredicateFieldIndex(): void {
