@@ -49,6 +49,8 @@ import type {
   JsonObject,
   PredicateEvaluationResult,
 } from '@revt-eng/core';
+// Plan 160 TASK-5: decode the compact `.rvtb` bundle client-side in Server mode.
+import { BundleHandle } from '@revt-eng/core/bundle';
 import {
   ImpressionHistory,
   StorageImpressionStore,
@@ -100,7 +102,6 @@ import {
   interactionStateKey as coreInteractionStateKey,
   suppressionForState as coreSuppression,
   deriveLocalEntitlementFromConfiguredRules as coreDeriveLocalEntitlement,
-  normalizeEntitlementResult as coreNormalizeEntitlementResult,
   usageThresholdForEntitlement as coreUsageThreshold,
   evaluateUsageThresholdCrossings as coreEvaluateUsageCrossings,
   deriveTrialTriggerStage as coreDeriveTrialStage,
@@ -165,8 +166,10 @@ export type RevTurbineInitWithProviderOptions = RevTurbineInitOptions & RevTurbi
 /**
  * Minimal initialization options for local-only mode.
  *
- * When `localRuntime.exportedConfig` is provided, core transport options can be
- * omitted and the SDK will inject safe local defaults.
+ * When `localRuntime.playbook` (or the deprecated `exportedConfig` alias) is
+ * provided, core transport options can be omitted and the SDK will inject
+ * safe local defaults. `playbook` is the canonical key; the runtime resolves
+ * both through {@link resolveLocalPlaybook}.
  */
 export type RevTurbineLocalOnlyMinimalInitOptions = Omit<
   RevTurbineInitOptions,
@@ -177,16 +180,22 @@ export type RevTurbineLocalOnlyMinimalInitOptions = Omit<
   endpoint?: string;
   mode?: RevTurbineSdkMode;
   runtimeMode?: 'local_only';
-  localRuntime: RevTurbineLocalRuntimeOptions & {
-    exportedConfig: ConfigArtifact;
-  };
+  localRuntime: RevTurbineLocalRuntimeOptions &
+    (
+      | { playbook: ConfigArtifact }
+      | {
+          /** @deprecated Use `playbook` — the canonical key for the same artifact. */
+          exportedConfig: ConfigArtifact;
+        }
+    );
 };
 
 /**
  * Public SDK initialization input.
  *
  * Accepts either full options for any runtime mode, or local-only minimal
- * options when `localRuntime.exportedConfig` is provided.
+ * options when `localRuntime.playbook` (or the deprecated `exportedConfig`
+ * alias) is provided.
  */
 export type RevTurbineInitInputOptions =
   | RevTurbineInitWithProviderOptions
@@ -543,7 +552,7 @@ export interface RevTurbineUiPathResolverValidationReport {
 }
 
 export interface RevTurbineUiPathResolverValidationOptions {
-  /** Optional explicit UI path definitions to validate. Defaults to exportedConfig.content_ui_paths. */
+  /** Optional explicit UI path definitions to validate. Defaults to the local Playbook's content_ui_paths. */
   uiPaths?: ContentUiPath[];
   /** Additional action resolver map to validate against for this invocation. */
   resolvers?: RevTurbineUiPathResolverMap;
@@ -556,7 +565,7 @@ export interface RevTurbineUiPathResolverValidationOptions {
 /**
  * Provider abstraction for RevTurbineConfig access inside the SDK.
  *
- * Local mode typically uses a static provider backed by `localRuntime.exportedConfig`.
+ * Local mode typically uses a static provider backed by `localRuntime.playbook` (or its deprecated `exportedConfig` alias).
  * Other modes can provide custom or REST-backed resolvers via `refresh()`.
  */
 export interface RevTurbineConfigProvider {
@@ -638,6 +647,23 @@ export interface RevTurbineInitOptions {
    * `'default'` when omitted.
    */
   environmentId?: string;
+  /**
+   * Test-traffic marker (plan 164).
+   *
+   * Set to `true` when this SDK instance generates **test traffic** — a
+   * staging deploy, an integration test, a QA walkthrough. Every emitted
+   * event (clickstream via `POST /api/track` and treatment interactions via
+   * `POST /api/events/interactions`) is then stamped `test: true`, and
+   * RevTurbine analytics **exclude those events by default** from every
+   * metric, rollup, and denominator; an `include_test` toggle reveals them.
+   *
+   * This is a deliberate, code-passed decision: pass it explicitly from your
+   * own configuration. The SDK never infers it from the environment (no
+   * `NODE_ENV` sniffing) — whether traffic is test traffic is your call, not
+   * a deployment artifact. Off by default (`false`); omitted or `false`
+   * emits events unchanged.
+   */
+  test?: boolean;
   /**
    * Analytics/clickstream telemetry opt-out.
    *
@@ -1694,6 +1720,75 @@ class StaticExportedConfigProvider implements RuntimeConfigProvider {
   }
 }
 
+/**
+ * Server-mode launched-config provider (plan 159). Fetches the tenant's active
+ * launched Playbook from the control plane (`GET /api/sdk/config`) so the SDK
+ * can evaluate entitlements LOCALLY in Server mode — the integrator never
+ * passes the Playbook. Polled with `refresh()` (TTL-gated, ETag revalidation)
+ * so a new release is picked up without a per-check round-trip. Authenticated
+ * with the public ingest token (the same key as `/api/track`); the launched
+ * Playbook carries no per-user/PII data (that is `/api/sdk/client-context`).
+ */
+class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
+  private cached?: RevTurbineConfig;
+  private etag?: string;
+  private lastFetchedAt = 0;
+  private static readonly REFRESH_TTL_MS = 60_000;
+
+  constructor(
+    private readonly endpoint: string,
+    private readonly tenantId: string,
+    private readonly token: string,
+    private readonly legacyTargetDefaults: LegacyConfigTargetDefaults,
+  ) {}
+
+  getExportedConfig(): RevTurbineConfig | undefined {
+    return this.cached;
+  }
+
+  async refresh(): Promise<RevTurbineConfig | undefined> {
+    const now = Date.now();
+    // Poll no more than once per TTL — a launched Playbook is immutable per
+    // version, so intra-TTL re-fetching only wastes requests.
+    if (this.cached && now - this.lastFetchedAt < ServerLaunchedConfigProvider.REFRESH_TTL_MS) {
+      return this.cached;
+    }
+    try {
+      const response = await fetch(`${this.endpoint}/api/sdk/config`, {
+        method: 'GET',
+        headers: {
+          // Prefer the compact `.rvtb` bundle (plan 160); fall back to JSON so an
+          // older control plane that ignores the header still serves a usable body.
+          accept: 'application/octet-stream, application/json',
+          authorization: `Bearer ${this.token}`,
+          'x-tenant-id': this.tenantId,
+          ...(this.etag ? { 'if-none-match': this.etag } : {}),
+        },
+      });
+      this.lastFetchedAt = now;
+      // 304 (unchanged) or any non-2xx: keep the last-known-good config. A
+      // caller with no config at all fails closed at the check site.
+      if (response.status === 304 || !response.ok) return this.cached;
+      // Content negotiation: an octet-stream body is the compact bundle — decode
+      // it client-side to the launched Playbook (BundleHandle.toPlaybook), the
+      // same shape the JSON path yields. Anything else is JSON.
+      const contentType = response.headers.get('content-type') ?? '';
+      const raw = contentType.includes('application/octet-stream')
+        ? new BundleHandle(new Uint8Array(await response.arrayBuffer())).toPlaybook()
+        : await response.json();
+      const next = configArtifactForRuntime(raw, 'GET /api/sdk/config', this.legacyTargetDefaults);
+      if (next) {
+        this.cached = next;
+        this.etag = response.headers.get('etag') ?? undefined;
+      }
+      return this.cached;
+    } catch {
+      // Network/parse failure — keep last-known-good; never throw.
+      return this.cached;
+    }
+  }
+}
+
 class ResolverBackedExportedConfigProvider implements RuntimeConfigProvider {
   private cached?: RevTurbineConfig;
   private readonly resolver: () => ConfigArtifact | Promise<ConfigArtifact>;
@@ -1786,6 +1881,9 @@ export class RevTurbineCustomerSdk {
   private readonly apiKey: string;
   private readonly ingestPublicKey?: string;
   private readonly environmentId: string;
+  // Caller-declared test traffic (plan 164) — stamps `test: true` on every
+  // emitted event; analytics default-exclude those rows.
+  private readonly testTraffic: boolean;
   private readonly analyticsEnabled: boolean;
   private readonly anonymousTelemetryEnabled: boolean;
   // Preview/example render (docs, playground) — suppresses the keyless init beacon.
@@ -1853,7 +1951,12 @@ export class RevTurbineCustomerSdk {
   private readonly configProvider?: RuntimeConfigProvider;
   private readonly branding?: BrandingConfig;
   private readonly apiBranding?: BrandingConfig;
-  private readonly defaultLocalPlacementDecisionResolver?: NonNullable<RevTurbineLocalRuntimeResolvers['getPlacementDecision']>;
+  // Lazily (re)built config-driven placement resolver (plan 159 TASK-4).
+  // Cached BY CONFIG REFERENCE: Server mode fetches/revalidates the config
+  // asynchronously, so a constructor-time build would be permanently stale —
+  // the cache invalidates whenever configProvider hands back a new object.
+  private cachedPlacementResolver?: NonNullable<RevTurbineLocalRuntimeResolvers['getPlacementDecision']>;
+  private cachedPlacementResolverConfig?: RevTurbineConfig;
   private sdkDisabledByProviderFailure = false;
   private sdkDisabledReason?: string;
   readonly providerRegistry: DomainProviderRegistry;
@@ -1865,6 +1968,7 @@ export class RevTurbineCustomerSdk {
     this.apiKey = options.apiKey;
     this.ingestPublicKey = options.ingestPublicKey;
     this.environmentId = options.environmentId?.trim() || 'default';
+    this.testTraffic = options.test === true;
     this.analyticsEnabled = options.analytics !== false;
     this.anonymousTelemetryEnabled = options.anonymousTelemetry !== false;
     this.previewMode = options.previewMode === true;
@@ -1920,7 +2024,6 @@ export class RevTurbineCustomerSdk {
       userId: this.userContext.id ?? this.anonymousId,
     });
     registerBuiltinSlotTypes(this.placementTypeRegistry);
-    this.defaultLocalPlacementDecisionResolver = this.buildDefaultLocalPlacementDecisionResolver();
     if (options.domainProviders) {
       for (const p of options.domainProviders) {
         this.providerRegistry.register(p);
@@ -1994,6 +2097,19 @@ export class RevTurbineCustomerSdk {
       return new StaticExportedConfigProvider(initialConfig);
     }
 
+    // Server mode with no customer-supplied config: fetch the launched Playbook
+    // from the control-plane cache (plan 159) so entitlements evaluate locally.
+    const runtimeMode = options.runtimeMode ?? RuntimeMode.Server;
+    const configToken = options.ingestPublicKey ?? options.apiKey;
+    if (runtimeMode !== RuntimeMode.LocalOnly && options.endpoint && configToken) {
+      return new ServerLaunchedConfigProvider(
+        options.endpoint,
+        options.tenantId,
+        configToken,
+        legacyTargetDefaults,
+      );
+    }
+
     return undefined;
   }
 
@@ -2033,23 +2149,38 @@ export class RevTurbineCustomerSdk {
     this.markAllSegmentsDirty();
   }
 
-  private buildDefaultLocalPlacementDecisionResolver(): RevTurbineLocalRuntimeResolvers['getPlacementDecision'] | undefined {
-    if (!this.isLocalOnlyMode()) return undefined;
-    if (this.localRuntime?.resolvers?.getPlacementDecision) return undefined;
-
+  /**
+   * The config-driven placement resolver (core `createStaticPlacementResolver`
+   * — the parity-locked engine behind every local_only/demo render), now
+   * available in EVERY mode once a config is present (plan 159 TASK-4 / Q-4):
+   * in Server mode the config arrives via the plan-159 fetch, so the resolver
+   * is built lazily and rebuilt whenever the provider hands back a new config
+   * object (revalidation). A custom `localRuntime.resolvers` override still
+   * wins in local_only. Returns undefined only while no config is available —
+   * callers fail closed with a distinct reason, mirroring TASK-3's
+   * checkEntitlement contract.
+   */
+  private getOrBuildPlacementResolver(): NonNullable<RevTurbineLocalRuntimeResolvers['getPlacementDecision']> | undefined {
+    if (this.localRuntime?.resolvers?.getPlacementDecision) {
+      return this.localRuntime.resolvers.getPlacementDecision;
+    }
     const exportedConfig = this.getConfiguredExportedConfig();
+    if (!exportedConfig) return undefined;
+    if (this.cachedPlacementResolver && this.cachedPlacementResolverConfig === exportedConfig) {
+      return this.cachedPlacementResolver;
+    }
     const placements = this.localRuntime?.placements
-      ?? (Array.isArray(exportedConfig?.placements)
+      ?? (Array.isArray(exportedConfig.placements)
         ? { placements: exportedConfig.placements }
         : undefined);
-
-    if (!exportedConfig || !placements) return undefined;
-
-    return createStaticPlacementResolver({
+    if (!placements) return undefined;
+    this.cachedPlacementResolver = createStaticPlacementResolver({
       placements,
       exportedConfig,
       impressionHistory: this.impressionHistory,
     });
+    this.cachedPlacementResolverConfig = exportedConfig;
+    return this.cachedPlacementResolver;
   }
 
   /**
@@ -3863,6 +3994,10 @@ export class RevTurbineCustomerSdk {
         event_id: eventIds.next(),
         request_id: requestId(),
         tenant_id: event.tenant_id,
+        // Caller-declared test traffic (plan 164): stamped only when the
+        // integration passed `test: true` at init — omitted otherwise, so a
+        // production instance's wire shape is unchanged.
+        ...(this.testTraffic ? { test: true } : {}),
       };
     });
 
@@ -4653,21 +4788,21 @@ export class RevTurbineCustomerSdk {
       };
     }
 
-    let legacyCtx: JsonObject | undefined;
-    let providerCtx: Awaited<ReturnType<DomainProviderRegistry['resolveAll']>> | undefined;
     let runtimeContextFingerprint: string | undefined;
 
-    if (this.isLocalOnlyMode()) {
-      legacyCtx = await this.localRuntime?.getContext?.();
-      providerCtx = this.providerRegistry.size > 0
-        ? await this.providerRegistry.resolveAll()
-        : this.synthesizeProviderContext();
-      if (legacyCtx || providerCtx) {
-        runtimeContextFingerprint = this.stableStringify({
-          legacyCtx: legacyCtx ?? {},
-          providerCtx: providerCtx ?? {},
-        });
-      }
+    // Context synthesis runs in EVERY mode now (plan 159 TASK-4): the static
+    // resolver needs plan/usage provider context whether the config came from
+    // localRuntime or the Server-mode fetch. `getContext` stays localRuntime-
+    // specific.
+    const legacyCtx = await this.localRuntime?.getContext?.();
+    const providerCtx = this.providerRegistry.size > 0
+      ? await this.providerRegistry.resolveAll()
+      : this.synthesizeProviderContext();
+    if (legacyCtx || providerCtx) {
+      runtimeContextFingerprint = this.stableStringify({
+        legacyCtx: legacyCtx ?? {},
+        providerCtx: providerCtx ?? {},
+      });
     }
 
     const key = this.decisionCacheKey(input, runtimeContextFingerprint);
@@ -4680,9 +4815,8 @@ export class RevTurbineCustomerSdk {
       return this.gateDecisionByCaps(cached, { tick: false });
     }
 
-    if (this.isLocalOnlyMode()) {
-      const resolver = this.localRuntime?.resolvers?.getPlacementDecision
-        ?? this.defaultLocalPlacementDecisionResolver;
+    {
+      const resolver = this.getOrBuildPlacementResolver();
       if (resolver) {
         const ctx = {
           ...legacyCtx,
@@ -4704,73 +4838,30 @@ export class RevTurbineCustomerSdk {
       }
     }
 
-    try {
-      const response = await fetch(this.endpointFor('decideContext', '/api/sdk/decide-context'), {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${this.apiKey}`,
-          'x-tenant-id': this.tenantId,
-          'x-request-id': rid,
-        },
-        body: JSON.stringify({
-          request_id: rid,
-          tenant_id: this.tenantId,
-          placement_id: input.placementId,
-          user_id: input.userId,
-          context_mode: input.contextMode ?? 'auto',
-          overrides: input.overrides
-            ? {
-              segment_id: input.overrides.segmentId,
-              plan_id: input.overrides.planId,
-              usage: input.overrides.usage?.map((item) => ({
-                entitlement_id: item.entitlementId,
-                meter_id: item.meterId,
-                used: item.used,
-              })),
-            }
-            : undefined,
-          traits: input.traits,
-          context: {
-            user: this.userContext,
-            page: this.pageContext,
-            placement,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`decide-context failed: ${response.status}`);
-      }
-
-      const payload = await response.json();
-      const decision = this.gateDecisionByCaps(
-        this.normalizeDecisionFromResponse(input.placementId, rid, placement.name, payload),
-      );
-      this.writeDecisionCache(key, decision, input.ttlMs);
-      this.localDecisionsByPlacementId.set(input.placementId, decision);
-      this.persistLocalRuntimeState();
-      return decision;
-    } catch {
-      const fallbackContent = await this.getPlacementContent(input.placementId, {
-        user_id: input.userId,
-        context_mode: input.contextMode ?? 'auto',
-        overrides: input.overrides as unknown as JsonValue, // sdk-ok: boundary-parse
-        traits: input.traits as unknown as JsonValue, // sdk-ok: boundary-parse
-      });
-      const fallbackDecision: RevTurbinePlacementDecision = {
-        placementId: input.placementId,
-        requestId: fallbackContent.requestId,
-        visible: true,
-        decisionSource: 'fallback',
-        reasonCodes: ['fallback_content'],
-        content: fallbackContent.content,
-      };
-      this.writeDecisionCache(key, fallbackDecision, input.ttlMs);
-      this.localDecisionsByPlacementId.set(input.placementId, fallbackDecision);
-      this.persistLocalRuntimeState();
-      return fallbackDecision;
-    }
+    // No config yet (Server mode before the plan-159 fetch lands, or a
+    // configless init): FAIL CLOSED with a distinct reason — the remote
+    // per-decision path (/api/sdk/decide-context) is retired per Q-2/Q-4,
+    // exactly as TASK-3 retired check-entitlement. The next call after the
+    // config arrives resolves locally via getOrBuildPlacementResolver().
+    const configUnavailable: RevTurbinePlacementDecision = {
+      placementId: input.placementId,
+      requestId: rid,
+      visible: false,
+      decisionSource: 'fallback',
+      reasonCodes: ['config_unavailable'],
+      suppressionReason: 'config_unavailable',
+      content: decisionContent(
+        `${placement.name} unavailable`,
+        'Playbook config not yet available; placement decisions resolve locally once it loads.',
+        'Continue',
+      ),
+    };
+    // Kick the plan-159 config fetch so the NEXT call resolves locally
+    // (fire-and-forget — this call still fails closed deterministically).
+    void this.refreshExportedConfigSnapshot();
+    // Deliberately NOT cached: the config may arrive milliseconds later and
+    // a cached fail-closed decision would mask it for the TTL window.
+    return configUnavailable;
   }
 
   async preloadPlacementDecisions(inputs: RevTurbinePlacementDecisionInput[]): Promise<void> {
@@ -4817,74 +4908,16 @@ export class RevTurbineCustomerSdk {
       });
     }
 
+    // Plan 159 TASK-4: the batch bootstrap-context POST is retired with the
+    // rest of the remote decision path. Every grouped input routes through
+    // getPlacementDecision, which resolves locally against the config (or
+    // fails closed with `config_unavailable` until the fetch lands) — the
+    // grouping still deduplicates identical (user, context) requests.
     for (const group of grouped.values()) {
-      if (group.placementIds.length <= 1) {
-        const single = inputs.find((item) => item.placementId === group.placementIds[0] && item.userId === group.userId);
-        if (single) {
-          await this.getPlacementDecision(single);
-        }
-        continue;
-      }
-
-      const rid = requestId();
-      try {
-        const response = await fetch(this.endpointFor('bootstrapContext', '/api/sdk/bootstrap-context'), {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            authorization: `Bearer ${this.apiKey}`,
-            'x-tenant-id': this.tenantId,
-            'x-request-id': rid,
-          },
-          body: JSON.stringify({
-            request_id: rid,
-            tenant_id: this.tenantId,
-            user_id: group.userId,
-            context_mode: group.contextMode ?? 'auto',
-            overrides: group.overrides
-              ? {
-                segment_id: group.overrides.segmentId,
-                plan_id: group.overrides.planId,
-                usage: group.overrides.usage?.map((item) => ({
-                  entitlement_id: item.entitlementId,
-                  meter_id: item.meterId,
-                  used: item.used,
-                })),
-              }
-              : undefined,
-            traits: group.traits,
-            placements: group.placementIds.map((placementId) => ({ placement_id: placementId })),
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`bootstrap-context failed: ${response.status}`);
-        }
-
-        const payload = await response.json();
-        const items = isRecord(payload) && Array.isArray(payload.decisions) ? payload.decisions : [];
-        for (const item of items) {
-          if (!isRecord(item)) continue;
-          const placementId = typeof item.placement_id === 'string' ? item.placement_id : '';
-          const result = isRecord(item.result) ? item.result : null;
-          const placement = this.placements.get(placementId);
-          if (!placement || !result) continue;
-          const decision = this.normalizeDecisionFromResponse(placementId, rid, placement.name, result);
-          const cacheKey = this.decisionCacheKey({
-            placementId,
-            userId: group.userId,
-            contextMode: group.contextMode,
-            overrides: group.overrides,
-            traits: group.traits,
-          });
-          this.writeDecisionCache(cacheKey, decision, group.ttlMs);
-          this.localDecisionsByPlacementId.set(placementId, decision);
-        }
-        this.persistLocalRuntimeState();
-      } catch {
-        const fallbackInputs = inputs.filter((item) => group.placementIds.includes(item.placementId) && item.userId === group.userId);
-        await Promise.allSettled(fallbackInputs.map((item) => this.getPlacementDecision(item)));
-      }
+      const groupInputs = inputs.filter(
+        (item) => group.placementIds.includes(item.placementId) && item.userId === group.userId,
+      );
+      await Promise.allSettled(groupInputs.map((item) => this.getPlacementDecision(item)));
     }
   }
 
@@ -4953,6 +4986,9 @@ export class RevTurbineCustomerSdk {
       payload_id: item.payloadId,
       metadata: item.metadata ?? {},
       tenant_id: this.tenantId,
+      // Caller-declared test traffic (plan 164): stamped only when the
+      // integration passed `test: true` at init — omitted otherwise.
+      ...(this.testTraffic ? { test: true } : {}),
     }));
 
     try {
@@ -5087,64 +5123,24 @@ export class RevTurbineCustomerSdk {
       };
     }
 
-    const payload = {
-      request_id: rid,
-      tenant_id: this.tenantId,
-      placement_id: placementId,
-      context: {
-        user: this.userContext,
-        page: this.pageContext,
-        placement,
-      },
-      request: request || {},
+    // Plan 159 TASK-4: the /api/sdk/decide POST is retired — content resolves
+    // through the local decision path (config-driven resolver, or the
+    // fail-closed `config_unavailable` decision until the fetch lands).
+    const userId = this.userContext.id ?? this.anonymousId;
+    const decision = await this.getPlacementDecision({ placementId, userId });
+    return {
+      placementId,
+      requestId: rid,
+      // The content type's source domain is 'remote' | 'fallback': any
+      // DECISIONED result (resolver or cache) reads as 'remote'; only a true
+      // fallback stays 'fallback'.
+      decisionSource: decision.decisionSource === 'fallback' ? 'fallback' : 'remote',
+      content: decision.content ?? decisionContent(
+        `${placement.name} treatment`,
+        'Fallback treatment active while no decision content is available.',
+        'Continue',
+      ),
     };
-
-    try {
-      const response = await fetch(this.endpointFor('decide', '/api/sdk/decide'), {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${this.apiKey}`,
-          'x-tenant-id': this.tenantId,
-          'x-request-id': rid,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error(`decision request failed: ${response.status}`);
-      }
-
-      const data = (await response.json()) as {
-        recommendation?: {
-          message?: string;
-          action?: string;
-          title?: string;
-        };
-      };
-
-      return {
-        placementId,
-        requestId: rid,
-        decisionSource: 'remote',
-        content: decisionContent(
-          data.recommendation?.title || `${placement.name} recommendation`,
-          data.recommendation?.message || 'Treatment selected by RevTurbine decisioning.',
-          data.recommendation?.action || 'View details',
-        ),
-      };
-    } catch {
-      return {
-        placementId,
-        requestId: rid,
-        decisionSource: 'fallback',
-        content: decisionContent(
-          `${placement.name} treatment`,
-          'Fallback treatment active while decision endpoint is unavailable.',
-          'Continue',
-        ),
-      };
-    }
   }
 
   private normalizePlacementOutput(data: unknown): PlacementOutput | null { // sdk-ok: boundary-parse
@@ -5157,10 +5153,6 @@ export class RevTurbineCustomerSdk {
       });
     }
     return result;
-  }
-
-  private normalizeEntitlementResult(data: unknown): EntitlementResult { // sdk-ok: boundary-parse
-    return coreNormalizeEntitlementResult(data, requestId);
   }
 
   private validateTrialStatusShape(data: unknown): RevTurbineTrialContext { // sdk-ok: boundary-parse
@@ -5191,57 +5183,28 @@ export class RevTurbineCustomerSdk {
 
     const rid = requestId();
 
-    if (this.isLocalOnlyMode()) {
-      const resolver = this.localRuntime?.resolvers?.getPlacement;
-      if (resolver) {
-        const resolved = await resolver(config);
-        if (!resolved) return null;
-        const capDecision = this.applyPlacementCapsIfNeeded(resolved);
-        return capDecision.allowed ? resolved : null;
-      }
-      const local = this.localPlacementForConfig(config);
-      if (!local) return null;
-      const capDecision = this.applyPlacementCapsIfNeeded(local);
-      return capDecision.allowed ? local : null;
+    // local_only custom resolver takes precedence, exactly as before.
+    if (this.isLocalOnlyMode() && this.localRuntime?.resolvers?.getPlacement) {
+      const resolved = await this.localRuntime.resolvers.getPlacement(config);
+      if (!resolved) return null;
+      const capDecision = this.applyPlacementCapsIfNeeded(resolved);
+      return capDecision.allowed ? resolved : null;
     }
 
-    try {
-      const response = await fetch(this.endpointFor('getPlacement', '/api/sdk/get-placement'), {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${this.apiKey}`,
-          'x-tenant-id': this.tenantId,
-          'x-request-id': rid,
-        },
-        body: JSON.stringify({
-          request_id: rid,
-          tenant_id: this.tenantId,
-          slot_id: slotId,
-          surface_type: surfaceType,
-          entitlement_handle: config.entitlementHandle,
-          plan_handle: config.planHandle,
-          placement_handle: config.placementHandle,
-          user_id: this.userContext.id,
-          usage: this.usageBalances,
-          context: {
-            user: this.userContext,
-            page: this.pageContext,
-          },
-        }),
-      });
-      if (!response.ok) return null;
-      const data = await response.json();
-      const normalized = this.normalizePlacementOutput(data);
-      if (!normalized) return null;
-      const capDecision = this.applyPlacementCapsIfNeeded(normalized);
-      if (!capDecision.allowed) return null;
-      this.localPlacementsByLookupKey.set(this.localPlacementLookupKey(config), normalized);
-      this.persistLocalRuntimeState();
-      return normalized;
-    } catch {
+    // Plan 159 TASK-4: the /api/sdk/get-placement POST is retired — every
+    // mode answers from the local placement state once a config is present
+    // (the same lookup semantics local_only has always had; decisions cached
+    // by getPlacementDecision feed it). Configless Server mode kicks the
+    // config fetch and returns null this call.
+    if (!this.getConfiguredExportedConfig() && !this.isLocalOnlyMode()) {
+      void this.refreshExportedConfigSnapshot();
+      void rid; // request id reserved for parity with the decision path
       return null;
     }
+    const local = this.localPlacementForConfig(config);
+    if (!local) return null;
+    const capDecision = this.applyPlacementCapsIfNeeded(local);
+    return capDecision.allowed ? local : null;
   }
 
   async checkEntitlement(handle: string, context?: RevTurbineEntitlementContext): Promise<EntitlementResult> {
@@ -5252,13 +5215,7 @@ export class RevTurbineCustomerSdk {
       return { status: 'denied', allowed: false, reason: this.sdkDisabledReason ?? 'sdk_disabled_provider_failure' };
     }
 
-    const effectiveUsage = context?.used !== undefined
-      ? { used: context.used }
-      : context?.balance !== undefined
-        ? { balance: context.balance }
-        : (this.usageBalances[handle] !== undefined ? { used: this.usageBalances[handle] } : undefined);
-    const rid = requestId();
-
+    // local_only: a custom resolver takes precedence.
     if (this.isLocalOnlyMode()) {
       const resolver = this.localRuntime?.resolvers?.checkEntitlement;
       if (resolver) {
@@ -5267,57 +5224,31 @@ export class RevTurbineCustomerSdk {
         this.persistLocalRuntimeState();
         return result;
       }
-
-      const derived = this.deriveLocalEntitlementFromConfiguredRules(handle, context);
-      if (derived) {
-        this.localEntitlementsByHandle.set(handle, derived);
-        this.persistLocalRuntimeState();
-        return derived;
-      }
-
-      const existing = this.localEntitlementsByHandle.get(handle);
-      if (existing) return existing;
-      // Fail-closed: local mode with no Playbook loaded and nothing cached has
-      // no basis to grant anything. A configured Playbook produces a real
-      // allow/deny above; this default only fires when there is genuinely no
-      // config, where denying is the safe answer.
-      return { status: 'denied', allowed: false, reason: 'local_runtime_default_allow' };
+    } else if (!this.getConfiguredExportedConfig()) {
+      // Server mode (plan 159): fetch the launched Playbook from the control
+      // plane so entitlements evaluate LOCALLY — no per-check round-trip. The
+      // config provider is TTL-gated + ETag-revalidated, so this is a cheap poll.
+      await this.refreshExportedConfigSnapshot();
     }
 
-    try {
-      const response = await fetch(this.endpointFor('checkEntitlement', '/api/sdk/check-entitlement'), {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${this.apiKey}`,
-          'x-tenant-id': this.tenantId,
-          'x-request-id': rid,
-        },
-        body: JSON.stringify({
-          request_id: rid,
-          tenant_id: this.tenantId,
-          handle,
-          user_id: this.userContext.id,
-          usage: effectiveUsage,
-          required_tier: context?.requiredTier,
-          context: {
-            user: this.userContext,
-          },
-        }),
-      });
-      // Fail-closed: an unreachable entitlement service cannot affirm the grant,
-      // so deny rather than leak access. The explicit reason still lets callers
-      // distinguish "RT said no" (a rule denial) from "RT unreachable".
-      if (!response.ok) return { status: 'denied', allowed: false, reason: 'entitlement_service_unavailable' };
-      const data = await response.json();
-      const normalized = this.normalizeEntitlementResult(data);
-      this.localEntitlementsByHandle.set(handle, normalized);
+    // Proven local evaluation against the configured Playbook (both modes).
+    const derived = this.deriveLocalEntitlementFromConfiguredRules(handle, context);
+    if (derived) {
+      this.localEntitlementsByHandle.set(handle, derived);
       this.persistLocalRuntimeState();
-      return normalized;
-    } catch {
-      // Fail-closed: a network/parse failure is not an affirmative grant.
-      return { status: 'denied', allowed: false, reason: 'entitlement_check_error' };
+      return derived;
     }
+
+    const existing = this.localEntitlementsByHandle.get(handle);
+    if (existing) return existing;
+
+    // Fail-closed: no configured Playbook means no basis to grant access. In
+    // Server mode this fires only when the launched config could not be fetched.
+    return {
+      status: 'denied',
+      allowed: false,
+      reason: this.isLocalOnlyMode() ? 'local_runtime_default_allow' : 'config_unavailable',
+    };
   }
 
   updateUsage(balances: UsageBalances): void {

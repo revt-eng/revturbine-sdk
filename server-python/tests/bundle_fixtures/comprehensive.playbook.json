@@ -1,0 +1,414 @@
+{
+  "artifact_type": "playbook",
+  "format_version": "1.0.0",
+  "playbook_handle": "pb_c",
+  "playbook_version_id": null,
+  "tenant_id": "tn_c",
+  "environment_id": "env_c",
+  "plans": [
+    {
+      "unique_handle": "free",
+      "name": "Free",
+      "tier_position": 0,
+      "sort_order": 0,
+      "visibility": "public"
+    },
+    {
+      "unique_handle": "pro",
+      "name": "Pro",
+      "tier_position": 1,
+      "sort_order": 0,
+      "visibility": "public"
+    }
+  ],
+  "entitlements": [
+    {
+      "unique_handle": "api",
+      "name": "API",
+      "type": "usage_limit",
+      "unit": "calls"
+    },
+    {
+      "unique_handle": "cred",
+      "name": "Cred",
+      "type": "credits"
+    },
+    {
+      "unique_handle": "dark",
+      "name": "Dark",
+      "type": "feature"
+    },
+    {
+      "unique_handle": "metered",
+      "name": "M",
+      "type": "price_per_unit"
+    },
+    {
+      "unique_handle": "seats",
+      "name": "Seats",
+      "type": "seat"
+    },
+    {
+      "unique_handle": "tier",
+      "name": "Tier",
+      "type": "capability_tier",
+      "tier_definitions": [
+        {
+          "name": "bronze",
+          "handle": "bronze"
+        },
+        {
+          "name": "gold",
+          "handle": "gold"
+        }
+      ]
+    }
+  ],
+  "entitlement_rules": [
+    {
+      "id": "r_c",
+      "entitlement_id": "cred",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "pro"
+        }
+      ],
+      "segment_ids": [],
+      "enforcement": "soft_block",
+      "initial_grant": 250,
+      "allowance_value": 500,
+      "rollover_enabled": true,
+      "max_balance": 1000,
+      "reset_period": "month",
+      "current_usage": 0
+    },
+    {
+      "id": "r_f",
+      "entitlement_id": "dark",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "pro"
+        },
+        {
+          "kind": "plan",
+          "id": "free"
+        }
+      ],
+      "segment_ids": [],
+      "enabled": true,
+      "max_balance": null,
+      "current_usage": 0
+    },
+    {
+      "id": "r_s",
+      "entitlement_id": "seats",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "pro"
+        }
+      ],
+      "segment_ids": [],
+      "included_count": 5,
+      "seat_type_id": "admin",
+      "max_balance": null,
+      "current_usage": 0
+    },
+    {
+      "id": "r_u",
+      "entitlement_id": "api",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "pro"
+        }
+      ],
+      "segment_ids": [
+        "ent"
+      ],
+      "limit_value": 1000,
+      "enforcement": "allow_overage",
+      "max_balance": null,
+      "current_usage": 0
+    }
+  ],
+  "segments": [
+    {
+      "name": "Ent",
+      "handle": "ent",
+      "predicates": [
+        {
+          "field": "size",
+          "operator": "gte",
+          "value": "1000"
+        }
+      ],
+      "dimension_id": "firmo"
+    }
+  ],
+  "content_ui_paths": [
+    {
+      "name": "tour",
+      "action_type": "open_feature_tour",
+      "tour_id": "t1",
+      "target_billing_period": "annual",
+      "description": "W"
+    },
+    {
+      "name": "up",
+      "action_type": "navigate_to_plans",
+      "plan_handle": "pro"
+    }
+  ],
+  "slot_configs": [
+    {
+      "slot_id": "sb",
+      "active": true,
+      "triggers": [
+        "surface_render"
+      ]
+    }
+  ],
+  "placement_slots": [
+    {
+      "id": "sb",
+      "label": "SB",
+      "description": "B",
+      "surface_type": "banner",
+      "placement_handle": "settings.banner",
+      "template": "ub"
+    }
+  ],
+  "message_blocks": [
+    {
+      "block_id": "uc",
+      "tenant_id": "tn_c",
+      "name": "UC",
+      "surface_template_id": "ub",
+      "default_content": {
+        "header": "Upgrade",
+        "body": "Unlock"
+      },
+      "segment_overrides": [
+        {
+          "segment_value_id": "ent",
+          "content": {
+            "body": "Ent copy"
+          }
+        }
+      ],
+      "tokens_used": [
+        "plan_name"
+      ],
+      "status": "active",
+      "created_at": "2026-07-13T12:00:00.000Z",
+      "updated_at": "2026-07-13T12:00:00.000Z"
+    }
+  ],
+  "placement_payloads": [
+    {
+      "payload_id": "lp",
+      "placement_id": "su",
+      "target": {
+        "plan_ids": [
+          "pro"
+        ],
+        "segment_chips": []
+      },
+      "created_at": "2026-07-13T12:00:00.000Z",
+      "source_mode": "content_linked",
+      "surfaces": [
+        {
+          "template_id": "ub",
+          "fields": {
+            "title": "Hi"
+          },
+          "ctas": []
+        }
+      ],
+      "content_link": {
+        "message_block_id": "uc"
+      }
+    }
+  ],
+  "placements": [
+    {
+      "id": "su",
+      "name": "SU",
+      "category": "gated",
+      "trigger": {
+        "type": "entitlement_gate",
+        "entitlement_handle": "api",
+        "tier_threshold": "gold"
+      },
+      "payloads": [
+        {
+          "id": "sud",
+          "target": {
+            "plan_ids": [
+              "pro"
+            ],
+            "segment_chips": [
+              "ent"
+            ]
+          },
+          "surfaces": [
+            {
+              "template_id": "ub",
+              "fields": {
+                "title": "Up"
+              },
+              "ctas": [
+                {
+                  "label": "Go",
+                  "path": "open_checkout",
+                  "config": {
+                    "url": "/x"
+                  }
+                }
+              ]
+            }
+          ],
+          "caps": {
+            "max_per_period": {
+              "count": 3,
+              "period": "day"
+            },
+            "cooldown_days": 7
+          },
+          "recommendation_strategy": "next_tier_up"
+        }
+      ],
+      "order": 0
+    }
+  ],
+  "content_promotions": [
+    {
+      "id": "launch",
+      "name": "Launch",
+      "discount": "20%",
+      "type": "percent",
+      "status": "active"
+    }
+  ],
+  "personalization_tokens": [
+    {
+      "token": "plan_name",
+      "label": "Plan name",
+      "category": "plan",
+      "value_map": {
+        "pro": "Pro plan"
+      },
+      "format": "string"
+    }
+  ],
+  "surface_templates": [
+    {
+      "id": "ub",
+      "surface_type": "banner",
+      "fields": [
+        {
+          "name": "title",
+          "type": "string",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "free_trial_rules": [
+    {
+      "id": "ftr",
+      "name": "ft",
+      "handle": "ft",
+      "plan_id": "pro",
+      "trial_limit_type": "time",
+      "grace_period_days": 0,
+      "usage_entitlement_handle": "api",
+      "usage_limit_value": 100,
+      "require_payment_method": false,
+      "auto_convert": true,
+      "limit_per_customer": 1,
+      "is_active": true,
+      "metadata": {}
+    }
+  ],
+  "reverse_trial_rules": [
+    {
+      "id": "rtr",
+      "name": "rt",
+      "handle": "rt",
+      "premium_plan_id": "pro",
+      "fallback_plan_id": "free",
+      "trial_limit_type": "time",
+      "start_policy": "signup",
+      "entitlements_during_trial": [
+        "api",
+        "cred"
+      ],
+      "is_active": true,
+      "metadata": {}
+    }
+  ],
+  "seat_types": [
+    {
+      "handle": "admin",
+      "name": "Admin",
+      "description": null,
+      "is_default": true,
+      "entitlement_handles": [
+        "seats"
+      ]
+    }
+  ],
+  "enforcement_defaults": [
+    {
+      "handle": "default",
+      "entitlement_handle": "api",
+      "soft_limit_percent": 80,
+      "hard_limit_percent": 100,
+      "soft_limit_action": "warn",
+      "hard_limit_action": "block",
+      "grace_period_hours": 24,
+      "notification_channels": [
+        "email"
+      ],
+      "is_active": true
+    }
+  ],
+  "placement_settings": [
+    {
+      "handle": "default",
+      "global_frequency_cap": {
+        "capRules": [],
+        "sessionCooldownMinutes": 30,
+        "testMode": "off"
+      },
+      "global_frequency_cap_period": "day",
+      "suppress_for_paid": true,
+      "suppress_for_trial": false,
+      "default_dismiss_cooldown_hours": 24,
+      "allow_stacking": false,
+      "priority_collision_strategy": "highest"
+    }
+  ],
+  "segment_dimensions": [
+    {
+      "handle": "firmo",
+      "name": "Firmo",
+      "category": "co",
+      "visibility_toggle": true,
+      "source_type": "derived"
+    }
+  ],
+  "meter_bindings": [
+    {
+      "handle": "am",
+      "entitlement_handle": "api",
+      "meter_handle": "req",
+      "limit": 10000,
+      "reset_period": "month"
+    }
+  ]
+}

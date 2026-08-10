@@ -1,7 +1,7 @@
 {
   "name": "@revt-eng/sdk",
-  "version": "0.2.49",
-  "description": "RevTurbine customer-facing SDK — placement decisioning, entitlement checks, and usage tracking.",
+  "version": "0.2.57",
+  "description": "RevTurbine customer-facing SDK \u2014 placement decisioning, entitlement checks, and usage tracking.",
   "type": "module",
   "packageManager": "pnpm@11.12.0",
   "engines": {
@@ -10,11 +10,11 @@
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "types": "./dist/types/web-sdk/index.d.ts"
+      "types": "./dist/index.d.ts"
     },
     "./headless": {
       "import": "./dist/headless.js",
-      "types": "./dist/types/web-sdk/headless.d.ts"
+      "types": "./dist/headless.d.ts"
     },
     "./source": "./index.ts",
     "./source/headless": "./headless.ts"
@@ -23,11 +23,12 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup && tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir dist/types",
+    "build": "tsup && tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir dist/types && rollup -c rollup.dts.config.mjs",
     "verify": "cd ../revturbine-web && npm run typecheck",
     "typecheck:sdk-api": "pnpm exec tsx ../scripts/check-sdk-types.ts",
     "playground": "vite --config playground/vite.config.ts",
-    "harness:headless": "pnpm exec tsx ../scripts/headless-harness.ts"
+    "harness:headless": "pnpm exec tsx ../scripts/headless-harness.ts",
+    "check:public-types": "node scripts/check-public-types.mjs"
   },
   "peerDependencies": {
     "react": ">=18",
@@ -42,13 +43,15 @@
     }
   },
   "devDependencies": {
-    "@revt-eng/schema": "0.1.147",
+    "@revt-eng/core": "0.1.156",
+    "@revt-eng/schema": "0.1.156",
     "@revt-eng/schema-external": "0.1.142",
-    "@revt-eng/core": "0.1.147",
-    "openapi-fetch": "^0.17.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "openapi-fetch": "^0.17.0",
     "playwright": "^1.61.1",
+    "rollup": "^4.62.4",
+    "rollup-plugin-dts": "^6.5.1",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3"
   },
@@ -60,5 +63,8 @@
     "type": "git",
     "url": "git+https://github.com/revt-eng/revturbine-external.git"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "zod": "4.4.3"
+  }
 }

@@ -143,8 +143,12 @@ def create_static_providers(
 
         def _segments() -> dict[str, Any]:
             segs = config.get("segments") or []
+            # Resolve by handle: the canonical Playbook (post plan-120 identity
+            # collapse, and every `bundle_to_playbook` output) carries `handle`
+            # only — no separate `id`. Fall back to `id` for legacy id-bearing
+            # configs, so both shapes resolve. `segment_ids` == the handles.
             return {
-                "segment_ids": [s["id"] for s in segs],
+                "segment_ids": [s.get("id") or s.get("handle") for s in segs],
                 "segment_slugs": [s["handle"] for s in segs],
             }
 

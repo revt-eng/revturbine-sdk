@@ -5,13 +5,17 @@
  * denied result so callers can still distinguish an infrastructure failure from
  * a rule-based "RT said no".
  *
- * Covers the four fallback paths in `checkEntitlement`:
- *   - server mode, non-ok response      → entitlement_service_unavailable
- *   - server mode, network/parse error  → entitlement_check_error
- *   - local mode, no Playbook + no cache → local_runtime_default_allow
- *   - SDK disabled by provider failure   → sdk_disabled_provider_failure
+ * Server mode evaluates entitlements LOCALLY against the launched Playbook it
+ * fetches from `/api/sdk/config` (plan 159) — there is no per-check round-trip.
+ * Covers the fallback paths in `checkEntitlement`:
+ *   - server mode, launched config unfetchable (non-ok) → config_unavailable
+ *   - server mode, launched config fetch throws          → config_unavailable
+ *   - local mode, no Playbook + no cache                 → local_runtime_default_allow
+ *   - SDK disabled by provider failure                   → sdk_disabled_provider_failure
+ * and the happy path: server mode fetches the Playbook and grants locally.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { encodeBundle, lowerToIR } from '@revt-eng/core/bundle';
 import { RevTurbineCustomerSdk } from './customer-side';
 import type { RevTurbineInitOptions } from './customer-side';
 
@@ -19,6 +23,7 @@ function serverSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustome
   const sdk = new RevTurbineCustomerSdk({
     tenantId: 'tenant_fc',
     apiKey: 'sk_test',
+    ingestPublicKey: 'pub_test',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
     runtimeMode: 'revturbine_server',
@@ -29,24 +34,40 @@ function serverSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustome
   return sdk;
 }
 
+// A launched Playbook that grants `generations` (usage_limit, under limit) to
+// the `starter` plan the test user is on — mirrors the known-good usage-limit
+// fixture shape.
+const LAUNCHED_CONFIG = {
+  version: '1.0.0',
+  plans: [{ unique_handle: 'starter', name: 'Starter', tier_position: 0, sort_order: 0 }],
+  entitlements: [{ unique_handle: 'generations', name: 'Generations', type: 'usage_limit', unit: 'images' }],
+  entitlement_rules: [
+    {
+      id: 'r_starter', entitlement_id: 'generations', targets: [{ kind: 'plan', id: 'starter' }], segment_ids: [],
+      kind: 'usage_limit', limit_value: 30, unit: 'images', period_scope: 'per_month', enforcement: 'hard_block',
+    },
+  ],
+  segments: [], content_ui_paths: [], surface_templates: [], placements: [],
+};
+
 afterEach(() => vi.restoreAllMocks());
 
 describe('entitlement checks fail closed', () => {
-  it('denies (does not grant) when the service returns a non-ok response', async () => {
+  it('denies (config_unavailable) when the launched config cannot be fetched (non-ok)', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 503 })));
-    const result = await serverSdk().checkEntitlement('data_export');
+    const result = await serverSdk().checkEntitlement('generations');
     expect(result.allowed).toBe(false);
     expect(result.status).toBe('denied');
-    // reason preserved so callers can tell an outage from a real denial
-    expect(result.reason).toBe('entitlement_service_unavailable');
+    // Server mode has no config to evaluate against → fail closed, distinctly.
+    expect(result.reason).toBe('config_unavailable');
   });
 
-  it('denies when the request throws (network/parse failure)', async () => {
+  it('denies (config_unavailable) when the launched config fetch throws', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('ECONNREFUSED'); }));
-    const result = await serverSdk().checkEntitlement('data_export');
+    const result = await serverSdk().checkEntitlement('generations');
     expect(result.allowed).toBe(false);
     expect(result.status).toBe('denied');
-    expect(result.reason).toBe('entitlement_check_error');
+    expect(result.reason).toBe('config_unavailable');
   });
 
   it('denies in local mode when no Playbook is loaded and nothing is cached', async () => {
@@ -63,5 +84,64 @@ describe('entitlement checks fail closed', () => {
     expect(result.allowed).toBe(false);
     expect(result.status).toBe('denied');
     expect(result.reason).toBe('local_runtime_default_allow');
+  });
+
+  it('server mode: fetches the launched Playbook from /api/sdk/config and grants via LOCAL eval (plan 159)', async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      if (String(url).includes('/api/sdk/config')) {
+        return new Response(JSON.stringify(LAUNCHED_CONFIG), {
+          status: 200,
+          headers: { 'content-type': 'application/json', ETag: '"v1"' },
+        });
+      }
+      // Telemetry / other best-effort calls: succeed quietly.
+      return new Response('{}', { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await serverSdk().checkEntitlement('generations');
+    expect(result.allowed).toBe(true);
+    expect(result.status).not.toBe('denied');
+    // The decision came from the fetched launched config — not a per-check call.
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/sdk/config'))).toBe(true);
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/sdk/check-entitlement'))).toBe(false);
+  });
+
+  it('server mode: decodes a compact .rvtb bundle response and grants via LOCAL eval (plan 160)', async () => {
+    // Compile the same launched Playbook to the compact `.rvtb` the control
+    // plane serves under `Accept: application/octet-stream` (plan 160 TASK-5).
+    // The `.rvtb`→Playbook decoder emits a CANONICAL Playbook, which the SDK
+    // parses without a legacy target fallback — so the bundle must carry the
+    // Playbook header identity (`format_version`/`environment_id`/
+    // `playbook_handle`), exactly as web's `buildExportedConfig` stamps it.
+    const bundle = encodeBundle(
+      lowerToIR(
+        { ...LAUNCHED_CONFIG, format_version: '1.0.0', environment_id: 'env_live', playbook_handle: 'default' },
+        { tenantId: 'tenant_fc', clock: () => 1_700_000_000_000 },
+      ).ir,
+    );
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      if (String(url).includes('/api/sdk/config')) {
+        return new Response(bundle, {
+          status: 200,
+          headers: { 'content-type': 'application/octet-stream', ETag: '"b1"' },
+        });
+      }
+      return new Response('{}', { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await serverSdk().checkEntitlement('generations');
+    // The SDK downloaded the bundle, decoded it client-side (BundleHandle.
+    // toPlaybook), and evaluated locally — identical grant to the JSON path.
+    expect(result.allowed).toBe(true);
+    expect(result.status).not.toBe('denied');
+
+    const configCall = fetchMock.mock.calls.find(([u]) => String(u).includes('/api/sdk/config'));
+    expect(configCall).toBeTruthy();
+    // It asked for the bundle (content negotiation) and never round-tripped a check.
+    const sentHeaders = (configCall![1] as RequestInit).headers as Record<string, string>;
+    expect(sentHeaders.accept).toContain('application/octet-stream');
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/sdk/check-entitlement'))).toBe(false);
   });
 });

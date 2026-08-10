@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "revturbine"
-version = "0.2.49"
+version = "0.2.57"
 description = "RevTurbine SDK for Python — local-mode and HTTP-mode placement and entitlement decisioning"
 requires-python = ">=3.10"
 license = "MIT"
@@ -18,6 +18,12 @@ dependencies = [
     # justification: it is a hard import-time dep of the required
     # generated-types artifact, not an optional add.)
     "pydantic[email]>=2.0",
+    # Runtime for the flatc-generated `.rvtb` bindings (plan 160 TASK-4). The
+    # Python decoder reads a compiled bundle back to the canonical Playbook dict
+    # (on-the-wire optimization); this is the FlatBuffers runtime the generated
+    # `revturbine/bundle/*.py` import. Major must match the flatc used to
+    # generate them (25.x). No numpy extra — the bindings don't use it.
+    "flatbuffers>=25.0",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -55,7 +61,9 @@ target-version = "py310"
 src = ["src", "tests"]
 # `src/revturbine/types.py` is the vendored datamodel-codegen artifact
 # (plan 33 REQ-4) — generated, never hand-edited, not lint-owned here.
-extend-exclude = ["src/revturbine/types.py"]
+# `src/revturbine/bundle/` is the flatc-generated FlatBuffer bindings (plan 160
+# TASK-4) — regenerated via `scripts/gen-fb.mjs`, never hand-edited.
+extend-exclude = ["src/revturbine/types.py", "src/revturbine/bundle"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "B", "UP", "SIM"]
@@ -74,7 +82,7 @@ files = ["src/revturbine", "tests"]
 # `revturbine_server` now imports that vendored `revturbine.types` fine,
 # but its legacy typing stays out of mypy --strict by deliberate scope
 # decision (independent legacy surface; not retyped here).
-exclude = ["revturbine_server/", "build/", "src/revturbine/types\\.py"]
+exclude = ["revturbine_server/", "build/", "src/revturbine/types\\.py", "src/revturbine/bundle/"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

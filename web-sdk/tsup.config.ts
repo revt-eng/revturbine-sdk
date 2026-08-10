@@ -53,6 +53,15 @@ export default defineConfig({
     'react-dom',
     'react/jsx-runtime',
     'react/jsx-dev-runtime',
+    // `@revt-eng/core/bundle` bundles the encoder (compile.ts → `node:crypto`
+    // `createHash`) alongside the decoder in one entry. The SDK only ever
+    // DECODES (`BundleHandle.toPlaybook`) — it never compiles a bundle — so the
+    // encoder is dead code here. Marking the node builtin external lets esbuild
+    // past the browser-platform resolve of `crypto`; tree-shaking then drops the
+    // unused encoder and, with it, the now-unreferenced `crypto` import. Verified
+    // absent from the emitted bundle (no `createHash`/`crypto` in dist/).
+    'crypto',
+    'node:crypto',
   ],
   // Bundle all internal deps — customers install only @revturbine/sdk + react
   noExternal: [
