@@ -53,6 +53,7 @@ export function ModalSlot({
   onCtaClick,
   onSecondaryCtaClick,
   onDismiss,
+  onRemindLater,
   visible,
   className,
   style,
@@ -75,6 +76,12 @@ export function ModalSlot({
     setDismissed(true);
     onDismiss();
   }, [onDismiss]);
+
+  const handleRemindLater = useCallback(() => {
+    // Defer — re-queue for the remind-later window (plan 167 REQ-7).
+    setDismissed(true);
+    onRemindLater?.();
+  }, [onRemindLater]);
 
   const handleOverlayClick = useCallback(
     (e: React.MouseEvent) => {
@@ -168,6 +175,18 @@ export function ModalSlot({
         fontSize: typography.fontSize,
         cursor: 'pointer',
       } as React.CSSProperties,
+      remindBtn: {
+        padding: '10px 16px',
+        backgroundColor: 'transparent',
+        color: colors.textMuted,
+        border: 'none',
+        borderRadius: shape.borderRadius,
+        fontWeight: 500,
+        fontSize: typography.fontSize,
+        cursor: 'pointer',
+        // Push it to the far left of the actions row (dismiss/CTA stay right).
+        marginRight: 'auto',
+      } as React.CSSProperties,
     };
   }, [theme]);
 
@@ -202,6 +221,16 @@ export function ModalSlot({
         {content.body && <div style={themedStyles.body}>{content.body}</div>}
 
         <div style={actionsStyle}>
+          {onRemindLater && modalType === 'optional' && (
+            <button
+              type="button"
+              style={themedStyles.remindBtn}
+              onClick={handleRemindLater}
+              data-rt-action="remind-later"
+            >
+              Remind me later
+            </button>
+          )}
           {content.secondary_cta_label && onSecondaryCtaClick && (
             <button type="button" style={themedStyles.secondaryBtn} onClick={onSecondaryCtaClick}>
               {content.secondary_cta_label}

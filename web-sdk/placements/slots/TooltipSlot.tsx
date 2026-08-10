@@ -64,6 +64,7 @@ export function TooltipSlot({
   content,
   onCtaClick,
   onDismiss,
+  onRemindLater,
   visible,
   className,
   style,
@@ -121,6 +122,12 @@ export function TooltipSlot({
     onDismiss();
   }, [onDismiss]);
 
+  const handleRemindLater = useCallback(() => {
+    // Defer — re-queue for the remind-later window (plan 167 REQ-7).
+    setDismissed(true);
+    onRemindLater?.();
+  }, [onRemindLater]);
+
   const themedStyles = useMemo(() => {
     const { colors, typography, shape, shadows } = theme;
     return {
@@ -169,6 +176,16 @@ export function TooltipSlot({
         lineHeight: 1,
         padding: '2px 4px',
       },
+      remind: {
+        background: 'transparent',
+        border: 'none',
+        color: colors.textMuted,
+        fontSize: typography.fontSizeSmall,
+        fontWeight: 500,
+        cursor: 'pointer',
+        whiteSpace: 'nowrap' as const,
+        padding: '2px 4px',
+      },
     } as const;
   }, [theme]);
 
@@ -191,6 +208,16 @@ export function TooltipSlot({
         {content.cta_label && (
           <button type="button" style={themedStyles.cta} onClick={onCtaClick}>
             {content.cta_label}
+          </button>
+        )}
+        {onRemindLater && (
+          <button
+            type="button"
+            style={themedStyles.remind}
+            onClick={handleRemindLater}
+            data-rt-action="remind-later"
+          >
+            Later
           </button>
         )}
         <button type="button" style={themedStyles.close} onClick={handleDismiss} aria-label="Close tooltip">

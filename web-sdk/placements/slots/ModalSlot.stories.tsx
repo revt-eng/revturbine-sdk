@@ -66,3 +66,29 @@ export const WithImage: Story = {
     },
   },
 };
+
+/**
+ * Optional modal with the defer affordance (plan 167 REQ-7): supplying
+ * `onRemindLater` renders a "Remind me later" control beside dismiss.
+ */
+export const WithRemindLater: Story = {
+  args: {
+    onRemindLater: () => {},
+  },
+};
+
+/**
+ * Blocking modals never render dismiss or defer controls, even when
+ * `onRemindLater` is supplied — the user must act.
+ */
+export const BlockingHidesRemindLater: Story = {
+  args: {
+    content: {
+      header: 'Your trial has ended',
+      body: 'Subscribe to continue. Your data is safe and available after upgrade.',
+      cta_label: 'Choose a Plan',
+      style: 'blocking',
+    },
+    onRemindLater: () => {},
+  },
+};

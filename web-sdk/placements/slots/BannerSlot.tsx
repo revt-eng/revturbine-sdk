@@ -61,6 +61,7 @@ export function BannerSlot({
   content,
   onCtaClick,
   onDismiss,
+  onRemindLater,
   visible,
   className,
   style,
@@ -84,6 +85,12 @@ export function BannerSlot({
     setDismissed(true);
     onDismiss();
   }, [onDismiss]);
+
+  const handleRemindLater = useCallback(() => {
+    // Defer — re-queue for the remind-later window (plan 167 REQ-7).
+    setDismissed(true);
+    onRemindLater?.();
+  }, [onRemindLater]);
 
   const themedStyles = useMemo(() => {
     const { colors, typography, shape } = theme;
@@ -125,6 +132,17 @@ export function BannerSlot({
         opacity: 0.7,
         lineHeight: 1,
       } as React.CSSProperties,
+      remind: {
+        padding: '4px 8px',
+        background: 'transparent',
+        border: 'none',
+        color: colors.primaryText,
+        fontSize: typography.fontSizeSmall,
+        fontWeight: 500,
+        cursor: 'pointer',
+        opacity: 0.85,
+        whiteSpace: 'nowrap',
+      } as React.CSSProperties,
     };
   }, [theme, position]);
 
@@ -147,6 +165,16 @@ export function BannerSlot({
         {content.cta_label && (
           <button type="button" style={themedStyles.cta} onClick={onCtaClick}>
             {content.cta_label}
+          </button>
+        )}
+        {onRemindLater && dismissible && (
+          <button
+            type="button"
+            style={themedStyles.remind}
+            onClick={handleRemindLater}
+            data-rt-action="remind-later"
+          >
+            Remind me later
           </button>
         )}
         {dismissible && (

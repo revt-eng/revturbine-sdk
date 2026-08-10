@@ -113,6 +113,15 @@ export interface PlacementSlotProps<C extends ResolvedContent = ResolvedContent>
   onSecondaryCtaClick?: () => void;
   /** Callback when user dismisses the placement. */
   onDismiss: () => void;
+  /**
+   * Optional callback when the user chooses "Remind me later" (defer). When
+   * provided, dismissible slots render a defer control beside dismiss; the
+   * placement re-queues and reappears after the remind-later window
+   * (`remind_later_minutes`, default 60) rather than the longer dismiss
+   * cooldown (plan 167 REQ-7). **Additive and optional** — omit it and slots
+   * render exactly as before, with no defer control.
+   */
+  onRemindLater?: () => void;
   /** Whether the placement is currently visible. */
   visible: boolean;
   /** Custom CSS class name for styling overrides. */

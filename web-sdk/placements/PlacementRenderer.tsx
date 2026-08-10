@@ -43,6 +43,12 @@ export interface PlacementRendererProps {
   onSecondaryCtaClick?: (uiPath: PlacementUiPath) => void;
   /** Callback when user dismisses the placement. */
   onDismiss?: (outputId: string) => void;
+  /**
+   * Callback when the user chooses "Remind me later" (defer). When provided,
+   * dismissible slots render a defer control; omit it and no defer control
+   * appears (plan 167 REQ-7). Additive/opt-in.
+   */
+  onRemindLater?: (outputId: string) => void;
   /** Callback fired once when the placement is first rendered visible. */
   onImpression?: (outputId: string) => void;
   /** Whether the placement is visible. Default true. */
@@ -74,6 +80,7 @@ export function PlacementRenderer({
   onCtaClick,
   onSecondaryCtaClick,
   onDismiss,
+  onRemindLater,
   onImpression,
   visible = true,
   className,
@@ -116,6 +123,10 @@ export function PlacementRenderer({
     onDismiss?.(placement.output_id);
   }, [onDismiss, placement.output_id]);
 
+  const handleRemindLater = useCallback(() => {
+    onRemindLater?.(placement.output_id);
+  }, [onRemindLater, placement.output_id]);
+
   // Fire impression event once when the placement is first rendered visible
   useEffect(() => {
     if (visible && slotType && !impressionFiredRef.current) {
@@ -140,6 +151,8 @@ export function PlacementRenderer({
     onCtaClick: handleCtaClick,
     onSecondaryCtaClick: handleSecondaryCtaClick,
     onDismiss: handleDismiss,
+    // Opt-in: only wire the defer control when the caller supplied a handler.
+    ...(onRemindLater ? { onRemindLater: handleRemindLater } : {}),
     visible,
     className,
     style,

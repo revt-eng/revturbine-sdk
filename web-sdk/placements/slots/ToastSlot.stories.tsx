@@ -73,3 +73,13 @@ export const NoCta: Story = {
     },
   },
 };
+
+/**
+ * Defer affordance (plan 167 REQ-7): supplying `onRemindLater` renders a
+ * "Remind me later" control beside dismiss.
+ */
+export const WithRemindLater: Story = {
+  args: {
+    onRemindLater: () => {},
+  },
+};

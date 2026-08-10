@@ -39,6 +39,7 @@ export function ToastSlot({
   content,
   onCtaClick,
   onDismiss,
+  onRemindLater,
   visible,
   className,
   style,
@@ -62,6 +63,12 @@ export function ToastSlot({
     setShown(false);
     onDismiss();
   }, [onDismiss]);
+
+  const handleRemindLater = useCallback(() => {
+    // Defer — re-queue for the remind-later window (plan 167 REQ-7).
+    setShown(false);
+    onRemindLater?.();
+  }, [onRemindLater]);
 
   useEffect(() => {
     if (!shown || duration <= 0) return;
@@ -105,6 +112,17 @@ export function ToastSlot({
         lineHeight: 1,
         flexShrink: 0,
       } as React.CSSProperties,
+      remind: {
+        background: 'transparent',
+        border: 'none',
+        color: colors.textMuted,
+        fontSize: typography.fontSizeSmall,
+        fontWeight: 500,
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+        padding: '2px 4px',
+        flexShrink: 0,
+      } as React.CSSProperties,
     };
   }, [theme]);
 
@@ -126,6 +144,16 @@ export function ToastSlot({
       {content.cta_label && (
         <button type="button" style={themedStyles.cta} onClick={onCtaClick}>
           {content.cta_label}
+        </button>
+      )}
+      {onRemindLater && (
+        <button
+          type="button"
+          style={themedStyles.remind}
+          onClick={handleRemindLater}
+          data-rt-action="remind-later"
+        >
+          Later
         </button>
       )}
       <button type="button" style={themedStyles.close} onClick={handleDismiss} aria-label="Close">
