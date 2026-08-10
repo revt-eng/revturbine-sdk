@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from revturbine.core.state.impression_history_types import (
+    DEFAULT_DISMISS_COOLDOWN_MS,
     DEFAULT_SUPPRESSION_MS,
     ImpressionHistoryStore,
     ImpressionOutcome,
@@ -21,7 +22,12 @@ from revturbine.core.state.impression_history_types import (
     ImpressionRecord,
 )
 
-__all__ = ["DEFAULT_SUPPRESSION_MS", "ImpressionHistory", "ImpressionHistoryOptions"]
+__all__ = [
+    "DEFAULT_DISMISS_COOLDOWN_MS",
+    "DEFAULT_SUPPRESSION_MS",
+    "ImpressionHistory",
+    "ImpressionHistoryOptions",
+]
 
 
 def _now_iso() -> str:
@@ -52,10 +58,12 @@ class ImpressionHistory:
         store: ImpressionHistoryStore,
         user_id: str,
         default_suppression_ms: int = DEFAULT_SUPPRESSION_MS,
+        default_dismiss_cooldown_ms: int = DEFAULT_DISMISS_COOLDOWN_MS,
     ) -> None:
         self._store = store
         self._user_id = user_id
         self._default_suppression_ms = default_suppression_ms
+        self._default_dismiss_cooldown_ms = default_dismiss_cooldown_ms
         self._retired_cache: set[str] | None = None
         self._suppressed_cache: dict[str, str] | None = None
 
@@ -77,13 +85,21 @@ class ImpressionHistory:
         payload_id: str | None = None,
         surface_template_id: str | None = None,
         metadata: dict[str, Any] | None = None,
+        cooldown_ms: int | None = None,
     ) -> None:
-        """Records a dismissal (terminal — placement is permanently retired).
+        """Records a dismissal. Time-boxed: the placement is hidden for the
+        dismiss cooldown (``cooldown_after_dismiss_days``, default 7 days) and
+        re-shows once it elapses. NOT permanent (plan 167, Q-1).
 
         Source: impression-history.ts:68-76
         """
-        self._append_record(placement_id, "dismissed", payload_id, surface_template_id, metadata)
-        self._retire_in_cache(placement_id)
+        ms = cooldown_ms if cooldown_ms is not None else self._default_dismiss_cooldown_ms
+        suppress_until = _suppress_until_iso(ms)
+        merged_metadata: dict[str, Any] = {**(metadata or {}), "suppressUntil": suppress_until}
+        self._append_record(
+            placement_id, "dismissed", payload_id, surface_template_id, merged_metadata
+        )
+        self._suppress_in_cache(placement_id, suppress_until)
 
     def record_click_thru(
         self,
@@ -91,12 +107,38 @@ class ImpressionHistory:
         payload_id: str | None = None,
         surface_template_id: str | None = None,
         metadata: dict[str, Any] | None = None,
+        cooldown_ms: int | None = None,
     ) -> None:
-        """Records a click-through (terminal — placement is permanently retired).
+        """Records a bare click-through — clicked but not confirmed complete
+        (e.g. abandoned checkout). Treated as a dismiss cooldown; the placement
+        may return. For a confirmed conversion use ``record_conversion``
+        (plan 167, Q-1).
 
         Source: impression-history.ts:82-90
         """
-        self._append_record(placement_id, "clicked_thru", payload_id, surface_template_id, metadata)
+        ms = cooldown_ms if cooldown_ms is not None else self._default_dismiss_cooldown_ms
+        suppress_until = _suppress_until_iso(ms)
+        merged_metadata: dict[str, Any] = {**(metadata or {}), "suppressUntil": suppress_until}
+        self._append_record(
+            placement_id, "clicked_thru", payload_id, surface_template_id, merged_metadata
+        )
+        self._suppress_in_cache(placement_id, suppress_until)
+
+    def record_conversion(
+        self,
+        placement_id: str,
+        payload_id: str | None = None,
+        surface_template_id: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        """Records a confirmed conversion — the placement is **permanently**
+        retired for this user (plan 167, Q-1).
+
+        Source: impression-history.ts:record_conversion
+        """
+        self._append_record(
+            placement_id, "cta_completed", payload_id, surface_template_id, metadata
+        )
         self._retire_in_cache(placement_id)
 
     def record_suppression(

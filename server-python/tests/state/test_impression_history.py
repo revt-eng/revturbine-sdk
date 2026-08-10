@@ -50,16 +50,25 @@ class TestRecording:
         assert records[0]["placement_id"] == "p1"
         assert records[0]["outcome"] == "impressed"
 
-    def test_record_dismissal_retires_in_cache(self) -> None:
+    def test_record_dismissal_is_a_cooldown_not_permanent(self) -> None:
         _, history = _make()
         history.record_dismissal("p1")
-        # is_retired_sync requires the cache; recording side-warms it.
-        assert history.is_retired_sync("p1") is True
-        assert history.is_retired_sync("p2") is False
+        # Dismiss is a time-boxed cooldown (plan 167, Q-1), not a permanent
+        # retirement; recording side-warms the suppressed cache.
+        assert history.is_retired_sync("p1") is False
+        assert history.is_suppressed_sync("p1") is True
+        assert history.is_hidden_sync("p1") is True
+        assert history.is_hidden_sync("p2") is False
 
-    def test_record_click_thru_retires_in_cache(self) -> None:
+    def test_record_click_thru_is_a_cooldown_not_permanent(self) -> None:
         _, history = _make()
         history.record_click_thru("p1")
+        assert history.is_retired_sync("p1") is False
+        assert history.is_suppressed_sync("p1") is True
+
+    def test_record_conversion_retires_permanently(self) -> None:
+        _, history = _make()
+        history.record_conversion("p1")
         assert history.is_retired_sync("p1") is True
 
     def test_record_suppression_warms_suppressed_cache(
@@ -106,7 +115,7 @@ class TestQueries:
             "u1",
             {
                 "placement_id": "p1",
-                "outcome": "dismissed",
+                "outcome": "cta_completed",
                 "occurred_at": "2026-05-14T00:00:00.000Z",
             },
         )
@@ -134,7 +143,7 @@ class TestQueries:
     ) -> None:
         freeze_time(1_700_000_000.0)
         _, history = _make()
-        history.record_dismissal("retired_p")
+        history.record_conversion("retired_p")
         history.record_suppression("suppressed_p", duration_ms=60_000)
         history.record_impression("visible_p")
         assert history.is_hidden_sync("retired_p") is True
@@ -179,7 +188,7 @@ class TestLifecycle:
             "u1",
             {
                 "placement_id": "retired_p",
-                "outcome": "dismissed",
+                "outcome": "cta_completed",
                 "occurred_at": "2026-05-14T00:00:00.000Z",
             },
         )
@@ -199,7 +208,8 @@ class TestLifecycle:
 
     def test_reset_clears_history(self) -> None:
         store, history = _make()
-        history.record_dismissal("p1")
+        history.record_conversion("p1")
+        assert history.is_retired_sync("p1") is True
         history.reset()
         # Store is empty, cache is empty.
         assert store.query("u1") == []
@@ -207,7 +217,7 @@ class TestLifecycle:
 
     def test_set_user_id_clears_caches(self) -> None:
         store, history = _make()
-        history.record_dismissal("p1")
+        history.record_conversion("p1")
         assert history.is_retired_sync("p1") is True
         # Switch user — caches go cold; sync check returns False (cache cold).
         history.set_user_id("u2")
@@ -227,7 +237,7 @@ class TestLifecycle:
             "u1",
             {
                 "placement_id": "p1",
-                "outcome": "dismissed",
+                "outcome": "cta_completed",
                 "occurred_at": "2026-05-14T00:00:00.000Z",
             },
         )
@@ -243,7 +253,7 @@ class TestRetireInCacheBranches:
         # Branch coverage: _retire_in_cache initializes when cache is None.
         _, history = _make()
         assert history.is_retired_sync("p1") is False  # cold
-        history.record_dismissal("p1")
+        history.record_conversion("p1")
         assert history.is_retired_sync("p1") is True
 
     def test_suppress_in_cold_cache_initializes(

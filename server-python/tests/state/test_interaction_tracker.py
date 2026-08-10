@@ -122,7 +122,7 @@ class TestTrackRemindMeLater:
 
 
 class TestTrackCta:
-    def test_cta_clicked_suppresses_5_minutes(
+    def test_cta_clicked_is_a_dismiss_cooldown(
         self,
         freeze_time: Callable[[float], None],
     ) -> None:
@@ -130,12 +130,11 @@ class TestTrackCta:
         storage = InMemoryStorage()
         tracker = InteractionTracker(storage=storage, tenant_id="t1", user_id="u1")
         tracker.track(_input(interaction_type="cta_clicked"))
-        # 4 minutes later — still suppressed.
-        freeze_time(1.0 + 4 * 60)
+        # A bare click is a dismiss-style cooldown (plan 167, Q-1), NOT a 5-minute
+        # window — still suppressed well past 5 minutes.
+        freeze_time(1.0 + 6 * 60)
         result = tracker.check_suppression("p1", "u1")
         assert result["suppressed"] is True
-        # cta_clicked should fall through to the dismiss-cooldown reason
-        # because it's not remind_me_later.
         assert result["reason"] == "suppressed_by_dismiss_cooldown"
 
     def test_cta_completed_same_5_minute_window(

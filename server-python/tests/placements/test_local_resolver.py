@@ -596,7 +596,7 @@ class TestResolverCandidatePath:
 class TestResolverDirectLookup:
     def test_placement_retired(self) -> None:
         history = _impression_history()
-        history.record_dismissal("pl_foo")
+        history.record_conversion("pl_foo")
         resolver = create_static_placement_resolver(
             {"placements": [_entry()]}, _config(), impression_history=history
         )

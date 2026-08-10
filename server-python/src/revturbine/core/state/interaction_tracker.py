@@ -27,7 +27,7 @@ from revturbine.core.state.types import (
 __all__ = ["InteractionTracker", "InteractionTrackerOptions"]
 
 _STORAGE_PREFIX = "revturbine:interaction-state"
-_DEFAULT_DISMISS_COOLDOWN_MS = 24 * 60 * 60 * 1000
+_DEFAULT_DISMISS_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000
 _DEFAULT_REMIND_LATER_MS = 60 * 60 * 1000
 _CTA_SUPPRESSION_MS = 5 * 60 * 1000
 
@@ -108,7 +108,16 @@ class InteractionTracker:
             next_state["suppressed_until"] = now + int(
                 remind_after * 1000 if remind_after is not None else self._default_remind_later_ms,
             )
-        elif input_data["interaction_type"] in ("cta_clicked", "cta_completed"):
+        elif input_data["interaction_type"] == "cta_clicked":
+            # Bare click (not confirmed complete) → dismiss cooldown; may return
+            # (plan 167, Q-1).
+            cooldown_ms = self._coerce_positive_finite(metadata.get("cooldown_ms"))
+            next_state["suppressed_until"] = now + int(
+                cooldown_ms if cooldown_ms is not None else self._default_dismiss_cooldown_ms,
+            )
+        elif input_data["interaction_type"] == "cta_completed":
+            # Confirmed conversion — permanence is owned by ImpressionHistory;
+            # short transient window here covers the in-flight action.
             next_state["suppressed_until"] = now + _CTA_SUPPRESSION_MS
 
         self._state[key] = next_state

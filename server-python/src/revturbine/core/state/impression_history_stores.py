@@ -64,15 +64,15 @@ def _extract_retired_ids(records: list[ImpressionRecord]) -> set[str]:
 
 def _extract_suppressed_placements(records: list[ImpressionRecord]) -> dict[str, str]:
     """Walk newest → oldest so the first hit per placement wins; drop any
-    suppression whose ``suppressUntil`` is in the past.
+    cooldown whose ``suppressUntil`` is in the past. A cooldown window is any
+    record carrying a future ``suppressUntil`` — now including ``dismissed`` and
+    bare ``clicked_thru`` (time-boxed per plan 167, Q-1), not only ``suppressed``.
 
     Source: impression-history-stores.ts:183-198
     """
     suppressed: dict[str, str] = {}
     now = int(time.time() * 1000)
     for record in reversed(records):
-        if record["outcome"] != "suppressed":
-            continue
         if record["placement_id"] in suppressed:
             continue
         metadata = record.get("metadata") or {}

@@ -86,11 +86,13 @@ class TestInMemoryImpressionStore:
     def test_get_retired_placement_ids(self) -> None:
         store = InMemoryImpressionStore()
         store.append("u1", _record(placement_id="p1", outcome="impressed"))
-        store.append("u1", _record(placement_id="p2", outcome="dismissed"))
+        store.append("u1", _record(placement_id="p2", outcome="cta_completed"))
         store.append("u1", _record(placement_id="p3", outcome="clicked_thru"))
         store.append("u1", _record(placement_id="p4", outcome="suppressed"))
         retired = store.get_retired_placement_ids("u1")
-        assert retired == {"p2", "p3"}  # suppressed is NOT terminal.
+        # Only a confirmed conversion is terminal (plan 167); dismiss / bare click /
+        # suppress are all time-boxed cooldowns.
+        assert retired == {"p2"}
 
     def test_get_suppressed_placements_only_active(
         self,
@@ -266,7 +268,7 @@ class TestStorageImpressionStore:
         freeze_now_ms(1_700_000_000_000)
         storage = InMemoryStorage()
         store = StorageImpressionStore(storage=storage, tenant_id="t1")
-        store.append("u1", _record(placement_id="dismissed_p", outcome="dismissed"))
+        store.append("u1", _record(placement_id="converted_p", outcome="cta_completed"))
         store.append(
             "u1",
             _record(
@@ -275,7 +277,7 @@ class TestStorageImpressionStore:
                 metadata={"suppressUntil": "2030-01-01T00:00:00.000Z"},
             ),
         )
-        assert store.get_retired_placement_ids("u1") == {"dismissed_p"}
+        assert store.get_retired_placement_ids("u1") == {"converted_p"}
         assert "suppressed_p" in store.get_suppressed_placements("u1")
 
     def test_malformed_json_treated_as_empty(self) -> None:

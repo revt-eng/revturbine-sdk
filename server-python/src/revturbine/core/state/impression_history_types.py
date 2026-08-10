@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Any, Literal, Protocol, TypedDict, runtime_checkable
 
 __all__ = [
+    "DEFAULT_DISMISS_COOLDOWN_MS",
     "DEFAULT_SUPPRESSION_MS",
     "TERMINAL_OUTCOMES",
     "ImpressionHistoryStore",
@@ -24,13 +25,18 @@ __all__ = [
 # ── Outcome vocabulary ──────────────────────────────────────────────────────
 
 
-ImpressionOutcome = Literal["impressed", "dismissed", "clicked_thru", "suppressed"]
-"""Source: impression-history-types.ts:21-25"""
+ImpressionOutcome = Literal["impressed", "dismissed", "clicked_thru", "cta_completed", "suppressed"]
+"""Only a confirmed conversion (``cta_completed``) is terminal; ``dismissed`` and
+a bare ``clicked_thru`` are time-boxed cooldowns (plan 167, Q-1).
+
+Source: impression-history-types.ts:21-25
+"""
 
 
-TERMINAL_OUTCOMES: frozenset[ImpressionOutcome] = frozenset({"dismissed", "clicked_thru"})
-"""Outcomes that **permanently** prevent re-presentation. Suppression is
-intentionally excluded — it has a configurable time window.
+TERMINAL_OUTCOMES: frozenset[ImpressionOutcome] = frozenset({"cta_completed"})
+"""Outcomes that **permanently** prevent re-presentation. Only a confirmed
+conversion is terminal; ``dismissed`` / ``clicked_thru`` / ``suppressed`` are all
+time-boxed (they carry a ``suppressUntil`` window).
 
 Source: impression-history-types.ts:31-34
 """
@@ -38,6 +44,14 @@ Source: impression-history-types.ts:31-34
 
 DEFAULT_SUPPRESSION_MS: int = 24 * 60 * 60 * 1000
 """Default suppression duration: 24 hours.
+
+Source: impression-history-types.ts:37
+"""
+
+
+DEFAULT_DISMISS_COOLDOWN_MS: int = 7 * 24 * 60 * 60 * 1000
+"""Default dismiss cooldown: 7 days (mirrors ``cooldown_after_dismiss_days``).
+Applied to ``dismissed`` and bare ``clicked_thru`` when no explicit window is given.
 
 Source: impression-history-types.ts:37
 """
