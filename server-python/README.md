@@ -12,21 +12,18 @@ canonical TypeScript `LocalRuntime` (cross-language parity is gate-enforced via
 
 ## Install
 
-Published as a GitHub **Release on `revt-eng/revturbine-external`** (the
-customer-accessible repo — there is no PyPI). Requires Python ≥ 3.10.
-`revturbine-external` is private, so fetch the wheel authenticated, then
-install the file:
+Published on **PyPI** as [`revturbine`](https://pypi.org/project/revturbine/).
+Requires Python ≥ 3.10.
 
 ```bash
-gh release download python-v0.1.0 \
-  --repo revt-eng/revturbine-external \
-  --pattern "revturbine-*.whl"
-pip install ./revturbine-*.whl
+pip install revturbine
 ```
 
-A plain `pip install <url>` will not work — private-repo release assets
-require authentication. (Contributors developing in this repo use the
-editable install under [Local development](#local-development) instead.)
+Releases are tag-driven and version-locked with `@revturbine/sdk` — the same
+version number always ships for both. (Contributors developing in this repo
+use the editable install under [Local development](#local-development)
+instead. The old GitHub-Release distribution on the now-archived
+`revt-eng/revturbine-external` is retired.)
 
 ## Quick start
 
@@ -56,6 +53,9 @@ decision = sdk.get_placement_decision(
   `user_context` requires `tenant_id` + `user_id` (optional `plan_handle`,
   `plan_name`, `usage`). Stateless / in-memory — no storage parameter.
 - `check_entitlement(handle, context=None) -> EntitlementCheckResult`
+- `can(handle, context=None)` — the advertised alias of `check_entitlement`
+  (same canonical/alias pair as the scaffold SDK function surface and the
+  server-node port)
 - `get_placement_decision(input) -> PlacementDecision`
 - `get_placement_decisions(inputs) -> list[PlacementDecision]`
 

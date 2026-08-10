@@ -6,7 +6,10 @@ from __future__ import annotations
 def test_package_imports() -> None:
     import revturbine
 
-    assert revturbine.__version__ == "0.2.2"
+    # Single-sourced from installed metadata (plan 174 TASK-5); the exact
+    # pyproject match is pinned by tests/test_version_single_source.py.
+    assert revturbine.__version__
+    assert revturbine.__version__ != "0.0.0+unknown"
 
 
 def test_py_typed_marker_present() -> None:

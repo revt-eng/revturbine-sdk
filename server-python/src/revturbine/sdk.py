@@ -204,6 +204,20 @@ class RevTurbineCustomerSdk:
         """
         return self._runtime.check_entitlement(handle, context)
 
+    def can(
+        self,
+        handle: str,
+        context: dict[str, Any] | None = None,
+    ) -> EntitlementCheckResult:
+        """The advertised ``can`` alias of :meth:`check_entitlement`.
+
+        Mirrors the server-node port and the scaffold SDK function
+        surface (canonical ``checkEntitlement``, alias ``can``), so the
+        documented server re-check verb works verbatim on this port too
+        (plan 174 TASK-5 / REQ-7).
+        """
+        return self.check_entitlement(handle, context)
+
     def get_placement_decision(
         self,
         input_data: PlacementDecisionInput,

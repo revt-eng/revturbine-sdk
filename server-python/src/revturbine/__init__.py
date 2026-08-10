@@ -14,6 +14,9 @@ dual-mode ``runtime_mode`` dispatch is superseded by the
 headless-server scope decision).
 """
 
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _package_version
+
 from revturbine.config import (
     PLAYBOOK_FORMAT_VERSION,
     ConfigArtifact,
@@ -25,7 +28,13 @@ from revturbine.config import (
 )
 from revturbine.sdk import RevTurbineCustomerSdk, UserContext
 
-__version__ = "0.2.2"
+# Single-sourced from the installed package metadata (pyproject.toml is the
+# only place the version is written — plan 174 TASK-5 / REQ-8; the literal
+# here previously drifted to 0.2.2 while pyproject moved on).
+try:
+    __version__ = _package_version("revturbine")
+except PackageNotFoundError:  # pragma: no cover — source tree without install
+    __version__ = "0.0.0+unknown"
 
 __all__ = [
     "PLAYBOOK_FORMAT_VERSION",
