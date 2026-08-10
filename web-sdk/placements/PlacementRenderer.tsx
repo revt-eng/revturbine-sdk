@@ -53,6 +53,15 @@ export interface PlacementRendererProps {
   onRemindLater?: (outputId: string) => void;
   /** Callback fired once when the placement is first rendered visible. */
   onImpression?: (outputId: string) => void;
+  /**
+   * Optional viewport-exposure ref, threaded through to the slot component's
+   * {@link PlacementSlotProps.exposureRef} (plan 174 TASK-15, completing plan
+   * 144 REQ-18's slot half). Supply the callback built by `usePlacement` (or
+   * an equivalent from the exposure substrate); the slot attaches it to its
+   * true visual root so `placement_exposed` can be viewport-qualified.
+   * Additive and optional — omitted, slots render exactly as before.
+   */
+  exposureRef?: (element: Element | null) => void;
   /** Whether the placement is visible. Default true. */
   visible?: boolean;
   /** Custom CSS class name. */
@@ -84,6 +93,7 @@ export function PlacementRenderer({
   onDismiss,
   onRemindLater,
   onImpression,
+  exposureRef,
   visible = true,
   className,
   style,
@@ -155,6 +165,8 @@ export function PlacementRenderer({
     onDismiss: handleDismiss,
     // Opt-in: only wire the defer control when the caller supplied a handler.
     ...(onRemindLater ? { onRemindLater: handleRemindLater } : {}),
+    // Plan 174 TASK-15: thread the exposure substrate through to the slot.
+    ...(exposureRef ? { exposureRef } : {}),
     visible,
     className,
     style,

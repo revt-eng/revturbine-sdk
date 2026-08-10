@@ -145,6 +145,7 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
         registry={registry}
         onCtaClick={handleCtaClick}
         onDismiss={handleDismiss}
+        exposureRef={result.exposureRef}
         visible={result.visible}
         className={className}
         style={inlineStyle}
@@ -157,6 +158,7 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
     registry,
     handleCtaClick,
     handleDismiss,
+    result.exposureRef,
     className,
     inlineStyle,
   ]);
