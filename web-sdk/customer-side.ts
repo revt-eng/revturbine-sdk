@@ -380,14 +380,56 @@ export type RevTurbineGateResult<T> =
   | { ran: false; entitlement: EntitlementResult };
 
 /**
- * Input to {@link RevTurbineCustomerSdk.update} — the advertised `update({ usage })`
- * verb. Patches customer-reported usage balances; for identity or full user-context
- * changes use {@link RevTurbineCustomerSdk.identify} / {@link RevTurbineCustomerSdk.setUserContext}.
+ * Input to {@link RevTurbineCustomerSdk.update} — the advertised `update(patch)` verb.
+ *
+ * Accepts **every session-scoped user-context field** — everything on
+ * {@link RevTurbineUserContext} except the identity handle `id` (and the
+ * persistence envelope `tenant_id` / `user_id` / timestamps, which the input
+ * type never carried). Those are bound at {@link RevTurbineCustomerSdk.identify}
+ * time and are not patchable here; use `identify()` to (re)establish identity.
+ *
+ * Every field is optional and merged with upsert semantics — an omitted field
+ * leaves the currently-held value untouched, so a partial patch (e.g. just
+ * `{ plan }`) never clobbers other context. Patchable fields include `plan`,
+ * `email`, `account_id`, `entitlements`, `custom`, `personalization`, `trial`,
+ * the billing-recovery signals (`payment_failed` / `payment_at_risk`), `tiers`,
+ * and `usage`.
+ *
+ * `usage` keeps its friendly `Record<string, number>` shape (absolute balances),
+ * distinct from the richer per-entry `usage` on {@link RevTurbineUserContext}.
  */
-export interface RevTurbineUpdateInput {
+export type RevTurbineUpdateInput = Omit<RevTurbineUserContext, 'id' | 'usage'> & {
   /** Usage balances to merge into the current snapshot (absolute values). */
   usage?: UsageBalances;
-}
+};
+
+/**
+ * Runtime mirror of {@link RevTurbineUpdateInput}'s keys — the fields
+ * `update()` patches. `satisfies` guards each entry against typos/renames;
+ * the aliases test asserts exhaustiveness against the type, so a
+ * schema-added context field fails the build until acknowledged here.
+ * JS callers' keys outside this set are dropped with a dev warning rather
+ * than merged into the context.
+ */
+export const RECOGNIZED_UPDATE_KEYS = [
+  'usage',
+  'account_id',
+  'email',
+  'email_type',
+  'plan',
+  'trial',
+  'payment_failed',
+  'payment_at_risk',
+  'tiers',
+  'entitlements',
+  'instances',
+  'custom',
+  'personalization',
+  'derived_config_version',
+  'context_hash',
+  'derived_computed_at',
+] as const satisfies readonly (keyof RevTurbineUpdateInput)[];
+const RECOGNIZED_UPDATE_KEY_SET: ReadonlySet<string> = new Set(RECOGNIZED_UPDATE_KEYS);
 
 /** Usage snapshot entry for a usage unit. */
 export interface RevTurbineUsageSnapshotEntry {
@@ -6339,24 +6381,50 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
-   * Patch customer-reported usage — the advertised `update({ usage })` verb,
-   * delegating to {@link updateUsage}. For identity or full user-context changes
-   * use {@link identify} / {@link setUserContext}. Unknown top-level keys are
-   * ignored with a dev-only warning — `update({ <handle>: n })` is not a
-   * supported shape and has never applied usage.
+   * Patch the session-bound user context — the advertised `update(patch)` verb.
+   * Accepts every session-scoped {@link RevTurbineUserContext} field except the
+   * identity handle `id` (see {@link RevTurbineUpdateInput}); to (re)establish
+   * identity use {@link identify}.
+   *
+   * `usage` routes through {@link updateUsage} (absolute balances + usage
+   * threshold-crossing events); every other recognized field routes through
+   * {@link setUserContext}, which merges with upsert semantics — an omitted field
+   * never clobbers a previously-set value. Both stores are updated independently,
+   * so `update({ plan, usage })` applies each without interference. Keys outside
+   * the recognized set are dropped with a dev-only warning — they never reach
+   * the context, and `update({ <handle>: n })` is not a usage report.
    *
    * @example
+   * // Bump reported usage:
    * rt.update({ usage: { generations: 25 } });
+   *
+   * @example
+   * // Reflect a plan change and new traits in one call (identity unchanged):
+   * rt.update({ plan: { id: 'pro', name: 'Pro' }, custom: { role: 'admin' } });
    */
   update(patch: RevTurbineUpdateInput): void {
-    if (patch.usage) this.updateUsage(patch.usage);
-    const unrecognized = Object.keys(patch ?? {}).filter((key) => key !== 'usage');
+    const { usage, ...context } = patch ?? {};
+    // Non-usage session fields (plan / email / custom / entitlements /
+    // personalization / trial / billing signals / tiers / …) merge through the
+    // same path as setUserContext — filtered to the recognized key set, so a JS
+    // caller's junk key (the docs-taught bare entitlement handle) warns instead
+    // of polluting the context. Skip the merge (and its segment re-evaluation)
+    // when the patch carries no recognized context fields.
+    const recognized = Object.entries(context).filter(([key]) => RECOGNIZED_UPDATE_KEY_SET.has(key));
+    const unrecognized = Object.keys(context).filter((key) => !RECOGNIZED_UPDATE_KEY_SET.has(key));
     if (unrecognized.length > 0) {
       devWarn(
-        `[RevTurbine] update() accepts only { usage }; ignored key(s): ${unrecognized.join(', ')}. ` +
-          'Report usage as update({ usage: { <unit>: n } }); for plan or identity changes use identify().',
+        `[RevTurbine] update() ignored unrecognized key(s): ${unrecognized.join(', ')}. ` +
+          `Patchable fields: ${RECOGNIZED_UPDATE_KEYS.join(', ')}. A bare entitlement handle is not a ` +
+          'usage report — use update({ usage: { <unit>: n } }); to (re)establish identity use identify().',
       );
     }
+    if (recognized.length > 0) {
+      this.setUserContext(Object.fromEntries(recognized));
+    }
+    // Usage keeps the dedicated balances path so the original `update({ usage })`
+    // contract — absolute Record<string, number> + threshold crossings — is preserved.
+    if (usage) this.updateUsage(usage);
   }
 
   /**
