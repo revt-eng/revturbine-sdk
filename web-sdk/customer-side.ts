@@ -1,4 +1,5 @@
 import { DomainProviderRegistry } from './providers/registry';
+import { ServerUserContextProvider } from './providers/server-user-context-provider';
 import type { AnyDomainProvider } from './providers/types';
 import { resolveBranding, type ResolvedBranding } from './branding';
 import type { BrandingConfig } from './generated';
@@ -88,6 +89,7 @@ import {
   evaluatePredicateVerbose,
   // ── Lifecycle pure functions ──
   mergeUserContext as coreMergeUserContext,
+  computeUserContextHash,
   toSegmentEvaluationTraits as coreToSegmentEvaluationTraits,
   buildTargetingState as coreBuildTargetingState,
   generatePlacementId as coreGeneratePlacementId,
@@ -1958,6 +1960,19 @@ export class RevTurbineCustomerSdk {
    * storage, never placed in a URL, never logged.
    */
   private clientContextToken?: string;
+  /**
+   * The `traits:server` provider (plan 165 TASK-4), auto-wired on the first
+   * successful client-context fetch and fed EXCLUSIVELY from the
+   * token-authenticated response — never from app-assertable input (plan 157
+   * client-session token model).
+   */
+  private serverUserContextProvider?: ServerUserContextProvider;
+  /**
+   * `computeUserContextHash` of the last applied server context. A subsequent
+   * fetch whose evaluation-relevant inputs hash the same is dropped, skipping a
+   * redundant segment re-evaluation.
+   */
+  private lastServerContextHash?: string;
   private usageBalances: UsageBalances = {};
   private localDecisionsByPlacementId = new Map<string, RevTurbinePlacementDecision>();
   private localPlacementsByLookupKey = new Map<string, PlacementOutput | null>();
@@ -5456,6 +5471,19 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
+   * Lazily create + register the `traits:server` provider (plan 165 TASK-4).
+   * Registered once on the first successful client-context fetch; later fetches
+   * only refresh its snapshot.
+   */
+  private ensureServerUserContextProvider(): ServerUserContextProvider {
+    if (!this.serverUserContextProvider) {
+      this.serverUserContextProvider = new ServerUserContextProvider();
+      this.providerRegistry.register(this.serverUserContextProvider);
+    }
+    return this.serverUserContextProvider;
+  }
+
+  /**
    * Enrich the held UserContext with the user's server-known CLIENT-SAFE context
    * (plan 157). Fetches `GET /api/sdk/client-context` with the provided client
    * token (`rt_client_`, minted by the customer's backend via the server SDK's
@@ -5488,7 +5516,36 @@ export class RevTurbineCustomerSdk {
       }
       const data = (await response.json()) as ClientSafeContextResponse; // sdk-ok: boundary-parse — client-context response
       const patch = this.mapClientSafeContext(data);
-      if (Object.keys(patch).length > 0) this.applyServerContextPatch(patch);
+      if (Object.keys(patch).length === 0) return;
+
+      // Surface the token-authenticated server signals into the `traits:server`
+      // evaluation namespace (plan 165 TASK-4). Auto-wired lazily on first fetch
+      // and fed ONLY from this authenticated response — the app cannot forge
+      // server-authoritative traits (plan 157 client-session token model).
+      this.ensureServerUserContextProvider().setSnapshot({
+        trial: patch.trial
+          ? {
+              in_trial: patch.trial.in_trial,
+              state: patch.trial.state,
+              days_remaining: patch.trial.days_remaining,
+            }
+          : undefined,
+        payment_at_risk: patch.payment_at_risk,
+      });
+
+      // Hash-skip (plan 165 REQ-4): re-apply — which triggers segment
+      // re-evaluation — only when the fetch actually changed the
+      // evaluation-relevant inputs. A redundant fetch that hashes the same as
+      // the last applied context is dropped. The coarse `payment_at_risk`
+      // billing signal is not part of the evaluation hash input, so it is folded
+      // into the skip key explicitly.
+      const serverHashInput = JSON.parse(JSON.stringify({ trial: patch.trial ?? null }));
+      const nextHash =
+        (await computeUserContextHash(serverHashInput)) +
+        `:${patch.payment_at_risk === true ? 1 : 0}`;
+      if (nextHash === this.lastServerContextHash) return;
+      this.lastServerContextHash = nextHash;
+      this.applyServerContextPatch(patch);
     } catch {
       // Best-effort enrichment — never surface to the app.
     }

@@ -49,3 +49,12 @@ export type {
 } from './types';
 
 export { DomainProviderRegistry } from './registry';
+
+// Server-user-context provider (`traits:server`) — plan 165 TASK-4. Auto-wired by
+// the SDK from the `/api/sdk/client-context` fetch; surfaces server-authoritative
+// trial/billing signals into the evaluation traits bag.
+export {
+  ServerUserContextProvider,
+  SERVER_TRAITS_DOMAIN,
+} from './server-user-context-provider';
+export type { ServerUserContextSnapshot } from './server-user-context-provider';
