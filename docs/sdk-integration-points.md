@@ -175,7 +175,7 @@ Every placement payload includes a `cta_path` object that tells the app what to 
 | `update_payment_method` | — | Opening payment method update (includes backup payment in v1) |
 | `enable_auto_renewal` | — | Prompting user to turn on auto-renewal |
 | `manage_subscription` | — | Opening subscription/billing management |
-| `extend_trial` | — | Calling RT's trial extension endpoint (if enabled in Plans & Entitlements) |
+| `extend_trial` | — | App-handled: your resolver calls your backend, which performs the extension (trial state is app-owned today; a RevTurbine `serverActions` construct for this is planned — plan 176) |
 | `open_rt_placement` | `placement_handle` | Calling `rt.getPlacement({ placementHandle })` to evaluate a chained placement. See Placement Chaining below. |
 | `custom` | `handle` | App-defined action — the handle is defined centrally in Content Studio |
 | `dismiss` | — | Closing the placement. Only for explicit dismiss buttons — standard close (X) is app UI, not a CTA Path. |
@@ -208,7 +208,7 @@ function handleCTA(placement) {
     case "update_payment_method": return openPaymentSettings();
     case "enable_auto_renewal": return openAutoRenewalPrompt();
     case "manage_subscription": return openSubscriptionSettings();
-    case "extend_trial":        return rt.extendTrial();
+    case "extend_trial":        return extendTrialViaYourBackend(); // app-owned: call your API; no rt.extendTrial() exists
     case "custom":              return handleCustomPath(cta_path.handle);
     case "dismiss":             return rt.dismiss(placement.output_id);
     case "snooze":              return rt.snooze(placement.output_id);

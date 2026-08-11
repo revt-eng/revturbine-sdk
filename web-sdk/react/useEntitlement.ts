@@ -61,6 +61,12 @@ export interface UseEntitlementResult {
  *
  * Returns a reactive entitlement result that can drive access-gate UI.
  *
+ * Until the first check resolves, `allowed` and `denied` are both `false` and
+ * `result` is `null` — the three-state model. Consumers decide from the triple
+ * (`isLoading` / `allowed` / `denied`), never from `denied` alone; the SDK is
+ * fail-closed, so "not yet allowed" is the default. Evaluation is local to the
+ * loaded Playbook — there is no per-check network call.
+ *
  * @example
  * ```tsx
  * function BrandKitSection() {
