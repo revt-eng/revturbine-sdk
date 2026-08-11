@@ -1,0 +1,123 @@
+---
+title: Billing & Stripe
+description: Connect your Stripe account, set up webhook destinations, and verify the pipeline in test mode.
+sidebar:
+  order: 9
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+RevTurbine reads billing truth from Stripe — the customer's current plan, payment
+health, and subscription lifecycle all flow in through Stripe webhooks and land on
+the customer record, where decisions read them. This page covers the three
+operational pieces: connecting the account, wiring the webhook destinations, and
+proving the pipeline works before real money moves.
+
+## Connect your Stripe account
+
+Connection happens in the dashboard — **Settings → Stripe**. There are two paths,
+and neither involves pasting API keys:
+
+- **Existing Stripe account** — use **Connect with Stripe** (OAuth). You're sent
+  to Stripe, approve the connection, and land back in Settings with the account
+  linked. RevTurbine receives scoped access through Stripe Connect; you can
+  revoke it from either side at any time.
+- **New Stripe account** — use **Set up payments** (embedded onboarding). Stripe's
+  onboarding flow runs inside the dashboard via an account session; when Stripe
+  finishes provisioning, the account is linked automatically.
+
+<Aside type="note">
+RevTurbine never asks for a Stripe secret key. If an integration guide tells you
+to paste one, it isn't describing RevTurbine.
+</Aside>
+
+Once connected, plan variations link to Stripe prices (`stripe_price_id`), the
+billing page gains a **Sync** action that compares RevTurbine's plans against
+your Stripe catalog, and webhook events begin updating customer records.
+
+## Webhook destinations
+
+All events arrive at **one URL**:
+
+```text
+https://www.revturbine.com/app/api/webhooks/stripe
+```
+
+Stripe ships two event styles, and each style requires its **own destination** in
+the Stripe Dashboard — so a complete setup registers **two destinations pointing
+at the same URL**, each with its own signing secret:
+
+| Destination | Event style | Signing secret |
+|---|---|---|
+| Snapshot (v1) | `customer.subscription.*`, `invoice.*`, `payment_intent.*`, … | `STRIPE_SIGNING_SECRET_SNAPSHOT` |
+| Thin (v2) | `v2.*` account/person lifecycle events | `STRIPE_SIGNING_SECRET_THIN` |
+
+The receiver verifies both styles with the same HMAC mechanism and detects the
+payload style from its shape — you never route by secret.
+
+<Aside type="caution" title="Missing secrets fail silently">
+If a destination's signing secret is missing or misnamed, that destination's
+events **fail signature verification and are dropped** — nothing errors in
+RevTurbine, and billing state quietly stops updating. If subscriptions or
+payment-health changes stop landing, check both destinations' delivery logs in
+the Stripe Dashboard first: a wall of `400`s on one destination means its secret
+is wrong; deliveries that never appear mean the destination isn't registered.
+</Aside>
+
+### What the events drive
+
+- `customer.subscription.created/updated/deleted` → the customer's current plan
+  (`customers.current_plan_id`) — which flows into SDK decisions automatically:
+  the client context carries the server-derived plan handle, and hosted
+  evaluation defaults to it when the caller doesn't supply one.
+- `invoice.payment_failed` / `payment_intent.payment_failed` → the customer's
+  billing-health issues, which drive the `payment_failed` retention qualifier
+  server-side (and clear again on `invoice.payment_succeeded`).
+- Account/person (v2) events → connected-account status shown in Settings.
+
+## Verify in test mode
+
+Walk this once after connecting, before anything real depends on the pipeline:
+
+<Steps>
+
+1. **Register a test-mode destination.** In the Stripe Dashboard (test mode), add
+   a destination for the same URL and set its secret as the test-mode signing
+   secret. Test events verify against it without touching live secrets.
+
+2. **Fire synthetic events.** With the Stripe CLI:
+
+   ```bash
+   stripe trigger customer.subscription.created
+   stripe trigger invoice.payment_failed
+   ```
+
+3. **Watch them land.** Settings → Stripe shows an events-received summary; a
+   triggered subscription event should move a test customer's plan, and the
+   payment-failure event should flip that customer's billing health to
+   `attention_required` (visible on the customer record).
+
+4. **Run the catalog comparison.** The billing page's **Sync** action compares
+   RevTurbine plans against the Stripe catalog and reports mismatched, missing,
+   and orphaned prices — a clean report means plan↔price linkage is coherent.
+
+5. **Confirm recovery.** `stripe trigger invoice.payment_succeeded` should clear
+   the billing-health issue again.
+
+</Steps>
+
+## Integration settings
+
+**Settings → Stripe** is the home for the connection itself: connected-account
+status, the events-received summary, and the Sync comparison. Stripe is the
+first integration with a settings surface; outbound analytics forwarding
+(PostHog — `createPostHogIntegration` in the SDK) is configured in code today,
+with a settings surface planned.
+
+## Where checkout fits
+
+RevTurbine decides *what* to offer; your app owns the checkout itself. A CTA
+with the `open_checkout` action resolves to `open_checkout_modal` carrying the
+plan handle — your resolver opens Stripe Checkout (or your own flow) for the
+matching price. After payment, the subscription webhook updates the customer's
+plan, and access follows without further app code.
