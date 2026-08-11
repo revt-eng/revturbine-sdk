@@ -237,8 +237,11 @@ class TestNormalizeCtaPath:
         ) == {"type": "custom", "url": "/integrations/crm", "org": "42"}
         assert _normalize_cta_path({"path": "custom"}) == {"type": "custom"}
 
-    def test_snooze_remind_later(self) -> None:
-        assert _normalize_cta_path({"path": "snooze_remind_later"}) == {"type": "dismiss"}
+    def test_authored_snooze_passes_through_first_class(self) -> None:
+        # Plan 174 TASK-6 (F-65a): the dead `snooze_remind_later` branch (a
+        # value in no authored enum) is gone; authored `snooze` passes through
+        # as a first-class output type, mirroring the TS resolver.
+        assert _normalize_cta_path({"path": "snooze"}) == {"type": "snooze"}
 
     def test_open_rt_placement(self) -> None:
         assert _normalize_cta_path(

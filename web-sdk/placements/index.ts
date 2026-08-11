@@ -35,6 +35,7 @@ export {
   unregisterCtaResolver,
   dispatchCtaClick,
   bridgeUiPathResolversIntoRegistry,
+  registerBuiltinSnoozeResolver,
 } from './cta-resolvers';
 
 // Built-in slot type registration

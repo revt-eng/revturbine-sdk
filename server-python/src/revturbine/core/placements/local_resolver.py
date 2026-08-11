@@ -276,9 +276,6 @@ def _normalize_cta_path(cta: Any) -> dict[str, Any]:
     if raw_path == "view_plans":
         return {"type": "navigate_to_plans"}
 
-    if raw_path == "snooze_remind_later":
-        return {"type": "dismiss"}
-
     if raw_path == "open_rt_placement":
         rt_result: dict[str, Any] = {"type": "open_rt_placement"}
         placement_handle = config.get("placement_handle")

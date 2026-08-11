@@ -139,6 +139,35 @@ export function bridgeUiPathResolversIntoRegistry(
 }
 
 /**
+ * Register the built-in `snooze` CTA resolver (plan 174 TASK-6 companion /
+ * Q-5): an authored `snooze` ui-path dispatches to the SDK's remind-later
+ * verb, honoring a payload-authored `remind_later_minutes` window when the
+ * placement output carries one (plan 167; the verb's default matches the
+ * 60-minute tenant default). Called by the SDK constructor AFTER the init
+ * `uiPathResolvers` bridge, and skips registration when a `snooze` resolver
+ * already exists — so a customer's resolver (init map or explicit
+ * registration, before or after init) always wins. Returns a cleanup that
+ * unregisters only this entry.
+ */
+export function registerBuiltinSnoozeResolver(
+  snooze: (outputId: string, seconds?: number) => void,
+  registry: CtaResolverRegistry = getDefaultCtaResolverRegistry(),
+): () => void {
+  if (registry.has('snooze')) return () => {};
+  const resolver: CtaResolver = (_uiPath, context) => {
+    const raw = context.placement as Record<string, unknown>; // sdk-ok: boundary-parse — decision output extra field
+    const minutes = typeof raw.remind_later_minutes === 'number' ? raw.remind_later_minutes : undefined;
+    snooze(context.placement.output_id, minutes !== undefined ? minutes * 60 : undefined);
+  };
+  registry.register('snooze', resolver);
+  return () => {
+    if (registry.get('snooze') === resolver) {
+      registry.unregister('snooze');
+    }
+  };
+}
+
+/**
  * Dispatch a CTA activation: invoke the registered resolver for the action
  * type if one exists, otherwise fall back to the supplied callback.
  *

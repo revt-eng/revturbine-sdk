@@ -189,6 +189,65 @@ describe('init uiPathResolvers → CTA dispatch bridge (AC-1)', () => {
     warn.mockRestore();
   });
 
+  it('an authored snooze CTA dispatches to the built-in remind-later resolver (plan 174 TASK-6 / Q-5)', async () => {
+    const snooze = vi
+      .spyOn(RevTurbineCustomerSdk.prototype, 'snooze')
+      .mockImplementation(async () => {});
+    makeSdk([CHECKOUT], { open_checkout_modal: vi.fn() });
+
+    const handled = clickCta(makePlacement({ type: 'snooze' }));
+    await flushMicrotasks();
+
+    expect(handled).toBe(true);
+    expect(snooze).toHaveBeenCalledWith('out_1', undefined);
+    snooze.mockRestore();
+  });
+
+  it('a payload-authored remind_later_minutes window rides into the snooze call as seconds', async () => {
+    const snooze = vi
+      .spyOn(RevTurbineCustomerSdk.prototype, 'snooze')
+      .mockImplementation(async () => {});
+    makeSdk([CHECKOUT], { open_checkout_modal: vi.fn() });
+
+    const placement = makePlacement({ type: 'snooze' });
+    (placement as unknown as Record<string, unknown>).remind_later_minutes = 45; // sdk-ok: boundary-parse — test fixture extra field
+    clickCta(placement);
+    await flushMicrotasks();
+
+    expect(snooze).toHaveBeenCalledWith('out_1', 2700);
+    snooze.mockRestore();
+  });
+
+  it('a customer snooze resolver in the init map wins over the built-in', async () => {
+    const snooze = vi
+      .spyOn(RevTurbineCustomerSdk.prototype, 'snooze')
+      .mockImplementation(async () => {});
+    const custom = vi.fn();
+    makeSdk([CHECKOUT], { open_checkout_modal: vi.fn(), snooze: custom });
+
+    clickCta(makePlacement({ type: 'snooze' }));
+    await flushMicrotasks();
+
+    expect(custom).toHaveBeenCalledTimes(1);
+    expect(snooze).not.toHaveBeenCalled();
+    snooze.mockRestore();
+  });
+
+  it('dispose() removes the built-in snooze resolver', async () => {
+    const snooze = vi
+      .spyOn(RevTurbineCustomerSdk.prototype, 'snooze')
+      .mockImplementation(async () => {});
+    const sdk = makeSdk([CHECKOUT], { open_checkout_modal: vi.fn() });
+    sdk.dispose();
+
+    const handled = clickCta(makePlacement({ type: 'snooze' }));
+    await flushMicrotasks();
+
+    expect(handled).toBe(false);
+    expect(snooze).not.toHaveBeenCalled();
+    snooze.mockRestore();
+  });
+
   it('a rejected async resolver is logged, not thrown into the click handler', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     makeSdk([CHECKOUT], {

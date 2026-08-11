@@ -117,7 +117,7 @@ import {
 } from './config-artifact';
 import { PlacementTypeRegistry } from './placements/registry';
 import { registerBuiltinSlotTypes } from './placements/builtin';
-import { bridgeUiPathResolversIntoRegistry } from './placements/cta-resolvers';
+import { bridgeUiPathResolversIntoRegistry, registerBuiltinSnoozeResolver } from './placements/cta-resolvers';
 import {
   resolveRecommendedPlanTokens,
   type RecommendationStrategy,
@@ -1926,6 +1926,7 @@ export class RevTurbineCustomerSdk {
   private readonly providerFailureSlotBehavior: RevTurbineProviderFailureSlotBehavior;
   private readonly uiPathResolvers: RevTurbineUiPathResolverMap;
   private unbridgeUiPathCtaResolvers: () => void = () => {};
+  private unregisterBuiltinSnoozeResolver: () => void = () => {};
   private readonly persistentStore: RevTurbineStorage;
   private readonly sessionStore: RevTurbineStorage;
   private readonly anonymousId: string;
@@ -2055,6 +2056,11 @@ export class RevTurbineCustomerSdk {
     // Plan 174 TASK-1 (F-70): init-supplied resolvers drive runtime CTA
     // dispatch; explicit registerCtaResolver() registrations keep precedence.
     this.unbridgeUiPathCtaResolvers = bridgeUiPathResolversIntoRegistry(this.uiPathResolvers);
+    // Plan 174 TASK-6 / Q-5: authored `snooze` dispatches to the remind-later
+    // verb by default; registered after the bridge so a customer resolver wins.
+    this.unregisterBuiltinSnoozeResolver = registerBuiltinSnoozeResolver((outputId, seconds) => {
+      void this.snooze(outputId, seconds);
+    });
     this.hydrateDecisionCache();
     this.hydrateInteractionState();
     this.hydratePresentationCaps();
@@ -4290,6 +4296,7 @@ export class RevTurbineCustomerSdk {
    */
   dispose(): void {
     this.unbridgeUiPathCtaResolvers();
+    this.unregisterBuiltinSnoozeResolver();
     if (this.flushTimer !== undefined) {
       clearInterval(this.flushTimer);
       this.flushTimer = undefined;
