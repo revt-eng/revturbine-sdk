@@ -144,6 +144,40 @@ export type SdkMetadata = Record<string, JsonValue>;
 /** User-provided traits or custom context (inherently untyped from customer code). */
 export type SdkTraits = Record<string, JsonValue>;
 
+/**
+ * Top-level keys {@link RevTurbineCustomerSdk.identify} recognizes on a
+ * canonical user-context input. Anything else is either ignored (canonical
+ * input) or routed to legacy `custom` traits — both with a dev-only warning
+ * (plan 168 REQ-3).
+ */
+const RECOGNIZED_IDENTIFY_KEYS = [
+  'account_id',
+  'email',
+  'plan',
+  'plan_handle',
+  'usage',
+  'entitlements',
+  'custom',
+  'personalization',
+] as const;
+const RECOGNIZED_IDENTIFY_KEY_SET: ReadonlySet<string> = new Set(RECOGNIZED_IDENTIFY_KEYS);
+
+/** Heuristic for an email-shaped `identify()` id — ids should be opaque; emails belong in `{ email }`. */
+const EMAIL_SHAPED_ID = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Dev detection mirrors the React-ecosystem convention: bundlers replace
+// NODE_ENV for production builds; environments without `process` (raw browser
+// ESM) are treated as dev so misuse diagnostics stay visible there.
+const IS_DEV_ENV = ((): boolean => {
+  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+  return env?.NODE_ENV !== 'production';
+})();
+
+/** Dev-only diagnostic channel — silenced in production builds. */
+function devWarn(message: string): void {
+  if (IS_DEV_ENV) console.warn(message);
+}
+
 /** Properties attached to analytics events. */
 export type SdkEventProperties = Record<string, JsonValue>;
 
@@ -240,6 +274,18 @@ const VALID_SURFACE_TYPES: ReadonlySet<RevTurbineSurfaceType> = new Set<RevTurbi
  * ```
  */
 export type UserContextInput = Omit<UserContext, 'id' | 'tenant_id' | 'user_id' | 'created_at' | 'updated_at'>;
+
+/**
+ * Input accepted by {@link RevTurbineCustomerSdk.identify} for the canonical
+ * user-context shape. Extends {@link UserContextInput} with the `plan_handle`
+ * convenience alias — shorthand for `plan: { id: plan_handle, name: plan_handle }`
+ * when the app knows only the plan handle. An explicit `plan` wins over the
+ * alias when both are supplied.
+ */
+export type IdentifyContextInput = UserContextInput & {
+  /** Alias for `plan` — the plan's `unique_handle` (e.g. `'pro'`). */
+  plan_handle?: string;
+};
 
 /**
  * A placement output returned by the decision engine.
@@ -2772,15 +2818,30 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
+   * The single resolver for the user's current plan spelling (plan 168 REQ-4).
+   * Reads the three forms the SDK accepts — `plan.id` (canonical),
+   * `custom.plan` (legacy traits), `custom.plan_handle` (docs-taught alias) —
+   * so every plan-scoped read site matches the same plan regardless of which
+   * spelling the app supplied. Returns `''` when no plan is set; callers
+   * lowercase as needed.
+   */
+  private resolveContextPlanRaw(): string {
+    const plan = this.userContext.plan;
+    if (isRecord(plan) && typeof plan.id === 'string' && plan.id) return plan.id;
+    const custom = this.userContext.custom;
+    if (typeof custom?.plan === 'string' && custom.plan) return custom.plan;
+    if (typeof custom?.plan_handle === 'string' && custom.plan_handle) return custom.plan_handle;
+    return '';
+  }
+
+  /**
    * The set of identifiers (lowercased plan id + unique_handle) that name the
    * user's CURRENT plan, so an `entitlement_rule` whose plan target carries
    * either form is matched. The app may set `plan.id` to the handle (`"free"`)
    * or the config id (`"plan_free"`); both resolve to the same plan here.
    */
   private activePlanIdentifiers(exportedConfig: RevTurbineConfig): Set<string> {
-    const raw = (isRecord(this.userContext.plan) && typeof this.userContext.plan.id === 'string')
-      ? this.userContext.plan.id
-      : (typeof this.userContext.custom?.plan === 'string' ? this.userContext.custom.plan : '');
+    const raw = this.resolveContextPlanRaw();
     const current = String(raw || '').toLowerCase();
     const ids = new Set<string>();
     if (!current) return ids;
@@ -2911,9 +2972,7 @@ export class RevTurbineCustomerSdk {
     const empty = { recommended_plan_handle: '', recommended_plan_name: '' };
     if (!exportedConfig?.plans?.length) return empty;
 
-    const currentPlanHandleRaw =
-      (typeof this.userContext.plan === 'object' && this.userContext.plan?.id)
-      || (typeof this.userContext.custom?.plan === 'string' ? this.userContext.custom.plan : '');
+    const currentPlanHandleRaw = this.resolveContextPlanRaw();
     const currentPlanHandle = String(currentPlanHandleRaw || '').toLowerCase();
 
     const planIRs = exportedConfig.plans.map((p) => ({
@@ -3076,9 +3135,7 @@ export class RevTurbineCustomerSdk {
     const exportedConfig = this.getConfiguredExportedConfig();
     if (!exportedConfig) return null;
 
-    const currentPlanHandleRaw =
-      (typeof this.userContext.plan === 'object' && this.userContext.plan?.id)
-      || (typeof this.userContext.custom?.plan === 'string' ? this.userContext.custom.plan : '');
+    const currentPlanHandleRaw = this.resolveContextPlanRaw();
     const currentPlanHandle = String(currentPlanHandleRaw || '').toLowerCase();
 
     const targeting = this.getTargeting();
@@ -3153,7 +3210,7 @@ export class RevTurbineCustomerSdk {
     const configuredPlanName = configuredPlanNameFromExportedConfig(exportedConfig, this.userContext.plan);
     const effectivePlan = configuredPlanName
       ?? cachedContext?.plan
-      ?? (typeof this.userContext.plan === 'object' && this.userContext.plan?.id ? this.userContext.plan.id : undefined);
+      ?? (this.resolveContextPlanRaw() || undefined);
     const configuredSegments = [...(exportedConfig?.segments ?? [])];
     const configuredTraitFields = Array.from(new Set(
       configuredSegments.flatMap((segment) => (segment.predicates ?? []).map((predicate) => predicate.field)),
@@ -6053,10 +6110,44 @@ export class RevTurbineCustomerSdk {
     await this.capture(name, data ?? {});
   }
 
-  identify(userId: string, contextOrTraits?: UserContextInput | SdkTraits): void {
+  /**
+   * Identify the current user and (optionally) supply their context.
+   *
+   * Accepts the canonical {@link IdentifyContextInput} — recognized by the
+   * presence of `account_id` / `email` / `plan` / `plan_handle` / `usage` /
+   * `entitlements` / `custom` — or a legacy plain-traits object, which is
+   * stored under `custom` unchanged. `plan_handle` is shorthand for
+   * `plan: { id: plan_handle, name: plan_handle }`; all three plan spellings
+   * (`plan.id`, `custom.plan`, `custom.plan_handle`) resolve identically for
+   * plan-scoped rules (plan 168 REQ-4).
+   *
+   * Guardrails: an empty id rejects the call; an email-shaped id warns in dev
+   * (ids stay opaque — pass emails as `{ email }`); unrecognized top-level
+   * keys are named in a dev warning instead of being dropped or routed
+   * silently. Legacy-traits behavior is unchanged beyond the diagnostic.
+   *
+   * @example
+   * ```ts
+   * rt.identify('user_123', { plan: { id: 'pro', name: 'Professional' } });
+   * rt.identify('user_123', { plan_handle: 'pro' }); // alias — same plan resolution
+   * ```
+   */
+  identify(userId: string, contextOrTraits?: IdentifyContextInput | SdkTraits): void {
+    if (typeof userId !== 'string' || userId.trim() === '') {
+      console.error('[RevTurbine] identify() requires a non-empty user id; call ignored. Pass your stable internal user id.');
+      return;
+    }
+    if (EMAIL_SHAPED_ID.test(userId)) {
+      devWarn(
+        `[RevTurbine] identify() received an email-shaped user id ("${userId}"). ` +
+          'Use an opaque stable id and pass the email as { email } instead.',
+      );
+    }
     const previousContext = this.userContext;
-    // Detect UserContextInput by the presence of its canonical fields.
-    // Legacy callers pass a plain traits object without these keys; they remain fully backward-compatible.
+    // Detect a canonical user-context input by the presence of its recognized
+    // fields. Legacy callers pass a plain traits object without these keys;
+    // they remain fully backward-compatible (stored under `custom`), now with
+    // a dev-only diagnostic instead of a silent route (plan 168 REQ-3).
     const isUserContextInput = contextOrTraits != null &&
       typeof contextOrTraits === 'object' &&
       !Array.isArray(contextOrTraits) &&
@@ -6064,24 +6155,45 @@ export class RevTurbineCustomerSdk {
         'account_id' in contextOrTraits ||
         'email' in contextOrTraits ||
         'plan' in contextOrTraits ||
+        'plan_handle' in contextOrTraits ||
         'usage' in contextOrTraits ||
         'entitlements' in contextOrTraits ||
         'custom' in contextOrTraits
       );
 
+    if (contextOrTraits != null && typeof contextOrTraits === 'object' && !Array.isArray(contextOrTraits)) {
+      const unrecognized = Object.keys(contextOrTraits).filter((key) => !RECOGNIZED_IDENTIFY_KEY_SET.has(key));
+      if (unrecognized.length > 0) {
+        devWarn(
+          isUserContextInput
+            ? `[RevTurbine] identify() ignoring unrecognized user-context key(s): ${unrecognized.join(', ')}. ` +
+              `Recognized keys: ${RECOGNIZED_IDENTIFY_KEYS.join(', ')}.`
+            : '[RevTurbine] identify() found no recognized user-context key — treating the object as legacy ' +
+              `traits (stored under custom). Keys seen: ${unrecognized.join(', ')}; recognized keys: ` +
+              `${RECOGNIZED_IDENTIFY_KEYS.join(', ')}. For plan-scoped rules use { plan: { id, name } } or { plan_handle }.`,
+        );
+      }
+    }
+
     if (isUserContextInput) {
-      const ctx = contextOrTraits as UserContextInput;
+      const ctx = contextOrTraits as IdentifyContextInput;
       if (ctx.usage) {
         this.usageBalances = { ...this.usageBalances, ...usageAmountsFromEntries(ctx.usage) };
       }
+      // `plan_handle` aliases to `plan` (plan 168 REQ-4); an explicit `plan`
+      // wins. The handle is also mirrored into `custom.plan_handle` so segment
+      // traits keep seeing the spelling legacy routing used to expose.
+      const planFromAlias = !ctx.plan && typeof ctx.plan_handle === 'string' && ctx.plan_handle.trim() !== ''
+        ? { id: ctx.plan_handle, name: ctx.plan_handle }
+        : undefined;
       this.userContext = this.mergeUserContext({
         id: userId,
         account_id: ctx.account_id,
         email: ctx.email,
-        plan: ctx.plan,
+        plan: ctx.plan ?? planFromAlias,
         usage: ctx.usage,
         entitlements: ctx.entitlements as Record<string, boolean> | undefined,
-        custom: ctx.custom,
+        custom: planFromAlias ? { plan_handle: planFromAlias.id, ...(ctx.custom ?? {}) } : ctx.custom,
         personalization: ctx.personalization,
       });
     } else {
@@ -6229,13 +6341,22 @@ export class RevTurbineCustomerSdk {
   /**
    * Patch customer-reported usage — the advertised `update({ usage })` verb,
    * delegating to {@link updateUsage}. For identity or full user-context changes
-   * use {@link identify} / {@link setUserContext}.
+   * use {@link identify} / {@link setUserContext}. Unknown top-level keys are
+   * ignored with a dev-only warning — `update({ <handle>: n })` is not a
+   * supported shape and has never applied usage.
    *
    * @example
    * rt.update({ usage: { generations: 25 } });
    */
   update(patch: RevTurbineUpdateInput): void {
     if (patch.usage) this.updateUsage(patch.usage);
+    const unrecognized = Object.keys(patch ?? {}).filter((key) => key !== 'usage');
+    if (unrecognized.length > 0) {
+      devWarn(
+        `[RevTurbine] update() accepts only { usage }; ignored key(s): ${unrecognized.join(', ')}. ` +
+          'Report usage as update({ usage: { <unit>: n } }); for plan or identity changes use identify().',
+      );
+    }
   }
 
   /**
