@@ -138,7 +138,7 @@ Opt into hand-authored capture with `domCapture` on the provider. One delegated 
 | `render` | When the placement renders |
 | `viewport` | When it scrolls into the viewport; falls back to resolution (`exposure_basis: 'render_fallback'`) when `IntersectionObserver` is unavailable |
 
-Attach `exposureRef` (from `usePlacement`) or the additive `exposureRef` prop on `PlacementSlotProps` to the placement's true visual root.
+`usePlacement` returns `exposureRef`; slot components receive the same ref through the additive `exposureRef` prop on `PlacementSlotProps` — the renderer threads it to every slot automatically, so a **custom component** just attaches it to its true visual root. (The built-in components attach it themselves in an upcoming release; until then, viewport exposure with built-ins uses the render fallback.)
 
 :::caution[Metric-migration note]
 Only `placementExposure: 'viewport'` **with `IntersectionObserver` present** moves the `placement_presentations` denominator to viewport-qualified presentations — a deliberate metric-definition change. CTR and conversion-rate for a placement switched to `viewport` reflect *seen* presentations from that point forward and no longer compare against pre-switch history. `legacy_resolution` (the default) leaves the denominator — and every existing dashboard — unchanged.
@@ -196,6 +196,29 @@ This is a deliberate, code-passed decision: pass it explicitly from your own con
 :::note[Not the same as placement "Test Mode"]
 Placement **Test Mode** (`off / test_users / all_traffic` on a placement's settings) is a *server-side decisioning* control — it governs **who is eligible to see** a placement, and stamps its own marker on decision responses. The `test` init option is a *caller-declared* marker on **emitted events**. A production user in a placement's test audience is not test traffic; a staging deploy emitting real-looking events is. The two are independent.
 :::
+
+## Silent-failure diagnostics
+
+When a placement or entitlement can't resolve for **infrastructure** reasons, the SDK reports it instead of failing silently — a `resolution_failure` diagnostic on the anonymous meta channel:
+
+| Reason | Emitted when |
+|---|---|
+| `placement_not_registered` | A decision is requested for a placement the app never registered — the classic "my payload renders nothing, silently" |
+| `config_unavailable` | The Playbook never arrived, so a placement fell back or an entitlement check denied without a rule saying no |
+| `sdk_disabled_provider_failure` | The provider chain failed and the SDK disabled itself fail-closed |
+
+Diagnostics carry **only** author-defined handles (placement, slot, plan, entitlement) and closed reason codes — never user context, free text, or your tenant identifier (deployments are counted through a one-way hash). They're deduplicated per session and capped, fire from keyed production installs as well as keyless ones, and are silenced by **either** opt-out:
+
+```ts
+initRevTurbine({ analytics: false });          // silences diagnostics too
+initRevTurbine({ anonymousTelemetry: false }); // likewise
+```
+
+Rule-based denials and local mode's default behavior are not failures and never emit.
+
+## Your taxonomy in analytics
+
+Events that carry the `area` / `action` / `purpose` taxonomy (from `TelemetryScope`, `useTrack` options, `EngagementArea`, and tracked actions) are additionally stored with the taxonomy as first-class analytics columns — so engagement queries group by area and action directly, with no JSON unpacking and no configuration on your side. Untagged events are unaffected.
 
 ## Privacy & delivery
 
