@@ -940,9 +940,15 @@ export interface components {
             bundle_version?: components["schemas"]["Anon_e17de468dbc9_4"];
             config_shape?: components["schemas"]["Anon_a070b8adf29f"];
             message?: components["schemas"]["Anon_7e1c99abdd77_2"];
+            reason?: components["schemas"]["Anon_e17de468dbc9_5"];
+            placement_handle?: components["schemas"]["Anon_e17de468dbc9_6"];
+            slot_handle?: components["schemas"]["Anon_e17de468dbc9_7"];
+            surface?: components["schemas"]["Anon_e17de468dbc9_8"];
+            plan_handle?: components["schemas"]["Anon_e17de468dbc9_9"];
+            entitlement_handle?: components["schemas"]["Anon_e17de468dbc9_10"];
         };
         /** @enum {string} */
-        SdkMetaEventType: "sdk_init" | "sdk_error" | "sdk_validation_warning";
+        SdkMetaEventType: "sdk_init" | "sdk_error" | "sdk_validation_warning" | "resolution_failure";
         SdkConfigShape: {
             plans: components["schemas"]["Anon_274ba4ca49d5"];
             entitlements: components["schemas"]["Anon_274ba4ca49d5_1"];
@@ -1773,6 +1779,18 @@ export interface components {
         Anon_274ba4ca49d5_7: number;
         Anon_7e1c99abdd77_2: components["schemas"]["Anon_373775e26848_4"];
         Anon_373775e26848_4: string;
+        Anon_e17de468dbc9_5: components["schemas"]["Anon_520c691f88f7_5"];
+        Anon_520c691f88f7_5: string;
+        Anon_e17de468dbc9_6: components["schemas"]["Anon_520c691f88f7_6"];
+        Anon_520c691f88f7_6: string;
+        Anon_e17de468dbc9_7: components["schemas"]["Anon_520c691f88f7_7"];
+        Anon_520c691f88f7_7: string;
+        Anon_e17de468dbc9_8: components["schemas"]["Anon_520c691f88f7_8"];
+        Anon_520c691f88f7_8: string;
+        Anon_e17de468dbc9_9: components["schemas"]["Anon_520c691f88f7_9"];
+        Anon_520c691f88f7_9: string;
+        Anon_e17de468dbc9_10: components["schemas"]["Anon_520c691f88f7_10"];
+        Anon_520c691f88f7_10: string;
         Anon_761f976a1da1_2: string;
         Anon_57796118d046_19: string;
         Anon_4e04ec5cc4e6_4: components["schemas"]["Anon_9ac136edb99a_9"];

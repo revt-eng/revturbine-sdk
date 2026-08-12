@@ -2546,6 +2546,10 @@ export class RevTurbineCustomerSdk {
       ? 'This placement is in safe fallback mode because all configured providers failed.'
       : 'This placement is currently hidden because provider fallback resolution failed.';
 
+    this.emitResolutionFailure({
+      reason: 'sdk_disabled_provider_failure',
+      placement_handle: placementId,
+    });
     return {
       placementId,
       requestId: requestId(),
@@ -3973,6 +3977,64 @@ export class RevTurbineCustomerSdk {
     );
   }
 
+  /**
+   * Session-scoped dedup for `resolution_failure` diagnostics (plan 144 Q-4
+   * disposition): one emit per `(reason, primary handle)` pair, capped per
+   * session so a render loop can never flood the channel.
+   */
+  private readonly emittedResolutionDiagnostics = new Set<string>();
+  private static readonly RESOLUTION_DIAGNOSTIC_SESSION_CAP = 20;
+
+  /**
+   * Gate for `resolution_failure` diagnostics (plan 144 TASK-21). Honors BOTH
+   * opt-outs (124 Q-6, decided 2026-08-12): either `anonymousTelemetry: false`
+   * or `analytics: false` silences diagnostics — the most conservative
+   * reading, so no privacy-minded install is surprised by a new emission.
+   * Unlike {@link anonymousTelemetryActive} there is NO keyless requirement:
+   * keyed production installs emit diagnostics too (124 Q-7). `previewMode`
+   * (docs/playground renders) still suppresses, and the channel is
+   * browser-only for now (server-side diagnostics are a named follow-up).
+   */
+  private diagnosticTelemetryActive(): boolean {
+    return (
+      this.anonymousTelemetryEnabled &&
+      this.analyticsEnabled &&
+      !this.previewMode &&
+      isBrowser()
+    );
+  }
+
+  /**
+   * Emit one `resolution_failure` diagnostic (plan 144 TASK-21 — the plan-124
+   * "silent failure" channel): a placement that resolved to the fallback, or
+   * an entitlement denied for infrastructure reasons, becomes observable on
+   * the keyless meta channel. Field values are author-defined handles and
+   * closed reason codes only (TASK-20 allow-list); deduped per
+   * `(reason, primary handle)` for the session and capped.
+   */
+  private emitResolutionFailure(
+    diag: {
+      reason: string;
+      placement_handle?: string;
+      slot_handle?: string;
+      surface?: string;
+      plan_handle?: string;
+      entitlement_handle?: string;
+    },
+  ): void {
+    if (!this.diagnosticTelemetryActive()) return;
+    const key = `${diag.reason}|${diag.placement_handle ?? diag.entitlement_handle ?? ''}`;
+    if (this.emittedResolutionDiagnostics.has(key)) return;
+    if (
+      this.emittedResolutionDiagnostics.size >=
+      RevTurbineCustomerSdk.RESOLUTION_DIAGNOSTIC_SESSION_CAP
+    ) {
+      return;
+    }
+    this.emittedResolutionDiagnostics.add(key);
+    void this.postAnonMeta('resolution_failure', diag);
+  }
+
   /** Fire the one anonymous `sdk_init` adoption beacon at startup. */
   private async emitSdkInitTelemetry(): Promise<void> {
     if (!this.anonymousTelemetryActive()) return;
@@ -4015,7 +4077,32 @@ export class RevTurbineCustomerSdk {
     if (!this.anonymousTelemetryActive()) return;
 
     this.showAnonTelemetryNoticeOnce();
+    await this.postAnonMeta(eventType, extra);
+  }
 
+  /**
+   * Ungated build + POST of one allowlisted meta event — the shared tail of
+   * {@link emitAnonMeta} (keyless adoption beacons, which stay gated on
+   * keyless installs) and the `resolution_failure` diagnostics (plan 144
+   * TASK-21), which are deliberately NOT keyless-only — keyed production
+   * installs emit them too (plan 124 Q-7). Callers gate; this never throws.
+   */
+  private async postAnonMeta(
+    eventType: components['schemas']['SdkMetaEventType'],
+    extra: Partial<
+      Pick<
+        SdkMetaEventBody,
+        | 'config_shape'
+        | 'message'
+        | 'reason'
+        | 'placement_handle'
+        | 'slot_handle'
+        | 'surface'
+        | 'plan_handle'
+        | 'entitlement_handle'
+      >
+    > = {},
+  ): Promise<void> {
     // Whole body is best-effort: hashing, serialization, AND delivery must
     // never throw into the host app (REQ-3/REQ-4).
     try {
@@ -4041,6 +4128,14 @@ export class RevTurbineCustomerSdk {
         ...(bundleVersion ? { bundle_version: bundleVersion } : {}),
         ...(extra.config_shape ? { config_shape: extra.config_shape } : {}),
         ...(extra.message ? { message: extra.message.slice(0, 500) } : {}),
+        // Diagnostic allow-list (plan 144 TASK-20/21): author-defined handles
+        // and closed reason codes only — length-capped to match the contract.
+        ...(extra.reason ? { reason: extra.reason.slice(0, 64) } : {}),
+        ...(extra.placement_handle ? { placement_handle: extra.placement_handle.slice(0, 64) } : {}),
+        ...(extra.slot_handle ? { slot_handle: extra.slot_handle.slice(0, 64) } : {}),
+        ...(extra.surface ? { surface: extra.surface.slice(0, 64) } : {}),
+        ...(extra.plan_handle ? { plan_handle: extra.plan_handle.slice(0, 64) } : {}),
+        ...(extra.entitlement_handle ? { entitlement_handle: extra.entitlement_handle.slice(0, 64) } : {}),
       };
       const body: SdkMetaIngestBatchBody = { events: [event] };
 
@@ -4942,6 +5037,12 @@ export class RevTurbineCustomerSdk {
     }
 
     if (!placement) {
+      // The motivating plan-124 case: a payload authored against a placement
+      // the app never registered resolves to nothing, silently. Make it heard.
+      this.emitResolutionFailure({
+        reason: 'placement_not_registered',
+        placement_handle: input.placementId,
+      });
       return {
         placementId: input.placementId,
         requestId: rid,
@@ -5034,6 +5135,10 @@ export class RevTurbineCustomerSdk {
     // per-decision path (/api/sdk/decide-context) is retired per Q-2/Q-4,
     // exactly as TASK-3 retired check-entitlement. The next call after the
     // config arrives resolves locally via getOrBuildPlacementResolver().
+    this.emitResolutionFailure({
+      reason: 'config_unavailable',
+      placement_handle: input.placementId,
+    });
     const configUnavailable: RevTurbinePlacementDecision = {
       placementId: input.placementId,
       requestId: rid,
@@ -5421,6 +5526,11 @@ export class RevTurbineCustomerSdk {
       // Fail-closed: a disabled SDK cannot affirm the grant, so it must not
       // leak access. The reason is preserved so callers can distinguish this
       // from a rule-based denial.
+      this.emitResolutionFailure({
+        reason: 'sdk_disabled_provider_failure',
+        entitlement_handle: handle,
+        plan_handle: this.resolveContextPlanRaw() || undefined,
+      });
       return { status: 'denied', allowed: false, reason: this.sdkDisabledReason ?? 'sdk_disabled_provider_failure' };
     }
 
@@ -5453,6 +5563,16 @@ export class RevTurbineCustomerSdk {
 
     // Fail-closed: no configured Playbook means no basis to grant access. In
     // Server mode this fires only when the launched config could not be fetched.
+    if (!this.isLocalOnlyMode()) {
+      // Infrastructure denial (plan 144 Q-3 scope): the check denied because
+      // the config never arrived, not because a rule said no. The local-mode
+      // default reason stays out of scope — it is a configuration choice.
+      this.emitResolutionFailure({
+        reason: 'config_unavailable',
+        entitlement_handle: handle,
+        plan_handle: this.resolveContextPlanRaw() || undefined,
+      });
+    }
     return {
       status: 'denied',
       allowed: false,
