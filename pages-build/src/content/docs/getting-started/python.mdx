@@ -175,7 +175,7 @@ new server integrations.
 
 Every public method delegates, with zero added decision logic, to the same
 decision substrate the TypeScript SDK uses. The shared corpus at
-`revturbine-sdk-internal/tests/parity/` runs both languages through identical fixtures
+Our parity suite runs both languages through identical fixtures
 and asserts **byte-identical** normalized output; a divergence is treated as a
 Python-port bug, never a fixture to loosen. This is what lets you gate in
 Python and render in TypeScript and trust they decided the same thing.

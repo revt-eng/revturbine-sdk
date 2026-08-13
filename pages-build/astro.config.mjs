@@ -115,11 +115,8 @@ export default defineConfig({
       favicon: '/favicon.png',
       customCss: ['./src/styles/custom.css'],
       social: [
-        { icon: 'github', label: 'GitHub', href: 'https://github.com/revt-eng/revturbine-external' },
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/revt-eng/revturbine-sdk' },
       ],
-      editLink: {
-        baseUrl: 'https://github.com/revt-eng/revturbine-sdk-internal/edit/main/pages-build/',
-      },
       head: [
         // OpenGraph defaults
         { tag: 'meta', attrs: { property: 'og:type', content: 'website' } },

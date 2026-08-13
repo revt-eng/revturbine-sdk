@@ -1,13 +1,13 @@
 ---
 title: Quickstart
-description: Get your first RevTurbine placement rendering in under 5 minutes — no backend required.
+description: Gate a paid feature and show an upgrade prompt in under 5 minutes — no account, no backend required.
 sidebar:
   order: 1
 ---
 
 import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
-This guide walks you through installing the SDK, running in **local-only mode**, and rendering your first placement — all client-side, no API keys or backend needed.
+This guide takes you from install to a working feature gate: a free user hits an upgrade prompt, a paid user gets through — all client-side, with no account, no API keys, and no backend.
 
 ## Before You Begin
 
@@ -40,11 +40,17 @@ This guide walks you through installing the SDK, running in **local-only mode**,
       </TabItem>
     </Tabs>
 
-2. **Add an exported config**
+2. **Add a Playbook**
 
-    Export your `playbook.json` from the RevTurbine dashboard and place it in your `src/` directory.
+    You don't need a RevTurbine account for this. Scaffold a starter Playbook straight into your app:
 
-    The exported config contains your plans, entitlements, placements, targeting rules, surface templates, and **UI paths** — everything the SDK needs to run locally.
+    ```bash
+    npx revturbine create
+    ```
+
+    That installs the SDK and CLI and drops a local-mode `playbook.json` in place. If you already have an account, `revturbine download --live --save ./playbook.json` pulls your real config instead.
+
+    The Playbook contains your plans, entitlements, placements, targeting rules, surface templates, and **UI paths** — everything the SDK needs to run locally.
 
 3. **Wrap your app in `RevTurbineProvider` with local runtime**
 
@@ -114,9 +120,27 @@ This guide walks you through installing the SDK, running in **local-only mode**,
     }
     ```
 
-5. **Verify it works**
+5. **Gate a paid feature**
 
-    Start your dev server. The SDK evaluates targeting rules from the exported config and renders the matching placement for each slot. If no placement matches the current user context, the component renders nothing — that's the additive principle at work.
+    Wrap the gated UI in `<Gate>`. It renders its children when the user is entitled, and shows the configured upgrade placement when they aren't — no manual check.
+
+    ```tsx title="src/components/BatchExport.tsx"
+    import { Gate } from '@revturbine/sdk';
+
+    function BatchExport() {
+      return (
+        <Gate id="batch_export_gate" can="batch_export">
+          <BatchExportButton />
+        </Gate>
+      );
+    }
+    ```
+
+    `can="batch_export"` is shorthand for `check={{ entitlement: 'batch_export' }}`. For custom deny UI, use the `useCan` hook instead — see the [Entitlements guide](/guides/entitlements/).
+
+6. **Verify it works**
+
+    Start your dev server. With the starter Playbook's free plan, `<Gate>` renders the upgrade placement instead of the button. Switch the user to the paid plan — change `plan` in the `user` option — and the button appears. Placement slots behave the same way: if no placement matches the current user context, the component renders nothing, which is the additive principle at work.
 
 </Steps>
 
@@ -146,7 +170,7 @@ When a placement is configured and the user matches targeting rules, the slot re
 
 - [Interactive playground](/playground/) — try live editable SDK scenarios in your browser
 - [Runtime modes](/guides/runtime-modes/) — understand local_only, server, and custom endpoints
-- [Component Gallery](/components/) — interactive demos of every built-in slot component
+- [Component Gallery](/components/) — interactive demos of the built-in placement surfaces
 - [Entitlement gates](/guides/entitlements/) — gate features, enforce usage limits
 - [Headless API](/guides/headless-api/) — use the SDK without React
 - [API Reference](/api/) — full TypeDoc reference for all exports

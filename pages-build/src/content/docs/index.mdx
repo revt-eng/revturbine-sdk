@@ -192,7 +192,7 @@ revturbine deploy                          # submit → approve → deploy the d
 
 <CardGrid>
   <Card title="Decisioning, not just rendering">
-    RevTurbine decides — caps, cooldowns, eligibility, priority across competing placements, and ML-scored propensity for conversion, expansion, and retention nudges. One `getPlacement()` call returns the winner. No client-side orchestration, no homegrown segment logic.
+    RevTurbine decides — caps, cooldowns, eligibility, and priority across competing placements. One `<Slot>` (or `usePlacement()`) returns the winner. No client-side orchestration, no homegrown segment logic. ML-scored propensity is on the roadmap, not shipped — see [Beyond gating](/docs/guides/beyond-gating/).
   </Card>
 
   <Card title="Entitlements and placements in one engine, linked to billing">
@@ -211,7 +211,7 @@ revturbine deploy                          # submit → approve → deploy the d
 | **Placements** | `Slot` / `usePlacement()` | Render upgrade banners, modals, toasts, and buttons based on targeting rules |
 | **Entitlements** | `Gate` / `rt.can()` | Gate features, enforce usage limits, check credits and seats |
 | **Usage tracking** | `rt.update()` | Track consumption for quota meters and passive placement triggers |
-| **Events** | `rt.track()` | Behavioral signals for propensity scoring |
+| **Events** | `rt.track()` | Behavioral signals for targeting and analytics |
 | **Interactions** | `dismiss()` / `snooze()` / `convert()` | CTA lifecycle tracking |
 | **Trial status** | `rt.getTrialStatus()` | Current trial state and countdown |
 

@@ -24,7 +24,7 @@ RevTurbine is the **authoritative source for monetization policy** — which pla
 | `rt.dismiss(outputId)` | User dismissed a placement. | — |
 | `rt.snooze(outputId)` | User snoozed a placement ("remind me later"). | — |
 | `rt.convert(outputId)` | User completed CTA. | — |
-| `rt.track(name, data?)` | Behavioral event for propensity scoring. | — |
+| `rt.track(name, data?)` | Behavioral event for targeting and analytics. | — |
 
 ## Two Integration Patterns
 
