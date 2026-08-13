@@ -8,16 +8,18 @@ import { useEntitlement, type UseEntitlementOptions, type UseEntitlementResult }
  */
 export interface UseCanResult {
   /**
-   * `true` when the user may proceed. This is `allowed || limited` (equivalently,
-   * not `denied`): a `limited` entitlement still grants access — it just means the
-   * usage/credit balance is running low. Deny-until-ready, matching the SDK's
-   * fail-closed contract: `can` is `false` until the check resolves, and stays
-   * `false` if the check errors. Evaluation is local to the loaded Playbook (no
-   * per-check network call), so the unresolved window is one microtask once
-   * initialization completes; in hosted mode the first load spans the initial
-   * config fetch. Gate paywall UI on `!can && !isLoading` so entitled users never
-   * see an upsell flash; never gate on `!allowed` (that would also block
-   * `limited` users who are still entitled).
+   * `true` when the user may proceed — the evaluator's verdict, i.e. not
+   * `denied`. A `limited` result still grants access when the evaluator allows
+   * it (degrade mode / running low), but an at-cap limit whose enforcement
+   * blocks — including the unset-enforcement default — resolves `limited` with
+   * `allowed: false` and `can` is `false`. Deny-until-ready, matching the
+   * SDK's fail-closed contract: `can` is `false` until the check resolves, and
+   * stays `false` if the check errors. Evaluation is local to the loaded
+   * Playbook (no per-check network call), so the unresolved window is one
+   * microtask once initialization completes; in hosted mode the first load
+   * spans the initial config fetch. Gate paywall UI on `!can && !isLoading` so
+   * entitled users never see an upsell flash; never gate on `!allowed` (that
+   * would also block `limited` users who are still entitled).
    */
   can: boolean;
   /**
@@ -72,7 +74,9 @@ export function useCan(
   const resolved = result !== null;
   return {
     can: resolved && !denied,
-    limited,
+    // Curated to the "granted but running low" meaning: a limited result that
+    // DENIES (at-cap, blocking enforcement) is a deny, not a soft warning.
+    limited: limited && !denied,
     isLoading: isLoading || (!resolved && error === null),
     result,
   };

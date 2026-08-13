@@ -95,6 +95,25 @@ describe('useCan — deny-until-ready (AC-9)', () => {
     expect(snapshots.at(-1)).toMatchObject({ can: true, limited: true, isLoading: false });
   });
 
+  // Plan 179 TASK-10 — at-cap limit whose enforcement blocks (incl. the
+  // unset-enforcement default) resolves `limited` + `allowed: false`. That is
+  // a settled deny, not a soft "running low" warning.
+  it('denies a limited result whose allowed verdict is false (at-cap, blocking)', async () => {
+    const sdk = createMockSdk({
+      checkEntitlement: vi.fn().mockResolvedValue({ status: 'limited', allowed: false, limit: 10, used: 10 }),
+    });
+    const snapshots = await mount('batch_export', sdk);
+    expect(snapshots.at(-1)).toMatchObject({ can: false, limited: false, isLoading: false });
+  });
+
+  it('keeps a degrade-mode limited result granted (allowed: true)', async () => {
+    const sdk = createMockSdk({
+      checkEntitlement: vi.fn().mockResolvedValue({ status: 'limited', allowed: true, limit: 10, used: 10 }),
+    });
+    const snapshots = await mount('batch_export', sdk);
+    expect(snapshots.at(-1)).toMatchObject({ can: true, limited: true, isLoading: false });
+  });
+
   it('stays denied while a check hangs unresolved — an unresolved check never grants', async () => {
     const sdk = createMockSdk({
       checkEntitlement: vi.fn().mockReturnValue(new Promise(() => {})),

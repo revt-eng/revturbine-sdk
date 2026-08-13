@@ -173,10 +173,17 @@ export function AccessGateSurfaceSlot({
     return pct >= uc.threshold;
   });
 
-  // Access is denied when any check fails.
-  const entitlementDenied = !!entitlementHandle && entitlementResult?.status === 'denied';
+  // Access is denied when any check fails. `allowed: false` counts as a deny
+  // regardless of status: an at-cap limit rule with blocking enforcement
+  // (including the unset-enforcement default) resolves `limited` +
+  // `allowed: false` — gating on status alone granted access at the cap
+  // (plan 179 TASK-10).
+  const entitlementDenied =
+    !!entitlementHandle &&
+    !!entitlementResult &&
+    (entitlementResult.status === 'denied' || entitlementResult.allowed === false);
   const denied = entitlementDenied || usageDenied;
-  // Limited — still entitled, but the balance is running low.
+  // Limited — still entitled (degrade / running low), unless it also denies.
   const limited = !!entitlementHandle && entitlementResult?.status === 'limited';
 
   // Fire denied callback.
@@ -213,7 +220,7 @@ export function AccessGateSurfaceSlot({
   // a flash of children → gate content.
   if (entitlementLoading && entitlementHandle) return null;
 
-  // Granted (allowed or limited — both are entitled).
+  // Granted (allowed, or limited with the evaluator's allowed verdict).
   if (!denied) {
     // Limited: still granted, but running low — show the soft-warn slot if given.
     if (limited && limitedFallback !== undefined) return <>{limitedFallback}</>;

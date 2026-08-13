@@ -109,6 +109,7 @@ export {
   EntitlementGate,
   SdkSession,
   initRevTurbine,
+  entitlementResultDenies,
 } from './controllers';
 export type {
   ChangeListener,

@@ -553,6 +553,36 @@ describe('EntitlementGate', () => {
       expect(sdk.checkEntitlement).toHaveBeenCalledWith('brand_kit', context);
     });
 
+    // Plan 179 TASK-10 — at-cap limit with blocking enforcement (including the
+    // unset-enforcement default) resolves `limited` + `allowed: false`; gating
+    // on status alone granted access at the cap.
+    it('denies a limited result whose allowed verdict is false (at-cap, blocking)', async () => {
+      sdk.checkEntitlement.mockResolvedValue({ status: 'limited', allowed: false, limit: 10, used: 10 });
+      const gate = new EntitlementGate(sdk, { handle: 'api_calls' });
+      await gate.check();
+      expect(gate.denied).toBe(true);
+      expect(gate.state.denied).toBe(true);
+      expect(gate.limited).toBe(true);
+      expect(gateEvaluatedCalls()[0][1]).toMatchObject({ outcome: 'limited', gated: true });
+    });
+
+    it('keeps a degrade-mode limited result granted (allowed: true)', async () => {
+      sdk.checkEntitlement.mockResolvedValue({ status: 'limited', allowed: true, limit: 10, used: 10 });
+      const gate = new EntitlementGate(sdk, { handle: 'api_calls' });
+      await gate.check();
+      expect(gate.denied).toBe(false);
+      expect(gate.limited).toBe(true);
+      expect(gateEvaluatedCalls()[0][1]).toMatchObject({ outcome: 'limited', gated: false });
+    });
+
+    it('resolves the gated placement for a blocked-limited result under autoGate', async () => {
+      sdk.checkEntitlement.mockResolvedValue({ status: 'limited', allowed: false });
+      sdk.getPlacement.mockResolvedValue({ output_id: 'po_1' });
+      const gate = new EntitlementGate(sdk, { handle: 'api_calls', autoGate: true });
+      await gate.check();
+      expect(gate.gatedPlacement).toEqual({ output_id: 'po_1' });
+    });
+
     it('detects limited status', async () => {
       sdk.checkEntitlement.mockResolvedValue({ status: 'limited', limit: 100, used: 80 });
       const gate = new EntitlementGate(sdk, { handle: 'api_calls' });

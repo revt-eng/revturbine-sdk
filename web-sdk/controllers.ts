@@ -652,6 +652,21 @@ export interface EntitlementGateState {
  * if (gate.denied && gate.gatedPlacement) { showUpgradeModal(gate.gatedPlacement); }
  * ```
  */
+/**
+ * Whether an entitlement result denies access.
+ *
+ * A result denies when its `status` is `'denied'` OR the evaluator's `allowed`
+ * verdict is explicitly `false`. The second clause matters for at-cap limit
+ * rules: blocking enforcement — including the unset-enforcement default —
+ * resolves `{ status: 'limited', allowed: false }`, and gating on status alone
+ * silently granted access at the cap (plan 179 TASK-10; the cold-funnel
+ * "cap never blocks" trap). Degrade mode (`limited` + `allowed: true`) stays
+ * granted.
+ */
+export function entitlementResultDenies(result: EntitlementResult | null): boolean {
+  return result !== null && (result.status === 'denied' || result.allowed === false);
+}
+
 export class EntitlementGate {
   private readonly sdk: RevTurbineCustomerSdk;
   private readonly options: EntitlementGateOptions;
@@ -678,7 +693,7 @@ export class EntitlementGate {
       result: this._result,
       allowed: this._result?.status === 'allowed',
       limited: this._result?.status === 'limited',
-      denied: this._result?.status === 'denied',
+      denied: entitlementResultDenies(this._result),
       gatedPlacement: this._gatedPlacement,
     };
   }
@@ -687,8 +702,13 @@ export class EntitlementGate {
   get allowed(): boolean { return this._result?.status === 'allowed'; }
   /** Convenience: `true` when usage is limited (partially exhausted). */
   get limited(): boolean { return this._result?.status === 'limited'; }
-  /** Convenience: `true` when the entitlement is denied. */
-  get denied(): boolean { return this._result?.status === 'denied'; }
+  /**
+   * Convenience: `true` when the entitlement denies — `status: 'denied'`, or
+   * the evaluator's `allowed` verdict is explicitly `false` (an at-cap limit
+   * with blocking enforcement resolves `limited` + `allowed: false`; see
+   * {@link entitlementResultDenies}).
+   */
+  get denied(): boolean { return entitlementResultDenies(this._result); }
   /** The raw entitlement result, or `null` before first check. */
   get result(): EntitlementResult | null { return this._result; }
   /** Resolved gated placement when `denied` and `autoGate` are active. */
@@ -717,7 +737,7 @@ export class EntitlementGate {
       // so a telemetry hiccup never breaks the gate.
       this.emitGateEvaluated(handle, res);
 
-      if (!autoGate || res.status !== 'denied') {
+      if (!autoGate || !entitlementResultDenies(res)) {
         this._gatedPlacement = null;
       } else if (res.placement) {
         this._gatedPlacement = res.placement;
@@ -759,7 +779,7 @@ export class EntitlementGate {
       void this.sdk.emitSemantic('gate_evaluated', {
         entitlement_handle: handle,
         outcome: res.status, // 'allowed' | 'limited' | 'denied'
-        gated: res.status === 'denied',
+        gated: entitlementResultDenies(res),
         reason: res.reason ?? null,
         limit: res.limit ?? null,
         used: res.used ?? null,

@@ -28,7 +28,7 @@ export type ConfigArtifact = Playbook | RevTurbineConfig;
  * boundary and validates it at runtime ({@link normalizeConfigArtifactOrThrow}
  * — a malformed artifact fails fast at init with a descriptive error).
  */
-export type UnvalidatedConfigArtifact = Record<string, unknown>;
+export type UnvalidatedConfigArtifact = Record<string, unknown>; // sdk-ok: type-definition
 
 /** Target values used only when an older legacy artifact predates target stamping. */
 export interface LegacyConfigTargetDefaults {
