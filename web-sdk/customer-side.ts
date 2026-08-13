@@ -118,7 +118,7 @@ import {
   type LegacyConfigTargetDefaults,
 } from './config-artifact';
 import { PlacementTypeRegistry } from './placements/registry';
-import { registerBuiltinSlotTypes } from './placements/builtin';
+import { applyPlacementRegistrySeed } from './placements/registry';
 import { bridgeUiPathResolversIntoRegistry, registerBuiltinSnoozeResolver } from './placements/cta-resolvers';
 import {
   resolveRecommendedPlanTokens,
@@ -2149,7 +2149,7 @@ export class RevTurbineCustomerSdk {
       }),
       userId: this.userContext.id ?? this.anonymousId,
     });
-    registerBuiltinSlotTypes(this.placementTypeRegistry);
+    applyPlacementRegistrySeed(this.placementTypeRegistry);
     if (options.domainProviders) {
       for (const p of options.domainProviders) {
         this.providerRegistry.register(p);

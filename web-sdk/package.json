@@ -1,6 +1,6 @@
 {
   "name": "@revt-eng/sdk",
-  "version": "0.2.72",
+  "version": "0.2.73",
   "description": "RevTurbine customer-facing SDK — placement decisioning, entitlement checks, and usage tracking.",
   "type": "module",
   "packageManager": "pnpm@11.12.0",
@@ -28,7 +28,8 @@
     "typecheck:sdk-api": "pnpm exec tsx ../scripts/check-sdk-types.ts",
     "playground": "vite --config playground/vite.config.ts",
     "harness:headless": "pnpm exec tsx ../scripts/headless-harness.ts",
-    "check:public-types": "node scripts/check-public-types.mjs"
+    "check:public-types": "node scripts/check-public-types.mjs",
+    "check:headless-standalone": "node scripts/check-headless-standalone.mjs"
   },
   "peerDependencies": {
     "react": ">=18",

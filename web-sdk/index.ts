@@ -44,6 +44,11 @@
 // ── Headless core (pure TypeScript — no React) ──────────────────────────────
 export * from './headless';
 
+// Seed the default placement registry with the built-in React slot components.
+// Lives outside the headless graph so `@revturbine/sdk/headless` never imports
+// React (plan 179 TASK-2).
+import './placements/install-builtins';
+
 // ── React integration layer ─────────────────────────────────────────────────
 export * from './react';
 

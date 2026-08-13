@@ -4,6 +4,7 @@ import {
   getDefaultRegistry,
   resetDefaultRegistry,
 } from '../registry';
+import '../install-builtins';
 import { orderedChannelCtas } from './ChannelPreviewSlots';
 
 /** Minimal placement output — `resolve()` only reads `surface.type`/`template`. */

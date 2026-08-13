@@ -14,6 +14,9 @@ import {
   parseUiPath,
   parsePromotion,
 } from './registry';
+// Guarantees the default registry is seeded with builtins even when this
+// module is loaded without the package barrel (direct module imports, tests).
+import './install-builtins';
 import {
   CtaResolverRegistry,
   getDefaultCtaResolverRegistry,

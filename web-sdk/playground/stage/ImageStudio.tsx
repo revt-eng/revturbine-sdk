@@ -1,4 +1,4 @@
-import { useEntitlement, useRevTurbine } from '../../index';
+import { EngagementArea, Track, useEntitlement, useRevTurbine } from '../../index';
 import { useStudio } from '../state/StudioProvider';
 import { useDemo } from '../state/DemoProvider';
 import { PRISM_CONFIG } from '../config/prism-config';
@@ -96,10 +96,24 @@ export function ImageStudio({ onStatus, onGate }: ImageStudioProps) {
 
   return (
     <section className="prism-studio">
+      {/* Plan 144 telemetry example (declarative surface): EngagementArea
+          scopes every descendant event with area="studio", emits a one-shot
+          engagement_view once half the area is genuinely seen, accrues
+          engagement_dwell only while visible, and bubbles descendant clicks
+          as engagement_interaction. In the playground's local_only mode
+          nothing is sent anywhere — the API itself is the demo. */}
+      <EngagementArea area="studio">
       <div className="prism-studio__toolbar">
-        <button className="prism-btn prism-btn--primary" onClick={generate}>
-          ✨ Generate
-        </button>
+        {/* Plan 144 telemetry example: Track asChild composes telemetry onto
+            the button's own onClick with no wrapper element —
+            generate_clicked marks the attempt; the imperative
+            sdk.track('image_generated') inside generate() still marks the
+            success. Two styles, two distinct semantics. */}
+        <Track event="generate_clicked" options={{ action: 'generate' }} asChild>
+          <button className="prism-btn prism-btn--primary" onClick={generate}>
+            ✨ Generate
+          </button>
+        </Track>
         {/* A badge means "there's a barrier" — shown only when the feature is
             actually gated, so Premium style and Batch export read the same way.
             While Premium style is usable (credits remain) it carries no badge;
@@ -141,6 +155,7 @@ export function ImageStudio({ onStatus, onGate }: ImageStudioProps) {
         watermarked={watermarked}
         totalGenerated={studio.generationsUsed}
       />
+      </EngagementArea>
     </section>
   );
 }

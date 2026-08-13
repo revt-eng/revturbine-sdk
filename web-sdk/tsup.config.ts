@@ -47,7 +47,11 @@ export default defineConfig({
   minify: true,
   clean: true,
   splitting: false,
-  treeshake: true,
+  // `no-external`: externals (react, crypto) are treated as side-effect-free,
+  // so a leftover bare `import 'crypto'` side-effect import is dropped instead
+  // of shipping in the browser bundle. Named imports that are actually used
+  // (react in index.js) are unaffected. Enforced by check-headless-standalone.
+  treeshake: { preset: 'recommended', moduleSideEffects: 'no-external' },
   external: [
     'react',
     'react-dom',
@@ -57,9 +61,8 @@ export default defineConfig({
     // `createHash`) alongside the decoder in one entry. The SDK only ever
     // DECODES (`BundleHandle.toPlaybook`) — it never compiles a bundle — so the
     // encoder is dead code here. Marking the node builtin external lets esbuild
-    // past the browser-platform resolve of `crypto`; tree-shaking then drops the
-    // unused encoder and, with it, the now-unreferenced `crypto` import. Verified
-    // absent from the emitted bundle (no `createHash`/`crypto` in dist/).
+    // past the browser-platform resolve of `crypto`; the treeshake setting
+    // above then drops the residual side-effect import.
     'crypto',
     'node:crypto',
   ],

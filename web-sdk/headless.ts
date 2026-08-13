@@ -202,8 +202,6 @@ export {
   parsePromotion,
 } from './placements/registry';
 
-export { registerBuiltinSlotTypes } from './placements/builtin';
-
 export {
   resolvePayloadForUser,
   resolvePayloadForUserWithProvider,

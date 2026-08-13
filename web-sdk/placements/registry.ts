@@ -8,8 +8,6 @@ import type {
   PlacementUiPath,
   PlacementPromotion,
 } from './types';
-import { registerBuiltinSlotTypes } from './builtin';
-
 /**
  * Keys {@link parseUiPath} lifts onto typed `PlacementUiPath` fields. Every
  * other key in a `cta_path` record is collected into `params`.
@@ -270,14 +268,49 @@ export function parsePromotion(raw?: Record<string, unknown>): PlacementPromotio
 
 /** Singleton default registry. */
 let defaultRegistry: PlacementTypeRegistry | null = null;
+let placementRegistrySeed: ((registry: PlacementTypeRegistry) => void) | null = null;
+let defaultRegistrySeedApplied = false;
+
+/**
+ * Install the seed applied to every SDK-created registry — the default
+ * singleton (on creation, or immediately if it already exists unseeded) and
+ * each SDK instance's `placementTypeRegistry`.
+ *
+ * The React entry installs the built-in slot components through this hook
+ * (`placements/install-builtins.ts`); the registry itself must not import
+ * them so the headless entry stays free of the React component graph.
+ * Internal wiring — not re-exported from the package entries.
+ */
+export function setPlacementRegistrySeed(seed: (registry: PlacementTypeRegistry) => void): void {
+  placementRegistrySeed = seed;
+  if (defaultRegistry && !defaultRegistrySeedApplied) {
+    defaultRegistrySeedApplied = true;
+    seed(defaultRegistry);
+  }
+}
+
+/**
+ * Apply the installed seed (if any) to a freshly created registry. Used by
+ * the SDK constructor for its per-instance registry. Internal wiring.
+ */
+export function applyPlacementRegistrySeed(registry: PlacementTypeRegistry): void {
+  placementRegistrySeed?.(registry);
+}
 
 /**
  * Get or create the default global placement type registry.
+ *
+ * On the React entry the registry comes pre-seeded with the built-in slot
+ * types; on the headless entry it starts empty (headless consumers register
+ * their own types via {@link PlacementTypeRegistry.register}).
  */
 export function getDefaultRegistry(): PlacementTypeRegistry {
   if (!defaultRegistry) {
     defaultRegistry = new PlacementTypeRegistry();
-    registerBuiltinSlotTypes(defaultRegistry);
+    if (placementRegistrySeed) {
+      defaultRegistrySeedApplied = true;
+      placementRegistrySeed(defaultRegistry);
+    }
   }
   return defaultRegistry;
 }
@@ -287,4 +320,5 @@ export function getDefaultRegistry(): PlacementTypeRegistry {
  */
 export function resetDefaultRegistry(): void {
   defaultRegistry = null;
+  defaultRegistrySeedApplied = false;
 }
