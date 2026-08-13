@@ -57,6 +57,10 @@ export const CONTROL_PLANE_EVENT_SOURCE: Record<ControlPlaneEventType, ControlPl
   entity_created: 'workflow',
   entity_updated: 'workflow',
   entity_deleted: 'workflow',
+  // Control-plane API error telemetry (plan 135 TASK-3 rework) — system.
+  // Emitted server-side only (web's cross-cutting error handler); classified
+  // here because the taxonomy Record is total over ControlPlaneEventType.
+  web_api_error: 'system',
 };
 
 /**

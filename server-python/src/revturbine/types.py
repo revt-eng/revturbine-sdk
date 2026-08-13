@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.142/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.173/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -27,6 +27,14 @@ from typing import Any, Literal
 
 class RevTurbineSchemas(BaseModel):
     pass
+
+
+class ActivityLevel(Enum):
+    new = "new"
+    high = "high"
+    medium = "medium"
+    low = "low"
+    inactive = "inactive"
 
 
 class BillingPeriod(Enum):
@@ -64,13 +72,13 @@ class AuditEvent(BaseModel):
     )
     id: constr(min_length=1)
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
+    environment_id: constr(min_length=1) | None = "production"
     actor_type: AuditActorType
-    actor_id: str | None
+    actor_id: str | None = None
     action: constr(min_length=1, max_length=120)
-    object_type: constr(max_length=120) | None
-    object_id: constr(max_length=200) | None
-    payload: dict[str, Any] | None
+    object_type: constr(max_length=120) | None = None
+    object_id: constr(max_length=200) | None = None
+    payload: dict[str, Any] | None = None
     occurred_at: AwareDatetime
 
 
@@ -84,13 +92,13 @@ class AuthAccount(BaseModel):
     account_id: constr(min_length=1)
     provider_id: constr(min_length=1)
     user_id: constr(min_length=1)
-    access_token: str | None
-    refresh_token: str | None
-    id_token: str | None
-    access_token_expires_at: AwareDatetime | None
-    refresh_token_expires_at: AwareDatetime | None
-    scope: str | None
-    password: str | None
+    access_token: str | None = None
+    refresh_token: str | None = None
+    id_token: str | None = None
+    access_token_expires_at: AwareDatetime | None = None
+    refresh_token_expires_at: AwareDatetime | None = None
+    scope: str | None = None
+    password: str | None = None
 
 
 class AuthApiKey(BaseModel):
@@ -101,24 +109,26 @@ class AuthApiKey(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     config_id: constr(min_length=1)
-    name: constr(max_length=200) | None
-    start: str | None
+    name: constr(max_length=200) | None = None
+    start: str | None = None
     reference_id: constr(min_length=1)
-    prefix: str | None
+    prefix: str | None = None
     key: constr(min_length=1)
-    refill_interval: conint(ge=-9007199254740991, le=9007199254740991) | None
-    refill_amount: conint(ge=-9007199254740991, le=9007199254740991) | None
-    last_refill_at: AwareDatetime | None
-    enabled: bool
-    rate_limit_enabled: bool
-    rate_limit_time_window: conint(ge=-9007199254740991, le=9007199254740991) | None
-    rate_limit_max: conint(ge=-9007199254740991, le=9007199254740991) | None
-    request_count: conint(ge=-9007199254740991, le=9007199254740991)
-    remaining: conint(ge=-9007199254740991, le=9007199254740991) | None
-    last_request: AwareDatetime | None
-    expires_at: AwareDatetime | None
-    permissions: str | None
-    metadata: str | None
+    refill_interval: conint(ge=-9007199254740991, le=9007199254740991) | None = None
+    refill_amount: conint(ge=-9007199254740991, le=9007199254740991) | None = None
+    last_refill_at: AwareDatetime | None = None
+    enabled: bool | None = True
+    rate_limit_enabled: bool | None = False
+    rate_limit_time_window: conint(ge=-9007199254740991, le=9007199254740991) | None = (
+        None
+    )
+    rate_limit_max: conint(ge=-9007199254740991, le=9007199254740991) | None = None
+    request_count: conint(ge=-9007199254740991, le=9007199254740991) | None = 0
+    remaining: conint(ge=-9007199254740991, le=9007199254740991) | None = None
+    last_request: AwareDatetime | None = None
+    expires_at: AwareDatetime | None = None
+    permissions: str | None = None
+    metadata: str | None = None
 
 
 class AuthOrganization(BaseModel):
@@ -127,10 +137,10 @@ class AuthOrganization(BaseModel):
     )
     id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
-    slug: constr(min_length=1, max_length=100) | None
-    logo: AnyUrl | None
+    slug: constr(min_length=1, max_length=100) | None = None
+    logo: AnyUrl | None = None
     created_at: AwareDatetime
-    metadata: str | None
+    metadata: str | None = None
 
 
 class AuthPasskey(BaseModel):
@@ -138,16 +148,16 @@ class AuthPasskey(BaseModel):
         extra="forbid",
     )
     id: constr(min_length=1)
-    name: constr(max_length=200) | None
+    name: constr(max_length=200) | None = None
     public_key: constr(min_length=1)
     user_id: constr(min_length=1)
     credential_id: constr(min_length=1)
-    counter: conint(ge=-9007199254740991, le=9007199254740991)
+    counter: conint(ge=-9007199254740991, le=9007199254740991) | None = 0
     device_type: constr(min_length=1)
-    backed_up: bool
-    transports: str | None
+    backed_up: bool | None = False
+    transports: str | None = None
     created_at: AwareDatetime
-    aaguid: str | None
+    aaguid: str | None = None
 
 
 class AuthSession(BaseModel):
@@ -159,11 +169,11 @@ class AuthSession(BaseModel):
     updated_at: AwareDatetime
     expires_at: AwareDatetime
     token: constr(min_length=1)
-    ip_address: str | None
-    user_agent: str | None
+    ip_address: str | None = None
+    user_agent: str | None = None
     user_id: constr(min_length=1)
-    active_organization_id: str | None
-    impersonated_by: str | None
+    active_organization_id: str | None = None
+    impersonated_by: str | None = None
 
 
 class AuthSsoProvider(BaseModel):
@@ -172,11 +182,11 @@ class AuthSsoProvider(BaseModel):
     )
     id: constr(min_length=1)
     issuer: constr(min_length=1)
-    oidc_config: str | None
-    saml_config: str | None
+    oidc_config: str | None = None
+    saml_config: str | None = None
     user_id: constr(min_length=1)
     provider_id: constr(min_length=1)
-    organization_id: str | None
+    organization_id: str | None = None
     domain: constr(min_length=1)
 
 
@@ -188,7 +198,7 @@ class AuthTwoFactor(BaseModel):
     secret: constr(min_length=1)
     backup_codes: constr(min_length=1)
     user_id: constr(min_length=1)
-    verified: bool
+    verified: bool | None = False
 
 
 class AuthVerification(BaseModel):
@@ -209,6 +219,11 @@ class BillingCadence(Enum):
     quarterly = "quarterly"
     one_time = "one_time"
     usage_based = "usage_based"
+
+
+class BillingHealthStatus(Enum):
+    payment_failed = "payment_failed"
+    payment_method_missing = "payment_method_missing"
 
 
 class BrandingConfig(BaseModel):
@@ -265,7 +280,7 @@ class ChangeLogEntry(BaseModel):
     actor_email: EmailStr | None = None
     diff: Diff | None = None
     summary: constr(max_length=1000) | None = None
-    metadata: dict[str, Any]
+    metadata: dict[str, Any] | None = {}
 
 
 class CohortMonth(BaseModel):
@@ -353,6 +368,7 @@ class ControlPlaneEventType(Enum):
     entity_created = "entity_created"
     entity_updated = "entity_updated"
     entity_deleted = "entity_deleted"
+    web_api_error = "web_api_error"
 
 
 class ControlPlaneSemanticEvent(BaseModel):
@@ -361,7 +377,7 @@ class ControlPlaneSemanticEvent(BaseModel):
     )
     event_type: ControlPlaneEventType
     source: ControlPlaneEventSource
-    payload: dict[str, Any]
+    payload: dict[str, Any] | None = {}
 
 
 class CtaActionType(Enum):
@@ -392,21 +408,21 @@ class CtaPath(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
     action_type: CtaActionType
     target_url: str | None = None
     target_plan_id: str | None = None
-    config_fields: dict[str, Any]
-    metadata: dict[str, Any]
+    config_fields: dict[str, Any] | None = {}
+    metadata: dict[str, Any] | None = {}
 
 
 class CtaPathType(Enum):
@@ -468,6 +484,11 @@ class Status1(Enum):
     suspended = "suspended"
 
 
+class BillingHealthIssue(Enum):
+    payment_failed = "payment_failed"
+    payment_method_missing = "payment_method_missing"
+
+
 class Decision(Enum):
     show = "show"
     suppress = "suppress"
@@ -495,9 +516,9 @@ class DecisionLog(BaseModel):
     placement_id: constr(min_length=1)
     decision: Decision
     reason: constr(max_length=500)
-    matched_rules: list[MatchedRule]
-    experiment_id: str | None
-    variant_id: str | None
+    matched_rules: list[MatchedRule] | None = Field([], validate_default=True)
+    experiment_id: str | None = None
+    variant_id: str | None = None
     latency_ms: confloat(ge=0.0) | None = None
 
 
@@ -569,8 +590,8 @@ class EntitlementEvalLog(BaseModel):
     entitlement_handle: constr(min_length=1)
     entitlement_type: str
     result: Result
-    current_usage: float | None
-    limit: float | None
+    current_usage: float | None = None
+    limit: float | None = None
     source: Source
     source_id: constr(min_length=1)
     latency_ms: confloat(ge=0.0) | None = None
@@ -595,7 +616,6 @@ class EntitlementRulePeriodUnit(Enum):
     quarter = "quarter"
     year = "year"
     billing_period = "billing_period"
-    on_purchase = "on_purchase"
     hour = "hour"
     six_hours = "six_hours"
 
@@ -628,19 +648,19 @@ class EntitlementRuleVariant(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     handle: constr(min_length=1, max_length=100)
     rule_id: constr(min_length=1)
     experiment_id: constr(min_length=1)
     variant_name: constr(min_length=1, max_length=200)
-    is_control: bool
-    override_fields: dict[str, Any]
+    is_control: bool | None = False
+    override_fields: dict[str, Any] | None = {}
 
 
 class TierDefinition(BaseModel):
@@ -680,7 +700,7 @@ class EnvironmentPromotionRequest(BaseModel):
     source_environment_id: constr(min_length=1)
     target_environment_id: constr(min_length=1)
     playbook_version_ids: list[str] | None = None
-    strategy: Strategy
+    strategy: Strategy | None = "all_current"
 
 
 class EnvironmentStatus(Enum):
@@ -742,9 +762,9 @@ class ExperimentVariant(BaseModel):
     )
     variant_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
-    weight: confloat(ge=0.0, le=1.0)
-    is_control: bool
-    config: dict[str, Any]
+    weight: confloat(ge=0.0, le=1.0) | None = 0.5
+    is_control: bool | None = False
+    config: dict[str, Any] | None = {}
 
 
 class Operator(Enum):
@@ -786,6 +806,7 @@ class ExportedConfigUiPathActionType(Enum):
     update_payment_method = "update_payment_method"
     enable_auto_renewal = "enable_auto_renewal"
     manage_subscription = "manage_subscription"
+    snooze = "snooze"
 
 
 class FeatureFlagValue(RootModel[bool | float | str]):
@@ -822,7 +843,7 @@ class Identity(BaseModel):
         extra="forbid",
     )
     external_id: constr(min_length=1)
-    traits: dict[str, Any]
+    traits: dict[str, Any] | None = {}
     plan_id: str | None = None
 
 
@@ -832,14 +853,14 @@ class IngestedEvent(BaseModel):
     )
     id: constr(min_length=1)
     event_type: constr(min_length=1)
-    source: EventSource
+    source: EventSource | None = "sdk"
     tenant_id: constr(min_length=1) | None = None
     user_id: constr(min_length=1) | None = None
     session_id: constr(min_length=1) | None = None
     occurred_at: AwareDatetime
     request_id: constr(min_length=1)
-    attributes: dict[str, Any]
-    payload: dict[str, Any]
+    attributes: dict[str, Any] | None = {}
+    payload: dict[str, Any] | None = {}
     ingested_at: AwareDatetime
 
 
@@ -866,10 +887,10 @@ class KpiAggregate(BaseModel):
     metric_key: constr(min_length=1)
     label: str
     current_value: float
-    previous_value: float | None
-    change_percent: float | None
+    previous_value: float | None = None
+    change_percent: float | None = None
     period: str
-    unit: Unit
+    unit: Unit | None = "count"
 
 
 class McpConfig(BaseModel):
@@ -881,10 +902,10 @@ class McpConfig(BaseModel):
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
     server_url: AnyUrl
-    api_token_hint: constr(max_length=50) | None
-    allow_write_actions: bool
-    enabled_tools: list[constr(max_length=100)]
-    enabled: bool
+    api_token_hint: constr(max_length=50) | None = None
+    allow_write_actions: bool | None = False
+    enabled_tools: list[constr(max_length=100)] | None = []
+    enabled: bool | None = False
 
 
 class McpTokenScope(Enum):
@@ -1017,21 +1038,21 @@ class MessageBlockRecord(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
-    content_fields: dict[str, Any]
+    content_fields: dict[str, Any] | None = {}
     variation_dimension_id: str | None = None
     variation_values: list[VariationValue] | None = None
     notes: constr(max_length=1000) | None = None
-    used_in_count: conint(ge=0, le=9007199254740991)
+    used_in_count: conint(ge=0, le=9007199254740991) | None = 0
 
 
 class SegmentOverride(BaseModel):
@@ -1089,21 +1110,21 @@ class Message(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     handle: constr(min_length=1, max_length=100)
     name: constr(min_length=1, max_length=200)
     channel: Channel
     subject: constr(max_length=500) | None = None
     body: str
-    template_variables: list[str]
-    metadata: dict[str, Any]
+    template_variables: list[str] | None = []
+    metadata: dict[str, Any] | None = {}
 
 
 class AggregationType(Enum):
@@ -1129,21 +1150,21 @@ class MeteringConfig(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     handle: constr(min_length=1, max_length=100)
     entitlement_id: constr(min_length=1)
     meter_key: constr(min_length=1, max_length=100)
-    aggregation_type: AggregationType
-    reset_period: ResetPeriod
-    stripe_meter_id: str | None
-    is_active: bool
-    metadata: dict[str, Any]
+    aggregation_type: AggregationType | None = "sum"
+    reset_period: ResetPeriod | None = "monthly"
+    stripe_meter_id: str | None = None
+    is_active: bool | None = True
+    metadata: dict[str, Any] | None = {}
 
 
 class OnboardingChecklist(BaseModel):
@@ -1156,8 +1177,8 @@ class OnboardingChecklist(BaseModel):
     tenant_id: constr(min_length=1)
     step_key: constr(min_length=1, max_length=100)
     label: constr(min_length=1, max_length=200)
-    done: bool
-    completed_at: AwareDatetime | None
+    done: bool | None = False
+    completed_at: AwareDatetime | None = None
 
 
 class OnboardingState(Enum):
@@ -1180,8 +1201,8 @@ class PaginationParams(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    page: conint(ge=1, le=9007199254740991)
-    per_page: conint(ge=1, le=100)
+    page: conint(ge=1, le=9007199254740991) | None = 1
+    per_page: conint(ge=1, le=100) | None = 25
 
 
 class PaymentTriggerPayload(BaseModel):
@@ -1253,23 +1274,23 @@ class PersonalizationToken(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     handle: constr(min_length=1, max_length=100)
     label: constr(min_length=1)
-    description: str | None
+    description: str | None = None
     category: Category
-    data_source: str | None
-    example_value: str | None
-    value_map: dict[str, str]
-    format: Format | None
-    metadata: dict[str, Any]
+    data_source: str | None = None
+    example_value: str | None = None
+    value_map: dict[str, str] | None = {}
+    format: Format | None = None
+    metadata: dict[str, Any] | None = {}
 
 
 class PlacementCapRule(BaseModel):
@@ -1330,19 +1351,19 @@ class Placement(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
     description: constr(max_length=500) | None = None
     category: PlacementCategory
-    drag_order_in_category: conint(ge=-9007199254740991, le=9007199254740991)
+    drag_order_in_category: conint(ge=-9007199254740991, le=9007199254740991) | None = 0
     surface_slot_id: str | None = None
     entitlement_id: str | None = None
     tier_threshold: str | None = None
@@ -1354,7 +1375,7 @@ class Placement(BaseModel):
     qualifier: Qualifier | None = None
     activation_window_start: AwareDatetime | None = None
     activation_window_end: AwareDatetime | None = None
-    metadata: dict[str, Any]
+    metadata: dict[str, Any] | None = {}
 
 
 class Kind(Enum):
@@ -1429,17 +1450,17 @@ class PlacementTestUser(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     handle: constr(min_length=1, max_length=100)
     identifier: constr(min_length=1, max_length=200)
-    identifier_type: PlacementTestUserIdentifierType
-    note: constr(max_length=500) | None
+    identifier_type: PlacementTestUserIdentifierType | None = "user_id"
+    note: constr(max_length=500) | None = None
     added_by: str
 
 
@@ -1457,21 +1478,21 @@ class PlacementVariant(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     handle: constr(min_length=1, max_length=100)
     placement_payload_id: constr(min_length=1)
     experiment_id: constr(min_length=1)
     variant_name: constr(min_length=1, max_length=200)
-    is_control: bool
+    is_control: bool | None = False
     traffic_allocation_percent: confloat(ge=0.0, le=100.0)
-    override_fields: dict[str, Any]
-    status: Status3
+    override_fields: dict[str, Any] | None = {}
+    status: Status3 | None = "active"
 
 
 class PlacementWarningCode(Enum):
@@ -1499,10 +1520,10 @@ class PlaybookHeader(BaseModel):
     )
     artifact_type: Literal["playbook"]
     format_version: Literal["1.0.0"]
-    playbook_handle: constr(min_length=1)
-    playbook_version_id: str | None
-    tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
+    playbook_handle: constr(min_length=1) | None = "default"
+    playbook_version_id: str | None = None
+    tenant_id: constr(min_length=1) | None = None
+    environment_id: constr(min_length=1) | None = None
     project_id: constr(min_length=1) | None = None
     exported_at: AwareDatetime | None = None
     schema_version: constr(min_length=1) | None = None
@@ -1557,16 +1578,16 @@ class PresentationRecord(BaseModel):
     tenant_id: constr(min_length=1)
     customer_id: constr(min_length=1)
     placement_id: constr(min_length=1)
-    payload_id: str | None
-    variant_id: str | None
+    payload_id: str | None = None
+    variant_id: str | None = None
     surface_type: str
     presented_at: AwareDatetime
-    dismissed_at: AwareDatetime | None
-    cta_clicked_at: AwareDatetime | None
-    cta_action_type: str | None
-    converted: bool
+    dismissed_at: AwareDatetime | None = None
+    cta_clicked_at: AwareDatetime | None = None
+    cta_action_type: str | None = None
+    converted: bool | None = False
     session_id: str | None = None
-    metadata: dict[str, Any]
+    metadata: dict[str, Any] | None = {}
 
 
 class PriceSource(Enum):
@@ -1596,11 +1617,11 @@ class RevTurbineConfigAddonVariationsItem(BaseModel):
     handle: constr(min_length=1)
     addon_handle: constr(min_length=1)
     billing_period: BillingPeriod
-    segment_handle: str | None
+    segment_handle: str | None = None
     price_amount: confloat(ge=0.0)
     pricing_model: PricingModel
-    visibility: PlanVisibility
-    stripe_price_id: str | None
+    visibility: PlanVisibility | None = "public"
+    stripe_price_id: str | None = None
     price_source: PriceSource
 
 
@@ -1610,8 +1631,8 @@ class RevTurbineConfigAddonsItem(BaseModel):
     )
     unique_handle: constr(min_length=1)
     name: constr(min_length=1)
-    sort_order: conint(ge=0, le=9007199254740991)
-    visibility: PlanVisibility
+    sort_order: conint(ge=0, le=9007199254740991) | None = 0
+    visibility: PlanVisibility | None = "public"
 
 
 class RevTurbineConfigEnforcementDefaultsItem(BaseModel):
@@ -1619,14 +1640,14 @@ class RevTurbineConfigEnforcementDefaultsItem(BaseModel):
         extra="forbid",
     )
     handle: constr(min_length=1)
-    entitlement_handle: str | None
-    soft_limit_percent: conint(ge=0, le=9007199254740991) | None
-    hard_limit_percent: conint(ge=0, le=9007199254740991) | None
+    entitlement_handle: str | None = None
+    soft_limit_percent: conint(ge=0, le=9007199254740991) | None = None
+    hard_limit_percent: conint(ge=0, le=9007199254740991) | None = None
     soft_limit_action: str
     hard_limit_action: str
-    grace_period_hours: conint(ge=0, le=9007199254740991) | None
-    notification_channels: list[str]
-    is_active: bool
+    grace_period_hours: conint(ge=0, le=9007199254740991) | None = None
+    notification_channels: list[str] | None = []
+    is_active: bool | None = True
 
 
 class RevTurbineConfigEntitlementsItem(BaseModel):
@@ -1647,8 +1668,8 @@ class RevTurbineConfigMeterBindingsItem(BaseModel):
     handle: constr(min_length=1)
     entitlement_handle: constr(min_length=1)
     meter_handle: constr(min_length=1)
-    limit: conint(ge=0, le=9007199254740991) | None
-    reset_period: str | None
+    limit: conint(ge=0, le=9007199254740991) | None = None
+    reset_period: str | None = None
 
 
 class Period1(Enum):
@@ -1844,11 +1865,11 @@ class RevTurbineConfigPlanVariationsItem(BaseModel):
     handle: constr(min_length=1)
     plan_handle: constr(min_length=1)
     billing_period: BillingPeriod
-    segment_handle: str | None
+    segment_handle: str | None = None
     price_amount: confloat(ge=0.0)
     pricing_model: PricingModel
-    visibility: PlanVisibility
-    stripe_price_id: str | None
+    visibility: PlanVisibility | None = "public"
+    stripe_price_id: str | None = None
     price_source: PriceSource
 
 
@@ -1858,9 +1879,9 @@ class RevTurbineConfigPlansItem(BaseModel):
     )
     unique_handle: constr(min_length=1)
     name: constr(min_length=1)
-    tier_position: conint(ge=0, le=9007199254740991)
-    sort_order: conint(ge=0, le=9007199254740991)
-    visibility: PlanVisibility
+    tier_position: conint(ge=0, le=9007199254740991) | None = 0
+    sort_order: conint(ge=0, le=9007199254740991) | None = 0
+    visibility: PlanVisibility | None = "public"
 
 
 class RevTurbineConfigSeatTypesItem(BaseModel):
@@ -1869,9 +1890,9 @@ class RevTurbineConfigSeatTypesItem(BaseModel):
     )
     handle: constr(min_length=1)
     name: constr(min_length=1)
-    description: str | None
-    is_default: bool
-    entitlement_handles: list[str]
+    description: str | None = None
+    is_default: bool | None = False
+    entitlement_handles: list[str] | None = []
 
 
 class RevTurbineConfigSegmentDimensionsItem(BaseModel):
@@ -1880,9 +1901,9 @@ class RevTurbineConfigSegmentDimensionsItem(BaseModel):
     )
     handle: constr(min_length=1)
     name: constr(min_length=1)
-    category: str | None
-    visibility_toggle: bool
-    source_type: str | None
+    category: str | None = None
+    visibility_toggle: bool | None = True
+    source_type: str | None = None
 
 
 class RevTurbineConfigSegmentsItemPredicatesItem(BaseModel):
@@ -1985,6 +2006,7 @@ class RevTurbineConfigUiPathActionType(Enum):
     update_payment_method = "update_payment_method"
     enable_auto_renewal = "enable_auto_renewal"
     manage_subscription = "manage_subscription"
+    snooze = "snooze"
 
 
 class RevenueMetric(BaseModel):
@@ -2047,6 +2069,7 @@ class SdkMetaEventType(Enum):
     sdk_init = "sdk_init"
     sdk_error = "sdk_error"
     sdk_validation_warning = "sdk_validation_warning"
+    resolution_failure = "resolution_failure"
 
 
 class SeatType(BaseModel):
@@ -2057,20 +2080,20 @@ class SeatType(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
     description: constr(max_length=500) | None = None
-    is_default: bool
-    entitlement_ids: list[str]
-    metadata: dict[str, Any]
+    is_default: bool | None = False
+    entitlement_ids: list[str] | None = []
+    metadata: dict[str, Any] | None = {}
 
 
 class SegmentDimension(BaseModel):
@@ -2081,19 +2104,19 @@ class SegmentDimension(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100) | None = None
-    category: DimensionCategory
-    visibility_toggle: bool
-    source_type: DimensionSourceType
+    category: DimensionCategory | None = "custom"
+    visibility_toggle: bool | None = True
+    source_type: DimensionSourceType | None = "system"
     estimated_size: conint(ge=0, le=9007199254740991) | None = None
 
 
@@ -2105,21 +2128,21 @@ class Segment(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
     description: constr(max_length=500) | None = None
-    rules: dict[str, Any]
-    is_active: bool
-    estimated_size: conint(ge=0, le=9007199254740991) | None
-    metadata: dict[str, Any]
+    rules: dict[str, Any] | None = {}
+    is_active: bool | None = True
+    estimated_size: conint(ge=0, le=9007199254740991) | None = None
+    metadata: dict[str, Any] | None = {}
 
 
 class SegmentValue(BaseModel):
@@ -2130,20 +2153,20 @@ class SegmentValue(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     dimension_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
     description: constr(max_length=500) | None = None
     definition_rule: dict[str, Any] | None = None
-    used_in_count: conint(ge=0, le=9007199254740991)
+    used_in_count: conint(ge=0, le=9007199254740991) | None = 0
 
 
 class SemanticEvent(BaseModel):
@@ -2151,7 +2174,7 @@ class SemanticEvent(BaseModel):
         extra="forbid",
     )
     event_type: constr(min_length=1)
-    payload: dict[str, Any]
+    payload: dict[str, Any] | None = {}
 
 
 class ServerEvaluationPayloadUserContext(BaseModel):
@@ -2192,30 +2215,30 @@ class StripeIntegrationConfig(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     handle: constr(min_length=1, max_length=100)
     stripe_account_id: constr(min_length=1)
-    live_mode: bool
-    onboarding_state: OnboardingState
-    onboarding_complete: bool
-    charges_enabled: bool
-    details_submitted: bool
-    payouts_enabled: bool
-    webhook_secret_set: bool
-    sync_products: bool
-    sync_prices: bool
-    sync_subscriptions: bool
-    sync_invoices: bool
-    default_currency: constr(min_length=3, max_length=3)
-    tax_behavior: TaxBehavior
+    live_mode: bool | None = False
+    onboarding_state: OnboardingState | None = "not_started"
+    onboarding_complete: bool | None = False
+    charges_enabled: bool | None = False
+    details_submitted: bool | None = False
+    payouts_enabled: bool | None = False
+    webhook_secret_set: bool | None = False
+    sync_products: bool | None = True
+    sync_prices: bool | None = True
+    sync_subscriptions: bool | None = True
+    sync_invoices: bool | None = False
+    default_currency: constr(min_length=3, max_length=3) | None = "USD"
+    tax_behavior: TaxBehavior | None = "unspecified"
     last_sync_at: str | None = None
-    metadata: dict[str, Any]
+    metadata: dict[str, Any] | None = {}
 
 
 class StripePriceBillingPeriod(Enum):
@@ -2243,12 +2266,12 @@ class StripePriceMock(BaseModel):
     stripe_price_id: constr(min_length=1)
     stripe_product_id: constr(min_length=1)
     billing_period: StripePriceBillingPeriod
-    unit_amount_cents: conint(ge=0, le=9007199254740991) | None
+    unit_amount_cents: conint(ge=0, le=9007199254740991) | None = None
     currency: Currency
     pricing_model: PricingModel
-    nickname: str | None
-    is_mock: bool
-    last_updated_from_stripe: AwareDatetime | None
+    nickname: str | None = None
+    is_mock: bool | None = False
+    last_updated_from_stripe: AwareDatetime | None = None
 
 
 class StripePrice(BaseModel):
@@ -2262,12 +2285,12 @@ class StripePrice(BaseModel):
     stripe_price_id: constr(min_length=1)
     stripe_product_id: constr(min_length=1)
     billing_period: StripePriceBillingPeriod
-    unit_amount_cents: conint(ge=0, le=9007199254740991) | None
+    unit_amount_cents: conint(ge=0, le=9007199254740991) | None = None
     currency: Currency
     pricing_model: PricingModel
-    nickname: str | None
-    is_mock: bool
-    last_updated_from_stripe: AwareDatetime | None
+    nickname: str | None = None
+    is_mock: bool | None = False
+    last_updated_from_stripe: AwareDatetime | None = None
 
 
 class StudioSurfaceType(Enum):
@@ -2378,10 +2401,14 @@ class TenantConfig(BaseModel):
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
     workspace_name: constr(min_length=1, max_length=200)
-    support_email: EmailStr | None
-    timezone: constr(max_length=50)
-    default_currency: constr(min_length=3, max_length=3)
-    logo_url: AnyUrl | None
+    support_email: EmailStr | None = None
+    timezone: constr(max_length=50) | None = "UTC"
+    default_currency: constr(min_length=3, max_length=3) | None = "USD"
+    logo_url: AnyUrl | None = None
+    activity_window_days: conint(ge=1, le=9007199254740991) | None = 30
+    activity_high_min: conint(ge=1, le=9007199254740991) | None = 10
+    activity_medium_min: conint(ge=1, le=9007199254740991) | None = 3
+    activity_low_min: conint(ge=1, le=9007199254740991) | None = 1
 
 
 class TenantStatus(Enum):
@@ -2402,8 +2429,8 @@ class Theme(BaseModel):
     )
     id: constr(min_length=1)
     name: constr(min_length=1, max_length=120)
-    mode: Mode
-    tokens: dict[str, str]
+    mode: Mode | None = "system"
+    tokens: dict[str, str] | None = {}
 
 
 class TreatmentInteractionType(Enum):
@@ -2474,7 +2501,7 @@ class UiPreference(BaseModel):
     updated_at: AwareDatetime
     user_id: constr(min_length=1)
     scope: constr(min_length=1)
-    preferences: dict[str, Any]
+    preferences: dict[str, Any] | None = {}
 
 
 class UsageAllocation(Enum):
@@ -2498,23 +2525,23 @@ class UsageEnforcementSettings(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     handle: constr(min_length=1, max_length=100)
     entitlement_id: constr(min_length=1)
-    soft_limit_percent: confloat(ge=0.0, le=100.0)
-    hard_limit_percent: confloat(ge=0.0, le=100.0)
-    soft_limit_action: EnforcementAction
-    hard_limit_action: EnforcementAction
-    grace_period_hours: conint(ge=0, le=9007199254740991)
-    notification_channels: list[NotificationChannel]
-    is_active: bool
+    soft_limit_percent: confloat(ge=0.0, le=100.0) | None = 80
+    hard_limit_percent: confloat(ge=0.0, le=100.0) | None = 100
+    soft_limit_action: EnforcementAction | None = "warn"
+    hard_limit_action: EnforcementAction | None = "block"
+    grace_period_hours: conint(ge=0, le=9007199254740991) | None = 0
+    notification_channels: list[NotificationChannel] | None = ["in_app"]
+    is_active: bool | None = True
 
 
 class UsagePeriodScope(Enum):
@@ -2622,6 +2649,22 @@ class WebhookEventStatus(Enum):
     skipped = "skipped"
 
 
+class ClientContextBilling(RootModel[Any]):
+    root: Any
+
+
+class ClientContextCapabilities(RootModel[Any]):
+    root: Any
+
+
+class ClientContextPlan(RootModel[Any]):
+    root: Any
+
+
+class ClientContextTrial(RootModel[Any]):
+    root: Any
+
+
 class EventOrigin(RootModel[Any]):
     root: Any
 
@@ -2650,19 +2693,19 @@ class AddOn(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
-    sort_order: conint(ge=-9007199254740991, le=9007199254740991)
-    visibility: PlanVisibility
-    metadata: dict[str, Any]
+    sort_order: conint(ge=-9007199254740991, le=9007199254740991) | None = 0
+    visibility: PlanVisibility | None = "public"
+    metadata: dict[str, Any] | None = {}
 
 
 class AddOnVariation(BaseModel):
@@ -2673,23 +2716,23 @@ class AddOnVariation(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     handle: constr(min_length=1, max_length=100)
     addon_id: constr(min_length=1)
     billing_period: BillingPeriod
-    segment_id: str | None
+    segment_id: str | None = None
     price_amount: confloat(ge=0.0)
     pricing_model: PricingModel
-    visibility: PlanVisibility
+    visibility: PlanVisibility | None = "public"
     stripe_price_id: str | None = None
-    price_source: PriceSource
+    price_source: PriceSource | None = "static"
 
 
 class Alert(BaseModel):
@@ -2706,10 +2749,10 @@ class Alert(BaseModel):
     description: constr(max_length=2000)
     resource_type: str | None = None
     resource_id: str | None = None
-    is_acknowledged: bool
-    acknowledged_at: AwareDatetime | None
-    acknowledged_by: str | None
-    metadata: dict[str, Any]
+    is_acknowledged: bool | None = False
+    acknowledged_at: AwareDatetime | None = None
+    acknowledged_by: str | None = None
+    metadata: dict[str, Any] | None = {}
 
 
 class ApiKey(BaseModel):
@@ -2724,9 +2767,9 @@ class ApiKey(BaseModel):
     key_hash: constr(min_length=1)
     key_prefix: constr(min_length=1, max_length=20)
     key_last4: constr(min_length=4, max_length=4)
-    status: ApiKeyStatus
-    last_used_at: AwareDatetime | None
-    expires_at: AwareDatetime | None
+    status: ApiKeyStatus | None = "active"
+    last_used_at: AwareDatetime | None = None
+    expires_at: AwareDatetime | None = None
 
 
 class AuthInvitation(BaseModel):
@@ -2736,8 +2779,8 @@ class AuthInvitation(BaseModel):
     id: constr(min_length=1)
     organization_id: constr(min_length=1)
     email: EmailStr
-    role: Role | None
-    status: InvitationStatus
+    role: Role | None = None
+    status: InvitationStatus | None = "pending"
     expires_at: AwareDatetime
     created_at: AwareDatetime
     inviter_id: constr(min_length=1)
@@ -2750,7 +2793,7 @@ class AuthMember(BaseModel):
     id: constr(min_length=1)
     organization_id: constr(min_length=1)
     user_id: constr(min_length=1)
-    role: Role
+    role: Role | None = "viewer"
     created_at: AwareDatetime
 
 
@@ -2763,13 +2806,25 @@ class AuthUser(BaseModel):
     updated_at: AwareDatetime
     name: constr(min_length=1, max_length=200)
     email: EmailStr
-    email_verified: bool
-    image: AnyUrl | None
-    role: UserRole
-    banned: bool
-    ban_reason: str | None
-    ban_expires: AwareDatetime | None
-    two_factor_enabled: bool
+    email_verified: bool | None = False
+    image: AnyUrl | None = None
+    role: UserRole | None = "user"
+    banned: bool | None = False
+    ban_reason: str | None = None
+    ban_expires: AwareDatetime | None = None
+    two_factor_enabled: bool | None = False
+
+
+class ClientContext(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    subject: constr(min_length=1)
+    context_version: str | None = None
+    trial: ClientContextTrial | None = None
+    billing: ClientContextBilling | None = None
+    plan: ClientContextPlan | None = None
+    capabilities: ClientContextCapabilities | None = None
 
 
 class ContentUiPath(BaseModel):
@@ -2793,7 +2848,7 @@ class CtaObject(BaseModel):
     )
     label: constr(min_length=1, max_length=200)
     cta_path_type: CtaPathType
-    config_fields: dict[str, Any]
+    config_fields: dict[str, Any] | None = {}
 
 
 class CustomerOverride(BaseModel):
@@ -2804,23 +2859,23 @@ class CustomerOverride(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     handle: constr(min_length=1, max_length=100)
     customer_id: constr(min_length=1)
     customer_id_list: list[str] | None = None
     override_type: CustomerOverrideType
     target_id: constr(min_length=1)
-    value: dict[str, Any]
-    duration_type: CustomerOverrideDuration
+    value: dict[str, Any] | None = {}
+    duration_type: CustomerOverrideDuration | None = "permanent"
     duration_value: str | None = None
-    expiry_date: AwareDatetime | None
-    status: CustomerOverrideStatus
+    expiry_date: AwareDatetime | None = None
+    status: CustomerOverrideStatus | None = "active"
     reason: constr(max_length=500) | None = None
     created_by: str | None = None
 
@@ -2837,9 +2892,10 @@ class Customer(BaseModel):
     identity: Identity
     stripe_customer_id: str | None = None
     current_plan_id: str | None = None
-    subscription_status: SubscriptionStatus
-    status: Status1
-    metadata: dict[str, Any]
+    subscription_status: SubscriptionStatus | None = "none"
+    status: Status1 | None = "active"
+    billing_health_issues: list[BillingHealthIssue] | None = []
+    metadata: dict[str, Any] | None = {}
 
 
 class DriftReport(BaseModel):
@@ -2857,10 +2913,10 @@ class DriftReport(BaseModel):
     summary: constr(max_length=1000)
     expected_value: Any | None = None
     actual_value: Any | None = None
-    affected_customer_count: conint(ge=0, le=9007199254740991)
-    is_resolved: bool
-    resolved_at: AwareDatetime | None
-    metadata: dict[str, Any]
+    affected_customer_count: conint(ge=0, le=9007199254740991) | None = 0
+    is_resolved: bool | None = False
+    resolved_at: AwareDatetime | None = None
+    metadata: dict[str, Any] | None = {}
 
 
 class EntitlementGrant(BaseModel):
@@ -2898,19 +2954,19 @@ class EntitlementRule(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     handle: constr(min_length=1, max_length=100)
     entitlement_id: constr(min_length=1)
     targets: list[EntitlementRuleTarget] = Field(..., min_length=1)
-    segment_ids: list[str]
-    visibility: RuleVisibility
+    segment_ids: list[str] | None = []
+    visibility: RuleVisibility | None = "public"
     period_scope: UsagePeriodScope | None = None
     instance: constr(max_length=100) | None = None
     reset_period: EntitlementRulePeriodUnit | None = None
@@ -2924,7 +2980,7 @@ class EntitlementRule(BaseModel):
     initial_grant: float | None = None
     allowance_value: float | Literal["unlimited"] | None = None
     rollover_enabled: bool | None = None
-    max_balance: float | Literal["unlimited"] | None
+    max_balance: float | Literal["unlimited"] | None = None
     seat_type_id: str | None = None
     included_count: (
         conint(ge=-9007199254740991, le=9007199254740991) | Literal["unlimited"] | None
@@ -2950,13 +3006,13 @@ class Entitlement(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
@@ -2966,8 +3022,8 @@ class Entitlement(BaseModel):
     period_scope: UsagePeriodScope | None = None
     allocation: UsageAllocation | None = None
     tier_definitions: list[TierDefinition] | None = None
-    sort_order: conint(ge=-9007199254740991, le=9007199254740991)
-    metadata: dict[str, Any]
+    sort_order: conint(ge=-9007199254740991, le=9007199254740991) | None = 0
+    metadata: dict[str, Any] | None = {}
 
 
 class Environment(BaseModel):
@@ -2981,15 +3037,15 @@ class Environment(BaseModel):
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
     description: constr(max_length=500) | None = None
-    is_production: bool
-    status: EnvironmentStatus
-    cloned_from_environment_id: str | None
-    cloned_at: AwareDatetime | None
-    cloned_at_sequence: conint(ge=0, le=9007199254740991) | None
-    requires_approval: bool
-    auto_deploy_on_approval: bool
+    is_production: bool | None = False
+    status: EnvironmentStatus | None = "active"
+    cloned_from_environment_id: str | None = None
+    cloned_at: AwareDatetime | None = None
+    cloned_at_sequence: conint(ge=0, le=9007199254740991) | None = None
+    requires_approval: bool | None = False
+    auto_deploy_on_approval: bool | None = False
     created_by: str | None = None
-    metadata: dict[str, Any]
+    metadata: dict[str, Any] | None = {}
 
 
 class EventEnvelope(BaseModel):
@@ -2998,14 +3054,14 @@ class EventEnvelope(BaseModel):
     )
     id: constr(min_length=1)
     event_type: constr(min_length=1)
-    source: EventSource
+    source: EventSource | None = "sdk"
     tenant_id: constr(min_length=1) | None = None
     user_id: constr(min_length=1) | None = None
     session_id: constr(min_length=1) | None = None
     occurred_at: AwareDatetime
     request_id: constr(min_length=1)
-    attributes: dict[str, Any]
-    payload: dict[str, Any]
+    attributes: dict[str, Any] | None = {}
+    payload: dict[str, Any] | None = {}
 
 
 class EventSearchParams(BaseModel):
@@ -3017,8 +3073,8 @@ class EventSearchParams(BaseModel):
     event_type: str | None = None
     from_: AwareDatetime | None = Field(None, alias="from")
     to: AwareDatetime | None = None
-    page: conint(ge=1, le=9007199254740991)
-    per_page: conint(ge=1, le=100)
+    page: conint(ge=1, le=9007199254740991) | None = 1
+    per_page: conint(ge=1, le=100) | None = 25
 
 
 class Experiment(BaseModel):
@@ -3029,31 +3085,31 @@ class Experiment(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
     description: constr(max_length=1000) | None = None
     experiment_type: ExperimentType
-    status: ExperimentStatus
+    status: ExperimentStatus | None = "draft"
     target_resource_id: str | None = None
-    target_segment_ids: list[str]
+    target_segment_ids: list[str] | None = []
     variants: list[ExperimentVariant] = Field(..., min_length=2)
     primary_metric: constr(min_length=1)
-    metric_threshold: float
-    secondary_metrics: list[str]
-    traffic_allocation: confloat(ge=0.0, le=1.0)
-    started_at: AwareDatetime | None
-    ended_at: AwareDatetime | None
-    confidence_threshold: confloat(ge=0.0, le=1.0)
-    winning_variant_id: str | None
-    metadata: dict[str, Any]
+    metric_threshold: float | None = 0.05
+    secondary_metrics: list[str] | None = []
+    traffic_allocation: confloat(ge=0.0, le=1.0) | None = 1
+    started_at: AwareDatetime | None = None
+    ended_at: AwareDatetime | None = None
+    confidence_threshold: confloat(ge=0.0, le=1.0) | None = 0.95
+    winning_variant_id: str | None = None
+    metadata: dict[str, Any] | None = {}
 
 
 class ExportedConfigSegmentsItem(BaseModel):
@@ -3075,10 +3131,10 @@ class FeatureFlag(BaseModel):
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
     key: constr(min_length=1, max_length=100)
-    value_type: FlagValueType
-    value: constr(max_length=4000)
+    value_type: FlagValueType | None = "boolean"
+    value: constr(max_length=4000) | None = "false"
     description: constr(max_length=500) | None = None
-    enabled: bool
+    enabled: bool | None = True
 
 
 class FieldDefinition(BaseModel):
@@ -3087,7 +3143,7 @@ class FieldDefinition(BaseModel):
     )
     name: constr(min_length=1)
     field_type: TemplateFieldType
-    required: bool
+    required: bool | None = False
     default_value: Any | None = None
     order: conint(ge=0, le=9007199254740991) | None = None
     help_text: constr(max_length=500) | None = None
@@ -3101,30 +3157,30 @@ class FreeTrialRule(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
     plan_id: str | None = None
     segment_id: str | None = None
-    trial_limit_type: TrialLimitType
+    trial_limit_type: TrialLimitType | None = Field("time", validate_default=True)
     duration_days: conint(ge=1, le=365) | None = None
-    grace_period_days: conint(ge=0, le=9007199254740991)
+    grace_period_days: conint(ge=0, le=9007199254740991) | None = 0
     usage_entitlement_handle: constr(min_length=1) | None = None
     usage_limit_value: conint(ge=1, le=9007199254740991) | None = None
-    require_payment_method: bool
-    auto_convert: bool
+    require_payment_method: bool | None = False
+    auto_convert: bool | None = True
     convert_to_plan_id: str | None = None
     fallback_plan_id: str | None = None
-    limit_per_customer: conint(ge=1, le=9007199254740991)
-    is_active: bool
-    metadata: dict[str, Any]
+    limit_per_customer: conint(ge=1, le=9007199254740991) | None = 1
+    is_active: bool | None = True
+    metadata: dict[str, Any] | None = {}
 
 
 class FreeTrialSettings(BaseModel):
@@ -3135,8 +3191,8 @@ class FreeTrialSettings(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    trial_limit_policy: TrialLimitPolicy
-    eligibility_scope: TrialEligibilityScope
+    trial_limit_policy: TrialLimitPolicy | None = "1_per_lifetime"
+    eligibility_scope: TrialEligibilityScope | None = "per_customer"
 
 
 class OptimizationSuggestion(BaseModel):
@@ -3150,13 +3206,13 @@ class OptimizationSuggestion(BaseModel):
     experiment_id: str | None = None
     resource_type: constr(min_length=1)
     resource_id: constr(min_length=1)
-    severity: Severity
+    severity: Severity | None = "info"
     title: constr(min_length=1, max_length=300)
     description: constr(max_length=2000)
     suggested_action: constr(max_length=1000) | None = None
     estimated_impact: float | None = None
-    is_dismissed: bool
-    metadata: dict[str, Any]
+    is_dismissed: bool | None = False
+    metadata: dict[str, Any] | None = {}
 
 
 class Surface(BaseModel):
@@ -3193,28 +3249,29 @@ class PlacementPayload(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     handle: constr(min_length=1, max_length=100)
     placement_id: constr(min_length=1)
-    drag_order: conint(ge=-9007199254740991, le=9007199254740991)
-    target_plan_ids: list[str]
-    target_plan_billing_cadences: list[str]
-    target_segments: list[str]
-    surface_slot_ids: list[str]
+    drag_order: conint(ge=-9007199254740991, le=9007199254740991) | None = 0
+    target_plan_ids: list[str] | None = []
+    target_plan_billing_cadences: list[str] | None = []
+    target_segments: list[str] | None = []
+    surface_slot_ids: list[str] | None = []
     surface_template_id: constr(min_length=1)
-    content_fields: dict[str, Any]
-    cta_list: list[CtaObject]
-    max_per_period: conint(ge=0, le=9007199254740991) | None
-    max_period_unit: CapPeriod
-    cooldown_after_dismiss_days: conint(ge=0, le=9007199254740991)
-    recommendation_strategy: RecommendationStrategy
+    content_fields: dict[str, Any] | None = {}
+    cta_list: list[CtaObject] | None = Field([], validate_default=True)
+    max_per_period: conint(ge=0, le=9007199254740991) | None = None
+    max_period_unit: CapPeriod | None = "session"
+    cooldown_after_dismiss_days: conint(ge=0, le=9007199254740991) | None = 7
+    remind_later_minutes: conint(ge=0, le=9007199254740991) | None = None
+    recommendation_strategy: RecommendationStrategy | None = "next_tier_up"
     recommendation_plan_override: str | None = None
 
 
@@ -3222,9 +3279,10 @@ class PlacementSettingsCapState(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    capRules: list[PlacementSettingsCapRule]
-    sessionCooldownMinutes: conint(ge=0, le=9007199254740991)
-    testMode: PlacementTestMode
+    capRules: list[PlacementSettingsCapRule] | None = Field([], validate_default=True)
+    sessionCooldownMinutes: conint(ge=0, le=9007199254740991) | None = 30
+    remindLaterMinutes: conint(ge=0, le=9007199254740991) | None = 60
+    testMode: PlacementTestMode | None = "off"
 
 
 class PlacementSettings(BaseModel):
@@ -3235,22 +3293,21 @@ class PlacementSettings(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     handle: constr(min_length=1, max_length=100)
-    global_frequency_cap: PlacementSettingsCapState | None
-    global_frequency_cap_period: GlobalFrequencyCapPeriod | None
-    suppress_for_paid: bool
-    suppress_for_trial: bool
-    default_dismiss_cooldown_hours: conint(ge=0, le=9007199254740991)
-    allow_stacking: bool
-    priority_collision_strategy: PriorityCollisionStrategy
+    global_frequency_cap: PlacementSettingsCapState | None = None
+    global_frequency_cap_period: GlobalFrequencyCapPeriod | None = None
+    suppress_for_paid: bool | None = False
+    suppress_for_trial: bool | None = False
+    allow_stacking: bool | None = False
+    priority_collision_strategy: PriorityCollisionStrategy | None = "highest_priority"
 
 
 class Plan(BaseModel):
@@ -3261,20 +3318,20 @@ class Plan(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
-    tier_position: conint(ge=0, le=9007199254740991)
-    sort_order: conint(ge=-9007199254740991, le=9007199254740991)
-    visibility: PlanVisibility
-    metadata: dict[str, Any]
+    tier_position: conint(ge=0, le=9007199254740991) | None = 0
+    sort_order: conint(ge=-9007199254740991, le=9007199254740991) | None = 0
+    visibility: PlanVisibility | None = "public"
+    metadata: dict[str, Any] | None = {}
 
 
 class PlanVariation(BaseModel):
@@ -3285,23 +3342,23 @@ class PlanVariation(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     handle: constr(min_length=1, max_length=100)
     plan_id: constr(min_length=1)
     billing_period: BillingPeriod
-    segment_id: str | None
+    segment_id: str | None = None
     price_amount: confloat(ge=0.0)
     pricing_model: PricingModel
-    visibility: PlanVisibility
+    visibility: PlanVisibility | None = "public"
     stripe_price_id: str | None = None
-    price_source: PriceSource
+    price_source: PriceSource | None = "static"
 
 
 class PlaybookVersionDiff(BaseModel):
@@ -3326,25 +3383,25 @@ class PlaybookVersion(BaseModel):
     environment_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     description: constr(max_length=2000) | None = None
-    status: PlaybookVersionStatus
-    labels: list[str]
+    status: PlaybookVersionStatus | None = "draft"
+    labels: list[str] | None = []
     created_by: constr(min_length=1)
-    submitted_by: str | None
-    reviewed_by: str | None
-    deployed_by: str | None
-    submitted_at: AwareDatetime | None
-    reviewed_at: AwareDatetime | None
-    deployed_at: AwareDatetime | None
-    base_snapshot_sequence: conint(ge=0, le=9007199254740991)
-    entry_count: conint(ge=0, le=9007199254740991)
-    conflict_count: conint(ge=0, le=9007199254740991)
-    rollback_of_playbook_version_id: str | None
-    cherry_picked_from_playbook_version_id: str | None
+    submitted_by: str | None = None
+    reviewed_by: str | None = None
+    deployed_by: str | None = None
+    submitted_at: AwareDatetime | None = None
+    reviewed_at: AwareDatetime | None = None
+    deployed_at: AwareDatetime | None = None
+    base_snapshot_sequence: conint(ge=0, le=9007199254740991) | None = 0
+    entry_count: conint(ge=0, le=9007199254740991) | None = 0
+    conflict_count: conint(ge=0, le=9007199254740991) | None = 0
+    rollback_of_playbook_version_id: str | None = None
+    cherry_picked_from_playbook_version_id: str | None = None
     review_notes: constr(max_length=2000) | None = None
     rejection_reason: constr(max_length=2000) | None = None
-    snapshot: dict[str, Any] | None
-    bundle: str | None
-    metadata: dict[str, Any]
+    snapshot: dict[str, Any] | None = None
+    bundle: str | None = None
+    metadata: dict[str, Any] | None = {}
 
 
 class Promotion(BaseModel):
@@ -3355,33 +3412,33 @@ class Promotion(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
     description: constr(max_length=1000) | None = None
-    rt_status: PromotionStatus
+    rt_status: PromotionStatus | None = "draft"
     discount_type: DiscountType
     discount_value: confloat(ge=0.0)
-    currency: constr(min_length=3, max_length=3)
-    applicable_plan_ids: list[str]
-    applicable_addon_ids: list[str]
-    target_segment_ids: list[str]
-    max_redemptions: conint(ge=0, le=9007199254740991) | None
-    current_redemptions: conint(ge=0, le=9007199254740991)
+    currency: constr(min_length=3, max_length=3) | None = "USD"
+    applicable_plan_ids: list[str] | None = []
+    applicable_addon_ids: list[str] | None = []
+    target_segment_ids: list[str] | None = []
+    max_redemptions: conint(ge=0, le=9007199254740991) | None = None
+    current_redemptions: conint(ge=0, le=9007199254740991) | None = 0
     coupon_code: constr(max_length=100) | None = None
-    starts_at: AwareDatetime | None
-    ends_at: AwareDatetime | None
-    stripe_coupon_id: str | None
-    stripe_promotion_code_id: str | None
-    auto_sync_stripe: bool
-    metadata: dict[str, Any]
+    starts_at: AwareDatetime | None = None
+    ends_at: AwareDatetime | None = None
+    stripe_coupon_id: str | None = None
+    stripe_promotion_code_id: str | None = None
+    auto_sync_stripe: bool | None = False
+    metadata: dict[str, Any] | None = {}
 
 
 class RevTurbineConfigEntitlementRulesItem(BaseModel):
@@ -3391,7 +3448,7 @@ class RevTurbineConfigEntitlementRulesItem(BaseModel):
     id: constr(min_length=1)
     entitlement_id: constr(min_length=1)
     targets: list[EntitlementRuleTarget] = Field(..., min_length=1)
-    segment_ids: list[str]
+    segment_ids: list[str] | None = []
     kind: EntitlementType | None = None
     unit: str | None = None
     tier_name: str | None = None
@@ -3408,13 +3465,13 @@ class RevTurbineConfigEntitlementRulesItem(BaseModel):
     initial_grant: float | None = None
     allowance_value: float | Literal["unlimited"] | None = None
     rollover_enabled: bool | None = None
-    max_balance: float | Literal["unlimited"] | None
+    max_balance: float | Literal["unlimited"] | None = None
     reset_period: EntitlementRulePeriodUnit | None = None
     max_seats: float | Literal["unlimited"] | None = None
     rate_value: float | None = None
     amount_cents: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     currency: str | None = None
-    current_usage: float
+    current_usage: float | None = 0
     allocation: UsageAllocation | None = None
 
 
@@ -3426,6 +3483,7 @@ class RevTurbineConfigPlacementPayloadItem(BaseModel):
     placement_id: constr(min_length=1)
     target: RevTurbineConfigStudioPayloadTarget
     caps: RevTurbineConfigStudioPayloadCaps | None = None
+    remind_later_minutes: conint(ge=0, le=9007199254740991) | None = None
     created_at: str
     updated_at: AwareDatetime | None = None
     source_mode: SourceMode
@@ -3439,13 +3497,12 @@ class RevTurbineConfigPlacementSettingsItem(BaseModel):
         extra="forbid",
     )
     handle: constr(min_length=1)
-    global_frequency_cap: PlacementSettingsCapState | None
-    global_frequency_cap_period: GlobalFrequencyCapPeriod | None
-    suppress_for_paid: bool
-    suppress_for_trial: bool
-    default_dismiss_cooldown_hours: conint(ge=0, le=9007199254740991) | None
-    allow_stacking: bool
-    priority_collision_strategy: str | None
+    global_frequency_cap: PlacementSettingsCapState | None = None
+    global_frequency_cap_period: GlobalFrequencyCapPeriod | None = None
+    suppress_for_paid: bool | None = False
+    suppress_for_trial: bool | None = False
+    allow_stacking: bool | None = False
+    priority_collision_strategy: str | None = None
 
 
 class RevTurbineConfigStudioPayload(BaseModel):
@@ -3457,8 +3514,9 @@ class RevTurbineConfigStudioPayload(BaseModel):
     surfaces: list[RevTurbineConfigStudioPayloadSurface]
     caps: RevTurbineConfigStudioPayloadCaps | None = None
     surface_slot_ids: list[str] | None = None
+    remind_later_minutes: conint(ge=0, le=9007199254740991) | None = None
     created_at: str | None = None
-    recommendation_strategy: RecommendationStrategy
+    recommendation_strategy: RecommendationStrategy | None = "next_tier_up"
     recommendation_plan_override: str | None = None
 
 
@@ -3470,28 +3528,28 @@ class ReverseTrialRule(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
     premium_plan_id: constr(min_length=1)
     fallback_plan_id: constr(min_length=1)
     segment_id: str | None = None
-    trial_limit_type: TrialLimitType
+    trial_limit_type: TrialLimitType | None = Field("time", validate_default=True)
     duration_days: conint(ge=1, le=365) | None = None
     usage_entitlement_handle: constr(min_length=1) | None = None
     usage_limit_value: conint(ge=1, le=9007199254740991) | None = None
-    start_policy: ReverseTrialStartPolicy
+    start_policy: ReverseTrialStartPolicy | None = "signup"
     show_upgrade_prompt_at_day: conint(ge=0, le=9007199254740991) | None = None
-    entitlements_during_trial: list[str]
-    is_active: bool
-    metadata: dict[str, Any]
+    entitlements_during_trial: list[str] | None = []
+    is_active: bool | None = True
+    metadata: dict[str, Any] | None = {}
 
 
 class ReverseTrialSettings(BaseModel):
@@ -3502,8 +3560,8 @@ class ReverseTrialSettings(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    trial_limit_policy: TrialLimitPolicy
-    eligibility_scope: TrialEligibilityScope
+    trial_limit_policy: TrialLimitPolicy | None = "1_per_lifetime"
+    eligibility_scope: TrialEligibilityScope | None = "per_customer"
 
 
 class SdkMetaEvent(BaseModel):
@@ -3520,6 +3578,12 @@ class SdkMetaEvent(BaseModel):
     bundle_version: constr(min_length=1, max_length=64) | None = None
     config_shape: SdkConfigShape | None = None
     message: constr(max_length=500) | None = None
+    reason: constr(min_length=1, max_length=64) | None = None
+    placement_handle: constr(min_length=1, max_length=64) | None = None
+    slot_handle: constr(min_length=1, max_length=64) | None = None
+    surface: constr(min_length=1, max_length=64) | None = None
+    plan_handle: constr(min_length=1, max_length=64) | None = None
+    entitlement_handle: constr(min_length=1, max_length=64) | None = None
 
 
 class SdkMetaIngestBatch(BaseModel):
@@ -3568,21 +3632,21 @@ class SurfaceSlot(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     surface_slot_handle: constr(min_length=1, max_length=200)
     surface_type: SurfaceType
-    surface_template_ids: list[str]
-    surface_slot_category: SurfaceSlotCategory
+    surface_template_ids: list[str] | None = []
+    surface_slot_category: SurfaceSlotCategory | None = "fixed"
     first_seen: AwareDatetime
     last_seen: AwareDatetime
-    status: Status4
-    placement_count: conint(ge=0, le=9007199254740991)
+    status: Status4 | None = "new"
+    placement_count: conint(ge=0, le=9007199254740991) | None = 0
 
 
 class SurfaceTemplate(BaseModel):
@@ -3593,18 +3657,18 @@ class SurfaceTemplate(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
-    playbook_version_id: str | None
-    is_current: bool
-    is_deleted: bool
-    delete_date: AwareDatetime | None
-    sequence: conint(ge=1, le=9007199254740991)
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
     anchor_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
     surface_type: StudioSurfaceType
-    field_definitions: list[FieldDefinition]
+    field_definitions: list[FieldDefinition] | None = Field([], validate_default=True)
     description: constr(max_length=500) | None = None
 
 
@@ -3617,8 +3681,8 @@ class Tenant(BaseModel):
     updated_at: AwareDatetime
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
-    status: TenantStatus
-    metadata: dict[str, Any]
+    status: TenantStatus | None = "active"
+    metadata: dict[str, Any] | None = {}
 
 
 class TrackEvent(BaseModel):
@@ -3642,6 +3706,7 @@ class TrackEvent(BaseModel):
     origin: EventOrigin | None = None
     playbook_version: str | None = None
     decision_id: str | None = None
+    test: bool | None = None
 
 
 class TrackIngestBatch(BaseModel):
@@ -3663,6 +3728,7 @@ class TreatmentInteractionInput(BaseModel):
     payload_id: constr(min_length=1) | None = None
     interaction_type: TreatmentInteractionType
     interaction_at: AwareDatetime | None = None
+    test: bool | None = None
     metadata: dict[str, Any] | None = None
 
 
@@ -3678,15 +3744,15 @@ class TrialInstance(BaseModel):
     rule_id: constr(min_length=1)
     rule_type: RuleType
     plan_id: constr(min_length=1)
-    status: TrialStatus
+    status: TrialStatus | None = "active"
     started_at: AwareDatetime
     expires_at: AwareDatetime | None = None
-    trial_limit_type: TrialLimitType
+    trial_limit_type: TrialLimitType | None = Field("time", validate_default=True)
     usage_entitlement_handle: constr(min_length=1) | None = None
     usage_limit_value: conint(ge=1, le=9007199254740991) | None = None
-    converted_at: AwareDatetime | None
-    cancelled_at: AwareDatetime | None
-    metadata: dict[str, Any]
+    converted_at: AwareDatetime | None = None
+    cancelled_at: AwareDatetime | None = None
+    metadata: dict[str, Any] | None = {}
 
 
 class UserInstanceContext(BaseModel):
@@ -3696,9 +3762,11 @@ class UserInstanceContext(BaseModel):
     product_instance_id: constr(min_length=1)
     user_id: constr(min_length=1)
     plan: UserPlanContext | None = None
-    usage: dict[str, UserUsageEntry]
+    usage: dict[str, UserUsageEntry] | None = Field({}, validate_default=True)
     trial: UserTrialStatus | None = None
-    entitlements: dict[str, bool | EntitlementGrant]
+    entitlements: dict[str, bool | EntitlementGrant] | None = Field(
+        {}, validate_default=True
+    )
 
 
 class WebhookEventLog(BaseModel):
@@ -3712,8 +3780,8 @@ class WebhookEventLog(BaseModel):
     event_id: constr(min_length=1)
     event_type: constr(min_length=1)
     source: WebhookEventSource
-    payload: dict[str, Any]
-    status: WebhookEventStatus
+    payload: dict[str, Any] | None = {}
+    status: WebhookEventStatus | None = "processed"
     processed_at: AwareDatetime | None = None
     error_message: str | None = None
 
@@ -3760,15 +3828,16 @@ class RevTurbineConfig(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    version: str
+    artifact_type: Literal["playbook"]
+    format_version: Literal["1.0.0"]
+    playbook_handle: constr(min_length=1) | None = "default"
+    playbook_version_id: str | None = None
+    tenant_id: constr(min_length=1) | None = None
+    environment_id: constr(min_length=1) | None = None
+    project_id: constr(min_length=1) | None = None
     exported_at: AwareDatetime | None = None
-    schema_version: str | None = None
-    bundle_schema_version: conint(ge=-9007199254740991, le=9007199254740991) | None = (
-        None
-    )
-    change_set_id: str | None
-    tenant_id: str | None = None
-    environment_id: str | None = None
+    schema_version: constr(min_length=1) | None = None
+    bundle_schema_version: conint(ge=0, le=9007199254740991) | None = None
     plans: list[RevTurbineConfigPlansItem]
     addons: list[RevTurbineConfigAddonsItem] | None = None
     entitlements: list[RevTurbineConfigEntitlementsItem]
@@ -3799,6 +3868,8 @@ class RevTurbineConfig(BaseModel):
     placement_settings: list[RevTurbineConfigPlacementSettingsItem] | None = None
     segment_dimensions: list[RevTurbineConfigSegmentDimensionsItem] | None = None
     meter_bindings: list[RevTurbineConfigMeterBindingsItem] | None = None
+    experiments: list[Any] | None = Field(None, max_length=0)
+    signal_catalog: dict[str, Any] | None = None
 
 
 class ServerEvaluationPayload(BaseModel):
@@ -3831,33 +3902,38 @@ class UserContext(BaseModel):
     email: EmailStr | None = None
     email_type: str | None = None
     plan: UserPlanContext | None = None
-    usage: dict[str, UserUsageEntry]
+    usage: dict[str, UserUsageEntry] | None = Field({}, validate_default=True)
     trial: UserTrialStatus | None = None
     payment_failed: bool | None = None
     payment_at_risk: bool | None = None
     tiers: dict[str, str] | None = None
-    entitlements: dict[str, bool | EntitlementGrant]
+    entitlements: dict[str, bool | EntitlementGrant] | None = Field(
+        {}, validate_default=True
+    )
     instances: list[UserInstanceContext] | None = None
-    custom: dict[str, str | float | bool | None]
-    personalization: dict[str, str | float]
+    custom: dict[str, str | float | bool | None] | None = {}
+    personalization: dict[str, str | float] | None = {}
     derived_config_version: str | None = None
     context_hash: str | None = None
-    derived_computed_at: AwareDatetime | None
+    derived_computed_at: AwareDatetime | None = None
+    activity_score: conint(ge=0, le=9007199254740991) | None = None
+    activity_score_computed_at: AwareDatetime | None = None
 
 
 class ExportedConfig(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    version: str
+    artifact_type: Literal["playbook"]
+    format_version: Literal["1.0.0"]
+    playbook_handle: constr(min_length=1) | None = "default"
+    playbook_version_id: str | None = None
+    tenant_id: constr(min_length=1) | None = None
+    environment_id: constr(min_length=1) | None = None
+    project_id: constr(min_length=1) | None = None
     exported_at: AwareDatetime | None = None
-    schema_version: str | None = None
-    bundle_schema_version: conint(ge=-9007199254740991, le=9007199254740991) | None = (
-        None
-    )
-    change_set_id: str | None
-    tenant_id: str | None = None
-    environment_id: str | None = None
+    schema_version: constr(min_length=1) | None = None
+    bundle_schema_version: conint(ge=0, le=9007199254740991) | None = None
     plans: list[RevTurbineConfigPlansItem]
     addons: list[RevTurbineConfigAddonsItem] | None = None
     entitlements: list[RevTurbineConfigEntitlementsItem]
@@ -3888,51 +3964,8 @@ class ExportedConfig(BaseModel):
     placement_settings: list[RevTurbineConfigPlacementSettingsItem] | None = None
     segment_dimensions: list[RevTurbineConfigSegmentDimensionsItem] | None = None
     meter_bindings: list[RevTurbineConfigMeterBindingsItem] | None = None
-
-
-class LegacyRevTurbineConfig(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    version: str
-    exported_at: AwareDatetime | None = None
-    schema_version: str | None = None
-    bundle_schema_version: conint(ge=-9007199254740991, le=9007199254740991) | None = (
-        None
-    )
-    change_set_id: str | None
-    tenant_id: str | None = None
-    environment_id: str | None = None
-    plans: list[RevTurbineConfigPlansItem]
-    addons: list[RevTurbineConfigAddonsItem] | None = None
-    entitlements: list[RevTurbineConfigEntitlementsItem]
-    entitlement_rules: list[RevTurbineConfigEntitlementRulesItem]
-    segments: list[RevTurbineConfigSegmentsItem]
-    content_ui_paths: list[ContentUiPath]
-    slot_configs: list[RevTurbineConfigSlotConfigsItem] | None = Field(
-        None, deprecated=True
-    )
-    content_overrides: dict[str, dict[str, str]] | None = Field(None, deprecated=True)
-    theme: dict[str, Any] | None = Field(None, deprecated=True)
-    placement_slots: list[RevTurbineConfigPlacementSlotsItem] | None = None
-    message_blocks: list[MessageBlock] | None = None
-    placement_payloads: list[RevTurbineConfigPlacementPayloadItem] | None = None
-    placements: list[RevTurbineConfigPlacementItem] | None = None
-    content_promotions: list[ContentPromotion] | None = None
-    personalization_tokens: list[RevTurbineConfigPersonalizationTokensItem] | None = (
-        None
-    )
-    surface_templates: list[RevTurbineConfigSurfaceTemplatesItem] | None = None
-    free_trial_rules: list[RevTurbineConfigFreeTrialRuleItem] | None = None
-    reverse_trial_rules: list[RevTurbineConfigReverseTrialRuleItem] | None = None
-    plan_variations: list[RevTurbineConfigPlanVariationsItem] | None = None
-    addon_variations: list[RevTurbineConfigAddonVariationsItem] | None = None
-    extension_rules: list[RevTurbineConfigExtensionRulesItem] | None = None
-    seat_types: list[RevTurbineConfigSeatTypesItem] | None = None
-    enforcement_defaults: list[RevTurbineConfigEnforcementDefaultsItem] | None = None
-    placement_settings: list[RevTurbineConfigPlacementSettingsItem] | None = None
-    segment_dimensions: list[RevTurbineConfigSegmentDimensionsItem] | None = None
-    meter_bindings: list[RevTurbineConfigMeterBindingsItem] | None = None
+    experiments: list[Any] | None = Field(None, max_length=0)
+    signal_catalog: dict[str, Any] | None = None
 
 
 class PlaybookBody(BaseModel):
@@ -3973,16 +4006,112 @@ class PlaybookBody(BaseModel):
     signal_catalog: dict[str, Any] | None = None
 
 
+class PlaybookObject(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    artifact_type: Literal["playbook"]
+    format_version: Literal["1.0.0"]
+    playbook_handle: constr(min_length=1) | None = "default"
+    playbook_version_id: str | None = None
+    tenant_id: constr(min_length=1) | None = None
+    environment_id: constr(min_length=1) | None = None
+    project_id: constr(min_length=1) | None = None
+    exported_at: AwareDatetime | None = None
+    schema_version: constr(min_length=1) | None = None
+    bundle_schema_version: conint(ge=0, le=9007199254740991) | None = None
+    plans: list[RevTurbineConfigPlansItem]
+    addons: list[RevTurbineConfigAddonsItem] | None = None
+    entitlements: list[RevTurbineConfigEntitlementsItem]
+    entitlement_rules: list[RevTurbineConfigEntitlementRulesItem]
+    segments: list[RevTurbineConfigSegmentsItem]
+    content_ui_paths: list[ContentUiPath]
+    slot_configs: list[RevTurbineConfigSlotConfigsItem] | None = Field(
+        None, deprecated=True
+    )
+    content_overrides: dict[str, dict[str, str]] | None = Field(None, deprecated=True)
+    theme: dict[str, Any] | None = Field(None, deprecated=True)
+    placement_slots: list[RevTurbineConfigPlacementSlotsItem] | None = None
+    message_blocks: list[MessageBlock] | None = None
+    placement_payloads: list[RevTurbineConfigPlacementPayloadItem] | None = None
+    placements: list[RevTurbineConfigPlacementItem] | None = None
+    content_promotions: list[ContentPromotion] | None = None
+    personalization_tokens: list[RevTurbineConfigPersonalizationTokensItem] | None = (
+        None
+    )
+    surface_templates: list[RevTurbineConfigSurfaceTemplatesItem] | None = None
+    free_trial_rules: list[RevTurbineConfigFreeTrialRuleItem] | None = None
+    reverse_trial_rules: list[RevTurbineConfigReverseTrialRuleItem] | None = None
+    plan_variations: list[RevTurbineConfigPlanVariationsItem] | None = None
+    addon_variations: list[RevTurbineConfigAddonVariationsItem] | None = None
+    extension_rules: list[RevTurbineConfigExtensionRulesItem] | None = None
+    seat_types: list[RevTurbineConfigSeatTypesItem] | None = None
+    enforcement_defaults: list[RevTurbineConfigEnforcementDefaultsItem] | None = None
+    placement_settings: list[RevTurbineConfigPlacementSettingsItem] | None = None
+    segment_dimensions: list[RevTurbineConfigSegmentDimensionsItem] | None = None
+    meter_bindings: list[RevTurbineConfigMeterBindingsItem] | None = None
+    experiments: list[Any] | None = Field(None, max_length=0)
+    signal_catalog: dict[str, Any] | None = None
+
+
 class Playbook(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
     artifact_type: Literal["playbook"]
     format_version: Literal["1.0.0"]
-    playbook_handle: constr(min_length=1)
-    playbook_version_id: str | None
-    tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1)
+    playbook_handle: constr(min_length=1) | None = "default"
+    playbook_version_id: str | None = None
+    tenant_id: constr(min_length=1) | None = None
+    environment_id: constr(min_length=1) | None = None
+    project_id: constr(min_length=1) | None = None
+    exported_at: AwareDatetime | None = None
+    schema_version: constr(min_length=1) | None = None
+    bundle_schema_version: conint(ge=0, le=9007199254740991) | None = None
+    plans: list[RevTurbineConfigPlansItem]
+    addons: list[RevTurbineConfigAddonsItem] | None = None
+    entitlements: list[RevTurbineConfigEntitlementsItem]
+    entitlement_rules: list[RevTurbineConfigEntitlementRulesItem]
+    segments: list[RevTurbineConfigSegmentsItem]
+    content_ui_paths: list[ContentUiPath]
+    slot_configs: list[RevTurbineConfigSlotConfigsItem] | None = Field(
+        None, deprecated=True
+    )
+    content_overrides: dict[str, dict[str, str]] | None = Field(None, deprecated=True)
+    theme: dict[str, Any] | None = Field(None, deprecated=True)
+    placement_slots: list[RevTurbineConfigPlacementSlotsItem] | None = None
+    message_blocks: list[MessageBlock] | None = None
+    placement_payloads: list[RevTurbineConfigPlacementPayloadItem] | None = None
+    placements: list[RevTurbineConfigPlacementItem] | None = None
+    content_promotions: list[ContentPromotion] | None = None
+    personalization_tokens: list[RevTurbineConfigPersonalizationTokensItem] | None = (
+        None
+    )
+    surface_templates: list[RevTurbineConfigSurfaceTemplatesItem] | None = None
+    free_trial_rules: list[RevTurbineConfigFreeTrialRuleItem] | None = None
+    reverse_trial_rules: list[RevTurbineConfigReverseTrialRuleItem] | None = None
+    plan_variations: list[RevTurbineConfigPlanVariationsItem] | None = None
+    addon_variations: list[RevTurbineConfigAddonVariationsItem] | None = None
+    extension_rules: list[RevTurbineConfigExtensionRulesItem] | None = None
+    seat_types: list[RevTurbineConfigSeatTypesItem] | None = None
+    enforcement_defaults: list[RevTurbineConfigEnforcementDefaultsItem] | None = None
+    placement_settings: list[RevTurbineConfigPlacementSettingsItem] | None = None
+    segment_dimensions: list[RevTurbineConfigSegmentDimensionsItem] | None = None
+    meter_bindings: list[RevTurbineConfigMeterBindingsItem] | None = None
+    experiments: list[Any] | None = Field(None, max_length=0)
+    signal_catalog: dict[str, Any] | None = None
+
+
+class PlaybookStrict(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    artifact_type: Literal["playbook"]
+    format_version: Literal["1.0.0"]
+    playbook_handle: constr(min_length=1) | None = "default"
+    playbook_version_id: str | None = None
+    tenant_id: constr(min_length=1) | None = None
+    environment_id: constr(min_length=1) | None = None
     project_id: constr(min_length=1) | None = None
     exported_at: AwareDatetime | None = None
     schema_version: constr(min_length=1) | None = None
