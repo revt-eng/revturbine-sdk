@@ -7,7 +7,7 @@
  *
  * @example
  * ```ts
- * import { initRevTurbine, PlacementController, EntitlementGate } from '@revt-eng/web-sdk/headless';
+ * import { initRevTurbine, PlacementController, EntitlementGate } from '@revturbine/sdk/headless';
  *
  * const session = await initRevTurbine({
  *   tenantId: 'tenant_abc',
@@ -46,6 +46,7 @@ import type {
   UserTargetingContext,
   RevTurbineUsageSnapshot,
   RevTurbineTrialContext,
+  RevTurbineUpdateInput,
   UsageBalances,
   JsonObject,
   SdkEventProperties,
@@ -904,6 +905,17 @@ export class SdkSession {
     this.sdk.updateUsage(balances);
   }
 
+  /**
+   * Patch the session-scoped user context — the whole-context-minus-`id`
+   * upsert (`update({ plan: {...} })`, `update({ usage: {...} })`, …).
+   * Alias of the SDK's `update()`, promoted onto the session facade so the
+   * documented `session.update()` verb is real (plan 179 Q-1/Q-3 ruling).
+   * Unrecognized keys dev-warn and drop, exactly as on the SDK.
+   */
+  update(patch: RevTurbineUpdateInput): void {
+    this.sdk.update(patch);
+  }
+
   /** Fetch full user context from the server (server runtime mode). */
   async fetchUserContext(userId: string): Promise<UserTargetingContext> {
     return this.sdk.fetchUserContext(userId);
@@ -981,6 +993,20 @@ export class SdkSession {
    * prefer {@link entitlement} which returns a full controller.
    */
   async checkEntitlement(
+    handle: string,
+    context?: RevTurbineEntitlementContext,
+  ): Promise<EntitlementResult> {
+    return this.sdk.checkEntitlement(handle, context);
+  }
+
+  /**
+   * The entitlement check as a `can` question — alias of
+   * {@link checkEntitlement}, promoted onto the session facade so
+   * `session.can('batch_export')` works without the `session.sdk` escape
+   * hatch (plan 179 Q-1/Q-3 ruling). Read `.allowed` for the verdict; an
+   * at-cap blocked limit resolves `limited` + `allowed: false`.
+   */
+  async can(
     handle: string,
     context?: RevTurbineEntitlementContext,
   ): Promise<EntitlementResult> {

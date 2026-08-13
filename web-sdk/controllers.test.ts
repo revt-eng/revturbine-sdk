@@ -27,6 +27,7 @@ function createMockSdk(overrides: Record<string, unknown> = {}) {
     resetUserContext: vi.fn(),
     setUserContext: vi.fn(),
     updateUsage: vi.fn(),
+    update: vi.fn(),
     fetchUserContext: vi.fn().mockResolvedValue({ userId: 'user_1', segmentIds: [], traits: {} }),
     getTrialStatus: vi.fn().mockResolvedValue({ in_trial: false }),
     getUsage: vi.fn().mockReturnValue({}),
@@ -822,6 +823,19 @@ describe('SdkSession', () => {
     it('delegates to SDK checkEntitlement()', async () => {
       await session.checkEntitlement('feature_x');
       expect(sdk.checkEntitlement).toHaveBeenCalledWith('feature_x', undefined);
+    });
+  });
+
+  // Plan 179 Q-1/Q-3 — the documented session verbs are first-class.
+  describe('can() / update() facade promotion', () => {
+    it('can() aliases checkEntitlement()', async () => {
+      await session.can('feature_x');
+      expect(sdk.checkEntitlement).toHaveBeenCalledWith('feature_x', undefined);
+    });
+
+    it('update() delegates to SDK update()', () => {
+      session.update({ plan: { id: 'pro', name: 'Pro' } } as any);
+      expect(sdk.update).toHaveBeenCalledWith({ plan: { id: 'pro', name: 'Pro' } });
     });
   });
 

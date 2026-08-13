@@ -8,7 +8,7 @@
  *
  * @example
  * ```ts
- * import { BrowserRuntime } from '@revt-eng/web-sdk';
+ * import { BrowserRuntime } from '@revturbine/sdk';
  * import { createStaticProviders } from '@revt-eng/core';
  *
  * const runtime = new BrowserRuntime({

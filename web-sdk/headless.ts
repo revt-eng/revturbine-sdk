@@ -1,5 +1,5 @@
 /**
- * @module @revt-eng/web-sdk/headless
+ * @module @revturbine/sdk/headless
  *
  * Pure TypeScript SDK — no React dependency.
  *
@@ -16,7 +16,7 @@
  * ## Quick Start
  *
  * ```ts
- * import { initRevTurbine } from '@revt-eng/web-sdk/headless';
+ * import { initRevTurbine } from '@revturbine/sdk/headless';
  *
  * const sdk = initRevTurbine({
  *   tenantId: 'tenant_abc',

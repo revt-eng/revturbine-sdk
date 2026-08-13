@@ -28,9 +28,9 @@
  *
  * ## Headless (pure TypeScript)
  *
- * For non-React usage, import from `@revt-eng/web-sdk/headless`:
+ * For non-React usage, import from `@revturbine/sdk/headless`:
  * ```ts
- * import { initRevTurbine } from '@revt-eng/web-sdk/headless';
+ * import { initRevTurbine } from '@revturbine/sdk/headless';
  * ```
  *
  * ## Modules
