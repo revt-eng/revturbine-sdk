@@ -116,6 +116,7 @@ import {
   configArtifactForRuntime,
   type ConfigArtifact,
   type LegacyConfigTargetDefaults,
+  type UnvalidatedConfigArtifact,
 } from './config-artifact';
 import { PlacementTypeRegistry } from './placements/registry';
 import { applyPlacementRegistrySeed } from './placements/registry';
@@ -219,10 +220,10 @@ export type RevTurbineLocalOnlyMinimalInitOptions = Omit<
   runtimeMode?: 'local_only';
   localRuntime: RevTurbineLocalRuntimeOptions &
     (
-      | { playbook: ConfigArtifact }
+      | { playbook: ConfigArtifact | UnvalidatedConfigArtifact }
       | {
           /** @deprecated Use `playbook` — the canonical key for the same artifact. */
-          exportedConfig: ConfigArtifact;
+          exportedConfig: ConfigArtifact | UnvalidatedConfigArtifact;
         }
     );
 };
@@ -990,10 +991,14 @@ export interface RevTurbineLocalRuntimeResolvers {
  * backwards compatibility. Both are optional at the type level, so this is the
  * one place that decides precedence — consumers must not read either key
  * directly or they will disagree about which one wins.
+ *
+ * The returned artifact may be the raw {@link UnvalidatedConfigArtifact} the
+ * caller supplied (e.g. an imported JSON module); the runtime config pipeline
+ * validates it via `configArtifactForRuntime` before evaluation.
  */
 export function resolveLocalPlaybook(
   localRuntime?: Pick<RevTurbineLocalRuntimeOptions, 'playbook' | 'exportedConfig'> | null,
-): ConfigArtifact | undefined {
+): ConfigArtifact | UnvalidatedConfigArtifact | undefined {
   return localRuntime?.playbook ?? localRuntime?.exportedConfig;
 }
 
@@ -1004,15 +1009,20 @@ export interface RevTurbineLocalRuntimeOptions {
    * templates, trial, and theme. Providers and resolvers read this to hydrate
    * domain state without a server.
    *
-   * Typically distributed as `playbook.json`.
+   * Typically distributed as `revturbine.playbook.json`. Accepts the artifact
+   * either as the typed {@link ConfigArtifact} or as raw parsed JSON
+   * ({@link UnvalidatedConfigArtifact}) — `import playbook from
+   * './revturbine.playbook.json'` passes `tsc --strict` directly, no cast
+   * needed; the SDK validates the shape at init and fails fast on a malformed
+   * artifact.
    */
-  playbook?: ConfigArtifact;
+  playbook?: ConfigArtifact | UnvalidatedConfigArtifact;
   /**
    * @deprecated Legacy alias for {@link RevTurbineLocalRuntimeOptions.playbook}.
    * Still fully supported — pass either one. When both are supplied `playbook`
    * wins. Prefer `playbook`: it matches the canonical type name.
    */
-  exportedConfig?: ConfigArtifact;
+  exportedConfig?: ConfigArtifact | UnvalidatedConfigArtifact;
   /** Optional static placements dataset used by the SDK's built-in local resolver. */
   placements?: LocalPlacementDataset;
   /**

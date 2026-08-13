@@ -40,6 +40,7 @@ export {
 export type {
   ConfigArtifact,
   LegacyConfigTargetDefaults,
+  UnvalidatedConfigArtifact,
 } from './config-artifact';
 
 // ── Core SDK class + init + config builders ─────────────────────────────────

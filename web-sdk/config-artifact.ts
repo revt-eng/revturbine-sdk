@@ -16,6 +16,20 @@ const LEGACY_PROJECTION_FIELDS = ['slot_configs', 'content_overrides'] as const;
 /** A canonical Playbook or the deprecated RevTurbineConfig wire shape. */
 export type ConfigArtifact = Playbook | RevTurbineConfig;
 
+/**
+ * A config artifact as raw parsed JSON — what
+ * `import playbook from './revturbine.playbook.json'` produces.
+ *
+ * TypeScript widens JSON modules to plain `string`/`number` property types,
+ * which can never satisfy the literal-typed {@link ConfigArtifact}
+ * (`artifact_type: "playbook"` etc.), so a strict-mode project could not pass
+ * the imported JSON without a cast. The SDK therefore accepts this raw shape
+ * everywhere a {@link ConfigArtifact} is accepted at the `localRuntime`
+ * boundary and validates it at runtime ({@link normalizeConfigArtifactOrThrow}
+ * — a malformed artifact fails fast at init with a descriptive error).
+ */
+export type UnvalidatedConfigArtifact = Record<string, unknown>;
+
 /** Target values used only when an older legacy artifact predates target stamping. */
 export interface LegacyConfigTargetDefaults {
   tenantId: string;
