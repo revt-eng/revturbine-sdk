@@ -25,26 +25,60 @@ import {
 } from '@revturbine/sdk/headless';
 ```
 
+## The headless contract
+
+Headless is intended for **entitlement checks and user-context updates** —
+`session.can()`, `session.update()`, usage reporting, event tracking. Two
+rules follow from that:
+
+1. **You supply the inputs.** Pass a `user` context at init, and in local mode
+   pass the Playbook (`localRuntime: { playbook }`). There is no React
+   provider doing this for you.
+2. **Placements need an explicit slot.** To resolve a placement headlessly you
+   provide a slot id **and** the surface template ids it accepts
+   (`surfaceSlot: { id, surfaceTemplateIds }`). The React entry's automatic
+   gate-placement resolution (`<Gate>`) is a React affordance — in headless
+   code, denied-state upsell surfaces resolve through the slot config you
+   declare.
+
 ## Quick Start
 
 ```ts
 import { initRevTurbine } from '@revturbine/sdk/headless';
+import playbook from './revturbine.playbook.json';
 
+// Local mode — no account, no network: user + Playbook are the inputs.
 const session = await initRevTurbine({
-  tenantId: 'tenant_abc',
-  apiKey: 'rt_live_xxx',
-  endpoint: 'https://revturbine.com/app',
+  runtimeMode: 'local_only',
+  localRuntime: { playbook },
   user: { id: 'user_123', plan: { id: 'pro' } },
 });
 
-// Placement
-const banner = session.placement({ surfaceSlot: { id: 'upsell_banner' } });
+// Hosted mode — swap the local runtime for your tenant credentials:
+// const session = await initRevTurbine({
+//   tenantId: 'tenant_abc',
+//   apiKey: 'rt_live_xxx',
+//   endpoint: 'https://revturbine.com/app',
+//   user: { id: 'user_123', plan: { id: 'pro' } },
+// });
+
+// Entitlement — the primary headless verbs
+const result = await session.can('brand_kit');
+if (!result.allowed) {
+  console.log('Denied:', result.reason);
+}
+session.update({ usage: { api_calls: 150 } });
+
+// Placement — explicit slot id + the surface template ids it accepts
+const banner = session.placement({
+  surfaceSlot: { id: 'upsell_banner', surfaceTemplateIds: ['general_banner'] },
+});
 await banner.load();
 if (banner.visible) {
   console.log('Show banner:', banner.content);
 }
 
-// Entitlement
+// Entitlement gate with a denied-state surface
 const gate = session.entitlement({ handle: 'brand_kit', autoGate: true });
 await gate.check();
 if (gate.denied) {
@@ -90,7 +124,11 @@ session.identify('user_456', { plan: { id: 'enterprise' } });
 session.setUserContext({ personalization: { company: 'Acme' } });
 const ctx = session.getUserContext();
 session.resetIdentity();
-session.update({ api_calls: 150 });
+// update() patches any context field except identity `id`. Usage goes under
+// the `usage` key — a bare handle is not a context field and is dropped with
+// a dev warning.
+session.update({ usage: { api_calls: 150 } });
+session.update({ plan: { id: 'enterprise', name: 'Enterprise' } });
 const fullCtx = await session.fetchUserContext('user_456');
 const trial = await session.getTrialStatus();
 const usage = session.getUsage();
@@ -99,11 +137,13 @@ const usage = session.getUsage();
 ### Factory Methods
 
 ```ts
-const ctrl = session.placement({ surfaceSlot: { id: 'upsell_banner' } });
+const ctrl = session.placement({
+  surfaceSlot: { id: 'upsell_banner', surfaceTemplateIds: ['general_banner'] },
+});
 const gate = session.entitlement({ handle: 'brand_kit', autoGate: true });
 const decision = await session.getPlacementBySlotId('upsell_banner');
 const result = await session.can('brand_kit');
-await session.track('feature_used', { feature: 'export_csv' });
+await session.trackEvent('feature_used', { feature: 'export_csv' });
 ```
 
 ## `PlacementController`
@@ -128,7 +168,7 @@ if (ctrl.visible) {
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `surfaceSlot` | `{id, name?}` | — | Canonical surface slot (preferred) |
+| `surfaceSlot` | `{id, name?, surfaceTemplateIds}` | — | Canonical surface slot (preferred). Headless resolution needs the slot id AND the surface template ids it accepts |
 | `placement` | `RevTurbinePlacementConfig` | — | Alternative: placement config |
 | `userId` | `string` | SDK user | Override target user |
 | `contextMode` | `RevTurbineContextMode` | `'auto'` | Context resolution mode |
