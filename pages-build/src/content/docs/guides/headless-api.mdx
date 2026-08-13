@@ -143,7 +143,10 @@ const ctrl = session.placement({
 const gate = session.entitlement({ handle: 'brand_kit', autoGate: true });
 const decision = await session.getPlacementBySlotId('upsell_banner');
 const result = await session.can('brand_kit');
-await session.trackEvent('feature_used', { feature: 'export_csv' });
+await session.track('feature_used', { feature: 'export_csv' });
+// Short-lived process (script, job, edge handler)? Flush before exit so
+// buffered events aren't lost:
+await session.flushEvents();
 ```
 
 ## `PlacementController`
