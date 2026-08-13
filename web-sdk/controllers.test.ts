@@ -28,6 +28,8 @@ function createMockSdk(overrides: Record<string, unknown> = {}) {
     setUserContext: vi.fn(),
     updateUsage: vi.fn(),
     update: vi.fn(),
+    track: vi.fn(),
+    flushEvents: vi.fn(),
     fetchUserContext: vi.fn().mockResolvedValue({ userId: 'user_1', segmentIds: [], traits: {} }),
     getTrialStatus: vi.fn().mockResolvedValue({ in_trial: false }),
     getUsage: vi.fn().mockReturnValue({}),
@@ -843,6 +845,19 @@ describe('SdkSession', () => {
     it('delegates to SDK trackEvent()', async () => {
       await session.trackEvent('button_clicked', { target: 'cta_1' } as any);
       expect(sdk.trackEvent).toHaveBeenCalledWith('button_clicked', { target: 'cta_1' });
+    });
+
+    // Plan 179 ruling (Kent, 2026-08-13) — the full telemetry surface rides
+    // the facade: track (the advertised alias) + flushEvents for short-lived
+    // headless processes.
+    it('track() delegates to SDK track()', async () => {
+      await session.track('ai_generation_completed', { credits: 3 } as any);
+      expect(sdk.track).toHaveBeenCalledWith('ai_generation_completed', { credits: 3 });
+    });
+
+    it('flushEvents() delegates to SDK flushEvents()', async () => {
+      await session.flushEvents();
+      expect(sdk.flushEvents).toHaveBeenCalled();
     });
   });
 });

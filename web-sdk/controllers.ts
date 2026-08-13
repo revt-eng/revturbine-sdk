@@ -1019,6 +1019,25 @@ export class SdkSession {
   async trackEvent(name: string, data?: Record<string, JsonObject[string]>): Promise<void> {
     return this.sdk.trackEvent(name, data);
   }
+
+  /**
+   * Track an event — the advertised alias of {@link trackEvent}, first-class
+   * on the session facade so headless code carries the full telemetry surface
+   * (plan 179 ruling, Kent 2026-08-13). Powers analytics, frequency caps,
+   * attribution, and experiments.
+   */
+  track(name: string, data?: Record<string, JsonObject[string]>): Promise<void> {
+    return this.sdk.track(name, data);
+  }
+
+  /**
+   * Flush buffered events immediately. Headless processes are often
+   * short-lived (scripts, jobs, edge handlers) — call this before exit so
+   * buffered `track()` events aren't lost with the process.
+   */
+  async flushEvents(): Promise<void> {
+    return this.sdk.flushEvents();
+  }
 }
 
 // ── Factory ─────────────────────────────────────────────────────────────────
