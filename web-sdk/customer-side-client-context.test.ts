@@ -132,6 +132,43 @@ describe('web-SDK fetchClientContext (plan 157 T5)', () => {
     expect(priv(sdk).userContext.custom?.tier).toBe('gold');
   });
 
+  // Plan 179 TASK-1 (F-74 browser half) — the server-derived plan reaches
+  // client decisions through the canonical `plan.id` form the single plan
+  // resolver reads. Q-2 shape: { handle, name }.
+  it('patches the server-derived plan into userContext.plan (purchase updates decisions)', async () => {
+    stubFetch({
+      ok: true,
+      status: 200,
+      json: async () => ({ ...CLIENT_CTX, plan: { handle: 'pro', name: 'Pro' } }),
+      text: async () => '',
+    });
+    const sdk = makeSdk();
+    // App supplied a stale plan — the Stripe-webhook truth overlays it.
+    sdk.setUserContext({ id: 'u1', plan: { id: 'free', name: 'Free' } } as RevTurbineUserContext);
+    await sdk.fetchClientContext('rt_client_abc');
+    expect(priv(sdk).userContext.plan).toMatchObject({ id: 'pro', name: 'Pro' });
+  });
+
+  it('falls back to the handle as display name when the server sends no name', async () => {
+    stubFetch({
+      ok: true,
+      status: 200,
+      json: async () => ({ ...CLIENT_CTX, plan: { handle: 'team' } }),
+      text: async () => '',
+    });
+    const sdk = makeSdk();
+    await sdk.fetchClientContext('rt_client_abc');
+    expect(priv(sdk).userContext.plan).toMatchObject({ id: 'team', name: 'team' });
+  });
+
+  it('leaves the app-supplied plan untouched when the response carries no plan', async () => {
+    stubFetch({ ok: true, status: 200, json: async () => CLIENT_CTX, text: async () => '' });
+    const sdk = makeSdk();
+    sdk.setUserContext({ id: 'u1', plan: { id: 'free', name: 'Free' } } as RevTurbineUserContext);
+    await sdk.fetchClientContext('rt_client_abc');
+    expect(priv(sdk).userContext.plan).toMatchObject({ id: 'free', name: 'Free' });
+  });
+
   it('never logs the client token', async () => {
     const logs: string[] = [];
     const methods = ['log', 'warn', 'error', 'info', 'debug'] as const;

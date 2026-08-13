@@ -530,6 +530,13 @@ interface ClientSafeContextResponse {
   context_version?: string;
   trial?: { status?: string; days_remaining?: number; ends_at?: string };
   billing?: { health?: string };
+  /**
+   * Server-derived plan identity (plan 174 TASK-9 / F-74 / plan 179 TASK-1):
+   * the Stripe-webhook-maintained truth, NOT anything the app supplied. When
+   * present it patches the canonical `userContext.plan`, so a purchase
+   * updates client decisions without app code.
+   */
+  plan?: { handle?: string; name?: string } | null;
   capabilities?: { can_upgrade?: boolean; can_manage_billing?: boolean };
 }
 
@@ -5768,7 +5775,9 @@ export class RevTurbineCustomerSdk {
       // the last applied context is dropped. The coarse `payment_at_risk`
       // billing signal is not part of the evaluation hash input, so it is folded
       // into the skip key explicitly.
-      const serverHashInput = JSON.parse(JSON.stringify({ trial: patch.trial ?? null }));
+      const serverHashInput = JSON.parse(
+        JSON.stringify({ trial: patch.trial ?? null, plan: patch.plan ?? null }),
+      );
       const nextHash =
         (await computeUserContextHash(serverHashInput)) +
         `:${patch.payment_at_risk === true ? 1 : 0}`;
@@ -5800,6 +5809,21 @@ export class RevTurbineCustomerSdk {
       // Coarse signal → the soft retention trigger. Raw failed-payment detail is
       // server_only and never crosses the boundary, so the SDK sees only this.
       patch.payment_at_risk = true;
+    }
+
+    // Server-derived plan (plan 179 TASK-1, Q-2 shape { handle, name }): patch
+    // through the canonical `plan.id` form so `resolveContextPlanRaw()` — the
+    // single plan resolver every plan-scoped read site uses — picks it up.
+    // Server truth (Stripe webhook) overlays the app-supplied plan by design.
+    const planHandle = data.plan?.handle;
+    if (typeof planHandle === 'string' && planHandle.length > 0) {
+      patch.plan = {
+        id: planHandle,
+        name:
+          typeof data.plan?.name === 'string' && data.plan.name.length > 0
+            ? data.plan.name
+            : planHandle,
+      };
     }
 
     return patch;
