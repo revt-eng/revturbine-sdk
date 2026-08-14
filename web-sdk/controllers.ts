@@ -261,6 +261,12 @@ export class PlacementController {
       surfaceSlotId: decision.output?.surface?.slot_id,
       surfaceTemplateId: decision.output?.surface?.template,
       payloadId: decision.output?.output_id,
+      // Experiment attribution (plan 183). Read off the decision that produced
+      // this treatment, so `experiment_perf` / `message_impact_by_variant` key
+      // correctly without customer code supplying anything. Undefined when the
+      // user is not enrolled — which stays distinct from being in control.
+      experimentId: decision.output?.experiment_id,
+      variantKey: decision.output?.variant_key,
       metadata: {
         decision_source: decision.decisionSource,
         exposure_basis: basis,
@@ -581,6 +587,8 @@ export class PlacementController {
       surfaceSlotId: this._decision?.output?.surface?.slot_id,
       surfaceTemplateId: this._decision?.output?.surface?.template,
       payloadId: this._decision?.output?.output_id,
+      experimentId: this._decision?.output?.experiment_id,
+      variantKey: this._decision?.output?.variant_key,
       metadata: decisionId ? { ...metadata, decision_id: decisionId } : metadata,
     });
 

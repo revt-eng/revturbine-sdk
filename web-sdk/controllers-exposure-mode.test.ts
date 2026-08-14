@@ -201,3 +201,53 @@ describe('plan 144 TASK-10 — placement_resolved + decision_id provenance', () 
     expect((impressions(sdk)[0][0] as { metadata?: { decision_id?: string } }).metadata?.decision_id).toBe('dec_9');
   });
 });
+
+describe('experiment attribution flows from the decision (plan 183 AC-4)', () => {
+  /** A decision whose output carries the experiment the resolver stamped. */
+  function mkEnrolledSdk(): AnySdk {
+    const sdk = mkSdk();
+    sdk.getPlacementDecision = vi.fn().mockResolvedValue({
+      visible: true,
+      placementId: 'pl_1',
+      decisionSource: 'remote',
+      content: { header: 'Hi' },
+      output: {
+        surface: { slot_id: 'slot_1', template: 'tpl_1' },
+        output_id: 'pay_1',
+        experiment_id: 'pricing_test',
+        variant_key: 'variant_b',
+      },
+    });
+    return sdk;
+  }
+
+  it('stamps experimentId/variantKey on the impression with NO customer input', async () => {
+    // AC-4: the SDK reports them without customer code supplying anything —
+    // loadCtrl passes no experiment data at all.
+    const sdk = mkEnrolledSdk();
+    await loadCtrl(sdk, {});
+    expect(impressions(sdk)[0]?.[0]).toMatchObject({
+      interactionType: 'impression',
+      experimentId: 'pricing_test',
+      variantKey: 'variant_b',
+    });
+  });
+
+  it('leaves them undefined when the decision reports no experiment', async () => {
+    const sdk = mkSdk(); // base decision output has no experiment_id
+    await loadCtrl(sdk, {});
+    const call = impressions(sdk)[0]?.[0] as { experimentId?: string; variantKey?: string };
+    expect(call.experimentId).toBeUndefined();
+    expect(call.variantKey).toBeUndefined();
+  });
+
+  it('carries attribution onto a conversion too, not just the impression', async () => {
+    const sdk = mkEnrolledSdk();
+    const ctrl = await loadCtrl(sdk, {});
+    await ctrl.trackInteraction('cta_completed');
+    const conversion = sdk.trackTreatmentInteraction.mock.calls
+      .map((c: unknown[]) => c[0] as { interactionType?: string; experimentId?: string; variantKey?: string })
+      .find((c) => c.interactionType === 'cta_completed');
+    expect(conversion).toMatchObject({ experimentId: 'pricing_test', variantKey: 'variant_b' });
+  });
+});

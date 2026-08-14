@@ -5388,6 +5388,11 @@ export class RevTurbineCustomerSdk {
       surface_slot_id: item.surfaceSlotId,
       surface_template_id: item.surfaceTemplateId,
       payload_id: item.payloadId,
+      // Experiment attribution (plan 183). Omitted rather than nulled when the
+      // user is not enrolled: absence means NOT ENROLLED, which stays distinct
+      // from being assigned to a control arm.
+      ...(item.experimentId ? { experiment_id: item.experimentId } : {}),
+      ...(item.variantKey ? { variant_key: item.variantKey } : {}),
       metadata: item.metadata ?? {},
       tenant_id: this.tenantId,
       // Caller-declared test traffic (plan 164): stamped only when the
@@ -5479,6 +5484,11 @@ export class RevTurbineCustomerSdk {
       interaction_type: normalized.interactionType,
       interaction_at: normalized.interactionAt ?? null,
       ...(decisionId ? { decision_id: decisionId } : {}),
+      // Siblings of `placement_id`, NOT inside `metadata` — CLICKSTREAM_LIFTED_FIELDS
+      // lifts from the payload's top level, so anything buried in the metadata bag
+      // never reaches the `experiment_id` / `variant_key` columns (plan 183).
+      ...(normalized.experimentId ? { experiment_id: normalized.experimentId } : {}),
+      ...(normalized.variantKey ? { variant_key: normalized.variantKey } : {}),
       metadata: interactionMeta,
     }, { immediate: false });
   }

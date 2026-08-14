@@ -93,3 +93,67 @@ describe('web-SDK treatment interactions → /api/events/interactions', () => {
     expect(calls.some((c) => c.url.endsWith('/api/events/interactions'))).toBe(true);
   });
 });
+
+describe('experiment attribution on interactions (plan 183 TASK-6 / AC-4)', () => {
+  it('carries experiment_id + variant_key onto the presentation row', async () => {
+    const sdk = makeSdk();
+    await sdk.trackTreatmentInteraction({
+      userId: 'end_user_1',
+      placementId: 'pl_upgrade',
+      interactionType: 'impression',
+      payloadId: 'payload_9',
+      experimentId: 'pricing_test',
+      variantKey: 'variant_b',
+    });
+    await settle();
+
+    expect(interactionCall().row).toMatchObject({
+      placement_id: 'pl_upgrade',
+      experiment_id: 'pricing_test',
+      variant_key: 'variant_b',
+    });
+  });
+
+  it('reports a control assignment — control is enrollment, not absence', async () => {
+    const sdk = makeSdk();
+    await sdk.trackTreatmentInteraction({
+      userId: 'u', placementId: 'p', interactionType: 'impression',
+      experimentId: 'pricing_test', variantKey: 'control',
+    });
+    await settle();
+
+    expect(interactionCall().row).toMatchObject({
+      experiment_id: 'pricing_test',
+      variant_key: 'control',
+    });
+  });
+
+  it('omits both keys entirely for a user who is not enrolled', async () => {
+    // Absence must not become an empty string or null: `experiment_perf` keys on
+    // this, and a blank arm would collapse the unenrolled into a real cohort.
+    const sdk = makeSdk();
+    await sdk.trackTreatmentInteraction({
+      userId: 'u', placementId: 'p', interactionType: 'impression',
+    });
+    await settle();
+
+    const { row } = interactionCall();
+    expect(row).not.toHaveProperty('experiment_id');
+    expect(row).not.toHaveProperty('variant_key');
+  });
+
+  it('carries attribution on a conversion, not just an impression', async () => {
+    const sdk = makeSdk();
+    await sdk.trackTreatmentInteraction({
+      userId: 'u', placementId: 'p', interactionType: 'cta_completed',
+      experimentId: 'pricing_test', variantKey: 'variant_b',
+    });
+    await settle();
+
+    expect(interactionCall().row).toMatchObject({
+      interaction_type: 'cta_completed',
+      experiment_id: 'pricing_test',
+      variant_key: 'variant_b',
+    });
+  });
+});
