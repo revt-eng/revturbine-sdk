@@ -4000,6 +4000,8 @@ export class RevTurbineCustomerSdk {
    * session so a render loop can never flood the channel.
    */
   private readonly emittedResolutionDiagnostics = new Set<string>();
+  /** Session dedup for {@link reportSdkError}, keyed by `reason`. */
+  private readonly emittedSdkErrors = new Set<string>();
   private static readonly RESOLUTION_DIAGNOSTIC_SESSION_CAP = 20;
 
   /**
@@ -4050,6 +4052,41 @@ export class RevTurbineCustomerSdk {
     }
     this.emittedResolutionDiagnostics.add(key);
     void this.postAnonMeta('resolution_failure', diag);
+  }
+
+  /**
+   * Report that the SDK itself failed (plan 182 TASK-5).
+   *
+   * `sdk_error` was declared in the meta taxonomy with no emitter. This is the
+   * "the SDK malfunctioned" signal — distinct from `resolution_failure`, which
+   * means a *decision* produced nothing. It rides the same anonymous
+   * `events_sdk_meta` lane: no tenant, no user, no placement identity.
+   *
+   * Deduped on `reason` for the session and capped, mirroring
+   * {@link emitResolutionFailure} — an SDK failing inside a render loop must
+   * not become a telemetry flood. Best-effort and never throwing: this is
+   * called from `catch` blocks, so it must not manufacture a second failure.
+   *
+   * @param reason Stable, categorical cause (e.g. `provider_init_failed`) —
+   *   what dashboards group by.
+   * @param message Human-readable detail for triage, sent on the same footing
+   *   as `sdk_validation_warning`'s message, which already ships on this lane.
+   */
+  reportSdkError(reason: string, message?: string): void {
+    if (!this.diagnosticTelemetryActive()) return;
+    if (this.emittedSdkErrors.has(reason)) return;
+    if (this.emittedSdkErrors.size >= RevTurbineCustomerSdk.RESOLUTION_DIAGNOSTIC_SESSION_CAP) {
+      return;
+    }
+    this.emittedSdkErrors.add(reason);
+    try {
+      // `void` alone swallows a rejected promise but NOT a synchronous throw,
+      // and this runs inside customer catch blocks — a telemetry failure here
+      // must never manufacture a second one.
+      void this.postAnonMeta('sdk_error', message ? { reason, message } : { reason });
+    } catch {
+      // Best-effort by contract.
+    }
   }
 
   /** Fire the one anonymous `sdk_init` adoption beacon at startup. */

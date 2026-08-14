@@ -114,8 +114,13 @@ export function RevTurbineProvider({ options, bootstrapPlacements, domCapture, c
     let mounted = true;
 
     async function initialize() {
+      // Declared outside the try so the catch can report through it (plan 182
+      // TASK-5). `initRevTurbine` is synchronous and first, so by the time any
+      // realistic init failure happens — identify, theme load, placement
+      // registration, bootstrap — the instance exists.
+      let nextSdk: ReturnType<typeof initRevTurbine> | undefined;
       try {
-        const nextSdk = initRevTurbine(options);
+        nextSdk = initRevTurbine(options);
 
         // The SDK constructor already merges options.user into userContext.
         // If options.user has structured fields, call identify() to ensure
@@ -184,6 +189,10 @@ export function RevTurbineProvider({ options, bootstrapPlacements, domCapture, c
         // alone hid the real failure from useRevTurbine().error.
         console.error('[RevTurbine] SDK provider initialization failed:', error);
         const cause = error instanceof Error ? error.message : String(error);
+        // Anonymous "the SDK itself failed" beacon (plan 182 TASK-5). Undefined
+        // only when the synchronous constructor threw — a malformed-options
+        // develop-time error that already fails loudly.
+        nextSdk?.reportSdkError('provider_init_failed', cause);
         setError(`Failed to initialize RevTurbine SDK provider: ${cause}`);
         setIsReady(false);
       }
