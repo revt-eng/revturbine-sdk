@@ -50,6 +50,12 @@ export interface ThemeLoaderOptions {
   apiKey: string;
   /** Optional storage provider. Falls back to localStorage in browser, in-memory on server. */
   storage?: RevTurbineStorage;
+  /**
+   * The launched Playbook's theme, used as the BASE that fetched overrides
+   * merge over (plan 184). Supplying it means a partial override from the
+   * control plane refines the Playbook's theme instead of replacing it.
+   */
+  base?: RevTurbineThemeInput;
 }
 
 /**
@@ -66,12 +72,14 @@ export async function loadTheme(
   opts: ThemeLoaderOptions,
   onUpdate?: (theme: RevTurbineTheme) => void,
 ): Promise<RevTurbineTheme> {
-  const { tenantId, endpoint, apiKey } = opts;
+  const { tenantId, endpoint, apiKey, base } = opts;
   const storage = opts.storage ?? resolvePersistentStorage();
 
-  // Fast path: use persisted theme while we fetch.
+  // Fast path: use persisted theme while we fetch. Layered over the Playbook's
+  // theme so an override that sets only a few tokens refines the base rather
+  // than replacing it (plan 184).
   const persisted = readPersistedTheme(tenantId, storage);
-  const localTheme = mergeTheme(persisted);
+  const localTheme = mergeTheme({ ...base, ...persisted });
 
   // Fire off background fetch — don't block the caller.
   fetchRemoteTheme(endpoint, tenantId, apiKey).then((remote) => {
@@ -80,7 +88,7 @@ export async function loadTheme(
     if (persisted?.version && remote.version === persisted.version) return;
 
     persistTheme(tenantId, remote, storage);
-    onUpdate?.(mergeTheme(remote));
+    onUpdate?.(mergeTheme({ ...base, ...remote }));
   }).catch(() => {
     // Network failures are non-fatal; we already have the local theme.
   });

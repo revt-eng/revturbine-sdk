@@ -4,6 +4,7 @@ import type { AnyDomainProvider } from './providers/types';
 import { resolveBranding, type ResolvedBranding } from './branding';
 import type { BrandingConfig } from './generated';
 import { isServer, isBrowser } from './env';
+import { isDevelopmentBuild } from './build-mode';
 import { redactPii, redactIdentityField, redactEnvelope } from './pii-redact';
 import { evaluateSegments } from './segments';
 import { buildControlPlaneEvent } from './control-plane-events';
@@ -168,11 +169,10 @@ const EMAIL_SHAPED_ID = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Dev detection mirrors the React-ecosystem convention: bundlers replace
 // NODE_ENV for production builds; environments without `process` (raw browser
-// ESM) are treated as dev so misuse diagnostics stay visible there.
-const IS_DEV_ENV = ((): boolean => {
-  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
-  return env?.NODE_ENV !== 'production';
-})();
+// ESM) are treated as dev so misuse diagnostics stay visible there. See
+// `build-mode.ts` for why the read must emit the literal
+// `process.env.NODE_ENV` token rather than route through `globalThis`.
+const IS_DEV_ENV = isDevelopmentBuild();
 
 /** Dev-only diagnostic channel — silenced in production builds. */
 function devWarn(message: string): void {
@@ -905,6 +905,20 @@ export interface RevTurbineInitOptions {
    * when no explicit {@link branding} and no legacy config-embedded theme apply.
    */
   apiBranding?: BrandingConfig;
+  /**
+   * Fetch the tenant's theme overrides from the control plane's
+   * `GET /api/sdk/theme` and apply them OVER the launched Playbook's theme
+   * (plan 184).
+   *
+   * Opt-in and `false` by default, deliberately: the SDK otherwise issues no
+   * theme request at all, so an integration with no branding configured never
+   * pays a round-trip — and never logs a failed one. Enable it when branding is
+   * managed from the RevTurbine dashboard and should change without a redeploy.
+   *
+   * Independent of {@link apiBranding}, which is the same rung supplied by the
+   * host instead of fetched by the SDK.
+   */
+  fetchThemeOverride?: boolean;
 }
 
 /** Base init options shared by all runtime mode helper builders. */

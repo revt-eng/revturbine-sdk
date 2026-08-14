@@ -3,15 +3,7 @@
 import React, { useCallback } from 'react';
 import { useTrack, type TrackOptions } from './useTrack';
 import type { SdkEventProperties } from '../customer-side';
-
-function isProductionBuild(): boolean {
-  const processLike = (globalThis as { process?: { env?: { NODE_ENV?: string } } }).process;
-  return processLike?.env?.NODE_ENV === 'production';
-}
-
-function devWarn(message: string): void {
-  if (!isProductionBuild() && typeof console !== 'undefined') console.warn(`[RevTurbine] ${message}`);
-}
+import { devWarn } from '../build-mode';
 
 /** Props for {@link Track}. */
 export interface TrackProps {

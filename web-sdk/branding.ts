@@ -21,6 +21,7 @@
  * the resolved result is always complete.
  */
 import type { BrandingConfig } from './generated';
+import { isDevelopmentBuild } from './build-mode';
 
 /**
  * Structural default branding. Neutral, brandless values that let the SDK render
@@ -108,7 +109,7 @@ export function resolveBranding(input: BrandingResolutionInput = {}): ResolvedBr
   if (isNonEmpty(input.explicit)) return merge(input.explicit, 'explicit');
 
   if (input.legacyConfigTheme && Object.keys(input.legacyConfigTheme).length > 0) {
-    if (input.warnOnLegacy !== false && !warnedLegacyBranding && isDevelopment()) {
+    if (input.warnOnLegacy !== false && !warnedLegacyBranding && isDevelopmentBuild()) {
       warnedLegacyBranding = true;
       // eslint-disable-next-line no-console
       console.warn(
@@ -123,21 +124,6 @@ export function resolveBranding(input: BrandingResolutionInput = {}): ResolvedBr
   if (isNonEmpty(input.apiBranding)) return merge(input.apiBranding, 'branding-api');
 
   return merge(undefined, 'default');
-}
-
-/**
- * Whether the SDK is running in a development build (drives the dev-only
- * warning). Browser-safe — the web-sdk build has no `@types/node`, so `process`
- * is accessed via `globalThis`, mirroring `config-artifact.ts`.
- */
-function isDevelopment(): boolean {
-  const processLike = (globalThis as { process?: { env?: { NODE_ENV?: string } } }).process;
-  if (processLike) return processLike.env?.NODE_ENV !== 'production';
-
-  const locationLike = (globalThis as { location?: { hostname?: string } }).location;
-  return locationLike?.hostname === 'localhost'
-    || locationLike?.hostname === '127.0.0.1'
-    || locationLike?.hostname === '[::1]';
 }
 
 /** Test-only: reset the one-time legacy-branding warning latch. @internal */

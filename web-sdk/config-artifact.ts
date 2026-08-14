@@ -2,6 +2,7 @@ import {
   type Playbook,
   type RevTurbineConfig,
 } from '@revt-eng/schema';
+import { isDevelopmentBuild } from './build-mode';
 
 const PLAYBOOK_FORMAT_VERSION = '1.0.0';
 const REQUIRED_BODY_ARRAY_FIELDS = [
@@ -38,17 +39,6 @@ export interface LegacyConfigTargetDefaults {
 
 function isRecord(value: unknown): value is Record<string, unknown> { // sdk-ok: boundary-parse
   return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function isDevelopmentBuild(): boolean {
-  const processLike = (globalThis as { process?: { env?: { NODE_ENV?: string } } }).process;
-  const nodeEnv = processLike?.env?.NODE_ENV;
-  if (processLike) return nodeEnv !== 'production';
-
-  const locationLike = (globalThis as { location?: { hostname?: string } }).location;
-  return locationLike?.hostname === 'localhost'
-    || locationLike?.hostname === '127.0.0.1'
-    || locationLike?.hostname === '[::1]';
 }
 
 function warnForLegacyProjections(value: Record<string, unknown>, source: string): void { // sdk-ok: boundary-parse

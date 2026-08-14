@@ -17,6 +17,7 @@ import { loadTheme } from '../theme/theme-loader';
 import { RevTurbineThemeProvider } from '../theme/ThemeContext';
 import { installAnnotatedCapture, type AnnotatedCaptureOptions } from '../telemetry';
 import { RevTurbineContext } from './useRevTurbine';
+import { isProductionBuild } from '../build-mode';
 
 type BootstrapPlacementInput = Omit<RevTurbinePlacementDecisionInput, 'placementId'> & {
   placement: RevTurbinePlacementConfig;
@@ -47,11 +48,6 @@ export type RevTurbineProviderProps = {
  * retrigger the initialization useEffect in an infinite loop.
  */
 const EMPTY_BOOTSTRAP: BootstrapPlacementInput[] = [];
-
-function isProductionBuild(): boolean {
-  const processLike = (globalThis as { process?: { env?: { NODE_ENV?: string } } }).process;
-  return processLike?.env?.NODE_ENV === 'production';
-}
 
 /**
  * React context provider for the RevTurbine SDK.
@@ -133,30 +129,39 @@ export function RevTurbineProvider({ options, bootstrapPlacements, domCapture, c
           );
         }
 
-        // Load theme — prefer the Playbook snapshot, fall back to API fetch.
-        // Must read via resolveLocalPlaybook so a caller using the canonical
-        // `playbook` key still gets the no-network theme shortcut instead of an
-        // API round-trip that can hang.
+        // Theme — the Playbook is the BASE, always resolved without a network
+        // call. Must read via resolveLocalPlaybook so a caller using the
+        // canonical `playbook` key still gets the no-network shortcut.
+        //
+        // Plan 184: this previously fell back to an unconditional
+        // `GET /api/sdk/theme` whenever the Playbook carried no theme — which
+        // in Server mode (no `localRuntime`) was ALWAYS, against an endpoint no
+        // control plane implemented. Every Server-mode consumer ate a
+        // guaranteed 404 on init. The fetch is now opt-in via
+        // `fetchThemeOverride`, and when enabled it layers OVER this base
+        // rather than replacing it.
         const playbook = resolveLocalPlaybook(options.localRuntime);
         const configTheme = playbook?.theme;
+        const baseTheme =
+          configTheme && typeof configTheme === 'object'
+            ? (configTheme as RevTurbineThemeInput)
+            : undefined;
 
-        if (configTheme && typeof configTheme === 'object') {
-          // RevTurbineConfig supplies the theme — merge with defaults (no API call).
-          const resolved = mergeTheme(configTheme as RevTurbineThemeInput);
-          if (mounted) setTheme(resolved);
-        } else {
-          // No theme in exported config — load from API / localStorage.
+        if (options.fetchThemeOverride) {
           const initialTheme = await loadTheme(
             {
               tenantId: options.tenantId ?? 'local',
               endpoint: options.endpoint ?? 'https://api.revturbine.local',
               apiKey: options.apiKey ?? 'local-only',
+              base: baseTheme,
             },
             (updated) => {
               if (mounted) setTheme(updated);
             },
           );
           if (mounted) setTheme(initialTheme);
+        } else if (mounted) {
+          setTheme(mergeTheme(baseTheme));
         }
 
         // Bootstrap preloads — derive userId from the SDK's own user context.
