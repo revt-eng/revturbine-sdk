@@ -123,10 +123,18 @@ describe('public export surface (barrel regression)', () => {
   // never re-exported from the package barrel, so `@revt-eng/sdk` consumers
   // could not import it. Import through './index' — the same path SDK consumers
   // resolve — so a dropped barrel re-export fails CI here, not silently downstream.
+  // The 5s default is not a budget this test can meet: importing './index'
+  // pulls the whole SDK graph — headless + server-node + react + placements +
+  // theme — which measures ~3.3s cold on an unloaded machine, so a full
+  // parallel run had almost no headroom and timed out here first. The
+  // assertion is "these three are re-exported", never "the barrel imports
+  // quickly", so the latency coupling was the defect; an explicit generous
+  // timeout removes it while still failing fast on a genuine hang. The
+  // barrel-regression guard itself is unchanged.
   it('re-exports createPostHogIntegration through the package barrel', async () => {
     const barrel = await import('./index');
     expect(typeof barrel.createPostHogIntegration).toBe('function');
     expect(typeof barrel.createPostHogAnalyticsProvider).toBe('function');
     expect(typeof barrel.createAnalyticsProvider).toBe('function');
-  });
+  }, 30_000);
 });

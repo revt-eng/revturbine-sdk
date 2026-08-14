@@ -8,6 +8,7 @@ import {
   type RevTurbinePlacementConfig,
   type RevTurbinePlacementDecisionInput,
   type RevTurbineUserContext,
+  type ServerEvaluationHydrationPayload,
   type UserContextInput,
   resolveLocalPlaybook,
 } from '../customer-side';
@@ -38,6 +39,34 @@ export type RevTurbineProviderProps = {
    * Omit to disable. Memoize an object value to avoid re-installing.
    */
   domCapture?: boolean | AnnotatedCaptureOptions;
+  /**
+   * A server-evaluated payload to hydrate the SDK from (plan 186 TASK-2).
+   *
+   * Produced by the server SDK — `RevTurbineServer.evaluate()` or
+   * `LocalEvaluationServer.evaluate()` — and serialized into page props / RSC
+   * props. Applied synchronously the moment the SDK instance exists, before any
+   * awaited init work, so the decisions and entitlements it carries are already
+   * cached the first time a gate reads them. Without it, a server-rendered app
+   * evaluates once on the server and then re-evaluates from scratch on the
+   * client.
+   *
+   * Carries no credential — it is built for browser delivery. A malformed or
+   * unknown-version payload is logged and skipped rather than thrown: hydration
+   * is an optimization, so a bad payload degrades to normal client-side
+   * evaluation instead of breaking the provider.
+   *
+   * Re-hydrates when the payload's identity changes (e.g. a server navigation
+   * supplies a fresh one), so a provider mounted in a root layout stays current
+   * without remounting. Memoize a value you rebuild every render.
+   *
+   * @example
+   * ```tsx
+   * // app/layout.tsx (Server Component)
+   * const payload = await server.evaluate({ userId, placements: [{ slotId: 'hero' }] });
+   * return <RevTurbineProvider options={options} serverPayload={payload}>{children}</RevTurbineProvider>;
+   * ```
+   */
+  serverPayload?: ServerEvaluationHydrationPayload;
   /** React children. */
   children: React.ReactNode;
 };
@@ -48,6 +77,29 @@ export type RevTurbineProviderProps = {
  * retrigger the initialization useEffect in an infinite loop.
  */
 const EMPTY_BOOTSTRAP: BootstrapPlacementInput[] = [];
+
+/**
+ * Apply a server-evaluated payload, absorbing any failure.
+ *
+ * Hydration is a cache pre-warm, never a correctness dependency — a rejected
+ * payload must leave the SDK usable and fall back to client-side evaluation, so
+ * this never rethrows into provider init. The failure is still reported through
+ * the anonymous `sdk_error` beacon so a systematically bad payload is visible.
+ */
+function hydrateFromServerPayload(
+  sdk: RevTurbineCustomerSdk,
+  payload: ServerEvaluationHydrationPayload,
+): void {
+  try {
+    sdk.hydrate(payload);
+  } catch (error) {
+    console.error('[RevTurbine] serverPayload hydration failed:', error);
+    sdk.reportSdkError(
+      'server_payload_hydration_failed',
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
 
 /**
  * React context provider for the RevTurbine SDK.
@@ -64,7 +116,7 @@ const EMPTY_BOOTSTRAP: BootstrapPlacementInput[] = [];
  * </RevTurbineProvider>
  * ```
  */
-export function RevTurbineProvider({ options, bootstrapPlacements, domCapture, children }: RevTurbineProviderProps) {
+export function RevTurbineProvider({ options, bootstrapPlacements, domCapture, serverPayload, children }: RevTurbineProviderProps) {
   const stableBootstrap = bootstrapPlacements ?? EMPTY_BOOTSTRAP;
   const [sdk, setSdk] = useState<RevTurbineCustomerSdk | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -73,6 +125,15 @@ export function RevTurbineProvider({ options, bootstrapPlacements, domCapture, c
   const [contextVersion, setContextVersion] = useState(0);
   const previousOptionsRef = useRef<RevTurbineInitInputOptions | null>(null);
   const previousBootstrapRef = useRef<BootstrapPlacementInput[] | null>(null);
+  // Read by the init effect without joining its deps: a fresh payload must not
+  // tear down and rebuild the SDK. Kept current every render so a re-init
+  // triggered by changed `options` hydrates from the latest payload, not the
+  // one captured at mount.
+  const serverPayloadRef = useRef<ServerEvaluationHydrationPayload | undefined>(serverPayload);
+  serverPayloadRef.current = serverPayload;
+  // Identity of the payload already applied, so init-time hydration and the
+  // change-driven effect below never apply the same payload twice.
+  const hydratedPayloadRef = useRef<ServerEvaluationHydrationPayload | null>(null);
 
   useEffect(() => {
     if (isProductionBuild()) {
@@ -117,6 +178,16 @@ export function RevTurbineProvider({ options, bootstrapPlacements, domCapture, c
       let nextSdk: ReturnType<typeof initRevTurbine> | undefined;
       try {
         nextSdk = initRevTurbine(options);
+
+        // Hydrate before any await: initRevTurbine is synchronous, so applying
+        // the payload here means the decision cache and entitlements are warm
+        // by the time `setSdk` publishes the instance — no gate ever reads an
+        // empty cache and refetches what the server already decided.
+        const initialPayload = serverPayloadRef.current;
+        if (initialPayload) {
+          hydrateFromServerPayload(nextSdk, initialPayload);
+          hydratedPayloadRef.current = initialPayload;
+        }
 
         // The SDK constructor already merges options.user into userContext.
         // If options.user has structured fields, call identify() to ensure
@@ -209,6 +280,16 @@ export function RevTurbineProvider({ options, bootstrapPlacements, domCapture, c
       mounted = false;
     };
   }, [options, stableBootstrap]);
+
+  // A later payload — typically a server navigation re-rendering the layout —
+  // applies without remounting. The ref guard skips the payload the init effect
+  // already consumed, so mounting with a payload hydrates exactly once.
+  useEffect(() => {
+    if (!sdk || !serverPayload) return;
+    if (hydratedPayloadRef.current === serverPayload) return;
+    hydrateFromServerPayload(sdk, serverPayload);
+    hydratedPayloadRef.current = serverPayload;
+  }, [sdk, serverPayload]);
 
   const setContext = useCallback((context: RevTurbineUserContext) => {
     if (!sdk) return;
