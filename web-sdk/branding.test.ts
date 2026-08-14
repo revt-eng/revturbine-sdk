@@ -1,8 +1,14 @@
 /**
  * Plan 118 TASK-20 — branding resolution ladder (AC-10).
  *
- * Verifies the four rungs and their priority: explicit → legacy config-embedded
- * (dev-warns) → branding API → DEFAULT_BRANDING, plus structural merge behavior.
+ * Verifies the four rungs and their priority: explicit → branding API → legacy
+ * config-embedded (dev-warns) → DEFAULT_BRANDING, plus structural merge
+ * behavior.
+ *
+ * The middle two are reversed from the original plan-118 order — plan 184
+ * (Kent, 2026-08-14) made the branding API an OVERRIDE, since control-plane
+ * branding is the live value and a stale `theme` baked into a shipped Playbook
+ * must not outrank it. See `docs/specs/scaffold/domain-model.md`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -44,32 +50,41 @@ describe('resolveBranding — four-rung ladder', () => {
     expect(branding.theme).toEqual({ primary: '#111' });
   });
 
-  it('rung 2: legacy config theme is used when no explicit branding, and dev-warns', () => {
+  it('rung 2: the branding API OVERRIDES config-embedded branding', () => {
+    // Reversed from the original plan-118 order (plan 184, Kent 2026-08-14):
+    // control-plane branding is the live value, so a stale `theme` baked into a
+    // shipped Playbook must not outrank it.
     const { branding, source } = resolveBranding({
       legacyConfigTheme: LEGACY_THEME,
       apiBranding: API,
     });
+    expect(source).toBe('branding-api');
+    expect(branding.support_email).toBe('help@acme.test');
+    // The outranked legacy theme contributes nothing.
+    expect(branding.theme).toEqual({});
+  });
+
+  it('rung 3: legacy config theme is used when no explicit and no API branding, and dev-warns', () => {
+    const { branding, source } = resolveBranding({ legacyConfigTheme: LEGACY_THEME });
     expect(source).toBe('legacy-config');
     expect(branding.theme).toEqual(LEGACY_THEME);
-    // API is a lower rung — not applied when legacy theme is present.
-    expect(branding.support_email).toBeUndefined();
     expect(console.warn).toHaveBeenCalledOnce();
     expect(vi.mocked(console.warn).mock.calls[0]?.[0]).toContain('deprecated');
   });
 
-  it('rung 2: the deprecation warning fires at most once', () => {
+  it('rung 3: the deprecation warning fires at most once', () => {
     resolveBranding({ legacyConfigTheme: LEGACY_THEME });
     resolveBranding({ legacyConfigTheme: LEGACY_THEME });
     expect(console.warn).toHaveBeenCalledOnce();
   });
 
-  it('rung 2: warnOnLegacy:false silences the warning but still resolves', () => {
+  it('rung 3: warnOnLegacy:false silences the warning but still resolves', () => {
     const { source } = resolveBranding({ legacyConfigTheme: LEGACY_THEME, warnOnLegacy: false });
     expect(source).toBe('legacy-config');
     expect(console.warn).not.toHaveBeenCalled();
   });
 
-  it('rung 3: branding API used when no explicit and no legacy theme', () => {
+  it('rung 2: branding API used when no explicit branding', () => {
     const { branding, source } = resolveBranding({ apiBranding: API });
     expect(source).toBe('branding-api');
     expect(branding.workspace_name).toBe('Acme (API)');

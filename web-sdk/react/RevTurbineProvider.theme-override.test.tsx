@@ -15,7 +15,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { RevTurbineProvider } from './RevTurbineProvider';
-import type { RevTurbineInitOptions } from '../customer-side';
+import type { RevTurbineCustomerSdk, RevTurbineInitOptions } from '../customer-side';
+import { useRevTurbine } from './useRevTurbine';
 
 let container: HTMLDivElement | null = null;
 let root: Root | null = null;
@@ -104,5 +105,57 @@ describe('theme override is opt-in', () => {
     await mount({ ...BASE, fetchThemeOverride: true });
     expect(themeRequests()).toHaveLength(1);
     expect(themeRequests()[0]).toBe('https://edge.example.com/api/sdk/theme');
+  });
+});
+
+describe('the fetched override reaches getBranding()', () => {
+  /**
+   * Without this wiring the override reached only the React theme context, so
+   * `getBranding()` and `useRevTurbineTheme()` could report different branding
+   * for the same tenant — a spec/code divergence introduced when the branding
+   * API became an override (plan 184).
+   */
+  it('resolves branding from the branding-API rung once the override lands', async () => {
+    let sdk: RevTurbineCustomerSdk | null = null;
+    function Grab(): null {
+      sdk = useRevTurbine().sdk;
+      return null;
+    }
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    await act(async () => {
+      root!.render(
+        <RevTurbineProvider options={{ ...BASE, fetchThemeOverride: true }}>
+          <Grab />
+        </RevTurbineProvider>,
+      );
+    });
+
+    expect(sdk).not.toBeNull();
+    const resolved = sdk!.getBranding();
+    expect(resolved.source).toBe('branding-api');
+    expect(resolved.branding.theme).toMatchObject({ primary: '#override' });
+  });
+
+  it('leaves branding on a lower rung when no override was fetched', async () => {
+    let sdk: RevTurbineCustomerSdk | null = null;
+    function Grab(): null {
+      sdk = useRevTurbine().sdk;
+      return null;
+    }
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    await act(async () => {
+      root!.render(
+        <RevTurbineProvider options={BASE}>
+          <Grab />
+        </RevTurbineProvider>,
+      );
+    });
+
+    // No fetch, so nothing may claim the branding-API rung.
+    expect(sdk!.getBranding().source).not.toBe('branding-api');
   });
 });

@@ -2109,7 +2109,10 @@ export class RevTurbineCustomerSdk {
   private lastTrialTriggerStage: 'none' | 'midpoint' | 'expiring' | 'expired' = 'none';
   private readonly configProvider?: RuntimeConfigProvider;
   private readonly branding?: BrandingConfig;
-  private readonly apiBranding?: BrandingConfig;
+  // Not readonly: `setApiBranding` replaces it when the SDK fetches the
+  // branding-API rung itself (plan 184 `fetchThemeOverride`), so `getBranding()`
+  // and the React theme context resolve from the same value.
+  private apiBranding?: BrandingConfig;
   // Lazily (re)built config-driven placement resolver (plan 159 TASK-4).
   // Cached BY CONFIG REFERENCE: Server mode fetches/revalidates the config
   // asynchronously, so a constructor-time build would be permanently stale —
@@ -2410,7 +2413,12 @@ export class RevTurbineCustomerSdk {
     const paymentAtRisk = this.userContext.payment_at_risk;
     const tiers = this.userContext.tiers;
     const hasTiers = tiers !== undefined && Object.keys(tiers).length > 0;
-    if (!plan && !usage && !hasTiers) return undefined;
+    // Experiment assignments (plan 183). Read straight off the user context
+    // like plan/usage/tiers, so an app that passes `experiments` gets segment
+    // enrollment and decision attribution without registering a provider.
+    const experiments = this.userContext.experiments;
+    const hasExperiments = experiments !== undefined && Object.keys(experiments).length > 0;
+    if (!plan && !usage && !hasTiers && !hasExperiments) return undefined;
 
     const usageEntries: Record<string, { used: number; limit: number; remaining: number; unit?: string; reset_date?: string }> = {};
     if (usage && typeof usage === 'object') {
@@ -2473,6 +2481,7 @@ export class RevTurbineCustomerSdk {
           ...(hasTiers ? { tiers } : {}),
         },
       } : {}),
+      ...(hasExperiments ? { experiments: { assignments: experiments } } : {}),
     };
   }
 
@@ -3203,6 +3212,24 @@ export class RevTurbineCustomerSdk {
       legacyConfigTheme: this.getConfiguredExportedConfig()?.theme,
       apiBranding: this.apiBranding,
     });
+  }
+
+  /**
+   * Supply the branding-API rung after init.
+   *
+   * `apiBranding` can be passed at construction when the host fetches branding
+   * itself, but with `fetchThemeOverride` the SDK fetches
+   * `GET /api/sdk/theme` *after* the instance exists. Without this setter that
+   * fetched value reached only the React theme context, so `getBranding()` and
+   * `useRevTurbineTheme()` could report different branding for the same tenant
+   * (plan 184).
+   *
+   * @param branding - Branding from the Branding API. Overrides config-embedded
+   *   branding but never the explicit `branding` init option.
+   * @public
+   */
+  setApiBranding(branding: BrandingConfig | undefined): void {
+    this.apiBranding = branding;
   }
 
   private deriveLocalEntitlementFromConfiguredRules(

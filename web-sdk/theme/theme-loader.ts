@@ -56,6 +56,16 @@ export interface ThemeLoaderOptions {
    * control plane refines the Playbook's theme instead of replacing it.
    */
   base?: RevTurbineThemeInput;
+  /**
+   * Called with the RAW override — the persisted copy on the fast path, then
+   * the freshly-fetched one — or `null` when there is no override.
+   *
+   * The resolved {@link RevTurbineTheme} is already merged with defaults, so it
+   * can't tell "the API supplied branding" from "nothing was fetched". Callers
+   * that must distinguish those — `getBranding()`, which reports which ladder
+   * rung won — need this unmerged value (plan 184).
+   */
+  onOverride?: (override: RevTurbineThemeInput | null) => void;
 }
 
 /**
@@ -80,6 +90,7 @@ export async function loadTheme(
   // than replacing it (plan 184).
   const persisted = readPersistedTheme(tenantId, storage);
   const localTheme = mergeTheme({ ...base, ...persisted });
+  opts.onOverride?.(persisted);
 
   // Fire off background fetch — don't block the caller.
   fetchRemoteTheme(endpoint, tenantId, apiKey).then((remote) => {
@@ -88,6 +99,7 @@ export async function loadTheme(
     if (persisted?.version && remote.version === persisted.version) return;
 
     persistTheme(tenantId, remote, storage);
+    opts.onOverride?.(remote);
     onUpdate?.(mergeTheme({ ...base, ...remote }));
   }).catch(() => {
     // Network failures are non-fatal; we already have the local theme.

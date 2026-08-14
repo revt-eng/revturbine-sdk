@@ -219,12 +219,25 @@ export function RevTurbineProvider({ options, bootstrapPlacements, domCapture, s
             : undefined;
 
         if (options.fetchThemeOverride) {
+          // Const capture: `nextSdk` is a `let ... | undefined`, and TS cannot
+          // prove it is still assigned inside the `onOverride` closure below
+          // (TS18048 under the release build's declaration emit).
+          const initializedSdk = nextSdk;
           const initialTheme = await loadTheme(
             {
               tenantId: options.tenantId ?? 'local',
               endpoint: options.endpoint ?? 'https://api.revturbine.local',
               apiKey: options.apiKey ?? 'local-only',
               base: baseTheme,
+              // Feed the raw override into the SDK's branding-API rung so
+              // `getBranding()` and `useRevTurbineTheme()` resolve from the
+              // same value — otherwise the two could report different branding
+              // for one tenant (plan 184).
+              onOverride: (override) => {
+                initializedSdk.setApiBranding(
+                  override && Object.keys(override).length > 0 ? { theme: override } : undefined,
+                );
+              },
             },
             (updated) => {
               if (mounted) setTheme(updated);

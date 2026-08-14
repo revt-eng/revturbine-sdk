@@ -11,10 +11,13 @@
  * a customer can render fully with no branding passed at all:
  *
  *   1. **Explicit `branding` argument** — passed to the SDK at init.
- *   2. **Legacy config-embedded** — the deprecated `theme` field carried inside
+ *   2. **Branding API** — branding from `GET /api/sdk/theme`, either fetched by
+ *      the SDK (`fetchThemeOverride`) or supplied by the host (`apiBranding`).
+ *      This **overrides** config-embedded branding: it is the live value, and
+ *      managing branding in the control plane is pointless if a stale `theme`
+ *      baked into a shipped Playbook outranks it (plan 184).
+ *   3. **Legacy config-embedded** — the deprecated `theme` field carried inside
  *      an older `RevTurbineConfig`/`Playbook`. Works, but warns in development.
- *   3. **Branding API** — branding fetched from the RevTurbine Branding API or a
- *      workspace-settings source and supplied by the host (`apiBranding`).
  *   4. **`DEFAULT_BRANDING`** — structural fallback so the SDK always renders.
  *
  * Each rung's (possibly partial) branding is merged over `DEFAULT_BRANDING`, so
@@ -108,6 +111,14 @@ export function resolveBranding(input: BrandingResolutionInput = {}): ResolvedBr
 
   if (isNonEmpty(input.explicit)) return merge(input.explicit, 'explicit');
 
+  // Rung 2 — the branding API OVERRIDES config-embedded branding (plan 184,
+  // Kent 2026-08-14). Branding served from the control plane is the live value,
+  // and the point of managing it there is that it changes without a redeploy; a
+  // stale `theme` baked into a shipped Playbook must not outrank it. This is the
+  // reverse of the original plan-118 order — see the Branding resolution section
+  // of `docs/specs/scaffold/domain-model.md`.
+  if (isNonEmpty(input.apiBranding)) return merge(input.apiBranding, 'branding-api');
+
   if (input.legacyConfigTheme && Object.keys(input.legacyConfigTheme).length > 0) {
     if (input.warnOnLegacy !== false && !warnedLegacyBranding && isDevelopmentBuild()) {
       warnedLegacyBranding = true;
@@ -120,8 +131,6 @@ export function resolveBranding(input: BrandingResolutionInput = {}): ResolvedBr
     }
     return merge({ theme: input.legacyConfigTheme }, 'legacy-config');
   }
-
-  if (isNonEmpty(input.apiBranding)) return merge(input.apiBranding, 'branding-api');
 
   return merge(undefined, 'default');
 }
