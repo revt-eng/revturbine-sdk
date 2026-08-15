@@ -17,6 +17,9 @@ export type {
   // Segments
   SegmentProvider,
   SegmentProviderState,
+  // Experiments
+  ExperimentProvider,
+  ExperimentProviderState,
   // Content
   ContentProvider,
   ContentProviderState,
@@ -58,3 +61,15 @@ export {
   SERVER_TRAITS_DOMAIN,
 } from './server-user-context-provider';
 export type { ServerUserContextSnapshot } from './server-user-context-provider';
+
+// The one built-in ExperimentProvider (plan 183 REQ-3b) — opt-in, deterministic,
+// and off unless explicitly registered. A customer's own experimentation tool
+// registers its own adapter instead; that path is first-class, not a fallback.
+export {
+  createBasicExperimentProvider,
+  bucketSubject,
+} from './basic-experiment-provider';
+export type {
+  BasicBucketerOptions,
+  BasicBucketerExperiment,
+} from './basic-experiment-provider';

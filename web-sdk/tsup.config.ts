@@ -38,6 +38,7 @@ export default defineConfig({
   entry: {
     index: 'index.ts',
     headless: 'headless.ts',
+    server: 'server/index.ts',
   },
   format: ['esm'],
   target: 'es2020',

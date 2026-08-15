@@ -41,4 +41,5 @@ const entry = (input, file) => ({
 export default [
   entry('dist/types/web-sdk/index.d.ts', 'dist/index.d.ts'),
   entry('dist/types/web-sdk/headless.d.ts', 'dist/headless.d.ts'),
+  entry('dist/types/web-sdk/server/index.d.ts', 'dist/server.d.ts'),
 ];

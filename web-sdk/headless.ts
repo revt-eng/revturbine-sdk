@@ -131,6 +131,13 @@ export type {
   paths as RevTurbineApiPaths,
 } from './api-client';
 
+// ── Shared decision views (plan 186 TASK-1) ─────────────────────────────────
+//
+// The decision half of a hook result, with the client-only lifecycle stripped
+// off — so a server-rendered caller and a React hook can describe the same
+// decision without one importing the other's module graph.
+export type { EntitlementView, PlacementView } from './views';
+
 // ── Environment detection ───────────────────────────────────────────────────
 export { isServer, isBrowser } from './env';
 

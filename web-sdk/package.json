@@ -1,6 +1,6 @@
 {
   "name": "@revt-eng/sdk",
-  "version": "0.2.84",
+  "version": "0.2.85",
   "description": "RevTurbine customer-facing SDK — placement decisioning, entitlement checks, and usage tracking.",
   "type": "module",
   "packageManager": "pnpm@11.12.0",
@@ -15,6 +15,10 @@
     "./headless": {
       "import": "./dist/headless.js",
       "types": "./dist/headless.d.ts"
+    },
+    "./server": {
+      "import": "./dist/server.js",
+      "types": "./dist/server.d.ts"
     },
     "./source": "./index.ts",
     "./source/headless": "./headless.ts"

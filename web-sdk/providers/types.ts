@@ -16,6 +16,8 @@ export type {
   EntitlementProvider,
   SegmentProviderState,
   SegmentProvider,
+  ExperimentProviderState,
+  ExperimentProvider,
   MessageBlockSnapshot,
   PlacementPayloadSnapshot,
   ContentProviderState,
