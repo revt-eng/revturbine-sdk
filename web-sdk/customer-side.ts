@@ -53,7 +53,7 @@ import type {
 } from '@revt-eng/core';
 // Plan 177 TASK-5: Server mode consumes the canonical-JSON payload artifact —
 // integrity-checked against its content address, version-refused before any
-// evaluation. (Replaces plan 160's client-side `.rvtb` FlatBuffer decode.)
+// evaluation. (Replaces plan 160's client-side binary-bundle decode.)
 import { assertPlaybookPayloadReadable, sha256Hex } from '@revt-eng/core/bundle';
 import {
   ImpressionHistory,

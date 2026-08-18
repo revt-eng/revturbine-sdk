@@ -65,28 +65,6 @@ pub mod trials;
 #[allow(missing_docs, dead_code, clippy::all)]
 pub mod types;
 
-// FlatBuffer bindings for the `.rvtb` rule-bundle wire format, emitted by
-// `flatc --rust` from scaffold's canonical `rule_bundle.fbs`
-// (`scripts/gen-fb.mjs`). Generated, and suppressed for the same reasons as
-// `types` above. The decoder that consumes these lands in TASK-9.
-// `unsafe_code` is allowed HERE ONLY: FlatBuffers decodes by reinterpreting a
-// byte buffer, so the generated readers are unsafe by construction. Crate-wide
-// the lint stays `deny` (Cargo.toml) so hand-written code cannot introduce it.
-// `unknown_lints` first: `mismatched_lifetime_syntaxes` postdates the 1.88
-// MSRV, so on a floor-version toolchain the lint name itself is unknown and
-// would warn. Allowing it keeps the build quiet across the supported range.
-#[allow(
-    unknown_lints,
-    missing_docs,
-    dead_code,
-    unsafe_code,
-    unused_imports,
-    mismatched_lifetime_syntaxes,
-    clippy::all
-)]
-#[rustfmt::skip]
-pub mod bundle;
-
 /// The crate version, kept in lockstep with the TypeScript and Python SDKs.
 ///
 /// All three packages carry the same version number by release policy, so this

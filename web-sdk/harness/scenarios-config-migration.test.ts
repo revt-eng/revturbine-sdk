@@ -3,12 +3,6 @@ import {
   createStaticPlacementResolver,
   type RevTurbinePlacementRecord,
 } from '@revt-eng/core';
-import {
-  BundleHandle,
-  createBundlePlacementResolver,
-  encodeBundle,
-  lowerToIR,
-} from '@revt-eng/core/bundle';
 import { PlaybookSchema } from '@revt-eng/schema';
 import { configArtifactForRuntime } from '../config-artifact';
 import {
@@ -211,7 +205,7 @@ describe('harness Playbook projection migration', () => {
     });
   });
 
-  it('keeps raw Playbook, Bundle, and harness-runtime decisions equivalent', async () => {
+  it('keeps raw Playbook and harness-runtime decisions equivalent', async () => {
     const playbook = canonicalHarnessPlaybook(HARNESS_SLOTS);
     const runtimeConfig = configArtifactForRuntime(playbook, 'parity fixture');
     if (!runtimeConfig) throw new Error('Expected a runtime config');
@@ -220,12 +214,6 @@ describe('harness Playbook projection migration', () => {
       placements: { placements: runtimeConfig.placements ?? [] },
       exportedConfig: runtimeConfig,
     });
-    const { ir, diagnostics } = lowerToIR(playbook, {
-      tenantId: 'tenant_harness',
-      clock: () => 0,
-    });
-    const handle = new BundleHandle(encodeBundle(ir));
-    const bundleResolver = createBundlePlacementResolver({ handle });
     const context = {
       __providers: {
         plan: { currentPlanHandle: DEFAULT_PLANS[0].unique_handle, currentPlanName: DEFAULT_PLANS[0].name },
@@ -245,11 +233,6 @@ describe('harness Playbook projection migration', () => {
       contentOverrides,
     );
 
-    expect(diagnostics.unresolved_placement_ids).toEqual([]);
-    expect(ir.slot_configs).toEqual([]);
-    expect(ir.content_override_keys).toEqual([]);
-    expect(handle.slotsLength()).toBe(HARNESS_SLOTS.length);
-
     for (const slot of HARNESS_SLOTS) {
       const placement = runtimeConfig.placements?.find(
         (candidate) => candidate.trigger.type === 'surface_render' && candidate.trigger.slot_id === slot.id,
@@ -268,7 +251,6 @@ describe('harness Playbook projection migration', () => {
       };
       const input = { placementId: placement.id, userId: 'user_harness_01' };
       const rawDecision = await staticResolver(input, placementRecord, context);
-      const bundleDecision = await bundleResolver(input, placementRecord, context);
       const runtimeOutput = runtimeData.placementsByLookupKey?.[buildLookupConfigKey({
         slotId: slot.id,
         surfaceType: slot.surfaceType,
@@ -276,9 +258,7 @@ describe('harness Playbook projection migration', () => {
         planHandle: DEFAULT_PLANS[0].unique_handle,
       })];
 
-      expect(normalizeDecision(rawDecision.output), `raw/Bundle parity for ${slot.id}`)
-        .toEqual(normalizeDecision(bundleDecision.output));
-      expect(normalizeDecision(bundleDecision.output), `Bundle/harness parity for ${slot.id}`)
+      expect(normalizeDecision(rawDecision.output), `raw/harness parity for ${slot.id}`)
         .toEqual(normalizeDecision(runtimeOutput));
     }
   });

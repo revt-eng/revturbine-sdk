@@ -1,6 +1,6 @@
 [package]
 name = "revturbine"
-version = "0.2.86"
+version = "0.2.87"
 edition = "2021"
 # MSRV (plan 185 Q-2). VERIFIED — `cargo +1.88 check --all-targets` passes,
 # 1.85 and 1.82 both fail.
@@ -8,8 +8,7 @@ edition = "2021"
 # The floor is set entirely by `regress` (the regex engine typify's generated
 # `pattern` validation uses): it declares no `rust-version`, is edition-2024
 # (needs >=1.85), and uses `let_chains` (stabilized 1.88). Every other
-# dependency is far lower — serde 1.56, serde_json 1.71, chrono 1.62,
-# flatbuffers 1.51.
+# dependency is far lower — serde 1.56, serde_json 1.71, chrono 1.62.
 #
 # So this number tracks `regress`, not anything RevTurbine does. Re-verify when
 # bumping it; raise deliberately, never incidentally — customers pin against it.
@@ -49,17 +48,9 @@ regress = "0.10"
 # padding strip, so the encoding cannot drift from the golden corpus.
 base64 = "0.22"
 
-# FlatBuffers runtime for the `.rvtb` bundle bindings. The MAJOR must match the
-# `flatc` that generated them (25.9.23) — server-python pins `flatbuffers>=25.0`
-# for the same reason. A mismatch is a silent wire-format decode failure.
-flatbuffers = "25"
-
 [lints.rust]
-# `deny`, not `forbid`: the flatc-generated bundle bindings are built on
-# zero-copy reads and are unavoidably unsafe internally, and `forbid` cannot be
-# lifted by an `#[allow]` at the module boundary. Hand-written code in this
-# crate stays unsafe-free — the allowance is scoped to the generated module in
-# src/lib.rs and nowhere else.
+# Kept at `deny` (not `forbid`) so a future generated module could scope an
+# `#[allow]` if it ever had to; hand-written code in this crate is unsafe-free.
 unsafe_code = "deny"
 missing_docs = "warn"
 

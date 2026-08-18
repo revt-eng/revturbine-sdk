@@ -141,24 +141,17 @@ silently discards the change.
 | Module | Source of truth | Regenerate with |
 |---|---|---|
 | `src/types.rs` | scaffold Zod schemas → JSON Schema → typify | `node scripts/sync-rust-types.mjs` (repo root) |
-| `src/bundle.rs` | scaffold `rule_bundle.fbs` → `flatc --rust` | `node server-rust/scripts/gen-fb.mjs` |
 
-Both resolve revturbine-scaffold from `$REVTURBINE_SCAFFOLD_DIR`, falling back
-to the sibling checkout. Set the env var when working from a git worktree,
-where the sibling path does not resolve.
-
-`flatc` **must** match the `flatbuffers` crate major (both 25.x). `gen-fb.mjs`
-asserts this rather than assuming it — a mismatch decodes silently wrong
-instead of failing to build.
+The generator resolves revturbine-scaffold from `$REVTURBINE_SCAFFOLD_DIR`,
+falling back to the sibling checkout. Set the env var when working from a git
+worktree, where the sibling path does not resolve.
 
 ### Lints and generated code
 
 The crate denies `unsafe_code` and `clippy::all`, and warns on `missing_docs`.
 Generated modules are exempted **at the module boundary** in `src/lib.rs` —
 never by editing the generated file and never by relaxing the crate-wide
-setting. The FlatBuffers readers are unsafe by construction (zero-copy reads
-over a byte buffer), which is why the lint is `deny` rather than `forbid`:
-`forbid` cannot be lifted by a scoped `#[allow]`.
+setting.
 
 ## Development
 
