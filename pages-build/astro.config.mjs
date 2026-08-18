@@ -179,6 +179,7 @@ export default defineConfig({
             { label: 'React Integration', slug: 'getting-started/react' },
             { label: 'Server-Side Integration', slug: 'getting-started/server-side' },
             { label: 'Python SDK', slug: 'getting-started/python' },
+            { label: 'Rust SDK', slug: 'getting-started/rust' },
           ],
         },
         {

@@ -20,8 +20,9 @@ port of the browser SDK (no React, no hooks, no decision cache — see
 <Aside type="note">
 The Python decision output is **byte-identical** to the canonical TypeScript
 `LocalRuntime` for the same inputs. A cross-language parity corpus
-(`tests/parity/`) drives both implementations through the same fixtures and
-fails CI on any divergence — the Python port is never allowed to drift.
+(`tests/parity/`) drives TypeScript, Python, and Rust through the same
+fixtures and fails CI on any divergence — the Python port is never allowed
+to drift.
 </Aside>
 
 ## Install
@@ -174,8 +175,8 @@ new server integrations.
 ## Parity guarantee
 
 Every public method delegates, with zero added decision logic, to the same
-decision substrate the TypeScript SDK uses. The shared corpus at
-Our parity suite runs both languages through identical fixtures
-and asserts **byte-identical** normalized output; a divergence is treated as a
-Python-port bug, never a fixture to loosen. This is what lets you gate in
+decision substrate the TypeScript SDK uses. Our parity suite runs all three
+ports — TypeScript, Python, and [Rust](/getting-started/rust/) — through
+identical fixtures and asserts **byte-identical** normalized output; a
+divergence is treated as a Python-port bug, never a fixture to loosen. This is what lets you gate in
 Python and render in TypeScript and trust they decided the same thing.

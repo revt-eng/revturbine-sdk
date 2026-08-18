@@ -1,0 +1,200 @@
+---
+title: Rust SDK
+description: Headless, in-memory entitlement and placement decisioning for Rust services — RevTurbineCustomerSdk.
+sidebar:
+  order: 7
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The Rust SDK is a **headless *server* library**: it decides entitlements and
+placements **in-process**, with no network call and no persistence beyond
+memory. Your service holds the user context and a `Playbook` snapshot and
+passes both to the SDK; the SDK decides locally.
+
+It is the same decision core as the TypeScript SDK's headless `LocalRuntime`
+and the [Python SDK](/getting-started/python/), exposed as a small public type.
+It is **not** a port of the browser SDK (no components, no hooks, no decision
+cache — see [Non-goals](#non-goals)).
+
+<Aside type="note">
+The Rust decision output is **byte-identical** to the canonical TypeScript
+`LocalRuntime` for the same inputs. A cross-language parity corpus
+(`tests/parity/`) drives TypeScript, Python, and Rust through the same fixtures
+and fails CI on any divergence — the Rust port is never allowed to drift.
+</Aside>
+
+The decision core is **synchronous**. It performs no I/O, so there is no async
+runtime dependency and no `.await` on the public surface — an entitlement gate
+is a plain function call, safe on a request hot path.
+
+## Install
+
+The `revturbine` crate is published to **crates.io**:
+
+```toml
+[dependencies]
+revturbine = "0.2"
+```
+
+The minimum supported Rust version is **1.88**, declared as `rust-version` in
+the crate manifest. Pin to a version whose schema matches the `Playbook` you
+deploy — see [Refreshing the Playbook](#refreshing-the-playbook).
+
+## Quick start
+
+Construct one SDK per `(user_context, playbook)`, then check entitlements and
+decide placements:
+
+```rust
+use revturbine::runtime::PlacementDecisionInput;
+use revturbine::sdk::{RevTurbineCustomerSdk, UserContext};
+use serde_json::json;
+
+let playbook: serde_json::Value =
+    serde_json::from_str(&std::fs::read_to_string("playbook.json")?)?;
+
+let user = UserContext {
+    tenant_id: "tenant_abc".to_string(),
+    user_id: "user_123".to_string(),
+    // Optional — the user's current plan and usage:
+    plan_handle: Some("pro".to_string()),
+    usage: Some(json!({ "api_calls": { "used": 900, "limit": 1000 } })),
+    ..Default::default()
+};
+
+let mut sdk = RevTurbineCustomerSdk::new(&user, &playbook)?;
+
+// Entitlement gate
+let check = sdk.check_entitlement("advanced_analytics", None);
+if !check.allowed {
+    return Err(check.reason.unwrap_or_else(|| "denied".to_string()).into());
+}
+
+// Placement decision (which payload, if any, to show)
+let decision = sdk.get_placement_decision(&PlacementDecisionInput {
+    placement_id: "pl_dashboard_upsell".to_string(),
+    user_id: "user_123".to_string(),
+});
+if decision["visible"] == true {
+    render(&decision["output"]);
+}
+
+// Batch form — same decision path, order-preserving
+let decisions = sdk.get_placement_decisions(&[
+    PlacementDecisionInput { placement_id: "pl_a".into(), user_id: "user_123".into() },
+    PlacementDecisionInput { placement_id: "pl_b".into(), user_id: "user_123".into() },
+]);
+```
+
+<Aside type="caution">
+Read **`allowed`**, not `status`. The `degrade` enforcement mode returns
+`status: "limited"` *and* `allowed: true` — gating on `status == "allowed"`
+would wrongly block a user who is meant to be served a degraded experience.
+</Aside>
+
+### User context
+
+| Field | Required | Meaning |
+|---|---|---|
+| `tenant_id` | ✅ | Tenant identifier. |
+| `user_id` | ✅ | Current user identifier. |
+| `plan_handle` | — | The user's current plan handle (feeds the plan + entitlements providers). |
+| `plan_name` | — | Display name; defaults to `plan_handle`. |
+| `usage` | — | Per-entitlement overrides: `{handle: {used, limit}}`. |
+| `trial_status` | — | Already-derived trial state, overlaid onto the plan provider. |
+| `payment_failed` | — | Billing-recovery signal for the retention qualifiers. |
+| `payment_at_risk` | — | Billing-recovery signal for the retention qualifiers. |
+| `tiers` | — | Current tier per `capability_tier` entitlement, for the tier gate. |
+
+`UserContext` implements `Default`, so `..Default::default()` covers every
+field you do not set. Only `tenant_id` and `user_id` are required.
+
+Omitting `trial_status` is the one easy mistake: without it every `trial_*`
+gate reads "no trial" and silently declines rather than erroring. Supply it
+whenever you run trial-triggered placements.
+
+### Public surface
+
+| Method | Returns |
+|---|---|
+| `check_entitlement(handle, context)` | `EntitlementCheckResult` |
+| `get_placement_decision(input)` | `serde_json::Value` |
+| `get_placement_decisions(inputs)` | `Vec<Value>`, order preserved |
+| `get_placement(config)` | `Option<Value>` — surface-keyed slot resolution |
+
+That is the entire public API. There is **no storage or persistence parameter**
+— the instance is stateless and in-memory by construction; build a fresh one
+per user context.
+
+`check_entitlement` takes `&self`; the placement methods take `&mut self`
+because within one instance they track which placements have already been
+decided, which is what supersession reads.
+
+<Aside type="caution">
+A malformed `Playbook` is an **error at construction**, not a degraded
+decision: `RevTurbineCustomerSdk::new` returns `Err`. A partially-understood
+Playbook can silently over-grant, so it fails closed instead of guessing.
+</Aside>
+
+## Runtime model
+
+Unlike the TypeScript SDK (which has `revturbine_server` / `custom_endpoints` /
+`local_only` runtime modes), the Rust SDK is **local-only by design**. There is
+no runtime-mode switch and no network path:
+
+| | Rust `RevTurbineCustomerSdk` |
+|---|---|
+| Network | None — decides from the supplied `Playbook` |
+| Persistence | None — in-memory only; no file/db, no decision cache |
+| State | None across instances; no interaction/suppression hydration |
+| Concurrency | Synchronous; no async runtime dependency |
+| Inputs | `UserContext` + `Playbook`, both supplied by your service |
+
+## Refreshing the Playbook
+
+The `Playbook` is a snapshot exported from the RevTurbine control plane. The
+SDK never fetches or caches it — your service owns its lifecycle:
+
+1. Fetch/export the latest `Playbook` JSON (on boot, on a timer, or on a
+   webhook from the control plane).
+2. Parse it **once** and share the `serde_json::Value`; construction borrows
+   the snapshot rather than taking ownership, so one parse serves every
+   request.
+3. Build a **new** `RevTurbineCustomerSdk` per user context from that shared
+   snapshot. Because the type is stateless, "refresh" is just "re-parse and
+   swap the shared snapshot" — e.g. behind an `ArcSwap` or an `RwLock`.
+
+Pin the crate to a version whose schema matches the `Playbook` you deploy; a
+snapshot newer than the crate's schema can decide differently than your
+TypeScript frontend.
+
+## Non-goals
+
+The Rust SDK is the headless server decision core only. The following are
+**intentionally not ported** (plan 33 REQ-14, inherited by plan 185 REQ-2) —
+they are browser/full-SDK concerns with no server equivalent:
+
+- UI components, hooks, and theming (no Rust equivalent).
+- Browser storage, `localStorage` theme persistence, `window.RevTurbine`.
+- HTTP-backed / dual-mode dispatch — the Rust crate is local-only.
+- `identify`, `dismiss` / `snooze` / `convert`, treatment-interaction
+  tracking, `capture`, `bootstrap_placement_decisions`, decision-cache and
+  interaction-state hydration.
+- Segment / targeting / personalization-token derivation from raw traits (the
+  evaluator matches pre-resolved data; deriving segments is browser/segments
+  machinery).
+
+## Parity guarantee
+
+Every public method delegates, with zero added decision logic, to the same
+decision substrate the TypeScript SDK uses. Our parity suite runs all three
+languages through identical fixtures and asserts **byte-identical** normalized
+output; a divergence is treated as a Rust-port bug, never a fixture to loosen.
+
+TypeScript is canonical — including where it is arguably wrong, because a port
+that is "more correct" in isolation is still divergent. Where the shared
+contract itself needs to change, it changes in all three ports together.
+
+This is what lets you gate in Rust and render in TypeScript and trust they
+decided the same thing.
