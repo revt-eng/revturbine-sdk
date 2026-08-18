@@ -28,8 +28,12 @@ on:
 permissions:
   contents: read
 
+# Static group on purpose: the `inputs` context is NOT available in workflow-level
+# `concurrency` for workflow_dispatch, and an unavailable context makes the whole
+# workflow fail to register — silently, as a 404 on dispatch rather than an error.
+# Yanks are manual and rare, so serializing all of them costs nothing.
 concurrency:
-  group: crates-yank-${{ inputs.version }}
+  group: crates-yank
   cancel-in-progress: false
 
 jobs:
@@ -38,8 +42,8 @@ jobs:
     env:
       # Through env, never interpolated into a run: block — workflow inputs are
       # attacker-shaped strings and `${{ }}` inside a script is a shell injection.
-      VERSION: ${{ inputs.version }}
-      ACTION: ${{ inputs.action }}
+      VERSION: ${{ github.event.inputs.version }}
+      ACTION: ${{ github.event.inputs.action }}
     steps:
       - name: Validate input
         run: |
@@ -50,7 +54,7 @@ jobs:
           fi
 
       - name: Refuse to yank the newest version
-        if: inputs.action == 'yank'
+        if: github.event.inputs.action == 'yank'
         run: |
           set -euo pipefail
           META=$(curl -fsS -H 'User-Agent: revturbine-ci' https://crates.io/api/v1/crates/revturbine)
