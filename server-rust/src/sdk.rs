@@ -26,7 +26,7 @@
 use serde_json::{json, Map, Value};
 
 use crate::adapters::{create_static_providers, StaticProviderOptions};
-use crate::config::parse_playbook_or_throw;
+use crate::config::{parse_playbook_or_throw, LegacyConfigTargetDefaults};
 use crate::decisions::EntitlementCheckResult;
 use crate::runtime::{LocalRuntime, PlacementDecisionInput};
 
@@ -94,7 +94,25 @@ impl RevTurbineCustomerSdk {
     /// degraded decision** — a partially-understood Playbook can silently
     /// over-grant.
     pub fn new(user_context: &UserContext, playbook: &Value) -> Result<Self, String> {
-        let config = parse_playbook_or_throw(Some(playbook), "playbook", None)?
+        // Identity is the one thing the caller MUST supply; an empty tenant or
+        // user silently decides as "some other user" rather than failing.
+        if user_context.tenant_id.is_empty() || user_context.user_id.is_empty() {
+            return Err("user_context requires non-empty 'tenant_id' and 'user_id'".to_string());
+        }
+
+        // Legacy artifacts predate target stamping and carry no `tenant_id`.
+        // The user context's tenant fills in — WITHOUT this the public
+        // constructor rejects every legacy Playbook, including the parity
+        // corpus's own `example-config.json`, while `LocalRuntime` accepts it.
+        // The parity gate cannot see the difference: its runners drive
+        // `LocalRuntime` directly and never cross this façade.
+        //
+        // Source: server-python/src/revturbine/sdk.py — same two defaults.
+        let defaults = LegacyConfigTargetDefaults {
+            tenant_id: user_context.tenant_id.clone(),
+            environment_id: "default".to_string(),
+        };
+        let config = parse_playbook_or_throw(Some(playbook), "playbook", Some(&defaults))?
             .ok_or_else(|| "Invalid playbook: expected an artifact, got null".to_string())?;
 
         let opts = StaticProviderOptions {
@@ -163,5 +181,100 @@ impl RevTurbineCustomerSdk {
     #[must_use]
     pub fn runtime(&mut self) -> &mut LocalRuntime {
         &mut self.runtime
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A legacy artifact: `version`, no `artifact_type`/`format_version`, and —
+    /// like every artifact that predates target stamping — no `tenant_id`.
+    fn legacy_playbook() -> Value {
+        json!({
+            "version": "1.0.0",
+            "plans": [],
+            "entitlements": [{ "unique_handle": "feat_x", "unit": null }],
+            "entitlement_rules": [],
+            "segments": [],
+            "content_ui_paths": [],
+            "placements": [{ "placement_id": "pl_known", "name": "Known" }]
+        })
+    }
+
+    fn ctx(tenant: &str, user: &str) -> UserContext {
+        UserContext {
+            tenant_id: tenant.to_string(),
+            user_id: user.to_string(),
+            ..Default::default()
+        }
+    }
+
+    /// Regression: the constructor used to pass `None` for the legacy target
+    /// defaults, so it rejected every legacy Playbook — including the parity
+    /// corpus's own `example-config.json` — while `LocalRuntime` accepted the
+    /// same artifact happily. The parity gate is blind to this: its runners
+    /// drive `LocalRuntime` directly and never cross this façade.
+    #[test]
+    fn accepts_legacy_playbook_without_tenant_id() {
+        let sdk = RevTurbineCustomerSdk::new(&ctx("tenant_abc", "user_1"), &legacy_playbook());
+        assert!(sdk.is_ok(), "legacy playbook rejected: {:?}", sdk.err());
+    }
+
+    /// The tenant the artifact lacks comes from the user context, not from a
+    /// placeholder — decisions are tenant-scoped, so a wrong fill-in is worse
+    /// than a rejection.
+    ///
+    /// Asserted at the config layer because `LocalRuntime` exposes no config
+    /// accessor and widening the public API for a test is the wrong trade. The
+    /// test above proves the SDK passes defaults at all; this proves the
+    /// defaults it builds carry the caller's tenant rather than a placeholder.
+    #[test]
+    fn legacy_tenant_is_taken_from_the_user_context() {
+        let defaults = LegacyConfigTargetDefaults {
+            tenant_id: "tenant_abc".to_string(),
+            environment_id: "default".to_string(),
+        };
+        let normalized =
+            parse_playbook_or_throw(Some(&legacy_playbook()), "playbook", Some(&defaults))
+                .expect("legacy playbook parses")
+                .expect("artifact present");
+        assert_eq!(normalized["tenant_id"], json!("tenant_abc"));
+    }
+
+    #[test]
+    fn rejects_empty_identity() {
+        for (tenant, user, label) in [
+            ("", "user_1", "empty tenant_id"),
+            ("tenant_abc", "", "empty user_id"),
+            ("", "", "both empty"),
+        ] {
+            let err = RevTurbineCustomerSdk::new(&ctx(tenant, user), &legacy_playbook())
+                .err()
+                .unwrap_or_else(|| panic!("{label} was accepted"));
+            assert!(err.contains("non-empty"), "{label}: unexpected error {err}");
+        }
+    }
+
+    /// The fill-in is scoped to the LEGACY branch. A canonical artifact declares
+    /// its own target, and silently substituting the caller's tenant there would
+    /// let a Playbook built for one tenant decide for another.
+    #[test]
+    fn canonical_playbook_still_requires_its_own_tenant_id() {
+        let canonical = json!({
+            "artifact_type": "playbook",
+            "format_version": "1.0.0",
+            "environment_id": "env_1",
+            "plans": [],
+            "entitlements": [],
+            "entitlement_rules": [],
+            "segments": [],
+            "content_ui_paths": [],
+            "placements": []
+        });
+        let err = RevTurbineCustomerSdk::new(&ctx("tenant_abc", "user_1"), &canonical)
+            .err()
+            .expect("canonical artifact without tenant_id must fail");
+        assert!(err.contains("tenant_id"), "unexpected error: {err}");
     }
 }

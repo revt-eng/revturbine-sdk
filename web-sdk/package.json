@@ -1,6 +1,6 @@
 {
   "name": "@revt-eng/sdk",
-  "version": "0.2.87",
+  "version": "0.2.88",
   "description": "RevTurbine customer-facing SDK — placement decisioning, entitlement checks, and usage tracking.",
   "type": "module",
   "packageManager": "pnpm@11.12.0",
@@ -62,7 +62,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/revt-eng/revturbine-external.git"
+    "url": "git+https://github.com/revt-eng/revturbine-sdk-internal.git",
+    "directory": "web-sdk"
   },
   "license": "MIT",
   "dependencies": {
