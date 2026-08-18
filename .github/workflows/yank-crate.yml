@@ -1,0 +1,100 @@
+name: Yank / unyank a crates.io version
+
+# The one lever crates.io gives after publish: a version can be YANKED, never
+# deleted. A yanked version keeps resolving for lockfiles that already pin it and
+# stops being selectable for anything new. `undo` reverses it — unlike publishing,
+# this is not a one-way door.
+#
+# workflow_dispatch ONLY, by design. Nothing automated should ever yank.
+#
+# Runs from the PUBLIC mirror because that is where CARGO_REGISTRY_TOKEN lives —
+# the private source repo is cut off from the org token by design.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Exact version to act on (e.g. 0.2.86)'
+        required: true
+      action:
+        description: 'yank (block new use) or undo (restore)'
+        required: true
+        default: yank
+        type: choice
+        options:
+          - yank
+          - undo
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crates-yank-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  yank:
+    runs-on: ubuntu-latest
+    env:
+      # Through env, never interpolated into a run: block — workflow inputs are
+      # attacker-shaped strings and `${{ }}` inside a script is a shell injection.
+      VERSION: ${{ inputs.version }}
+      ACTION: ${{ inputs.action }}
+    steps:
+      - name: Validate input
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::'$VERSION' is not a bare semver (x.y.z)."
+            exit 1
+          fi
+
+      - name: Refuse to yank the newest version
+        if: inputs.action == 'yank'
+        run: |
+          set -euo pipefail
+          META=$(curl -fsS -H 'User-Agent: revturbine-ci' https://crates.io/api/v1/crates/revturbine)
+
+          if ! printf '%s' "$META" | jq -e --arg v "$VERSION" \
+              '.versions[] | select(.num == $v)' >/dev/null; then
+            echo "::error::$VERSION is not published — nothing to yank."
+            exit 1
+          fi
+
+          MAX=$(printf '%s' "$META" | jq -r '.crate.max_stable_version // .crate.max_version')
+          echo "newest on crates.io: $MAX — requested: $VERSION"
+          if [ "$MAX" = "$VERSION" ]; then
+            echo "::error::$VERSION is the NEWEST published version. Yanking it would push every resolver back onto an older release. Publish a newer version first."
+            exit 1
+          fi
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run cargo yank
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ "$ACTION" = "undo" ]; then
+            cargo yank --undo --version "$VERSION" revturbine
+          else
+            cargo yank --version "$VERSION" revturbine
+          fi
+
+      - name: Confirm registry state
+        run: |
+          set -euo pipefail
+          # The index is not read-your-writes; a bare check right after the call
+          # can still report the old state and "pass" without having changed it.
+          if [ "$ACTION" = "undo" ]; then EXPECT=false; else EXPECT=true; fi
+          for i in $(seq 1 10); do
+            YANKED=$(curl -fsS -H 'User-Agent: revturbine-ci' \
+              https://crates.io/api/v1/crates/revturbine \
+              | jq -r --arg v "$VERSION" '.versions[] | select(.num == $v) | .yanked')
+            echo "attempt $i: $VERSION yanked=$YANKED (want $EXPECT)"
+            [ "$YANKED" = "$EXPECT" ] && exit 0
+            sleep 6
+          done
+          echo "::error::registry still reports yanked=$YANKED for $VERSION; expected $EXPECT"
+          exit 1
