@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type RevTurbinePlacementConfig,
   type RevTurbineSurfaceSlotConfig,
+  type RevTurbinePlacementContent,
+  type RevTurbinePlacementDecision,
   type RevTurbinePlacementDecisionOverrides,
   type RevTurbineContextMode,
 } from '../customer-side';
-import type { PlacementView } from '../views';
 import { PlacementController } from '../controllers';
 import type { PlacementExposureMode } from '../controllers';
 import { exposureManager, type ExposureBasis } from '../telemetry';
@@ -54,18 +55,13 @@ export type UsePlacementOptions = {
 /**
  * Result returned by the {@link usePlacement} hook.
  */
-/**
- * The client-side placement result: the resolved decision
- * ({@link PlacementView}) plus the lifecycle and interaction surface a hook
- * adds on top.
- *
- * Everything beyond {@link PlacementView} is inherently client-side — a loading
- * state, interaction callbacks, and viewport-exposure wiring have no meaning to
- * a server caller that awaits a decision and renders once.
- */
-export type UsePlacementResult = PlacementView & {
+export type UsePlacementResult = {
   isLoading: boolean;
   error: string;
+  placementId: string;
+  visible: boolean;
+  decision: RevTurbinePlacementDecision | null;
+  content: RevTurbinePlacementContent['content'] | null;
   refresh: () => Promise<void>;
   dismiss: (cooldownMs?: number) => Promise<void>;
   snooze: (seconds?: number) => Promise<void>;

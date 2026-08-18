@@ -1,0 +1,9 @@
+# Cargo build output.
+/target
+
+# Cargo.lock IS committed. Convention says libraries omit it, but this repo
+# gates on reproducibility — the cross-language parity suite (plan 185 TASK-10)
+# must byte-match the TypeScript side, and a silently-resolved dependency bump
+# is exactly the kind of thing that breaks that without a code change. CI builds
+# with `--locked`. It does not affect consumers: `cargo publish` ignores a
+# library's lockfile.

@@ -9,7 +9,6 @@ import type {
   RevTurbineEntitlementContext,
   RevTurbinePlacementRequestConfig,
 } from '../customer-side';
-import type { EntitlementView } from '../views';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -34,19 +33,21 @@ export interface UseEntitlementOptions {
   gatePlacementRequest?: Omit<RevTurbinePlacementRequestConfig, 'entitlementHandle'>;
 }
 
-/**
- * The client-side entitlement result: the resolved decision
- * ({@link EntitlementView}) plus the lifecycle a hook resolves it through.
- *
- * The lifecycle half is what makes this distinct from the server shape. A
- * server caller awaits its decision and therefore has no loading state and
- * nothing to re-run mid-render.
- */
-export interface UseEntitlementResult extends EntitlementView {
+export interface UseEntitlementResult {
   /** Whether the entitlement check is in progress. */
   isLoading: boolean;
   /** Error message if the check failed. */
   error: string | null;
+  /** The entitlement result from the SDK. `null` until resolved. */
+  result: EntitlementResult | null;
+  /** Convenience: `true` when the entitlement is allowed. */
+  allowed: boolean;
+  /** Convenience: `true` when usage is limited (partially exhausted). */
+  limited: boolean;
+  /** Convenience: `true` when the entitlement is denied. */
+  denied: boolean;
+  /** Resolved gated placement when `denied` and `autoGate` are active. */
+  gatedPlacement: PlacementOutput | null;
   /** Re-run the entitlement check. */
   recheck: () => Promise<void>;
 }

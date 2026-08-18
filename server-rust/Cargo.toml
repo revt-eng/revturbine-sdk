@@ -1,15 +1,74 @@
 [package]
-name = "revturbine-server-sdk"
-version = "0.1.0"
+name = "revturbine"
+version = "0.2.86"
 edition = "2021"
-publish = false
-description = "RevTurbine server-side evaluation SDK for Rust"
+# MSRV (plan 185 Q-2). VERIFIED — `cargo +1.88 check --all-targets` passes,
+# 1.85 and 1.82 both fail.
+#
+# The floor is set entirely by `regress` (the regex engine typify's generated
+# `pattern` validation uses): it declares no `rust-version`, is edition-2024
+# (needs >=1.85), and uses `let_chains` (stabilized 1.88). Every other
+# dependency is far lower — serde 1.56, serde_json 1.71, chrono 1.62,
+# flatbuffers 1.51.
+#
+# So this number tracks `regress`, not anything RevTurbine does. Re-verify when
+# bumping it; raise deliberately, never incidentally — customers pin against it.
+rust-version = "1.88"
+description = "RevTurbine SDK for Rust — headless, local-mode placement and entitlement decisioning"
+license = "MIT"
+# The PUBLIC mirror, not `revturbine-sdk-internal` — this crate is published
+# from the mirror, and crates.io renders `repository` as the crate page's
+# primary source link. Pointing it at the private repo would 404 for every
+# visitor. (Same class as the `license` fix: `cargo publish --dry-run` validates
+# neither.)
+repository = "https://github.com/revt-eng/revturbine-sdk"
+homepage = "https://revturbine.com"
+readme = "README.md"
+keywords = ["monetization", "entitlements", "paywall", "feature-flags"]
+categories = ["api-bindings"]
+
+# The crate name matches the PyPI package (`revturbine`) — both unscoped, both
+# with distribution name == import name. crates.io has no scoping mechanism, so
+# the unscoped PyPI name is the exact analog rather than a compromise. The TS
+# packages stay scoped (`@revt-eng/sdk` internal, `@revturbine/sdk` public).
+#
+# Version is LOCKSTEP with web-sdk/package.json and server-python/pyproject.toml
+# — all three carry the same number. See the release notes in AGENTS.md.
 
 [dependencies]
-revturbine-schema-types = { path = "../../revturbine-scaffold/crates/revturbine-schema-types" }
-reqwest = { version = "0.12", features = ["json"] }
+# Required by the generated type surface (src/types.rs). Keep in step with
+# GENERATED_DEPS in revturbine-scaffold/scripts/generate-rust-types.ts — that
+# script's smoke check compiles the artifact against exactly these.
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tokio = { version = "1", features = ["rt"] }
-uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
+regress = "0.10"
+
+# base64url for the FNV-1a fallback-hash output. Tiny, no transitive deps, and
+# `URL_SAFE_NO_PAD` is exactly the TS `btoa(...)` + `+`/`/` substitution +
+# padding strip, so the encoding cannot drift from the golden corpus.
+base64 = "0.22"
+
+# FlatBuffers runtime for the `.rvtb` bundle bindings. The MAJOR must match the
+# `flatc` that generated them (25.9.23) — server-python pins `flatbuffers>=25.0`
+# for the same reason. A mismatch is a silent wire-format decode failure.
+flatbuffers = "25"
+
+[lints.rust]
+# `deny`, not `forbid`: the flatc-generated bundle bindings are built on
+# zero-copy reads and are unavoidably unsafe internally, and `forbid` cannot be
+# lifted by an `#[allow]` at the module boundary. Hand-written code in this
+# crate stays unsafe-free — the allowance is scoped to the generated module in
+# src/lib.rs and nowhere else.
+unsafe_code = "deny"
+missing_docs = "warn"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+
+[dev-dependencies]
+# Test-only. The canonical-JSON golden corpus (tests/canonical_corpus.rs)
+# stores a sha256 per document rather than the full canonical string, which
+# keeps the committed fixture at ~4 KB instead of ~700 KB. Not a runtime
+# dependency — consumers of this crate never pull it.
+sha2 = "0.10"

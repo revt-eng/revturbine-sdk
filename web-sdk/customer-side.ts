@@ -51,8 +51,10 @@ import type {
   JsonObject,
   PredicateEvaluationResult,
 } from '@revt-eng/core';
-// Plan 160 TASK-5: decode the compact `.rvtb` bundle client-side in Server mode.
-import { BundleHandle } from '@revt-eng/core/bundle';
+// Plan 177 TASK-5: Server mode consumes the canonical-JSON payload artifact —
+// integrity-checked against its content address, version-refused before any
+// evaluation. (Replaces plan 160's client-side `.rvtb` FlatBuffer decode.)
+import { assertPlaybookPayloadReadable, sha256Hex } from '@revt-eng/core/bundle';
 import {
   ImpressionHistory,
   StorageImpressionStore,
@@ -1890,9 +1892,7 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
       const response = await fetch(`${this.endpoint}/api/sdk/config`, {
         method: 'GET',
         headers: {
-          // Prefer the compact `.rvtb` bundle (plan 160); fall back to JSON so an
-          // older control plane that ignores the header still serves a usable body.
-          accept: 'application/octet-stream, application/json',
+          accept: 'application/json',
           authorization: `Bearer ${this.token}`,
           'x-tenant-id': this.tenantId,
           ...(this.etag ? { 'if-none-match': this.etag } : {}),
@@ -1902,13 +1902,24 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
       // 304 (unchanged) or any non-2xx: keep the last-known-good config. A
       // caller with no config at all fails closed at the check site.
       if (response.status === 304 || !response.ok) return this.cached;
-      // Content negotiation: an octet-stream body is the compact bundle — decode
-      // it client-side to the launched Playbook (BundleHandle.toPlaybook), the
-      // same shape the JSON path yields. Anything else is JSON.
-      const contentType = response.headers.get('content-type') ?? '';
-      const raw = contentType.includes('application/octet-stream')
-        ? new BundleHandle(new Uint8Array(await response.arrayBuffer())).toPlaybook()
-        : await response.json();
+      // The body is the canonical-JSON payload artifact (plan 177 TASK-5).
+      // Read it as TEXT so integrity is verified over the exact received
+      // bytes, not a re-serialization.
+      const text = await response.text();
+      // Integrity: when the server names the content address, the received
+      // bytes MUST hash to it — a mismatch is a failed fetch (keep
+      // last-known-good). An older control plane that doesn't address its
+      // body skips the check rather than failing every fetch.
+      const expectedSha = response.headers.get('x-bundle-sha256');
+      if (expectedSha) {
+        const actualSha = await sha256Hex(new TextEncoder().encode(text));
+        if (actualSha !== expectedSha) return this.cached;
+      }
+      const raw: unknown = JSON.parse(text); // sdk-ok: boundary-parse
+      // Version refusal BEFORE consumption (plan 177 AC-3): a payload this
+      // runtime cannot fully understand is never partially applied — the
+      // throw lands in the fail-soft catch below, keeping last-known-good.
+      assertPlaybookPayloadReadable(raw);
       const next = configArtifactForRuntime(raw, 'GET /api/sdk/config', this.legacyTargetDefaults);
       if (next) {
         this.cached = next;
@@ -1916,7 +1927,7 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
       }
       return this.cached;
     } catch {
-      // Network/parse failure — keep last-known-good; never throw.
+      // Network/parse/refusal failure — keep last-known-good; never throw.
       return this.cached;
     }
   }

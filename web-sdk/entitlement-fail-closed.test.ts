@@ -15,7 +15,7 @@
  * and the happy path: server mode fetches the Playbook and grants locally.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { encodeBundle, lowerToIR } from '@revt-eng/core/bundle';
+import { buildPlaybookPayload, sha256Hex, SCHEMA_VERSION } from '@revt-eng/core/bundle';
 import { RevTurbineCustomerSdk } from './customer-side';
 import type { RevTurbineInitOptions } from './customer-side';
 
@@ -39,6 +39,10 @@ function serverSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustome
 // fixture shape.
 const LAUNCHED_CONFIG = {
   version: '1.0.0',
+  // A real launched Playbook always carries the payload version envelope —
+  // web's build-exported-config stamps it — and since plan 177 TASK-5 the
+  // SDK refuses an unversioned payload rather than partially applying it.
+  bundle_schema_version: SCHEMA_VERSION,
   plans: [{ unique_handle: 'starter', name: 'Starter', tier_position: 0, sort_order: 0 }],
   entitlements: [{ unique_handle: 'generations', name: 'Generations', type: 'usage_limit', unit: 'images' }],
   entitlement_rules: [
@@ -107,24 +111,29 @@ describe('entitlement checks fail closed', () => {
     expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/sdk/check-entitlement'))).toBe(false);
   });
 
-  it('server mode: decodes a compact .rvtb bundle response and grants via LOCAL eval (plan 160)', async () => {
-    // Compile the same launched Playbook to the compact `.rvtb` the control
-    // plane serves under `Accept: application/octet-stream` (plan 160 TASK-5).
-    // The `.rvtb`→Playbook decoder emits a CANONICAL Playbook, which the SDK
-    // parses without a legacy target fallback — so the bundle must carry the
-    // Playbook header identity (`format_version`/`environment_id`/
-    // `playbook_handle`), exactly as web's `buildExportedConfig` stamps it.
-    const bundle = encodeBundle(
-      lowerToIR(
-        { ...LAUNCHED_CONFIG, format_version: '1.0.0', environment_id: 'env_live', playbook_handle: 'default' },
-        { tenantId: 'tenant_fc', clock: () => 1_700_000_000_000 },
-      ).ir,
+  it('server mode: consumes the canonical payload artifact, integrity-verified, and grants via LOCAL eval (plan 177 TASK-5)', async () => {
+    // The exact artifact the control plane serves post plan 177: canonical
+    // bytes off the payload compiler, content address in x-bundle-sha256.
+    const { canonical, bytes } = buildPlaybookPayload(
+      {
+        ...LAUNCHED_CONFIG,
+        format_version: '1.0.0',
+        tenant_id: 'tenant_fc',
+        environment_id: 'env_live',
+        playbook_handle: 'default',
+      } as never,
+      { tenantId: 'tenant_fc', clock: () => 1_700_000_000_000 },
     );
+    const sha = await sha256Hex(bytes);
     const fetchMock = vi.fn(async (url: string | URL | Request) => {
       if (String(url).includes('/api/sdk/config')) {
-        return new Response(bundle, {
+        return new Response(canonical, {
           status: 200,
-          headers: { 'content-type': 'application/octet-stream', ETag: '"b1"' },
+          headers: {
+            'content-type': 'application/json; charset=utf-8',
+            ETag: `"${sha}"`,
+            'x-bundle-sha256': sha,
+          },
         });
       }
       return new Response('{}', { status: 200 });
@@ -132,16 +141,115 @@ describe('entitlement checks fail closed', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     const result = await serverSdk().checkEntitlement('generations');
-    // The SDK downloaded the bundle, decoded it client-side (BundleHandle.
-    // toPlaybook), and evaluated locally — identical grant to the JSON path.
     expect(result.allowed).toBe(true);
     expect(result.status).not.toBe('denied');
 
     const configCall = fetchMock.mock.calls.find(([u]) => String(u).includes('/api/sdk/config'));
     expect(configCall).toBeTruthy();
-    // It asked for the bundle (content negotiation) and never round-tripped a check.
+    // Plain JSON — the octet-stream negotiation is gone.
     const sentHeaders = (configCall![1] as RequestInit).headers as Record<string, string>;
-    expect(sentHeaders.accept).toContain('application/octet-stream');
+    expect(sentHeaders.accept).toBe('application/json');
     expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/sdk/check-entitlement'))).toBe(false);
+  });
+
+  it('denies (config_unavailable) when the payload bytes do not hash to the advertised content address', async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      if (String(url).includes('/api/sdk/config')) {
+        return new Response(JSON.stringify(LAUNCHED_CONFIG), {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+            'x-bundle-sha256': 'f'.repeat(64), // wrong address — tampered or corrupted
+          },
+        });
+      }
+      return new Response('{}', { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await serverSdk().checkEntitlement('generations');
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toBe('config_unavailable');
+  });
+
+  it('denies (config_unavailable) rather than partially applying a payload from a newer schema (plan 177 AC-3)', async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      if (String(url).includes('/api/sdk/config')) {
+        return new Response(
+          JSON.stringify({ ...LAUNCHED_CONFIG, bundle_schema_version: SCHEMA_VERSION + 10 }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      return new Response('{}', { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await serverSdk().checkEntitlement('generations');
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toBe('config_unavailable');
+  });
+
+  it('denies (config_unavailable) for an UNVERSIONED payload — refusal needs a version to trust', async () => {
+    const { bundle_schema_version: _dropped, ...unversioned } = LAUNCHED_CONFIG;
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      if (String(url).includes('/api/sdk/config')) {
+        return new Response(JSON.stringify(unversioned), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response('{}', { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await serverSdk().checkEntitlement('generations');
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toBe('config_unavailable');
+  });
+
+  it('preserves a runtime-discovered trigger.slot_id through the payload path (plan 177 AC-6, SDK half)', async () => {
+    // `header_upgrade_cta` is deliberately NOT declared anywhere — the class
+    // of reference the FlatBuffer path destroyed (stored as an index into an
+    // empty slots table). The JSON payload carries it by value.
+    const withSlotRef = {
+      ...LAUNCHED_CONFIG,
+      format_version: '1.0.0',
+      tenant_id: 'tenant_fc',
+      environment_id: 'env_live',
+      playbook_handle: 'default',
+      placements: [
+        {
+          id: 'pl_header_upgrade',
+          name: 'Header upgrade CTA',
+          category: 'fixed',
+          trigger: { type: 'surface_render', slot_id: 'header_upgrade_cta' },
+          order: 0,
+          payloads: [],
+        },
+      ],
+    };
+    const { canonical, payload } = buildPlaybookPayload(withSlotRef as never, {
+      tenantId: 'tenant_fc',
+      clock: () => 1_700_000_000_000,
+    });
+    // By value in the artifact itself…
+    expect(canonical).toContain('"slot_id":"header_upgrade_cta"');
+    const placements = payload.placements as Array<{ trigger: Record<string, unknown> }>;
+    expect(placements[0]!.trigger.slot_id).toBe('header_upgrade_cta');
+
+    // …and the SDK consumes that artifact without error (the FB path threw
+    // in toPlaybook() here and silently failed every check closed).
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      if (String(url).includes('/api/sdk/config')) {
+        return new Response(canonical, {
+          status: 200,
+          headers: { 'content-type': 'application/json; charset=utf-8' },
+        });
+      }
+      return new Response('{}', { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const result = await serverSdk().checkEntitlement('generations');
+    expect(result.allowed).toBe(true);
   });
 });

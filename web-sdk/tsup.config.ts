@@ -38,7 +38,6 @@ export default defineConfig({
   entry: {
     index: 'index.ts',
     headless: 'headless.ts',
-    server: 'server/index.ts',
   },
   format: ['esm'],
   target: 'es2020',
@@ -58,12 +57,13 @@ export default defineConfig({
     'react-dom',
     'react/jsx-runtime',
     'react/jsx-dev-runtime',
-    // `@revt-eng/core/bundle` bundles the encoder (compile.ts → `node:crypto`
-    // `createHash`) alongside the decoder in one entry. The SDK only ever
-    // DECODES (`BundleHandle.toPlaybook`) — it never compiles a bundle — so the
-    // encoder is dead code here. Marking the node builtin external lets esbuild
-    // past the browser-platform resolve of `crypto`; the treeshake setting
-    // above then drops the residual side-effect import.
+    // `@revt-eng/core/bundle` bundles the compiler (compile.ts → `node:crypto`
+    // `createHash`) alongside the payload helpers in one entry. The SDK only
+    // consumes the payload readers (`assertPlaybookPayloadReadable`,
+    // `sha256Hex` — WebCrypto) — it never compiles an artifact — so the
+    // compiler is dead code here. Marking the node builtin external lets
+    // esbuild past the browser-platform resolve of `crypto`; the treeshake
+    // setting above then drops the residual side-effect import.
     'crypto',
     'node:crypto',
   ],

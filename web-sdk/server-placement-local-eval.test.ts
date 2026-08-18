@@ -10,6 +10,7 @@
  *     (not cached) + the config fetch is kicked for the next call.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { SCHEMA_VERSION } from '@revt-eng/core/bundle';
 import { RevTurbineCustomerSdk } from './customer-side';
 import type { RevTurbineInitOptions } from './customer-side';
 
@@ -34,6 +35,9 @@ function serverSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustome
 // — the static resolver should surface it without any network decision.
 const LAUNCHED_CONFIG = {
   version: '1.0.0',
+  // Plan 177 TASK-5: the SDK refuses an unversioned payload; a real launched
+  // Playbook always carries the envelope (web stamps it).
+  bundle_schema_version: SCHEMA_VERSION,
   plans: [{ unique_handle: 'starter', name: 'Starter', tier_position: 0, sort_order: 0 }],
   entitlements: [],
   entitlement_rules: [],

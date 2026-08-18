@@ -18,13 +18,21 @@ from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _package_version
 
 from revturbine.config import (
+    BUNDLE_MIN_READABLE_SCHEMA_VERSION,
+    BUNDLE_SCHEMA_VERSION,
     PLAYBOOK_FORMAT_VERSION,
     ConfigArtifact,
     LegacyRevTurbineConfig,
     Playbook,
     PlaybookHeader,
+    PlaybookPayloadRefusalReason,
+    PlaybookPayloadVersion,
+    PlaybookPayloadVersionError,
     RevTurbineConfig,
+    assert_playbook_payload_readable,
     parse_playbook_or_throw,
+    parse_playbook_payload,
+    read_playbook_payload_version,
 )
 from revturbine.sdk import RevTurbineCustomerSdk, UserContext
 
@@ -37,14 +45,22 @@ except PackageNotFoundError:  # pragma: no cover — source tree without install
     __version__ = "0.0.0+unknown"
 
 __all__ = [
+    "BUNDLE_MIN_READABLE_SCHEMA_VERSION",
+    "BUNDLE_SCHEMA_VERSION",
     "PLAYBOOK_FORMAT_VERSION",
     "ConfigArtifact",
     "LegacyRevTurbineConfig",
     "Playbook",
     "PlaybookHeader",
+    "PlaybookPayloadRefusalReason",
+    "PlaybookPayloadVersion",
+    "PlaybookPayloadVersionError",
     "RevTurbineConfig",
     "RevTurbineCustomerSdk",
     "UserContext",
     "__version__",
+    "assert_playbook_payload_readable",
     "parse_playbook_or_throw",
+    "parse_playbook_payload",
+    "read_playbook_payload_version",
 ]
