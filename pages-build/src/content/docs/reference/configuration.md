@@ -44,9 +44,47 @@ Complete reference for `RevTurbineInitOptions` and related configuration types.
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `user` | `RevTurbineUserContext` | — | Initial user context |
+| `user` | `RevTurbineUserContext` | — | Initial user context. `plan_handle` is the plan's `unique_handle` — the value plan-scoped rules match on |
+| `clientSession` | `() => string \| Promise<string>` | — | Mints a client-session token so the SDK keeps server-derived context fresh on its own. See [Server-derived context](#server-derived-context-clientsession) |
 | `page` | `RevTurbinePageContext` | — | Page context (URL, title, referrer, tags) |
 | `contextPolicy` | `RevTurbineContextPolicy` | `{ inferUser: true, inferPage: true, routerAutoTrack: true }` | Auto-inference behavior |
+
+### Server-derived context (`clientSession`)
+
+Your app tells RevTurbine who the user is. Some of that state, though, is only
+knowable on your server — the plan a Stripe webhook just changed, trial status,
+a payment that failed. `clientSession` is how the SDK gets it without you
+wiring a refresh loop.
+
+Supply a function that returns a client-session token minted by your backend
+(`POST /api/sdk/client-sessions`). The SDK calls it when it first needs a
+token, again after `identify()`, and again if the control plane reports one
+expired — then fetches `GET /api/sdk/client-context` and folds the result into
+its decisions. **A purchase updates what the user can do with no further app
+code.**
+
+```ts
+initRevTurbine({
+  publishableKey: 'rt_pub_…',
+  user: { id: 'user_123', plan_handle: 'free' },
+  clientSession: () =>
+    fetch('/api/revturbine-session', { method: 'POST' })
+      .then((r) => r.json())
+      .then((j) => j.client_token),
+});
+```
+
+It is a **function, not a token**, because these tokens are short-lived (~10
+minutes) — a value captured at init would go stale mid-session, and refreshing
+it would become your problem.
+
+The token is a transport credential, never user context: held in memory only,
+never persisted, never logged, never placed in a URL. If your minter throws or
+the fetch fails, the SDK keeps using the context your app supplied — enrichment
+is best-effort and never breaks your app.
+
+Omit `clientSession` and none of this happens: no token is requested and no
+client-context call is made. Server-derived context is opt-in.
 
 ### Behavioral Flags
 
