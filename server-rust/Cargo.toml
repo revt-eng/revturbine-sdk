@@ -1,6 +1,6 @@
 [package]
 name = "revturbine"
-version = "0.2.90"
+version = "0.2.91"
 edition = "2021"
 # MSRV (plan 185 Q-2). VERIFIED — `cargo +1.88 check --all-targets` passes,
 # 1.85 and 1.82 both fail.

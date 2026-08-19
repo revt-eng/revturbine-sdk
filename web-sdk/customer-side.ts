@@ -313,6 +313,14 @@ export type IdentifyContextInput = Partial<UserContextInput> & {
  * rt.identify('u_1', { plan_handle: 'pro', custom: { anything: 'you like' } });
  * ```
  */
+/**
+ * Mints a short-lived client-session token for the signed-in user (plan 191
+ * Q-6). Called by the SDK on first need, after `identify()`, and again when a
+ * token is rejected as expired. Return the raw `rt_client_…` token your
+ * backend minted from `POST /api/sdk/client-sessions`.
+ */
+export type RevTurbineClientSessionProvider = () => string | Promise<string>;
+
 export type Exact<Shape, T> = {
   // Homomorphic (`K in keyof T`) on purpose: a mapped type in this form is
   // inference-preserving, so `T` is still inferred from the argument at the
@@ -898,6 +906,40 @@ export interface RevTurbineInitOptions {
   /** Optional UI path resolver map used by `validateUiPathResolvers()`. */
   uiPathResolvers?: RevTurbineUiPathResolverMap;
   user?: RevTurbineUserContext;
+  /**
+   * Mint a short-lived client-session token (`rt_client_`, plan 157) for the
+   * signed-in user — the SDK's hook into server-authoritative context
+   * (plan 191 REQ-5 / Q-6).
+   *
+   * Supply this and the purchase-to-plan loop closes itself: the SDK fetches
+   * `GET /api/sdk/client-context` on your behalf, so a Stripe webhook that
+   * changes the user's plan reaches client decisions with **no app code** —
+   * previously the enrichment path existed but nothing ever called it.
+   *
+   * A **callback**, not a token value, because these tokens carry a ~10-minute
+   * TTL: a static string would go stale mid-session. The SDK calls this when
+   * it first needs a token, again after `identify()` (a new user needs a new
+   * token), and again when the control plane rejects one as expired — so
+   * short TTLs stay an implementation detail of your backend.
+   *
+   * The token is transport credential, never user context: it is held in
+   * memory only, never persisted, never logged, never put in a URL, and never
+   * merged into the context the app can set. Rejections are swallowed —
+   * enrichment is best-effort and never breaks the host app.
+   *
+   * @example
+   * ```ts
+   * initRevTurbine({
+   *   publishableKey: 'rt_pub_…',
+   *   user: { id: 'user_123', plan_handle: 'free' },
+   *   clientSession: () =>
+   *     fetch('/api/revturbine-session', { method: 'POST' })
+   *       .then((r) => r.json())
+   *       .then((j) => j.client_token),
+   * });
+   * ```
+   */
+  clientSession?: RevTurbineClientSessionProvider;
   page?: RevTurbinePageContext;
   contextPolicy?: RevTurbineContextPolicy;
   /**
@@ -2123,6 +2165,14 @@ export class RevTurbineCustomerSdk {
    */
   private clientContextToken?: string;
   /**
+   * App-supplied minter for the token above (plan 191 Q-6). Its presence is
+   * what turns client-context enrichment from "the app must call an
+   * undocumented method" into an automatic loop.
+   */
+  private readonly clientSessionProvider?: RevTurbineClientSessionProvider;
+  /** Bounds the 401 re-mint retry to one attempt per fetch. */
+  private retriedClientContextAfterMint = false;
+  /**
    * The `traits:server` provider (plan 165 TASK-4), auto-wired on the first
    * successful client-context fetch and fed EXCLUSIVELY from the
    * token-authenticated response — never from app-assertable input (plan 157
@@ -2186,6 +2236,7 @@ export class RevTurbineCustomerSdk {
     this.runtimeMode = options.runtimeMode ?? RuntimeMode.Server;
     this.endpointOverrides = options.endpointOverrides ?? {};
     this.localRuntime = options.localRuntime;
+    this.clientSessionProvider = options.clientSession;
     this.branding = options.branding;
     this.apiBranding = options.apiBranding;
     this.configProvider = this.resolveConfigProvider(options);
@@ -2273,6 +2324,10 @@ export class RevTurbineCustomerSdk {
     // Plan 95 TASK-7: keyless anonymous adoption beacon — only fires when no
     // ingest key is configured (see emitSdkInitTelemetry); best-effort.
     void this.emitSdkInitTelemetry();
+    // Plan 191 REQ-5: with a `clientSession` minter configured, the SDK owns
+    // the client-context loop from here — no app call required. Fire-and-
+    // forget: enrichment must never delay or fail construction.
+    this.autoFetchClientContext();
   }
 
   private isLocalOnlyMode(): boolean {
@@ -5921,6 +5976,11 @@ export class RevTurbineCustomerSdk {
     if (typeof clientToken === 'string' && clientToken.length > 0) {
       this.clientContextToken = clientToken;
     }
+    // Plan 191 REQ-5: with a minter configured the SDK sources its own token,
+    // so the app never has to hold (or refresh) one.
+    if (!this.clientContextToken) {
+      this.clientContextToken = await this.mintClientSessionToken();
+    }
     const token = this.clientContextToken;
     if (!token) return;
 
@@ -5930,7 +5990,24 @@ export class RevTurbineCustomerSdk {
         headers: { authorization: `Bearer ${token}` },
       });
       if (!response.ok) {
-        if (response.status === 401) this.clientContextToken = undefined;
+        if (response.status === 401) {
+          // Expired or revoked (these tokens live ~10 minutes). Re-mint ONCE
+          // and retry, so a long-lived session keeps enriching without the
+          // app tracking `expires_at` itself. `retriedAfterMint` bounds it:
+          // a backend minting bad tokens must not become a request loop.
+          this.clientContextToken = undefined;
+          if (this.clientSessionProvider && !this.retriedClientContextAfterMint) {
+            const fresh = await this.mintClientSessionToken();
+            if (fresh) {
+              this.retriedClientContextAfterMint = true;
+              try {
+                await this.fetchClientContext(fresh);
+              } finally {
+                this.retriedClientContextAfterMint = false;
+              }
+            }
+          }
+        }
         return;
       }
       const data = (await response.json()) as ClientSafeContextResponse; // sdk-ok: boundary-parse — client-context response
@@ -5974,6 +6051,39 @@ export class RevTurbineCustomerSdk {
     } catch {
       // Best-effort enrichment — never surface to the app.
     }
+  }
+
+  /**
+   * Ask the app's `clientSession` minter for a token (plan 191 Q-6).
+   *
+   * Returns undefined when no minter is configured, when it throws, or when
+   * it yields a non-string/empty value — enrichment then simply does not
+   * happen. A minter that rejects (backend down, user signed out mid-flight)
+   * must never surface as an SDK error in the host app.
+   */
+  private async mintClientSessionToken(): Promise<string | undefined> {
+    if (!this.clientSessionProvider) return undefined;
+    try {
+      const minted = await this.clientSessionProvider();
+      return typeof minted === 'string' && minted.length > 0 ? minted : undefined;
+    } catch {
+      // Best-effort: a failed mint leaves the SDK on app-supplied context.
+      return undefined;
+    }
+  }
+
+  /**
+   * Kick off the client-context loop when — and only when — the app supplied
+   * a `clientSession` minter (plan 191 REQ-5). Fire-and-forget by design:
+   * called from the constructor and from `identify()`, neither of which may
+   * block on the network.
+   */
+  private autoFetchClientContext(): void {
+    if (!this.clientSessionProvider) return;
+    void this.fetchClientContext().catch(() => {
+      // `fetchClientContext` already swallows its own failures; this guards
+      // the promise itself so a rejection never becomes unhandled.
+    });
   }
 
   /** Map the client-safe context response into a UserContext patch (plan 157). */
@@ -6574,6 +6684,13 @@ export class RevTurbineCustomerSdk {
     // Switch impression history to the new user and re-hydrate retired cache.
     this.impressionHistory.setUserId(userId);
     void this.impressionHistory.hydrate();
+    // A client-session token is minted FOR a specific user, so a new identity
+    // invalidates the held one and re-mints (plan 191 REQ-5). Without this a
+    // sign-out/sign-in would enrich the new user from the old user's token.
+    if (this.clientSessionProvider) {
+      this.clientContextToken = undefined;
+      this.autoFetchClientContext();
+    }
     // Only the customer's own `custom` map is observed (plan 114 TASK-4); the
     // legacy traits-as-custom path is gone (plan 191 Q-2).
     this.emitObservedContextFields(ctx.custom);
