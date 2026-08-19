@@ -39,6 +39,7 @@ import type {
   RevTurbineContextMode,
   RevTurbineEntitlementContext,
   RevTurbineUserContext,
+  Exact,
   UserContextInput,
   SdkMetadata,
   EntitlementResult,
@@ -1077,7 +1078,9 @@ export class SdkSession {
  * });
  * ```
  */
-export async function initRevTurbine(options: SdkSessionOptions): Promise<SdkSession> {
+export async function initRevTurbine<TUser extends RevTurbineUserContext = RevTurbineUserContext>(
+  options: SdkSessionOptions & { user?: Exact<RevTurbineUserContext, TUser> },
+): Promise<SdkSession> {
   const { bootstrapPlacements, ...rest } = options;
   const initOptions = rest as RevTurbineInitInputOptions;
   const sdk = initRevTurbineCore(initOptions);

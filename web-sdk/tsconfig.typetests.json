@@ -1,0 +1,11 @@
+{
+  "//": "Type-level fixtures (plan 191 AC-3). Checked by `pnpm check:types:exact`; excluded from the build so they never ship in dist.",
+  "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["**/*.test-d.ts", "customer-side.ts"],
+  "exclude": ["dist", "node_modules"]
+}

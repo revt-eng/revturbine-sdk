@@ -28,6 +28,7 @@
     "dist",
     "node_modules",
     "**/*.test.ts",
+    "**/*.test-d.ts",
     "**/*.test.tsx",
     "**/*.stories.tsx",
     "harness",

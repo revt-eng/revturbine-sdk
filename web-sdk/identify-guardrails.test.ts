@@ -128,12 +128,41 @@ describe('identify() unrecognized-key warning (AC-3)', () => {
   });
 });
 
-describe('identify() legacy traits stay compatible (AC-6)', () => {
-  it('routes a plain traits object into custom exactly as before (plus a dev diagnostic)', () => {
+describe('identify() unrecognized keys are dropped and reported (plan 191 REQ-3 / Q-5)', () => {
+  // Plan 191 Q-2 retired the legacy plain-traits overload: a bare trait no
+  // longer routes into `custom` silently. TypeScript rejects it at compile
+  // time (see user-context-exactness.test-d.ts); these pin the runtime half
+  // for plain-JS callers, which is where the original trap actually shipped.
+  it('drops an unrecognized top-level key instead of routing it into custom', () => {
     const sdk = makeLocalSdk();
-    sdk.identify('user_1', { favorite_color: 'red' });
+    sdk.identify('user_1', { favorite_color: 'red' } as never);
+    expect(sdk.getUserContext().id).toBe('user_1');
+    expect(sdk.getUserContext().custom?.favorite_color).toBeUndefined();
+  });
+
+  it('reports the dropped keys prod-visibly, once per session, without their values', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const sdk = makeLocalSdk();
+      sdk.identify('user_1', { context: { plan_handle: 'starter' } } as never);
+      sdk.identify('user_2', { context: { plan_handle: 'starter' } } as never);
+
+      const reports = warn.mock.calls
+        .map((args) => String(args[0]))
+        .filter((line) => line.includes('unrecognized user-context key'));
+      expect(reports).toHaveLength(1); // deduped for the session
+      expect(reports[0]).toContain('context');
+      expect(reports[0]).toContain('custom'); // points at the right home
+      expect(reports[0]).not.toContain('starter'); // key names only, never values
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('still records the customer-supplied custom map', () => {
+    const sdk = makeLocalSdk();
+    sdk.identify('user_1', { custom: { favorite_color: 'red' } });
     expect(sdk.getUserContext()).toMatchObject({ id: 'user_1', custom: { favorite_color: 'red' } });
-    expect(warnings().join('\n')).toContain('legacy');
   });
 });
 

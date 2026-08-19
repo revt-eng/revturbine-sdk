@@ -284,9 +284,41 @@ export type UserContextInput = Omit<UserContext, 'id' | 'tenant_id' | 'user_id' 
  * identity — the plan's `unique_handle`; the `plan` object is display
  * metadata (name/price/period) and never participates in matching.
  */
-export type IdentifyContextInput = UserContextInput & {
+export type IdentifyContextInput = Partial<UserContextInput> & {
   /** THE plan matching identity — the plan's `unique_handle` (e.g. `'pro'`). */
   plan_handle?: string;
+};
+
+/**
+ * Exact-shape constraint: rejects keys the target shape does not declare, and
+ * — unlike TypeScript's built-in excess-property check — keeps rejecting them
+ * when the value arrives through a variable rather than a fresh object
+ * literal (plan 191 REQ-3).
+ *
+ * That distinction is the whole point: the shape docs used to teach
+ * (`user: { id, context: { plan_handle } }`) compiled cleanly whenever the
+ * options object was built in an un-annotated intermediate — a `useMemo`, a
+ * helper function, a spread — because excess-property checking had already
+ * been discarded. The user then had no plan at runtime, silently. Under this
+ * constraint every excess key maps to `never`, so the call fails to compile
+ * wherever the object was built.
+ *
+ * Free-form customer values belong under `custom`, which stays open.
+ *
+ * @example
+ * ```ts
+ * // ✗ compile error — `context` is not a user-context field
+ * rt.identify('u_1', { context: { plan_handle: 'pro' } });
+ * // ✓
+ * rt.identify('u_1', { plan_handle: 'pro', custom: { anything: 'you like' } });
+ * ```
+ */
+export type Exact<Shape, T> = {
+  // Homomorphic (`K in keyof T`) on purpose: a mapped type in this form is
+  // inference-preserving, so `T` is still inferred from the argument at the
+  // call site. Map any key the shape does not declare to `never`, which is
+  // what turns an excess key into a compile error instead of a silent drop.
+  [K in keyof T]: K extends keyof Shape ? T[K] : never;
 };
 
 /**
@@ -4061,6 +4093,8 @@ export class RevTurbineCustomerSdk {
   private readonly emittedResolutionDiagnostics = new Set<string>();
   /** Session dedup for {@link reportSdkError}, keyed by `reason`. */
   private readonly emittedSdkErrors = new Set<string>();
+  /** Session dedupe for the unrecognized-context-key report (plan 191 Q-5). */
+  private readonly reportedUnrecognizedContextKeys = new Set<string>();
   private static readonly RESOLUTION_DIAGNOSTIC_SESSION_CAP = 20;
 
   /**
@@ -5580,6 +5614,49 @@ export class RevTurbineCustomerSdk {
     };
   }
 
+  /**
+   * Report user-context keys the SDK does not recognize, then let the caller
+   * strip them (plan 191 REQ-3 / Q-5 ruling).
+   *
+   * TypeScript rejects these at compile time via {@link Exact}, but plain-JS
+   * callers get no such guard — and the previous dev-only warning was
+   * compiled out of production builds, which is exactly how the
+   * `user: { id, context: { plan_handle } }` shape shipped silently. So this
+   * is prod-visible: one `console.warn` per session per distinct key set
+   * (never a per-render flood), plus an `sdk_validation_warning` beacon so
+   * integration mistakes surface in dashboards instead of only in a console
+   * nobody is reading. Never throws — a monetization SDK must not take down
+   * the host app over a bad key.
+   */
+  private reportUnrecognizedContextKeys(
+    verb: 'identify' | 'update',
+    unrecognized: string[],
+    recognizedKeys: readonly string[],
+    extraGuidance?: string,
+  ): void {
+    if (unrecognized.length === 0) return;
+    const dedupeKey = `${verb}:${[...unrecognized].sort().join(',')}`;
+    if (this.reportedUnrecognizedContextKeys.has(dedupeKey)) return;
+    this.reportedUnrecognizedContextKeys.add(dedupeKey);
+
+    const guidance = extraGuidance ? ` ${extraGuidance}` : '';
+    console.warn(
+      `[RevTurbine] ${verb}() dropped unrecognized user-context key(s): ${unrecognized.join(', ')}. ` +
+        `Recognized keys: ${recognizedKeys.join(', ')}. Pass free-form values under { custom: { … } }.${guidance}`,
+    );
+    try {
+      // `void` alone swallows a rejected promise but not a synchronous throw,
+      // and this sits on the identify/update hot path.
+      void this.capture(SDK_WARNING_EVENT_TYPE, {
+        reason: `${verb} received unrecognized user-context key(s)`,
+        // Key NAMES only — never their values, which are customer data.
+        unrecognized_keys: unrecognized.join(','),
+      });
+    } catch {
+      // Telemetry must never break the calling app.
+    }
+  }
+
   private normalizePlacementOutput(data: unknown): PlacementOutput | null { // sdk-ok: boundary-parse
     const result = coreNormalizePlacementOutput(data, requestId);
     if (result && isRecord(data) && typeof data.decision_id !== 'string') {
@@ -6441,7 +6518,7 @@ export class RevTurbineCustomerSdk {
    * rt.identify('user_123', { plan_handle: 'pro', plan: { handle: 'pro', name: 'Professional' } });
    * ```
    */
-  identify(userId: string, contextOrTraits?: IdentifyContextInput | SdkTraits): void {
+  identify<T extends IdentifyContextInput>(userId: string, context?: Exact<IdentifyContextInput, T>): void {
     if (typeof userId !== 'string' || userId.trim() === '') {
       console.error('[RevTurbine] identify() requires a non-empty user id; call ignored. Pass your stable internal user id.');
       return;
@@ -6453,68 +6530,42 @@ export class RevTurbineCustomerSdk {
       );
     }
     const previousContext = this.userContext;
-    // Detect a canonical user-context input by the presence of its recognized
-    // fields. Legacy callers pass a plain traits object without these keys;
-    // they remain fully backward-compatible (stored under `custom`), now with
-    // a dev-only diagnostic instead of a silent route (plan 168 REQ-3).
-    const isUserContextInput = contextOrTraits != null &&
-      typeof contextOrTraits === 'object' &&
-      !Array.isArray(contextOrTraits) &&
-      (
-        'account_id' in contextOrTraits ||
-        'email' in contextOrTraits ||
-        'plan' in contextOrTraits ||
-        'plan_handle' in contextOrTraits ||
-        'usage' in contextOrTraits ||
-        'entitlements' in contextOrTraits ||
-        'custom' in contextOrTraits
+    // Plan 191 REQ-3 (Q-2 ruling): there is no legacy traits overload — a
+    // plain traits object no longer routes into `custom` silently. Free-form
+    // values are passed explicitly under `custom`. Unrecognized keys are
+    // stripped and reported (prod-visible, once per session) rather than
+    // dropped invisibly: TypeScript rejects them at compile time via
+    // {@link Exact}, but plain-JS callers get no such guard.
+    const ctx = (isRecord(context) ? context : {}) as IdentifyContextInput;
+    if (isRecord(context)) {
+      this.reportUnrecognizedContextKeys(
+        'identify',
+        Object.keys(context).filter((key) => !RECOGNIZED_IDENTIFY_KEY_SET.has(key)),
+        RECOGNIZED_IDENTIFY_KEYS,
       );
-
-    if (contextOrTraits != null && typeof contextOrTraits === 'object' && !Array.isArray(contextOrTraits)) {
-      const unrecognized = Object.keys(contextOrTraits).filter((key) => !RECOGNIZED_IDENTIFY_KEY_SET.has(key));
-      if (unrecognized.length > 0) {
-        devWarn(
-          isUserContextInput
-            ? `[RevTurbine] identify() ignoring unrecognized user-context key(s): ${unrecognized.join(', ')}. ` +
-              `Recognized keys: ${RECOGNIZED_IDENTIFY_KEYS.join(', ')}.`
-            : '[RevTurbine] identify() found no recognized user-context key — treating the object as legacy ' +
-              `traits (stored under custom). Keys seen: ${unrecognized.join(', ')}; recognized keys: ` +
-              `${RECOGNIZED_IDENTIFY_KEYS.join(', ')}. For plan-scoped rules use { plan_handle } — the plan's unique_handle.`,
-        );
-      }
     }
 
-    if (isUserContextInput) {
-      const ctx = contextOrTraits as IdentifyContextInput;
-      if (ctx.usage) {
-        this.usageBalances = { ...this.usageBalances, ...usageAmountsFromEntries(ctx.usage) };
-      }
-      // `plan_handle` is THE plan matching identity (plan 191 Q-1/REQ-1); the
-      // `plan` object is display metadata and never participates in matching.
-      // The SDK writes nothing into `custom` for its own semantics (REQ-2) —
-      // that namespace belongs to the customer.
-      this.userContext = this.mergeUserContext({
-        id: userId,
-        account_id: ctx.account_id,
-        email: ctx.email,
-        plan_handle:
-          typeof ctx.plan_handle === 'string' && ctx.plan_handle.trim() !== ''
-            ? ctx.plan_handle.trim()
-            : undefined,
-        plan: ctx.plan,
-        usage: ctx.usage,
-        entitlements: ctx.entitlements as Record<string, boolean> | undefined,
-        custom: ctx.custom,
-        personalization: ctx.personalization,
-      });
-    } else {
-      // Legacy: plain traits object → map into custom
-      this.userContext = this.mergeUserContext({
-        id: userId,
-        custom: contextOrTraits as SdkTraits | undefined,
-        usage: {},
-      });
+    if (ctx.usage) {
+      this.usageBalances = { ...this.usageBalances, ...usageAmountsFromEntries(ctx.usage) };
     }
+    // `plan_handle` is THE plan matching identity (plan 191 Q-1/REQ-1); the
+    // `plan` object is display metadata and never participates in matching.
+    // The SDK writes nothing into `custom` for its own semantics (REQ-2) —
+    // that namespace belongs to the customer.
+    this.userContext = this.mergeUserContext({
+      id: userId,
+      account_id: ctx.account_id,
+      email: ctx.email,
+      plan_handle:
+        typeof ctx.plan_handle === 'string' && ctx.plan_handle.trim() !== ''
+          ? ctx.plan_handle.trim()
+          : undefined,
+      plan: ctx.plan,
+      usage: ctx.usage,
+      entitlements: ctx.entitlements as Record<string, boolean> | undefined,
+      custom: ctx.custom,
+      personalization: ctx.personalization,
+    });
     this.recalculateDerivedUsageTraits();
     this.markSegmentsDirtyFromContextChange(previousContext, this.userContext);
     this.decisionCache.clear();
@@ -6523,10 +6574,9 @@ export class RevTurbineCustomerSdk {
     // Switch impression history to the new user and re-hydrate retired cache.
     this.impressionHistory.setUserId(userId);
     void this.impressionHistory.hydrate();
-    // In the legacy path the traits object IS the custom map (plan 114 TASK-4).
-    this.emitObservedContextFields(
-      isUserContextInput ? (contextOrTraits as UserContextInput).custom : (contextOrTraits as SdkTraits | undefined),
-    );
+    // Only the customer's own `custom` map is observed (plan 114 TASK-4); the
+    // legacy traits-as-custom path is gone (plan 191 Q-2).
+    this.emitObservedContextFields(ctx.custom);
   }
 
   resetIdentity(): void {
@@ -6671,8 +6721,8 @@ export class RevTurbineCustomerSdk {
    * // Reflect a plan change and new traits in one call (identity unchanged):
    * rt.update({ plan_handle: 'pro', custom: { role: 'admin' } });
    */
-  update(patch: RevTurbineUpdateInput): void {
-    const { usage, ...context } = patch ?? {};
+  update<T extends RevTurbineUpdateInput>(patch: Exact<RevTurbineUpdateInput, T>): void {
+    const { usage, ...context } = (patch ?? {}) as RevTurbineUpdateInput;
     // Non-usage session fields (plan / email / custom / entitlements /
     // personalization / trial / billing signals / tiers / …) merge through the
     // same path as setUserContext — filtered to the recognized key set, so a JS
@@ -6680,14 +6730,13 @@ export class RevTurbineCustomerSdk {
     // of polluting the context. Skip the merge (and its segment re-evaluation)
     // when the patch carries no recognized context fields.
     const recognized = Object.entries(context).filter(([key]) => RECOGNIZED_UPDATE_KEY_SET.has(key));
-    const unrecognized = Object.keys(context).filter((key) => !RECOGNIZED_UPDATE_KEY_SET.has(key));
-    if (unrecognized.length > 0) {
-      devWarn(
-        `[RevTurbine] update() ignored unrecognized key(s): ${unrecognized.join(', ')}. ` +
-          `Patchable fields: ${RECOGNIZED_UPDATE_KEYS.join(', ')}. A bare entitlement handle is not a ` +
-          'usage report — use update({ usage: { <unit>: n } }); to (re)establish identity use identify().',
-      );
-    }
+    this.reportUnrecognizedContextKeys(
+      'update',
+      Object.keys(context).filter((key) => !RECOGNIZED_UPDATE_KEY_SET.has(key)),
+      RECOGNIZED_UPDATE_KEYS,
+      'A bare entitlement handle is not a usage report — use update({ usage: { <unit>: n } }); ' +
+        'to (re)establish identity use identify().',
+    );
     if (recognized.length > 0) {
       this.setUserContext(Object.fromEntries(recognized));
     }
@@ -6823,7 +6872,7 @@ export function initRevTurbine(options: RevTurbineInitInputOptions): RevTurbineC
     executeProviderChain('persistPlacementTypes', [types], () => originalPersistPlacementTypes(types))
   );
 
-  sdk.identify = (userId: string, contextOrTraits?: UserContextInput | SdkTraits) => {
+  sdk.identify = (userId: string, context?: IdentifyContextInput) => {
     let attempted = 0;
     for (let index = 0; index < providerChain.length; index += 1) {
       const candidate = providerChain[index];
@@ -6832,7 +6881,7 @@ export function initRevTurbine(options: RevTurbineInitInputOptions): RevTurbineC
       }
       attempted += 1;
       try {
-        candidate.identify(userId, contextOrTraits);
+        candidate.identify(userId, context);
         return;
       } catch (error) {
         const nextFallback = providerChain.slice(index + 1).some((next) => typeof next.identify === 'function');
@@ -6846,11 +6895,11 @@ export function initRevTurbine(options: RevTurbineInitInputOptions): RevTurbineC
 
     if (attempted > 0) {
       sdk.disableForProviderFailure('provider_identify_chain_failed');
-      originalIdentify(userId, contextOrTraits);
+      originalIdentify(userId, context);
       return;
     }
 
-    originalIdentify(userId, contextOrTraits);
+    originalIdentify(userId, context);
   };
 
   return sdk;

@@ -8,6 +8,7 @@ import {
   type RevTurbinePlacementConfig,
   type RevTurbinePlacementDecisionInput,
   type RevTurbineUserContext,
+  type Exact,
   type UserContextInput,
   resolveLocalPlaybook,
 } from '../customer-side';
@@ -23,9 +24,17 @@ type BootstrapPlacementInput = Omit<RevTurbinePlacementDecisionInput, 'placement
   placement: RevTurbinePlacementConfig;
 };
 
-export type RevTurbineProviderProps = {
-  /** SDK initialization options. Accepts optional provider or factory. */
-  options: RevTurbineInitInputOptions;
+export type RevTurbineProviderProps<TUser extends RevTurbineUserContext = RevTurbineUserContext> = {
+  /**
+   * SDK initialization options. Accepts optional provider or factory.
+   *
+   * `options.user` is exact-checked (plan 191 REQ-3): a key the user context
+   * does not declare — the `user: { id, context: { plan_handle } }` shape the
+   * docs used to teach — fails to compile, including when `options` is built
+   * in an un-annotated `useMemo`, which is precisely where TypeScript's own
+   * excess-property check stops applying.
+   */
+  options: RevTurbineInitInputOptions & { user?: Exact<RevTurbineUserContext, TUser> };
   /** Placements to bootstrap (preload decisions) on mount. */
   bootstrapPlacements?: BootstrapPlacementInput[];
   /**
@@ -64,7 +73,12 @@ const EMPTY_BOOTSTRAP: BootstrapPlacementInput[] = [];
  * </RevTurbineProvider>
  * ```
  */
-export function RevTurbineProvider({ options, bootstrapPlacements, domCapture, children }: RevTurbineProviderProps) {
+export function RevTurbineProvider<TUser extends RevTurbineUserContext = RevTurbineUserContext>({
+  options,
+  bootstrapPlacements,
+  domCapture,
+  children,
+}: RevTurbineProviderProps<TUser>) {
   const stableBootstrap = bootstrapPlacements ?? EMPTY_BOOTSTRAP;
   const [sdk, setSdk] = useState<RevTurbineCustomerSdk | null>(null);
   const [isReady, setIsReady] = useState(false);

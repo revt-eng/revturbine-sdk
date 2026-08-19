@@ -100,18 +100,28 @@ describe('web-SDK user-context field-names signal → /api/track', () => {
     expect(fields).toEqual(['locale', 'theme']);
   });
 
-  it('maps legacy identify(userId, traits) field names into the signal', async () => {
+  it('observes only the customer-owned custom map', async () => {
     const sdk = makeSdk();
-    sdk.identify('u1', { role: 'editor', department: 'growth' });
+    sdk.identify('u1', { custom: { role: 'editor', department: 'growth' } });
     await sdk.flushEvents();
 
     const { fields } = contextFieldsEvent();
     expect(fields).toEqual(['department', 'role']);
   });
 
+  it('emits nothing for unrecognized top-level keys — they are dropped, not observed (plan 191)', async () => {
+    const sdk = makeSdk();
+    // The retired legacy-traits shape: these no longer land in `custom`, so
+    // there is no observed-field signal to emit.
+    sdk.identify('u1', { role: 'editor', department: 'growth' } as never);
+    await sdk.flushEvents();
+
+    expect(trackedEvents().some((e) => e.event_name === 'user_context_observed')).toBe(false);
+  });
+
   it('emits nothing when no custom fields are set', async () => {
     const sdk = makeSdk();
-    sdk.identify('u1', { plan: 'pro' }); // canonical field, no custom bag
+    sdk.identify('u1', { plan_handle: 'pro' }); // canonical field, no custom bag
     await sdk.flushEvents();
 
     expect(trackedEvents().some((e) => e.event_name === 'user_context_observed')).toBe(false);
