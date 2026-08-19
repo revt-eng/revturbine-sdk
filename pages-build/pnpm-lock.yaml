@@ -18,14 +18,14 @@ importers:
         specifier: ^2.20.0
         version: 2.20.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@revt-eng/core':
-        specifier: 0.1.187
-        version: 0.1.187(drizzle-orm@0.45.2)(react@19.2.6)(tailwindcss@4.3.0)
+        specifier: 0.1.195
+        version: 0.1.195(drizzle-orm@0.45.2)(react@19.2.6)(tailwindcss@4.3.0)
       '@revt-eng/schema':
-        specifier: 0.1.187
-        version: 0.1.187(react@19.2.6)(tailwindcss@4.3.0)
+        specifier: 0.1.195
+        version: 0.1.195(react@19.2.6)(tailwindcss@4.3.0)
       '@revt-eng/schema-external':
-        specifier: 0.1.187
-        version: 0.1.187(zod@4.4.3)
+        specifier: 0.1.195
+        version: 0.1.195(zod@4.4.3)
       '@revturbine/sdk':
         specifier: 0.2.46
         version: 0.2.46(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -690,18 +690,18 @@ packages:
     peerDependencies:
       react: '>=16.8'
 
-  '@revt-eng/core@0.1.187':
-    resolution: {integrity: sha512-TmQPjA02WBiporTt9UfgYNzev/v09Re1VqKx/4vJJwFRQVyAH23TFWQOuyLOKt/WT9s9p6J5PjbkEYjNKKM2uQ==, tarball: https://npm.pkg.github.com/download/@revt-eng/core/0.1.187/7e4f39c0c8498a3b40d0a7e7d3d8498a8b7ca54d}
+  '@revt-eng/core@0.1.195':
+    resolution: {integrity: sha512-dNoZv3eiA8pXY+X/P+l+Iz/5woRr0n9NOzL0Spc7faEsAEf4tygHLANevVsk2rPprO6Onu3yBoFCMJ7Knp8xDg==, tarball: https://npm.pkg.github.com/download/@revt-eng/core/0.1.195/6f78886b2cee0ca887d67298f0d400a5c718f659}
     peerDependencies:
       drizzle-orm: '>=0.30.0'
 
-  '@revt-eng/schema-external@0.1.187':
-    resolution: {integrity: sha512-QX/2oE8AZp0R+FvDGw+z9poE+aYBPidGQ13ko8KkKA+P3dewot4gNi5QcM9Y64qzieJ5KLehEGu+uWdvZ1iBTQ==, tarball: https://npm.pkg.github.com/download/@revt-eng/schema-external/0.1.187/274b625f12b450ba1808cf836d8a378dff79ae25}
+  '@revt-eng/schema-external@0.1.195':
+    resolution: {integrity: sha512-qU1LBk8oZ2daf9QslnT07jZpzE3ItQLaYtf5gaz3eBBVY7RVgvntLwJz3fkZPV3aeA3Q2zuNx4nq4chc3nnrzw==, tarball: https://npm.pkg.github.com/download/@revt-eng/schema-external/0.1.195/a4f701c67da771aebdf02921fadd3a026c4d170e}
     peerDependencies:
       zod: ^4.0.0
 
-  '@revt-eng/schema@0.1.187':
-    resolution: {integrity: sha512-TcWxv8xXQfTbCTopg/a5WotJsSkdGjeLxVyV3zc9GcB0m3tHlC71a2Kj78WF4SisumXNS7ENuthLoRoh/78BDw==, tarball: https://npm.pkg.github.com/download/@revt-eng/schema/0.1.187/17f7a4638afb2b00b94dcdb0f06923bb1def4dc6}
+  '@revt-eng/schema@0.1.195':
+    resolution: {integrity: sha512-au7cSK9uqAq6UnqNEjo6QtQAD6QGFffa3IgocYcbJtN9kmo+s+GDVSfwlyWeprLKJFGxMN/gjmGsYF6XtokPzA==, tarball: https://npm.pkg.github.com/download/@revt-eng/schema/0.1.195/16e6d6697b2a3441d531a1b7674bf494e8ad91f6}
     peerDependencies:
       react: '>=19'
       tailwindcss: '>=4'
@@ -1462,9 +1462,6 @@ packages:
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
     engines: {node: '>=8'}
-
-  flatbuffers@25.9.23:
-    resolution: {integrity: sha512-MI1qs7Lo4Syw0EOzUl0xjs2lsoeqFku44KpngfIduHBYvzm8h2+7K8YMQh1JtVVVrUvhLpNwqVi4DERegUJhPQ==}
 
   flattie@1.1.1:
     resolution: {integrity: sha512-9UbaD6XdAL97+k/n+N7JwX46K/M6Zc6KcFYskrYL8wbBV/Uyk0CTAMY0VT+qiK5PM7AIc9aTWYtq65U7T+aCNQ==}
@@ -3308,21 +3305,20 @@ snapshots:
     dependencies:
       react: 19.2.6
 
-  '@revt-eng/core@0.1.187(drizzle-orm@0.45.2)(react@19.2.6)(tailwindcss@4.3.0)':
+  '@revt-eng/core@0.1.195(drizzle-orm@0.45.2)(react@19.2.6)(tailwindcss@4.3.0)':
     dependencies:
-      '@revt-eng/schema': 0.1.187(react@19.2.6)(tailwindcss@4.3.0)
+      '@revt-eng/schema': 0.1.195(react@19.2.6)(tailwindcss@4.3.0)
       drizzle-orm: 0.45.2
-      flatbuffers: 25.9.23
       zod: 4.4.3
     transitivePeerDependencies:
       - react
       - tailwindcss
 
-  '@revt-eng/schema-external@0.1.187(zod@4.4.3)':
+  '@revt-eng/schema-external@0.1.195(zod@4.4.3)':
     dependencies:
       zod: 4.4.3
 
-  '@revt-eng/schema@0.1.187(react@19.2.6)(tailwindcss@4.3.0)':
+  '@revt-eng/schema@0.1.195(react@19.2.6)(tailwindcss@4.3.0)':
     dependencies:
       react: 19.2.6
       tailwindcss: 4.3.0
@@ -4034,8 +4030,6 @@ snapshots:
   fill-range@7.1.1:
     dependencies:
       to-regex-range: 5.0.1
-
-  flatbuffers@25.9.23: {}
 
   flattie@1.1.1: {}
 
