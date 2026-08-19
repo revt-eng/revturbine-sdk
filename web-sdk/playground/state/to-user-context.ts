@@ -21,7 +21,10 @@ export function toUserContext(config: RevTurbineConfig, state: DemoState): RevTu
 
   return {
     id: state.userId,
-    plan: { id: state.planHandle, name: planName(config, state.planHandle) },
+    // The exemplar shape (plan 191): flat `plan_handle` is the matching
+    // identity; the plan object carries display metadata by `handle`.
+    plan_handle: state.planHandle,
+    plan: { handle: state.planHandle, name: planName(config, state.planHandle) },
     usage: {
       generations: {
         entitlement_handle: 'generations',

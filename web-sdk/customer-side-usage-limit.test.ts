@@ -62,24 +62,24 @@ function genLimit(sdk: RevTurbineCustomerSdk): number | undefined {
 describe('getUsage() resolves the per-plan usage limit (local-runtime)', () => {
   it('Free user → 30, not the Enterprise 999999', () => {
     const sdk = makeSdk();
-    sdk.identify('u_free', { plan: { id: 'free', name: 'Free' } });
+    sdk.identify('u_free', { plan_handle: 'free' });
     sdk.updateUsage({ generations: 10 });
     expect(genLimit(sdk)).toBe(30);
   });
 
   it('Pro user → 2000', () => {
     const sdk = makeSdk();
-    sdk.identify('u_pro', { plan: { id: 'pro', name: 'Pro' } });
+    sdk.identify('u_pro', { plan_handle: 'pro' });
     sdk.updateUsage({ generations: 10 });
     expect(genLimit(sdk)).toBe(2000);
   });
 
   it('switching plan in-session updates the limit', () => {
     const sdk = makeSdk();
-    sdk.identify('u', { plan: { id: 'free', name: 'Free' } });
+    sdk.identify('u', { plan_handle: 'free' });
     sdk.updateUsage({ generations: 10 });
     expect(genLimit(sdk)).toBe(30);
-    sdk.identify('u', { plan: { id: 'pro', name: 'Pro' } });
+    sdk.identify('u', { plan_handle: 'pro' });
     expect(genLimit(sdk)).toBe(2000);
   });
 });

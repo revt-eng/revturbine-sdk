@@ -160,7 +160,7 @@ describe('resolution_failure diagnostics — entitlement infra-denials (Q-3 scop
       runtimeMode: 'revturbine_server',
       contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
     });
-    sdk.identify('u1', { plan: { id: 'free', name: 'Free' } });
+    sdk.identify('u1', { plan_handle: 'free' });
     const res = await sdk.checkEntitlement('generations');
     await settle();
     expect(res.status).toBe('denied');

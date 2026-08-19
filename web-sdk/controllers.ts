@@ -13,7 +13,7 @@
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
  *   endpoint: 'https://edge.example.com',
- *   user: { id: 'user_123', plan: { id: 'pro' } },
+ *   user: { id: 'user_123', plan_handle: 'pro' },
  * });
  *
  * const banner = session.placement({ surfaceSlot: { id: 'upsell_banner' } });
@@ -843,7 +843,7 @@ export type SdkSessionOptions = RevTurbineInitInputOptions & {
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
  *   endpoint: 'https://edge.example.com',
- *   user: { id: 'user_123', plan: { id: 'pro' } },
+ *   user: { id: 'user_123', plan_handle: 'pro' },
  * });
  *
  * // Get a placement by slot ID
@@ -855,7 +855,7 @@ export type SdkSessionOptions = RevTurbineInitInputOptions & {
  * await gate.check();
  *
  * // Update user context (works in any runtime mode)
- * session.identify('user_456', { plan: { id: 'enterprise' } });
+ * session.identify('user_456', { plan_handle: 'enterprise' });
  * session.setUserContext({ personalization: { company: 'Acme' } });
  * ```
  */
@@ -1070,7 +1070,7 @@ export class SdkSession {
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
  *   endpoint: 'https://edge.example.com',
- *   user: { id: 'user_123', plan: { id: 'pro' } },
+ *   user: { id: 'user_123', plan_handle: 'pro' },
  *   bootstrapPlacements: [
  *     { placement: { name: 'pricing_banner' } },
  *   ],

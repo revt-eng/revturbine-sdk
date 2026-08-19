@@ -205,6 +205,193 @@ pub fn parse_playbook_or_throw(
     Ok(Some(Value::Object(normalized)))
 }
 
+// ── Canonical-JSON payload version refusal (plan 177 TASK-3 / AC-3) ─────────
+//
+// Port of scaffold `src/core/bundle/json-payload.ts` (the reference) and
+// `server-python/src/revturbine/config.py`. The delivered payload artifact
+// carries `bundle_schema_version` (what wrote it) and
+// `bundle_min_readable_schema_version` (the oldest reader the writer vouches
+// for). A runtime refuses — on raw parsed JSON, before the body is parsed or
+// any rule evaluated — rather than partially applying config it cannot fully
+// understand. Policy today is the strict range check
+// `[BUNDLE_MIN_READABLE_SCHEMA_VERSION ..= BUNDLE_SCHEMA_VERSION]`; the
+// payload-carried floor exists so a future additive-forward relaxation needs
+// no artifact re-stamping. Cross-port agreement is enforced by the shared
+// matrix at `tests/parity/canonical/version-refusal.json`.
+
+/// Newest payload `bundle_schema_version` this port fully understands.
+/// Mirror of `SCHEMA_VERSION` in scaffold `src/core/bundle/ir.ts` — the
+/// single source of truth, whose header logs every bump.
+pub const BUNDLE_SCHEMA_VERSION: u64 = 14;
+
+/// Oldest payload `bundle_schema_version` this port still reads correctly.
+/// Mirror of `MIN_READABLE_SCHEMA_VERSION` in scaffold `src/core/bundle/ir.ts`.
+pub const BUNDLE_MIN_READABLE_SCHEMA_VERSION: u64 = 11;
+
+/// Why a payload was refused. Mirrors the TypeScript/Python reason taxonomy —
+/// the shared matrix asserts the exact strings via
+/// [`PlaybookPayloadRefusalReason::as_str`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PlaybookPayloadRefusalReason {
+    /// Not a JSON object, or an inconsistent version/floor pair.
+    MalformedEnvelope,
+    /// `bundle_schema_version` absent or not a non-negative integer.
+    MissingSchemaVersion,
+    /// Payload newer than this reader fully understands.
+    SchemaVersionTooNew,
+    /// Payload older than this reader's readable floor.
+    SchemaVersionTooOld,
+    /// The payload's own floor demands a newer reader than this one.
+    RequiresNewerReader,
+}
+
+impl PlaybookPayloadRefusalReason {
+    /// The cross-language wire spelling of this reason.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::MalformedEnvelope => "malformed_envelope",
+            Self::MissingSchemaVersion => "missing_schema_version",
+            Self::SchemaVersionTooNew => "schema_version_too_new",
+            Self::SchemaVersionTooOld => "schema_version_too_old",
+            Self::RequiresNewerReader => "requires_newer_reader",
+        }
+    }
+}
+
+/// A refused payload: the reason plus a human-readable message.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PlaybookPayloadVersionError {
+    /// Machine-readable refusal reason.
+    pub reason: PlaybookPayloadRefusalReason,
+    /// Human-readable detail, mirroring the TypeScript messages.
+    pub message: String,
+}
+
+impl std::fmt::Display for PlaybookPayloadVersionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
+impl std::error::Error for PlaybookPayloadVersionError {}
+
+/// The version pair extracted from a payload envelope.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PlaybookPayloadVersion {
+    /// The writer's `bundle_schema_version`.
+    pub schema_version: u64,
+    /// The writer's floor; defaults to `schema_version` when absent.
+    pub min_readable_schema_version: u64,
+}
+
+fn refusal(reason: PlaybookPayloadRefusalReason, message: String) -> PlaybookPayloadVersionError {
+    PlaybookPayloadVersionError { reason, message }
+}
+
+/// Extract and envelope-validate the payload's version pair from raw JSON.
+///
+/// No body parsing, no rule evaluation. A payload that predates the floor
+/// field gets `floor = schema_version` — the conservative reading that claims
+/// no cross-version compatibility.
+pub fn read_playbook_payload_version(
+    raw: &Value,
+) -> Result<PlaybookPayloadVersion, PlaybookPayloadVersionError> {
+    let Some(obj) = raw.as_object() else {
+        return Err(refusal(
+            PlaybookPayloadRefusalReason::MalformedEnvelope,
+            "Playbook payload: expected a top-level JSON object".into(),
+        ));
+    };
+    // `as_u64` declines strings, booleans, negatives, and fractionals alike.
+    let Some(version) = obj.get("bundle_schema_version").and_then(Value::as_u64) else {
+        return Err(refusal(
+            PlaybookPayloadRefusalReason::MissingSchemaVersion,
+            concat!(
+                "Playbook payload: missing non-negative integer ",
+                "\"bundle_schema_version\" — refusing an unversioned payload"
+            )
+            .into(),
+        ));
+    };
+    let floor = match obj.get("bundle_min_readable_schema_version") {
+        None | Some(Value::Null) => version,
+        Some(v) => match v.as_u64() {
+            Some(f) if f <= version => f,
+            _ => {
+                return Err(refusal(
+                    PlaybookPayloadRefusalReason::MalformedEnvelope,
+                    format!(
+                        "Playbook payload: \"bundle_min_readable_schema_version\" ({v}) \
+                         must be a non-negative integer <= bundle_schema_version ({version})"
+                    ),
+                ))
+            }
+        },
+    };
+    Ok(PlaybookPayloadVersion {
+        schema_version: version,
+        min_readable_schema_version: floor,
+    })
+}
+
+/// The refusal gate (AC-3).
+///
+/// Errors unless the payload's version window is fully inside what this
+/// reader supports; returns the version pair on success. Run on raw parsed
+/// JSON BEFORE any body parse — refusing late is indistinguishable from
+/// partially applying config. `None` reader bounds use the live constants.
+pub fn assert_playbook_payload_readable(
+    raw: &Value,
+    schema_version: Option<u64>,
+    min_readable_schema_version: Option<u64>,
+) -> Result<PlaybookPayloadVersion, PlaybookPayloadVersionError> {
+    let supported = schema_version.unwrap_or(BUNDLE_SCHEMA_VERSION);
+    let reader_floor = min_readable_schema_version.unwrap_or(BUNDLE_MIN_READABLE_SCHEMA_VERSION);
+    let version = read_playbook_payload_version(raw)?;
+    if version.min_readable_schema_version > supported {
+        return Err(refusal(
+            PlaybookPayloadRefusalReason::RequiresNewerReader,
+            format!(
+                "Playbook payload requires schema_version >= {}; this reader supports {}..{}",
+                version.min_readable_schema_version, reader_floor, supported
+            ),
+        ));
+    }
+    if version.schema_version > supported {
+        return Err(refusal(
+            PlaybookPayloadRefusalReason::SchemaVersionTooNew,
+            format!(
+                "Playbook payload: unsupported bundle_schema_version={} (reader supports {}..{})",
+                version.schema_version, reader_floor, supported
+            ),
+        ));
+    }
+    if version.schema_version < reader_floor {
+        return Err(refusal(
+            PlaybookPayloadRefusalReason::SchemaVersionTooOld,
+            format!(
+                "Playbook payload: unsupported bundle_schema_version={} (reader supports {}..{})",
+                version.schema_version, reader_floor, supported
+            ),
+        ));
+    }
+    Ok(version)
+}
+
+/// Parse a delivered payload artifact into a validated Playbook.
+///
+/// The Rust counterpart of TypeScript `parsePlaybookPayload` / Python
+/// `parse_playbook_payload`. Order is the contract: `serde_json` parse,
+/// version refusal, THEN [`parse_playbook_or_throw`]. Payloads are canonical
+/// artifacts — there is no legacy-defaults escape hatch here.
+pub fn parse_playbook_payload(text: &str, source: &str) -> Result<Value, String> {
+    let raw: Value = serde_json::from_str(text)
+        .map_err(|err| format!("Invalid {source}: not valid JSON — {err}"))?;
+    assert_playbook_payload_readable(&raw, None, None).map_err(|err| err.message)?;
+    parse_playbook_or_throw(Some(&raw), source, None)?
+        .ok_or_else(|| format!("Invalid {source}: empty payload"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -270,7 +270,7 @@ const VALID_SURFACE_TYPES: ReadonlySet<RevTurbineSurfaceType> = new Set<RevTurbi
  * sdk.identify('user_123', {
  *   account_id: 'acct_456',
  *   email: 'jane@acme.com',
- *   plan: { id: 'pro', name: 'Professional' },
+ *   plan_handle: 'pro',
  *   entitlements: { data_export: true },
  *   custom: { role: 'editor' },
  * });
@@ -280,13 +280,12 @@ export type UserContextInput = Omit<UserContext, 'id' | 'tenant_id' | 'user_id' 
 
 /**
  * Input accepted by {@link RevTurbineCustomerSdk.identify} for the canonical
- * user-context shape. Extends {@link UserContextInput} with the `plan_handle`
- * convenience alias — shorthand for `plan: { id: plan_handle, name: plan_handle }`
- * when the app knows only the plan handle. An explicit `plan` wins over the
- * alias when both are supplied.
+ * user-context shape (plan 191). `plan_handle` is THE plan matching
+ * identity — the plan's `unique_handle`; the `plan` object is display
+ * metadata (name/price/period) and never participates in matching.
  */
 export type IdentifyContextInput = UserContextInput & {
-  /** Alias for `plan` — the plan's `unique_handle` (e.g. `'pro'`). */
+  /** THE plan matching identity — the plan's `unique_handle` (e.g. `'pro'`). */
   plan_handle?: string;
 };
 
@@ -419,6 +418,7 @@ export const RECOGNIZED_UPDATE_KEYS = [
   'account_id',
   'email',
   'email_type',
+  'plan_handle',
   'plan',
   'trial',
   'payment_failed',
@@ -2414,6 +2414,9 @@ export class RevTurbineCustomerSdk {
    */
   private synthesizeProviderContext(): Awaited<ReturnType<DomainProviderRegistry['resolveAll']>> | undefined {
     const plan = this.userContext.plan;
+    // The matching identity is the first-class handle (plan 191): a context
+    // carrying only `plan_handle` (no display object) still yields plan state.
+    const planHandle = this.resolveContextPlanRaw();
     const usage = this.userContext.usage;
     const trial = this.localTrialStatus;
     // Billing-recovery signals (plan 138) → PlanProviderState for the Retention
@@ -2429,7 +2432,7 @@ export class RevTurbineCustomerSdk {
     // enrollment and decision attribution without registering a provider.
     const experiments = this.userContext.experiments;
     const hasExperiments = experiments !== undefined && Object.keys(experiments).length > 0;
-    if (!plan && !usage && !hasTiers && !hasExperiments) return undefined;
+    if (!plan && !planHandle && !usage && !hasTiers && !hasExperiments) return undefined;
 
     const usageEntries: Record<string, { used: number; limit: number; remaining: number; unit?: string; reset_date?: string }> = {};
     if (usage && typeof usage === 'object') {
@@ -2476,10 +2479,12 @@ export class RevTurbineCustomerSdk {
     };
 
     return {
-      ...(plan ? {
+      ...(plan || planHandle ? {
         plan: {
-          currentPlanHandle: plan.id ?? plan.name ?? '',
-          currentPlanName: plan.name,
+          // Identity from the first-class handle (plan 191 Q-1 amendment:
+          // the object's symbol is `handle` — there is no plan id).
+          currentPlanHandle: planHandle || (plan?.handle ?? ''),
+          ...(plan?.name !== undefined ? { currentPlanName: plan.name } : {}),
           ...planTrialFields,
           ...(paymentFailed !== undefined ? { paymentFailed } : {}),
           ...(paymentAtRisk !== undefined ? { paymentAtRisk } : {}),
@@ -2915,27 +2920,27 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
-   * The single resolver for the user's current plan spelling (plan 168 REQ-4).
-   * Reads the three forms the SDK accepts — `plan.id` (canonical),
-   * `custom.plan` (legacy traits), `custom.plan_handle` (docs-taught alias) —
-   * so every plan-scoped read site matches the same plan regardless of which
-   * spelling the app supplied. Returns `''` when no plan is set; callers
-   * lowercase as needed.
+   * The single resolver for the user's current plan identity (plan 168 REQ-4,
+   * reshaped by plan 191 REQ-1/REQ-2 + the Q-1 amendment): the plan's
+   * `unique_handle`, read from the first-class fields alone — flat
+   * `plan_handle`, else the plan object's `handle` (there is no plan `id`).
+   * `custom` is the customer's namespace — never a source of the SDK's own
+   * plan semantics. Returns `''` when no plan is set; callers lowercase as
+   * needed.
    */
   private resolveContextPlanRaw(): string {
+    const handle = this.userContext.plan_handle;
+    if (typeof handle === 'string' && handle.trim()) return handle.trim();
     const plan = this.userContext.plan;
-    if (isRecord(plan) && typeof plan.id === 'string' && plan.id) return plan.id;
-    const custom = this.userContext.custom;
-    if (typeof custom?.plan === 'string' && custom.plan) return custom.plan;
-    if (typeof custom?.plan_handle === 'string' && custom.plan_handle) return custom.plan_handle;
+    if (isRecord(plan) && typeof plan.handle === 'string' && plan.handle.trim()) return plan.handle.trim();
     return '';
   }
 
   /**
-   * The set of identifiers (lowercased plan id + unique_handle) that name the
-   * user's CURRENT plan, so an `entitlement_rule` whose plan target carries
-   * either form is matched. The app may set `plan.id` to the handle (`"free"`)
-   * or the config id (`"plan_free"`); both resolve to the same plan here.
+   * The set of identifiers (lowercased `unique_handle`) naming the user's
+   * CURRENT plan for `entitlement_rule` plan-target matching. Identity is
+   * handle-based everywhere (plan 191): rule targets carry handles, and the
+   * context supplies the handle via `plan_handle` or `plan.handle`.
    */
   private activePlanIdentifiers(exportedConfig: RevTurbineConfig): Set<string> {
     const raw = this.resolveContextPlanRaw();
@@ -3473,11 +3478,13 @@ export class RevTurbineCustomerSdk {
       }
     }
 
+    // Plan identity comes from the first-class fields alone (plan 191 REQ-2):
+    // `traits.plan_handle` is core's reserved, impersonation-proof key, and
+    // `targeting.plan` is the first-class effectivePlan. Customer `custom`
+    // values (`traits.plan`, `traits.plan_id`) never drive plan matching.
     const currentPlanIdOrHandle = firstStringValue(
-      targeting.plan,
-      targeting.traits.plan,
       targeting.traits.plan_handle,
-      targeting.traits.plan_id,
+      targeting.plan,
     ) ?? '';
     const normalizedCurrentPlan = currentPlanIdOrHandle.toLowerCase();
 
@@ -5875,7 +5882,11 @@ export class RevTurbineCustomerSdk {
       // billing signal is not part of the evaluation hash input, so it is folded
       // into the skip key explicitly.
       const serverHashInput = JSON.parse(
-        JSON.stringify({ trial: patch.trial ?? null, plan: patch.plan ?? null }),
+        JSON.stringify({
+          trial: patch.trial ?? null,
+          plan_handle: patch.plan_handle ?? null,
+          plan: patch.plan ?? null,
+        }),
       );
       const nextHash =
         (await computeUserContextHash(serverHashInput)) +
@@ -5910,14 +5921,17 @@ export class RevTurbineCustomerSdk {
       patch.payment_at_risk = true;
     }
 
-    // Server-derived plan (plan 179 TASK-1, Q-2 shape { handle, name }): patch
-    // through the canonical `plan.id` form so `resolveContextPlanRaw()` — the
-    // single plan resolver every plan-scoped read site uses — picks it up.
-    // Server truth (Stripe webhook) overlays the app-supplied plan by design.
+    // Server-derived plan (plan 179 TASK-1, Q-2 shape { handle, name }):
+    // patched natively as the first-class `plan_handle` — THE matching
+    // identity `resolveContextPlanRaw()` reads (plan 191 REQ-1; the old
+    // "canonical plan.id form" shim is gone). Server truth (Stripe webhook)
+    // overlays the app-supplied plan by design. The display name rides along
+    // as `plan` metadata.
     const planHandle = data.plan?.handle;
     if (typeof planHandle === 'string' && planHandle.length > 0) {
+      patch.plan_handle = planHandle;
       patch.plan = {
-        id: planHandle,
+        handle: planHandle,
         name:
           typeof data.plan?.name === 'string' && data.plan.name.length > 0
             ? data.plan.name
@@ -6411,10 +6425,10 @@ export class RevTurbineCustomerSdk {
    * Accepts the canonical {@link IdentifyContextInput} — recognized by the
    * presence of `account_id` / `email` / `plan` / `plan_handle` / `usage` /
    * `entitlements` / `custom` — or a legacy plain-traits object, which is
-   * stored under `custom` unchanged. `plan_handle` is shorthand for
-   * `plan: { id: plan_handle, name: plan_handle }`; all three plan spellings
-   * (`plan.id`, `custom.plan`, `custom.plan_handle`) resolve identically for
-   * plan-scoped rules (plan 168 REQ-4).
+   * stored under `custom` unchanged. `plan_handle` is THE plan matching
+   * identity (the plan's `unique_handle`, plan 191 REQ-1); the `plan` object
+   * is display metadata and never participates in matching, and nothing in
+   * `custom` ever drives plan resolution (REQ-2).
    *
    * Guardrails: an empty id rejects the call; an email-shaped id warns in dev
    * (ids stay opaque — pass emails as `{ email }`); unrecognized top-level
@@ -6423,8 +6437,8 @@ export class RevTurbineCustomerSdk {
    *
    * @example
    * ```ts
-   * rt.identify('user_123', { plan: { id: 'pro', name: 'Professional' } });
-   * rt.identify('user_123', { plan_handle: 'pro' }); // alias — same plan resolution
+   * rt.identify('user_123', { plan_handle: 'pro' }); // THE matching identity
+   * rt.identify('user_123', { plan_handle: 'pro', plan: { handle: 'pro', name: 'Professional' } });
    * ```
    */
   identify(userId: string, contextOrTraits?: IdentifyContextInput | SdkTraits): void {
@@ -6465,7 +6479,7 @@ export class RevTurbineCustomerSdk {
               `Recognized keys: ${RECOGNIZED_IDENTIFY_KEYS.join(', ')}.`
             : '[RevTurbine] identify() found no recognized user-context key — treating the object as legacy ' +
               `traits (stored under custom). Keys seen: ${unrecognized.join(', ')}; recognized keys: ` +
-              `${RECOGNIZED_IDENTIFY_KEYS.join(', ')}. For plan-scoped rules use { plan: { id, name } } or { plan_handle }.`,
+              `${RECOGNIZED_IDENTIFY_KEYS.join(', ')}. For plan-scoped rules use { plan_handle } — the plan's unique_handle.`,
         );
       }
     }
@@ -6475,20 +6489,22 @@ export class RevTurbineCustomerSdk {
       if (ctx.usage) {
         this.usageBalances = { ...this.usageBalances, ...usageAmountsFromEntries(ctx.usage) };
       }
-      // `plan_handle` aliases to `plan` (plan 168 REQ-4); an explicit `plan`
-      // wins. The handle is also mirrored into `custom.plan_handle` so segment
-      // traits keep seeing the spelling legacy routing used to expose.
-      const planFromAlias = !ctx.plan && typeof ctx.plan_handle === 'string' && ctx.plan_handle.trim() !== ''
-        ? { id: ctx.plan_handle, name: ctx.plan_handle }
-        : undefined;
+      // `plan_handle` is THE plan matching identity (plan 191 Q-1/REQ-1); the
+      // `plan` object is display metadata and never participates in matching.
+      // The SDK writes nothing into `custom` for its own semantics (REQ-2) —
+      // that namespace belongs to the customer.
       this.userContext = this.mergeUserContext({
         id: userId,
         account_id: ctx.account_id,
         email: ctx.email,
-        plan: ctx.plan ?? planFromAlias,
+        plan_handle:
+          typeof ctx.plan_handle === 'string' && ctx.plan_handle.trim() !== ''
+            ? ctx.plan_handle.trim()
+            : undefined,
+        plan: ctx.plan,
         usage: ctx.usage,
         entitlements: ctx.entitlements as Record<string, boolean> | undefined,
-        custom: planFromAlias ? { plan_handle: planFromAlias.id, ...(ctx.custom ?? {}) } : ctx.custom,
+        custom: ctx.custom,
         personalization: ctx.personalization,
       });
     } else {
@@ -6531,7 +6547,7 @@ export class RevTurbineCustomerSdk {
    * @example
    * // Between demo personas:
    * rt.resetUserContext();
-   * rt.identify('demo_pro', { plan: { id: 'pro', name: 'Pro' } });
+   * rt.identify('demo_pro', { plan_handle: 'pro' });
    */
   resetUserContext(): void {
     this.clearAllUserState({ reinfer: false });
@@ -6653,7 +6669,7 @@ export class RevTurbineCustomerSdk {
    *
    * @example
    * // Reflect a plan change and new traits in one call (identity unchanged):
-   * rt.update({ plan: { id: 'pro', name: 'Pro' }, custom: { role: 'admin' } });
+   * rt.update({ plan_handle: 'pro', custom: { role: 'admin' } });
    */
   update(patch: RevTurbineUpdateInput): void {
     const { usage, ...context } = patch ?? {};

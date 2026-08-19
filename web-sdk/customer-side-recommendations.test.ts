@@ -66,7 +66,7 @@ function makeSdk(): RevTurbineCustomerSdk {
 describe('recommended_plan_* personalization tokens', () => {
   it('AC-4: pro-plan user → recommended_plan_handle=team, recommended_plan_name=Team', () => {
     const sdk = makeSdk();
-    sdk.identify('user_pro', { plan: { id: 'pro', name: 'Pro' } });
+    sdk.identify('user_pro', { plan_handle: 'pro' });
 
     const tokens = sdk.getPersonalizationTokens();
     expect(tokens.recommended_plan_handle).toBe('team');
@@ -75,7 +75,7 @@ describe('recommended_plan_* personalization tokens', () => {
 
   it('AC-4: starter-plan user → recommended_plan_handle=pro, recommended_plan_name=Pro', () => {
     const sdk = makeSdk();
-    sdk.identify('user_starter', { plan: { id: 'starter', name: 'Starter' } });
+    sdk.identify('user_starter', { plan_handle: 'starter' });
 
     const tokens = sdk.getPersonalizationTokens();
     expect(tokens.recommended_plan_handle).toBe('pro');
@@ -84,7 +84,7 @@ describe('recommended_plan_* personalization tokens', () => {
 
   it('AC-4: top-of-ladder user (team) → tokens resolve to empty strings', () => {
     const sdk = makeSdk();
-    sdk.identify('user_team', { plan: { id: 'team', name: 'Team' } });
+    sdk.identify('user_team', { plan_handle: 'team' });
 
     const tokens = sdk.getPersonalizationTokens();
     expect(tokens.recommended_plan_handle).toBe('');
@@ -93,7 +93,7 @@ describe('recommended_plan_* personalization tokens', () => {
 
   it('unknown current plan → tokens resolve to empty strings (no throw)', () => {
     const sdk = makeSdk();
-    sdk.identify('user_unknown', { plan: { id: 'not_a_plan', name: 'Unknown' } });
+    sdk.identify('user_unknown', { plan_handle: 'not_a_plan' });
 
     const tokens = sdk.getPersonalizationTokens();
     expect(tokens.recommended_plan_handle).toBe('');
@@ -120,7 +120,7 @@ describe('recommended_plan_* personalization tokens', () => {
 describe('recommendation strategy dispatch (plan #47)', () => {
   it('next_tier_up strategy → same as the default helper output (pro → team)', () => {
     const sdk = makeSdk();
-    sdk.identify('user_pro', { plan: { id: 'pro', name: 'Pro' } });
+    sdk.identify('user_pro', { plan_handle: 'pro' });
 
     const tokens = sdk.getPersonalizationTokens({ recommendation_strategy: 'next_tier_up' });
     expect(tokens.recommended_plan_handle).toBe('team');
@@ -129,7 +129,7 @@ describe('recommendation strategy dispatch (plan #47)', () => {
 
   it('custom strategy + valid override → resolves to the override plan', () => {
     const sdk = makeSdk();
-    sdk.identify('user_starter', { plan: { id: 'starter', name: 'Starter' } });
+    sdk.identify('user_starter', { plan_handle: 'starter' });
 
     const tokens = sdk.getPersonalizationTokens({
       recommendation_strategy: 'custom',
@@ -141,7 +141,7 @@ describe('recommendation strategy dispatch (plan #47)', () => {
 
   it('custom strategy + missing override → empty tokens', () => {
     const sdk = makeSdk();
-    sdk.identify('user_starter', { plan: { id: 'starter', name: 'Starter' } });
+    sdk.identify('user_starter', { plan_handle: 'starter' });
 
     const tokens = sdk.getPersonalizationTokens({ recommendation_strategy: 'custom' });
     expect(tokens.recommended_plan_handle).toBe('');
@@ -150,7 +150,7 @@ describe('recommendation strategy dispatch (plan #47)', () => {
 
   it('custom strategy + unknown override handle → empty tokens (no throw)', () => {
     const sdk = makeSdk();
-    sdk.identify('user_starter', { plan: { id: 'starter', name: 'Starter' } });
+    sdk.identify('user_starter', { plan_handle: 'starter' });
 
     const tokens = sdk.getPersonalizationTokens({
       recommendation_strategy: 'custom',
@@ -162,7 +162,7 @@ describe('recommendation strategy dispatch (plan #47)', () => {
 
   it('custom strategy + override === current plan → empty tokens', () => {
     const sdk = makeSdk();
-    sdk.identify('user_pro', { plan: { id: 'pro', name: 'Pro' } });
+    sdk.identify('user_pro', { plan_handle: 'pro' });
 
     const tokens = sdk.getPersonalizationTokens({
       recommendation_strategy: 'custom',
@@ -174,7 +174,7 @@ describe('recommendation strategy dispatch (plan #47)', () => {
 
   it('best_value strategy → falls back to next_tier_up output (until that plan ships)', () => {
     const sdk = makeSdk();
-    sdk.identify('user_pro', { plan: { id: 'pro', name: 'Pro' } });
+    sdk.identify('user_pro', { plan_handle: 'pro' });
 
     const tokens = sdk.getPersonalizationTokens({ recommendation_strategy: 'best_value' });
     expect(tokens.recommended_plan_handle).toBe('team');

@@ -59,44 +59,42 @@ afterEach(() => {
 
 const warnings = (): string[] => warnSpy.mock.calls.map((c) => String(c[0]));
 
-describe('identify() plan spellings converge (AC-4 / REQ-4)', () => {
+describe('identify() plan identity is handle-based (plan 191 REQ-1/REQ-2)', () => {
   // The resolver is asserted through the public targeting snapshot (the same
-  // resolution the entitlement path consumes) — core's unknown-plan fallback
-  // semantics stay out of the assertion. Canonical-vs-alias additionally
-  // asserts identical end-to-end entitlement results (AC-4 verbatim).
-  it('canonical { plan: { id, name } } resolves the plan and matches the rule', async () => {
+  // resolution the entitlement path consumes). Plan 191 retired the plan-168
+  // three-spellings convergence: `plan_handle` is THE matching identity, the
+  // `plan` object is display metadata, and `custom` never drives the SDK's
+  // own plan semantics.
+  it('{ plan_handle } resolves the plan and matches the rule', async () => {
     const sdk = makeLocalSdk();
-    sdk.identify('user_1', { plan: { id: 'starter', name: 'Starter' } });
+    sdk.identify('user_1', { plan_handle: 'starter' });
     expect(sdk.getTargeting().plan?.toLowerCase()).toBe('starter');
     const res = await sdk.checkEntitlement('generations');
     expect(res.status).not.toBe('denied');
     expect(res.limit).toBe(30);
-  });
-
-  it('{ plan_handle } aliases to plan and resolves identically (AC-4)', async () => {
-    const canonical = makeLocalSdk();
-    canonical.identify('user_1', { plan: { id: 'starter', name: 'starter' } });
-    const canonicalRes = await canonical.checkEntitlement('generations');
-
-    const aliased = makeLocalSdk();
-    aliased.identify('user_1', { plan_handle: 'starter' });
-    expect(aliased.getTargeting().plan?.toLowerCase()).toBe('starter');
-    const aliasRes = await aliased.checkEntitlement('generations');
-
-    expect(aliasRes).toEqual(canonicalRes);
     expect(warnings().join('\n')).not.toContain('unrecognized');
   });
 
-  it('{ custom: { plan_handle } } is read by the plan resolver (REQ-4 leg 3)', () => {
+  it('plan.id (DB-internal) never participates in matching (REQ-1)', () => {
     const sdk = makeLocalSdk();
-    sdk.identify('user_1', { custom: { plan_handle: 'starter' } });
-    expect(sdk.getTargeting().plan?.toLowerCase()).toBe('starter');
+    sdk.identify('user_1', { plan: { id: 'starter', name: 'Starter' } });
+    expect(sdk.getTargeting().plan).toBeUndefined();
   });
 
-  it('{ custom: { plan } } (legacy spelling) still resolves', () => {
+  it('custom never drives plan resolution (REQ-2)', () => {
+    const viaHandleKey = makeLocalSdk();
+    viaHandleKey.identify('user_1', { custom: { plan_handle: 'starter' } });
+    expect(viaHandleKey.getTargeting().plan).toBeUndefined();
+
+    const viaPlanKey = makeLocalSdk();
+    viaPlanKey.identify('user_1', { custom: { plan: 'starter' } });
+    expect(viaPlanKey.getTargeting().plan).toBeUndefined();
+  });
+
+  it('identify() writes nothing into custom for its own semantics (AC-2)', () => {
     const sdk = makeLocalSdk();
-    sdk.identify('user_1', { custom: { plan: 'starter' } });
-    expect(sdk.getTargeting().plan?.toLowerCase()).toBe('starter');
+    sdk.identify('user_1', { plan_handle: 'starter', custom: { role: 'editor' } });
+    expect(sdk.getUserContext().custom).toEqual({ role: 'editor' });
   });
 
   it('an unrecognized wrapper shape never resolves the plan (the documented trap)', () => {
