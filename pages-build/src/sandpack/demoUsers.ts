@@ -44,7 +44,7 @@ export const demoUsers = {
     label: 'Alice (Professional / owner)',
     context: {
       id: 'user_alice',
-      plan: { id: 'professional', name: 'Professional' },
+      plan: { handle: 'professional', name: 'Professional' },
       usage: {
         core_credits: usageEntry('core_credits', 'credits', 20, 30, '2026-05-01'),
         premium_credits: usageEntry('premium_credits', 'credits', 3, 10, '2026-05-01'),
@@ -72,7 +72,7 @@ export const demoUsers = {
     label: 'Bob (Professional / editor)',
     context: {
       id: 'user_bob',
-      plan: { id: 'professional', name: 'Professional' },
+      plan: { handle: 'professional', name: 'Professional' },
       usage: {
         core_credits: usageEntry('core_credits', 'credits', 10, 30, '2026-05-01'),
         premium_credits: usageEntry('premium_credits', 'credits', 1, 10, '2026-05-01'),
@@ -100,7 +100,7 @@ export const demoUsers = {
     label: 'Carol (Starter / admin)',
     context: {
       id: 'user_carol',
-      plan: { id: 'starter', name: 'Starter' },
+      plan: { handle: 'starter', name: 'Starter' },
       usage: {
         core_credits: usageEntry('core_credits', 'credits', 24, 30, '2026-05-01'),
         premium_credits: usageEntry('premium_credits', 'credits', 5, 5, '2026-05-01'),
@@ -128,7 +128,7 @@ export const demoUsers = {
     label: 'Dan (Starter / viewer)',
     context: {
       id: 'user_dan',
-      plan: { id: 'starter', name: 'Starter' },
+      plan: { handle: 'starter', name: 'Starter' },
       usage: {
         core_credits: usageEntry('core_credits', 'credits', 26, 30, '2026-05-01'),
         premium_credits: usageEntry('premium_credits', 'credits', 5, 5, '2026-05-01'),
@@ -156,7 +156,7 @@ export const demoUsers = {
     label: 'Eve (Enterprise / admin)',
     context: {
       id: 'user_eve',
-      plan: { id: 'enterprise', name: 'Enterprise' },
+      plan: { handle: 'enterprise', name: 'Enterprise' },
       usage: {
         core_credits: usageEntry('core_credits', 'credits', 0, 999999, '2026-05-01'),
         premium_credits: usageEntry('premium_credits', 'credits', 0, 125, '2026-05-01'),
@@ -188,7 +188,7 @@ export const demoUsers = {
     label: 'Frank (Enterprise / editor)',
     context: {
       id: 'user_frank',
-      plan: { id: 'enterprise', name: 'Enterprise' },
+      plan: { handle: 'enterprise', name: 'Enterprise' },
       usage: {
         core_credits: usageEntry('core_credits', 'credits', 0, 999999, '2026-05-01'),
         premium_credits: usageEntry('premium_credits', 'credits', 0, 125, '2026-05-01'),
