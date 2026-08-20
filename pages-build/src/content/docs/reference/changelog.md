@@ -13,6 +13,30 @@ The SDK follows [Semantic Versioning](https://semver.org/):
 
 ## Unreleased
 
+### Behaviour change — read this one
+
+- **A user with no resolvable plan now gets DENIED, not granted.** This is a
+  fix, and it changes decisions: if the SDK could not resolve a plan identity,
+  the evaluator used to *skip* plan targeting rather than fail it, so every
+  plan-targeted rule matched and a plan-gated entitlement returned
+  `allowed: true`. A pro-only feature was reachable by a user with no plan.
+
+  The check now returns
+  `{ status: 'denied', allowed: false, reason: 'no_plan_identity' }`. That
+  reason is deliberately distinct from `no_matching_entitlement_rule`: the
+  first means *we could not tell what plan this user is on* — an integration
+  problem — and the second means *their plan does not include this*, which is
+  the system working. If denials appear after upgrading, check `reason` before
+  assuming the entitlement config is wrong.
+
+  Most likely cause of a new `no_plan_identity`: still passing the `plan.id`
+  shape retired in 0.3.0. Pass `plan_handle: 'pro'` or
+  `plan: { handle, name }`.
+
+  The same defect existed one level up, and is also fixed: the no-provider
+  fallback path discarded the plan handle entirely, so it evaluated
+  plan-targeted rules against no plan at all.
+
 ### Breaking changes
 
 - **A plan's identity is its `unique_handle`, never its `id`.** Pass
