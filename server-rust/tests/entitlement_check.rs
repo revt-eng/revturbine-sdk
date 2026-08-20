@@ -166,6 +166,36 @@ fn rule_entitlement_id_must_reference_the_handle_not_a_separate_id() {
     );
 }
 
+/// Plan 194 REQ-1 — an unresolvable plan identity DENIES.
+///
+/// The rule filter used to skip the plan check when no identity resolved, so
+/// every plan-targeted rule matched and a plan-gated entitlement came back
+/// allowed for a user with no plan. Byte parity with TS and Python is locked
+/// by the `entitlement_no_plan_identity_denies` fixture.
+#[test]
+fn no_plan_identity_fails_closed() {
+    let cfg = config(
+        "feature",
+        json!([{ "entitlement_id": "feat_x", "plan_ids": ["pro"], "enabled": true }]),
+    );
+
+    // Control: the targeted handle still grants, so a blanket deny cannot pass.
+    assert!(derive(&cfg, &input("feat_x", "pro")).allowed);
+
+    for unresolvable in ["", "   ", "\t"] {
+        let r = derive(&cfg, &input("feat_x", unresolvable));
+        assert!(!r.allowed, "identity {unresolvable:?} must not grant");
+        assert_eq!(r.reason.as_deref(), Some("no_plan_identity"));
+    }
+
+    // Both deny, but a dashboard has to tell a broken integration apart from a
+    // correctly-gated user, so the reasons must not collapse.
+    let no_identity = derive(&cfg, &input("feat_x", ""));
+    let untargeted = derive(&cfg, &input("feat_x", "starter"));
+    assert!(!untargeted.allowed);
+    assert_ne!(no_identity.reason, untargeted.reason);
+}
+
 /// Plan 191 REQ-1 / AC-1 — plan identity IS the handle; `plans[].id` is
 /// DB-internal and matches nothing. Mirrors
 /// `TestHandleIsTheOnlyIdentity` in the Python port and the

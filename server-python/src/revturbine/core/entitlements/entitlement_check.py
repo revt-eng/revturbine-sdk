@@ -134,7 +134,10 @@ def derive_local_entitlement_from_configured_rules(
         if entitlement is not None and isinstance(entitlement.get("unique_handle"), str)
         else handle
     )
-    normalized_plan_handle = str(current_plan_handle or "").lower()
+    # Trimmed, so a whitespace-only handle collapses to "no identity" rather
+    # than becoming an identity that matches no plan. Both fail closed, but
+    # only the collapsed form reports the actual cause (plan 194 REQ-1).
+    normalized_plan_handle = str(current_plan_handle or "").strip().lower()
 
     plans: list[dict[str, Any]] = exported_config.get("plans") or []
     # Plan 191 REQ-1: plan identity IS the handle. `plans[].id` is DB-internal
@@ -156,6 +159,23 @@ def derive_local_entitlement_from_configured_rules(
         if matched_plan is not None and isinstance(matched_plan.get("unique_handle"), str)
         else (normalized_plan_handle or None)
     )
+
+    # Plan 194 REQ-1. Without a plan identity there is nothing to match plan
+    # targets against, and the rule filter below used to SKIP the plan check
+    # rather than fail it — so every plan-targeted rule matched and a
+    # plan-gated entitlement came back ``allowed`` for a user with no plan.
+    # Entitlement-rule targeting has been explicit since plan 34 REQ-9 (an
+    # empty ``targets`` matches nothing), so "no identity" can only ever mean
+    # "matches nothing", never "matches everything". The reason is distinct
+    # from ``no_matching_entitlement_rule`` on purpose: "we could not identify
+    # the user's plan" is a broken integration, "their plan lacks this" is a
+    # correctly-gated user, and telemetry has to tell them apart.
+    if current_plan_handle_ref is None:
+        return {
+            "status": "denied",
+            "allowed": False,
+            "reason": "no_plan_identity",
+        }
 
     rules: list[dict[str, Any]] = exported_config.get("entitlement_rules") or []
 
@@ -201,8 +221,10 @@ def derive_local_entitlement_from_configured_rules(
             plan_ids = []
 
         # Plan 120 TASK-4: plan targets are handle-valued — match the user's
-        # current plan HANDLE against the rule's listed plan handles.
-        if current_plan_handle_ref is not None and current_plan_handle_ref not in plan_ids:
+        # current plan HANDLE against the rule's listed plan handles. The
+        # ``None`` identity case returned above (plan 194 REQ-1), so this is an
+        # unconditional match now rather than a skippable one.
+        if current_plan_handle_ref not in plan_ids:
             return False
 
         # Plan #39 REQ-8: dimensional matching — intra-dimension OR +

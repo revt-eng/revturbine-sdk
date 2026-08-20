@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.196/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.199/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -1248,6 +1248,29 @@ class EventSource(Enum):
     sdk = "sdk"
     workflow = "workflow"
     system = "system"
+
+
+class EventStability(Enum):
+    stable = "stable"
+    internal = "internal"
+    deprecated = "deprecated"
+
+
+class EventSurface(Enum):
+    sdk_client = "sdk_client"
+    sdk_server = "sdk_server"
+    control_plane = "control_plane"
+    webhook_derived = "webhook_derived"
+
+
+class EventTaxonomyEntry(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    name: constr(pattern=r"^[a-z][a-z0-9_]*$")
+    surface: EventSurface
+    purpose: constr(min_length=1, max_length=300)
+    stability: EventStability
 
 
 class ExperimentStatus(Enum):
@@ -3822,6 +3845,15 @@ class EventEnvelope(BaseModel):
     payload: dict[str, Any] | None = {}
 
 
+class EventPrefixFamily(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    prefix: constr(pattern=r"^[a-z][a-z0-9_]*_$")
+    surface: EventSurface
+    purpose: constr(min_length=1, max_length=300)
+
+
 class EventSearchParams(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -3833,6 +3865,15 @@ class EventSearchParams(BaseModel):
     to: AwareDatetime | None = None
     page: conint(ge=1, le=9007199254740991) | None = 1
     per_page: conint(ge=1, le=100) | None = 25
+
+
+class EventTaxonomy(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    version: conint(ge=1, le=9007199254740991)
+    events: list[EventTaxonomyEntry] = Field(..., min_length=1)
+    prefix_families: list[EventPrefixFamily]
 
 
 class Experiment(BaseModel):

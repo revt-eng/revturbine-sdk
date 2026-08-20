@@ -504,10 +504,23 @@ impl LocalRuntime {
         context: Option<&Value>,
         provider_result: EntitlementCheckResult,
     ) -> EntitlementCheckResult {
+        // Plan 194 REQ-1: evaluate against the runtime's ACTUAL plan. This
+        // used to hardcode `""`, so the fallback evaluated plan-targeted rules
+        // against no plan — and the evaluator papered over that by skipping
+        // the plan filter, matching every rule and granting. The plan provider
+        // is present even when the entitlements one is not, which is the only
+        // reason this branch runs at all.
+        let current_plan_handle = self
+            .providers
+            .get("plan")
+            .and_then(|p| p.get("current_plan_handle"))
+            .and_then(Value::as_str)
+            .unwrap_or("");
+
         let input = LocalEntitlementInput {
             handle,
             context_used: context.and_then(|c| c.get("used")).and_then(Value::as_f64),
-            current_plan_handle: "",
+            current_plan_handle,
             segment_ids: HashSet::new(),
             usage_balances: HashMap::new(),
             user_usage: None,

@@ -258,7 +258,16 @@ class LocalRuntime:
         """
         engine_result = self.engine.check_entitlement(handle, context)
         if engine_result.get("reason") == "no_entitlement_provider":
-            return self._derive_entitlement_from_config(handle, context)
+            # Plan 194 REQ-1: the plan provider is present even when the
+            # entitlements one is not — which is the only reason this branch
+            # runs — so source the real handle instead of discarding it.
+            plan = self.engine.resolve_providers().get("plan")
+            plan_handle = plan.get("current_plan_handle") if plan is not None else None
+            return self._derive_entitlement_from_config(
+                handle,
+                context,
+                plan_handle if isinstance(plan_handle, str) else "",
+            )
         return engine_result
 
     # ── Interaction tracking ──────────────────────────────────────────────
@@ -500,15 +509,21 @@ class LocalRuntime:
     def _derive_entitlement_from_config(
         self,
         handle: str,
-        context: dict[str, Any] | None = None,
+        context: dict[str, Any] | None,
+        current_plan_handle: str,
     ) -> EntitlementCheckResult:
         """ExportedConfig-rule entitlement fallback.
 
         Plan 33 TASK-13: faithful port of the plan-32/34-reconciled
-        ``deriveLocalEntitlementFromConfiguredRules``. The TS call site
-        passes empty plan/segment/usage context (the engine path already
-        applied provider context; this fallback decides purely from the
-        config rules).
+        ``deriveLocalEntitlementFromConfiguredRules``.
+
+        Plan 194 REQ-1: the caller passes the runtime's ACTUAL plan.
+        This used to hardcode ``""``, so the fallback evaluated
+        plan-targeted rules against no plan — and the evaluator papered
+        over that by skipping the plan filter, matching every rule and
+        granting. With the evaluator now failing closed on a missing
+        identity, sourcing the real handle is what keeps a
+        correctly-planned user deciding correctly here.
 
         Plan 191 REQ-6 (Q-4): the terminal fallback DENIES with
         ``entitlement_not_in_playbook``. It used to grant with
@@ -530,7 +545,7 @@ class LocalRuntime:
         result = derive_local_entitlement_from_configured_rules(
             handle=handle,
             context=context,
-            current_plan_handle="",
+            current_plan_handle=current_plan_handle,
             segment_ids=set(),
             usage_balances={},
             exported_config=self._exported_config,

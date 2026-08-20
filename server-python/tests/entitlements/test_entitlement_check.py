@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+
 from revturbine.core.entitlements.entitlement_check import (
     derive_local_entitlement_from_configured_rules,
 )
@@ -258,3 +260,50 @@ class TestHandleIsTheOnlyIdentity:
     def test_plan_target_written_as_db_id_matches_nothing(self) -> None:
         cfg = self._cfg_with_distinct_ids("batch_export", "p_9f3")
         assert _derive(cfg, "batch_export", plan="pro")["reason"] == "no_matching_entitlement_rule"
+
+
+class TestNoPlanIdentityFailsClosed:
+    """Plan 194 REQ-1 — an unresolvable plan identity DENIES.
+
+    The rule filter used to skip the plan check when no identity resolved, so
+    every plan-targeted rule matched and a plan-gated entitlement came back
+    allowed for a user with no plan. Byte parity with TS and Rust is locked by
+    the ``entitlement_no_plan_identity_denies`` fixture.
+    """
+
+    @staticmethod
+    def _cfg() -> dict[str, Any]:
+        return {
+            "version": "1.0.0",
+            "plans": [{"id": "p_9f3", "unique_handle": "pro"}],
+            "entitlements": [{"id": "ent_7c1", "unique_handle": "advanced", "type": "feature"}],
+            "entitlement_rules": [
+                {
+                    "id": "er_4d8",
+                    "entitlement_id": "advanced",
+                    "targets": [{"kind": "plan", "id": "pro"}],
+                    "segment_id": None,
+                    "type_fields": {"kind": "feature", "enabled": True},
+                }
+            ],
+        }
+
+    def test_the_targeted_handle_still_grants(self) -> None:
+        assert _derive(self._cfg(), "advanced", plan="pro")["allowed"] is True
+
+    @pytest.mark.parametrize("plan", ["", "   ", None])
+    def test_unresolvable_identity_denies(self, plan: str | None) -> None:
+        assert _derive(self._cfg(), "advanced", plan=plan) == {
+            "status": "denied",
+            "allowed": False,
+            "reason": "no_plan_identity",
+        }
+
+    def test_reason_is_distinct_from_an_untargeted_plan(self) -> None:
+        # Both deny, but a dashboard has to tell a broken integration apart
+        # from a correctly-gated user, so the reasons must not collapse.
+        no_identity = _derive(self._cfg(), "advanced", plan="")
+        untargeted = _derive(self._cfg(), "advanced", plan="starter")
+        assert no_identity["allowed"] is False
+        assert untargeted["allowed"] is False
+        assert no_identity["reason"] != untargeted["reason"]

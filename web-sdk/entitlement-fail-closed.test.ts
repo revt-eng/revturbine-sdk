@@ -13,6 +13,13 @@
  *   - local mode, no Playbook + no cache                 → entitlement_not_in_playbook
  *   - SDK disabled by provider failure                   → sdk_disabled_provider_failure
  * and the happy path: server mode fetches the Playbook and grants locally.
+ *
+ * Plan 194 REQ-1 footnote: this file's own fixture used to build its user with
+ * `plan: { id: 'starter' }` — the shape retired in 0.3.0 — and the happy-path
+ * tests still passed, because an unresolvable plan identity GRANTED. That is
+ * the fail-open this suite exists to rule out, reproduced inside the suite
+ * itself. With the identity now failing closed, the fixture had to start
+ * supplying a real handle for those tests to mean anything.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildPlaybookPayload, sha256Hex, SCHEMA_VERSION } from '@revt-eng/core/bundle';
@@ -30,7 +37,7 @@ function serverSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustome
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
     ...over,
   });
-  sdk.setUserContext({ id: 'user_fc', plan: { id: 'starter', name: 'Starter' } });
+  sdk.setUserContext({ id: 'user_fc', plan: { handle: 'starter', name: 'Starter' } });
   return sdk;
 }
 
@@ -83,7 +90,7 @@ describe('entitlement checks fail closed', () => {
       runtimeMode: 'local_only',
       contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
     });
-    sdk.setUserContext({ id: 'user_fc', plan: { id: 'starter', name: 'Starter' } });
+    sdk.setUserContext({ id: 'user_fc', plan: { handle: 'starter', name: 'Starter' } });
     const result = await sdk.checkEntitlement('data_export');
     expect(result.allowed).toBe(false);
     expect(result.status).toBe('denied');

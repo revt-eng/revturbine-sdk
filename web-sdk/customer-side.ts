@@ -5713,8 +5713,15 @@ export class RevTurbineCustomerSdk {
    * context. TypeScript rejects it at compile time via {@link Exact}, but a
    * plain-JS caller — or a stale build — passes it happily, and the failure is
    * SILENT and consequential: {@link resolveContextPlanRaw} finds no handle, so
-   * the user reads as having no plan and every plan-targeted entitlement rule
-   * quietly stops matching (fail-closed, with no signal).
+   * the user reads as having no plan.
+   *
+   * This comment used to say the result was "fail-closed, with no signal".
+   * That was wrong, and wrong in the dangerous direction — until plan 194
+   * REQ-1 an unresolvable plan identity made the evaluator SKIP the plan
+   * filter, so every plan-targeted rule matched and a plan-gated entitlement
+   * came back `allowed`. The core now denies with `no_plan_identity`, which is
+   * what makes the fail-closed claim true; both halves are load-bearing, so
+   * this guard and that early return should move together.
    *
    * So the legacy shape is rejected rather than tolerated: the offending `id`
    * is stripped from the plan object, the caller gets a prod-visible console

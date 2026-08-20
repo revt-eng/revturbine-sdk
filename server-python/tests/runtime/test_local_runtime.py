@@ -288,13 +288,17 @@ class TestDeferredLeafContract:
     def test_check_entitlement_no_provider_runs_config_fallback(self) -> None:
         # No entitlements provider → engine returns no_entitlement_provider
         # → LocalRuntime fallback runs the ported reconciled evaluator.
-        # Empty config ⇒ no matching rule ⇒ denied (fail closed; TASK-13,
-        # faithful to deriveLocalEntitlementFromConfiguredRules).
+        #
+        # Plan 194 REQ-1 changed the reason, not the verdict. The fallback
+        # hardcodes `current_plan_handle=""` (there is no plan context in a
+        # no-provider runtime), so it cannot evaluate a plan-targeted rule at
+        # all — and the evaluator now says so instead of proceeding without an
+        # identity. Mirrors local-runtime.test.ts.
         runtime = _make_runtime()
         assert runtime.check_entitlement("feature_x") == {
             "status": "denied",
             "allowed": False,
-            "reason": "no_matching_entitlement_rule",
+            "reason": "no_plan_identity",
         }
 
     @pytest.mark.parametrize(

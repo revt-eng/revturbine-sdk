@@ -252,7 +252,10 @@ pub fn derive_local_entitlement_from_configured_rules(
         .unwrap_or(input.handle)
         .to_string();
 
-    let normalized_plan_handle = input.current_plan_handle.to_lowercase();
+    // Trimmed, so a whitespace-only handle collapses to "no identity" rather
+    // than becoming an identity that matches no plan. Both fail closed, but
+    // only the collapsed form reports the actual cause (plan 194 REQ-1).
+    let normalized_plan_handle = input.current_plan_handle.trim().to_lowercase();
 
     let plans = exported_config
         .get("plans")
@@ -280,6 +283,24 @@ pub fn derive_local_entitlement_from_configured_rules(
                 Some(normalized_plan_handle.clone())
             }
         });
+
+    // Plan 194 REQ-1. Without a plan identity there is nothing to match plan
+    // targets against, and the rule filter below used to SKIP the plan check
+    // rather than fail it — so every plan-targeted rule matched and a
+    // plan-gated entitlement came back allowed for a user with no plan.
+    // Entitlement-rule targeting has been explicit since plan 34 REQ-9 (an
+    // empty `targets` matches nothing), so "no identity" can only ever mean
+    // "matches nothing", never "matches everything". The reason is distinct
+    // from `no_matching_entitlement_rule` on purpose: "we could not identify
+    // the user's plan" is a broken integration, "their plan lacks this" is a
+    // correctly-gated user, and telemetry has to tell them apart.
+    let Some(current_plan_handle_ref) = current_plan_handle_ref else {
+        return Some(EntitlementCheckResult::with_reason(
+            "denied",
+            false,
+            "no_plan_identity",
+        ));
+    };
 
     let rules = exported_config
         .get("entitlement_rules")
@@ -332,11 +353,11 @@ pub fn derive_local_entitlement_from_configured_rules(
         };
 
         // Plan 120 TASK-4: plan targets are handle-valued — match the user's
-        // current plan HANDLE against the rule's listed plan handles.
-        if let Some(handle_ref) = current_plan_handle_ref.as_deref() {
-            if !plan_ids.contains(&handle_ref) {
-                return false;
-            }
+        // current plan HANDLE against the rule's listed plan handles. The
+        // `None` identity case returned above (plan 194 REQ-1), so this is an
+        // unconditional match now rather than a skippable one.
+        if !plan_ids.contains(&current_plan_handle_ref.as_str()) {
+            return false;
         }
 
         let rule_segment_ids: Option<Vec<String>> = rule
