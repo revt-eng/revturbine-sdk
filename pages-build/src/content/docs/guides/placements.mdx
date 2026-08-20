@@ -184,7 +184,7 @@ interface PlacementOutput {
 ### Interaction Methods
 
 ```tsx
-const { dismiss, snooze, ctaClick, ctaComplete } = usePlacement({ ... });
+const { dismiss, snooze, ctaClick, ctaComplete } = usePlacement({ placement: { name: 'hero_banner' } });
 
 // Dismiss — suppresses for default cooldown
 await dismiss();
@@ -251,6 +251,8 @@ Map CTA actions to application navigation:
     },
   }}
 >
+  <YourApp />
+</RevTurbineProvider>
 ```
 
 When a user clicks a CTA, the SDK calls the matching resolver.

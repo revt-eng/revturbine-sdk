@@ -100,7 +100,7 @@ A credits flow that:
 
      return useCallback((cost: number) => {
        spent.current += cost;
-       sdk?.update({ credits: spent.current });
+       sdk?.update({ usage: { credits: spent.current } });
      }, [sdk]);
    }
    ```

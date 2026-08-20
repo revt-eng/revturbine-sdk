@@ -26,7 +26,6 @@ This guide provides ready-to-use patterns for each surface type supported by the
 ```tsx
 <Slot
   id="upgrade_banner"
-  surfaceType="banner"
 />
 ```
 
@@ -37,7 +36,6 @@ This guide provides ready-to-use patterns for each surface type supported by the
 ```tsx
 <Slot
   id="mp4_download_gate"
-  surfaceType="modal"
 />
 ```
 
@@ -52,7 +50,6 @@ Only request a modal at **safe moments**: after a user action (clicked a button,
 ```tsx
 <Slot
   id="brand_kit_inline"
-  surfaceType="in_page"
 />
 ```
 
@@ -61,7 +58,6 @@ Only request a modal at **safe moments**: after a user action (clicked a button,
 ```tsx
 <Slot
   id="trial_countdown_toast"
-  surfaceType="toast"
 />
 ```
 
@@ -70,7 +66,6 @@ Only request a modal at **safe moments**: after a user action (clicked a button,
 ```tsx
 <Slot
   id="nav_upgrade_button"
-  surfaceType="button"
 />
 ```
 
@@ -81,7 +76,6 @@ Only request a modal at **safe moments**: after a user action (clicked a button,
 ```tsx
 <Slot
   id="plans_page_surface"
-  surfaceType="full_page"
 />
 ```
 
@@ -90,7 +84,6 @@ Only request a modal at **safe moments**: after a user action (clicked a button,
 ```tsx
 <Slot
   id="cli_usage_warning"
-  surfaceType="cli"
 />
 ```
 
@@ -99,7 +92,6 @@ Only request a modal at **safe moments**: after a user action (clicked a button,
 ```tsx
 <Slot
   id="core_credits_quota_meter"
-  surfaceType="in_page"
 />
 ```
 
@@ -110,7 +102,6 @@ Only request a modal at **safe moments**: after a user action (clicked a button,
 ```tsx
 <Slot
   id="credit_balance_panel"
-  surfaceType="in_page"
 />
 ```
 

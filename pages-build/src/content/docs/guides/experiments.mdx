@@ -41,10 +41,15 @@ declare const experimentClient: { getVariant(experimentId: string, userId: strin
 const userId = 'user_123';
 const variant = experimentClient.getVariant('pricing_experiment', userId); // e.g. 'variant_a' | 'variant_b'
 
-const rt = initRevTurbine({ tenantId: 'tenant_abc', apiKey: 'rt_live_xxx', mode: 'react' });
+const rt = await initRevTurbine({
+  tenantId: 'tenant_abc',
+  apiKey: 'rt_live_xxx',
+  endpoint: 'https://app.revturbine.com',
+  mode: 'react',
+});
 
 // The variant rides along as a custom trait on the user context.
-rt.identify(userId, { plan_handle: 'free', pricing_experiment: variant });
+rt.identify(userId, { plan_handle: 'free', custom: { pricing_experiment: variant } });
 ```
 
 In React, set the same trait on the provider's user context:
@@ -58,10 +63,13 @@ export function App({ userId, variant }: { userId: string; variant: string }) {
       options={{
         tenantId: 'tenant_abc',
         apiKey: 'rt_live_xxx',
-        user: { id: userId, context: { plan_handle: 'free', pricing_experiment: variant } },
+        endpoint: 'https://app.revturbine.com',
+        mode: 'react',
+        user: { id: userId, plan_handle: 'free', custom: { pricing_experiment: variant } },
       }}
     >
       {/* your app */}
+      <YourApp />
     </RevTurbineProvider>
   );
 }
@@ -142,7 +150,12 @@ Track the conversion event you care about. Variant attribution comes from the tr
 ```tsx
 import { initRevTurbine } from '@revturbine/sdk';
 
-const rt = initRevTurbine({ tenantId: 'tenant_abc', apiKey: 'rt_live_xxx', mode: 'react' });
+const rt = await initRevTurbine({
+  tenantId: 'tenant_abc',
+  apiKey: 'rt_live_xxx',
+  endpoint: 'https://app.revturbine.com',
+  mode: 'react',
+});
 
 // After the user upgrades:
 rt.track('upgrade_completed', { plan: 'professional', source: 'export_gate' });

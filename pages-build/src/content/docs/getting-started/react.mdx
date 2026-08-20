@@ -24,7 +24,7 @@ export default function App() {
     localRuntime: { playbook },
     user: {
       id: 'user_123',
-      context: { plan_handle: 'starter' },
+      plan_handle: 'starter',
     },
   }), []);
 
@@ -56,6 +56,8 @@ Preload placement decisions during initialization to eliminate loading flicker:
     { placement: { name: 'nav_cta' }, userId: 'user_123' },
   ]}
 >
+  <YourApp />
+</RevTurbineProvider>
 ```
 
 ## Hooks
@@ -235,14 +237,20 @@ For the simplest integration, use `<Slot>` — it resolves the placement and ren
 ```tsx
 import { Slot } from '@revturbine/sdk';
 
-// Banner
-<Slot id="hero_banner" surfaceType="banner" />
+export function Surfaces() {
+  return (
+    <>
+      {/* Banner */}
+      <Slot id="hero_banner" />
 
-// Modal gate
-<Slot id="export_gate" surfaceType="modal" />
+      {/* Modal gate */}
+      <Slot id="export_gate" />
 
-// Inline card
-<Slot id="pricing_card" surfaceType="in_page" />
+      {/* Inline card */}
+      <Slot id="pricing_card" />
+    </>
+  );
+}
 ```
 
 See the [Component Gallery](/components/) for interactive demos of every built-in slot component.
@@ -257,7 +265,7 @@ const { setContext } = useRevTurbine();
 // After login
 setContext({
   id: user.id,
-  plan: { id: user.planId },
+  plan_handle: user.planHandle,
   traits: { role: user.role },
 });
 ```

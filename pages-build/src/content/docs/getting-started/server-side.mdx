@@ -35,12 +35,12 @@ pnpm add @revturbine/sdk
 import { initRevTurbine, RuntimeMode } from '@revturbine/sdk';
 import playbook from './playbook.json';
 
-const sdk = initRevTurbine({
+const sdk = await initRevTurbine({
   runtimeMode: RuntimeMode.LocalOnly,
   localRuntime: { playbook },
   user: {
     id: 'user_123',
-    plan: { id: 'starter', name: 'Starter' },
+    plan_handle: 'starter',
     entitlements: { data_export: false },
   },
 });
@@ -62,23 +62,21 @@ Resolve placements server-side for SSR or email templates:
 import { initRevTurbine, RuntimeMode } from '@revturbine/sdk';
 import playbook from './playbook.json';
 
-const sdk = initRevTurbine({
+const sdk = await initRevTurbine({
   runtimeMode: RuntimeMode.LocalOnly,
   localRuntime: { playbook },
   user: {
     id: req.user.id,
-    plan: { id: req.user.planId },
+    plan_handle: req.user.planHandle,
   },
 });
 
-// Report current usage
-sdk.update({ api_calls: req.user.apiCallCount });
+// Report current usage (balances live under `usage`; a bare handle is not
+// a usage report)
+sdk.update({ usage: { api_calls: req.user.apiCallCount } });
 
 // Resolve a specific slot's placement
-const banner = await sdk.getPlacement({
-  slotId: 'dashboard_banner',
-  surfaceTemplateIds: ['banner_placement'],
-});
+const banner = await sdk.getPlacement({ slotId: 'dashboard_banner' });
 
 if (banner) {
   // Render banner.content into your template
@@ -103,7 +101,7 @@ export default function Dashboard({ user }) {
     localRuntime: { playbook },
     user: {
       id: user.id,
-      plan: { id: user.planId, name: user.planName },
+      plan_handle: user.planHandle,
       entitlements: user.entitlements,
     },
   }), [user]);

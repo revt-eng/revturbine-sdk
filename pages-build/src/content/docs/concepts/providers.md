@@ -112,10 +112,14 @@ Pass your provider via the `provider` option:
 
 ```tsx
 import { RevTurbineProvider, RuntimeMode } from '@revturbine/sdk';
+import type { RevTurbineSdkProvider } from '@revturbine/sdk';
 import playbook from './playbook.json';
 import { useMemo } from 'react';
 
-const myProvider = {
+// Typing the object as RevTurbineSdkProvider keeps `status` on the SDK's
+// literal union — without it TypeScript widens it to `string` and the
+// provider no longer satisfies the interface.
+const myProvider: RevTurbineSdkProvider = {
   async getPlacement(config) {
     const res = await fetch(`/api/placements/${config.slotId}`);
     if (!res.ok) return null;
@@ -138,6 +142,7 @@ function App() {
   return (
     <RevTurbineProvider options={options}>
       {/* slots will call myProvider.getPlacement() */}
+      <YourApp />
     </RevTurbineProvider>
   );
 }
@@ -200,7 +205,8 @@ function App() {
     const analytics = createAnalyticsProvider({
       handler: (eventName, properties) => {
         // Push to your analytics platform
-        window.analytics.track(eventName, properties);
+        // `segment` here is your own analytics SDK (Segment, Amplitude, …).
+        segment.track(eventName, properties);
       },
     });
 
@@ -214,6 +220,7 @@ function App() {
   return (
     <RevTurbineProvider options={options}>
       {/* All impressions and interactions now flow to Segment */}
+      <YourApp />
     </RevTurbineProvider>
   );
 }
@@ -268,7 +275,7 @@ const analytics = createAnalyticsProvider({
 ```ts
 const analytics = createAnalyticsProvider({
   handler: (eventName, properties) => {
-    window.analytics.track(eventName, properties);
+    segment.track(eventName, properties);
   },
 });
 ```

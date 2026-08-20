@@ -173,7 +173,7 @@ A usage tracking flow that:
 
        // Report usage to the SDK
        callCount.current += 1;
-       sdk?.update({ api_calls: callCount.current });
+       sdk?.update({ usage: { api_calls: callCount.current } });
 
        return response;
      }, [sdk]);
@@ -193,7 +193,7 @@ A usage tracking flow that:
 
      const simulateUsage = (count: number) => {
        setCalls(count);
-       sdk?.update({ api_calls: count });
+       sdk?.update({ usage: { api_calls: count } });
      };
 
      return (

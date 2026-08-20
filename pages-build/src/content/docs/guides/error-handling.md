@@ -29,7 +29,7 @@ The SDK never throws into your app and never blocks your render. But *placements
 Hooks expose errors as strings — they never throw:
 
 ```tsx
-const { error, isLoading } = usePlacement({ ... });
+const { error, isLoading } = usePlacement({ placement: { name: 'hero_banner' } });
 const { error: entError } = useEntitlement({ handle: 'data_export' });
 
 if (error) {
@@ -73,10 +73,12 @@ When the provider chain is exhausted (all providers failed), slots behave accord
 ```tsx
 <RevTurbineProvider
   options={{
-    // ...
+    ...options,
     providerFailureSlotBehavior: 'invisible', // default
   }}
 >
+  <YourApp />
+</RevTurbineProvider>
 ```
 
 | Value | Behavior |
@@ -108,7 +110,7 @@ Placement decisions include `reason_codes` that explain why a placement was hidd
 ### Inspecting Reason Codes
 
 ```tsx
-const { decision } = usePlacement({ ... });
+const { decision } = usePlacement({ placement: { name: 'hero_banner' } });
 
 if (decision?.reason_codes?.includes('cap_limit_exceeded')) {
   // User has seen this placement too many times
@@ -135,7 +137,7 @@ if (decision?.reason_codes?.includes('cap_limit_exceeded')) {
 ### Manual Retry
 
 ```tsx
-const { refresh, error } = usePlacement({ ... });
+const { refresh, error } = usePlacement({ placement: { name: 'hero_banner' } });
 const { recheck, error: entError } = useEntitlement({ handle: 'data_export' });
 
 // Retry after transient failure
@@ -155,7 +157,7 @@ function Dashboard() {
       <DashboardContent />
 
       {/* SDK enhancement — fails gracefully to nothing */}
-      <Slot id="dashboard_banner" surfaceType="banner" />
+      <Slot id="dashboard_banner" />
     </div>
   );
 }

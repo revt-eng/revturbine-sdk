@@ -144,20 +144,14 @@ A video export button that:
 
    ```tsx
    // Free user → sees upgrade modal
-   <RevTurbineProvider
-     options={{
-       // ...
-       user: { id: 'user_1', context: { plan_handle: 'free' } },
-     }}
-   >
+   <RevTurbineProvider options={{ ...options, user: { id: 'user_1', plan_handle: 'free' } }}>
+     <YourApp />
+   </RevTurbineProvider>;
 
    // Professional user → sees export controls
-   <RevTurbineProvider
-     options={{
-       // ...
-       user: { id: 'user_2', context: { plan_handle: 'professional' } },
-     }}
-   >
+   <RevTurbineProvider options={{ ...options, user: { id: 'user_2', plan_handle: 'professional' } }}>
+     <YourApp />
+   </RevTurbineProvider>;
    ```
 
 </Steps>

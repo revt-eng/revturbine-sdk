@@ -91,7 +91,7 @@ Wrap your app once, then add **slots** (where placements render) and **gates** (
     function App() {
       const options = useMemo(() => ({
         localRuntime: { playbook },
-        user: { id: 'user_123', context: { plan_handle: 'starter' } },
+        user: { id: 'user_123', plan_handle: 'starter' },
         // UI path resolvers connect placement CTAs to your app's navigation.
         uiPathResolvers: {
           navigate_to_plans: () => { window.location.href = '/pricing'; },

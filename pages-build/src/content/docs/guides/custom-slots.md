@@ -59,11 +59,12 @@ registry.register({
   id: 'custom:feedback-widget',
   label: 'Feedback Widget',
   description: 'In-app feedback collection prompt',
-  surfaceType: 'inline_embed',
+  // One of the SDK's surface types — see the table below.
+  surfaceType: 'in_page',
   component: FeedbackWidget,
   priority: 10,
-  accepts: (output) => output.template_id === 'feedback_v1',
-  defaultProps: { dismissible: true },
+  // The template id lives on the decision's surface, not at the top level.
+  accepts: (output) => output.surface.template === 'feedback_v1',
 });
 ```
 

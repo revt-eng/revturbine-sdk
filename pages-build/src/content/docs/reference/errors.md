@@ -69,7 +69,7 @@ localStorage.setItem('revturbine:debug', 'true');
 Errors and reason codes are also available programmatically:
 
 ```tsx
-const { decision, error } = usePlacement({ ... });
+const { decision, error } = usePlacement({ placement: { name: 'hero_banner' } });
 
 // Hook-level error (string)
 console.log(error);

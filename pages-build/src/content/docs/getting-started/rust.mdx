@@ -77,7 +77,8 @@ let decision = sdk.get_placement_decision(&PlacementDecisionInput {
     user_id: "user_123".to_string(),
 });
 if decision["visible"] == true {
-    render(&decision["output"]);
+    // Render `decision["output"]` with your own UI layer.
+    println!("{}", decision["output"]);
 }
 
 // Batch form — same decision path, order-preserving

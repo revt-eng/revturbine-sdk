@@ -51,7 +51,7 @@ import playbook from './revturbine.playbook.json';
 const session = await initRevTurbine({
   runtimeMode: 'local_only',
   localRuntime: { playbook },
-  user: { id: 'user_123', plan: { id: 'pro' } },
+  user: { id: 'user_123', plan_handle: 'pro' },
 });
 
 // Hosted mode — swap the local runtime for your tenant credentials:
@@ -59,7 +59,7 @@ const session = await initRevTurbine({
 //   tenantId: 'tenant_abc',
 //   apiKey: 'rt_live_xxx',
 //   endpoint: 'https://revturbine.com/app',
-//   user: { id: 'user_123', plan: { id: 'pro' } },
+//   user: { id: 'user_123', plan_handle: 'pro' },
 // });
 
 // Entitlement — the primary headless verbs
@@ -95,7 +95,7 @@ const session = await initRevTurbine({
   tenantId: 'tenant_abc',
   apiKey: 'rt_live_xxx',
   endpoint: 'https://revturbine.com/app',
-  user: { id: 'user_123', plan: { id: 'pro' } },
+  user: { id: 'user_123', plan_handle: 'pro' },
   runtimeMode: RuntimeMode.Server,
   bootstrapPlacements: [
     { placement: { name: 'pricing_banner' } },
@@ -120,7 +120,7 @@ The session returned by `initRevTurbine()`. Provides the full imperative API.
 ### User Context
 
 ```ts
-session.identify('user_456', { plan: { id: 'enterprise' } });
+session.identify('user_456', { plan_handle: 'enterprise' });
 session.setUserContext({ personalization: { company: 'Acme' } });
 const ctx = session.getUserContext();
 session.resetIdentity();
@@ -128,7 +128,7 @@ session.resetIdentity();
 // the `usage` key — a bare handle is not a context field and is dropped with
 // a dev warning.
 session.update({ usage: { api_calls: 150 } });
-session.update({ plan: { id: 'enterprise', name: 'Enterprise' } });
+session.update({ plan_handle: 'enterprise', plan: { handle: 'enterprise', name: 'Enterprise' } });
 const fullCtx = await session.fetchUserContext('user_456');
 const trial = await session.getTrialStatus();
 const usage = session.getUsage();
@@ -301,7 +301,7 @@ export function usePlacement(slotId: string) {
   let unsub: (() => void) | undefined;
 
   onMounted(async () => {
-    const session = await initRevTurbine({ /* ... */ });
+    const session = await initRevTurbine(options); // your init options
     const ctrl = session.placement({ surfaceSlot: { id: slotId } });
     unsub = ctrl.onChange(() => {
       state.value = { visible: ctrl.visible, content: ctrl.content };
@@ -325,7 +325,7 @@ export function createPlacementStore(slotId: string) {
   const store = writable({ visible: false, content: null });
 
   (async () => {
-    const session = await initRevTurbine({ /* ... */ });
+    const session = await initRevTurbine(options); // your init options
     const ctrl = session.placement({ surfaceSlot: { id: slotId } });
     ctrl.onChange(() => {
       store.set({ visible: ctrl.visible, content: ctrl.content });

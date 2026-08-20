@@ -141,11 +141,13 @@ An upgrade button in your navigation bar that:
    ```tsx
    <RevTurbineProvider
      options={{
-       // ...
-       user: { id: 'user_1', context: { plan_handle: 'starter' } },
-       // Try: context: { plan_handle: 'pro' } — button disappears
+       ...options,
+       // Try: plan_handle: 'pro' — button disappears
+       user: { id: 'user_1', plan_handle: 'starter' },
      }}
    >
+     <YourApp />
+   </RevTurbineProvider>
    ```
 
 </Steps>

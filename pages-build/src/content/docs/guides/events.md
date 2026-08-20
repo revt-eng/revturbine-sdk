@@ -78,13 +78,17 @@ import { TelemetryScope, useTrack } from '@revturbine/sdk';
 ```tsx
 import { TrackOnView, Track } from '@revturbine/sdk';
 
-<TrackOnView event="hero_seen" data={{ variant: 'a' }}>
-  <Hero />
-</TrackOnView>
+export const Examples = () => (
+  <>
+    <TrackOnView event="hero_seen" data={{ variant: 'a' }}>
+      <Hero />
+    </TrackOnView>
 
-<Track event="cta_clicked" data={{ plan: 'pro' }} asChild>
-  <button onClick={handleUpgrade}>Upgrade</button>
-</Track>
+    <Track event="cta_clicked" data={{ plan: 'pro' }} asChild>
+      <button onClick={handleUpgrade}>Upgrade</button>
+    </Track>
+  </>
+);
 ```
 
 ## Tracked & gated actions

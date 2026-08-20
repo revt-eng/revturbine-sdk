@@ -65,7 +65,7 @@ This guide takes you from install to a working feature gate: a free user hits an
         localRuntime: { playbook },
         user: {
           id: 'user_123',
-          context: { plan_handle: 'starter' },
+          plan_handle: 'starter',
         },
         uiPathResolvers: {
           navigate_to_plans: (ctx) => {

@@ -94,8 +94,8 @@ A dunning banner that:
        localRuntime: { playbook },
        user: {
          id: 'user_123',
-         context: {
-           plan_handle: 'pro',
+         plan_handle: 'pro',
+         custom: {
            billing_status: billingStatus, // 'active' | 'payment_failed'
          },
        },
@@ -126,7 +126,7 @@ A dunning banner that:
    When the payment succeeds, set `billing_status` back to `active` and the banner stops rendering automatically — no manual teardown.
 
    ```ts
-   sdk.identify('user_123', { context: { plan_handle: 'pro', billing_status: 'active' } });
+   sdk.identify('user_123', { plan_handle: 'pro', custom: { billing_status: 'active' } });
    ```
 
 </Steps>

@@ -193,7 +193,7 @@ interface RevTurbineStorage {
 
 ### `revturbine_server` (default)
 
-```ts
+```ts docs-check=false reason="required-field shape sketch, not a value"
 {
   tenantId: string;   // ✅ Required
   apiKey: string;     // ✅ Required (rt_live_* or rt_test_*)
@@ -204,7 +204,7 @@ interface RevTurbineStorage {
 
 ### `local_only`
 
-```ts
+```ts docs-check=false reason="required-field shape sketch, not a value"
 {
   tenantId: string;                   // ✅ Required (can be 'demo')
   apiKey: string;                     // ✅ Required (can be 'local')
@@ -219,7 +219,7 @@ interface RevTurbineStorage {
 
 ### `custom_endpoints`
 
-```ts
+```ts docs-check=false reason="required-field shape sketch, not a value"
 {
   tenantId: string;                   // ✅ Required
   apiKey: string;                     // ✅ Required
