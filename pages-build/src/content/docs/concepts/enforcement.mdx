@@ -51,7 +51,7 @@ Use the client check for a fast, friendly UX:
 ```tsx
 import { Gate } from '@revturbine/sdk';
 
-// Client: instant show/hide + upsell when denied. Fails open.
+// Client: instant show/hide + upsell when denied. Fails closed.
 <Gate id="editor_export" can="data_export">
   <ExportButton />
 </Gate>
