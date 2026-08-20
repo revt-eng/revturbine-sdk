@@ -15,8 +15,58 @@ The SDK follows [Semantic Versioning](https://semver.org/):
 
 ### Breaking changes
 
+- **A plan's identity is its `unique_handle`, never its `id`.** Pass
+  `plan_handle: 'pro'`, or `plan: { handle: 'pro', name: 'Pro' }` — the plan
+  object's identity field is renamed `id` → `handle`. `plan.id` is a
+  database-internal identifier the client often does not have, and it no longer
+  participates in matching anywhere: React SDK, headless TypeScript, Python, or
+  Rust. A user context whose only plan signal is `plan.id` now matches no
+  plan-targeted rule and **fails closed**, instead of silently having no plan
+  and missing every rule.
+
+  ```diff
+  - rt.identify('user_123', { plan: { id: 'pro', name: 'Pro' } })
+  + rt.identify('user_123', { plan_handle: 'pro' })
+  ```
+
+- **Unknown user-context keys are now a compile error.** `identify()` no longer
+  accepts an arbitrary traits bag, and the exactness survives un-annotated
+  intermediates (a bare `useMemo`, a helper's return value). Pass free-form
+  customer values explicitly under `custom`, via `update()`. This closes the
+  failure mode where `user: { id, context: { plan_handle } }` type-checked,
+  landed at `custom.context.plan_handle`, and left the user with no plan in
+  production with no error at compile time or runtime.
+
+- **The SDK no longer reads or writes `userContext.custom` for its own
+  semantics.** `custom` is a pure customer pass-through. If you were relying on
+  the SDK-written `custom.plan_handle` alias, move to the first-class field.
+
+- **Reason code renamed: `local_runtime_default_allow` →
+  `entitlement_not_in_playbook`.** No deprecated alias — update any `switch` on
+  the old string. The old name stated a verdict the result does not have (it
+  denies), and was *also* emitted by the headless runtime on an allowed result,
+  so one code meant opposite things on two surfaces. Relatedly, the headless
+  runtimes' terminal fallback now **denies** where it used to grant.
+
 - JavaScript package installation and Node-based tooling now require Node.js
   22.13 or newer. Node.js 20 is no longer supported.
+
+### Fixed
+
+- **The Python and Rust server SDKs denied entitlements the TypeScript SDK
+  granted.** Both ports resolved entitlements and plans by `id` *or*
+  `unique_handle` — a resolution TypeScript dropped some time ago — and then
+  matched rules against the record's database id rather than its handle. On any
+  Playbook whose ids differ from its handles (every real export), every rule
+  missed and every check failed closed. Cross-language parity now covers the
+  evaluator directly, so the three languages are byte-identical on it.
+
+### Added
+
+- `clientSession: () => Promise<string>` init option. Supply a callback that
+  mints an `rt_client_` session token and the SDK ingests server-derived plan,
+  trial, and payment state automatically — invoked lazily on first need and
+  re-invoked on expiry, with no further application code.
 
 ### Added
 
@@ -56,7 +106,11 @@ The SDK follows [Semantic Versioning](https://semver.org/):
 - Client-side cap enforcement
 - Impression history and suppression management
 - localStorage persistence with custom storage support
-- Fail-open error handling
+- Fail-open error handling — **reversed in 0.2.29**: entitlement checks are
+  fail-*closed*. A check that cannot produce an affirmative grant denies rather
+  than granting, and the `reason` names the cause. Listed here as the 0.1.0
+  behaviour for historical accuracy; see
+  [Error handling](/guides/error-handling/) for current semantics.
 - TypeScript types for all public APIs
 
 **Runtime compatibility:**
