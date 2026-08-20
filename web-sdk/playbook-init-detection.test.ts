@@ -43,8 +43,13 @@ describe('playbook-only init is detected as local-only', () => {
 
     // The check resolved from the Playbook (a local answer), not a server round-trip.
     expect(fetchSpy).not.toHaveBeenCalled();
-    expect(result.reason).not.toBe('entitlement_service_unavailable');
-    expect(result.reason).not.toBe('entitlement_check_error');
+    // These asserted against two reason codes the SDK has never emitted, so
+    // they held vacuously (plan 191 REQ-6). The real property is that no
+    // *infrastructure* denial fired — the Playbook was there and a rule
+    // decided.
+    expect(result.reason).not.toBe('config_unavailable');
+    expect(result.reason).not.toBe('entitlement_not_in_playbook');
+    expect(result.reason).not.toBe('sdk_disabled_provider_failure');
   });
 
   it('resolveLocalPlaybook underpins the fix for both keys', () => {

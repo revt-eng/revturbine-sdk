@@ -118,36 +118,42 @@ def derive_local_entitlement_from_configured_rules(
     (deriveLocalEntitlementFromConfiguredRules)
     """
     entitlements: list[dict[str, Any]] = exported_config.get("entitlements") or []
+    # Plan 120 TASK-4 / plan 191 REQ-1: the config carries only the handle, so
+    # entitlements resolve by handle alone. The `id` fallback this port used to
+    # carry was a pre-plan-120 mirror that TS dropped; because the ids in the
+    # corpus (`ent_core_credits`) differ from the handles the rules reference
+    # (`core_credits`), it made every rule miss and every check deny.
     entitlement: dict[str, Any] | None = None
     for item in entitlements:
-        if (isinstance(item.get("unique_handle"), str) and item["unique_handle"] == handle) or (
-            isinstance(item.get("id"), str) and item["id"] == handle
-        ):
+        if isinstance(item.get("unique_handle"), str) and item["unique_handle"] == handle:
             entitlement = item
             break
 
     entitlement_id = (
-        entitlement["id"]
-        if entitlement is not None and isinstance(entitlement.get("id"), str)
+        entitlement["unique_handle"]
+        if entitlement is not None and isinstance(entitlement.get("unique_handle"), str)
         else handle
     )
     normalized_plan_handle = str(current_plan_handle or "").lower()
 
     plans: list[dict[str, Any]] = exported_config.get("plans") or []
+    # Plan 191 REQ-1: plan identity IS the handle. `plans[].id` is DB-internal
+    # and never participates in matching — a context whose only plan signal is
+    # that id must miss every plan-targeted rule.
     matched_plan: dict[str, Any] | None = None
     for plan in plans:
         if (
             isinstance(plan.get("unique_handle"), str)
             and plan["unique_handle"].lower() == normalized_plan_handle
-        ) or (
-            isinstance(plan.get("id"), str) and str(plan["id"]).lower() == normalized_plan_handle
         ):
             matched_plan = plan
             break
 
-    current_plan_id: str | None = (
-        matched_plan["id"]
-        if matched_plan is not None and isinstance(matched_plan.get("id"), str)
+    # The handle the user's current plan is known by — plan targets are
+    # handle-valued, so this is what a `kind:'plan'` target matches against.
+    current_plan_handle_ref: str | None = (
+        matched_plan["unique_handle"]
+        if matched_plan is not None and isinstance(matched_plan.get("unique_handle"), str)
         else (normalized_plan_handle or None)
     )
 
@@ -194,7 +200,9 @@ def derive_local_entitlement_from_configured_rules(
         else:
             plan_ids = []
 
-        if current_plan_id and current_plan_id not in plan_ids:
+        # Plan 120 TASK-4: plan targets are handle-valued — match the user's
+        # current plan HANDLE against the rule's listed plan handles.
+        if current_plan_handle_ref is not None and current_plan_handle_ref not in plan_ids:
             return False
 
         # Plan #39 REQ-8: dimensional matching — intra-dimension OR +

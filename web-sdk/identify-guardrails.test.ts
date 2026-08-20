@@ -81,6 +81,51 @@ describe('identify() plan identity is handle-based (plan 191 REQ-1/REQ-2)', () =
     expect(sdk.getTargeting().plan).toBeUndefined();
   });
 
+  // The removed key is REJECTED, not silently tolerated: TypeScript stops it
+  // at compile time, but a plain-JS caller would otherwise get a user with no
+  // plan and every plan-targeted rule quietly failing closed.
+  it('rejects a removed plan.id: strips it, errors loudly, and says matching is broken', () => {
+    const sdk = makeLocalSdk();
+    sdk.identify('user_1', { plan: { id: 'starter', name: 'Starter' } } as never);
+
+    const errors = errorSpy.mock.calls.map((c) => String(c[0]));
+    expect(errors.some((m) => m.includes('plan.id'))).toBe(true);
+    expect(errors.some((m) => m.includes('unique_handle'))).toBe(true);
+    // Names the consequence, so the integrator knows this is not cosmetic.
+    expect(errors.some((m) => m.includes('plan-targeted rules will not match'))).toBe(true);
+    // The legacy key never reaches the stored context.
+    expect(sdk.getUserContext().plan).toEqual({ name: 'Starter' });
+  });
+
+  it('keeps the handle when both handle and legacy id are supplied', () => {
+    const sdk = makeLocalSdk();
+    sdk.identify('user_1', { plan: { handle: 'starter', id: 'pl_123', name: 'Starter' } } as never);
+
+    expect(sdk.getUserContext().plan).toEqual({ handle: 'starter', name: 'Starter' });
+    expect(errorSpy.mock.calls.map((c) => String(c[0]))
+      .some((m) => m.includes('plan matching is unaffected'))).toBe(true);
+  });
+
+  it('reports the removed plan.id once per session, not on every call', () => {
+    const sdk = makeLocalSdk();
+    sdk.identify('user_1', { plan: { id: 'starter', name: 'Starter' } } as never);
+    sdk.identify('user_1', { plan: { id: 'starter', name: 'Starter' } } as never);
+
+    const planIdErrors = errorSpy.mock.calls
+      .map((c) => String(c[0]))
+      .filter((m) => m.includes('plan.id'));
+    expect(planIdErrors).toHaveLength(1);
+  });
+
+  it('rejects the removed plan.id through setUserContext too', () => {
+    const sdk = makeLocalSdk();
+    sdk.setUserContext({ id: 'user_1', plan: { id: 'starter', name: 'Starter' } } as never);
+
+    expect(errorSpy.mock.calls.map((c) => String(c[0]))
+      .some((m) => m.includes('setUserContext()'))).toBe(true);
+    expect(sdk.getUserContext().plan).toEqual({ name: 'Starter' });
+  });
+
   it('custom never drives plan resolution (REQ-2)', () => {
     const viaHandleKey = makeLocalSdk();
     viaHandleKey.identify('user_1', { custom: { plan_handle: 'starter' } });
@@ -169,7 +214,10 @@ describe('identify() unrecognized keys are dropped and reported (plan 191 REQ-3 
 describe('identify() id guardrails (AC-5)', () => {
   it('rejects an empty id — the call is ignored', () => {
     const sdk = makeLocalSdk();
-    sdk.identify('user_1', { plan: { id: 'starter', name: 'Starter' } });
+    // Seeded with the CURRENT plan shape: the legacy `plan.id` now raises its
+    // own rejection error, which would make this exact-count assertion about
+    // something other than the empty id it is testing.
+    sdk.identify('user_1', { plan_handle: 'starter' });
     sdk.identify('   ');
     expect(errorSpy).toHaveBeenCalledTimes(1);
     expect(sdk.getUserContext().id).toBe('user_1');

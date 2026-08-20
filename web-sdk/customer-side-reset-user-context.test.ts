@@ -27,7 +27,7 @@ describe('resetUserContext() (hard reset for demos)', () => {
     sdk.identify('u_demo', {
       account_id: 'acct_1',
       email: 'demo@example.com',
-      plan: { id: 'pro', name: 'Pro' },
+      plan: { handle: 'pro', name: 'Pro' },
       custom: { region: 'us' },
     });
     sdk.updateUsage({ generations: 25 });
@@ -52,7 +52,7 @@ describe('resetUserContext() (hard reset for demos)', () => {
 
   it('does NOT re-infer anonymous context even when inferUser is on', () => {
     const sdk = makeSdk({ contextPolicy: { inferUser: true, inferPage: false, routerAutoTrack: false } });
-    sdk.identify('u', { plan: { id: 'pro', name: 'Pro' }, custom: { seat: 'admin' } });
+    sdk.identify('u', { plan: { handle: 'pro', name: 'Pro' }, custom: { seat: 'admin' } });
 
     sdk.resetUserContext();
 
@@ -63,14 +63,14 @@ describe('resetUserContext() (hard reset for demos)', () => {
 
   it('leaves the SDK usable — identify after reset re-establishes the user', () => {
     const sdk = makeSdk();
-    sdk.identify('u_old', { plan: { id: 'free', name: 'Free' } });
+    sdk.identify('u_old', { plan: { handle: 'free', name: 'Free' } });
     sdk.resetUserContext();
 
-    sdk.identify('u_new', { plan: { id: 'enterprise', name: 'Enterprise' }, email: 'new@example.com' });
+    sdk.identify('u_new', { plan: { handle: 'enterprise', name: 'Enterprise' }, email: 'new@example.com' });
 
     const ctx = sdk.getUserContext();
     expect(ctx.email).toBe('new@example.com');
-    expect(ctx.plan).toEqual({ id: 'enterprise', name: 'Enterprise' });
+    expect(ctx.plan).toEqual({ handle: 'enterprise', name: 'Enterprise' });
   });
 
   it('resetIdentity() still works (shared teardown is intact)', () => {

@@ -166,6 +166,13 @@ const RECOGNIZED_IDENTIFY_KEYS = [
 ] as const;
 const RECOGNIZED_IDENTIFY_KEY_SET: ReadonlySet<string> = new Set(RECOGNIZED_IDENTIFY_KEYS);
 
+/**
+ * The pre-plan-191 plan shape a plain-JS caller may still send: the current
+ * plan context plus the removed `id` key. Named so the guard can narrow it
+ * without reaching for a bare index signature.
+ */
+type PlanContextWithLegacyId = NonNullable<RevTurbineUserContext['plan']> & { id?: string };
+
 /** Heuristic for an email-shaped `identify()` id — ids should be opaque; emails belong in `{ email }`. */
 const EMAIL_SHAPED_ID = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -3980,8 +3987,24 @@ export class RevTurbineCustomerSdk {
     historyRef.__rtPatched = true;
   }
 
-  private mergeUserContext(next: Partial<RevTurbineUserContext>): RevTurbineUserContext {
-    return coreMergeUserContext(this.userContext, next) as RevTurbineUserContext;
+  /**
+   * Merge a caller-supplied patch into the current user context.
+   *
+   * The single choke point every context entry point flows through
+   * (identify / setUserContext / update / rehydrate), so it is also where the
+   * removed `plan.id` key is rejected — see {@link rejectLegacyPlanId}.
+   *
+   * @param next The caller's patch.
+   * @param verb Which entry point supplied it, for the rejection diagnostic.
+   */
+  private mergeUserContext(
+    next: Partial<RevTurbineUserContext>,
+    verb: 'identify' | 'setUserContext' | 'update' = 'setUserContext',
+  ): RevTurbineUserContext {
+    const guarded = 'plan' in next
+      ? { ...next, plan: this.rejectLegacyPlanId(verb, next.plan) as RevTurbineUserContext['plan'] }
+      : next;
+    return coreMergeUserContext(this.userContext, guarded) as RevTurbineUserContext;
   }
 
   private mergePageContext(next: RevTurbinePageContext): RevTurbinePageContext {
@@ -5683,6 +5706,66 @@ export class RevTurbineCustomerSdk {
    * nobody is reading. Never throws — a monetization SDK must not take down
    * the host app over a bad key.
    */
+/**
+   * Detect and reject the removed `plan.id` identity key (plan 191 Q-1).
+   *
+   * Plan identity is the `unique_handle`; `plan.id` was removed from the user
+   * context. TypeScript rejects it at compile time via {@link Exact}, but a
+   * plain-JS caller — or a stale build — passes it happily, and the failure is
+   * SILENT and consequential: {@link resolveContextPlanRaw} finds no handle, so
+   * the user reads as having no plan and every plan-targeted entitlement rule
+   * quietly stops matching (fail-closed, with no signal).
+   *
+   * So the legacy shape is rejected rather than tolerated: the offending `id`
+   * is stripped from the plan object, the caller gets a prod-visible console
+   * error (once per session, mirroring
+   * {@link reportUnrecognizedContextKeys}), and an `sdk_validation_warning`
+   * rides the anonymous meta lane so the control plane can see integrations
+   * still sending it.
+   *
+   * A plan object carrying BOTH `handle` and `id` keeps the handle — the `id`
+   * is simply dropped, since the handle is the identity.
+   *
+   * @param verb Which entry point received it, for the message and dedupe key.
+   * @param plan The caller-supplied plan object, unvalidated.
+   * @returns The plan object with any legacy `id` removed, or the input
+   *   unchanged when it carries none.
+   */
+  private rejectLegacyPlanId(
+    verb: 'identify' | 'setUserContext' | 'update',
+    plan: RevTurbineUserContext['plan'],
+  ): RevTurbineUserContext['plan'] {
+    if (!isRecord(plan) || !('id' in plan)) return plan;
+
+    const { id: legacyId, ...rest } = plan as PlanContextWithLegacyId;
+    const hasHandle = typeof rest.handle === 'string' && rest.handle.trim() !== '';
+    const dedupeKey = `${verb}:plan.id`;
+    if (!this.reportedUnrecognizedContextKeys.has(dedupeKey)) {
+      this.reportedUnrecognizedContextKeys.add(dedupeKey);
+      console.error(
+        `[RevTurbine] ${verb}() received a removed \`plan.id\` key and dropped it. ` +
+          'Plan identity is the unique_handle: pass { plan: { handle: "…" } } ' +
+          '(or the flat plan_handle). ' +
+          (hasHandle
+            ? 'A handle was also supplied, so plan matching is unaffected.'
+            : 'No handle was supplied, so this user has NO plan for entitlement-rule matching ' +
+              'and plan-targeted rules will not match.'),
+      );
+      try {
+        // Key name only — never the value, which is customer data.
+        void this.capture(SDK_WARNING_EVENT_TYPE, {
+          reason: `${verb} received removed plan.id key`,
+          unrecognized_keys: 'plan.id',
+          plan_handle_present: hasHandle ? '1' : '0',
+        });
+      } catch {
+        // Telemetry must never break the calling app.
+      }
+    }
+    void legacyId;
+    return rest as RevTurbineUserContext['plan'];
+  }
+
   private reportUnrecognizedContextKeys(
     verb: 'identify' | 'update',
     unrecognized: string[],
@@ -5831,7 +5914,12 @@ export class RevTurbineCustomerSdk {
     return {
       status: 'denied',
       allowed: false,
-      reason: this.isLocalOnlyMode() ? 'local_runtime_default_allow' : 'config_unavailable',
+      // Plan 191 Q-4 — hard rename, no deprecated alias. The old string was
+      // `local_runtime_default_allow`, which named a verdict this result does
+      // not have (it denies), AND was the same string the headless
+      // `LocalRuntime` emitted on an *allowed* result — one reason code
+      // meaning opposite things on two surfaces. The new code names the cause.
+      reason: this.isLocalOnlyMode() ? 'entitlement_not_in_playbook' : 'config_unavailable',
     };
   }
 
@@ -6137,7 +6225,7 @@ export class RevTurbineCustomerSdk {
    */
   private applyServerContextPatch(patch: Partial<RevTurbineUserContext>): void {
     const previousContext = this.userContext;
-    this.userContext = this.mergeUserContext(patch);
+    this.userContext = this.mergeUserContext(patch, 'update');
     this.recalculateDerivedUsageTraits();
     this.markSegmentsDirtyFromContextChange(previousContext, this.userContext);
     this.persistLocalRuntimeState();
@@ -6675,7 +6763,7 @@ export class RevTurbineCustomerSdk {
       entitlements: ctx.entitlements as Record<string, boolean> | undefined,
       custom: ctx.custom,
       personalization: ctx.personalization,
-    });
+    }, 'identify');
     this.recalculateDerivedUsageTraits();
     this.markSegmentsDirtyFromContextChange(previousContext, this.userContext);
     this.decisionCache.clear();

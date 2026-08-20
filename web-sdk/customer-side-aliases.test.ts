@@ -83,8 +83,8 @@ describe('advertised hero-API aliases (plan 84)', () => {
     const sdk = makeSdk();
     const usageSpy = vi.spyOn(sdk, 'updateUsage').mockImplementation(() => undefined);
     const ctxSpy = vi.spyOn(sdk, 'setUserContext').mockImplementation(() => undefined);
-    sdk.update({ plan: { id: 'pro', name: 'Pro' }, custom: { role: 'admin' } });
-    expect(ctxSpy).toHaveBeenCalledWith({ plan: { id: 'pro', name: 'Pro' }, custom: { role: 'admin' } });
+    sdk.update({ plan: { handle: 'pro', name: 'Pro' }, custom: { role: 'admin' } });
+    expect(ctxSpy).toHaveBeenCalledWith({ plan: { handle: 'pro', name: 'Pro' }, custom: { role: 'admin' } });
     expect(usageSpy).not.toHaveBeenCalled();
   });
 
@@ -92,19 +92,19 @@ describe('advertised hero-API aliases (plan 84)', () => {
     const sdk = makeSdk();
     const usageSpy = vi.spyOn(sdk, 'updateUsage').mockImplementation(() => undefined);
     const ctxSpy = vi.spyOn(sdk, 'setUserContext').mockImplementation(() => undefined);
-    sdk.update({ plan: { id: 'pro', name: 'Pro' }, usage: { generations: 3 } });
-    expect(ctxSpy).toHaveBeenCalledWith({ plan: { id: 'pro', name: 'Pro' } });
+    sdk.update({ plan: { handle: 'pro', name: 'Pro' }, usage: { generations: 3 } });
+    expect(ctxSpy).toHaveBeenCalledWith({ plan: { handle: 'pro', name: 'Pro' } });
     expect(usageSpy).toHaveBeenCalledWith({ generations: 3 });
   });
 
   it('update() merges context without clobbering identity or unset fields', () => {
     const sdk = makeSdk();
-    sdk.identify('user_alias', { plan: { id: 'free', name: 'Free' }, custom: { role: 'viewer' } });
+    sdk.identify('user_alias', { plan: { handle: 'free', name: 'Free' }, custom: { role: 'viewer' } });
     sdk.update({ email: 'jane@acme.com' });
     const ctx = sdk.getUserContext();
     expect(ctx.user_id).toBe('user_alias'); // identity preserved
     expect(ctx.email).toBe('jane@acme.com'); // new field applied
-    expect(ctx.plan).toEqual({ id: 'free', name: 'Free' }); // prior field untouched
+    expect(ctx.plan).toEqual({ handle: 'free', name: 'Free' }); // prior field untouched
     expect(ctx.custom).toMatchObject({ role: 'viewer' });
   });
 

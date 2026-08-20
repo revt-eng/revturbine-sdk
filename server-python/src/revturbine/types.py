@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.173/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.196/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -51,6 +51,518 @@ class AlertType(Enum):
     experiment_significance = "experiment_significance"
     drift_detected = "drift_detected"
     custom = "custom"
+
+
+class AnalyticsAgentCatalogEntryKind(Enum):
+    concept = "concept"
+    dimension = "dimension"
+    metric = "metric"
+    query_family = "query_family"
+
+
+class AnalyticsAnalyticalUnit(Enum):
+    account = "account"
+    user = "user"
+    billing_unit = "billing_unit"
+    organization = "organization"
+
+
+class AnalyticsBlockError(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    block_id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+    code: constr(pattern=r"^[A-Z][A-Z0-9_]{2,79}$")
+    message: constr(min_length=1, max_length=500)
+
+
+class AnalyticsCardinalityClass(Enum):
+    low = "low"
+    medium = "medium"
+    high = "high"
+
+
+class GrainItem(RootModel[constr(pattern=r"^[a-z][a-z0-9_]{0,49}$")]):
+    root: constr(pattern=r"^[a-z][a-z0-9_]{0,49}$")
+
+
+class Dimension(
+    RootModel[constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)]
+):
+    root: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+
+
+class Metric(
+    RootModel[constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)]
+):
+    root: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+
+
+class AnalyticsCatalogDeprecation(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    deprecated: bool
+    replaced_by: (
+        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
+    ) = None
+
+
+class AnalyticsCatalogSource(Enum):
+    fixture = "fixture"
+    generated = "generated"
+
+
+class AnalyticsClassification(Enum):
+    unrestricted = "unrestricted"
+    pii = "pii"
+    financial = "financial"
+    operational = "operational"
+
+
+class AnalyticsCompareMode(Enum):
+    none = "none"
+    previous_period = "previous_period"
+    previous_year = "previous_year"
+
+
+class AnalyticsCompileResolution(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    path: constr(pattern=r"^(\/[^/]*)*$", max_length=300)
+    rule: constr(min_length=1, max_length=120)
+    value: Any | None = None
+
+
+class AnalyticsCoverage(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    numerator: conint(ge=0, le=9007199254740991)
+    denominator: conint(ge=0, le=9007199254740991)
+    rate: confloat(ge=0.0, le=1.0)
+
+
+class AnalyticsCustomizationCapability(Enum):
+    title = "title"
+    filter_defaults = "filter_defaults"
+    metric_selection = "metric_selection"
+    grouping = "grouping"
+    compatible_renderer = "compatible_renderer"
+    sort = "sort"
+    limit = "limit"
+    block_visibility = "block_visibility"
+    layout = "layout"
+    source_scope = "source_scope"
+    handoff_target = "handoff_target"
+    hidden_scope = "hidden_scope"
+    raw_expression = "raw_expression"
+
+
+class AnalyticsCustomizationPolicy(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    allow: list[AnalyticsCustomizationCapability] | None = []
+    deny: list[AnalyticsCustomizationCapability] | None = []
+
+
+class AnalyticsDimensionCapability(Enum):
+    filter = "filter"
+    group = "group"
+    split = "split"
+    sort = "sort"
+
+
+class AnalyticsDimensionType(Enum):
+    string = "string"
+    number = "number"
+    boolean = "boolean"
+    date = "date"
+    datetime = "datetime"
+    id = "id"
+    enum = "enum"
+
+
+class AnalyticsFieldType(Enum):
+    string = "string"
+    number = "number"
+    currency = "currency"
+    percent = "percent"
+    date = "date"
+    datetime = "datetime"
+    boolean = "boolean"
+
+
+class AnalyticsFilterControl(Enum):
+    date_range = "date_range"
+    single_select = "single_select"
+    multi_select = "multi_select"
+    search_select = "search_select"
+    number_range = "number_range"
+
+
+class AnalyticsFilterOperator(Enum):
+    eq = "eq"
+    neq = "neq"
+    in_ = "in"
+    not_in = "not_in"
+    between = "between"
+    gte = "gte"
+    lte = "lte"
+    is_null = "is_null"
+    is_not_null = "is_not_null"
+    contains = "contains"
+
+
+class AnalyticsFilterValue1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    preset: constr(pattern=r"^[a-z0-9_]{1,20}$")
+    compare: AnalyticsCompareMode | None = None
+
+
+class AnalyticsFilterValue2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    min: float | None = None
+    max: float | None = None
+
+
+class AnalyticsFilterValue(
+    RootModel[
+        constr(max_length=200)
+        | float
+        | bool
+        | list[constr(max_length=200) | float | bool | None]
+        | AnalyticsFilterValue1
+        | AnalyticsFilterValue2
+        | None
+    ]
+):
+    root: (
+        constr(max_length=200)
+        | float
+        | bool
+        | list[constr(max_length=200) | float | bool | None]
+        | AnalyticsFilterValue1
+        | AnalyticsFilterValue2
+        | None
+    )
+
+
+class Type(Enum):
+    number = "number"
+    currency = "currency"
+    percent = "percent"
+    duration = "duration"
+
+
+class AnalyticsFormatSpec(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Type
+    decimals: conint(ge=0, le=6) | None = None
+    compact: bool | None = None
+
+
+class AnalyticsHistoricalMode(Enum):
+    as_of_event = "as_of_event"
+    current = "current"
+
+
+class AnalyticsQueryFamily(Enum):
+    scalar = "scalar"
+    timeseries = "timeseries"
+    breakdown = "breakdown"
+    funnel = "funnel"
+    table = "table"
+    timeline = "timeline"
+
+
+class BlockId(RootModel[constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")]):
+    root: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+
+
+class Mark(Enum):
+    line = "line"
+    area = "area"
+    bar = "bar"
+    stacked_bar = "stacked_bar"
+    scatter = "scatter"
+
+
+class YItem(
+    RootModel[constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)]
+):
+    root: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+
+
+class Encoding(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    x: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    y: (
+        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+        | list[YItem]
+    )
+    color: (
+        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
+    ) = None
+    facet: (
+        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
+    ) = None
+
+
+class Stage(
+    RootModel[constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)]
+):
+    root: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+
+
+class AnalyticsRenderFunnel(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["funnel"]
+    stages: list[Stage] = Field(..., max_length=10, min_length=2)
+    split_by: (
+        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
+    ) = None
+
+
+class AnalyticsRenderMetric(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["metric"]
+    value: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    comparison: (
+        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
+    ) = None
+    format: AnalyticsFormatSpec | None = None
+
+
+class Presentation(Enum):
+    list = "list"
+    ranked_cards = "ranked_cards"
+
+
+class AnalyticsRenderRecommendations(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["recommendations"]
+    presentation: Presentation
+
+
+class Column(
+    RootModel[constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)]
+):
+    root: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+
+
+class AnalyticsRenderTable(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["table"]
+    columns: list[Column] = Field(..., max_length=20, min_length=1)
+
+
+class AnalyticsRenderTimeline(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["timeline"]
+    timestamp: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    event_type: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+
+
+class AnalyticsResultField(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    type: AnalyticsFieldType
+    nullable: bool
+
+
+class Legend(Enum):
+    none = "none"
+    top = "top"
+    right = "right"
+    bottom = "bottom"
+    left = "left"
+
+
+class EmptyState(Enum):
+    blank = "blank"
+    message = "message"
+
+
+class AnalyticsSemanticFilter(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    dimension: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    operator: AnalyticsFilterOperator
+    value: AnalyticsFilterValue | None = None
+
+
+class AnalyticsSemanticId(
+    RootModel[constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)]
+):
+    root: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+
+
+class AnalyticsSourceScope(Enum):
+    total = "total"
+    revturbine_tracked = "revturbine_tracked"
+    revturbine_influenced = "revturbine_influenced"
+
+
+class Op(Enum):
+    add = "add"
+    replace = "replace"
+    remove = "remove"
+
+
+class AnalyticsSuggestedPatchOp(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    op: Op
+    path: constr(pattern=r"^(\/[^/]*)*$", max_length=300)
+    value: Any | None = None
+
+
+class AnalyticsTimeGrain(Enum):
+    hour = "hour"
+    day = "day"
+    week = "week"
+    month = "month"
+    quarter = "quarter"
+
+
+class AnalyticsValidationIssue(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    code: constr(pattern=r"^[A-Z][A-Z0-9_]{2,79}$")
+    path: constr(pattern=r"^(\/[^/]*)*$", max_length=300)
+    message: constr(min_length=1, max_length=500)
+    actual: Any | None = None
+    allowed: list[constr(max_length=200) | float | bool | None] | None = Field(
+        None, max_length=50
+    )
+    suggested_patch: list[AnalyticsSuggestedPatchOp] | None = Field(None, max_length=10)
+
+
+class GroupByItem(
+    RootModel[constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)]
+):
+    root: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+
+
+class Time(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    dimension: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    grain: AnalyticsTimeGrain
+
+
+class FiltersFromItem(RootModel[constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")]):
+    root: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+
+
+class Direction(Enum):
+    asc = "asc"
+    desc = "desc"
+
+
+class OrderByItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    field: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    direction: Direction
+
+
+class AppliesToItem(RootModel[constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")]):
+    root: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+
+
+class Item(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    block_id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+    x: conint(ge=0, le=9007199254740991)
+    y: conint(ge=0, le=9007199254740991)
+    w: conint(ge=1, le=24)
+    h: conint(ge=1, le=24)
+
+
+class AnalyticsViewLayout(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["grid"]
+    columns: conint(ge=1, le=24) | None = 12
+    items: list[Item] = Field(..., max_length=24)
+
+
+class OrderByItem1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    field: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    direction: Direction
+
+
+class AnalyticsViewQuery(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    concept: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    family: AnalyticsQueryFamily
+    metrics: list[Metric] = Field(..., max_length=10, min_length=1)
+    group_by: list[GroupByItem] | None = Field(None, max_length=3)
+    time: Time | None = None
+    filters_from: list[FiltersFromItem] | None = Field(None, max_length=20)
+    fixed_filters: list[AnalyticsSemanticFilter] | None = Field(None, max_length=20)
+    compare: AnalyticsCompareMode | None = None
+    order_by: list[OrderByItem1] | None = Field(None, max_length=3)
+    limit: conint(ge=1, le=1000) | None = None
+
+
+class BaseTemplate(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+    version: conint(ge=1, le=9007199254740991)
+
+
+class AnalyticsViewVisibility(Enum):
+    private = "private"
+    team = "team"
+    tenant = "tenant"
+
+
+class AnalyticsWarning(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    code: constr(pattern=r"^[A-Z][A-Z0-9_]{2,79}$")
+    message: constr(min_length=1, max_length=500)
 
 
 class ApiKeyStatus(Enum):
@@ -893,6 +1405,14 @@ class KpiAggregate(BaseModel):
     unit: Unit | None = "count"
 
 
+class LocalizedText(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: constr(min_length=1, max_length=300)
+    key: constr(max_length=120) | None = None
+
+
 class McpConfig(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -1464,37 +1984,6 @@ class PlacementTestUser(BaseModel):
     added_by: str
 
 
-class Status3(Enum):
-    active = "active"
-    paused = "paused"
-    complete = "complete"
-
-
-class PlacementVariant(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-    tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1) | None = "production"
-    playbook_version_id: str | None = None
-    is_current: bool | None = True
-    is_deleted: bool | None = False
-    delete_date: AwareDatetime | None = None
-    sequence: conint(ge=1, le=9007199254740991) | None = 1
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
-    handle: constr(min_length=1, max_length=100)
-    placement_payload_id: constr(min_length=1)
-    experiment_id: constr(min_length=1)
-    variant_name: constr(min_length=1, max_length=200)
-    is_control: bool | None = False
-    traffic_allocation_percent: confloat(ge=0.0, le=100.0)
-    override_fields: dict[str, Any] | None = {}
-    status: Status3 | None = "active"
-
-
 class PlacementWarningCode(Enum):
     threshold_not_emitted = "threshold_not_emitted"
 
@@ -1528,6 +2017,7 @@ class PlaybookHeader(BaseModel):
     exported_at: AwareDatetime | None = None
     schema_version: constr(min_length=1) | None = None
     bundle_schema_version: conint(ge=0, le=9007199254740991) | None = None
+    bundle_min_readable_schema_version: conint(ge=0, le=9007199254740991) | None = None
 
 
 class PlaybookVersionDeployResult(BaseModel):
@@ -1566,6 +2056,15 @@ class PlaybookVersionStatus(Enum):
     deployed = "deployed"
     rejected = "rejected"
     archived = "archived"
+
+
+class PresentationOutcome(Enum):
+    presented = "presented"
+    clicked = "clicked"
+    converted = "converted"
+    dismissed = "dismissed"
+    reminded = "reminded"
+    suppressed = "suppressed"
 
 
 class PresentationRecord(BaseModel):
@@ -1923,6 +2422,7 @@ class RevTurbineConfigSegmentsItem(BaseModel):
     handle: constr(min_length=1)
     predicates: list[RevTurbineConfigSegmentsItemPredicatesItem] | None = None
     dimension_id: str | None = None
+    experiment_id: constr(min_length=1) | None = None
 
 
 class RevTurbineConfigSlotConfigsItem(BaseModel):
@@ -2140,6 +2640,7 @@ class Segment(BaseModel):
     handle: constr(min_length=1, max_length=100)
     description: constr(max_length=500) | None = None
     rules: dict[str, Any] | None = {}
+    experiment_id: constr(min_length=1) | None = None
     is_active: bool | None = True
     estimated_size: conint(ge=0, le=9007199254740991) | None = None
     metadata: dict[str, Any] | None = {}
@@ -2341,7 +2842,7 @@ class SurfaceSlotCategory(Enum):
     triggered = "triggered"
 
 
-class Status4(Enum):
+class Status3(Enum):
     active = "active"
     inactive = "inactive"
     new = "new"
@@ -2584,7 +3085,7 @@ class UserPlanContext(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    id: constr(min_length=1)
+    handle: constr(min_length=1)
     name: constr(min_length=1)
     price: str | None = None
     billing_period: BillingPeriod4 | None = None
@@ -2753,6 +3254,263 @@ class Alert(BaseModel):
     acknowledged_at: AwareDatetime | None = None
     acknowledged_by: str | None = None
     metadata: dict[str, Any] | None = {}
+
+
+class AnalyticsAgentCatalogEntry(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: AnalyticsSemanticId
+    kind: AnalyticsAgentCatalogEntryKind
+    label: constr(min_length=1, max_length=120)
+    description: constr(min_length=1, max_length=500)
+    when_to_use: constr(max_length=500) | None = None
+    do_not_use_for: constr(max_length=500) | None = None
+    value_type: AnalyticsFieldType | None = None
+    format: AnalyticsFormatSpec | None = None
+    capabilities: list[AnalyticsDimensionCapability] | None = None
+    compatible_concepts: list[AnalyticsSemanticId] | None = None
+    compatible_families: list[AnalyticsQueryFamily] | None = None
+    analytical_units: list[AnalyticsAnalyticalUnit] | None = None
+    source_scope: AnalyticsSourceScope | None = None
+    example: constr(max_length=2000) | None = None
+    deprecation: AnalyticsCatalogDeprecation | None = None
+
+
+class AnalyticsCatalogConcept(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    version: conint(ge=1, le=9007199254740991)
+    label: constr(min_length=1, max_length=120)
+    description: constr(max_length=500) | None = None
+    when_to_use: constr(max_length=500) | None = None
+    do_not_use_for: constr(max_length=500) | None = None
+    grain: list[GrainItem] = Field(..., min_length=1)
+    analytical_units: list[AnalyticsAnalyticalUnit] = Field(..., min_length=1)
+    primary_time_dimension: constr(
+        pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120
+    )
+    historical_mode: AnalyticsHistoricalMode
+    dimensions: list[Dimension] = Field(..., min_length=1)
+    metrics: list[Metric] = Field(..., min_length=1)
+    query_families: list[AnalyticsQueryFamily] = Field(..., min_length=1)
+    source_scope: AnalyticsSourceScope
+    coverage_metric: (
+        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
+    ) = None
+    deprecation: AnalyticsCatalogDeprecation | None = None
+
+
+class AnalyticsCatalogDimension(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    label: constr(min_length=1, max_length=120)
+    description: constr(max_length=500) | None = None
+    when_to_use: constr(max_length=500) | None = None
+    do_not_use_for: constr(max_length=500) | None = None
+    type: AnalyticsDimensionType
+    operators: list[AnalyticsFilterOperator] = Field(..., min_length=1)
+    control: AnalyticsFilterControl
+    capabilities: list[AnalyticsDimensionCapability] = Field(..., min_length=1)
+    cardinality: AnalyticsCardinalityClass
+    classification: AnalyticsClassification | None = "unrestricted"
+    historical_mode: AnalyticsHistoricalMode | None = None
+    allowed_concepts: (
+        list[constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)]
+        | None
+    ) = None
+    exclude_from_segment_picker: bool | None = False
+    deprecation: AnalyticsCatalogDeprecation | None = None
+
+
+class AnalyticsCatalogMetric(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    label: constr(min_length=1, max_length=120)
+    description: constr(max_length=500) | None = None
+    when_to_use: constr(max_length=500) | None = None
+    do_not_use_for: constr(max_length=500) | None = None
+    value_type: AnalyticsFieldType
+    format: AnalyticsFormatSpec | None = None
+    source_scope: AnalyticsSourceScope | None = None
+    deprecation: AnalyticsCatalogDeprecation | None = None
+
+
+class AnalyticsCatalog(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    catalog_version: constr(min_length=1, max_length=64)
+    source: AnalyticsCatalogSource
+    generated_at: AwareDatetime | None = None
+    concepts: list[AnalyticsCatalogConcept] = Field(..., min_length=1)
+    dimensions: list[AnalyticsCatalogDimension] = Field(..., min_length=1)
+    metrics: list[AnalyticsCatalogMetric] = Field(..., min_length=1)
+
+
+class AnalyticsCatalogSearchResult(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    catalog_version: constr(min_length=1, max_length=64)
+    query: constr(min_length=1, max_length=200)
+    entries: list[AnalyticsAgentCatalogEntry] = Field(..., max_length=50)
+
+
+class AnalyticsFilterState(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    filter_id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+    value: AnalyticsFilterValue | None
+
+
+class AnalyticsQueryRequest(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    view_id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+    revision: conint(ge=1, le=9007199254740991) | None = None
+    block_ids: list[BlockId] | None = Field(None, max_length=24, min_length=1)
+    filter_state: list[AnalyticsFilterState] | None = Field(None, max_length=20)
+
+
+class AnalyticsResultMeta(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    query_hash: constr(min_length=1, max_length=128)
+    concept: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    analytical_unit: AnalyticsAnalyticalUnit
+    source_scope: AnalyticsSourceScope
+    coverage: AnalyticsCoverage | None = None
+    as_of: AwareDatetime
+    freshness_seconds: conint(ge=0, le=9007199254740991)
+    applied_filters: list[AnalyticsSemanticFilter] | None = Field(
+        [], validate_default=True
+    )
+    next_cursor: constr(max_length=500) | None = None
+    warnings: list[AnalyticsWarning] | None = Field([], validate_default=True)
+
+
+class AnalyticsResult(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    data: list[dict[str, Any]]
+    fields: list[AnalyticsResultField]
+    meta: AnalyticsResultMeta
+
+
+class ReferenceLine(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: float
+    label: LocalizedText | None = None
+
+
+class AnalyticsSafeChartOptions(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    legend: Legend | None = None
+    value_labels: bool | None = None
+    reference_lines: list[ReferenceLine] | None = Field(None, max_length=5)
+    x_axis_format: AnalyticsFormatSpec | None = None
+    y_axis_format: AnalyticsFormatSpec | None = None
+    empty_state: EmptyState | None = None
+
+
+class AnalyticsTemplateSummary(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+    version: conint(ge=1, le=9007199254740991)
+    title: LocalizedText
+    description: LocalizedText | None = None
+    block_count: conint(ge=1, le=9007199254740991)
+
+
+class AnalyticsValidationResult(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    valid: bool
+    errors: list[AnalyticsValidationIssue] | None = Field([], validate_default=True)
+    warnings: list[AnalyticsWarning] | None = Field([], validate_default=True)
+    catalog_version: constr(min_length=1, max_length=64)
+
+
+class AnalyticsViewFilterDraft(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$") | None = None
+    dimension: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    control: AnalyticsFilterControl | None = None
+    label: LocalizedText | None = None
+    operators: list[AnalyticsFilterOperator] | None = Field(None, min_length=1)
+    default_value: AnalyticsFilterValue | None = None
+    required: bool | None = None
+    pinned: bool | None = None
+    applies_to: Literal["all"] | list[AppliesToItem] | None = None
+
+
+class AnalyticsViewFilter(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+    dimension: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    control: AnalyticsFilterControl
+    label: LocalizedText | None = None
+    operators: list[AnalyticsFilterOperator] = Field(..., min_length=1)
+    default_value: AnalyticsFilterValue | None = None
+    required: bool | None = False
+    pinned: bool | None = False
+    applies_to: Literal["all"] | list[AppliesToItem] | None = Field(
+        "all", validate_default=True
+    )
+
+
+class AnalyticsViewHandoffDraft(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$") | None = None
+    label: LocalizedText | None = None
+    target: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    bindings: (
+        dict[
+            constr(pattern=r"^[a-z][a-z0-9_]{0,49}$"),
+            constr(min_length=1, max_length=200),
+        ]
+        | None
+    ) = None
+
+
+class AnalyticsViewHandoff(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+    label: LocalizedText
+    target: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    bindings: (
+        dict[
+            constr(pattern=r"^[a-z][a-z0-9_]{0,49}$"),
+            constr(min_length=1, max_length=200),
+        ]
+        | None
+    ) = {}
 
 
 class ApiKey(BaseModel):
@@ -3120,6 +3878,7 @@ class ExportedConfigSegmentsItem(BaseModel):
     handle: constr(min_length=1)
     predicates: list[RevTurbineConfigSegmentsItemPredicatesItem] | None = None
     dimension_id: str | None = None
+    experiment_id: constr(min_length=1) | None = None
 
 
 class FeatureFlag(BaseModel):
@@ -3239,6 +3998,9 @@ class PlacementDecisionOutput(BaseModel):
     decision_id: str
     config_version: str
     present_upsell: bool
+    experiment_id: str | None = None
+    variant_key: str | None = None
+    experiment_version_id: str | None = None
 
 
 class PlacementPayload(BaseModel):
@@ -3645,7 +4407,7 @@ class SurfaceSlot(BaseModel):
     surface_slot_category: SurfaceSlotCategory | None = "fixed"
     first_seen: AwareDatetime
     last_seen: AwareDatetime
-    status: Status4 | None = "new"
+    status: Status3 | None = "new"
     placement_count: conint(ge=0, le=9007199254740991) | None = 0
 
 
@@ -3728,6 +4490,10 @@ class TreatmentInteractionInput(BaseModel):
     payload_id: constr(min_length=1) | None = None
     interaction_type: TreatmentInteractionType
     interaction_at: AwareDatetime | None = None
+    message_block_handle: constr(min_length=1) | None = None
+    message_block_id: constr(min_length=1) | None = None
+    experiment_id: constr(min_length=1) | None = None
+    variant_key: constr(min_length=1) | None = None
     test: bool | None = None
     metadata: dict[str, Any] | None = None
 
@@ -3786,6 +4552,120 @@ class WebhookEventLog(BaseModel):
     error_message: str | None = None
 
 
+class AnalyticsBlockResult(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    block_id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+    result: AnalyticsResult
+
+
+class AnalyticsQueryResponse(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    view_id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+    revision: conint(ge=1, le=9007199254740991)
+    catalog_version: constr(min_length=1, max_length=64)
+    results: list[AnalyticsBlockResult]
+    errors: list[AnalyticsBlockError] | None = Field([], validate_default=True)
+
+
+class AnalyticsRenderCartesian(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["cartesian"]
+    mark: Mark
+    encoding: Encoding
+    options: AnalyticsSafeChartOptions | None = None
+
+
+class AnalyticsRenderSpec(
+    RootModel[
+        AnalyticsRenderMetric
+        | AnalyticsRenderCartesian
+        | AnalyticsRenderFunnel
+        | AnalyticsRenderTable
+        | AnalyticsRenderTimeline
+        | AnalyticsRenderRecommendations
+    ]
+):
+    root: (
+        AnalyticsRenderMetric
+        | AnalyticsRenderCartesian
+        | AnalyticsRenderFunnel
+        | AnalyticsRenderTable
+        | AnalyticsRenderTimeline
+        | AnalyticsRenderRecommendations
+    )
+
+
+class AnalyticsViewBlockDraft(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$") | None = None
+    title: LocalizedText | None = None
+    concept: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    family: AnalyticsQueryFamily
+    metrics: list[Metric] = Field(..., max_length=10, min_length=1)
+    group_by: list[GroupByItem] | None = Field(None, max_length=3)
+    time: Time | None = None
+    filters_from: list[FiltersFromItem] | None = Field(None, max_length=20)
+    fixed_filters: list[AnalyticsSemanticFilter] | None = Field(None, max_length=20)
+    compare: AnalyticsCompareMode | None = None
+    order_by: list[OrderByItem] | None = Field(None, max_length=3)
+    limit: conint(ge=1, le=1000) | None = None
+    render: Literal["auto"] | AnalyticsRenderSpec | None = None
+
+
+class AnalyticsViewBlock(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+    title: LocalizedText | None = None
+    description: LocalizedText | None = None
+    query: AnalyticsViewQuery
+    render: AnalyticsRenderSpec
+
+
+class AnalyticsViewDraft(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["revturbine.analytics-view-draft"]
+    schema_version: constr(pattern=r"^\d+\.\d+$")
+    title: LocalizedText
+    analytical_unit: AnalyticsAnalyticalUnit | None = None
+    filters: Literal["recommended"] | list[AnalyticsViewFilterDraft] | None = None
+    layout: Literal["auto"] | AnalyticsViewLayout | None = None
+    blocks: list[AnalyticsViewBlockDraft] = Field(..., max_length=24, min_length=1)
+    handoffs: Literal["recommended"] | list[AnalyticsViewHandoffDraft] | None = None
+    visibility: AnalyticsViewVisibility | None = None
+
+
+class AnalyticsView(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["revturbine.analytics-view"]
+    schema_version: constr(pattern=r"^\d+\.\d+$")
+    id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+    revision: conint(ge=1, le=9007199254740991)
+    title: LocalizedText
+    description: LocalizedText | None = None
+    analytical_unit: AnalyticsAnalyticalUnit
+    base_template: BaseTemplate | None = None
+    catalog_version: constr(min_length=1, max_length=64)
+    filters: list[AnalyticsViewFilter] = Field(..., max_length=20)
+    layout: AnalyticsViewLayout
+    blocks: list[AnalyticsViewBlock] = Field(..., max_length=24, min_length=1)
+    handoffs: list[AnalyticsViewHandoff] | None = Field(None, max_length=10)
+    customization_policy: AnalyticsCustomizationPolicy
+
+
 class EntitlementCheckResult(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -3838,6 +4718,7 @@ class RevTurbineConfig(BaseModel):
     exported_at: AwareDatetime | None = None
     schema_version: constr(min_length=1) | None = None
     bundle_schema_version: conint(ge=0, le=9007199254740991) | None = None
+    bundle_min_readable_schema_version: conint(ge=0, le=9007199254740991) | None = None
     plans: list[RevTurbineConfigPlansItem]
     addons: list[RevTurbineConfigAddonsItem] | None = None
     entitlements: list[RevTurbineConfigEntitlementsItem]
@@ -3901,6 +4782,7 @@ class UserContext(BaseModel):
     account_id: constr(min_length=1) | None = None
     email: EmailStr | None = None
     email_type: str | None = None
+    plan_handle: constr(min_length=1) | None = None
     plan: UserPlanContext | None = None
     usage: dict[str, UserUsageEntry] | None = Field({}, validate_default=True)
     trial: UserTrialStatus | None = None
@@ -3918,6 +4800,7 @@ class UserContext(BaseModel):
     derived_computed_at: AwareDatetime | None = None
     activity_score: conint(ge=0, le=9007199254740991) | None = None
     activity_score_computed_at: AwareDatetime | None = None
+    experiments: dict[str, str] | None = None
 
 
 class ExportedConfig(BaseModel):
@@ -3934,6 +4817,7 @@ class ExportedConfig(BaseModel):
     exported_at: AwareDatetime | None = None
     schema_version: constr(min_length=1) | None = None
     bundle_schema_version: conint(ge=0, le=9007199254740991) | None = None
+    bundle_min_readable_schema_version: conint(ge=0, le=9007199254740991) | None = None
     plans: list[RevTurbineConfigPlansItem]
     addons: list[RevTurbineConfigAddonsItem] | None = None
     entitlements: list[RevTurbineConfigEntitlementsItem]
@@ -4020,6 +4904,7 @@ class PlaybookObject(BaseModel):
     exported_at: AwareDatetime | None = None
     schema_version: constr(min_length=1) | None = None
     bundle_schema_version: conint(ge=0, le=9007199254740991) | None = None
+    bundle_min_readable_schema_version: conint(ge=0, le=9007199254740991) | None = None
     plans: list[RevTurbineConfigPlansItem]
     addons: list[RevTurbineConfigAddonsItem] | None = None
     entitlements: list[RevTurbineConfigEntitlementsItem]
@@ -4068,6 +4953,7 @@ class Playbook(BaseModel):
     exported_at: AwareDatetime | None = None
     schema_version: constr(min_length=1) | None = None
     bundle_schema_version: conint(ge=0, le=9007199254740991) | None = None
+    bundle_min_readable_schema_version: conint(ge=0, le=9007199254740991) | None = None
     plans: list[RevTurbineConfigPlansItem]
     addons: list[RevTurbineConfigAddonsItem] | None = None
     entitlements: list[RevTurbineConfigEntitlementsItem]
@@ -4116,6 +5002,7 @@ class PlaybookStrict(BaseModel):
     exported_at: AwareDatetime | None = None
     schema_version: constr(min_length=1) | None = None
     bundle_schema_version: conint(ge=0, le=9007199254740991) | None = None
+    bundle_min_readable_schema_version: conint(ge=0, le=9007199254740991) | None = None
     plans: list[RevTurbineConfigPlansItem]
     addons: list[RevTurbineConfigAddonsItem] | None = None
     entitlements: list[RevTurbineConfigEntitlementsItem]

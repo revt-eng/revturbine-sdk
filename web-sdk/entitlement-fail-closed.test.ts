@@ -10,7 +10,7 @@
  * Covers the fallback paths in `checkEntitlement`:
  *   - server mode, launched config unfetchable (non-ok) → config_unavailable
  *   - server mode, launched config fetch throws          → config_unavailable
- *   - local mode, no Playbook + no cache                 → local_runtime_default_allow
+ *   - local mode, no Playbook + no cache                 → entitlement_not_in_playbook
  *   - SDK disabled by provider failure                   → sdk_disabled_provider_failure
  * and the happy path: server mode fetches the Playbook and grants locally.
  */
@@ -87,7 +87,7 @@ describe('entitlement checks fail closed', () => {
     const result = await sdk.checkEntitlement('data_export');
     expect(result.allowed).toBe(false);
     expect(result.status).toBe('denied');
-    expect(result.reason).toBe('local_runtime_default_allow');
+    expect(result.reason).toBe('entitlement_not_in_playbook');
   });
 
   it('server mode: fetches the launched Playbook from /api/sdk/config and grants via LOCAL eval (plan 159)', async () => {

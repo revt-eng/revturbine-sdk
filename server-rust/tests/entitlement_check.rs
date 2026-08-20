@@ -16,10 +16,12 @@ use revturbine::entitlements::{
 
 /// A config with one entitlement and the given rules, all targeting `pro`.
 ///
-/// The entitlement carries **no separate `id`** and rules reference it by
-/// `unique_handle`. That is the canonical authoring shape, and it is
-/// load-bearing rather than incidental — see
-/// `rule_entitlement_id_must_reference_the_handle` below.
+/// Every reference — the entitlement's and the plan's — is authored by
+/// `unique_handle`, and that is load-bearing rather than incidental: the plan
+/// deliberately carries a DB-internal `id` (`plan_pro`) that differs from its
+/// handle, so a rule that referenced the id would match nothing. See
+/// `rule_entitlement_id_must_reference_the_handle_not_a_separate_id` and
+/// `plan_identity_is_the_handle_never_the_db_id` below (plan 191 REQ-1).
 fn config(entitlement_type: &str, rules: Value) -> Value {
     json!({
         "entitlements": [
@@ -51,7 +53,7 @@ fn derive(cfg: &Value, inp: &LocalEntitlementInput) -> EntitlementCheckResult {
 fn feature_enabled_is_allowed_with_no_reason() {
     let cfg = config(
         "feature",
-        json!([{ "entitlement_id": "feat_x", "plan_ids": ["plan_pro"], "enabled": true }]),
+        json!([{ "entitlement_id": "feat_x", "plan_ids": ["pro"], "enabled": true }]),
     );
     let r = derive(&cfg, &input("feat_x", "pro"));
     assert_eq!(r.status, "allowed");
@@ -65,7 +67,7 @@ fn feature_enabled_is_allowed_with_no_reason() {
 fn feature_disabled_is_denied() {
     let cfg = config(
         "feature",
-        json!([{ "entitlement_id": "feat_x", "plan_ids": ["plan_pro"], "enabled": false }]),
+        json!([{ "entitlement_id": "feat_x", "plan_ids": ["pro"], "enabled": false }]),
     );
     let r = derive(&cfg, &input("feat_x", "pro"));
     assert_eq!(r.status, "denied");
@@ -78,7 +80,7 @@ fn feature_enabled_defaults_true_when_unset() {
     // `!== false`, not truthiness: an absent flag grants.
     let cfg = config(
         "feature",
-        json!([{ "entitlement_id": "feat_x", "plan_ids": ["plan_pro"] }]),
+        json!([{ "entitlement_id": "feat_x", "plan_ids": ["pro"] }]),
     );
     assert!(derive(&cfg, &input("feat_x", "pro")).allowed);
 }
@@ -89,7 +91,7 @@ fn feature_enabled_defaults_true_when_unset() {
 fn no_rule_for_handle_denies_fail_closed() {
     let cfg = config(
         "feature",
-        json!([{ "entitlement_id": "ent_other", "plan_ids": ["plan_pro"], "enabled": true }]),
+        json!([{ "entitlement_id": "ent_other", "plan_ids": ["pro"], "enabled": true }]),
     );
     let r = derive(&cfg, &input("feat_x", "pro"));
     assert_eq!(r.status, "denied");
@@ -113,51 +115,87 @@ fn plan_targeting_is_explicit_only() {
 fn entitlement_matched_by_unique_handle() {
     let cfg = config(
         "feature",
-        json!([{ "entitlement_id": "feat_x", "plan_ids": ["plan_pro"], "enabled": true }]),
+        json!([{ "entitlement_id": "feat_x", "plan_ids": ["pro"], "enabled": true }]),
     );
     assert!(derive(&cfg, &input("feat_x", "pro")).allowed);
 }
 
 #[test]
 fn rule_entitlement_id_must_reference_the_handle_not_a_separate_id() {
-    // A trap worth pinning. When an entitlement carries its own `id`, the
-    // evaluator resolves `entitlement_id` to THAT id for rule matching, but
-    // derives `kind` from a map keyed by `unique_handle`. A rule referencing
-    // the id therefore MATCHES but derives no kind — falling through to the
-    // unknown-kind default (allowed) and silently ceasing to enforce.
-    //
-    // This is why rule refs are authored by handle. Asserted so the behaviour
-    // is discovered here rather than as a production fail-open.
+    // This test used to pin a fail-open: because the port resolved
+    // `entitlement_id` to the entitlement's DB `id` while deriving `kind` from
+    // a map keyed by `unique_handle`, an id-referencing rule MATCHED but
+    // derived no kind, fell through to the unknown-kind default, and silently
+    // returned allowed. Plan 191 TASK-5 removed the `id` resolution (TS has
+    // matched by handle alone since plan 120 TASK-4), so the id-referencing
+    // rule now simply does not match — and the absence of a matching rule
+    // fails CLOSED.
     let cfg = json!({
         "entitlements": [
             { "id": "ent_x", "unique_handle": "feat_x", "type": "feature" }
         ],
         "plans": [{ "id": "plan_pro", "unique_handle": "pro" }],
         "entitlement_rules": [
-            { "entitlement_id": "ent_x", "plan_ids": ["plan_pro"], "enabled": false }
+            { "entitlement_id": "ent_x", "plan_ids": ["pro"], "enabled": false }
         ],
     });
     let r = derive(&cfg, &input("feat_x", "pro"));
     assert_eq!(
-        r.status, "allowed",
-        "id-referencing rule matches but derives no kind — documented trap",
+        r.reason.as_deref(),
+        Some("no_matching_entitlement_rule"),
+        "a rule referencing the DB id matches nothing and fails closed",
     );
+    assert!(!r.allowed);
 
-    // Authored by handle, the same rule enforces correctly.
+    // Authored by handle, the same rule enforces — an entitlement carrying a
+    // separate `id` no longer changes anything, because the id is inert.
     let by_handle = json!({
         "entitlements": [
             { "id": "ent_x", "unique_handle": "feat_x", "type": "feature" }
         ],
         "plans": [{ "id": "plan_pro", "unique_handle": "pro" }],
         "entitlement_rules": [
-            { "entitlement_id": "feat_x", "plan_ids": ["plan_pro"], "enabled": false }
+            { "entitlement_id": "feat_x", "plan_ids": ["pro"], "enabled": false }
         ],
     });
-    // `entitlement_id` resolves to the entitlement's `id`, so a handle-authored
-    // rule only matches when the entitlement has no separate id — which is the
-    // canonical post-plan-120 shape the other tests use.
     assert_eq!(
         derive(&by_handle, &input("feat_x", "pro"))
+            .reason
+            .as_deref(),
+        Some("feature_not_enabled_for_plan"),
+    );
+}
+
+/// Plan 191 REQ-1 / AC-1 — plan identity IS the handle; `plans[].id` is
+/// DB-internal and matches nothing. Mirrors
+/// `TestHandleIsTheOnlyIdentity` in the Python port and the
+/// `entitlement_plan_identity_is_handle` parity fixture.
+#[test]
+fn plan_identity_is_the_handle_never_the_db_id() {
+    let cfg = config(
+        "feature",
+        json!([{ "entitlement_id": "feat_x", "plan_ids": ["pro"], "enabled": true }]),
+    );
+
+    // The handle matches.
+    assert!(derive(&cfg, &input("feat_x", "pro")).allowed);
+
+    // A context whose only plan signal is the DB id matches no plan-targeted
+    // rule, and the absence of a matching rule fails closed.
+    let by_db_id = derive(&cfg, &input("feat_x", "plan_pro"));
+    assert!(!by_db_id.allowed);
+    assert_eq!(
+        by_db_id.reason.as_deref(),
+        Some("no_matching_entitlement_rule"),
+    );
+
+    // Symmetrically: a rule that targets the DB id matches nobody.
+    let targets_db_id = config(
+        "feature",
+        json!([{ "entitlement_id": "feat_x", "plan_ids": ["plan_pro"], "enabled": true }]),
+    );
+    assert_eq!(
+        derive(&targets_db_id, &input("feat_x", "pro"))
             .reason
             .as_deref(),
         Some("no_matching_entitlement_rule"),
@@ -168,7 +206,7 @@ fn rule_entitlement_id_must_reference_the_handle_not_a_separate_id() {
 fn plan_handle_matching_is_case_insensitive() {
     let cfg = config(
         "feature",
-        json!([{ "entitlement_id": "feat_x", "plan_ids": ["plan_pro"], "enabled": true }]),
+        json!([{ "entitlement_id": "feat_x", "plan_ids": ["pro"], "enabled": true }]),
     );
     assert!(derive(&cfg, &input("feat_x", "PRO")).allowed);
 }
@@ -178,7 +216,7 @@ fn plan_handle_matching_is_case_insensitive() {
 fn usage_cfg(enforcement: Option<&str>) -> Value {
     let mut rule = json!({
         "entitlement_id": "feat_x",
-        "plan_ids": ["plan_pro"],
+        "plan_ids": ["pro"],
         "kind": "usage_limit",
         "limit_value": 10,
     });
@@ -267,7 +305,7 @@ fn unlimited_limit_is_allowed_without_limit_fields() {
     let cfg = config(
         "usage_limit",
         json!([{
-            "entitlement_id": "feat_x", "plan_ids": ["plan_pro"],
+            "entitlement_id": "feat_x", "plan_ids": ["pro"],
             "kind": "usage_limit", "limit_value": "unlimited",
         }]),
     );
@@ -283,7 +321,7 @@ fn credits_allowance_exhausted() {
     let cfg = config(
         "credits",
         json!([{
-            "entitlement_id": "feat_x", "plan_ids": ["plan_pro"],
+            "entitlement_id": "feat_x", "plan_ids": ["pro"],
             "kind": "credits", "allowance_value": 100, "enforcement": "hard_block",
         }]),
     );
@@ -297,7 +335,7 @@ fn credits_fall_back_to_initial_grant_only_when_allowance_absent() {
     let cfg = config(
         "credits",
         json!([{
-            "entitlement_id": "feat_x", "plan_ids": ["plan_pro"],
+            "entitlement_id": "feat_x", "plan_ids": ["pro"],
             "kind": "credits", "initial_grant": 25, "enforcement": "hard_block",
         }]),
     );
@@ -313,7 +351,7 @@ fn an_explicit_null_allowance_means_unlimited_and_beats_initial_grant() {
     let cfg = config(
         "credits",
         json!([{
-            "entitlement_id": "feat_x", "plan_ids": ["plan_pro"],
+            "entitlement_id": "feat_x", "plan_ids": ["pro"],
             "kind": "credits", "allowance_value": null, "initial_grant": 5,
         }]),
     );
@@ -329,7 +367,7 @@ fn capability_tier_emits_current_tier() {
     let cfg = config(
         "capability_tier",
         json!([{
-            "entitlement_id": "feat_x", "plan_ids": ["plan_pro"],
+            "entitlement_id": "feat_x", "plan_ids": ["pro"],
             "kind": "capability_tier", "tier_name": "gold",
         }]),
     );
@@ -343,7 +381,7 @@ fn capability_tier_without_a_name_omits_current_tier() {
     let cfg = config(
         "capability_tier",
         json!([{
-            "entitlement_id": "feat_x", "plan_ids": ["plan_pro"],
+            "entitlement_id": "feat_x", "plan_ids": ["pro"],
             "kind": "capability_tier",
         }]),
     );
@@ -359,8 +397,8 @@ fn most_permissive_rule_wins_over_array_order() {
     let cfg = config(
         "usage_limit",
         json!([
-            { "entitlement_id": "feat_x", "plan_ids": ["plan_pro"], "kind": "usage_limit", "limit_value": 5 },
-            { "entitlement_id": "feat_x", "plan_ids": ["plan_pro"], "kind": "usage_limit", "limit_value": 500 },
+            { "entitlement_id": "feat_x", "plan_ids": ["pro"], "kind": "usage_limit", "limit_value": 5 },
+            { "entitlement_id": "feat_x", "plan_ids": ["pro"], "kind": "usage_limit", "limit_value": 500 },
         ]),
     );
     let r = derive(&cfg, &at_usage(10.0));
@@ -376,7 +414,7 @@ fn kind_is_derived_from_the_parent_entitlement_when_the_rule_omits_it() {
     let cfg = config(
         "usage_limit",
         json!([{
-            "entitlement_id": "feat_x", "plan_ids": ["plan_pro"], "limit_value": 10,
+            "entitlement_id": "feat_x", "plan_ids": ["pro"], "limit_value": 10,
             "enforcement": "hard_block",
         }]),
     );

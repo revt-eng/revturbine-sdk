@@ -508,8 +508,22 @@ class LocalRuntime:
         ``deriveLocalEntitlementFromConfiguredRules``. The TS call site
         passes empty plan/segment/usage context (the engine path already
         applied provider context; this fallback decides purely from the
-        config rules), and substitutes a default-allow when the
-        evaluator returns ``None`` (no config).
+        config rules).
+
+        Plan 191 REQ-6 (Q-4): the terminal fallback DENIES with
+        ``entitlement_not_in_playbook``. It used to grant with
+        ``local_runtime_default_allow`` — a name that stated a verdict
+        rather than a cause, and one the browser SDK emitted on a
+        *denied* result, so a single reason code meant opposite things
+        on two surfaces. An entitlement the Playbook does not describe
+        is one we have no basis to grant.
+
+        The branch is presently unreachable — the evaluator always
+        returns a result (an unmatched entitlement already denies with
+        ``no_matching_entitlement_rule``) despite its ``| None``
+        signature. It is kept, and kept closed, so that a reintroduced
+        ``None`` path fails safe rather than opening a hole. Mirrors
+        local-runtime.ts.
 
         Source: local-runtime.ts:355-369
         """
@@ -524,7 +538,7 @@ class LocalRuntime:
         if result is not None:
             return result
         return {
-            "status": "allowed",
-            "allowed": True,
-            "reason": "local_runtime_default_allow",
+            "status": "denied",
+            "allowed": False,
+            "reason": "entitlement_not_in_playbook",
         }

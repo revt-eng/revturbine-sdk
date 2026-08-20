@@ -237,13 +237,17 @@ pub fn derive_local_entitlement_from_configured_rules(
         .and_then(Value::as_array)
         .unwrap_or(&empty);
 
-    let entitlement = entitlements.iter().find(|item| {
-        item.get("unique_handle").and_then(Value::as_str) == Some(input.handle)
-            || item.get("id").and_then(Value::as_str) == Some(input.handle)
-    });
+    // Plan 120 TASK-4 / plan 191 REQ-1: the config carries only the handle, so
+    // entitlements resolve by handle alone. The `id` fallback this port used to
+    // carry was a pre-plan-120 mirror that TS dropped; because the ids in the
+    // corpus (`ent_core_credits`) differ from the handles the rules reference
+    // (`core_credits`), it made every rule miss and every check deny.
+    let entitlement = entitlements
+        .iter()
+        .find(|item| item.get("unique_handle").and_then(Value::as_str) == Some(input.handle));
 
     let entitlement_id = entitlement
-        .and_then(|e| e.get("id"))
+        .and_then(|e| e.get("unique_handle"))
         .and_then(Value::as_str)
         .unwrap_or(input.handle)
         .to_string();
@@ -254,17 +258,19 @@ pub fn derive_local_entitlement_from_configured_rules(
         .get("plans")
         .and_then(Value::as_array)
         .unwrap_or(&empty);
+    // Plan 191 REQ-1: plan identity IS the handle. `plans[].id` is DB-internal
+    // and never participates in matching — a context whose only plan signal is
+    // that id must miss every plan-targeted rule.
     let matched_plan = plans.iter().find(|p| {
         p.get("unique_handle")
             .and_then(Value::as_str)
             .is_some_and(|h| h.to_lowercase() == normalized_plan_handle)
-            || p.get("id")
-                .and_then(Value::as_str)
-                .is_some_and(|i| i.to_lowercase() == normalized_plan_handle)
     });
 
-    let current_plan_id: Option<String> = matched_plan
-        .and_then(|p| p.get("id"))
+    // The handle the user's current plan is known by — plan targets are
+    // handle-valued, so this is what a `kind:'plan'` target matches against.
+    let current_plan_handle_ref: Option<String> = matched_plan
+        .and_then(|p| p.get("unique_handle"))
         .and_then(Value::as_str)
         .map(str::to_string)
         .or_else(|| {
@@ -325,8 +331,10 @@ pub fn derive_local_entitlement_from_configured_rules(
                 .unwrap_or_default()
         };
 
-        if let Some(cpid) = current_plan_id.as_deref() {
-            if !plan_ids.contains(&cpid) {
+        // Plan 120 TASK-4: plan targets are handle-valued — match the user's
+        // current plan HANDLE against the rule's listed plan handles.
+        if let Some(handle_ref) = current_plan_handle_ref.as_deref() {
+            if !plan_ids.contains(&handle_ref) {
                 return false;
             }
         }

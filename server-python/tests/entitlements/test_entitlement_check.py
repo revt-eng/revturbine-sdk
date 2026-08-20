@@ -195,20 +195,66 @@ class TestCapabilityTierAndUsageResolution:
         # No context → usage_balances consulted.
         assert _derive(cfg, "u", usage_balances={"u": 1})["allowed"] is True
 
-    def test_entitlement_matched_by_unique_handle(self) -> None:
-        cfg = {
+
+class TestHandleIsTheOnlyIdentity:
+    """Plan 191 REQ-1 — `id` is DB-internal and matches NOTHING.
+
+    Both halves of identity resolution — the entitlement reference and the
+    plan reference — key on `unique_handle` alone, mirroring
+    entitlement-check.ts since plan 120 TASK-4. This port carried the
+    pre-plan-120 `id`-or-handle fallback until plan 191 TASK-5, which made
+    it DENY where TS granted on any config whose ids differ from its
+    handles (every real export: `ent_core_credits` vs `core_credits`).
+    Cross-language byte parity is additionally locked by the
+    `entitlement_plan_identity_is_handle` fixture.
+    """
+
+    @staticmethod
+    def _cfg_with_distinct_ids(rule_entitlement_ref: str, plan_target: str) -> dict[str, Any]:
+        return {
             "version": "1.0.0",
-            "plans": [{"id": "starter", "unique_handle": "starter"}],
-            "entitlements": [{"id": "ent_x", "unique_handle": "feat_x"}],
+            "plans": [{"id": "p_9f3", "unique_handle": "pro"}],
+            "entitlements": [{"id": "ent_7c1", "unique_handle": "batch_export"}],
             "entitlement_rules": [
                 {
-                    "id": "r1",
-                    "entitlement_id": "ent_x",
-                    "targets": [{"kind": "plan", "id": "starter"}],
+                    "id": "er_4d8",
+                    "entitlement_id": rule_entitlement_ref,
+                    "targets": [{"kind": "plan", "id": plan_target}],
                     "segment_id": None,
                     "type_fields": {"kind": "feature", "enabled": False},
                 }
             ],
         }
-        # Looked up by unique_handle → resolves entitlement_id → rule.
-        assert _derive(cfg, "feat_x")["reason"] == "feature_not_enabled_for_plan"
+
+    def test_rule_entitlement_ref_is_the_handle(self) -> None:
+        cfg = self._cfg_with_distinct_ids("batch_export", "pro")
+        assert _derive(cfg, "batch_export", plan="pro")["reason"] == "feature_not_enabled_for_plan"
+
+    def test_rule_entitlement_ref_by_db_id_matches_nothing(self) -> None:
+        cfg = self._cfg_with_distinct_ids("ent_7c1", "pro")
+        assert _derive(cfg, "batch_export", plan="pro") == {
+            "status": "denied",
+            "allowed": False,
+            "reason": "no_matching_entitlement_rule",
+        }
+
+    def test_checking_by_entitlement_db_id_resolves_nothing(self) -> None:
+        cfg = self._cfg_with_distinct_ids("batch_export", "pro")
+        assert _derive(cfg, "ent_7c1", plan="pro")["reason"] == "no_matching_entitlement_rule"
+
+    def test_plan_target_matches_the_handle(self) -> None:
+        cfg = self._cfg_with_distinct_ids("batch_export", "pro")
+        assert _derive(cfg, "batch_export", plan="pro")["reason"] == "feature_not_enabled_for_plan"
+
+    def test_plan_identity_given_as_db_id_matches_nothing(self) -> None:
+        """AC-1 — a context whose only plan signal is `plan.id` fails closed."""
+        cfg = self._cfg_with_distinct_ids("batch_export", "pro")
+        assert _derive(cfg, "batch_export", plan="p_9f3") == {
+            "status": "denied",
+            "allowed": False,
+            "reason": "no_matching_entitlement_rule",
+        }
+
+    def test_plan_target_written_as_db_id_matches_nothing(self) -> None:
+        cfg = self._cfg_with_distinct_ids("batch_export", "p_9f3")
+        assert _derive(cfg, "batch_export", plan="pro")["reason"] == "no_matching_entitlement_rule"
