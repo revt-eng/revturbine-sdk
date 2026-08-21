@@ -13,6 +13,29 @@ The SDK follows [Semantic Versioning](https://semver.org/):
 
 ## Unreleased
 
+## 0.6.0
+
+### Breaking changes
+
+- **The server-side decision methods are removed.** They called a hosted
+  decision endpoint that no longer exists, so every one of them had been
+  returning a network error since that endpoint was deleted — in two languages.
+
+  | Removed | Use instead |
+  |---|---|
+  | `RevTurbineServer.evaluate` (Node) | `LocalEvaluationServer.evaluate` — fetches a Playbook and evaluates in-process |
+  | `RevTurbineServer.getPlacement` / `.checkEntitlement` / `.can` / `.getTrialStatus` (Node) | the client SDK, or `LocalEvaluationServer` |
+  | the whole `revturbine_server` module (Python) | `RevTurbineCustomerSdk` — the headless SDK, which evaluates locally |
+
+  **`RevTurbineServer` itself stays**, and keeps `createClientSession()`. That
+  is the live half: it mints the browser-safe `rt_client_` token the client
+  SDK's `clientSession` callback consumes. If you use the class only for that,
+  nothing changes.
+
+  Why: evaluation is a pure function of (user context, Playbook) and runs in
+  the SDK. There is no hosted decision endpoint, so a network client for one
+  had nothing left to call.
+
 ## 0.5.0
 
 ### Fixed
