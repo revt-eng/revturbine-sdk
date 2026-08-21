@@ -70,20 +70,24 @@ if (access.status === "denied") {
 const used = billing.getUsed("ai_credits");
 const access = await rt.can("ai_credits", { used });
 
-if (access.status === "allowed") {
+// Branch on `allowed` — it is the verdict. `status` is the shape of the
+// answer, and `limited` appears on both sides of it.
+if (access.allowed) {
   executeAction();
   billing.recordUsage("ai_credits", 1);
-  rt.update({ ai_credits: billing.getUsed("ai_credits") });
-} else if (access.status === "limited") {
-  executeAction(); // still allowed — approaching limit
-  billing.recordUsage("ai_credits", 1);
-  rt.update({ ai_credits: billing.getUsed("ai_credits") });
-  const p = rt.getPlacement({
-    slotId: "usage_warning",
-    surfaceType: "banner",
-    entitlementHandle: "ai_credits"
-  });
-  if (p) renderBanner(p);
+  // Usage goes under `usage`. A bare handle is not a usage report.
+  rt.update({ usage: { ai_credits: billing.getUsed("ai_credits") } });
+
+  // `limited` AND allowed means at or past the limit under an enforcement
+  // that lets it through — `degrade` or `allow_overage`. Nudge, don't block.
+  if (access.status === "limited") {
+    const p = rt.getPlacement({
+      slotId: "usage_warning",
+      surfaceType: "banner",
+      entitlementHandle: "ai_credits"
+    });
+    if (p) renderBanner(p);
+  }
 } else {
   const p = rt.getPlacement({
     slotId: "usage_limit_gate",
@@ -94,6 +98,15 @@ if (access.status === "allowed") {
   else showGenericDenial();
 }
 ```
+
+:::caution[`limited` is not "approaching the limit"]
+This example previously ran `executeAction()` in a `status === "limited"`
+branch, commented *"still allowed — approaching limit"*. There is no
+approaching state: `limited` occurs only **at or past** the cap, and under the
+default (unset) enforcement it carries `allowed: false`. Treating `limited` as
+permission grants unlimited usage at exactly the point the limit should bite.
+Read `allowed`; use `status` only to decide how to soften the outcome.
+:::
 
 ## Handling `cta_path`
 
