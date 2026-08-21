@@ -27,8 +27,8 @@ importers:
         specifier: 0.1.203
         version: 0.1.203(zod@4.4.3)
       '@revturbine/sdk':
-        specifier: 0.2.46
-        version: 0.2.46(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+        specifier: 0.6.0
+        version: 0.6.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       astro:
         specifier: ^6.1.9
         version: 6.4.2(@types/node@24.12.4)(rollup@4.60.4)(yaml@2.9.0)
@@ -706,8 +706,8 @@ packages:
       react: '>=19'
       tailwindcss: '>=4'
 
-  '@revturbine/sdk@0.2.46':
-    resolution: {integrity: sha512-t6aoCRbRqsTFAFZFWrnDY0CYFvQc4/PkgJRAs24uX3O0qEq6K/i5HyRj0J+EbCYXzF0kCLdDoC5zlt2A/8tuMQ==}
+  '@revturbine/sdk@0.6.0':
+    resolution: {integrity: sha512-umIcezcGQt0cYEN5y6YOUgCNZGiyqn928C/yeW4kQth7x7ANaY3H9eBLOSW16R+5JmEOhYeLJYeCkDQiaCVxSw==}
     engines: {node: '>=22.13'}
     peerDependencies:
       react: '>=18'
@@ -3325,7 +3325,9 @@ snapshots:
       zod: 4.4.3
       zod-openapi: 5.4.6(zod@4.4.3)
 
-  '@revturbine/sdk@0.2.46(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
+  '@revturbine/sdk@0.6.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
+    dependencies:
+      zod: 4.4.3
     optionalDependencies:
       react: 19.2.6
       react-dom: 19.2.6(react@19.2.6)
