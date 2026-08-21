@@ -75,9 +75,28 @@ Create an account in the studio, then connect the CLI to it.
 You don't need an account to try the SDK locally — `local_only` runtime mode (used in the next step) runs entirely client-side from a bundled config. The account is for managing your live config and connecting the SDK in server mode.
 </Aside>
 
-## 3. Instrument your React app
+## 3. Instrument your app
 
 Wrap your app once, then add **slots** (where placements render) and **gates** (entitlement checks).
+
+:::note[Not using React?]
+The walkthrough below is React because that is the shortest path to something on
+screen. **RevTurbine does not require React.** The decision engine is
+framework-agnostic and ships as its own entry point:
+
+```ts
+import { initRevTurbine } from '@revturbine/sdk/headless';
+```
+
+That entry pulls in no React at all, so it runs on Svelte, Vue, plain
+TypeScript, and Node servers. You get the same entitlement checks and placement
+decisions; what you give up is the prebuilt `<Slot>` / `<Gate>` components, and
+you render the resolved content yourself.
+
+See the [Headless API guide](/guides/headless-api/) for the session, controller
+and gate surface, and [Server-side](/getting-started/server-side/) for Node. The
+Python and Rust SDKs evaluate the same Playbook with byte-identical results.
+:::
 
 <Steps>
 
@@ -192,7 +211,7 @@ revturbine launch --draft                  # submit → approve → launch the d
 
 <CardGrid>
   <Card title="Decisioning, not just rendering">
-    RevTurbine decides — caps, cooldowns, eligibility, and priority across competing placements. One `<Slot>` (or `usePlacement()`) returns the winner. No client-side orchestration, no homegrown segment logic. ML-scored propensity is on the roadmap, not shipped — see [Beyond gating](/docs/guides/beyond-gating/).
+    RevTurbine decides — caps, cooldowns, eligibility, and priority across competing placements. One `<Slot>` (or `usePlacement()`) returns the winner. No client-side orchestration, no homegrown segment logic. ML-scored propensity is on the roadmap, not shipped — see [Beyond gating](/guides/beyond-gating/).
   </Card>
 
   <Card title="Entitlements and placements in one engine, linked to billing">
@@ -201,6 +220,10 @@ revturbine launch --draft                  # submit → approve → launch the d
 
   <Card title="PM- and marketer-controlled, dev-decoupled">
     Drop a slot once. Your PM, growth, marketing, or CRO team changes content, targeting, and CTAs in the studio — no engineering tickets, no deploys. UI path resolvers keep the navigation contract in your code; everything else iterates without you.
+  </Card>
+
+  <Card title="Framework-agnostic, and the same answer everywhere">
+    The React components are a convenience, not the product. `@revturbine/sdk/headless` imports no React and runs on Svelte, Vue, plain TypeScript, or a Node server; Python and Rust SDKs evaluate the same Playbook. Every one of them runs the same engine over the same inputs, and a cross-language gate diffs their decisions byte-for-byte — so a check answers identically wherever you make it. See [Headless API](/guides/headless-api/).
   </Card>
 </CardGrid>
 

@@ -164,8 +164,6 @@ The SDK follows [Semantic Versioning](https://semver.org/):
   trial, and payment state automatically — invoked lazily on first need and
   re-invoked on expiry, with no further application code.
 
-### Added
-
 - `previewMode` init option. Set `previewMode: true` when an SDK instance is a
   non-install render — a docs example, a live playground, a component preview —
   to keep it out of SDK-adoption telemetry. Its only current effect is to
