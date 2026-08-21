@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/check-deps.mjs",
     "dev": "astro dev",
+    "prebuild": "node scripts/check-deps.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "lint:md": "markdownlint-cli2 \"src/content/docs/{getting-started,tutorials,guides,concepts,reference,playground}/**/*.{md,mdx}\"",
@@ -13,7 +15,8 @@
     "lint:config": "node scripts/check-config-examples.mjs",
     "lint:no-internal-pkg": "node scripts/check-no-internal-pkg.mjs",
     "check": "pnpm lint:no-internal-pkg && pnpm typecheck && pnpm lint:md && pnpm lint:config && pnpm build && pnpm lint:links",
-    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json"
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
+    "lint:deps": "node scripts/check-deps.mjs"
   },
   "packageManager": "pnpm@11.12.0",
   "engines": {
