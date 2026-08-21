@@ -32,7 +32,7 @@ pnpm add @revturbine/sdk
 ### Entitlement Checks
 
 ```ts
-import { initRevTurbine, RuntimeMode } from '@revturbine/sdk';
+import { initRevTurbine, RuntimeMode } from '@revturbine/sdk/headless';
 import playbook from './playbook.json';
 
 const sdk = await initRevTurbine({
@@ -59,7 +59,7 @@ if (!result.allowed) {
 Resolve placements server-side for SSR or email templates:
 
 ```ts
-import { initRevTurbine, RuntimeMode } from '@revturbine/sdk';
+import { initRevTurbine, RuntimeMode } from '@revturbine/sdk/headless';
 import playbook from './playbook.json';
 
 const sdk = await initRevTurbine({
@@ -130,7 +130,7 @@ A Python server SDK is also available, with byte-identical decisioning parity to
 
 | Language | Package | Status |
 |---|---|---|
-| Node.js | `@revturbine/sdk` (local runtime) | ✅ Available |
+| Node.js |  `@revturbine/sdk/headless` (local runtime) | ✅ Available |
 | Python | `revturbine` (PyPI) | ✅ Available |
 
 See the [Python SDK guide](/getting-started/python/) for setup and usage.
