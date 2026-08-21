@@ -13,6 +13,53 @@ The SDK follows [Semantic Versioning](https://semver.org/):
 
 ## Unreleased
 
+## 0.5.0
+
+### Fixed
+
+- **A mounted `<Gate>` / `useCan` never re-evaluated after `update()`.** The user
+  context is a private field on the SDK instance whose identity never changes, so
+  React was never told it had changed — the SDK returned `denied` while a mounted
+  gate kept rendering granted children. Only a remount or
+  `useEntitlement().recheck()` fixed it, and `useCan` has no `recheck`.
+
+  `identify()`, `setUserContext()`, `update()`, `updateUsage()` and the reset
+  verbs now notify subscribers; gates re-check on that signal. A changed
+  `context` prop on `<Gate check={{ entitlement, context }}>` re-evaluates too,
+  and `useUsageSnapshot` recomputes, so a meter stops rendering the balance it
+  first saw. **No application change is needed** — this is the fix that makes
+  "access flips with no app code" true.
+
+- **`<Gate>` put the paid affordance into server-rendered HTML.** The gate is
+  built inside a `useEffect`, and effects do not run during SSR — so `isLoading`
+  read `false`, `result` was `null`, and the gate emitted its children. A crawler
+  or JS-disabled reader saw the paid feature permanently; everyone else saw it
+  flash until hydration. It now withholds children until a real answer exists.
+
+- **An entitlement check that ERRORED used to grant.** A settled error is a
+  decision — the check ran and could not answer — so `<Gate>` now denies and
+  shows the fallback, matching how `useCan` already settled.
+
+- **A mis-shaped usage report wiped the meter while the gate kept the old
+  balance.** `init` takes usage as entry objects and `update()` types it
+  `Record<string, number>`; passing the init shape left `getUsage()` empty while
+  the decision evaluated a stale value. Both shapes are now accepted.
+
+### Added
+
+- **Unrecognized usage keys are reported.** `update({ usage: { generatons: 99 } })`
+  — one letter off — read as zero consumed at any consumption, so the limit never
+  bit and the check granted forever. A usage key matching no entitlement handle in
+  the Playbook now warns once per session (naming the key *and* the Playbook's
+  known handles) and emits an SDK-health beacon. It still stores the balance:
+  usage reporting is optional, so denying would break every legitimately-zero
+  user. **This catches the typo, not an app that never reports usage at all.**
+
+- `rt.onUserContextChange(listener)` — subscribe to user-context changes.
+  Returns an unsubscribe function.
+
+## 0.4.0
+
 ### Behaviour change — read this one
 
 - **A user with no resolvable plan now gets DENIED, not granted.** This is a
@@ -36,6 +83,18 @@ The SDK follows [Semantic Versioning](https://semver.org/):
   The same defect existed one level up, and is also fixed: the no-provider
   fallback path discarded the plan handle entirely, so it evaluated
   plan-targeted rules against no plan at all.
+
+### Fixed
+
+- **The Python and Rust server SDKs denied entitlements the TypeScript SDK
+  granted.** Both ports resolved entitlements and plans by `id` *or*
+  `unique_handle` — a resolution TypeScript dropped some time ago — and then
+  matched rules against the record's database id rather than its handle. On any
+  Playbook whose ids differ from its handles (every real export), every rule
+  missed and every check failed closed. Cross-language parity now covers the
+  evaluator directly, so the three languages are byte-identical on it.
+
+## 0.3.0
 
 ### Breaking changes
 
@@ -74,16 +133,6 @@ The SDK follows [Semantic Versioning](https://semver.org/):
 
 - JavaScript package installation and Node-based tooling now require Node.js
   22.13 or newer. Node.js 20 is no longer supported.
-
-### Fixed
-
-- **The Python and Rust server SDKs denied entitlements the TypeScript SDK
-  granted.** Both ports resolved entitlements and plans by `id` *or*
-  `unique_handle` — a resolution TypeScript dropped some time ago — and then
-  matched rules against the record's database id rather than its handle. On any
-  Playbook whose ids differ from its handles (every real export), every rule
-  missed and every check failed closed. Cross-language parity now covers the
-  evaluator directly, so the three languages are byte-identical on it.
 
 ### Added
 
