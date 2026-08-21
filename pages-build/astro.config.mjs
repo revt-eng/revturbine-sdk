@@ -63,12 +63,26 @@ function baseAbsoluteInternalLinks(base) {
               const np = prefix(p);
               return np ? `${pre}${np}"` : m;
             });
+        // The llms artifacts are MARKDOWN, not HTML, and they bypass the render
+        // pass entirely: `starlightLlmsTxt` runs with `rawContent: true` (see
+        // its config below for why), so authored links reach them exactly as
+        // written — 187 root-absolute `](/guides/…)` links that 404 under any
+        // subpath mount. These are the files written FOR agents, which makes a
+        // dead link in them worse than one on a page a human can navigate
+        // around.
+        const rewriteMarkdown = (text) =>
+          text.replace(/\]\((\/(?!\/)[^)\s]*)\)/g, (m, p) => {
+            const np = prefix(p);
+            return np ? `](${np})` : m;
+          });
         const walk = async (d) => {
           for (const e of await readdir(d, { withFileTypes: true })) {
             const p = join(d, e.name);
             if (e.isDirectory()) await walk(p);
             else if (e.name.endsWith('.html'))
               await writeFile(p, rewrite(await readFile(p, 'utf8')));
+            else if (/^llms.*\.txt$/.test(e.name))
+              await writeFile(p, rewriteMarkdown(await readFile(p, 'utf8')));
           }
         };
         await walk(root);
