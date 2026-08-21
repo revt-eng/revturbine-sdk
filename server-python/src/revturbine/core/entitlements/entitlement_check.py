@@ -77,11 +77,14 @@ def _apply_usage_enforcement(
         return {"status": "allowed", "allowed": True}
     if enforcement == "hard_block":
         return {"status": "denied", "allowed": False, "reason": base_reason}
-    if enforcement == "soft_block":
+    # `soft_block` is the pre-v15 spelling of `block_with_upsell` (plan 194
+    # TASK-8). Accepting it keeps a v13/v14 payload denying rather than falling
+    # to the unset-enforcement default; both spellings report the new reason.
+    if enforcement in ("block_with_upsell", "soft_block"):
         return {
             "status": "denied",
             "allowed": False,
-            "reason": f"{base_reason}_soft_block",
+            "reason": f"{base_reason}_block_with_upsell",
         }
     if enforcement == "degrade":
         return {

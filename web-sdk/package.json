@@ -1,7 +1,7 @@
 {
   "name": "@revt-eng/sdk",
-  "version": "0.6.0",
-  "description": "RevTurbine customer-facing SDK — placement decisioning, entitlement checks, and usage tracking.",
+  "version": "0.7.0",
+  "description": "RevTurbine customer-facing SDK \u2014 placement decisioning, entitlement checks, and usage tracking.",
   "type": "module",
   "packageManager": "pnpm@11.12.0",
   "engines": {
@@ -23,7 +23,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup && tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir dist/types && rollup -c rollup.dts.config.mjs",
+    "build": "tsup && tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir dist/types && rollup -c rollup.dts.config.mjs && node scripts/strip-internal-refs.mjs dist",
     "verify": "cd ../revturbine-web && npm run typecheck",
     "typecheck:sdk-api": "pnpm exec tsx ../scripts/check-sdk-types.ts",
     "playground": "vite --config playground/vite.config.ts",
@@ -44,9 +44,9 @@
     }
   },
   "devDependencies": {
-    "@revt-eng/core": "0.1.203",
-    "@revt-eng/schema": "0.1.203",
-    "@revt-eng/schema-external": "0.1.203",
+    "@revt-eng/core": "0.1.205",
+    "@revt-eng/schema": "0.1.205",
+    "@revt-eng/schema-external": "0.1.205",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "openapi-fetch": "^0.17.0",

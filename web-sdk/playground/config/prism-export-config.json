@@ -301,7 +301,7 @@
       "kind": "rate_limit",
       "rate_value": 30,
       "period_scope": "per_minute",
-      "enforcement": "soft_block",
+      "enforcement": "block_with_upsell",
       "current_usage": 0
     },
     {

@@ -281,11 +281,31 @@ fn hard_block_denies_at_the_limit() {
 }
 
 #[test]
-fn soft_block_denies_with_a_suffixed_reason() {
-    let r = derive(&usage_cfg(Some("soft_block")), &at_usage(10.0));
+fn block_with_upsell_denies_with_a_suffixed_reason() {
+    let r = derive(&usage_cfg(Some("block_with_upsell")), &at_usage(10.0));
     assert_eq!(r.status, "denied");
     assert!(!r.allowed);
-    assert_eq!(r.reason.as_deref(), Some("usage_limit_reached_soft_block"));
+    assert_eq!(
+        r.reason.as_deref(),
+        Some("usage_limit_reached_block_with_upsell")
+    );
+}
+
+#[test]
+fn soft_block_pre_v15_alias_denies_identically() {
+    // The pre-v15 spelling. A v13/v14 payload carries `soft_block` literally and
+    // must still deny; falling through to the unset-enforcement default would
+    // still deny, but as `limited` with no upsell signal — a silent decision
+    // change on decode.
+    let legacy = derive(&usage_cfg(Some("soft_block")), &at_usage(10.0));
+    let current = derive(&usage_cfg(Some("block_with_upsell")), &at_usage(10.0));
+    assert_eq!(legacy.status, current.status);
+    assert_eq!(legacy.allowed, current.allowed);
+    assert_eq!(legacy.reason, current.reason);
+    assert_eq!(
+        legacy.reason.as_deref(),
+        Some("usage_limit_reached_block_with_upsell")
+    );
 }
 
 #[test]

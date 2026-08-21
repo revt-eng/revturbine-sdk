@@ -924,7 +924,7 @@ export function SdkLocalHarnessApp() {
                           ? { kind: 'credits', allowance: 100, period: 'per_month', rollover: false, unit: selectedEntitlement.unit ?? 'credits' }
                           : selectedEntitlement.type === 'seat'
                             ? { kind: 'seat', included_seats: 5 }
-                            : { kind: 'usage_limit', limit_value: 100, unit: selectedEntitlement.unit ?? 'units', period: 'per_month', enforcement: 'soft_block' },
+                            : { kind: 'usage_limit', limit_value: 100, unit: selectedEntitlement.unit ?? 'units', period: 'per_month', enforcement: 'block_with_upsell' },
                     current_usage: 0,
                   }]);
                 }}

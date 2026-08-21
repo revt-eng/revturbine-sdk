@@ -103,6 +103,19 @@ export type {
   UsageTriggerPayload,
 } from './customer-side';
 
+/**
+ * Runtime-mode constants, re-exported here so a server integration never has
+ * to reach for the root entry to name a mode.
+ *
+ * The root barrel pulls in React. A plain Node server importing
+ * `RuntimeMode` from `@revturbine/sdk` therefore dies with
+ * "Cannot find package 'react'" before it evaluates anything — which is what
+ * the server-side docs told readers to do (plan 194 REQ-6). Additive: the root
+ * entry keeps exporting it.
+ */
+export { RuntimeMode } from './customer-side';
+export type { RevTurbineRuntimeMode } from './customer-side';
+
 // ── Headless controllers (framework-agnostic orchestration) ─────────────────
 export {
   PlacementController,

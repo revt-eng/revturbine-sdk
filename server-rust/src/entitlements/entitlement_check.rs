@@ -64,10 +64,14 @@ fn apply_usage_enforcement(
     }
     match enforcement.and_then(Value::as_str) {
         Some("hard_block") => EntitlementCheckResult::with_reason("denied", false, base_reason),
-        Some("soft_block") => EntitlementCheckResult::with_reason(
+        // `soft_block` is the pre-v15 spelling of `block_with_upsell` (plan 194
+        // TASK-8). Accepting it keeps a v13/v14 payload denying rather than
+        // falling to the unset-enforcement default below; both spellings report
+        // the new reason.
+        Some("block_with_upsell") | Some("soft_block") => EntitlementCheckResult::with_reason(
             "denied",
             false,
-            &format!("{base_reason}_soft_block"),
+            &format!("{base_reason}_block_with_upsell"),
         ),
         Some("degrade") => {
             EntitlementCheckResult::with_reason("limited", true, &format!("{base_reason}_degraded"))

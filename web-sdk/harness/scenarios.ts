@@ -893,15 +893,15 @@ export const DEFAULT_ENTITLEMENTS: HarnessEntitlement[] = [
 
 export const DEFAULT_ENTITLEMENT_RULES: HarnessEntitlementRule[] = [
   // Trial
-  { id: 'rule_1', entitlement_id: 'ent_api_calls', targets: [{ kind: 'plan', id: 'plan_trial' }], segment_ids: [], type_fields: { kind: 'usage_limit', limit_value: 1000, unit: 'calls', period: 'per_month', enforcement: 'soft_block' }, current_usage: 800 },
+  { id: 'rule_1', entitlement_id: 'ent_api_calls', targets: [{ kind: 'plan', id: 'plan_trial' }], segment_ids: [], type_fields: { kind: 'usage_limit', limit_value: 1000, unit: 'calls', period: 'per_month', enforcement: 'block_with_upsell' }, current_usage: 800 },
   { id: 'rule_2', entitlement_id: 'ent_seats', targets: [{ kind: 'plan', id: 'plan_trial' }], segment_ids: [], type_fields: { kind: 'seat', included_seats: 3 }, current_usage: 2 },
   { id: 'rule_3', entitlement_id: 'ent_credits', targets: [{ kind: 'plan', id: 'plan_trial' }], segment_ids: [], type_fields: { kind: 'credits', allowance: 50, period: 'per_month', rollover: false, unit: 'credits' }, current_usage: 42 },
   { id: 'rule_4', entitlement_id: 'ent_exports', targets: [{ kind: 'plan', id: 'plan_trial' }], segment_ids: [], type_fields: { kind: 'usage_limit', limit_value: 10, unit: 'exports', period: 'per_month', enforcement: 'hard_block' }, current_usage: 8 },
   // Starter
-  { id: 'rule_5', entitlement_id: 'ent_api_calls', targets: [{ kind: 'plan', id: 'plan_starter' }], segment_ids: [], type_fields: { kind: 'usage_limit', limit_value: 5000, unit: 'calls', period: 'per_month', enforcement: 'soft_block' }, current_usage: 4200 },
+  { id: 'rule_5', entitlement_id: 'ent_api_calls', targets: [{ kind: 'plan', id: 'plan_starter' }], segment_ids: [], type_fields: { kind: 'usage_limit', limit_value: 5000, unit: 'calls', period: 'per_month', enforcement: 'block_with_upsell' }, current_usage: 4200 },
   { id: 'rule_6', entitlement_id: 'ent_seats', targets: [{ kind: 'plan', id: 'plan_starter' }], segment_ids: [], type_fields: { kind: 'seat', included_seats: 10 }, current_usage: 7 },
   { id: 'rule_7', entitlement_id: 'ent_credits', targets: [{ kind: 'plan', id: 'plan_starter' }], segment_ids: [], type_fields: { kind: 'credits', allowance: 200, period: 'per_month', rollover: false, unit: 'credits' }, current_usage: 150 },
-  { id: 'rule_8', entitlement_id: 'ent_exports', targets: [{ kind: 'plan', id: 'plan_starter' }], segment_ids: [], type_fields: { kind: 'usage_limit', limit_value: 100, unit: 'exports', period: 'per_month', enforcement: 'soft_block' }, current_usage: 65 },
+  { id: 'rule_8', entitlement_id: 'ent_exports', targets: [{ kind: 'plan', id: 'plan_starter' }], segment_ids: [], type_fields: { kind: 'usage_limit', limit_value: 100, unit: 'exports', period: 'per_month', enforcement: 'block_with_upsell' }, current_usage: 65 },
   // Pro
   { id: 'rule_9', entitlement_id: 'ent_api_calls', targets: [{ kind: 'plan', id: 'plan_pro' }], segment_ids: [], type_fields: { kind: 'usage_limit', limit_value: 50000, unit: 'calls', period: 'per_month', enforcement: 'allow_overage' }, current_usage: 12000 },
   { id: 'rule_10', entitlement_id: 'ent_seats', targets: [{ kind: 'plan', id: 'plan_pro' }], segment_ids: [], type_fields: { kind: 'seat', included_seats: 50 }, current_usage: 22 },

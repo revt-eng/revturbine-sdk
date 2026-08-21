@@ -123,10 +123,17 @@ class TestUsageEnforcement:
             "remaining": 0,
         }
 
-    def test_soft_block(self) -> None:
-        assert _derive(self._ul("soft_block"), "u", context={"used": 12})["reason"] == (
-            "usage_limit_reached_soft_block"
+    def test_block_with_upsell(self) -> None:
+        assert _derive(self._ul("block_with_upsell"), "u", context={"used": 12})["reason"] == (
+            "usage_limit_reached_block_with_upsell"
         )
+
+    def test_soft_block_pre_v15_alias(self) -> None:
+        """The pre-v15 spelling must deny identically, not fall to the default."""
+        legacy = _derive(self._ul("soft_block"), "u", context={"used": 12})
+        current = _derive(self._ul("block_with_upsell"), "u", context={"used": 12})
+        assert legacy == current
+        assert legacy["reason"] == "usage_limit_reached_block_with_upsell"
 
     def test_degrade_is_limited_but_allowed(self) -> None:
         r = _derive(self._ul("degrade"), "u", context={"used": 12})

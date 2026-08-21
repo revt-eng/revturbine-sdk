@@ -2286,6 +2286,33 @@ export class RevTurbineCustomerSdk {
       tags: ensureArray(options.page?.tags),
     };
     this.anonymousId = this.resolveAnonymousId();
+    // Plan 194 REQ-10. `identify('')` is refused loudly; init was not, so an
+    // app that meant to supply an id and had none fell through to an anonymous
+    // id and evaluated normally — caps, usage attribution and analytics
+    // identity all keyed to a user that does not exist, with no signal.
+    //
+    // Deliberately narrow: this fires only when a `user` object IS supplied and
+    // its `id` is blank — the caller intended identity and did not get it.
+    // Omitting `user` entirely is legitimate (a signed-out visitor is what the
+    // anonymous id is FOR), and warning on that would be noise people learn to
+    // ignore.
+    if (
+      isRecord(options.user) &&
+      'id' in options.user &&
+      (typeof options.user.id !== 'string' || options.user.id.trim() === '')
+    ) {
+      console.error(
+        '[RevTurbine] init() received a `user` with a blank id; falling back to an ' +
+          'anonymous id. Caps, usage attribution and analytics identity will key to ' +
+          'that anonymous id, not to your user. Pass a stable internal user id, or ' +
+          'omit `user` entirely if the visitor really is signed out.',
+      );
+      try {
+        void this.capture(SDK_WARNING_EVENT_TYPE, { reason: 'init received a blank user id' });
+      } catch {
+        // Telemetry must never break the calling app.
+      }
+    }
     this.sessionId = requestId();
     this.providerRegistry = new DomainProviderRegistry();
     this.placementTypeRegistry = new PlacementTypeRegistry();
@@ -2757,6 +2784,23 @@ export class RevTurbineCustomerSdk {
       config_version: 'sdk-fallback',
       present_upsell: false,
     };
+  }
+
+  /**
+   * Whether the integrator explicitly configured an endpoint for `key`.
+   *
+   * Most SDK endpoints have a working default on `revturbine-web`, so the
+   * override is a convenience. A few do not — `placementTypes` is the live
+   * example: `/api/sdk/placement-types` was never built, and there is no
+   * `placement_types` table behind it. For those, the default is not a
+   * fallback but a guaranteed 404, so the call is only meaningful when the
+   * integrator has pointed it somewhere real (`custom_endpoints`).
+   *
+   * @internal
+   */
+  private hasEndpointOverride(key: keyof RevTurbineEndpointOverrides): boolean {
+    const override = this.endpointOverrides[key];
+    return typeof override === 'string' && override.trim().length > 0;
   }
 
   private endpointFor(
@@ -5163,8 +5207,34 @@ export class RevTurbineCustomerSdk {
     return id;
   }
 
+  /**
+   * Persist authored placement types to a configured backend.
+   *
+   * **Requires an explicit `placementTypes` endpoint override.** RevTurbine
+   * hosts no `/api/sdk/placement-types` route — the default path was never
+   * built, and there is no table behind it — so without an override this
+   * method is a no-op rather than a guaranteed 404. It previously threw
+   * `persist_placement_types_failed:404` in every non-`local_only` mode, which
+   * made a documented method unusable on the documented default path.
+   *
+   * Supply `endpointOverrides.placementTypes` (or override the provider hook of
+   * the same name) to send these somewhere real.
+   */
   async persistPlacementTypes(types: RevTurbinePlacementTypeEntity[]): Promise<void> {
     if (this.isLocalOnlyMode()) return;
+
+    // No default route exists for this verb, so an unconfigured call can only
+    // 404. Fail silent-but-visible instead of throwing (plan 208, F-88).
+    if (!this.hasEndpointOverride('placementTypes')) {
+      if (isDevelopmentBuild()) {
+        console.warn(
+          '[RevTurbine] persistPlacementTypes() was called but no `endpointOverrides.placementTypes` is configured. ' +
+            'RevTurbine hosts no default route for this verb, so the call was skipped. ' +
+            'Configure an endpoint if you need placement types persisted.',
+        );
+      }
+      return;
+    }
 
     const normalizedTypes = (Array.isArray(types) ? types : [])
       .map((entry) => normalizePlacementTypeEntity(entry))

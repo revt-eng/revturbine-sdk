@@ -33,7 +33,7 @@ const REPO = resolve(HERE, '..');
  *
  * Rule outcomes come from the `@revt-eng/core` evaluator; infrastructure
  * denials from `customer-side.ts`. The two limit codes additionally carry an
- * enforcement suffix (`_soft_block` / `_degraded` / `_overage`), generated
+ * enforcement suffix (`_block_with_upsell` / `_degraded` / `_overage`), generated
  * rather than written out, so the suffixes are listed separately.
  */
 const EMITTED_BASE = [
@@ -49,7 +49,7 @@ const EMITTED_BASE = [
   'sdk_disabled_provider_failure',
 ] as const;
 
-const ENFORCEMENT_SUFFIXES = ['_soft_block', '_degraded', '_overage'] as const;
+const ENFORCEMENT_SUFFIXES = ['_block_with_upsell', '_degraded', '_overage'] as const;
 const SUFFIXABLE = ['usage_limit_reached', 'credit_balance_exhausted'] as const;
 
 const EMITTED = new Set<string>([
@@ -111,6 +111,7 @@ const NOT_A_REASON_CODE = new Set([
   'price_per_unit',
   'rate_limit',
   'soft_block',
+  'block_with_upsell',
   'hard_block',
   'allow_overage',
   'current_tier',

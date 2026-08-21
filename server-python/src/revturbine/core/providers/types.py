@@ -155,7 +155,7 @@ class EntitlementGrant(_EntitlementGrantRequired, total=False):
     limit: float
     used: float
     allocation: str
-    enforcement: Literal["hard_block", "soft_block", "degrade", "allow_overage"]
+    enforcement: Literal["hard_block", "block_with_upsell", "degrade", "allow_overage"]
     source: Literal["rule", "user_context", "override"]
     plan_id: str
     segment_id: str

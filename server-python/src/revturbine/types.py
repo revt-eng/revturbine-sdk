@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.203/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.205/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -1001,39 +1001,6 @@ class BillingHealthIssue(Enum):
     payment_method_missing = "payment_method_missing"
 
 
-class Decision(Enum):
-    show = "show"
-    suppress = "suppress"
-    defer = "defer"
-
-
-class MatchedRule(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    rule_id: str
-    rule_type: str
-    matched: bool
-
-
-class DecisionLog(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-    tenant_id: constr(min_length=1)
-    customer_id: constr(min_length=1)
-    placement_id: constr(min_length=1)
-    decision: Decision
-    reason: constr(max_length=500)
-    matched_rules: list[MatchedRule] | None = Field([], validate_default=True)
-    experiment_id: str | None = None
-    variant_id: str | None = None
-    latency_ms: confloat(ge=0.0) | None = None
-
-
 class DimensionCategory(Enum):
     default = "default"
     custom = "custom"
@@ -1071,42 +1038,9 @@ class EnforcementAction(Enum):
 
 class EnforcementMode(Enum):
     hard_block = "hard_block"
-    soft_block = "soft_block"
+    block_with_upsell = "block_with_upsell"
     degrade = "degrade"
     allow_overage = "allow_overage"
-
-
-class Result(Enum):
-    granted = "granted"
-    denied = "denied"
-    limited = "limited"
-    metered = "metered"
-
-
-class Source(Enum):
-    plan = "plan"
-    addon = "addon"
-    override = "override"
-    trial = "trial"
-
-
-class EntitlementEvalLog(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-    tenant_id: constr(min_length=1)
-    customer_id: constr(min_length=1)
-    entitlement_handle: constr(min_length=1)
-    entitlement_type: str
-    result: Result
-    current_usage: float | None = None
-    limit: float | None = None
-    source: Source
-    source_id: constr(min_length=1)
-    latency_ms: confloat(ge=0.0) | None = None
 
 
 class EntitlementGrantSource(Enum):
@@ -2088,28 +2022,6 @@ class PresentationOutcome(Enum):
     dismissed = "dismissed"
     reminded = "reminded"
     suppressed = "suppressed"
-
-
-class PresentationRecord(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-    tenant_id: constr(min_length=1)
-    customer_id: constr(min_length=1)
-    placement_id: constr(min_length=1)
-    payload_id: str | None = None
-    variant_id: str | None = None
-    surface_type: str
-    presented_at: AwareDatetime
-    dismissed_at: AwareDatetime | None = None
-    cta_clicked_at: AwareDatetime | None = None
-    cta_action_type: str | None = None
-    converted: bool | None = False
-    session_id: str | None = None
-    metadata: dict[str, Any] | None = {}
 
 
 class PriceSource(Enum):

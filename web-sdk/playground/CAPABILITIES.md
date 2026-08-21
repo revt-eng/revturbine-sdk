@@ -24,7 +24,7 @@ Schema references below point at `revturbine-scaffold/src/config/models/schema.t
 | Credits entitlement | `type: credits` — `credits` (top-up available) | §2.3 |
 | Rate-limit entitlement | `type: rate_limit` — `burst_rate` | §2.3 |
 | Capability-tier entitlement | `type: capability_tier` — `resolution_tier` (watermark) | §2.3 |
-| Enforcement modes | rule `type_fields.enforcement`: `hard_block` / `soft_block` / `allow_overage` | `placement-prioritization.md` |
+| Enforcement modes | rule `type_fields.enforcement`: `hard_block` / `block_with_upsell` / `allow_overage` | `placement-prioritization.md` |
 | Segments / targeting | 10 `segments[]` + payload `target.segment_chips` | `targeting-studio-ui.md` §4.0 |
 | Fixed placements | `category: fixed` + `surface_render` trigger — nav button, quota meter, credit counter | `placement-studio-ui.md` |
 | Gated placements | `category: gated` + `entitlement_gate` trigger — hard / soft / inline gates | `sdk.md` §3 |
