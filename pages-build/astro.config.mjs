@@ -243,7 +243,12 @@ export default defineConfig({
             { label: 'Configuration', slug: 'reference/configuration' },
             { label: 'Error Codes', slug: 'reference/errors' },
             { label: 'Compatibility Matrix', slug: 'reference/compatibility' },
-            { label: 'Changelog', slug: 'reference/changelog' },
+            // Changelog is intentionally unpublished for now — we don't want to
+            // expose release-by-release iteration pace publicly. The page source
+            // lives at src/content/docs/reference/_changelog.md; the leading `_`
+            // keeps it out of the content collection (no route, no sitemap entry,
+            // no llms.txt content). To republish: drop the underscore and restore
+            // this entry as { label: 'Changelog', slug: 'reference/changelog' }.
           ],
         },
         {
