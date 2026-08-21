@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "revturbine"
-version = "0.5.0"
+version = "0.6.0"
 description = "RevTurbine SDK for Python — local-mode and HTTP-mode placement and entitlement decisioning"
 requires-python = ">=3.10"
 license = "MIT"
@@ -47,7 +47,7 @@ dev = [
 # unchanged rather than folding it into a dual-mode dispatch (the original
 # plan's `runtime_mode` framing is superseded).
 [tool.hatch.build.targets.wheel]
-packages = ["src/revturbine", "revturbine_server"]
+packages = ["src/revturbine"]
 
 [tool.ruff]
 line-length = 100

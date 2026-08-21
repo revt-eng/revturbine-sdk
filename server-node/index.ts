@@ -1,12 +1,22 @@
 /**
  * @module @revt-eng/sdk/server-node
  *
- * Server-side evaluation SDK for RevTurbine.
+ * Server-side support for RevTurbine on Node.
  *
- * Use `RevTurbineServer` to pre-evaluate placement decisions, entitlements,
- * and user context on the server. The resulting `ServerEvaluationPayload`
- * can be serialized into your page props and consumed by the client-side SDK
- * via `sdk.hydrate(payload)`.
+ * **Evaluation does not happen here.** It is a pure function of
+ * (UserContext, Playbook) and runs in the customer SDKs — there is no hosted
+ * decision endpoint (plan 192). For local server-side evaluation use
+ * `LocalEvaluationServer`, which fetches a Playbook and evaluates in-process.
+ *
+ * `RevTurbineServer` is now a **client-session minter**: it exchanges your
+ * secret key for a short-lived, browser-safe `rt_client_` token that the
+ * client SDK's `clientSession` callback consumes to ingest server-derived
+ * plan, trial, and payment state.
+ *
+ * Its decision methods — `evaluate`, `getPlacement`, `checkEntitlement`,
+ * `getTrialStatus` — were REMOVED in plan 194 TASK-9. Every one of them
+ * called an endpoint plan 192 deleted, so each had been returning a network
+ * error since that shipped.
  *
  * @example
  * ```ts
@@ -18,12 +28,8 @@
  *   endpoint: 'https://edge.example.com',
  * });
  *
- * const payload = await server.evaluate({
- *   userId: 'user_123',
- *   traits: { plan: 'pro' },
- *   placements: [{ slotId: 'hero_banner' }],
- *   includeTheme: true,
- * });
+ * // Hand this to the browser; the client SDK re-mints on expiry.
+ * const { token } = await server.createClientSession({ userId: 'user_123' });
  * ```
  */
 export { RevTurbineServer, RevTurbineClientSessionError } from './client';

@@ -213,12 +213,13 @@ class TestLegacyClientCoexistence:
         ):
             assert isinstance(cls, type)
 
-        legacy = importlib.import_module("revturbine_server")
-        assert legacy.__name__ == "revturbine_server"
-        assert hasattr(legacy, "RevTurbineServer")
+        # The legacy `revturbine_server` thin-RPC client was REMOVED (plan 194
+        # TASK-9). Every public method on it — evaluate / check_entitlement /
+        # can / get_placement / get_trial_status — called a hosted decision
+        # endpoint that plan 192 deleted, so the whole module was dead. Unlike
+        # node's RevTurbineServer it had no client-session mint to keep.
+        with pytest.raises(ModuleNotFoundError):
+            importlib.import_module("revturbine_server")
 
-        # Still independent: distinct top-level package; the headless SDK
-        # does not require the legacy client.
         revturbine = importlib.import_module("revturbine")
-        assert legacy is not revturbine
         assert hasattr(revturbine, "RevTurbineCustomerSdk")
