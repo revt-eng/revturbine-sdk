@@ -41,15 +41,16 @@ A recurring loop looks like:
 
 ```bash
 # 1. Your agent proposes a config change (new segment, adjusted limit, new copy).
-# 2. Verify it against the schema before anything ships.
-revturbine verify ./playbook.json
+# 2. Validate it against the real schema before anything ships.
+revturbine validate ./playbook.json
 
-# 3. Preview / evaluate the candidate against real inputs.
-revturbine preview ./playbook.json
-revturbine evaluate ./playbook.json --handle data_export
+# 3. Upload it as the open draft, then preview and evaluate that draft.
+revturbine upload ./playbook.json
+revturbine preview
+revturbine evaluate --draft --entitlement data_export
 
-# 4. Stage it through the review lifecycle (draft -> submit -> approve -> deploy).
-revturbine deploy ./playbook.json
+# 4. Launch it through the review lifecycle.
+revturbine launch --draft
 ```
 
 The guardrails are the point: the agent proposes, the CLI **verifies against the real schema** and lets you **preview the impact** before deploy, and the change moves through the same draft → submit → approve → deploy lifecycle a human would use. Your app code never changes — the agent only ever edits config.

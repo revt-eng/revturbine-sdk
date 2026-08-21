@@ -176,14 +176,14 @@ Your monetization model — **plans, entitlements, entitlement rules, segments, 
 The CLI ships config through reviewable **change sets** (`draft → submit → approve → deploy`):
 
 ```bash
-revturbine verify ./playbook.json   # schema-validate locally, no writes
+revturbine validate ./playbook.json # schema-validate locally, no writes
 revturbine diff                            # compare your file against the live config
 revturbine upload ./playbook.json   # stage a draft change set
-revturbine deploy                          # submit → approve → deploy the draft
+revturbine launch --draft                  # submit → approve → launch the draft
 ```
 
 <Aside type="tip">
-`revturbine export --save playbook.json` pulls your live config back down — handy for bundling into the SDK's `local_only` mode.
+`revturbine download --live --save playbook.json` pulls your live config back down — handy for bundling into the SDK's `local_only` mode.
 </Aside>
 
 ---

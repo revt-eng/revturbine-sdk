@@ -129,7 +129,7 @@ A credits flow that:
    }
    ```
 
-   `limited` flips to `true` as the balance approaches empty (the SDK's "approaching limit" state), so you can restyle the badge without re-deriving the percentage yourself.
+   `limited` flips to `true` when the balance is **at or past** the allowance — not as it approaches one. There is no "approaching" state: to warn before the cap, compare `current` against `limit` yourself (the placement below triggers at 80%). And read `allowed` before granting access — under the default enforcement a `limited` result is `allowed: false`.
 
 4. **Render the warning slot**
 

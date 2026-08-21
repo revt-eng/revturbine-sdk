@@ -171,7 +171,7 @@ interface EntitlementResult {
 | Status | Meaning |
 |---|---|
 | `allowed` | Full access — proceed normally |
-| `limited` | Access granted but approaching limit (e.g., 85% usage) |
+| `limited` | At or past a limit. **Read `allowed`, not this** — under the default (unset) enforcement `limited` carries `allowed: false`; only `degrade` and `allow_overage` pair it with `allowed: true`. There is no "approaching" state. |
 | `denied` | No access — show upgrade prompt or block |
 
 ## Usage Tracking
