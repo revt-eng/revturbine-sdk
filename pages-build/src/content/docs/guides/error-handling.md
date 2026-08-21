@@ -140,10 +140,24 @@ the rule's `enforcement` mode:
 
 | Suffix | `enforcement` | Outcome |
 |---|---|---|
+| *(none)* | `hard_block` | `denied` — hard stop |
 | *(none)* | unset | `limited`, **not** allowed |
-| `_soft_block` | `soft_block` | `denied` — render the upsell placement |
+| `_block_with_upsell` | `block_with_upsell` | `denied` — render the upsell placement |
 | `_degraded` | `degrade` | `limited` but **allowed** (throttled, not blocked) |
 | `_overage` | `allow_overage` | `allowed` — metered overage |
+
+Two modes produce no suffix and they are **not** equivalent: `hard_block`
+denies, while leaving `enforcement` unset returns `limited` and does not allow.
+Branch on `allowed`, never on the presence of a suffix.
+
+:::note[Renamed in schema v15]
+`block_with_upsell` was previously called `soft_block`. The name was misleading —
+`soft_` reads as permissive, but the mode **denies**; it just tells you to render
+an upsell rather than a hard stop. Behaviour is unchanged, and the old spelling
+is still accepted when it appears in an already-compiled Playbook, so existing
+payloads keep deciding exactly as before. The reason code it produces is now
+`..._block_with_upsell` in every case.
+:::
 
 ### Denied because the SDK could not decide
 
