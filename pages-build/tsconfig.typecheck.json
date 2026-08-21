@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "//": [
+    "Typecheck the TypeScript pages-build owns: the Sandpack demo fixtures and",
+    "the docs components (plan 195 item 5c, widened 2026-08-21).",
+    "",
+    "WHY THIS EXISTS. pages-build's check chain is lint + astro build +",
+    "link-check, and `astro build` bundles standalone .ts/.tsx WITHOUT",
+    "type-checking it. So `demoUsers.ts` kept `plan: { id }` for months after the",
+    "field was renamed to `handle` — the file even closed with",
+    "`satisfies Record<DemoUserId, DemoUser>`, so the types were right and",
+    "applied; nothing ever RAN them. The next docs deploy would have installed a",
+    "current SDK into every Sandpack sandbox and denied every entitlement check",
+    "in every live demo.",
+    "",
+    "SCOPE — galleries are excluded, deliberately. `src/components/galleries/**`",
+    "imports Storybook stories from SDK source by relative path",
+    "(`../../../../web-sdk/placements/slots/*.stories`). Following those imports",
+    "drags web-sdk source into this program, which fails for two reasons that are",
+    "about the program shape, not about the code being wrong:",
+    "  1. the stories import `@storybook/react-vite`, which is not declared as a",
+    "     dependency anywhere in this repo and is absent from the lockfile;",
+    "  2. compiling web-sdk source alongside the published `@revturbine/sdk`",
+    "     .d.ts puts two structurally identical `RevTurbine` global declarations",
+    "     in one program, which is a hard TS2717 conflict.",
+    "Installing Storybook would not fix (2). Both are real and both are tracked",
+    "separately — see the PR body. Vite resolves these at build time, so the",
+    "gallery pages themselves render; what is missing is a type gate over them."
+  ],
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["astro/client"],
+    "skipLibCheck": true
+  },
+  "include": ["src/sandpack/**/*.ts", "src/components/**/*.ts", "src/components/**/*.tsx"],
+  "exclude": ["src/components/galleries/**"]
+}

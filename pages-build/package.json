@@ -12,8 +12,8 @@
     "lint:snippets": "node scripts/check-snippets.mjs",
     "lint:config": "node scripts/check-config-examples.mjs",
     "lint:no-internal-pkg": "node scripts/check-no-internal-pkg.mjs",
-    "check": "pnpm lint:no-internal-pkg && pnpm typecheck:sandpack && pnpm lint:md && pnpm lint:config && pnpm build && pnpm lint:links",
-    "typecheck:sandpack": "tsc --noEmit -p tsconfig.sandpack.json"
+    "check": "pnpm lint:no-internal-pkg && pnpm typecheck && pnpm lint:md && pnpm lint:config && pnpm build && pnpm lint:links",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json"
   },
   "packageManager": "pnpm@11.12.0",
   "engines": {

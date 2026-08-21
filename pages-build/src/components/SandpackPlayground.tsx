@@ -7,14 +7,11 @@ import React, { useMemo, useState, useEffect } from 'react';
 import type { SandpackScenario } from '../sandpack/scenarios';
 import { sandpackScenarios } from '../sandpack/scenarios';
 import { demoUsers } from '../sandpack/demoUsers';
-import { DEMO_USER_IDS } from '../sandpack/shared';
+import { DEMO_USER_IDS, type DemoUserId } from '../sandpack/shared';
 
 // Raw string imports for Sandpack virtual filesystem
-// @ts-expect-error -- Vite raw import
 import exportedConfigRaw from '../sandpack/example-playbook.json?raw';
-// @ts-expect-error -- Vite raw import
 import demoUsersRaw from '../sandpack/demoUsers.ts?raw';
-// @ts-expect-error -- Vite raw import
 import sharedRaw from '../sandpack/shared.ts?raw';
 
 // Typed import for host-side inspector usage
@@ -736,8 +733,8 @@ function PlaygroundPanels({
   onOpenSandbox,
 }: {
   scenario: SandpackScenario;
-  selectedUserId: string;
-  onUserChange: (userId: string) => void;
+  selectedUserId: DemoUserId;
+  onUserChange: (userId: DemoUserId) => void;
   sandboxOpen: boolean;
   onOpenSandbox: () => void;
 }) {
@@ -783,7 +780,10 @@ function PlaygroundPanels({
               id={`rt-user-${scenario.id}`}
               className="rt-user-select"
               value={selectedUserId}
-              onChange={(e) => onUserChange(e.target.value)}
+              onChange={(e) => {
+                const next = DEMO_USER_IDS.find((id) => id === e.target.value);
+                if (next) onUserChange(next);
+              }}
             >
               {DEMO_USER_IDS.map((id) => (
                 <option key={id} value={id}>
@@ -818,8 +818,8 @@ function PlaygroundPanels({
 /** Host-side SDK session shared by the output and the inspector. */
 function PlaygroundRuntime(props: {
   scenario: SandpackScenario;
-  selectedUserId: string;
-  onUserChange: (userId: string) => void;
+  selectedUserId: DemoUserId;
+  onUserChange: (userId: DemoUserId) => void;
   sandboxOpen: boolean;
   onOpenSandbox: () => void;
 }) {

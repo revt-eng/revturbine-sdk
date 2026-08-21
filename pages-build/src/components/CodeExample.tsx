@@ -10,17 +10,13 @@ import React from 'react';
 // demo config + demo user + CTA resolvers). Mounted as a visible tab so readers can
 // inspect the one-time setup, while each example's App.tsx stays focused on the
 // component being demonstrated.
-// @ts-expect-error -- Vite raw import
 import demoAppRaw from '../sandpack/DemoApp.tsx?raw';
 
 // Standard fixtures, mounted (hidden) into every example's virtual filesystem so
 // `DemoApp` — and the usage code, if it wants — can import the same demo config +
 // users the rest of the docs use. Raw-imported as strings via Vite's `?raw`.
-// @ts-expect-error -- Vite raw import
 import exportedConfigRaw from '../sandpack/example-playbook.json?raw';
-// @ts-expect-error -- Vite raw import
 import demoUsersRaw from '../sandpack/demoUsers.ts?raw';
-// @ts-expect-error -- Vite raw import
 import sharedRaw from '../sandpack/shared.ts?raw';
 
 // Published `@revturbine/sdk` version to install in the sandbox. Injected at build
