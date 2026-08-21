@@ -70,7 +70,7 @@ The engine emits `cta_path: { type: "custom", url: "/integrations/crm", org: "ac
 The SDK parses that into a `PlacementUiPath`, lifting known keys (`url`, …) onto
 typed fields and collecting the rest into `params`:
 
-```ts
+```ts docs-check=false reason="shape sketch of a received value, not a statement"
 // what your resolver receives
 { type: "custom", url: "/integrations/crm", params: { org: "acme", flow: "oauth" } }
 ```

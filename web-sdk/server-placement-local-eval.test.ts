@@ -27,7 +27,7 @@ function serverSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustome
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
     ...over,
   });
-  sdk.setUserContext({ id: 'user_t4', plan: { id: 'starter', name: 'Starter' } });
+  sdk.setUserContext({ id: 'user_t4', plan: { handle: 'starter', name: 'Starter' } });
   return sdk;
 }
 

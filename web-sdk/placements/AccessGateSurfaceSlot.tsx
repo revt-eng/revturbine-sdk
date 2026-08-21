@@ -154,7 +154,11 @@ export function AccessGateSurfaceSlot({
   // For pure-usage checks, we still use an entitlement handle if available;
   // usage thresholds are evaluated from the usage snapshot separately.
   const entitlementHandle = primaryEntitlement?.entitlement ?? '';
-  const { result: entitlementResult, isLoading: entitlementLoading } = useEntitlement({
+  const {
+    result: entitlementResult,
+    isLoading: entitlementLoading,
+    error: entitlementError,
+  } = useEntitlement({
     handle: entitlementHandle,
     context: primaryEntitlement?.context,
     autoCheck: !!entitlementHandle,
@@ -180,8 +184,11 @@ export function AccessGateSurfaceSlot({
   // (plan 179 TASK-10).
   const entitlementDenied =
     !!entitlementHandle &&
-    !!entitlementResult &&
-    (entitlementResult.status === 'denied' || entitlementResult.allowed === false);
+    // A check that errored denies (plan 194 REQ-4) — the SDK is fail-closed,
+    // and "we could not answer" is not a grant.
+    (entitlementError !== null ||
+      (!!entitlementResult &&
+        (entitlementResult.status === 'denied' || entitlementResult.allowed === false)));
   const denied = entitlementDenied || usageDenied;
   // Limited — still entitled (degrade / running low), unless it also denies.
   const limited = !!entitlementHandle && entitlementResult?.status === 'limited';
@@ -216,9 +223,31 @@ export function AccessGateSurfaceSlot({
     surfaceSlot,
   });
 
-  // While the entitlement check is loading, render nothing to avoid
-  // a flash of children → gate content.
-  if (entitlementLoading && entitlementHandle) return null;
+  // Deny until resolved — render nothing until a real answer exists.
+  //
+  // This used to key on `entitlementLoading` alone, which is false during
+  // server rendering: the gate is constructed inside a `useEffect`, effects do
+  // not run on the server, so there is no gate to be "loading". `result` was
+  // null, `denied` computed false, and the gate emitted its CHILDREN into the
+  // server HTML (plan 194 REQ-4).
+  //
+  // That is a fail-open in the one place the client cannot correct: a crawler
+  // or a JS-disabled reader saw the paid affordance permanently, and everyone
+  // else saw it flash until hydration closed the gate. It also contradicted
+  // `useCan`'s own deny-until-ready contract.
+  //
+  // Keying on "no result yet" covers both the loading window and the
+  // no-effects-ran window with one condition. `null` rather than
+  // `deniedFallback` on purpose: the server has run no check, so rendering the
+  // upsell would flash an upgrade prompt at users who are in fact entitled.
+  // A SETTLED error is a decision, not a pending one: the check ran and could
+  // not answer, so it denies and shows the fallback. Folding it into
+  // "unresolved" would render nothing forever after a failed check — safe, but
+  // a blank where the upsell belongs. `useCan` settles the same way
+  // (`can: false`) when a check throws.
+  const entitlementUnresolved =
+    !!entitlementHandle && entitlementResult === null && entitlementError === null;
+  if (entitlementUnresolved || (entitlementLoading && entitlementHandle)) return null;
 
   // Granted (allowed, or limited with the evaluator's allowed verdict).
   if (!denied) {

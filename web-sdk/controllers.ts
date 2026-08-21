@@ -806,6 +806,37 @@ export class EntitlementGate {
     return () => { this.listeners.delete(listener); };
   }
 
+  /**
+   * Re-evaluate whenever the user context changes (plan 194 REQ-3).
+   *
+   * `notify()` fires only from inside `check()` — it announces this gate's own
+   * re-check and never knew a context change had happened. So after
+   * `update({ usage: … })` the SDK returned `denied` while a mounted gate kept
+   * rendering granted children, and only a remount or a manual `recheck()`
+   * fixed it.
+   *
+   * Only re-checks a gate that has already produced a result: before the first
+   * `check()` there is nothing on screen to be stale, and firing then would
+   * turn every `identify()` at startup into a redundant evaluation.
+   *
+   * Returns an unsubscribe function. Call it when the gate is discarded —
+   * without that, a gate outlives its consumer and keeps re-checking.
+   */
+  watchUserContext(): () => void {
+    // `onUserContextChange` is new in this release, and `RevTurbineCustomerSdk`
+    // is a class consumers hand-roll test doubles for. A double built against
+    // the previous surface would otherwise throw from inside a React effect —
+    // and an SDK that can break the host app's render has failed at its one
+    // hard guarantee. Degrade to the pre-subscription behaviour instead.
+    const subscribe = (this.sdk as Partial<RevTurbineCustomerSdk>).onUserContextChange;
+    if (typeof subscribe !== 'function') return () => {};
+
+    return subscribe.call(this.sdk, () => {
+      if (this._result === null && !this._isLoading) return;
+      void this.check();
+    });
+  }
+
   private notify(): void {
     for (const listener of this.listeners) {
       listener();
@@ -919,7 +950,9 @@ export class SdkSession {
    * upsert (`update({ plan: {...} })`, `update({ usage: {...} })`, …).
    * Alias of the SDK's `update()`, promoted onto the session facade so the
    * documented `session.update()` verb is real (plan 179 Q-1/Q-3 ruling).
-   * Unrecognized keys dev-warn and drop, exactly as on the SDK.
+   * Unrecognized keys warn (prod-visible, once per session) and drop, exactly
+   * as on the SDK — plan 191 Q-5 made the warning prod-visible rather than
+   * dev-only, so this comment was stale in the direction that matters.
    */
   update(patch: RevTurbineUpdateInput): void {
     this.sdk.update(patch);

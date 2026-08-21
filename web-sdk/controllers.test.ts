@@ -731,8 +731,8 @@ describe('SdkSession', () => {
 
   describe('user context', () => {
     it('delegates identify() to SDK', () => {
-      session.identify('user_2', { plan: { id: 'pro' } } as any);
-      expect(sdk.identify).toHaveBeenCalledWith('user_2', { plan: { id: 'pro' } });
+      session.identify('user_2', { plan: { handle: 'pro' } } as any);
+      expect(sdk.identify).toHaveBeenCalledWith('user_2', { plan: { handle: 'pro' } });
     });
 
     it('delegates resetIdentity() to SDK', () => {
@@ -836,8 +836,8 @@ describe('SdkSession', () => {
     });
 
     it('update() delegates to SDK update()', () => {
-      session.update({ plan: { id: 'pro', name: 'Pro' } } as any);
-      expect(sdk.update).toHaveBeenCalledWith({ plan: { id: 'pro', name: 'Pro' } });
+      session.update({ plan: { handle: 'pro', name: 'Pro' } } as any);
+      expect(sdk.update).toHaveBeenCalledWith({ plan: { handle: 'pro', name: 'Pro' } });
     });
   });
 

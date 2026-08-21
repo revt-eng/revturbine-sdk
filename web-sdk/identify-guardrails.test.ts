@@ -83,7 +83,10 @@ describe('identify() plan identity is handle-based (plan 191 REQ-1/REQ-2)', () =
 
   // The removed key is REJECTED, not silently tolerated: TypeScript stops it
   // at compile time, but a plain-JS caller would otherwise get a user with no
-  // plan and every plan-targeted rule quietly failing closed.
+  // plan. Until plan 194 REQ-1 that meant every plan-targeted rule quietly
+  // GRANTED — this comment said "failing closed", which was wrong in the
+  // dangerous direction. The core now denies with `no_plan_identity`; the loud
+  // rejection here is what turns a silent misconfiguration into a visible one.
   it('rejects a removed plan.id: strips it, errors loudly, and says matching is broken', () => {
     const sdk = makeLocalSdk();
     sdk.identify('user_1', { plan: { id: 'starter', name: 'Starter' } } as never);

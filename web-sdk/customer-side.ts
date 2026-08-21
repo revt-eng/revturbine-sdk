@@ -32,6 +32,9 @@ import type {
   TrackEvent,
 } from '@revt-eng/schema';
 import {
+  EVENT_PREFIX_FAMILIES,
+  SDK_AUTOMATIC_NON_EMITTED_NAMES,
+  SDK_CLIENT_EVENT_NAMES,
   SurfaceTypeSchema,
   TriggerEventTypeSchema,
 } from '@revt-eng/schema';
@@ -1790,15 +1793,24 @@ function liftClickstreamFields(
 /** The lifted event origin (plan 144 TASK-10). Matches scaffold's `EventOriginSchema`. */
 type EventOrigin = 'explicit' | 'automatic' | 'derived' | 'raw';
 
-// Event names the SDK emits on its own behalf (auto-tracked lifecycle + derived
-// signals), as opposed to a customer `track()` call. Prefix families cover the
-// placement / gate / slot / engagement lifecycle; the set covers the rest.
-const SDK_AUTOMATIC_EVENT_PREFIXES = ['placement_', 'gate_', 'slot_', 'engagement_'] as const;
+// Event names the SDK emits on its own behalf (auto-tracked lifecycle +
+// derived signals), as opposed to a customer `track()` call — the input to
+// origin classification.
+//
+// CONVERGED onto the scaffold taxonomy (plan 181 TASK-2 / REQ-8): the fixed
+// names come from `SDK_CLIENT_EVENT_NAMES`, so origin classification and the
+// data dictionary cannot disagree about what the platform emits. Two things
+// are added on top, and both are deliberate:
+//   - `SDK_AUTOMATIC_NON_EMITTED_NAMES` — names the SDK classifies as
+//     automatic without emitting (today: `impression`, an interaction TYPE
+//     that lands in placement_presentations.outcome). They belong to origin
+//     classification, not to the event taxonomy.
+//   - the prefix families, whose members are author-defined and therefore
+//     unenumerable; the taxonomy declares them AS open.
+const SDK_AUTOMATIC_EVENT_PREFIXES = EVENT_PREFIX_FAMILIES.map((family) => family.prefix);
 const SDK_AUTOMATIC_EVENT_NAMES = new Set<string>([
-  'impression',
-  'segment_enrolled',
-  'segment_unenrolled',
-  USER_CONTEXT_FIELDS_EVENT,
+  ...SDK_CLIENT_EVENT_NAMES,
+  ...SDK_AUTOMATIC_NON_EMITTED_NAMES,
 ]);
 
 /**
@@ -4173,6 +4185,23 @@ export class RevTurbineCustomerSdk {
   private readonly emittedSdkErrors = new Set<string>();
   /** Session dedupe for the unrecognized-context-key report (plan 191 Q-5). */
   private readonly reportedUnrecognizedContextKeys = new Set<string>();
+
+  /**
+   * Listeners for user-context changes (plan 194 REQ-3).
+   *
+   * The user context is a private field on this instance, and the instance's
+   * identity never changes — so a React tree had no way to learn that
+   * `update()` or `identify()` had happened. Mounted gates kept rendering a
+   * decision made against the previous context: the SDK returned `denied`
+   * while `<Gate>` still rendered its granted children, through an effect
+   * flush and a forced parent re-render. Only a remount or a manual
+   * `recheck()` fixed it, and `useCan` has no `recheck`.
+   *
+   * This is the missing half. It is on the SDK rather than in the hooks so the
+   * headless controllers get it too — `EntitlementGate.onChange` consumers are
+   * not all React.
+   */
+  private readonly userContextListeners = new Set<() => void>();
   private static readonly RESOLUTION_DIAGNOSTIC_SESSION_CAP = 20;
 
   /**
@@ -4821,6 +4850,43 @@ export class RevTurbineCustomerSdk {
     this.persistLocalRuntimeState();
     void this.evaluateUserSegmentsAndUsage(userContext, false);
     this.emitObservedContextFields(userContext.custom);
+    this.notifyUserContextChanged();
+  }
+
+  /**
+   * Subscribe to user-context changes — `identify()`, `setUserContext()`,
+   * `update()`, `updateUsage()`, and `resetIdentity()` (plan 194 REQ-3).
+   *
+   * Returns an unsubscribe function. Listeners must never throw; one that does
+   * is caught here rather than allowed to break the verb that fired it.
+   *
+   * @example
+   * ```ts
+   * const unsubscribe = rt.onUserContextChange(() => refreshMyUi());
+   * ```
+   */
+  onUserContextChange(listener: () => void): () => void {
+    this.userContextListeners.add(listener);
+    return () => {
+      this.userContextListeners.delete(listener);
+    };
+  }
+
+  /**
+   * Tell subscribers the user context changed.
+   *
+   * Fired from the mutating verbs rather than from `persistLocalRuntimeState`,
+   * which several non-context paths also call — over-notifying would re-run
+   * every mounted gate's check on an interaction record.
+   */
+  private notifyUserContextChanged(): void {
+    for (const listener of [...this.userContextListeners]) {
+      try {
+        listener();
+      } catch {
+        // A subscriber must never break identify()/update() for the host app.
+      }
+    }
   }
 
   setPageContext(pageContext: RevTurbinePageContext): void {
@@ -5932,11 +5998,116 @@ export class RevTurbineCustomerSdk {
 
   updateUsage(balances: UsageBalances): void {
     const previousContext = this.userContext;
-    this.usageBalances = { ...this.usageBalances, ...balances };
+    // Plan 194 REQ-5. `init` takes usage as ENTRY objects
+    // (`{ entitlement_handle, unit, amount }`); `update()` types it as
+    // `Record<string, number>`. A caller who reaches for the init shape here
+    // used to be worse off than one who passed nothing: the objects landed in
+    // `usageBalances`, `getUsage()` skipped them as non-finite (so the meter
+    // read empty) while the decision kept evaluating the OLD balance — meter
+    // and gate silently disagreeing, which is the one outcome ruled out.
+    // `usageAmountsFromEntries` already accepts both shapes for
+    // `userContext.usage`, so reusing it here makes the two paths agree
+    // instead of adding a second rule.
+    const normalized = usageAmountsFromEntries(balances);
+    this.reportUnusableUsageValues(balances, normalized);
+    this.reportUnmatchedUsageKeys(Object.keys(normalized));
+    this.usageBalances = { ...this.usageBalances, ...normalized };
     this.recalculateDerivedUsageTraits();
     this.markSegmentsDirtyFromContextChange(previousContext, this.userContext);
     this.persistLocalRuntimeState();
     void this.evaluateUserSegmentsAndUsage({}, true);
+    this.notifyUserContextChanged();
+  }
+
+  /**
+   * Report usage values that are neither a number nor an entry object, so a
+   * dropped balance is visible rather than silent (plan 194 REQ-5).
+   *
+   * `usageAmountsFromEntries` keeps what it understands and drops the rest.
+   * Dropping quietly is what let a mis-shaped report leave the meter empty
+   * while the gate kept deciding on a stale balance.
+   */
+  private reportUnusableUsageValues(
+    supplied: UsageBalances,
+    normalized: Record<string, number>,
+  ): void {
+    const unusable = Object.keys(supplied).filter((key) => !(key in normalized));
+    if (unusable.length === 0) return;
+
+    const dedupeKey = `usage:unusable:${[...unusable].sort().join(',')}`;
+    if (this.reportedUnrecognizedContextKeys.has(dedupeKey)) return;
+    this.reportedUnrecognizedContextKeys.add(dedupeKey);
+
+    console.warn(
+      `[RevTurbine] updateUsage() dropped usage value(s) it could not read: ${unusable.join(', ')}. ` +
+        'A usage balance is a number — `update({ usage: { <entitlement_handle>: 42 } })` — ' +
+        'or an entry object carrying a numeric `amount`. The reported balance was NOT applied, ' +
+        'so any limit on these entitlements is still evaluating the previous value.',
+    );
+    try {
+      void this.capture(SDK_WARNING_EVENT_TYPE, {
+        reason: 'updateUsage received unusable usage value(s)',
+        // Key NAMES only — never their values, which are customer data.
+        unrecognized_keys: unusable.join(','),
+      });
+    } catch {
+      // Telemetry must never break the calling app.
+    }
+  }
+
+  /**
+   * Report reported usage keys that match no entitlement handle in the
+   * Playbook (plan 194 REQ-2 / Kent's Q-2 ruling: warn, never deny).
+   *
+   * A one-letter typo — `generatons` for `generations` — reads as zero
+   * consumed at any real consumption, so the limit never bites and the check
+   * grants forever. Nothing on the path noticed, and the mistake survives
+   * review because the correctly-keyed entitlement works in the same session.
+   *
+   * Deliberately warn-only. Usage reporting is optional, so the SDK cannot
+   * tell "used: 0" from "never reported"; denying on an unmatched key would
+   * break every legitimately-zero user. The narrow, certain case is the one
+   * caught here: a key naming an entitlement the Playbook does not contain.
+   *
+   * Silent when no Playbook has loaded yet — validating against a config we
+   * do not have would warn on every correct key in Server mode's startup
+   * window, which trains people to ignore the warning.
+   */
+  private reportUnmatchedUsageKeys(keys: string[]): void {
+    if (keys.length === 0) return;
+    const config = this.getConfiguredExportedConfig();
+    const entitlements = config?.entitlements;
+    if (!Array.isArray(entitlements) || entitlements.length === 0) return;
+
+    const known = new Set(
+      entitlements
+        .map((e) => (isRecord(e) && typeof e.unique_handle === 'string' ? e.unique_handle : null))
+        .filter((h): h is string => h !== null),
+    );
+    if (known.size === 0) return;
+
+    const unmatched = keys.filter((key) => !known.has(key));
+    if (unmatched.length === 0) return;
+
+    const dedupeKey = `usage:unmatched:${[...unmatched].sort().join(',')}`;
+    if (this.reportedUnrecognizedContextKeys.has(dedupeKey)) return;
+    this.reportedUnrecognizedContextKeys.add(dedupeKey);
+
+    console.warn(
+      `[RevTurbine] updateUsage() received usage key(s) matching no entitlement in the Playbook: ` +
+        `${unmatched.join(', ')}. The balance is stored but nothing reads it, so any limit on the ` +
+        'entitlement you meant is still evaluating zero consumed. Usage keys are entitlement ' +
+        `unique_handles — check for a typo. Known handles: ${[...known].sort().join(', ')}.`,
+    );
+    try {
+      void this.capture(SDK_WARNING_EVENT_TYPE, {
+        reason: 'updateUsage received usage key(s) matching no entitlement handle',
+        // Key NAMES only — never their values, which are customer data.
+        unrecognized_keys: unmatched.join(','),
+      });
+    } catch {
+      // Telemetry must never break the calling app.
+    }
   }
 
   /**
@@ -6789,6 +6960,7 @@ export class RevTurbineCustomerSdk {
     // Only the customer's own `custom` map is observed (plan 114 TASK-4); the
     // legacy traits-as-custom path is gone (plan 191 Q-2).
     this.emitObservedContextFields(ctx.custom);
+    this.notifyUserContextChanged();
   }
 
   resetIdentity(): void {
@@ -6843,6 +7015,9 @@ export class RevTurbineCustomerSdk {
     // Reset impression history to anonymous user.
     this.impressionHistory.setUserId(this.anonymousId);
     void this.impressionHistory.hydrate();
+    // A sign-out is the most consequential context change there is — a mounted
+    // gate must not keep rendering the signed-out user's entitlements.
+    this.notifyUserContextChanged();
   }
 
   // ── Advertised hero-API aliases (plan 84) ──────────────────────────────────

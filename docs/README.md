@@ -246,7 +246,7 @@ const localSdk = initRevTurbine(
     mode: 'react',
     localRuntime: {
       initialData: {
-        trialStatus: { inTrial: true, dayNumber: 2 },
+        trialStatus: { in_trial: true, day_number: 2 },
       },
     },
   }),
@@ -373,8 +373,8 @@ function App() {
         apiKey: 'rt_live_xxx',
         endpoint: 'https://api.revturbine.io',
         mode: 'react',
+        user: { id: 'user_123' },
       }}
-      defaultUserId="user_123"
     >
       <YourApp />
       <SurfaceSlotComponent

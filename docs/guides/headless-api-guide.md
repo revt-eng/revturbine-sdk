@@ -18,19 +18,20 @@ import {
   initRevTurbine,
   PlacementController,
   EntitlementGate,
-} from '@revt-eng/web-sdk/headless';
+} from '@revt-eng/sdk/headless';
 ```
 
 ## Quick Start
 
 ```ts
-import { initRevTurbine } from '@revt-eng/web-sdk/headless';
+import { initRevTurbine } from '@revt-eng/sdk/headless';
 
 const session = await initRevTurbine({
   tenantId: 'tenant_abc',
   apiKey: 'rt_live_xxx',
   endpoint: 'https://api.revturbine.io',
-  user: { id: 'user_123', plan: { id: 'pro' } },
+  mode: 'snippet',
+  user: { id: 'user_123', plan_handle: 'pro' },
 });
 
 // Placement
@@ -62,7 +63,7 @@ const session = await initRevTurbine({
   tenantId: 'tenant_abc',
   apiKey: 'rt_live_xxx',
   endpoint: 'https://api.revturbine.io',
-  user: { id: 'user_123', plan: { id: 'pro' } },
+  user: { id: 'user_123', plan_handle: 'pro' },
   runtimeMode: 'revturbine_server',
   bootstrapPlacements: [
     { placement: { name: 'pricing_banner' } },
@@ -88,7 +89,7 @@ The session returned by `initRevTurbine()`. Provides the full imperative API.
 
 ```ts
 // Identify a different user
-session.identify('user_456', { plan: { id: 'enterprise' } });
+session.identify('user_456', { plan_handle: 'enterprise' });
 
 // Merge fields into user context
 session.setUserContext({ personalization: { company: 'Acme' } });
@@ -252,7 +253,7 @@ await gate.recheck(); // re-run the check
 
 ### Vanilla JS / Web Components
 
-```ts
+```ts docs-check=false reason="framework-lifecycle snippet; init options elided as pseudo-code"
 const session = await initRevTurbine({ /* ... */ });
 
 const banner = session.placement({ surfaceSlot: { id: 'top_banner' } });
@@ -273,9 +274,9 @@ document.getElementById('dismiss-btn')?.addEventListener('click', () => {
 
 ### Vue 3 (Composition API)
 
-```ts
+```ts docs-check=false reason="framework-lifecycle snippet; init options elided as pseudo-code"
 import { ref, onMounted, onUnmounted } from 'vue';
-import { initRevTurbine } from '@revt-eng/web-sdk/headless';
+import { initRevTurbine } from '@revt-eng/sdk/headless';
 
 export function usePlacement(slotId: string) {
   const state = ref({ visible: false, content: null });
@@ -297,9 +298,9 @@ export function usePlacement(slotId: string) {
 
 ### Svelte
 
-```ts
+```ts docs-check=false reason="framework-lifecycle snippet; init options elided as pseudo-code"
 import { writable } from 'svelte/store';
-import { initRevTurbine } from '@revt-eng/web-sdk/headless';
+import { initRevTurbine } from '@revt-eng/sdk/headless';
 
 export function createPlacementStore(slotId: string) {
   const store = writable({ visible: false, content: null });

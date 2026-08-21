@@ -11,7 +11,8 @@ const session = await initRevTurbine({
   tenantId: 'tenant_abc',
   apiKey: 'rt_live_xxx',
   endpoint: 'https://api.revturbine.io',
-  user: { id: 'user_123', plan: { id: 'pro' } },
+  mode: 'snippet',
+  user: { id: 'user_123', plan_handle: 'pro' },
 });
 ```
 
@@ -152,7 +153,7 @@ The session wraps the SDK instance and provides convenience methods.
 ### User context
 
 ```ts
-session.identify('user_456', { plan: { id: 'enterprise' } });
+session.identify('user_456', { plan_handle: 'enterprise' });
 session.setUserContext({ personalization: { company: 'Acme' } });
 
 const ctx = session.getUserContext();
@@ -205,7 +206,7 @@ const session = await initRevTurbine({
   tenantId: 'tenant_abc',
   apiKey: 'rt_live_xxx',
   endpoint: 'https://api.revturbine.io',
-  user: { id: 'user_123', plan: { id: 'pro' } },
+  user: { id: 'user_123', plan_handle: 'pro' },
 
   // Optional: preload placement decisions
   bootstrapPlacements: [

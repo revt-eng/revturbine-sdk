@@ -120,7 +120,7 @@ const sdk = initRevTurbine(
     localRuntime: {
       storageKey: 'my-app:revturbine-local-runtime',
       initialData: {
-        trialStatus: { inTrial: true, dayNumber: 3, daysRemaining: 11 },
+        trialStatus: { in_trial: true, day_number: 3, days_remaining: 11 },
       },
     },
   }),

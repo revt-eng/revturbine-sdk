@@ -64,7 +64,7 @@ describe('web-SDK synthesizeProviderContext — plan-138 billing + tier signals'
     const sdk = makeSdk();
     const ctx = synth(sdk, {
       id: 'u1',
-      plan: { id: 'pro', name: 'Pro' },
+      plan: { handle: 'pro', name: 'Pro' },
       tiers: { branding: 'custom_branding' },
     });
     expect(ctx?.entitlements?.tiers).toEqual({ branding: 'custom_branding' });
@@ -74,7 +74,7 @@ describe('web-SDK synthesizeProviderContext — plan-138 billing + tier signals'
     const sdk = makeSdk();
     const ctx = synth(sdk, {
       id: 'u1',
-      plan: { id: 'pro', name: 'Pro' },
+      plan: { handle: 'pro', name: 'Pro' },
       payment_failed: true,
       payment_at_risk: false,
     });
@@ -84,7 +84,7 @@ describe('web-SDK synthesizeProviderContext — plan-138 billing + tier signals'
 
   it('omits the signals when the user context does not set them', () => {
     const sdk = makeSdk();
-    const ctx = synth(sdk, { id: 'u1', plan: { id: 'pro', name: 'Pro' } });
+    const ctx = synth(sdk, { id: 'u1', plan: { handle: 'pro', name: 'Pro' } });
     expect(ctx?.plan && 'paymentFailed' in ctx.plan).toBe(false);
     expect(ctx?.plan && 'paymentAtRisk' in ctx.plan).toBe(false);
     expect(ctx?.entitlements?.tiers).toBeUndefined();
@@ -94,7 +94,7 @@ describe('web-SDK synthesizeProviderContext — plan-138 billing + tier signals'
     const sdk = makeSdk();
     const ctx = synth(sdk, {
       id: 'u1',
-      plan: { id: 'pro', name: 'Pro' },
+      plan: { handle: 'pro', name: 'Pro' },
       tiers: { branding: 'white_label' },
     });
     expect(ctx?.entitlements?.tiers).toEqual({ branding: 'white_label' });
@@ -102,7 +102,7 @@ describe('web-SDK synthesizeProviderContext — plan-138 billing + tier signals'
 
   it('treats an empty tiers map as no tier signal', () => {
     const sdk = makeSdk();
-    const ctx = synth(sdk, { id: 'u1', plan: { id: 'pro', name: 'Pro' }, tiers: {} });
+    const ctx = synth(sdk, { id: 'u1', plan: { handle: 'pro', name: 'Pro' }, tiers: {} });
     expect(ctx?.entitlements?.tiers).toBeUndefined();
   });
 });

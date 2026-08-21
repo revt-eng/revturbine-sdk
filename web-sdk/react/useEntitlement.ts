@@ -87,7 +87,15 @@ export function useEntitlement({
   const [, forceUpdate] = useState(0);
   const gateRef = useRef<EntitlementGate | null>(null);
 
-  // Re-create gate when SDK or handle changes
+  // Plan 194 REQ-3: a changed `context` must re-evaluate. The gate captures
+  // `context` at construction and the effect below keyed only on
+  // `[sdk, handle]`, so `<Gate check={{ entitlement, context }}>` ignored a
+  // changed context entirely. Keying on a serialized form rather than the
+  // object keeps callers free to pass an inline literal — whose identity
+  // changes every render, and would otherwise rebuild the gate forever.
+  const contextKey = JSON.stringify(context ?? null);
+
+  // Re-create gate when SDK, handle, or context changes
   useEffect(() => {
     if (!sdk) {
       gateRef.current = null;
@@ -106,13 +114,21 @@ export function useEntitlement({
     const unsub = gate.onChange(() => {
       forceUpdate((v) => v + 1);
     });
+    // Plan 194 REQ-3. Without this the gate re-rendered only when it re-checked
+    // itself, and nothing re-checked it after `update()` / `identify()` — so a
+    // mounted gate kept rendering a decision made against the previous user
+    // context. The deps below are `[sdk, handle]`, both unchanged by a context
+    // change, so the effect that creates this gate never re-runs either.
+    const unwatch = gate.watchUserContext();
 
     return () => {
       unsub();
+      unwatch();
       gateRef.current = null;
     };
-  // Deps intentionally limited — featureKey identity triggers refetch -- handle identity is the key dependency
-  }, [sdk, handle]);
+  // `contextKey` (not `context`) so an inline literal does not rebuild the gate
+  // on every render — see the note where it is computed.
+  }, [sdk, handle, contextKey]);
 
   const recheck = useCallback(async () => {
     await gateRef.current?.check();
@@ -122,7 +138,10 @@ export function useEntitlement({
     if (autoCheck && isReady && gateRef.current) {
       void gateRef.current.check();
     }
-  }, [autoCheck, isReady]);
+  // `handle` and `contextKey` are here because the effect above rebuilds the
+  // gate when either moves, and a rebuilt gate that never checks renders its
+  // three-state loading form forever.
+  }, [autoCheck, isReady, handle, contextKey]);
 
   const state = gateRef.current?.state;
   return {

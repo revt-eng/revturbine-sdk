@@ -63,7 +63,7 @@ describe('web-SDK synthesizeProviderContext — plan-183 experiment assignments'
   it('threads UserContext.experiments onto ExperimentProviderState', () => {
     const ctx = synth(makeSdk(), {
       id: 'u1',
-      plan: { id: 'pro', name: 'Pro' },
+      plan: { handle: 'pro', name: 'Pro' },
       experiments: { pricing_test: 'variant_b', copy_test: 'control' },
     });
     expect(ctx?.experiments?.assignments).toEqual({
@@ -80,12 +80,12 @@ describe('web-SDK synthesizeProviderContext — plan-183 experiment assignments'
   });
 
   it('omits experiments entirely when the app supplies none', () => {
-    const ctx = synth(makeSdk(), { id: 'u1', plan: { id: 'pro', name: 'Pro' } });
+    const ctx = synth(makeSdk(), { id: 'u1', plan: { handle: 'pro', name: 'Pro' } });
     expect(ctx?.experiments).toBeUndefined();
   });
 
   it('omits experiments for an empty map rather than reporting enrollment', () => {
-    const ctx = synth(makeSdk(), { id: 'u1', plan: { id: 'pro', name: 'Pro' }, experiments: {} });
+    const ctx = synth(makeSdk(), { id: 'u1', plan: { handle: 'pro', name: 'Pro' }, experiments: {} });
     expect(ctx?.experiments).toBeUndefined();
   });
 

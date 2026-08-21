@@ -100,17 +100,18 @@ if (access.status === "denied") {
 const used = billing.getUsed("ai_credits"); // 45 — RT knows the limit (50)
 const access = rt.checkEntitlement("ai_credits", { used });
 
-if (access.status === "allowed") {
+// Branch on `allowed` — it is the verdict. `limited` appears on BOTH sides of
+// it: at/past the cap it is allowed:false under the default enforcement, and
+// allowed:true only under `degrade` / `allow_overage`.
+if (access.allowed) {
   executeAction();
   billing.recordUsage("ai_credits", 1);                    // app's billing system is source of truth
   rt.updateUsage({ ai_credits: billing.getUsed("ai_credits") }); // sync RT's cache from billing
 
-} else if (access.status === "limited") {
-  executeAction();                                          // still allowed — approaching limit
-  billing.recordUsage("ai_credits", 1);
-  rt.updateUsage({ ai_credits: billing.getUsed("ai_credits") });
-  const p = rt.getPlacement({ slotId: "usage_warning", surfaceType: "banner", entitlementHandle: "ai_credits" });
-  if (p) renderBanner(p);                                   // "5 credits remaining — upgrade for more"
+  if (access.status === "limited") {                        // allowed, but at the cap — nudge
+    const p = rt.getPlacement({ slotId: "usage_warning", surfaceType: "banner", entitlementHandle: "ai_credits" });
+    if (p) renderBanner(p);                                 // "5 credits remaining — upgrade for more"
+  }
 
 } else {                                                    // denied
   const p = rt.getPlacement({ slotId: "usage_limit_gate", surfaceType: "modal", entitlementHandle: "ai_credits" });

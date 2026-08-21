@@ -37,7 +37,7 @@ describe('playbook-only init is detected as local-only', () => {
       localRuntime: { playbook: MINIMAL_PLAYBOOK },
       uiPathResolvers: {},
     } as never);
-    sdk.setUserContext({ id: 'user_x', plan: { id: 'starter', name: 'Starter' } });
+    sdk.setUserContext({ id: 'user_x', plan: { handle: 'starter', name: 'Starter' } });
 
     const result = await sdk.checkEntitlement('anything');
 
