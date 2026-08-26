@@ -135,12 +135,19 @@ export function RevTurbineProvider<TUser extends RevTurbineUserContext = RevTurb
         // The SDK constructor already merges options.user into userContext.
         // If options.user has structured fields, call identify() to ensure
         // segment recalculation and cache invalidation happen.
+        //
+        // `id` is an `options.user` key, NOT an identify-context key: it is
+        // the first identify() argument. Passing the whole `user` object
+        // through as the context therefore tripped the plan 191 unrecognized-
+        // key guardrail on EVERY provider mount — a console warning plus an
+        // `sdk_validation_warning` event per session, for correct integration
+        // code. Strip it here rather than teaching the guardrail to ignore
+        // `id`, which would also hide it from direct identify() callers who
+        // really did put the id in the wrong place.
         const user = options.user;
         if (user && typeof user === 'object' && (user as { id?: string }).id) {
-          nextSdk.identify(
-            (user as { id: string }).id,
-            user as UserContextInput,
-          );
+          const { id, ...context } = user as { id: string } & UserContextInput;
+          nextSdk.identify(id, context as UserContextInput);
         }
 
         // Theme — the Playbook is the BASE, always resolved without a network

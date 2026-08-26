@@ -14,11 +14,22 @@ import { describe, expect, it } from 'vitest';
 
 import {
   bucketSubject,
+  adaptExperimentVersionToBucketer,
   createBasicExperimentProvider,
+  createNativeExperimentAssignmentProvider,
+  UnsupportedExperimentAssignmentUnitError,
+  type CanonicalExperimentAllocation,
   type BasicBucketerExperiment,
+  type NativeExperimentAssignmentUnit,
 } from './providers/basic-experiment-provider';
 
 const twoArm: BasicBucketerExperiment = { variants: ['control', 'variant_b'] };
+const assignmentUnits: readonly NativeExperimentAssignmentUnit[] = [
+  'user',
+  'account',
+  'organization',
+  'billing_unit',
+];
 
 /** Bucket `n` synthetic subjects and count how many landed on each arm. */
 function distribute(experiment: BasicBucketerExperiment, n = 20_000): Record<string, number> {
@@ -161,5 +172,98 @@ describe('createBasicExperimentProvider', () => {
   it('assigns nothing when no experiments are configured', () => {
     const provider = createBasicExperimentProvider({ subject: 'user_1', experiments: {} });
     expect((provider.resolve() as { assignments: Record<string, string> }).assignments).toEqual({});
+  });
+});
+
+describe('canonical Experiment allocation adapter — plan 199', () => {
+  const allocation = (
+    weights: readonly number[],
+    trafficAllocation = 1,
+  ): CanonicalExperimentAllocation => ({
+    handle: 'pricing_test',
+    traffic_allocation: trafficAllocation,
+    variants: weights.map((weight, index) => ({
+      variant_id: `variant_${index}`,
+      weight,
+    })),
+  });
+
+  it('preserves the unassigned remainder for fraction weights below one', () => {
+    const adapted = adaptExperimentVersionToBucketer(allocation([0.3, 0.3]));
+    expect(adapted).toEqual({
+      variants: { variant_0: 0.3, variant_1: 0.3 },
+      exposure: 0.6,
+    });
+
+    const counts = distribute(adapted, 50_000);
+    expect(counts.variant_0 / 50_000).toBeCloseTo(0.3, 1);
+    expect(counts.variant_1 / 50_000).toBeCloseTo(0.3, 1);
+    expect(counts.__unenrolled__ / 50_000).toBeCloseTo(0.4, 1);
+  });
+
+  it('normalizes oversubscribed fractions and excludes zero-weight arms', () => {
+    expect(adaptExperimentVersionToBucketer(allocation([0.8, 0, 0.8], 0.5))).toEqual({
+      variants: { variant_0: 0.8, variant_2: 0.8 },
+      exposure: 0.5,
+    });
+    expect(adaptExperimentVersionToBucketer(allocation([0, 0], 0.75))).toEqual({
+      variants: {},
+      exposure: 0,
+    });
+  });
+
+  it('realizes the canonical fraction intent across generated non-normalized vectors', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const weights = Array.from({ length: 2 + (seed % 4) }, (_, index) =>
+        ((seed * (index + 3) * 17) % 101) / 100,
+      );
+      if (seed % 3 === 0) weights[seed % weights.length] = 0;
+      const trafficAllocation = ((seed * 37) % 101) / 100;
+      const adapted = adaptExperimentVersionToBucketer(allocation(weights, trafficAllocation));
+      const positiveSum = weights.reduce((sum, weight) => sum + (weight > 0 ? weight : 0), 0);
+      const denominator = Math.max(1, positiveSum);
+      const counts = distribute(adapted, 30_000);
+
+      weights.forEach((weight, index) => {
+        const realized = (counts[`variant_${index}`] ?? 0) / 30_000;
+        const intended = trafficAllocation * Math.max(0, weight) / denominator;
+        expect(Math.abs(realized - intended)).toBeLessThan(0.015);
+      });
+    }
+  });
+
+  it('builds a provider directly from canonical Experiment versions', () => {
+    const provider = createNativeExperimentAssignmentProvider({
+      subject: 'user_42',
+      experiments: [allocation([0.5, 0.5])],
+    });
+    const resolved = provider.resolve();
+    expect(resolved.assignments.pricing_test).toMatch(/^variant_[01]$/);
+  });
+
+  it.each(assignmentUnits)(
+    'launches when the provider subject represents the requested %s unit',
+    (assignmentUnit) => {
+      const provider = createNativeExperimentAssignmentProvider({
+        subject: `${assignmentUnit}_42`,
+        subjectUnit: assignmentUnit,
+        experiments: [{ ...allocation([0.5, 0.5]), assignment_unit: assignmentUnit }],
+      });
+
+      expect(provider.resolve().assignments.pricing_test).toMatch(/^variant_[01]$/);
+    },
+  );
+
+  it('refuses launch instead of silently substituting the provider subject unit', () => {
+    expect(() => createNativeExperimentAssignmentProvider({
+      subject: 'user_42',
+      subjectUnit: 'user',
+      experiments: [{ ...allocation([0.5, 0.5]), assignment_unit: 'account' }],
+    })).toThrow(UnsupportedExperimentAssignmentUnitError);
+
+    expect(() => createNativeExperimentAssignmentProvider({
+      subject: 'user_42',
+      experiments: [{ ...allocation([0.5, 0.5]), assignment_unit: 'account' }],
+    })).toThrow(/refuse launch instead of substituting an assignment unit/);
   });
 });

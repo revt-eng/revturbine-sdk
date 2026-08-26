@@ -1,16 +1,18 @@
 /**
- * The one built-in `ExperimentProvider` (plan 183 REQ-3b).
+ * The built-in `ExperimentAssignmentProvider` (plan 183 REQ-3b).
  *
  * Deliberately basic, and deliberately opt-in: nothing registers this for you.
  * A customer with their own experimentation tool registers an adapter that
  * reads *their* assignments instead and loses nothing — the third-party path is
- * first-class, not a fallback. RevTurbine does not own the split.
- *
- * Weights live here, in SDK code, rather than in the Playbook. Assignment is
- * the provider's job, so the config that drives it is client-side
- * configuration, not authored monetization config.
+ * first-class, not a fallback. The canonical Experiment owns native desired
+ * allocation; external bindings declare whether their allocation is managed
+ * or observed.
  */
-import type { ExperimentProvider, ExperimentProviderState } from '@revt-eng/core';
+import type {
+  ExperimentAssignmentProvider,
+  ExperimentProviderState,
+} from '@revt-eng/core';
+import type { Experiment } from '@revt-eng/schema';
 
 /** One experiment's arms, and optionally how much of the population sees it. */
 export interface BasicBucketerExperiment {
@@ -46,6 +48,61 @@ export interface BasicBucketerOptions {
    * silently poison the results. Absent beats wrong.
    */
   subject: string | (() => string | undefined | null);
+}
+
+/**
+ * The allocation fields owned by one canonical Experiment version.
+ *
+ * Derived from the schema type rather than redeclared, so schema evolution is
+ * visible here at compile time without making the adapter require unrelated
+ * persistence fields.
+ */
+export interface CanonicalExperimentAllocation {
+  handle: Experiment['handle'];
+  traffic_allocation: Experiment['traffic_allocation'];
+  /** Unit represented by the stable subject identifier; defaults to `user`. */
+  assignment_unit?: Experiment['assignment_unit'];
+  variants: ReadonlyArray<Pick<Experiment['variants'][number], 'variant_id' | 'weight'>>;
+}
+
+/** One supported canonical experiment assignment unit. */
+export type NativeExperimentAssignmentUnit = NonNullable<Experiment['assignment_unit']>;
+
+/** Raised before provider registration when its subject cannot serve an experiment's unit. */
+export class UnsupportedExperimentAssignmentUnitError extends Error {
+  /** Experiment whose requested assignment unit cannot be served. */
+  readonly experimentHandle: string;
+  /** Assignment unit requested by the canonical Experiment version. */
+  readonly requestedUnit: NativeExperimentAssignmentUnit;
+  /** Unit represented by the provider's configured subject. */
+  readonly subjectUnit: NativeExperimentAssignmentUnit;
+
+  /** Construct an unsupported-unit launch error. */
+  constructor(
+    experimentHandle: string,
+    requestedUnit: NativeExperimentAssignmentUnit,
+    subjectUnit: NativeExperimentAssignmentUnit,
+  ) {
+    super(
+      `Experiment "${experimentHandle}" requests assignment unit "${requestedUnit}", `
+      + `but this native provider is configured for "${subjectUnit}"; refuse launch `
+      + 'instead of substituting an assignment unit.',
+    );
+    this.name = 'UnsupportedExperimentAssignmentUnitError';
+    this.experimentHandle = experimentHandle;
+    this.requestedUnit = requestedUnit;
+    this.subjectUnit = subjectUnit;
+  }
+}
+
+/** Options for the native assignment provider backed by Experiment versions. */
+export interface NativeExperimentAssignmentOptions {
+  /** Canonical, versioned Experiment allocations to execute. */
+  experiments: readonly CanonicalExperimentAllocation[];
+  /** Stable assignment subject, re-read per resolution when supplied as a function. */
+  subject: BasicBucketerOptions['subject'];
+  /** Unit represented by `subject`; defaults to `user` for backward compatibility. */
+  subjectUnit?: NativeExperimentAssignmentUnit;
 }
 
 /**
@@ -123,6 +180,60 @@ export function bucketSubject(
 }
 
 /**
+ * Translate canonical fraction weights into the bucketer's ratio + exposure
+ * representation.
+ *
+ * For weights whose positive sum is below one, the missing fraction remains
+ * unenrolled: `[0.3, 0.3]` becomes ratio `0.3:0.3` at exposure `0.6`, realizing
+ * 30% / 30% / 40% unassigned. If fractions are oversubscribed (sum above one),
+ * they are normalized proportionally within `traffic_allocation`; this keeps
+ * the conversion total for every schema-valid vector. Zero weights are
+ * omitted, matching `bucketSubject()`'s established exclusion semantics.
+ */
+export function adaptExperimentVersionToBucketer(
+  experiment: CanonicalExperimentAllocation,
+): BasicBucketerExperiment {
+  const variants: Record<string, number> = {};
+  for (const variant of experiment.variants) {
+    if (!Number.isFinite(variant.weight) || variant.weight <= 0) continue;
+    variants[variant.variant_id] = (variants[variant.variant_id] ?? 0) + variant.weight;
+  }
+
+  const weightSum = Object.values(variants).reduce((sum, weight) => sum + weight, 0);
+  const trafficAllocation = Number.isFinite(experiment.traffic_allocation)
+    ? Math.min(1, Math.max(0, experiment.traffic_allocation))
+    : 0;
+
+  return {
+    variants,
+    exposure: trafficAllocation * Math.min(1, weightSum),
+  };
+}
+
+/**
+ * Build the native assignment provider whose allocation authority is the
+ * canonical Experiment version rather than duplicated SDK configuration.
+ */
+export function createNativeExperimentAssignmentProvider(
+  options: NativeExperimentAssignmentOptions,
+): ExperimentAssignmentProvider {
+  const subjectUnit = options.subjectUnit ?? 'user';
+  const experiments: Record<string, BasicBucketerExperiment> = {};
+  for (const experiment of options.experiments) {
+    const requestedUnit = experiment.assignment_unit ?? 'user';
+    if (requestedUnit !== subjectUnit) {
+      throw new UnsupportedExperimentAssignmentUnitError(
+        experiment.handle,
+        requestedUnit,
+        subjectUnit,
+      );
+    }
+    experiments[experiment.handle] = adaptExperimentVersionToBucketer(experiment);
+  }
+  return createBasicExperimentProvider({ experiments, subject: options.subject });
+}
+
+/**
  * Build the built-in bucketer. Register it explicitly to switch it on:
  *
  * ```ts
@@ -138,7 +249,7 @@ export function bucketSubject(
  */
 export function createBasicExperimentProvider(
   options: BasicBucketerOptions,
-): ExperimentProvider {
+): ExperimentAssignmentProvider {
   const { experiments, subject } = options;
 
   return {

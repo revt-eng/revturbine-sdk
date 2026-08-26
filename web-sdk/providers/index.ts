@@ -18,6 +18,7 @@ export type {
   SegmentProvider,
   SegmentProviderState,
   // Experiments
+  ExperimentAssignmentProvider,
   ExperimentProvider,
   ExperimentProviderState,
   // Content
@@ -62,14 +63,20 @@ export {
 } from './server-user-context-provider';
 export type { ServerUserContextSnapshot } from './server-user-context-provider';
 
-// The one built-in ExperimentProvider (plan 183 REQ-3b) — opt-in, deterministic,
+// The built-in ExperimentAssignmentProvider — opt-in and deterministic.
 // and off unless explicitly registered. A customer's own experimentation tool
 // registers its own adapter instead; that path is first-class, not a fallback.
 export {
   createBasicExperimentProvider,
+  createNativeExperimentAssignmentProvider,
+  UnsupportedExperimentAssignmentUnitError,
+  adaptExperimentVersionToBucketer,
   bucketSubject,
 } from './basic-experiment-provider';
 export type {
   BasicBucketerOptions,
   BasicBucketerExperiment,
+  CanonicalExperimentAllocation,
+  NativeExperimentAssignmentOptions,
+  NativeExperimentAssignmentUnit,
 } from './basic-experiment-provider';

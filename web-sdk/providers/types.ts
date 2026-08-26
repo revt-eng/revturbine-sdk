@@ -17,6 +17,7 @@ export type {
   SegmentProviderState,
   SegmentProvider,
   ExperimentProviderState,
+  ExperimentAssignmentProvider,
   ExperimentProvider,
   MessageBlockSnapshot,
   PlacementPayloadSnapshot,

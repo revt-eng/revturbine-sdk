@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.205/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.225/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -273,6 +273,26 @@ class AnalyticsFormatSpec(BaseModel):
 class AnalyticsHistoricalMode(Enum):
     as_of_event = "as_of_event"
     current = "current"
+
+
+class AnalyticsMetricAggregationSemantics(Enum):
+    additive = "additive"
+    semi_additive = "semi_additive"
+    non_additive = "non_additive"
+
+
+class AnalyticsMetricDirection(Enum):
+    increase = "increase"
+    decrease = "decrease"
+    neutral = "neutral"
+
+
+class AnalyticsMetricStatisticalType(Enum):
+    binary = "binary"
+    count = "count"
+    continuous = "continuous"
+    ratio = "ratio"
+    revenue = "revenue"
 
 
 class AnalyticsQueryFamily(Enum):
@@ -1207,6 +1227,73 @@ class EventTaxonomyEntry(BaseModel):
     stability: EventStability
 
 
+class EvidenceRequirement(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    min_units: conint(ge=0, le=9007199254740991) | None = None
+    min_events: conint(ge=0, le=9007199254740991) | None = None
+    min_periods: conint(ge=0, le=9007199254740991) | None = None
+    min_denominator: confloat(ge=0.0) | None = None
+
+
+class Methodology(Enum):
+    frequentist = "frequentist"
+    bayesian = "bayesian"
+
+
+class VarianceReduction(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    method: Literal["cuped"]
+    covariate_metric: AnalyticsSemanticId
+    lookback_days: conint(le=9007199254740991, gt=0)
+
+
+class ExperimentAnalysisConfig(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    methodology: Methodology
+    analysis_unit: AnalyticsAnalyticalUnit
+    sequential: dict[str, str | float | bool | None] | None = None
+    multiple_comparisons: dict[str, str | float | bool | None] | None = None
+    variance_reduction: VarianceReduction | None = None
+    practical_significance: dict[str, str | float | bool | None] | None = None
+
+
+class Status2(Enum):
+    healthy = "healthy"
+    warning = "warning"
+    unhealthy = "unhealthy"
+    insufficient_data = "insufficient_data"
+
+
+class Issue(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    code: constr(min_length=1, max_length=100)
+    message: constr(min_length=1, max_length=500)
+
+
+class EvidenceProviderBinding(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    provider_handle: constr(min_length=1, max_length=100)
+    capability: Literal["experiment_evidence"]
+
+
+class AnalysisProviderBinding(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    provider_handle: constr(min_length=1, max_length=100)
+    capability: Literal["experiment_analysis"]
+
+
 class ExperimentStatus(Enum):
     draft = "draft"
     ramping = "ramping"
@@ -1225,15 +1312,40 @@ class ExperimentType(Enum):
     custom = "custom"
 
 
-class ExperimentVariant(BaseModel):
+class ExperimentVariantTarget1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    variant_id: constr(min_length=1)
-    name: constr(min_length=1, max_length=200)
-    weight: confloat(ge=0.0, le=1.0) | None = 0.5
-    is_control: bool | None = False
-    config: dict[str, Any] | None = {}
+    kind: Literal["placement"]
+    placement_handle: constr(min_length=1)
+    placement_payload_handle: constr(min_length=1) | None = None
+
+
+class ExperimentVariantTarget2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["entitlement"]
+    entitlement_handle: constr(min_length=1)
+    rule_handle: constr(min_length=1) | None = None
+
+
+class ExperimentVariantTarget3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["plan"]
+    plan_handle: constr(min_length=1)
+    plan_variation_handle: constr(min_length=1) | None = None
+
+
+class ExperimentVariantTarget4(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["pricing"]
+    plan_variation_handle: constr(min_length=1)
+    promotion_handle: constr(min_length=1) | None = None
 
 
 class Operator(Enum):
@@ -1305,6 +1417,18 @@ class FunnelStep(BaseModel):
     count: conint(ge=0, le=9007199254740991)
     conversion_rate: confloat(ge=0.0, le=1.0)
     drop_off_rate: confloat(ge=0.0, le=1.0)
+
+
+class GrowthSignalPoint(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    start: AwareDatetime
+    end: AwareDatetime
+    value: float
+    numerator: float | None = None
+    denominator: float | None = None
+    sample_size: conint(ge=0, le=9007199254740991) | None = None
 
 
 class Identity(BaseModel):
@@ -1548,7 +1672,7 @@ class ChildBlock(BaseModel):
     block_id: str
 
 
-class Status2(Enum):
+class Status3(Enum):
     draft = "draft"
     active = "active"
     archived = "archived"
@@ -1566,7 +1690,7 @@ class MessageBlock(BaseModel):
     segment_overrides: list[SegmentOverride] | None = None
     child_blocks: list[ChildBlock] | None = None
     tokens_used: list[str] | None = None
-    status: Status2
+    status: Status3
     created_at: AwareDatetime
     updated_at: AwareDatetime
 
@@ -1665,6 +1789,31 @@ class OnboardingState(Enum):
     charges_enabled = "charges_enabled"
     activated = "activated"
     deauthorized = "deauthorized"
+
+
+class Resource(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: constr(min_length=1)
+    handle: constr(min_length=1)
+
+
+class Window(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    start: AwareDatetime
+    end: AwareDatetime
+
+
+class OpportunityInterpretation(Enum):
+    increase = "increase"
+    decrease = "decrease"
+    level_shift = "level_shift"
+    threshold = "threshold"
+    peer_gap = "peer_gap"
+    correlation = "correlation"
 
 
 class OrgMemberRole(Enum):
@@ -2044,6 +2193,37 @@ class PromotionStatus(Enum):
     archived = "archived"
 
 
+class ProviderAvailability(Enum):
+    available = "available"
+    stale = "stale"
+    unavailable = "unavailable"
+    unsupported = "unsupported"
+    partial = "partial"
+
+
+class ProviderCapability(Enum):
+    analytics_execution = "analytics_execution"
+    experiment_assignment = "experiment_assignment"
+    experiment_evidence = "experiment_evidence"
+    experiment_analysis = "experiment_analysis"
+    growth_signal = "growth_signal"
+    growth_benchmark = "growth_benchmark"
+    optimization = "optimization"
+
+
+class ProviderProvenance(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    provider_handle: constr(min_length=1, max_length=100)
+    provider_type: constr(min_length=1, max_length=100)
+    provider_version: constr(min_length=1, max_length=100)
+    contract_version: conint(ge=1, le=9007199254740991)
+    generated_at: AwareDatetime
+    data_watermark: AwareDatetime | None = None
+    source_revision: constr(min_length=1, max_length=200) | None = None
+
+
 class RevTurbineConfigAddonVariationsItem(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -2357,6 +2537,7 @@ class RevTurbineConfigSegmentsItem(BaseModel):
     handle: constr(min_length=1)
     predicates: list[RevTurbineConfigSegmentsItemPredicatesItem] | None = None
     dimension_id: str | None = None
+    experiment_handle: constr(min_length=1) | None = None
     experiment_id: constr(min_length=1) | None = None
 
 
@@ -2575,6 +2756,7 @@ class Segment(BaseModel):
     handle: constr(min_length=1, max_length=100)
     description: constr(max_length=500) | None = None
     rules: dict[str, Any] | None = {}
+    experiment_handle: constr(min_length=1) | None = None
     experiment_id: constr(min_length=1) | None = None
     is_active: bool | None = True
     estimated_size: conint(ge=0, le=9007199254740991) | None = None
@@ -2777,7 +2959,7 @@ class SurfaceSlotCategory(Enum):
     triggered = "triggered"
 
 
-class Status3(Enum):
+class Status4(Enum):
     active = "active"
     inactive = "inactive"
     new = "new"
@@ -2876,6 +3058,27 @@ class TreatmentInteractionType(Enum):
     cta_clicked = "cta_clicked"
     cta_completed = "cta_completed"
     suppress = "suppress"
+
+
+class TrendFeatures(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    current: float
+    baseline: float
+    absolute_delta: float
+    relative_delta: float
+    short_window: float
+    long_window: float
+    slope: float
+    acceleration: float
+    volatility: float
+    persistence: float
+    seasonal_expected: float | None = None
+    seasonal_deviation: float | None = None
+    peer_value: float | None = None
+    peer_gap: float | None = None
+    sample_size: conint(ge=0, le=9007199254740991) | None = None
 
 
 class TrialEligibilityScope(Enum):
@@ -3085,6 +3288,10 @@ class WebhookEventStatus(Enum):
     skipped = "skipped"
 
 
+class BinaryVariantStatisticalSummary(RootModel[Any]):
+    root: Any
+
+
 class ClientContextBilling(RootModel[Any]):
     root: Any
 
@@ -3101,7 +3308,43 @@ class ClientContextTrial(RootModel[Any]):
     root: Any
 
 
+class CovarianceVariantStatisticalSummary(RootModel[Any]):
+    root: Any
+
+
 class EventOrigin(RootModel[Any]):
+    root: Any
+
+
+class ExperimentAllocationMode(RootModel[Any]):
+    root: Any
+
+
+class ExperimentConfidenceInterval(RootModel[Any]):
+    root: Any
+
+
+class ExperimentEvidenceProvenance(RootModel[Any]):
+    root: Any
+
+
+class ExperimentObservationWindow(RootModel[Any]):
+    root: Any
+
+
+class ExperimentSampleRatioMismatch(RootModel[Any]):
+    root: Any
+
+
+class ExperimentSequentialResult(RootModel[Any]):
+    root: Any
+
+
+class MeanVariantStatisticalSummary(RootModel[Any]):
+    root: Any
+
+
+class RatioVariantStatisticalSummary(RootModel[Any]):
     root: Any
 
 
@@ -3118,6 +3361,10 @@ class RevTurbineConfigReverseTrialRuleItem(RootModel[Any]):
 
 
 class TrialLimitType(RootModel[Any]):
+    root: Any
+
+
+class FieldSchema0(RootModel[Any]):
     root: Any
 
 
@@ -3189,6 +3436,14 @@ class Alert(BaseModel):
     acknowledged_at: AwareDatetime | None = None
     acknowledged_by: str | None = None
     metadata: dict[str, Any] | None = {}
+
+
+class AnalysisProvenance(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    provider: ProviderProvenance
+    evidence: list[ExperimentEvidenceProvenance] = Field(..., min_length=1)
 
 
 class AnalyticsAgentCatalogEntry(BaseModel):
@@ -3274,6 +3529,10 @@ class AnalyticsCatalogMetric(BaseModel):
     value_type: AnalyticsFieldType
     format: AnalyticsFormatSpec | None = None
     source_scope: AnalyticsSourceScope | None = None
+    direction: AnalyticsMetricDirection | None = None
+    statistical_type: AnalyticsMetricStatisticalType | None = None
+    aggregation_semantics: AnalyticsMetricAggregationSemantics | None = None
+    preferred_analysis_unit: AnalyticsAnalyticalUnit | None = None
     deprecation: AnalyticsCatalogDeprecation | None = None
 
 
@@ -3591,6 +3850,14 @@ class Customer(BaseModel):
     metadata: dict[str, Any] | None = {}
 
 
+class DetectorRequirements(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    required_metrics: list[AnalyticsSemanticId] = Field(..., min_length=1)
+    evidence: EvidenceRequirement
+
+
 class DriftReport(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -3788,39 +4055,70 @@ class EventTaxonomy(BaseModel):
     prefix_families: list[EventPrefixFamily]
 
 
-class Experiment(BaseModel):
+class ExperimentHealth(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    id: constr(min_length=1)
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-    tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1) | None = "production"
-    playbook_version_id: str | None = None
-    is_current: bool | None = True
-    is_deleted: bool | None = False
-    delete_date: AwareDatetime | None = None
-    sequence: conint(ge=1, le=9007199254740991) | None = 1
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
-    anchor_id: constr(min_length=1)
-    name: constr(min_length=1, max_length=200)
-    handle: constr(min_length=1, max_length=100)
-    description: constr(max_length=1000) | None = None
-    experiment_type: ExperimentType
-    status: ExperimentStatus | None = "draft"
-    target_resource_id: str | None = None
-    target_segment_ids: list[str] | None = []
-    variants: list[ExperimentVariant] = Field(..., min_length=2)
-    primary_metric: constr(min_length=1)
-    metric_threshold: float | None = 0.05
-    secondary_metrics: list[str] | None = []
-    traffic_allocation: confloat(ge=0.0, le=1.0) | None = 1
-    started_at: AwareDatetime | None = None
-    ended_at: AwareDatetime | None = None
-    confidence_threshold: confloat(ge=0.0, le=1.0) | None = 0.95
-    winning_variant_id: str | None = None
-    metadata: dict[str, Any] | None = {}
+    status: Status2
+    sample_ratio_mismatch: ExperimentSampleRatioMismatch | None = None
+    issues: list[Issue] | None = Field([], validate_default=True)
+
+
+class ExperimentMetricResult(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    metric: AnalyticsSemanticId
+    control_variant_id: constr(min_length=1)
+    variant_id: constr(min_length=1)
+    estimator: constr(min_length=1, max_length=100)
+    estimator_version: constr(min_length=1, max_length=100)
+    estimate: float
+    control_estimate: float
+    absolute_effect: float
+    relative_effect: float | None = None
+    standard_error: confloat(ge=0.0) | None = None
+    confidence_interval: ExperimentConfidenceInterval | None = None
+    p_value: confloat(ge=0.0, le=1.0) | None = None
+    probability_positive: confloat(ge=0.0, le=1.0) | None = None
+    expected_loss: confloat(ge=0.0) | None = None
+    sequential: ExperimentSequentialResult | None = None
+    sample_size: conint(ge=0, le=9007199254740991) | None = None
+
+
+class AssignmentProviderBinding(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    provider_handle: constr(min_length=1, max_length=100)
+    capability: Literal["experiment_assignment"]
+    allocation_mode: ExperimentAllocationMode
+
+
+class ExperimentVariantTarget5(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["custom"]
+    provider_payload: dict[str, FieldSchema0]
+
+
+class ExperimentVariantTarget(
+    RootModel[
+        ExperimentVariantTarget1
+        | ExperimentVariantTarget2
+        | ExperimentVariantTarget3
+        | ExperimentVariantTarget4
+        | ExperimentVariantTarget5
+    ]
+):
+    root: (
+        ExperimentVariantTarget1
+        | ExperimentVariantTarget2
+        | ExperimentVariantTarget3
+        | ExperimentVariantTarget4
+        | ExperimentVariantTarget5
+    )
 
 
 class ExportedConfigSegmentsItem(BaseModel):
@@ -3831,6 +4129,7 @@ class ExportedConfigSegmentsItem(BaseModel):
     handle: constr(min_length=1)
     predicates: list[RevTurbineConfigSegmentsItemPredicatesItem] | None = None
     dimension_id: str | None = None
+    experiment_handle: constr(min_length=1) | None = None
     experiment_id: constr(min_length=1) | None = None
 
 
@@ -3907,6 +4206,32 @@ class FreeTrialSettings(BaseModel):
     eligibility_scope: TrialEligibilityScope | None = "per_customer"
 
 
+class GrowthSignalSeries(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    metric: AnalyticsSemanticId
+    analytical_unit: AnalyticsAnalyticalUnit
+    source_scope: AnalyticsSourceScope
+    dimensions: dict[AnalyticsSemanticId, str]
+    points: list[GrowthSignalPoint]
+    provenance: ProviderProvenance
+
+
+class OpportunityEvidence(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    metric: AnalyticsSemanticId
+    current: float
+    baseline: float | None = None
+    relative_delta: float | None = None
+    window: Window
+    sample_size: conint(ge=0, le=9007199254740991) | None = None
+    source_scope: AnalyticsSourceScope
+    interpretation: OpportunityInterpretation
+
+
 class OptimizationSuggestion(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -3923,6 +4248,12 @@ class OptimizationSuggestion(BaseModel):
     description: constr(max_length=2000)
     suggested_action: constr(max_length=1000) | None = None
     estimated_impact: float | None = None
+    detector_id: constr(min_length=1) | None = None
+    detector_version: conint(ge=1, le=9007199254740991) | None = None
+    opportunity_type: constr(min_length=1) | None = None
+    evidence: list[OpportunityEvidence] | None = None
+    hypothesis: constr(min_length=1) | None = None
+    confidence: confloat(ge=0.0, le=1.0) | None = None
     is_dismissed: bool | None = False
     metadata: dict[str, Any] | None = {}
 
@@ -4156,6 +4487,14 @@ class Promotion(BaseModel):
     metadata: dict[str, Any] | None = {}
 
 
+class ProviderBindingRef(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    provider_handle: constr(min_length=1, max_length=100)
+    capability: ProviderCapability
+
+
 class RevTurbineConfigEntitlementRulesItem(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -4360,7 +4699,7 @@ class SurfaceSlot(BaseModel):
     surface_slot_category: SurfaceSlotCategory | None = "fixed"
     first_seen: AwareDatetime
     last_seen: AwareDatetime
-    status: Status3 | None = "new"
+    status: Status4 | None = "new"
     placement_count: conint(ge=0, le=9007199254740991) | None = 0
 
 
@@ -4485,6 +4824,22 @@ class UserInstanceContext(BaseModel):
     trial: UserTrialStatus | None = None
     entitlements: dict[str, bool | EntitlementGrant] | None = Field(
         {}, validate_default=True
+    )
+
+
+class VariantStatisticalSummary(
+    RootModel[
+        MeanVariantStatisticalSummary
+        | BinaryVariantStatisticalSummary
+        | RatioVariantStatisticalSummary
+        | CovarianceVariantStatisticalSummary
+    ]
+):
+    root: (
+        MeanVariantStatisticalSummary
+        | BinaryVariantStatisticalSummary
+        | RatioVariantStatisticalSummary
+        | CovarianceVariantStatisticalSummary
     )
 
 
@@ -4633,6 +4988,72 @@ class EntitlementCheckResult(BaseModel):
     placement: PlacementDecisionOutput | None = None
 
 
+class ExperimentAnalysisResult(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    schema_version: conint(ge=1, le=9007199254740991)
+    engine: constr(min_length=1, max_length=100)
+    engine_version: constr(min_length=1, max_length=100)
+    methodology: constr(min_length=1, max_length=100)
+    metrics: list[ExperimentMetricResult]
+    health: ExperimentHealth
+    provenance: AnalysisProvenance
+
+
+class ExperimentEvidence(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    schema_version: conint(ge=1, le=9007199254740991)
+    experiment_handle: constr(min_length=1, max_length=100)
+    experiment_version: conint(ge=1, le=9007199254740991)
+    metric: AnalyticsSemanticId
+    analysis_unit: AnalyticsAnalyticalUnit
+    variants: list[VariantStatisticalSummary] = Field(..., min_length=1)
+    observation_window: ExperimentObservationWindow
+    data_watermark: AwareDatetime
+    source_scope: AnalyticsSourceScope
+    provider: ProviderProvenance
+
+
+class ExperimentEvidenceSnapshot(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    created_at: AwareDatetime
+    experiment_handle: constr(min_length=1, max_length=100)
+    experiment_version: conint(ge=1, le=9007199254740991)
+    metric_semantic_id: AnalyticsSemanticId
+    metric_catalog_version: constr(min_length=1, max_length=64)
+    endpoint_version: constr(min_length=1, max_length=100)
+    query_hash: constr(min_length=1, max_length=128)
+    evidence_provider_handle: constr(min_length=1, max_length=100)
+    evidence_provider_type: constr(min_length=1, max_length=100)
+    evidence_provider_version: constr(min_length=1, max_length=100)
+    evidence_provider_contract_version: conint(ge=1, le=9007199254740991)
+    summary_schema_version: conint(ge=1, le=9007199254740991)
+    observation_window_start: AwareDatetime
+    observation_window_end: AwareDatetime
+    data_watermark: AwareDatetime
+    analysis_unit: AnalyticsAnalyticalUnit
+    evidence: ExperimentEvidence
+
+
+class ExperimentVariant(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    variant_id: constr(min_length=1)
+    name: constr(min_length=1, max_length=200)
+    weight: confloat(ge=0.0, le=1.0) | None = 0.5
+    is_control: bool | None = False
+    targets: list[ExperimentVariantTarget] | None = Field(None, min_length=1)
+    config: dict[str, Any] | None = {}
+
+
 class ExportedConfigPlacementItem(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -4643,6 +5064,32 @@ class ExportedConfigPlacementItem(BaseModel):
     trigger: RevTurbineConfigPlacementTrigger
     payloads: list[RevTurbineConfigStudioPayload]
     order: conint(ge=0, le=9007199254740991)
+
+
+class GrowthSignalBundle(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    availability: ProviderAvailability
+    series: list[GrowthSignalSeries]
+    provenance: ProviderProvenance
+
+
+class OpportunityCandidate(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    detector_id: constr(min_length=1)
+    detector_version: conint(ge=1, le=9007199254740991)
+    opportunity_type: constr(min_length=1)
+    resource: Resource | None = None
+    segment_handles: list[constr(min_length=1)] | None = None
+    evidence: list[OpportunityEvidence] = Field(..., min_length=1)
+    hypothesis: constr(min_length=1)
+    confidence: confloat(ge=0.0, le=1.0)
+    impact: dict[str, Any] | None = None
+    suggested_action: dict[str, Any] | None = None
+    suggested_experiment: dict[str, Any] | None = None
 
 
 class RevTurbineConfigPlacementItem(BaseModel):
@@ -4754,6 +5201,84 @@ class UserContext(BaseModel):
     activity_score: conint(ge=0, le=9007199254740991) | None = None
     activity_score_computed_at: AwareDatetime | None = None
     experiments: dict[str, str] | None = None
+
+
+class ExperimentAnalysisResultRecord(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    created_at: AwareDatetime
+    experiment_handle: constr(min_length=1, max_length=100)
+    experiment_version: conint(ge=1, le=9007199254740991)
+    metric_semantic_id: AnalyticsSemanticId
+    metric_catalog_version: constr(min_length=1, max_length=64)
+    endpoint_version: constr(min_length=1, max_length=100)
+    query_hash: constr(min_length=1, max_length=128)
+    evidence_provider_handle: constr(min_length=1, max_length=100)
+    evidence_provider_type: constr(min_length=1, max_length=100)
+    evidence_provider_version: constr(min_length=1, max_length=100)
+    evidence_provider_contract_version: conint(ge=1, le=9007199254740991)
+    summary_schema_version: conint(ge=1, le=9007199254740991)
+    observation_window_start: AwareDatetime
+    observation_window_end: AwareDatetime
+    data_watermark: AwareDatetime
+    evidence_snapshot_id: constr(min_length=1)
+    analysis_provider_handle: constr(min_length=1, max_length=100)
+    analysis_provider_type: constr(min_length=1, max_length=100)
+    analysis_provider_version: constr(min_length=1, max_length=100)
+    analysis_provider_contract_version: conint(ge=1, le=9007199254740991)
+    engine: constr(min_length=1, max_length=100)
+    engine_version: constr(min_length=1, max_length=100)
+    estimator: constr(min_length=1, max_length=100)
+    estimator_version: constr(min_length=1, max_length=100)
+    analysis_config: ExperimentAnalysisConfig
+    result: ExperimentAnalysisResult
+
+
+class Experiment(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    tenant_id: constr(min_length=1)
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
+    anchor_id: constr(min_length=1)
+    name: constr(min_length=1, max_length=200)
+    handle: constr(min_length=1, max_length=100)
+    description: constr(max_length=1000) | None = None
+    experiment_type: ExperimentType
+    status: ExperimentStatus | None = "draft"
+    target_resource_id: str | None = None
+    target_segments: list[str] | None = None
+    target_segment_ids: list[str] | None = []
+    variants: list[ExperimentVariant] = Field(..., min_length=2)
+    primary_metric: AnalyticsSemanticId
+    guardrail_metrics: list[AnalyticsSemanticId] | None = None
+    assignment_unit: AnalyticsAnalyticalUnit | None = None
+    assignment_provider_binding: AssignmentProviderBinding | None = None
+    evidence_provider_binding: EvidenceProviderBinding | None = None
+    analysis_provider_binding: AnalysisProviderBinding | None = None
+    analysis_config: ExperimentAnalysisConfig | None = None
+    metric_threshold: float | None = 0.05
+    secondary_metrics: list[AnalyticsSemanticId] | None = Field(
+        [], validate_default=True
+    )
+    traffic_allocation: confloat(ge=0.0, le=1.0) | None = 1
+    started_at: AwareDatetime | None = None
+    ended_at: AwareDatetime | None = None
+    confidence_threshold: confloat(ge=0.0, le=1.0) | None = 0.95
+    winning_variant_id: str | None = None
+    metadata: dict[str, Any] | None = {}
 
 
 class ExportedConfig(BaseModel):
