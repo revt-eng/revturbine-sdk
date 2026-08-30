@@ -58,6 +58,64 @@ async function handleExport(req) {
 `Server` mode refreshes the launched Playbook from the control plane, then
 evaluates locally. A fetch failure denies access rather than granting it.
 
+## Server-Owned CTA Actions
+
+An authored CTA such as `extend_trial` starts in the browser but must mutate
+state on your server. Register a `serverActions` handler with the client SDK;
+it calls your route and returns fresh server-authoritative context:
+
+```ts
+const options = {
+  // ...your normal RevTurbineProvider options
+  serverActions: {
+    extend_trial: async ({ placement, params }) => {
+      const response = await fetch('/api/trial/extend', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          decisionId: placement.decision_id,
+          extensionDays: params.extension_days,
+        }),
+      });
+
+      if (!response.ok) return { success: false };
+      return { success: true, userContext: await response.json() };
+    },
+  },
+};
+```
+
+The route repeats the entitlement check before it changes anything:
+
+```ts
+import { initRevTurbine, RuntimeMode } from '@revturbine/sdk/headless';
+
+export async function POST(request: Request) {
+  const user = await requireUser(request);
+  const rt = await initRevTurbine({
+    tenantId: process.env.REVTURBINE_TENANT_ID!,
+    apiKey: process.env.REVTURBINE_API_KEY!,
+    endpoint: process.env.REVTURBINE_ENDPOINT!,
+    mode: 'snippet',
+    runtimeMode: RuntimeMode.Server,
+    user: { id: user.id, plan_handle: user.planHandle },
+  });
+
+  const access = await rt.can('trial_extension');
+  if (!access.allowed) return new Response('Not allowed', { status: 403 });
+
+  const trial = await extendTrial(user.id);
+  return Response.json({
+    plan_handle: user.planHandle,
+    trial: { in_trial: true, days_remaining: trial.daysRemaining },
+  });
+}
+```
+
+The SDK contains rejection and `{ success: false }`, leaves held context
+unchanged, and records the result on the canonical `placement_interaction`
+event. There is no client-side `extendTrial()` mutation.
+
 ## Bundled Local Runtime
 
 The local runtime evaluates entitlements and placements entirely from a Playbook JSON snapshot. No API server connection required.
