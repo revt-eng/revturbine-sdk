@@ -13,6 +13,27 @@ The SDK follows [Semantic Versioning](https://semver.org/):
 
 ## Unreleased
 
+### Added
+
+- `canonicalHashKey` is the supported canonical serializer beneath hashes and
+  cache keys. It uses RFC 8785 UTF-16 code-unit key ordering and ships with the
+  same golden vectors in TypeScript, Python, and Rust.
+
+### Deprecated
+
+- `stableStringify` remains available and keeps its existing output for
+  compatibility, but its ordering is locale-sensitive and is unsuitable for
+  hashes or cache keys. Migrate those callers to `canonicalHashKey`. The SDK's
+  internal user-context and placement fingerprints have migrated, so upgrading
+  intentionally causes a one-time cache miss/re-evaluation for stored context
+  hashes; it does not change persisted identity.
+
+### Fixed
+
+- Content-linked placement decisions now propagate `message_block_handle` in
+  the Python and Rust runtimes as well as TypeScript, restoring three-language
+  parity for message attribution.
+
 ## 0.6.0
 
 ### Breaking changes

@@ -18,14 +18,14 @@ importers:
         specifier: ^2.20.0
         version: 2.20.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@revt-eng/core':
-        specifier: 0.1.229
-        version: 0.1.229(drizzle-orm@0.45.2)(react@19.2.6)(tailwindcss@4.3.0)
+        specifier: 0.1.258
+        version: 0.1.258(drizzle-orm@0.45.2)(react@19.2.6)(tailwindcss@4.3.0)
       '@revt-eng/schema':
-        specifier: 0.1.229
-        version: 0.1.229(react@19.2.6)(tailwindcss@4.3.0)
+        specifier: 0.1.258
+        version: 0.1.258(react@19.2.6)(tailwindcss@4.3.0)
       '@revt-eng/schema-external':
-        specifier: 0.1.229
-        version: 0.1.229(zod@4.4.3)
+        specifier: 0.1.258
+        version: 0.1.258(zod@4.4.3)
       '@revturbine/sdk':
         specifier: 0.6.0
         version: 0.6.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -690,18 +690,18 @@ packages:
     peerDependencies:
       react: '>=16.8'
 
-  '@revt-eng/core@0.1.229':
-    resolution: {integrity: sha512-qmVyspi4m83Or5X34MFKAN5y9dAvYOBv6QH9hFlBd7s7X5fBtATARuvo08gv6yE9+lK5NlFewjMMZxoh1TLGvQ==, tarball: https://npm.pkg.github.com/download/@revt-eng/core/0.1.229/60c08576bdec4e160fb19be5a388ddd090b1d862}
+  '@revt-eng/core@0.1.258':
+    resolution: {integrity: sha512-uc68axfaYmMPkIZfFZ5kTfpywUjlnhsN5AzOTQORtF5Axy/uS5H5rIBUoIf/SzlxVZ9RwFx49heUD7jvyuagWQ==, tarball: https://npm.pkg.github.com/download/@revt-eng/core/0.1.258/3599810d9507e29a3796c38bdaca472c64dad3a9}
     peerDependencies:
       drizzle-orm: '>=0.30.0'
 
-  '@revt-eng/schema-external@0.1.229':
-    resolution: {integrity: sha512-cTIxdVKZ298jUvv9KUEbYo9lkLGbW6BPrE9yQ2AOfGG8kuZV3hfVw5pMNsqM83nRFYeoB6x1yrBBJnIU1bsAFw==, tarball: https://npm.pkg.github.com/download/@revt-eng/schema-external/0.1.229/0d313ef1b46c52024f5af541b8b93b929ba1c51d}
+  '@revt-eng/schema-external@0.1.258':
+    resolution: {integrity: sha512-xrfhIV4qpafsgfs7LDQcJ6G0aA4/95q8ROsg67Lx2utogXzmFmYis9EhQpKTqrNlmCud8XvswxNL+7lUb4thpw==, tarball: https://npm.pkg.github.com/download/@revt-eng/schema-external/0.1.258/4ef9f83cb6b721f6b5b5e486c4b860d0bf6901d4}
     peerDependencies:
       zod: ^4.0.0
 
-  '@revt-eng/schema@0.1.229':
-    resolution: {integrity: sha512-sZaBamvWWl13u3k1T7+346w9JmZUw9P/nZUJTP09knjKEgRnCAX0SXH43MDwWAZ0538nGWRqFwTppylmaF8xwQ==, tarball: https://npm.pkg.github.com/download/@revt-eng/schema/0.1.229/42dc3959f5ef0646012a4561a7226ee1bec2b4cd}
+  '@revt-eng/schema@0.1.258':
+    resolution: {integrity: sha512-arV/vhAxjvBHA1STkJEvrrJRW58EZ/Tmwm6e+TGgBdv/ejJIISQDqcihSjHd+iXOpAevUzIb1Aq5nDMQBiGYKg==, tarball: https://npm.pkg.github.com/download/@revt-eng/schema/0.1.258/537237d97cfe2b84e5672b10d76598959b329639}
     peerDependencies:
       react: '>=19'
       tailwindcss: '>=4'
@@ -2052,6 +2052,9 @@ packages:
     resolution: {integrity: sha512-uxFIHU0YlHYhDQtV4R9J6a52SLx28BCjT+4ieh7IGbgwVJWO+km431c4yRlREUAsAmt/uMjQUyQHNEPf0M39CA==}
     engines: {node: '>=6'}
 
+  pure-rand@8.4.2:
+    resolution: {integrity: sha512-vvuOGgcuPJAirlHvuQw1TrOiw7ptaIXXmIbNuiNOY6lNGJJH49PQ1Kj4nd783nPdQhQdicgOjVI2yI/9BD6/Ng==}
+
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
@@ -3305,21 +3308,22 @@ snapshots:
     dependencies:
       react: 19.2.6
 
-  '@revt-eng/core@0.1.229(drizzle-orm@0.45.2)(react@19.2.6)(tailwindcss@4.3.0)':
+  '@revt-eng/core@0.1.258(drizzle-orm@0.45.2)(react@19.2.6)(tailwindcss@4.3.0)':
     dependencies:
-      '@revt-eng/schema': 0.1.229(react@19.2.6)(tailwindcss@4.3.0)
+      '@revt-eng/schema': 0.1.258(react@19.2.6)(tailwindcss@4.3.0)
       drizzle-orm: 0.45.2
       zod: 4.4.3
     transitivePeerDependencies:
       - react
       - tailwindcss
 
-  '@revt-eng/schema-external@0.1.229(zod@4.4.3)':
+  '@revt-eng/schema-external@0.1.258(zod@4.4.3)':
     dependencies:
       zod: 4.4.3
 
-  '@revt-eng/schema@0.1.229(react@19.2.6)(tailwindcss@4.3.0)':
+  '@revt-eng/schema@0.1.258(react@19.2.6)(tailwindcss@4.3.0)':
     dependencies:
+      pure-rand: 8.4.2
       react: 19.2.6
       tailwindcss: 4.3.0
       zod: 4.4.3
@@ -5051,6 +5055,8 @@ snapshots:
   property-information@7.1.0: {}
 
   punycode.js@2.3.1: {}
+
+  pure-rand@8.4.2: {}
 
   queue-microtask@1.2.3: {}
 
