@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.262/rust/revturbine_types.rs
+//   published/v0.1.263/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -38435,14 +38435,6 @@ impl ::std::default::Default for EvidenceRequirement {
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
-#[doc = "    \"target_segment_ids\": {"]
-#[doc = "      \"default\": [],"]
-#[doc = "      \"type\": \"array\","]
-#[doc = "      \"items\": {"]
-#[doc = "        \"type\": \"string\""]
-#[doc = "      },"]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    },"]
 #[doc = "    \"target_segments\": {"]
 #[doc = "      \"type\": \"array\","]
 #[doc = "      \"items\": {"]
@@ -38559,8 +38551,6 @@ pub struct Experiment {
     pub status: ExperimentStatus,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub target_resource_id: ::std::option::Option<::std::string::String>,
-    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
-    pub target_segment_ids: ::std::vec::Vec<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
     pub target_segments: ::std::vec::Vec<::std::string::String>,
     pub tenant_id: ExperimentTenantId,
@@ -46718,11 +46708,6 @@ impl<'de> ::serde::Deserialize<'de> for ExportedConfigSchemaVersion {
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
-#[doc = "    \"experiment_id\": {"]
-#[doc = "      \"type\": \"string\","]
-#[doc = "      \"minLength\": 1,"]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    },"]
 #[doc = "    \"handle\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"minLength\": 1,"]
@@ -46758,8 +46743,6 @@ pub struct ExportedConfigSegmentsItem {
     pub dimension_id: ::std::option::Option<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub experiment_handle: ::std::option::Option<ExportedConfigSegmentsItemExperimentHandle>,
-    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
-    pub experiment_id: ::std::option::Option<ExportedConfigSegmentsItemExperimentId>,
     pub handle: ExportedConfigSegmentsItemHandle,
     pub name: ExportedConfigSegmentsItemName,
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
@@ -46825,75 +46808,6 @@ impl ::std::convert::TryFrom<::std::string::String> for ExportedConfigSegmentsIt
     }
 }
 impl<'de> ::serde::Deserialize<'de> for ExportedConfigSegmentsItemExperimentHandle {
-    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
-    where
-        D: ::serde::Deserializer<'de>,
-    {
-        ::std::string::String::deserialize(deserializer)?
-            .parse()
-            .map_err(|e: self::error::ConversionError| {
-                <D::Error as ::serde::de::Error>::custom(e.to_string())
-            })
-    }
-}
-#[doc = "`ExportedConfigSegmentsItemExperimentId`"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"type\": \"string\","]
-#[doc = "  \"minLength\": 1,"]
-#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[serde(transparent)]
-pub struct ExportedConfigSegmentsItemExperimentId(::std::string::String);
-impl ::std::ops::Deref for ExportedConfigSegmentsItemExperimentId {
-    type Target = ::std::string::String;
-    fn deref(&self) -> &::std::string::String {
-        &self.0
-    }
-}
-impl ::std::convert::From<ExportedConfigSegmentsItemExperimentId> for ::std::string::String {
-    fn from(value: ExportedConfigSegmentsItemExperimentId) -> Self {
-        value.0
-    }
-}
-impl ::std::str::FromStr for ExportedConfigSegmentsItemExperimentId {
-    type Err = self::error::ConversionError;
-    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        if value.chars().count() < 1usize {
-            return Err("shorter than 1 characters".into());
-        }
-        Ok(Self(value.to_string()))
-    }
-}
-impl ::std::convert::TryFrom<&str> for ExportedConfigSegmentsItemExperimentId {
-    type Error = self::error::ConversionError;
-    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<&::std::string::String> for ExportedConfigSegmentsItemExperimentId {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: &::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<::std::string::String> for ExportedConfigSegmentsItemExperimentId {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: ::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl<'de> ::serde::Deserialize<'de> for ExportedConfigSegmentsItemExperimentId {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -79974,11 +79888,6 @@ impl<'de> ::serde::Deserialize<'de> for RevTurbineConfigSegmentDimensionsItemNam
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
-#[doc = "    \"experiment_id\": {"]
-#[doc = "      \"type\": \"string\","]
-#[doc = "      \"minLength\": 1,"]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    },"]
 #[doc = "    \"handle\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"minLength\": 1,"]
@@ -80014,8 +79923,6 @@ pub struct RevTurbineConfigSegmentsItem {
     pub dimension_id: ::std::option::Option<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub experiment_handle: ::std::option::Option<RevTurbineConfigSegmentsItemExperimentHandle>,
-    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
-    pub experiment_id: ::std::option::Option<RevTurbineConfigSegmentsItemExperimentId>,
     pub handle: RevTurbineConfigSegmentsItemHandle,
     pub name: RevTurbineConfigSegmentsItemName,
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
@@ -80083,75 +79990,6 @@ impl ::std::convert::TryFrom<::std::string::String>
     }
 }
 impl<'de> ::serde::Deserialize<'de> for RevTurbineConfigSegmentsItemExperimentHandle {
-    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
-    where
-        D: ::serde::Deserializer<'de>,
-    {
-        ::std::string::String::deserialize(deserializer)?
-            .parse()
-            .map_err(|e: self::error::ConversionError| {
-                <D::Error as ::serde::de::Error>::custom(e.to_string())
-            })
-    }
-}
-#[doc = "`RevTurbineConfigSegmentsItemExperimentId`"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"type\": \"string\","]
-#[doc = "  \"minLength\": 1,"]
-#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[serde(transparent)]
-pub struct RevTurbineConfigSegmentsItemExperimentId(::std::string::String);
-impl ::std::ops::Deref for RevTurbineConfigSegmentsItemExperimentId {
-    type Target = ::std::string::String;
-    fn deref(&self) -> &::std::string::String {
-        &self.0
-    }
-}
-impl ::std::convert::From<RevTurbineConfigSegmentsItemExperimentId> for ::std::string::String {
-    fn from(value: RevTurbineConfigSegmentsItemExperimentId) -> Self {
-        value.0
-    }
-}
-impl ::std::str::FromStr for RevTurbineConfigSegmentsItemExperimentId {
-    type Err = self::error::ConversionError;
-    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        if value.chars().count() < 1usize {
-            return Err("shorter than 1 characters".into());
-        }
-        Ok(Self(value.to_string()))
-    }
-}
-impl ::std::convert::TryFrom<&str> for RevTurbineConfigSegmentsItemExperimentId {
-    type Error = self::error::ConversionError;
-    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<&::std::string::String> for RevTurbineConfigSegmentsItemExperimentId {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: &::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<::std::string::String> for RevTurbineConfigSegmentsItemExperimentId {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: ::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl<'de> ::serde::Deserialize<'de> for RevTurbineConfigSegmentsItemExperimentId {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -85337,11 +85175,6 @@ impl<'de> ::serde::Deserialize<'de> for SeatTypeTenantId {
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
-#[doc = "    \"experiment_id\": {"]
-#[doc = "      \"type\": \"string\","]
-#[doc = "      \"minLength\": 1,"]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    },"]
 #[doc = "    \"handle\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 100,"]
@@ -85460,8 +85293,6 @@ pub struct Segment {
     pub estimated_size: ::std::option::Option<i64>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub experiment_handle: ::std::option::Option<SegmentExperimentHandle>,
-    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
-    pub experiment_id: ::std::option::Option<SegmentExperimentId>,
     pub handle: SegmentHandle,
     pub id: SegmentId,
     #[serde(default = "defaults::default_bool::<true>")]
@@ -86386,75 +86217,6 @@ impl ::std::convert::TryFrom<::std::string::String> for SegmentExperimentHandle 
     }
 }
 impl<'de> ::serde::Deserialize<'de> for SegmentExperimentHandle {
-    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
-    where
-        D: ::serde::Deserializer<'de>,
-    {
-        ::std::string::String::deserialize(deserializer)?
-            .parse()
-            .map_err(|e: self::error::ConversionError| {
-                <D::Error as ::serde::de::Error>::custom(e.to_string())
-            })
-    }
-}
-#[doc = "`SegmentExperimentId`"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"type\": \"string\","]
-#[doc = "  \"minLength\": 1,"]
-#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[serde(transparent)]
-pub struct SegmentExperimentId(::std::string::String);
-impl ::std::ops::Deref for SegmentExperimentId {
-    type Target = ::std::string::String;
-    fn deref(&self) -> &::std::string::String {
-        &self.0
-    }
-}
-impl ::std::convert::From<SegmentExperimentId> for ::std::string::String {
-    fn from(value: SegmentExperimentId) -> Self {
-        value.0
-    }
-}
-impl ::std::str::FromStr for SegmentExperimentId {
-    type Err = self::error::ConversionError;
-    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        if value.chars().count() < 1usize {
-            return Err("shorter than 1 characters".into());
-        }
-        Ok(Self(value.to_string()))
-    }
-}
-impl ::std::convert::TryFrom<&str> for SegmentExperimentId {
-    type Error = self::error::ConversionError;
-    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<&::std::string::String> for SegmentExperimentId {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: &::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<::std::string::String> for SegmentExperimentId {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: ::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl<'de> ::serde::Deserialize<'de> for SegmentExperimentId {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,

@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.262/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.263/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -2707,7 +2707,6 @@ class RevTurbineConfigSegmentsItem(BaseModel):
     predicates: list[RevTurbineConfigSegmentsItemPredicatesItem] | None = None
     dimension_id: str | None = None
     experiment_handle: constr(min_length=1) | None = None
-    experiment_id: constr(min_length=1) | None = None
 
 
 class RevTurbineConfigSlotConfigsItem(BaseModel):
@@ -2926,7 +2925,6 @@ class Segment(BaseModel):
     description: constr(max_length=500) | None = None
     rules: dict[str, Any] | None = {}
     experiment_handle: constr(min_length=1) | None = None
-    experiment_id: constr(min_length=1) | None = None
     is_active: bool | None = True
     estimated_size: conint(ge=0, le=9007199254740991) | None = None
     metadata: dict[str, Any] | None = {}
@@ -4401,7 +4399,6 @@ class ExportedConfigSegmentsItem(BaseModel):
     predicates: list[RevTurbineConfigSegmentsItemPredicatesItem] | None = None
     dimension_id: str | None = None
     experiment_handle: constr(min_length=1) | None = None
-    experiment_id: constr(min_length=1) | None = None
 
 
 class FeatureFlag(BaseModel):
@@ -5455,7 +5452,6 @@ class Experiment(BaseModel):
     status: ExperimentStatus | None = "draft"
     target_resource_id: str | None = None
     target_segments: list[str] | None = None
-    target_segment_ids: list[str] | None = []
     variants: list[ExperimentVariant] = Field(..., min_length=2)
     primary_metric: AnalyticsSemanticId
     guardrail_metrics: list[AnalyticsSemanticId] | None = None
