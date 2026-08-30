@@ -9,7 +9,7 @@ sidebar:
 
 | Symptom | Likely Cause | Fix |
 |---|---|---|
-| `getPlacement` returns `null` unexpectedly | Slot/surface mismatch or no eligible payload | Verify `slotId`, `surfaceType`, and payload targeting. Start with `createSlotPlacementRequest(...)`. |
+| `getPlacement` returns `null` unexpectedly | Slot/component mismatch or no eligible payload | Verify `slotId`, `componentType`, and payload targeting. Start with `createSlotPlacementRequest(...)`. |
 | Entitlement check denies with `config_unavailable` or `sdk_disabled_provider_failure` | Playbook fetch or configured provider failed | Verify endpoint availability, auth headers, and provider health. See [Client vs Server Enforcement](/concepts/enforcement/) for the authoritative fallback contract. |
 | CTA path not firing expected action | Payload action field mismatch (`cta_path` vs legacy shape) | Use canonical `cta_path` in payloads and parse via `PlacementRenderer`. |
 | Decisions feel stale | Cache TTL too long | Lower `ttlMs` in decision requests or call refresh flows explicitly. |

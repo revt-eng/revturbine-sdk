@@ -181,9 +181,11 @@ Report usage to keep entitlement checks accurate:
 ```ts
 // Update current balances
 sdk.update({
-  api_calls: 950,
-  storage_gb: 45,
-  team_members: 5,
+  usage: {
+    api_calls: 950,
+    storage_gb: 45,
+    team_members: 5,
+  },
 });
 ```
 
@@ -193,6 +195,29 @@ sdk.update({
 - Segment re-evaluation (targeting rules may change)
 - Decision cache invalidation
 - Local runtime state persistence
+
+`update()` accepts a widened session-context patch, so the same call can also
+refresh plan, traits, or page context. Usage balances always belong under the
+`usage` key; a bare entitlement handle is not interpreted as usage.
+
+## Generate Entitlement Handle Types
+
+Generate a union from your Playbook so `can()` accepts only handles that exist:
+
+```bash
+npx revturbine generate types ./revturbine.playbook.json --out src/revturbine.generated.ts
+```
+
+```ts
+import { Entitlements } from './revturbine.generated';
+
+// The generated value retains its EntitlementHandle literal type.
+const handle = Entitlements.feature.data_export;
+const result = await sdk.can(handle);
+```
+
+See the [CLI reference](/reference/cli/#generate-typed-handles) for selectors and all
+supported generated type families.
 
 ### Reading Usage
 

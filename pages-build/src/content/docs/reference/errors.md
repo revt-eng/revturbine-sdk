@@ -7,15 +7,15 @@ This page lists all error and reason codes the SDK may return, organized by cate
 
 ## Placement Reason Codes
 
-Returned in `decision.reason_codes[]` to explain why a placement was or wasn't shown.
+Returned in `decision.reasonCodes[]` to explain why a placement was or wasn't shown.
 
 | Code | Meaning | Fix |
 |---|---|---|
-| `cap_limit_exceeded` | Impression cap reached (session/day/week/month/lifetime) | Increase cap in dashboard or wait for period reset |
+| `cap_exceeded` | Impression cap reached (session/day/week/month/lifetime) | Increase cap in dashboard or wait for period reset |
 | `suppressed` | User recently dismissed, snoozed, or completed CTA | Wait for cooldown to expire |
 | `plan_mismatch` | User's plan doesn't match placement targeting | Verify targeting rules or user context |
 | `segment_mismatch` | User doesn't match the required segment | Check segment definitions |
-| `config_not_loaded` | Playbook not yet available | Ensure provider initialized before rendering slots |
+| `config_unavailable` | Playbook not available | Ensure the Playbook is bundled or the Server-mode config endpoint is reachable |
 | `api_error` | API returned non-200 response | Check endpoint URL, API key, and network connectivity |
 | `network_error` | Network timeout or unreachable endpoint | Verify endpoint is accessible from client |
 | `fallback_content` | Using fallback placeholder content | Provider failure — check API connectivity |
@@ -87,7 +87,7 @@ const { decision, error } = usePlacement({ placement: { name: 'hero_banner' } })
 console.log(error);
 
 // Decision-level reason codes
-console.log(decision?.reason_codes);
+console.log(decision?.reasonCodes);
 ```
 
 ## Related

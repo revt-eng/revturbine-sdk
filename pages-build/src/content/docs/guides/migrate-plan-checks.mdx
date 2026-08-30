@@ -110,7 +110,7 @@ async function handleExport(req, res) {
 
 ```tsx
 // 2. The upgrade navigation, wired to the placement the <Gate> renders when denied.
-<Gate id="export" can="data_export" onCtaClick={(path) => router.push(path.href ?? '/pricing')}>
+<Gate id="export" can="data_export" onCtaClick={(path) => router.push(path.url ?? '/pricing')}>
   <button onClick={exportData}>Export</button>
 </Gate>
 ```

@@ -142,7 +142,7 @@ Opt into hand-authored capture with `domCapture` on the provider. One delegated 
 | `render` | When the placement renders |
 | `viewport` | When it scrolls into the viewport; falls back to resolution (`exposure_basis: 'render_fallback'`) when `IntersectionObserver` is unavailable |
 
-`usePlacement` returns `exposureRef`; slot components receive the same ref through the additive `exposureRef` prop on `PlacementSlotProps` — the renderer threads it to every slot automatically, so a **custom component** just attaches it to its true visual root. (The built-in components attach it themselves in an upcoming release; until then, viewport exposure with built-ins uses the render fallback.)
+`usePlacement` returns `exposureRef`; slot components receive the same ref through the additive `exposureRef` prop on `PlacementSlotProps`. The renderer threads it to every slot automatically, and a **custom component** must attach it to its true visual root. The built-in slots do not consume the ref, so their viewport mode uses the render fallback.
 
 :::caution[Metric-migration note]
 Only `placementExposure: 'viewport'` **with `IntersectionObserver` present** moves the `placement_presentations` denominator to viewport-qualified presentations — a deliberate metric-definition change. CTR and conversion-rate for a placement switched to `viewport` reflect *seen* presentations from that point forward and no longer compare against pre-switch history. `legacy_resolution` (the default) leaves the denominator — and every existing dashboard — unchanged.

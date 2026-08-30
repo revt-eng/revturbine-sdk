@@ -11,7 +11,7 @@ The SDK ships with 11 built-in slot components (banner, modal, toast, etc.). Whe
 
 ## Built-In Slot Types
 
-| ID | Component | Surface Type |
+| ID | Component | Component Type |
 |---|---|---|
 | `banner` | `BannerSlot` | `banner` |
 | `modal` | `ModalSlot` | `modal` |
@@ -36,13 +36,14 @@ Run `pnpm storybook` in the SDK repo to preview all variants, or try the
 Create a `PlacementSlotType` definition and register it:
 
 ```tsx
-import { PlacementTypeRegistry } from '@revturbine/sdk';
+import { PlacementTypeRegistry, useRevTurbineTheme } from '@revturbine/sdk';
 import type { PlacementSlotProps } from '@revturbine/sdk';
 
 // 1. Define the component
-function FeedbackWidget({ content, onDismiss, onCtaClick }: PlacementSlotProps) {
+function FeedbackWidget({ content, onDismiss, onCtaClick, exposureRef }: PlacementSlotProps) {
+  const theme = useRevTurbineTheme();
   return (
-    <div className="feedback-widget">
+    <div ref={exposureRef} className="feedback-widget" style={{ color: theme.colors.text }}>
       <p>{content?.body}</p>
       <div>
         <button onClick={onCtaClick}>{content?.cta_label ?? 'Submit'}</button>
@@ -59,8 +60,8 @@ registry.register({
   id: 'custom:feedback-widget',
   label: 'Feedback Widget',
   description: 'In-app feedback collection prompt',
-  // One of the SDK's surface types — see the table below.
-  surfaceType: 'in_page',
+  // One of the SDK's component types — see the table below.
+  componentType: 'in_page',
   component: FeedbackWidget,
   priority: 10,
   // The template id lives on the decision's surface, not at the top level.
@@ -75,7 +76,7 @@ registry.register({
 | `id` | `string` | ✅ | Unique identifier (prefix with `custom:`) |
 | `label` | `string` | ✅ | Human-readable label (shown in Studio) |
 | `description` | `string` | ✅ | What this slot type does |
-| `surfaceType` | `string` | ✅ | Base surface type |
+| `componentType` | `RevTurbineComponentType` | ✅ | Canonical component type |
 | `component` | `ComponentType<PlacementSlotProps>` | ✅ | React component to render |
 | `accepts` | `(output) => boolean` | — | Predicate to match specific placements |
 | `priority` | `number` | — | Higher = evaluated first (default: 0) |
@@ -87,21 +88,21 @@ All slot components (built-in and custom) receive the same props:
 
 ```ts
 interface PlacementSlotProps {
-  // Decision data
-  output: PlacementOutput;
-  content: PlacementOutput['content'];
-  decision: RevTurbinePlacementDecision;
+  placement: PlacementOutput;
+  content: ResolvedContent;
+  uiPath: PlacementUiPath;
+  promotion?: PlacementPromotion;
 
-  // Interaction callbacks
+  // Renderer callbacks
+  onCtaClick: () => void;
+  onSecondaryCtaClick?: () => void;
   onDismiss: () => void;
-  onCtaClick: (target?: string) => void;
-  onCtaComplete: (target?: string) => void;
-  onSnooze: (seconds?: number) => void;
-  onImpression: () => void;
+  onRemindLater?: () => void;
 
-  // Configuration
-  dismissible: boolean;
-  theme: RevTurbineTheme;
+  visible: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+  exposureRef?: (element: Element | null) => void;
 }
 ```
 
@@ -125,10 +126,11 @@ The SDK evaluates registered types by priority, calling `accepts()` on each unti
 
 ## Theme Integration
 
-Custom slots should use the theme from props for consistent styling:
+Custom slots obtain the active theme with `useRevTurbineTheme()`:
 
 ```tsx
-function CustomCard({ content, theme, onCtaClick }: PlacementSlotProps) {
+function CustomCard({ content, onCtaClick }: PlacementSlotProps) {
+  const theme = useRevTurbineTheme();
   return (
     <div style={{
       background: theme.colors.surface,

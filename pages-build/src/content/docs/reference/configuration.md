@@ -128,9 +128,12 @@ client-context call is made. Server-derived context is opt-in.
 |---|---|
 | `placementDecisionsByPlacementId` | `Record<string, RevTurbinePlacementDecision>` |
 | `placementsByLookupKey` | `Record<string, PlacementOutput \| null>` |
-| `entitlementByHandle` | `Record<string, EntitlementResult>` |
 | `userContextByUserId` | `Record<string, UserTargetingContext>` |
 | `trialStatus` | `RevTurbineTrialContext` |
+
+Entitlement grants are evaluated from `localRuntime.playbook`. For a custom
+source, implement the documented `checkEntitlement` resolver; do not seed
+grants through `initialData`.
 
 ### resolvers
 

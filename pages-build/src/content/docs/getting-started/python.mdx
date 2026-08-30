@@ -64,7 +64,7 @@ sdk = RevTurbineCustomerSdk(
 )
 
 # Entitlement gate
-result = sdk.check_entitlement("advanced_analytics")
+result = sdk.can("advanced_analytics")
 if not result["allowed"]:
     raise PermissionError(result["reason"])
 
@@ -101,11 +101,12 @@ raises `ValueError` at construction.
 
 | Method | Returns |
 |---|---|
+| `can(handle, context=None)` | `{status, allowed, reason, ...}`; preferred entitlement re-check |
 | `check_entitlement(handle, context=None)` | `{status, allowed, reason, ...}` |
 | `get_placement_decision(input)` | `{placement_id, visible, output, content, ...}` |
 | `get_placement_decisions(inputs)` | ordered `list` of the above |
 
-That is the entire public API. There is **no storage/persistence parameter**
+`can()` is an alias of `check_entitlement()`. There is **no storage/persistence parameter**
 — the instance is stateless and in-memory by construction; construct a fresh
 one per user context.
 

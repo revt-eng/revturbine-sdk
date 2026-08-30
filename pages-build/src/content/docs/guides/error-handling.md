@@ -94,15 +94,15 @@ Use `'placeholder'` during development to visually verify that slots are wired c
 
 ## Reason Codes
 
-Placement decisions include `reason_codes` that explain why a placement was hidden or shown:
+Placement decisions include `reasonCodes` that explain why a placement was hidden or shown:
 
 | Code | Meaning |
 |---|---|
-| `cap_limit_exceeded` | Impression cap reached |
+| `cap_exceeded` | Impression cap reached |
 | `suppressed` | User recently dismissed/snoozed |
 | `plan_mismatch` | User's plan doesn't match targeting |
 | `segment_mismatch` | User doesn't match targeting segment |
-| `config_not_loaded` | Playbook not yet available |
+| `config_unavailable` | Playbook not available |
 | `api_error` | API returned non-200 |
 | `network_error` | Network/timeout failure |
 | `fallback_content` | Using fallback placeholder |
@@ -112,7 +112,7 @@ Placement decisions include `reason_codes` that explain why a placement was hidd
 ```tsx
 const { decision } = usePlacement({ placement: { name: 'hero_banner' } });
 
-if (decision?.reason_codes?.includes('cap_limit_exceeded')) {
+if (decision?.reasonCodes?.includes('cap_exceeded')) {
   // User has seen this placement too many times
 }
 ```

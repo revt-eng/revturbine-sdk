@@ -151,10 +151,10 @@ import {
 
 const slotRequest = createSlotPlacementRequest('dashboard_banner', 'banner');
 const entitlementRequest = createEntitlementPlacementRequest('mp4_download', {
-  surfaceType: 'modal',
+  componentType: 'modal',
 });
 const chainedRequest = createChainedPlacementRequest('upgrade_follow_up', {
   slotId: 'settings_footer',
-  surfaceType: 'in_page',
+  componentType: 'in_page',
 });
 ```

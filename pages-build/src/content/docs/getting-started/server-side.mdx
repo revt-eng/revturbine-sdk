@@ -7,7 +7,10 @@ sidebar:
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
-The SDK supports server-side entitlement checks and placement decisions using the **local runtime** mode — all logic runs against an Playbook snapshot with no network calls required.
+The headless SDK runs on Node.js and edge runtimes. In `Server` mode it fetches
+the launched Playbook and evaluates each entitlement and placement in-process;
+in `LocalOnly` mode you bundle the Playbook yourself and make no decisioning
+network calls.
 
 ## When to Use Server-Side
 
@@ -17,11 +20,47 @@ The SDK supports server-side entitlement checks and placement decisions using th
 | Gate API endpoints | — | ✅ |
 | Enforce usage limits before processing | — | ✅ |
 | SSR placement decisions | ✅ (local mode) | ✅ |
-| Track server-side events | — | 🔜 Coming soon |
+| Track server-side events | — | ✅ |
 
-## Local Runtime (Available Now)
+## Headless Server Re-check
 
-The local runtime evaluates entitlements and placements entirely from an Playbook JSON snapshot. No API server connection required.
+Use the `./headless` entry so a server or edge function does not load React.
+Always repeat money-, data-, or compute-sensitive checks at this boundary:
+
+```ts
+import { initRevTurbine, RuntimeMode } from '@revturbine/sdk/headless';
+
+async function handleExport(req) {
+  const rt = await initRevTurbine({
+    tenantId: process.env.REVTURBINE_TENANT_ID!,
+    apiKey: process.env.REVTURBINE_API_KEY!,
+    endpoint: process.env.REVTURBINE_ENDPOINT!,
+    mode: 'snippet',
+    runtimeMode: RuntimeMode.Server,
+    user: {
+      id: req.user.id,
+      plan_handle: req.user.planHandle,
+      usage: req.user.usage,
+    },
+  });
+
+  const result = await rt.can('data_export');
+  if (!result.allowed) {
+    return new Response('Upgrade required', { status: 403 });
+  }
+
+  await rt.track('data_export_started');
+  await rt.flushEvents();
+  return runExport(req);
+}
+```
+
+`Server` mode refreshes the launched Playbook from the control plane, then
+evaluates locally. A fetch failure denies access rather than granting it.
+
+## Bundled Local Runtime
+
+The local runtime evaluates entitlements and placements entirely from a Playbook JSON snapshot. No API server connection required.
 
 ### Installation
 
@@ -118,11 +157,11 @@ export default function Dashboard({ user }) {
 }
 ```
 
-## RevTurbineServer Provider
+## Client Sessions
 
-:::note[Coming Soon]
-The `RevTurbineServer` provider — which connects to the RevTurbine API for real-time decisions, server-side event tracking, and usage reporting — is not yet available. Use the **local runtime** mode shown above for all server-side use cases today.
-:::
+`RevTurbineServer`, exported from `@revturbine/sdk/headless`, mints short-lived,
+browser-safe client sessions from a secret server key. It is available today,
+but it is not the decision evaluator; use the headless session above for checks.
 
 ## Python server SDK
 
@@ -130,8 +169,16 @@ A Python server SDK is also available, with byte-identical decisioning parity to
 
 | Language | Package | Status |
 |---|---|---|
-| Node.js |  `@revturbine/sdk/headless` (local runtime) | ✅ Available |
+| Node.js / edge | `@revturbine/sdk/headless` | ✅ Available |
 | Python | `revturbine` (PyPI) | ✅ Available |
+
+Python exposes the same re-check question as `can()`:
+
+```python
+result = sdk.can("data_export")
+if not result["allowed"]:
+    raise PermissionError(result["reason"])
+```
 
 See the [Python SDK guide](/getting-started/python/) for setup and usage.
 

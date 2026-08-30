@@ -7,7 +7,7 @@ description: SDK version compatibility, supported browsers, runtimes, and featur
 
 | SDK Version | Schema Version | API Version | Status |
 |---|---|---|---|
-| `0.1.x` | `0.1.x` | `v1` | Current |
+| `0.7.x` | `0.1.x` | `v1` | Current |
 
 ## Browser Support
 
@@ -95,13 +95,9 @@ The SDK ships with `.d.ts` type declarations. All public APIs are fully typed.
 
 ## Bundle Size
 
-| Package | Size (minified + gzip) |
-|---|---|
-| `@revturbine/sdk` (full) | ~45 KB |
-| `@revturbine/sdk` (headless only) | ~15 KB |
-| Server SDK (Node.js) | ~8 KB |
-
-Tree-shakeable — unused slot components are excluded from the bundle.
+Bundle size depends on the entry point, bundler, and imported components. The
+SDK is tree-shakeable, so measure the exact pinned release in your production
+build; this page does not publish estimates that can drift from the package.
 
 ## Related
 

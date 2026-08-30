@@ -185,7 +185,7 @@ export default defineConfig({
       ],
       sidebar: [
         {
-          label: 'Getting Started',
+          label: 'Start',
           items: [
             { label: 'Quickstart', slug: 'getting-started/quickstart' },
             { label: 'Recommended API Path', slug: 'getting-started/api-overview' },
@@ -249,24 +249,6 @@ export default defineConfig({
             // keeps it out of the content collection (no route, no sitemap entry,
             // no llms.txt content). To republish: drop the underscore and restore
             // this entry as { label: 'Changelog', slug: 'reference/changelog' }.
-          ],
-        },
-        {
-          label: 'Component Gallery',
-          items: [
-            { label: 'Overview', slug: 'components' },
-            { label: 'ButtonSlot', slug: 'components/button-slot' },
-            { label: 'BannerSlot', slug: 'components/banner-slot' },
-            { label: 'ModalSlot', slug: 'components/modal-slot' },
-            { label: 'ToastSlot', slug: 'components/toast-slot' },
-            { label: 'QuotaMeterSlot', slug: 'components/quota-meter-slot' },
-            { label: 'InlineEmbedSlot', slug: 'components/inline-embed-slot' },
-          ],
-        },
-        {
-          label: 'Playground',
-          items: [
-            { label: 'All Examples', slug: 'playground' },
           ],
         },
       ],

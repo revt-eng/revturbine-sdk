@@ -28,7 +28,7 @@ Resolves a placement for a given slot and surface type. Called by `FixedSurfaceS
 const analyticsProvider: RevTurbineSdkProvider = {
   async getPlacement(config) {
     // config.slotId — the slot requesting a placement
-    // config.surfaceType — the surface type (button, modal, banner, etc.)
+    // config.componentType — the component type (button, modal, banner, etc.)
     // config.entitlementHandle — for access gate slots
 
     // Example: fetch from your own decisioning API
@@ -44,7 +44,7 @@ const analyticsProvider: RevTurbineSdkProvider = {
 | Field | Type | Description |
 |---|---|---|
 | `slotId` | `string?` | Slot identifier |
-| `surfaceType` | `string?` | Surface type (`button`, `modal`, `banner`, etc.) |
+| `componentType` | `RevTurbineComponentType?` | Component type (`button`, `modal`, `banner`, etc.) |
 | `entitlementHandle` | `string?` | Entitlement to check (access gates) |
 | `planHandle` | `string?` | Plan-specific placements |
 | `placementHandle` | `string?` | Chaining from a prior CTA path |
@@ -75,7 +75,7 @@ const entitlementProvider: RevTurbineSdkProvider = {
 
 | Field | Type | Description |
 |---|---|---|
-| `status` | `string` | `'allowed'`, `'denied'`, `'usage_capped'`, etc. |
+| `status` | `string` | `'allowed'`, `'limited'`, or `'denied'` |
 | `allowed` | `boolean` | Whether access is granted |
 
 ### `persistPlacementTypes`
@@ -85,7 +85,7 @@ Stores placement type metadata. Called during SDK initialization to register bui
 ```ts
 const storageProvider: RevTurbineSdkProvider = {
   async persistPlacementTypes(types) {
-    // types — array of { id, label, description, surfaceType, priority }
+    // types — array of { id, label, description, componentType, priority }
     await fetch('/api/placement-types', {
       method: 'POST',
       body: JSON.stringify(types),

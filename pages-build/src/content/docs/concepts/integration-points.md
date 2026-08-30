@@ -18,8 +18,8 @@ RevTurbine is the **authoritative source for monetization policy** — which pla
 | `initRevTurbine(config)` | Initialize the SDK. Call once on startup. | — |
 | `rt.identify(userId, context)` | Identify user with plan, usage, and traits. | — |
 | `rt.getPlacement(config)` | Get the winning placement for a slot or entitlement. | `PlacementOutput \| null` |
-| `rt.can(handle, context?)` | Pure access check — feature, usage, credits, seats, tiers. | `{ status, currentTier?, reason? }` |
-| `rt.update(balances)` | Update cached balances between `identify` calls. | — |
+| `rt.can(handle, context?)` | Pure access check — feature, usage, credits, seats, tiers. | `{ status, allowed, current_tier?, reason? }` |
+| `rt.update({ usage: balances })` | Update cached usage balances between `identify` calls. | — |
 | `rt.getTrialStatus()` | Get current trial state. | `{ inTrial, trialType, planHandle, dayNumber, daysRemaining }` |
 | `rt.dismiss(outputId)` | User dismissed a placement. | — |
 | `rt.snooze(outputId)` | User snoozed a placement ("remind me later"). | — |
@@ -31,9 +31,9 @@ RevTurbine is the **authoritative source for monetization policy** — which pla
 ### 1. Slot-Based (Fixed, Passive)
 
 ```javascript
-const p = rt.getPlacement({
+const p = await rt.getPlacement({
   slotId: "header_upgrade_cta",
-  surfaceType: "button"
+  componentType: "button"
 });
 if (p) renderUpgradeButton(p.content.label, p.cta_path);
 else renderDefaultButton(); // additive only
@@ -44,7 +44,7 @@ else renderDefaultButton(); // additive only
 ```javascript
 const access = await rt.can("ai_export");
 if (access.status === "denied") {
-  const p = rt.getPlacement({ entitlementHandle: "ai_export" });
+  const p = await rt.getPlacement({ entitlementHandle: "ai_export" });
   if (p) showModal(p);
   else showGenericDenial();
 } else {
@@ -81,17 +81,17 @@ if (access.allowed) {
   // `limited` AND allowed means at or past the limit under an enforcement
   // that lets it through — `degrade` or `allow_overage`. Nudge, don't block.
   if (access.status === "limited") {
-    const p = rt.getPlacement({
+    const p = await rt.getPlacement({
       slotId: "usage_warning",
-      surfaceType: "banner",
+      componentType: "banner",
       entitlementHandle: "ai_credits"
     });
     if (p) renderBanner(p);
   }
 } else {
-  const p = rt.getPlacement({
+  const p = await rt.getPlacement({
     slotId: "usage_limit_gate",
-    surfaceType: "modal",
+    componentType: "modal",
     entitlementHandle: "ai_credits"
   });
   if (p) showModal(p);
@@ -126,21 +126,21 @@ Every placement payload includes a `cta_path` object. The `type` field determine
 | `snooze` | Closing and re-queuing for later |
 
 ```javascript
-function handleCTA(placement) {
+async function handleCTA(placement) {
   const { cta_path } = placement;
   switch (cta_path.type) {
     case "open_checkout":
       return openCheckout(cta_path.plan_handle, cta_path.promotion_id);
     case "view_plans":
       if (cta_path.placement_handle) {
-        const p = rt.getPlacement({
+        const p = await rt.getPlacement({
           placementHandle: cta_path.placement_handle
         });
         return p ? renderPlacement(p) : navigateToPlans();
       }
       return navigateToPlans(cta_path.plan_handle);
     case "open_rt_placement":
-      const next = rt.getPlacement({
+      const next = await rt.getPlacement({
         placementHandle: cta_path.placement_handle
       });
       return next ? renderPlacement(next) : navigateToPlans();
@@ -185,6 +185,6 @@ function handleCTA(placement) {
 
 ## Modal Safety Rule
 
-Modal (`surfaceType: "modal"`) is interruptive — it takes over the screen. Only request a modal at **safe moments**: when the user has just performed an action, completed a task, or reached a natural transition. Never on passive page render.
+Modal (`componentType: "modal"`) is interruptive — it takes over the screen. Only request a modal at **safe moments**: when the user has just performed an action, completed a task, or reached a natural transition. Never on passive page render.
 
 Non-interruptive types (`banner`, `in_page`, `button`, `toast`) are safe on render.

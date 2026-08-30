@@ -22,7 +22,7 @@ The SDK supports three runtime modes. **Start with `local_only`** to get up and 
 
 | Mode | Best for | Network dependency | Required config |
 |---|---|---|---|
-| **`local_only`** | Getting started, offline, **and production** when a bundled Playbook is enough | **None** | `localRuntime: { playbook }` |
+| **`local_only`** | Getting started, offline, **and production** when a bundled Playbook is enough | No decisioning network; optional anonymous adoption beacon | `localRuntime: { playbook }` |
 | `revturbine_server` | Production with live A/B testing | RevTurbine edge endpoints | `tenantId`, `apiKey`, `endpoint` |
 | `custom_endpoints` | Customer proxy/service boundaries | Customer endpoints | Base config + `endpointOverrides` |
 
@@ -33,7 +33,11 @@ import { RuntimeMode } from '@revturbine/sdk';
 // runtimeMode: RuntimeMode.LocalOnly | RuntimeMode.Server | RuntimeMode.CustomEndpoints
 ```
 
-`local_only` makes **no server calls at all** — no config fetches and **no telemetry** (neither the `/api/track` clickstream nor the keyless SDK-init beacon). That makes it the right mode for demos, examples, and tests, which must never report events.
+`local_only` makes no config or decisioning calls and does not send clickstream
+events to RevTurbine ingest. A keyless, anonymous `sdk_init` adoption beacon is
+the one network exception. Set `anonymousTelemetry: false` (or
+`previewMode: true` for docs and examples) when the process must make zero
+RevTurbine requests.
 
 ## Copy-Paste Setup
 
@@ -59,7 +63,7 @@ const sdk = initRevTurbine(
 ```
 
 <Aside type="tip">
-In `local_only` mode the SDK evaluates all targeting rules, entitlements, and placement decisions client-side using the loaded Playbook — no network calls for decisioning, and clickstream events stay in `localStorage`. The one exception is a keyless, anonymous `sdk_init` adoption beacon fired once at startup (config-shape counts only, never user data); opt out with `anonymousTelemetry: false`, or set `previewMode: true` for a docs/example render.
+In `local_only` mode the SDK evaluates all targeting rules, entitlements, and placement decisions client-side using the loaded Playbook. Clickstream events are not sent to RevTurbine ingest; local consumers and runtime persistence still work. The one network exception is the anonymous adoption beacon described above.
 </Aside>
 
 </TabItem>

@@ -129,35 +129,19 @@ When a placement resolves, the decision contains:
 ```ts
 interface PlacementOutput {
   output_id: string;
-  decision_id?: string;
-  surface_type: string;      // 'banner', 'modal', 'toast', etc.
-  template_id: string;       // Which surface template was selected
-  content: {
-    header?: string;         // Headline text
-    body?: string;           // Body/description text
-    cta_label?: string;      // Primary CTA button label
-    secondary_cta_label?: string;
-    image_url?: string;
-    dismissible?: boolean;
-    position?: string;       // 'top', 'bottom', 'center'
-    duration?: number;       // Auto-dismiss in ms (toasts)
+  category: string;
+  surface: {
+    type: RevTurbineComponentType;
+    template?: string;
+    slot_id?: string;
   };
-  ui_path?: {
-    action_type: string;     // 'open_pricing', 'upgrade', 'start_trial'
-    plan_handle?: string;
-    promotion_id?: string;
-    url?: string;
-  };
-  promotion?: {
-    id: string;
-    type: string;
-    discount?: number | string;
-  };
-  reason_codes?: string[];
-  cap_policies?: Array<{
-    count: number;
-    period: 'session' | 'day' | 'week' | 'month' | 'lifetime';
-  }>;
+  content: Record<string, unknown>; // toast duration is in seconds
+  cta_path?: Record<string, unknown>;
+  promotion?: Record<string, unknown>;
+  rule_id: string;
+  decision_id: string;
+  config_version: string;
+  present_upsell: boolean;
 }
 ```
 
@@ -206,32 +190,35 @@ Each interaction is automatically tracked as a treatment interaction event.
 
 ## Cap Policies
 
-Placement decisions can include cap policies that limit how often a placement appears:
+Placements can author cap policies that limit how often they appear:
 
 ```ts
-cap_policies: [
-  { count: 3, period: 'session' },    // Max 3 times per session
-  { count: 1, period: 'day' },        // Max 1 per day
-  { count: 5, period: 'lifetime' },   // Max 5 ever
-]
+const capPolicy = {
+  caps: {
+    max_per_period: { count: 3, period: 'session' },
+    cooldown_days: 1,
+  },
+};
 ```
 
-The SDK enforces caps client-side using localStorage. When a cap is reached, the placement returns `reason_codes: ['cap_limit_exceeded']` and `visible: false`.
+Authoring a cap in the Playbook enables client-side cap enforcement for that placement. The decision API returns `visible: false` with a `cap_exceeded` reason when capped; the convenience `getPlacement()` API returns `null`.
 
 ## Placement Chaining
 
-A CTA can point to another placement via `ui_path.placement_handle`:
+A CTA can point to another placement via `cta_path.placement_handle`:
 
 ```ts
+import { parseUiPath } from '@revturbine/sdk';
+
 // First placement decides: show upgrade banner
 const banner = await sdk.getPlacement({ slotId: 'dashboard_banner' });
-// banner.ui_path = { action_type: 'upgrade', plan_handle: 'professional' }
+// banner.cta_path = { type: 'open_rt_placement', placement_handle: 'checkout_offer' }
 
 // On CTA click, resolve the follow-up placement
-const followUp = await sdk.getPlacement({
-  slotId: 'checkout_modal',
-  placementHandle: banner.ui_path.placement_handle,
-});
+const path = banner?.cta_path ? parseUiPath(banner.cta_path) : undefined;
+const followUp = path?.placement_handle
+  ? await sdk.getPlacement({ placementHandle: path.placement_handle })
+  : null;
 ```
 
 ## UI Path Resolvers
