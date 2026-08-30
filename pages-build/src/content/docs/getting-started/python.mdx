@@ -9,7 +9,7 @@ import { Aside } from '@astrojs/starlight/components';
 
 The Python SDK is a **headless *server* library**: it decides entitlements and
 placements **in-process**, with no network call and no persistence beyond
-memory. The server holds the user context and an `Playbook` snapshot and
+memory. The server holds the user context and a `Playbook` snapshot and
 passes both to the SDK; the SDK decides locally.
 
 It is intentionally a small surface — the same decision core as the TypeScript
@@ -49,7 +49,7 @@ entitlements and decide placements:
 import json
 from revturbine import RevTurbineCustomerSdk
 
-with open("playbook.json") as f:
+with open("revturbine.playbook.json") as f:
     exported_config = json.load(f)
 
 sdk = RevTurbineCustomerSdk(

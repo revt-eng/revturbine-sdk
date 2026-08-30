@@ -42,7 +42,7 @@ import { RuntimeMode } from '@revturbine/sdk';
 
 ```ts
 import { initRevTurbine, createLocalRuntimeConfig } from '@revturbine/sdk';
-import playbook from './playbook.json';
+import playbook from './revturbine.playbook.json';
 
 const sdk = initRevTurbine(
   createLocalRuntimeConfig({
@@ -59,7 +59,7 @@ const sdk = initRevTurbine(
 ```
 
 <Aside type="tip">
-In `local_only` mode the SDK evaluates all targeting rules, entitlements, and placement decisions client-side using the exported config — no network calls for decisioning, and clickstream events stay in `localStorage`. The one exception is a keyless, anonymous `sdk_init` adoption beacon fired once at startup (config-shape counts only, never user data); opt out with `anonymousTelemetry: false`, or set `previewMode: true` for a docs/example render.
+In `local_only` mode the SDK evaluates all targeting rules, entitlements, and placement decisions client-side using the loaded Playbook — no network calls for decisioning, and clickstream events stay in `localStorage`. The one exception is a keyless, anonymous `sdk_init` adoption beacon fired once at startup (config-shape counts only, never user data); opt out with `anonymousTelemetry: false`, or set `previewMode: true` for a docs/example render.
 </Aside>
 
 </TabItem>

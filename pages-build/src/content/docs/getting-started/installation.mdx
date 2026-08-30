@@ -82,17 +82,17 @@ Both server SDKs are published — `@revturbine/sdk` (npm) and `revturbine` (PyP
 
 ## CLI
 
-The **`@revturbine/cli`** package manages your RevTurbine configuration (plans, entitlements, placements) and change sets from the terminal — verify, diff, upload, and deploy an `Playbook`.
+The **`@revturbine/cli`** package validates and launches Playbooks from the terminal. Install it as an exact development dependency so its bundled schema snapshot is pinned with your repository:
 
 ```bash
-npm install -g @revturbine/cli
-revturbine --help
+npm install -D --save-exact @revturbine/cli
+npx revturbine --help
 ```
 
 Or run it without installing:
 
 ```bash
-npx @revturbine/cli verify ./playbook.json
+npx @revturbine/cli validate ./revturbine.playbook.json
 ```
 
 ### Authenticate
@@ -103,15 +103,15 @@ The CLI signs in with a browser device-flow login — there are no API keys or e
 revturbine login
 ```
 
-This opens your browser to approve the device, then stores a tenant-scoped token at `~/.revturbine/credentials.json` (file mode `0600`). Run `revturbine status` to confirm you're connected — or `revturbine signup` to create an account from the terminal first. Commands that only read or validate a local file, like `verify`, need no login.
+This opens your browser to approve the device, then stores a tenant-scoped token at `~/.revturbine/credentials.json` (file mode `0600`). Run `revturbine status` to confirm you're connected — or `revturbine signup` to create an account from the terminal first. Commands that only read or validate a local file, like `validate`, need no login.
 
-See the [CLI reference](https://www.npmjs.com/package/@revturbine/cli) for the full command surface (`verify`, `diff`, `upload`, `deploy`, `export`, `status`, and the change-set lifecycle).
+See the [CLI reference](/reference/cli/) for the full command surface, file-selector rules, generated handle types, and the draft → Release lifecycle.
 
 ## Supported Runtimes
 
 | Runtime | Minimum Version |
 |---|---|
-| Node.js | 20+ |
+| Node.js | 22.13+ |
 | Modern browsers | Chrome 90+, Firefox 90+, Safari 15+, Edge 90+ |
 | React | 18.0+ |
 | TypeScript | 5.0+ |

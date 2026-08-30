@@ -52,7 +52,7 @@ use revturbine::sdk::{RevTurbineCustomerSdk, UserContext};
 use serde_json::json;
 
 let playbook: serde_json::Value =
-    serde_json::from_str(&std::fs::read_to_string("playbook.json")?)?;
+    serde_json::from_str(&std::fs::read_to_string("revturbine.playbook.json")?)?;
 
 let user = UserContext {
     tenant_id: "tenant_abc".to_string(),

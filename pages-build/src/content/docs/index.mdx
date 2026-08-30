@@ -1,5 +1,5 @@
 ---
-title: Getting Started
+title: Start
 description: Install the CLI and SDK, register an account, instrument a React app with slots and gates, and manage your monetization config — from zero to live.
 ---
 
@@ -13,14 +13,14 @@ It's **additive** — if RevTurbine is disconnected, misconfigured, or every pla
 
 Two packages, both on the public npm registry — no auth token or registry config.
 
-- **`@revturbine/cli`** — manage your monetization config (plans, entitlements, placements) and change sets from the terminal.
+- **`@revturbine/cli`** — manage your Playbook (plans, entitlements, placements) and Releases from the terminal.
 - **`@revturbine/sdk`** — render placements and check entitlements in your app.
 
-Install the CLI globally:
+Pin the CLI in your project so local development, CI, and coding agents use the same schema snapshot:
 
 ```bash
-npm install -g @revturbine/cli
-revturbine --help
+npm install -D --save-exact @revturbine/cli
+npx revturbine --help
 ```
 
 Add the SDK to your React app:
@@ -100,11 +100,11 @@ Python and Rust SDKs evaluate the same Playbook with byte-identical results.
 
 <Steps>
 
-1. **Wrap your app in `RevTurbineProvider`.** This example runs in `local_only` mode — no backend, no network calls — from an `playbook.json` you ship with your app (see step 4 for where it comes from).
+1. **Wrap your app in `RevTurbineProvider`.** This example runs in `local_only` mode — no backend, no network calls — from a `revturbine.playbook.json` you ship with your app (see step 4 for where it comes from).
 
     ```tsx title="src/App.tsx"
     import { RevTurbineProvider } from '@revturbine/sdk';
-    import playbook from './playbook.json';
+    import playbook from './revturbine.playbook.json';
     import { useMemo } from 'react';
 
     function App() {
@@ -178,13 +178,13 @@ Python and Rust SDKs evaluate the same Playbook with byte-identical results.
 
 </Steps>
 
-## 4. Manage your Exported Config
+## 4. Manage your Playbook
 
-Your monetization model — **plans, entitlements, entitlement rules, segments, surface templates, and placements** — is a single portable snapshot called an **Playbook**. It's what the SDK reads (bundled in local mode, or served live), and you can author it two ways.
+Your monetization model — **plans, entitlements, entitlement rules, segments, surface templates, and placements** — is a single portable snapshot called a **Playbook**. It's what the SDK reads (bundled in local mode, or served live), and you can author it two ways.
 
 <CardGrid>
   <Card title="RevTurbine UI (studio)" icon="laptop">
-    Edit visually at [**revturbine.com/app**](https://revturbine.com/app) — define plans, entitlements, targeting rules, and placements, preview their impact, and deploy. Export an `playbook.json` snapshot anytime for local mode.
+    Edit visually at [**revturbine.com/app**](https://revturbine.com/app) — define plans, entitlements, targeting rules, and placements, preview their impact, and launch. Download a `revturbine.playbook.json` snapshot anytime for local mode.
   </Card>
 
   <Card title="RevTurbine CLI + Agent" icon="setting">
@@ -192,17 +192,18 @@ Your monetization model — **plans, entitlements, entitlement rules, segments, 
   </Card>
 </CardGrid>
 
-The CLI ships config through reviewable **change sets** (`draft → submit → approve → deploy`):
+The default CLI loop takes a Playbook from file to a live **Release**. `launch <file>` validates, stages, and releases it as one guarded operation:
 
 ```bash
-revturbine validate ./playbook.json # schema-validate locally, no writes
-revturbine diff                            # compare your file against the live config
-revturbine upload ./playbook.json   # stage a draft change set
-revturbine launch --draft                  # submit → approve → launch the draft
+revturbine download --live --save ./revturbine.playbook.json
+# edit ./revturbine.playbook.json
+revturbine validate ./revturbine.playbook.json
+revturbine diff ./revturbine.playbook.json --live
+revturbine launch ./revturbine.playbook.json
 ```
 
 <Aside type="tip">
-`revturbine download --live --save playbook.json` pulls your live config back down — handy for bundling into the SDK's `local_only` mode.
+For a separately reviewable draft, run `revturbine upload ./revturbine.playbook.json`, inspect it with `revturbine preview`, then run `revturbine launch --draft`. See the [CLI reference](/reference/cli/) for every command and selector.
 </Aside>
 
 ---

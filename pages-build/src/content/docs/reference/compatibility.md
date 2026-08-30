@@ -46,7 +46,7 @@ The SDK uses React hooks (`useState`, `useEffect`, `useContext`, `useRef`). Reac
 | Package | Runtime | Minimum Version |
 |---|---|---|
 | `@revturbine/sdk` (web) | Browser | — |
-| Server SDK (Node.js) | Node.js | 20.0 |
+| Server SDK (Node.js) | Node.js | 22.13 |
 
 ## Build Tool Compatibility
 

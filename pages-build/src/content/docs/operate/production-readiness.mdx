@@ -47,14 +47,14 @@ The SDK caches placement decisions and interaction state per user and persists t
 
 ## Config versioning
 
-Every placement decision carries the `config_version` it was evaluated against, so you can trace a decision back to the exact Playbook that produced it. The Playbook moves through a lifecycle — **draft → submit → approve → deploy** — so a change is reviewed and versioned before it goes live.
+Every placement decision carries the `config_version` it was evaluated against, so you can trace a decision back to the exact Playbook that produced it. A Playbook moves from **draft → Release**, so each launched change is reviewed, versioned, and traceable.
 
 ## Test plan changes before you deploy
 
 Because monetization changes ship as config, you can verify them without touching app code:
 
-- **CLI:** `revturbine validate` / `preview` / `evaluate` a candidate Playbook against real inputs before launching it — the same config a green run produces is what you ship.
-- **`local_only`:** load a candidate `playbook.json` in a test build and exercise the gates and placements against fixture users.
+- **CLI:** validate and diff `./revturbine.playbook.json`, or upload it as a draft and run `preview` plus `evaluate --draft --user <file>` before launch. The [CLI reference](/reference/cli/) lists the required selectors.
+- **`local_only`:** load a candidate `revturbine.playbook.json` in a test build and exercise the gates and placements against fixture users.
 - **[Debugging Decisions](/operate/debugging/):** use `explainPlacementDecision()` to see exactly why a decision resolved the way it did.
 
 ## Related

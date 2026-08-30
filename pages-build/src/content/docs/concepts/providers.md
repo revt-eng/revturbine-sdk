@@ -113,7 +113,7 @@ Pass your provider via the `provider` option:
 ```tsx
 import { RevTurbineProvider, RuntimeMode } from '@revturbine/sdk';
 import type { RevTurbineSdkProvider } from '@revturbine/sdk';
-import playbook from './playbook.json';
+import playbook from './revturbine.playbook.json';
 import { useMemo } from 'react';
 
 // Typing the object as RevTurbineSdkProvider keeps `status` on the SDK's
@@ -197,7 +197,7 @@ The SDK can forward all impressions, interactions, and lifecycle events to your 
 
 ```tsx
 import { RevTurbineProvider, createAnalyticsProvider, RuntimeMode } from '@revturbine/sdk';
-import playbook from './playbook.json';
+import playbook from './revturbine.playbook.json';
 import { useMemo } from 'react';
 
 function App() {

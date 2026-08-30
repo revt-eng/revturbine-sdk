@@ -45,10 +45,10 @@ This guide takes you from install to a working feature gate: a free user hits an
     You don't need a RevTurbine account for this. Scaffold a starter Playbook straight into your app:
 
     ```bash
-    npx revturbine create
+    npx @revturbine/cli init
     ```
 
-    That installs the SDK and CLI and drops a local-mode `playbook.json` in place. If you already have an account, `revturbine download --live --save ./playbook.json` pulls your real config instead.
+    That installs the SDK, pins the CLI, and drops a local-mode `revturbine.playbook.json` in place. If you already have an account, `revturbine download --live --save ./revturbine.playbook.json` pulls your real config instead.
 
     The Playbook contains your plans, entitlements, placements, targeting rules, surface templates, and **UI paths** — everything the SDK needs to run locally.
 
@@ -56,7 +56,7 @@ This guide takes you from install to a working feature gate: a free user hits an
 
     ```tsx title="src/App.tsx"
     import { RevTurbineProvider, Slot, RuntimeMode } from '@revturbine/sdk';
-    import playbook from './playbook.json';
+    import playbook from './revturbine.playbook.json';
     import { useMemo } from 'react';
 
     function App() {
@@ -93,7 +93,7 @@ This guide takes you from install to a working feature gate: a free user hits an
     ```
 
     <Aside type="tip">
-    With `localRuntime`, the SDK makes **zero network calls**. All decisioning happens client-side using the exported config. No API keys or backend needed.
+    With `localRuntime`, entitlement and placement decisioning happens client-side from the loaded Playbook. No API keys or backend are needed for those decisions. The SDK may emit the documented anonymous adoption beacon unless `anonymousTelemetry: false` or `previewMode: true` is set.
     </Aside>
 
 4. **Add a placement slot**

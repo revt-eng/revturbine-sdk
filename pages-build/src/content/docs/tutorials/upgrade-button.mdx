@@ -33,9 +33,9 @@ An upgrade button in your navigation bar that:
 
 2. **Create an Playbook fixture**
 
-   For local development, you need a config file with plans, entitlements, and placements. Create `src/fixtures/playbook.json`:
+   For local development, you need a Playbook with plans, entitlements, and placements. Create `src/fixtures/revturbine.playbook.json`:
 
-   ```json title="playbook.json"
+   ```json title="revturbine.playbook.json"
    {
      "artifact_type": "playbook",
      "format_version": "1.0.0",
@@ -84,7 +84,7 @@ An upgrade button in your navigation bar that:
    ```tsx
    // src/App.tsx
    import { RevTurbineProvider, RuntimeMode } from '@revturbine/sdk';
-   import playbook from './fixtures/playbook.json';
+   import playbook from './fixtures/revturbine.playbook.json';
 
    export default function App() {
      return (

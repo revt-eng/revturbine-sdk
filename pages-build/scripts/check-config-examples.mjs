@@ -1,11 +1,12 @@
-// check-config-examples.mjs — CI guard for ExportedConfig examples in the docs.
+// check-config-examples.mjs — CI guard for Playbook examples in the docs.
 //
-// Every fenced code block tagged `json title="playbook.json"` in the docs
-// is parsed and validated against `ExportedConfigSchema` from @revt-eng/schema.
+// Every fenced code block tagged `json title="revturbine.playbook.json"` in the docs
+// is parsed and validated against `PlaybookSchema` from @revt-eng/schema.
 // A docs example that no longer matches the real schema fails the build, so the
-// config JSON readers copy is always valid (run `revturbine verify`-able).
+// Playbook JSON readers copy is always valid with `revturbine validate`.
 //
-// Convention: tag any ExportedConfig example with ```json title="playbook.json".
+// Convention: tag any complete Playbook example with
+// ```json title="revturbine.playbook.json".
 // Other JSON blocks (decision outputs, partial snippets) are ignored.
 //
 // Usage: node scripts/check-config-examples.mjs   (run from pages-build/)
@@ -16,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { ExportedConfigSchema } = require('@revt-eng/schema');
+const { PlaybookSchema } = require('@revt-eng/schema');
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const DOCS = join(ROOT, 'src', 'content', 'docs');
@@ -32,8 +33,8 @@ function walk(dir) {
   return out;
 }
 
-// Match ```json ... ``` blocks whose info string carries title="playbook.json".
-const BLOCK = /```json[^\n]*\btitle="playbook\.json"[^\n]*\n([\s\S]*?)```/g;
+// Match complete Playbook blocks by their canonical filename.
+const BLOCK = /```json[^\n]*\btitle="revturbine\.playbook\.json"[^\n]*\n([\s\S]*?)```/g;
 
 let total = 0;
 const failures = [];
@@ -45,7 +46,7 @@ for (const file of walk(DOCS)) {
   let i = 0;
   while ((m = BLOCK.exec(src)) !== null) {
     total += 1;
-    const where = `${rel} [playbook.json block ${i++}]`;
+    const where = `${rel} [revturbine.playbook.json block ${i++}]`;
     let parsed;
     try {
       parsed = JSON.parse(m[1]);
@@ -53,22 +54,22 @@ for (const file of walk(DOCS)) {
       failures.push(`${where}: JSON parse error — ${e.message}`);
       continue;
     }
-    const r = ExportedConfigSchema.safeParse(parsed);
+    const r = PlaybookSchema.safeParse(parsed);
     if (!r.success) {
       const issues = r.error.issues
         .slice(0, 6)
         .map((iss) => `      ${iss.path.join('.') || '(root)'} — ${iss.message}`)
         .join('\n');
-      failures.push(`${where}: does not validate against ExportedConfigSchema\n${issues}`);
+      failures.push(`${where}: does not validate against PlaybookSchema\n${issues}`);
     }
   }
 }
 
 if (failures.length > 0) {
-  console.error(`\n✗ ${failures.length} invalid ExportedConfig example(s):\n`);
+  console.error(`\n✗ ${failures.length} invalid Playbook example(s):\n`);
   for (const f of failures) console.error('  • ' + f);
-  console.error(`\nFix the JSON so it validates, or drop the title="playbook.json" tag if it isn't a full config.\n`);
+  console.error(`\nFix the JSON so it validates, or drop the title="revturbine.playbook.json" tag if it isn't a full Playbook.\n`);
   process.exit(1);
 }
 
-console.log(`✓ ${total} ExportedConfig example(s) validate against ExportedConfigSchema.`);
+console.log(`✓ ${total} Playbook example(s) validate against PlaybookSchema.`);
