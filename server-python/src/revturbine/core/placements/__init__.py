@@ -8,7 +8,8 @@ keys). Batch 2c lands the static local resolver
 """
 
 from revturbine.core.placements.local_resolver import (
-    DEFAULT_TEMPLATE_TO_SURFACE,
+    BUILT_IN_TEMPLATE_COMPONENT_TYPES,
+    DEFAULT_TEMPLATE_COMPONENT_TYPES,
     ExportedConfig,
     LocalPlacementDataset,
     LocalPlacementEntry,
@@ -46,6 +47,7 @@ from revturbine.core.placements.placement_decision import (
     normalize_decision_from_response,
     normalize_placement_output,
     resolve_local_placement_from_candidates,
+    resolve_placement_component_type,
 )
 
 __all__ = [
@@ -60,7 +62,8 @@ __all__ = [
     "resolve_payload_for_user_with_provider",
     "resolve_tokens",
     # local_resolver
-    "DEFAULT_TEMPLATE_TO_SURFACE",
+    "BUILT_IN_TEMPLATE_COMPONENT_TYPES",
+    "DEFAULT_TEMPLATE_COMPONENT_TYPES",
     "ExportedConfig",
     "LocalPlacementDataset",
     "LocalPlacementEntry",
@@ -86,4 +89,5 @@ __all__ = [
     "normalize_decision_from_response",
     "normalize_placement_output",
     "resolve_local_placement_from_candidates",
+    "resolve_placement_component_type",
 ]

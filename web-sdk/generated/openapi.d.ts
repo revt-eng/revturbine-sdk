@@ -635,12 +635,14 @@ export interface components {
             anchor_id: components["schemas"]["Anon_fb248bf5a9f7_2"];
             name: components["schemas"]["Anon_4c26b3baab05_4"];
             handle: components["schemas"]["Anon_af12d548dbee_4"];
-            surface_type: components["schemas"]["Anon_5bda92aa4322"];
+            surface_type: components["schemas"]["Anon_b5b008cadebe"];
             field_definitions?: components["schemas"]["Anon_4a3cd2d08b03"];
             description?: components["schemas"]["Anon_ee9224780226_1"];
         };
         /** @enum {string} */
-        StudioSurfaceType: "button" | "plans_page_ctas" | "plans_page_full" | "inline_gate_message" | "tooltip" | "in_page_card" | "usage_counter" | "credit_counter" | "trial_counter" | "banner" | "modal_optional" | "modal_blocking" | "toast" | "email" | "sms" | "push" | "cli" | "agent_connector" | "custom_in_app";
+        ComponentType: "banner" | "modal" | "tooltip" | "sidebar" | "inline" | "toast" | "fullscreen" | "email" | "sms" | "push" | "in_page" | "button" | "full_page" | "agent" | "cli" | "custom";
+        /** @enum {string} */
+        DefaultTemplateIds: "button" | "plans_page_ctas" | "plans_page_full" | "inline_gate_message" | "tooltip" | "in_page_card" | "usage_counter" | "credit_counter" | "trial_counter" | "banner" | "modal_optional" | "modal_blocking" | "toast" | "email" | "sms" | "push" | "cli" | "agent_connector" | "custom_in_app";
         FieldDefinition: {
             name: components["schemas"]["Anon_9ac136edb99a_1"];
             field_type: components["schemas"]["TemplateFieldType"];
@@ -1410,7 +1412,7 @@ export interface components {
         Anon_fb248bf5a9f7_2: string;
         Anon_4c26b3baab05_4: components["schemas"]["Anon_52ba84a4bbf3"];
         Anon_af12d548dbee_4: components["schemas"]["Anon_0eb2e3b6e08c"];
-        Anon_5bda92aa4322: components["schemas"]["StudioSurfaceType"];
+        Anon_b5b008cadebe: components["schemas"]["ComponentType"] | components["schemas"]["DefaultTemplateIds"];
         /** @default [] */
         Anon_4a3cd2d08b03: components["schemas"]["Anon_614b5f6483c2"];
         Anon_614b5f6483c2: components["schemas"]["FieldDefinition"][];
@@ -2513,7 +2515,7 @@ export interface components {
             sequence: components["schemas"]["Anon_ffffc3c874cb_1"];
             base_sequence: components["schemas"]["Anon_71a2fb329804_1"];
             surface_slot_handle: components["schemas"]["Anon_872e58432369_3"];
-            surface_type: components["schemas"]["Anon_d8a06421c676"];
+            surface_type: components["schemas"]["Anon_67e8169f51c4"];
             surface_template_ids: components["schemas"]["Anon_f8dbfffc0ce2_16"];
             surface_slot_category: components["schemas"]["Anon_28f393a0fbc4"];
             first_seen: components["schemas"]["Anon_be3e2585472d_4"];
@@ -2521,8 +2523,6 @@ export interface components {
             status: components["schemas"]["Anon_4bdd7a28c3fc"];
             placement_count: components["schemas"]["Anon_b32f11b2ff5e_2"];
         };
-        /** @enum {string} */
-        SurfaceType: "banner" | "modal" | "tooltip" | "sidebar" | "inline" | "toast" | "fullscreen" | "email" | "sms" | "push" | "in_page" | "button" | "full_page" | "agent" | "cli" | "custom";
         Customer: {
             id: components["schemas"]["Anon_fb248bf5a9f7_9"];
             created_at: components["schemas"]["Anon_be3e2585472d_2"];
@@ -3994,7 +3994,7 @@ export interface components {
         Anon_96f9066c2fdc_45: components["schemas"]["Anon_00404e686415_48"];
         Anon_00404e686415_48: string;
         Anon_872e58432369_3: string;
-        Anon_d8a06421c676: components["schemas"]["SurfaceType"];
+        Anon_67e8169f51c4: components["schemas"]["ComponentType"];
         /** @default [] */
         Anon_f8dbfffc0ce2_16: components["schemas"]["Anon_681004346c78_19"];
         Anon_681004346c78_19: string[];
@@ -4095,7 +4095,7 @@ export interface components {
         Anon_fb248bf5a9f7_21: string;
         Anon_4c26b3baab05_19: components["schemas"]["Anon_52ba84a4bbf3_2"];
         Anon_af12d548dbee_23: components["schemas"]["Anon_0eb2e3b6e08c_1"];
-        Anon_5bda92aa4322_1: components["schemas"]["StudioSurfaceType"];
+        Anon_b5b008cadebe_1: components["schemas"]["ComponentType"] | components["schemas"]["DefaultTemplateIds"];
         /** @default [] */
         Anon_3b6346b139c2: components["schemas"]["Anon_f836473839d1"];
         Anon_f836473839d1: components["schemas"]["FieldDefinitionOutput"][];
@@ -5708,7 +5708,7 @@ export interface components {
             anchor_id: components["schemas"]["Anon_fb248bf5a9f7_21"];
             name: components["schemas"]["Anon_4c26b3baab05_19"];
             handle: components["schemas"]["Anon_af12d548dbee_23"];
-            surface_type: components["schemas"]["Anon_5bda92aa4322_1"];
+            surface_type: components["schemas"]["Anon_b5b008cadebe_1"];
             field_definitions: components["schemas"]["Anon_3b6346b139c2"];
             description?: components["schemas"]["Anon_ee9224780226_6"];
         };

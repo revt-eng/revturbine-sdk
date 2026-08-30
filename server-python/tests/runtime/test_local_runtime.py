@@ -150,13 +150,27 @@ class TestGetPlacementBySlot:
             "surface_template_ids": ["banner_placement"],
         }
 
-    def test_slot_record_by_surface_type(self) -> None:
+    def test_slot_record_by_canonical_component_type(self) -> None:
+        runtime = _make_runtime(exported_config=SLOT_CONFIG)
+        record = runtime._slot_record_for_config({"component_type": "modal"})
+        assert record is not None
+        assert record["placement_id"] == "slot_modal"
+
+    def test_slot_record_keeps_surface_type_alias(self) -> None:
         runtime = _make_runtime(exported_config=SLOT_CONFIG)
         record = runtime._slot_record_for_config({"surface_type": "modal"})
         assert record is not None
         assert record["placement_id"] == "slot_modal"
         # Slot carries no ``template`` → empty surface_template_ids.
         assert record["metadata"]["surface_template_ids"] == []
+
+    def test_component_type_precedes_surface_type_alias(self) -> None:
+        runtime = _make_runtime(exported_config=SLOT_CONFIG)
+        record = runtime._slot_record_for_config(
+            {"component_type": "banner", "surface_type": "modal"}
+        )
+        assert record is not None
+        assert record["placement_id"] == "slot_banner"
 
     def test_slot_record_none_when_no_match(self) -> None:
         runtime = _make_runtime(exported_config=SLOT_CONFIG)

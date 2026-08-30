@@ -85,7 +85,7 @@ describe('rt.getPlacement({ fixedOnly: true })', () => {
       [`${slotId}::banner::ent_conv::::`]: conversion,
     });
 
-    const result = await sdk.getPlacement({ slotId, surfaceType: 'banner', fixedOnly: true });
+    const result = await sdk.getPlacement({ slotId, componentType: 'banner', fixedOnly: true });
     expect(result?.output_id).toBe('out_fixed');
   });
 
@@ -113,5 +113,19 @@ describe('rt.getPlacement({ fixedOnly: true })', () => {
     // Fixed (tier 2) outranks Conversion (tier 4).
     const result = await sdk.getPlacement({ slotId, surfaceType: 'banner' });
     expect(result?.output_id).toBe('out_fixed');
+  });
+
+  it('keeps surfaceType as an alias and gives componentType precedence', async () => {
+    const fixed = makeOutput('out_fixed', 'fixed', slotId);
+    const sdk = makeLocalSdk({ [lookupKey(slotId)]: fixed });
+
+    const alias = await sdk.getPlacement({ slotId, surfaceType: 'banner' });
+    const canonical = await sdk.getPlacement({
+      slotId,
+      componentType: 'banner',
+      surfaceType: 'modal',
+    });
+    expect(alias?.output_id).toBe('out_fixed');
+    expect(canonical?.output_id).toBe('out_fixed');
   });
 });

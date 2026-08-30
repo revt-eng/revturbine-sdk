@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ToastSlot } from './ToastSlot';
+import { ToastComponent } from '.';
 import type { PlacementSlotProps } from '../types';
 
 const basePlacement: PlacementSlotProps['placement'] = {
@@ -15,8 +15,8 @@ const basePlacement: PlacementSlotProps['placement'] = {
 };
 
 const meta = {
-  title: 'SDK/Placements/ToastSlot',
-  component: ToastSlot,
+  title: 'SDK/Placements/ToastComponent',
+  component: ToastComponent,
   args: {
     placement: basePlacement,
     content: {
@@ -36,7 +36,7 @@ const meta = {
   parameters: {
     layout: 'fullscreen',
   },
-} satisfies Meta<typeof ToastSlot>;
+} satisfies Meta<typeof ToastComponent>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

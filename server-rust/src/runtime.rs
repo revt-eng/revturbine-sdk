@@ -249,14 +249,14 @@ impl LocalRuntime {
                 return Some(existing.clone());
             }
         }
-        let surface_type = config.get("surface_type").and_then(Value::as_str);
+        let component_type = placement_component_type(config);
 
         let slot = self
             .config
             .get("placement_slots")
             .and_then(Value::as_array)?
             .iter()
-            .find(|s| match (slot_id, surface_type) {
+            .find(|s| match (slot_id, component_type) {
                 // A slot id is the more specific key and wins outright.
                 (Some(id), _) => s.get("id").and_then(Value::as_str) == Some(id),
                 (None, Some(st)) => s.get("surface_type").and_then(Value::as_str) == Some(st),
@@ -528,4 +528,12 @@ impl LocalRuntime {
         derive_local_entitlement_from_configured_rules(&input, &self.config)
             .unwrap_or(provider_result)
     }
+}
+
+/// Single compatibility boundary for component_type / surface_type.
+fn placement_component_type(config: &Value) -> Option<&str> {
+    config
+        .get("component_type")
+        .or_else(|| config.get("surface_type"))
+        .and_then(Value::as_str)
 }

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ModalSlot } from './ModalSlot';
+import { ModalComponent } from '.';
 import type { PlacementSlotProps } from '../types';
 
 const basePlacement: PlacementSlotProps['placement'] = {
@@ -15,8 +15,8 @@ const basePlacement: PlacementSlotProps['placement'] = {
 };
 
 const meta = {
-  title: 'SDK/Placements/ModalSlot',
-  component: ModalSlot,
+  title: 'SDK/Placements/ModalComponent',
+  component: ModalComponent,
   args: {
     placement: basePlacement,
     content: {
@@ -37,7 +37,7 @@ const meta = {
   parameters: {
     layout: 'fullscreen',
   },
-} satisfies Meta<typeof ModalSlot>;
+} satisfies Meta<typeof ModalComponent>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

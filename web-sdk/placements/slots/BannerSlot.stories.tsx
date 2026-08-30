@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { BannerSlot } from './BannerSlot';
+import { BannerComponent } from '.';
 import type { PlacementSlotProps } from '../types';
 
 const basePlacement: PlacementSlotProps['placement'] = {
@@ -15,8 +15,8 @@ const basePlacement: PlacementSlotProps['placement'] = {
 };
 
 const meta = {
-  title: 'SDK/Placements/BannerSlot',
-  component: BannerSlot,
+  title: 'SDK/Placements/BannerComponent',
+  component: BannerComponent,
   args: {
     placement: basePlacement,
     content: {
@@ -34,7 +34,7 @@ const meta = {
   argTypes: {
     visible: { control: 'boolean' },
   },
-} satisfies Meta<typeof BannerSlot>;
+} satisfies Meta<typeof BannerComponent>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

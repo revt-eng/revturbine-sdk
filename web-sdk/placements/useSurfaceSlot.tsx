@@ -5,6 +5,7 @@ import type {
   RevTurbineContextMode,
   RevTurbinePlacementDecisionOverrides,
   RevTurbineSurfaceSlotConfig,
+  RevTurbineComponentType,
 } from '../customer-side';
 import { usePlacement, type UsePlacementResult } from '../react/usePlacement';
 import { PlacementRenderer } from '../placements/PlacementRenderer';
@@ -28,6 +29,8 @@ export type UseSurfaceSlotOptions = {
   personalization?: PersonalizationContext;
   /** Custom registry for slot type resolution. */
   registry?: PlacementTypeRegistry;
+  /** Component types this slot accepts. Matching is exact. */
+  acceptedComponentTypes?: readonly RevTurbineComponentType[];
   /** Callback when CTA is clicked. Receives the parsed ui_path. */
   onCtaClick?: (uiPath: PlacementUiPath) => void;
   /** Custom CSS class for the rendered placement. */
@@ -72,6 +75,7 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
     surfaceSlot,
     personalization,
     registry,
+    acceptedComponentTypes,
     onCtaClick,
     className,
     style: inlineStyle,
@@ -143,6 +147,7 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
         placement={placementOutput}
         personalization={resolvedPersonalization}
         registry={registry}
+        acceptedComponentTypes={acceptedComponentTypes}
         onCtaClick={handleCtaClick}
         onDismiss={handleDismiss}
         exposureRef={result.exposureRef}
@@ -156,6 +161,7 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
     result.visible,
     resolvedPersonalization,
     registry,
+    acceptedComponentTypes,
     handleCtaClick,
     handleDismiss,
     result.exposureRef,

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { CliSlot } from './CliSlot';
+import { CliComponent } from '.';
 import type { PlacementSlotProps } from '../types';
 
 const basePlacement: PlacementSlotProps['placement'] = {
@@ -15,8 +15,8 @@ const basePlacement: PlacementSlotProps['placement'] = {
 };
 
 const meta = {
-  title: 'SDK/Placements/CliSlot',
-  component: CliSlot,
+  title: 'SDK/Placements/CliComponent',
+  component: CliComponent,
   args: {
     placement: basePlacement,
     content: {
@@ -38,7 +38,7 @@ const meta = {
       </div>
     ),
   ],
-} satisfies Meta<typeof CliSlot>;
+} satisfies Meta<typeof CliComponent>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

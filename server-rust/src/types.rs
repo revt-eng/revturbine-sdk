@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.258/rust/revturbine_types.rs
+//   published/v0.1.261/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -26062,6 +26062,150 @@ pub struct CohortMonth {
     pub retention_rate: f64,
     pub revenue_cents: i64,
 }
+#[doc = "`ComponentType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"banner\","]
+#[doc = "    \"modal\","]
+#[doc = "    \"tooltip\","]
+#[doc = "    \"sidebar\","]
+#[doc = "    \"inline\","]
+#[doc = "    \"toast\","]
+#[doc = "    \"fullscreen\","]
+#[doc = "    \"email\","]
+#[doc = "    \"sms\","]
+#[doc = "    \"push\","]
+#[doc = "    \"in_page\","]
+#[doc = "    \"button\","]
+#[doc = "    \"full_page\","]
+#[doc = "    \"agent\","]
+#[doc = "    \"cli\","]
+#[doc = "    \"custom\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ComponentType {
+    #[serde(rename = "banner")]
+    Banner,
+    #[serde(rename = "modal")]
+    Modal,
+    #[serde(rename = "tooltip")]
+    Tooltip,
+    #[serde(rename = "sidebar")]
+    Sidebar,
+    #[serde(rename = "inline")]
+    Inline,
+    #[serde(rename = "toast")]
+    Toast,
+    #[serde(rename = "fullscreen")]
+    Fullscreen,
+    #[serde(rename = "email")]
+    Email,
+    #[serde(rename = "sms")]
+    Sms,
+    #[serde(rename = "push")]
+    Push,
+    #[serde(rename = "in_page")]
+    InPage,
+    #[serde(rename = "button")]
+    Button,
+    #[serde(rename = "full_page")]
+    FullPage,
+    #[serde(rename = "agent")]
+    Agent,
+    #[serde(rename = "cli")]
+    Cli,
+    #[serde(rename = "custom")]
+    Custom,
+}
+impl ::std::fmt::Display for ComponentType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Banner => f.write_str("banner"),
+            Self::Modal => f.write_str("modal"),
+            Self::Tooltip => f.write_str("tooltip"),
+            Self::Sidebar => f.write_str("sidebar"),
+            Self::Inline => f.write_str("inline"),
+            Self::Toast => f.write_str("toast"),
+            Self::Fullscreen => f.write_str("fullscreen"),
+            Self::Email => f.write_str("email"),
+            Self::Sms => f.write_str("sms"),
+            Self::Push => f.write_str("push"),
+            Self::InPage => f.write_str("in_page"),
+            Self::Button => f.write_str("button"),
+            Self::FullPage => f.write_str("full_page"),
+            Self::Agent => f.write_str("agent"),
+            Self::Cli => f.write_str("cli"),
+            Self::Custom => f.write_str("custom"),
+        }
+    }
+}
+impl ::std::str::FromStr for ComponentType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "banner" => Ok(Self::Banner),
+            "modal" => Ok(Self::Modal),
+            "tooltip" => Ok(Self::Tooltip),
+            "sidebar" => Ok(Self::Sidebar),
+            "inline" => Ok(Self::Inline),
+            "toast" => Ok(Self::Toast),
+            "fullscreen" => Ok(Self::Fullscreen),
+            "email" => Ok(Self::Email),
+            "sms" => Ok(Self::Sms),
+            "push" => Ok(Self::Push),
+            "in_page" => Ok(Self::InPage),
+            "button" => Ok(Self::Button),
+            "full_page" => Ok(Self::FullPage),
+            "agent" => Ok(Self::Agent),
+            "cli" => Ok(Self::Cli),
+            "custom" => Ok(Self::Custom),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ComponentType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ComponentType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ComponentType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 #[doc = "`ContentPayloadSegmentEntry`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -30220,6 +30364,165 @@ impl<'de> ::serde::Deserialize<'de> for CustomerTenantId {
             .map_err(|e: self::error::ConversionError| {
                 <D::Error as ::serde::de::Error>::custom(e.to_string())
             })
+    }
+}
+#[doc = "`DefaultTemplateIds`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"button\","]
+#[doc = "    \"plans_page_ctas\","]
+#[doc = "    \"plans_page_full\","]
+#[doc = "    \"inline_gate_message\","]
+#[doc = "    \"tooltip\","]
+#[doc = "    \"in_page_card\","]
+#[doc = "    \"usage_counter\","]
+#[doc = "    \"credit_counter\","]
+#[doc = "    \"trial_counter\","]
+#[doc = "    \"banner\","]
+#[doc = "    \"modal_optional\","]
+#[doc = "    \"modal_blocking\","]
+#[doc = "    \"toast\","]
+#[doc = "    \"email\","]
+#[doc = "    \"sms\","]
+#[doc = "    \"push\","]
+#[doc = "    \"cli\","]
+#[doc = "    \"agent_connector\","]
+#[doc = "    \"custom_in_app\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum DefaultTemplateIds {
+    #[serde(rename = "button")]
+    Button,
+    #[serde(rename = "plans_page_ctas")]
+    PlansPageCtas,
+    #[serde(rename = "plans_page_full")]
+    PlansPageFull,
+    #[serde(rename = "inline_gate_message")]
+    InlineGateMessage,
+    #[serde(rename = "tooltip")]
+    Tooltip,
+    #[serde(rename = "in_page_card")]
+    InPageCard,
+    #[serde(rename = "usage_counter")]
+    UsageCounter,
+    #[serde(rename = "credit_counter")]
+    CreditCounter,
+    #[serde(rename = "trial_counter")]
+    TrialCounter,
+    #[serde(rename = "banner")]
+    Banner,
+    #[serde(rename = "modal_optional")]
+    ModalOptional,
+    #[serde(rename = "modal_blocking")]
+    ModalBlocking,
+    #[serde(rename = "toast")]
+    Toast,
+    #[serde(rename = "email")]
+    Email,
+    #[serde(rename = "sms")]
+    Sms,
+    #[serde(rename = "push")]
+    Push,
+    #[serde(rename = "cli")]
+    Cli,
+    #[serde(rename = "agent_connector")]
+    AgentConnector,
+    #[serde(rename = "custom_in_app")]
+    CustomInApp,
+}
+impl ::std::fmt::Display for DefaultTemplateIds {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Button => f.write_str("button"),
+            Self::PlansPageCtas => f.write_str("plans_page_ctas"),
+            Self::PlansPageFull => f.write_str("plans_page_full"),
+            Self::InlineGateMessage => f.write_str("inline_gate_message"),
+            Self::Tooltip => f.write_str("tooltip"),
+            Self::InPageCard => f.write_str("in_page_card"),
+            Self::UsageCounter => f.write_str("usage_counter"),
+            Self::CreditCounter => f.write_str("credit_counter"),
+            Self::TrialCounter => f.write_str("trial_counter"),
+            Self::Banner => f.write_str("banner"),
+            Self::ModalOptional => f.write_str("modal_optional"),
+            Self::ModalBlocking => f.write_str("modal_blocking"),
+            Self::Toast => f.write_str("toast"),
+            Self::Email => f.write_str("email"),
+            Self::Sms => f.write_str("sms"),
+            Self::Push => f.write_str("push"),
+            Self::Cli => f.write_str("cli"),
+            Self::AgentConnector => f.write_str("agent_connector"),
+            Self::CustomInApp => f.write_str("custom_in_app"),
+        }
+    }
+}
+impl ::std::str::FromStr for DefaultTemplateIds {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "button" => Ok(Self::Button),
+            "plans_page_ctas" => Ok(Self::PlansPageCtas),
+            "plans_page_full" => Ok(Self::PlansPageFull),
+            "inline_gate_message" => Ok(Self::InlineGateMessage),
+            "tooltip" => Ok(Self::Tooltip),
+            "in_page_card" => Ok(Self::InPageCard),
+            "usage_counter" => Ok(Self::UsageCounter),
+            "credit_counter" => Ok(Self::CreditCounter),
+            "trial_counter" => Ok(Self::TrialCounter),
+            "banner" => Ok(Self::Banner),
+            "modal_optional" => Ok(Self::ModalOptional),
+            "modal_blocking" => Ok(Self::ModalBlocking),
+            "toast" => Ok(Self::Toast),
+            "email" => Ok(Self::Email),
+            "sms" => Ok(Self::Sms),
+            "push" => Ok(Self::Push),
+            "cli" => Ok(Self::Cli),
+            "agent_connector" => Ok(Self::AgentConnector),
+            "custom_in_app" => Ok(Self::CustomInApp),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for DefaultTemplateIds {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for DefaultTemplateIds {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for DefaultTemplateIds {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
     }
 }
 #[doc = "`DetectorRequirements`"]
@@ -58693,7 +58996,7 @@ impl ::std::convert::TryFrom<::std::string::String> for PlacementCategory {
 #[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "        },"]
 #[doc = "        \"type\": {"]
-#[doc = "          \"$ref\": \"#/$defs/SurfaceType\","]
+#[doc = "          \"$ref\": \"#/$defs/ComponentType\","]
 #[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "        }"]
 #[doc = "      },"]
@@ -58767,7 +59070,7 @@ pub struct PlacementDecisionOutput {
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"type\": {"]
-#[doc = "      \"$ref\": \"#/$defs/SurfaceType\","]
+#[doc = "      \"$ref\": \"#/$defs/ComponentType\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    }"]
 #[doc = "  },"]
@@ -58784,7 +59087,7 @@ pub struct PlacementDecisionOutputSurface {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub template: ::std::option::Option<::std::string::String>,
     #[serde(rename = "type")]
-    pub type_: SurfaceType,
+    pub type_: ComponentType,
 }
 #[doc = "`PlacementDescription`"]
 #[doc = r""]
@@ -90237,7 +90540,7 @@ impl<'de> ::serde::Deserialize<'de> for SupersessionRecordSupersededOutputId {
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"surface_type\": {"]
-#[doc = "      \"$ref\": \"#/$defs/SurfaceType\","]
+#[doc = "      \"$ref\": \"#/$defs/ComponentType\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"tenant_id\": {"]
@@ -90298,7 +90601,7 @@ pub struct SurfaceSlot {
     pub surface_slot_handle: SurfaceSlotSurfaceSlotHandle,
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
     pub surface_template_ids: ::std::vec::Vec<::std::string::String>,
-    pub surface_type: SurfaceType,
+    pub surface_type: ComponentType,
     pub tenant_id: SurfaceSlotTenantId,
     pub updated_at: ::chrono::DateTime<::chrono::offset::Utc>,
 }
@@ -90891,7 +91194,14 @@ impl<'de> ::serde::Deserialize<'de> for SurfaceSlotTenantId {
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"surface_type\": {"]
-#[doc = "      \"$ref\": \"#/$defs/StudioSurfaceType\","]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/$defs/ComponentType\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/$defs/DefaultTemplateIds\""]
+#[doc = "        }"]
+#[doc = "      ],"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"tenant_id\": {"]
@@ -90948,7 +91258,7 @@ pub struct SurfaceTemplate {
     pub playbook_version_id: ::std::option::Option<::std::string::String>,
     #[serde(default = "defaults::default_nzu64::<::std::num::NonZeroU64, 1>")]
     pub sequence: ::std::num::NonZeroU64,
-    pub surface_type: StudioSurfaceType,
+    pub surface_type: SurfaceTemplateSurfaceType,
     pub tenant_id: SurfaceTemplateTenantId,
     pub updated_at: ::chrono::DateTime<::chrono::offset::Utc>,
 }
@@ -91381,6 +91691,47 @@ impl<'de> ::serde::Deserialize<'de> for SurfaceTemplateName {
             .map_err(|e: self::error::ConversionError| {
                 <D::Error as ::serde::de::Error>::custom(e.to_string())
             })
+    }
+}
+#[doc = "`SurfaceTemplateSurfaceType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"anyOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"$ref\": \"#/$defs/ComponentType\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"$ref\": \"#/$defs/DefaultTemplateIds\""]
+#[doc = "    }"]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+pub struct SurfaceTemplateSurfaceType {
+    #[serde(
+        flatten,
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub subtype_0: ::std::option::Option<ComponentType>,
+    #[serde(
+        flatten,
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub subtype_1: ::std::option::Option<DefaultTemplateIds>,
+}
+impl ::std::default::Default for SurfaceTemplateSurfaceType {
+    fn default() -> Self {
+        Self {
+            subtype_0: Default::default(),
+            subtype_1: Default::default(),
+        }
     }
 }
 #[doc = "`SurfaceTemplateTenantId`"]

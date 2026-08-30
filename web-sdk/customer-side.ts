@@ -27,7 +27,6 @@ import type {
   TrialInstance,
   UserUsageEntry,
   UserPlanContext,
-  SurfaceType,
   TriggerEventType,
   TrackEvent,
 } from '@revt-eng/schema';
@@ -35,7 +34,7 @@ import {
   EVENT_PREFIX_FAMILIES,
   SDK_AUTOMATIC_NON_EMITTED_NAMES,
   SDK_CLIENT_EVENT_NAMES,
-  SurfaceTypeSchema,
+  ComponentTypeSchema,
   TriggerEventTypeSchema,
 } from '@revt-eng/schema';
 import type { components } from './generated/openapi';
@@ -54,6 +53,7 @@ import type {
   JsonObject,
   PredicateEvaluationResult,
 } from '@revt-eng/core';
+import { resolvePlacementComponentType } from '@revt-eng/core';
 // Plan 177 TASK-5: Server mode consumes the canonical-JSON payload artifact —
 // integrity-checked against its content address, version-refused before any
 // evaluation. (Replaces plan 160's client-side binary-bundle decode.)
@@ -260,14 +260,14 @@ export type RevTurbineInitInputOptions =
 export type RevTurbineSdkMode = 'snippet' | 'react' | 'iframe';
 
 /**
- * Canonical surface type for placement rendering.
+ * Canonical component type for placement rendering.
  * Re-exported from `@revt-eng/core` — single source of truth.
  */
-export type { RevTurbineSurfaceType } from '@revt-eng/core';
-import type { RevTurbineSurfaceType } from '@revt-eng/core';
+export type { RevTurbineComponentType, RevTurbineSurfaceType } from '@revt-eng/core';
+import type { RevTurbineComponentType, RevTurbineSurfaceType } from '@revt-eng/core';
 
-const VALID_SURFACE_TYPES: ReadonlySet<RevTurbineSurfaceType> = new Set<RevTurbineSurfaceType>(
-  SurfaceTypeSchema.options,
+const VALID_COMPONENT_TYPES: ReadonlySet<RevTurbineComponentType> = new Set<RevTurbineComponentType>(
+  ComponentTypeSchema.options,
 );
 
 /**
@@ -365,7 +365,9 @@ import type { RevTurbineEntitlementContext } from '@revt-eng/core';
 export interface RevTurbinePlacementRequestConfig {
   /** Slot identifier used for slot-based decisions. */
   slotId?: string;
-  /** Surface type declared by the slot integration point. */
+  /** Component type declared by the slot integration point. */
+  componentType?: RevTurbineComponentType;
+  /** @deprecated Use `componentType`. */
   surfaceType?: RevTurbineSurfaceType;
   /** Entitlement handle used for entitlement-based decisions. */
   entitlementHandle?: string;
@@ -1298,6 +1300,8 @@ export interface RevTurbineSlotPlacementRequestOptions {
 /** Optional context for entitlement-based placement requests. */
 export interface RevTurbineEntitlementPlacementRequestOptions {
   slotId?: string;
+  componentType?: RevTurbineComponentType;
+  /** @deprecated Use `componentType`. */
   surfaceType?: RevTurbineSurfaceType;
   planHandle?: string;
   placementHandle?: string;
@@ -1306,6 +1310,8 @@ export interface RevTurbineEntitlementPlacementRequestOptions {
 /** Optional context for chained placement requests. */
 export interface RevTurbineChainedPlacementRequestOptions {
   slotId?: string;
+  componentType?: RevTurbineComponentType;
+  /** @deprecated Use `componentType`. */
   surfaceType?: RevTurbineSurfaceType;
   entitlementHandle?: string;
   planHandle?: string;
@@ -1316,12 +1322,12 @@ export interface RevTurbineChainedPlacementRequestOptions {
  */
 export function createSlotPlacementRequest(
   slotId: string,
-  surfaceType: RevTurbineSurfaceType,
+  componentType: RevTurbineComponentType,
   options: RevTurbineSlotPlacementRequestOptions = {},
 ): RevTurbinePlacementRequestConfig {
   return {
     slotId,
-    surfaceType,
+    componentType,
     entitlementHandle: options.entitlementHandle,
     planHandle: options.planHandle,
     placementHandle: options.placementHandle,
@@ -1338,7 +1344,7 @@ export function createEntitlementPlacementRequest(
   return {
     entitlementHandle,
     slotId: options.slotId,
-    surfaceType: options.surfaceType,
+    componentType: resolvePlacementComponentType(options),
     planHandle: options.planHandle,
     placementHandle: options.placementHandle,
   };
@@ -1354,7 +1360,7 @@ export function createChainedPlacementRequest(
   return {
     placementHandle,
     slotId: options.slotId,
-    surfaceType: options.surfaceType,
+    componentType: resolvePlacementComponentType(options),
     entitlementHandle: options.entitlementHandle,
     planHandle: options.planHandle,
   };
@@ -2770,7 +2776,7 @@ export class RevTurbineCustomerSdk {
       output_id: outputId,
       category: 'fallback',
       surface: {
-        type: config.surfaceType ?? 'banner',
+        type: resolvePlacementComponentType(config) ?? 'banner',
         slot_id: config.slotId,
       },
       content: {
@@ -2823,7 +2829,8 @@ export class RevTurbineCustomerSdk {
 
   private localLookupMatchesConfig(parts: LocalLookupParts, config: RevTurbinePlacementRequestConfig): boolean {
     if (config.slotId && parts.slotId && parts.slotId !== config.slotId) return false;
-    if (config.surfaceType && parts.surfaceType && parts.surfaceType !== config.surfaceType) return false;
+    const componentType = resolvePlacementComponentType(config);
+    if (componentType && parts.surfaceType && parts.surfaceType !== componentType) return false;
 
     const matchesOptional = (requested?: string, candidate?: string) => {
       if (!requested) return true;
@@ -5964,13 +5971,13 @@ export class RevTurbineCustomerSdk {
     }
 
     const slotId = config.slotId;
-    const surfaceType = config.surfaceType;
+    const componentType = resolvePlacementComponentType(config);
 
     // Runtime check is required: the SDK is exposed as window.RevTurbine for plain JS callers
     // who bypass TypeScript's compile-time guarantees. The spec requires the SDK reject unknown values.
-    if (surfaceType && !VALID_SURFACE_TYPES.has(surfaceType)) {
+    if (componentType && !VALID_COMPONENT_TYPES.has(componentType)) {
       void this.capture(SDK_WARNING_EVENT_TYPE, {
-        reason: `getPlacement called with unknown surfaceType: ${String(surfaceType)}`,
+        reason: `getPlacement called with unknown componentType: ${String(componentType)}`,
         slot_id: slotId ?? null,
       });
       return null;
@@ -7409,7 +7416,7 @@ function normalizePlacementTypeEntity(value: unknown): RevTurbinePlacementTypeEn
   const description = toCompactString(value.description, 1024);
   const surfaceTypeRaw = toCompactString(value.surfaceType, 64);
 
-  if (!id || !label || !description || !VALID_SURFACE_TYPES.has(surfaceTypeRaw as RevTurbineSurfaceType)) {
+  if (!id || !label || !description || !VALID_COMPONENT_TYPES.has(surfaceTypeRaw as RevTurbineComponentType)) {
     return null;
   }
 

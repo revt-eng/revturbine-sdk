@@ -104,17 +104,48 @@ class _CandidateOutput(TypedDict):
     entitlement_gate_trigger: Any  # EntitlementGateTriggerShape | None
 
 
-# Source: local-resolver.ts:51-60
-DEFAULT_TEMPLATE_TO_SURFACE: dict[str, str] = {
+# Vendored from @revt-eng/schema 0.1.260 DEFAULT_TEMPLATE_COMPONENT_TYPES.
+# Keep this table byte-for-byte aligned with the Rust port; parity fixtures
+# exercise every built-in id so drift fails before release.
+DEFAULT_TEMPLATE_COMPONENT_TYPES: dict[str, str] = {
+    "button": "button",
+    "plans_page_ctas": "in_page",
+    "plans_page_full": "full_page",
+    "inline_gate_message": "inline",
+    "tooltip": "tooltip",
+    "in_page_card": "in_page",
+    "usage_counter": "in_page",
+    "credit_counter": "in_page",
+    "trial_counter": "in_page",
+    "banner": "banner",
+    "modal_optional": "modal",
+    "modal_blocking": "modal",
+    "toast": "toast",
+    "email": "email",
+    "sms": "sms",
+    "push": "push",
+    "cli": "cli",
+    "agent_connector": "agent",
+    "custom_in_app": "custom",
+}
+
+BUILT_IN_TEMPLATE_COMPONENT_TYPES: dict[str, str] = {
+    **DEFAULT_TEMPLATE_COMPONENT_TYPES,
     "modal_overlay": "modal",
     "banner_placement": "banner",
-    "in_page_card": "in_page",
-    "inline_gate_message": "in_page",
-    "usage_counter": "in_page",
-    "button": "button",
-    "email": "email",
     "full_page": "full_page",
 }
+
+COMPONENT_TYPES = frozenset(DEFAULT_TEMPLATE_COMPONENT_TYPES.values()) | {
+    "sidebar",
+    "fullscreen",
+}
+
+
+def _resolve_component_type(value: str) -> str | None:
+    if value in COMPONENT_TYPES:
+        return value
+    return DEFAULT_TEMPLATE_COMPONENT_TYPES.get(value)
 
 
 def _read_entitlement_handle_from_trigger(trigger: Any) -> str | None:
@@ -416,12 +447,18 @@ def create_static_placement_resolver(
 
     Source: local-resolver.ts:129-449
     """
-    template_to_surface: dict[str, str] = {**DEFAULT_TEMPLATE_TO_SURFACE}
+    template_to_surface: dict[str, str] = {**BUILT_IN_TEMPLATE_COMPONENT_TYPES}
     for template in exported_config.get("surface_templates") or []:
         if is_record(template):
             surface_type_value = template.get("surface_type")
             if isinstance(surface_type_value, str):
-                template_to_surface[template["id"]] = surface_type_value
+                component_type = _resolve_component_type(surface_type_value)
+                if component_type is None:
+                    raise ValueError(
+                        f"Surface template {template['id']} has no canonical ComponentType "
+                        f"for {surface_type_value}"
+                    )
+                template_to_surface[template["id"]] = component_type
 
     plan_handle_to_id: dict[str, str] = {}
     for plan in exported_config.get("plans") or []:
@@ -479,8 +516,9 @@ def create_static_placement_resolver(
             continue
 
         template_id = surface["template_id"]
-        mapped_surface = template_to_surface.get(template_id)
-        surface_type = mapped_surface if mapped_surface is not None else "custom"
+        surface_type = template_to_surface.get(template_id)
+        if surface_type is None:
+            raise ValueError(f"Surface template {template_id} has no canonical ComponentType")
 
         fields = surface.get("fields")
         content: dict[str, Any] = {**fields} if is_record(fields) else {}

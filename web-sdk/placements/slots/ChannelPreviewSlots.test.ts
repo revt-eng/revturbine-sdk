@@ -25,7 +25,7 @@ describe('channel preview slot registration (plan 76 TASK-15, AC-11)', () => {
       const slot = registry.resolve(outputForSurface(surfaceType));
       expect(slot, `no slot registered for ${surfaceType}`).toBeDefined();
       expect(slot?.id).toBe(expectedId);
-      expect(slot?.surfaceType).toBe(surfaceType);
+      expect(slot?.componentType).toBe(surfaceType);
       expect(typeof slot?.component).toBe('function');
     }
   });

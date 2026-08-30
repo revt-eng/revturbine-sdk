@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { AgentConnectorSlot } from './AgentConnectorSlot';
+import { AgentConnectorComponent } from '.';
 import type { PlacementSlotProps } from '../types';
 
 const basePlacement: PlacementSlotProps['placement'] = {
@@ -15,8 +15,8 @@ const basePlacement: PlacementSlotProps['placement'] = {
 };
 
 const meta = {
-  title: 'SDK/Placements/AgentConnectorSlot',
-  component: AgentConnectorSlot,
+  title: 'SDK/Placements/AgentConnectorComponent',
+  component: AgentConnectorComponent,
   args: {
     placement: basePlacement,
     content: {
@@ -33,7 +33,7 @@ const meta = {
   parameters: {
     layout: 'centered',
   },
-} satisfies Meta<typeof AgentConnectorSlot>;
+} satisfies Meta<typeof AgentConnectorComponent>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

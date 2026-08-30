@@ -43,6 +43,24 @@ export { registerBuiltinSlotTypes } from './builtin';
 
 // Built-in slot components (for direct use or extension)
 export {
+  BannerComponent,
+  ModalComponent,
+  InlineEmbedComponent,
+  InPageComponent,
+  ToastComponent,
+  ButtonComponent,
+  QuotaMeterComponent,
+  FullPageComponent,
+  CliComponent,
+  CreditBalanceComponent,
+  TooltipComponent,
+  AgentConnectorComponent,
+  EmailPreviewComponent,
+  SmsPreviewComponent,
+  PushPreviewComponent,
+} from './slots';
+/** @deprecated Use the corresponding `*Component` export. */
+export {
   BannerSlot,
   ModalSlot,
   InlineEmbedSlot,
@@ -55,7 +73,25 @@ export {
   CreditBalanceSlot,
   TooltipSlot,
   AgentConnectorSlot,
+  EmailPreviewSlot,
+  SmsPreviewSlot,
+  PushPreviewSlot,
 } from './slots';
+export type {
+  BannerComponentProps,
+  ModalComponentProps,
+  InlineEmbedComponentProps,
+  InPageComponentProps,
+  ToastComponentProps,
+  ButtonComponentProps,
+  QuotaMeterComponentProps,
+  FullPageComponentProps,
+  CliComponentProps,
+  CreditBalanceComponentProps,
+  TooltipComponentProps,
+  AgentConnectorComponentProps,
+} from './slots';
+/** @deprecated Use the corresponding `*ComponentProps` export. */
 export type {
   BannerSlotProps,
   ModalSlotProps,

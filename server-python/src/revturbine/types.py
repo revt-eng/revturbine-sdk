@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.258/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.261/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -860,6 +860,25 @@ class CohortMonth(BaseModel):
     revenue_cents: conint(ge=0, le=9007199254740991)
 
 
+class ComponentType(Enum):
+    banner = "banner"
+    modal = "modal"
+    tooltip = "tooltip"
+    sidebar = "sidebar"
+    inline = "inline"
+    toast = "toast"
+    fullscreen = "fullscreen"
+    email = "email"
+    sms = "sms"
+    push = "push"
+    in_page = "in_page"
+    button = "button"
+    full_page = "full_page"
+    agent = "agent"
+    cli = "cli"
+    custom = "custom"
+
+
 class ContentPayloadSegmentEntry(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -1053,6 +1072,28 @@ class Status1(Enum):
 class BillingHealthIssue(Enum):
     payment_failed = "payment_failed"
     payment_method_missing = "payment_method_missing"
+
+
+class DefaultTemplateIds(Enum):
+    button = "button"
+    plans_page_ctas = "plans_page_ctas"
+    plans_page_full = "plans_page_full"
+    inline_gate_message = "inline_gate_message"
+    tooltip = "tooltip"
+    in_page_card = "in_page_card"
+    usage_counter = "usage_counter"
+    credit_counter = "credit_counter"
+    trial_counter = "trial_counter"
+    banner = "banner"
+    modal_optional = "modal_optional"
+    modal_blocking = "modal_blocking"
+    toast = "toast"
+    email = "email"
+    sms = "sms"
+    push = "push"
+    cli = "cli"
+    agent_connector = "agent_connector"
+    custom_in_app = "custom_in_app"
 
 
 class DimensionCategory(Enum):
@@ -2003,6 +2044,37 @@ class PlacementCategory(Enum):
     retention = "retention"
 
 
+class Surface(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    template: str | None = None
+    type: ComponentType
+    slot_id: str | None = None
+
+
+class PlacementDecisionOutput(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    output_id: str
+    category: str
+    surface: Surface
+    content: dict[str, Any]
+    promotion: dict[str, Any] | None = None
+    cta_path: dict[str, Any] | None = None
+    ui_path: dict[str, Any] | None = None
+    rule_id: str
+    decision_id: str
+    config_version: str
+    present_upsell: bool
+    message_block_handle: str | None = None
+    message_block_id: str | None = None
+    experiment_id: str | None = None
+    variant_key: str | None = None
+    experiment_version_id: str | None = None
+
+
 class RecommendationStrategy(Enum):
     next_tier_up = "next_tier_up"
     best_value = "best_value"
@@ -2892,6 +2964,33 @@ class SemanticEvent(BaseModel):
     payload: dict[str, Any] | None = {}
 
 
+class ServerEvaluationPayloadDecisionsItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    slot_id: str | None = None
+    entitlement_handle: str | None = None
+    plan_handle: str | None = None
+    placement_handle: str | None = None
+    visible: bool
+    output: PlacementDecisionOutput | None = None
+    reason_codes: list[str] | None = None
+
+
+class ServerEvaluationPayloadEntitlementsValue(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    status: EntitlementStatus
+    allowed: bool
+    reason: str | None = None
+    current_tier: str | None = None
+    limit: float | None = None
+    used: float | None = None
+    remaining: float | None = None
+    placement: PlacementDecisionOutput | None = None
+
+
 class ServerEvaluationPayloadUserContext(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -3060,6 +3159,31 @@ class Status4(Enum):
     active = "active"
     inactive = "inactive"
     new = "new"
+
+
+class SurfaceSlot(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    tenant_id: constr(min_length=1)
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
+    surface_slot_handle: constr(min_length=1, max_length=200)
+    surface_type: ComponentType
+    surface_template_ids: list[str] | None = []
+    surface_slot_category: SurfaceSlotCategory | None = "fixed"
+    first_seen: AwareDatetime
+    last_seen: AwareDatetime
+    status: Status4 | None = "new"
+    placement_count: conint(ge=0, le=9007199254740991) | None = 0
 
 
 class SurfaceTypeCapRule(BaseModel):
@@ -4009,6 +4133,20 @@ class DriftReport(BaseModel):
     metadata: dict[str, Any] | None = {}
 
 
+class EntitlementCheckResult(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    status: EntitlementStatus
+    allowed: bool
+    reason: str | None = None
+    current_tier: str | None = None
+    limit: float | None = None
+    used: float | None = None
+    remaining: float | None = None
+    placement: PlacementDecisionOutput | None = None
+
+
 class EntitlementGrant(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -4390,37 +4528,6 @@ class OptimizationSuggestion(BaseModel):
     metadata: dict[str, Any] | None = {}
 
 
-class Surface(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    template: str | None = None
-    type: SurfaceType
-    slot_id: str | None = None
-
-
-class PlacementDecisionOutput(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    output_id: str
-    category: str
-    surface: Surface
-    content: dict[str, Any]
-    promotion: dict[str, Any] | None = None
-    cta_path: dict[str, Any] | None = None
-    ui_path: dict[str, Any] | None = None
-    rule_id: str
-    decision_id: str
-    config_version: str
-    present_upsell: bool
-    message_block_handle: str | None = None
-    message_block_id: str | None = None
-    experiment_id: str | None = None
-    variant_key: str | None = None
-    experiment_version_id: str | None = None
-
-
 class PlacementPayload(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -4781,60 +4888,8 @@ class SdkMetaIngestBatch(BaseModel):
     events: list[SdkMetaEvent] = Field(..., max_length=10, min_length=1)
 
 
-class ServerEvaluationPayloadDecisionsItem(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    slot_id: str | None = None
-    entitlement_handle: str | None = None
-    plan_handle: str | None = None
-    placement_handle: str | None = None
-    visible: bool
-    output: PlacementDecisionOutput | None = None
-    reason_codes: list[str] | None = None
-
-
-class ServerEvaluationPayloadEntitlementsValue(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    status: EntitlementStatus
-    allowed: bool
-    reason: str | None = None
-    current_tier: str | None = None
-    limit: float | None = None
-    used: float | None = None
-    remaining: float | None = None
-    placement: PlacementDecisionOutput | None = None
-
-
 class ServerEvaluationPayloadTrialStatus(RootModel[UserTrialStatus]):
     root: UserTrialStatus
-
-
-class SurfaceSlot(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-    tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1) | None = "production"
-    playbook_version_id: str | None = None
-    is_current: bool | None = True
-    is_deleted: bool | None = False
-    delete_date: AwareDatetime | None = None
-    sequence: conint(ge=1, le=9007199254740991) | None = 1
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
-    surface_slot_handle: constr(min_length=1, max_length=200)
-    surface_type: SurfaceType
-    surface_template_ids: list[str] | None = []
-    surface_slot_category: SurfaceSlotCategory | None = "fixed"
-    first_seen: AwareDatetime
-    last_seen: AwareDatetime
-    status: Status4 | None = "new"
-    placement_count: conint(ge=0, le=9007199254740991) | None = 0
 
 
 class SurfaceTemplate(BaseModel):
@@ -4855,7 +4910,7 @@ class SurfaceTemplate(BaseModel):
     anchor_id: constr(min_length=1)
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
-    surface_type: StudioSurfaceType
+    surface_type: ComponentType | DefaultTemplateIds
     field_definitions: list[FieldDefinition] | None = Field([], validate_default=True)
     description: constr(max_length=500) | None = None
 
@@ -5106,20 +5161,6 @@ class AnalyticsView(BaseModel):
     blocks: list[AnalyticsViewBlock] = Field(..., max_length=24, min_length=1)
     handoffs: list[AnalyticsViewHandoff] | None = Field(None, max_length=10)
     customization_policy: AnalyticsCustomizationPolicy
-
-
-class EntitlementCheckResult(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    status: EntitlementStatus
-    allowed: bool
-    reason: str | None = None
-    current_tier: str | None = None
-    limit: float | None = None
-    used: float | None = None
-    remaining: float | None = None
-    placement: PlacementDecisionOutput | None = None
 
 
 class ExperimentAnalysisResult(BaseModel):

@@ -16,7 +16,8 @@ import pytest
 
 from revturbine.core.decisions.types import PlacementDecision, PlacementRecord
 from revturbine.core.placements import (
-    DEFAULT_TEMPLATE_TO_SURFACE,
+    BUILT_IN_TEMPLATE_COMPONENT_TYPES,
+    DEFAULT_TEMPLATE_COMPONENT_TYPES,
     create_static_placement_resolver,
 )
 from revturbine.core.placements.local_resolver import (
@@ -304,7 +305,7 @@ class TestResolverIndex:
         assert decision["visible"] is True
         assert decision["output"]["output_id"] == "pay1"
 
-    def test_surface_type_from_default_map_then_config_then_custom(self) -> None:
+    def test_component_type_from_schema_map_then_config(self) -> None:
         resolver = create_static_placement_resolver(
             {
                 "placements": [
@@ -321,26 +322,47 @@ class TestResolverIndex:
                             )
                         ],
                     ),
-                    _entry(
-                        entry_id="pl_c",
-                        payloads=[
-                            _payload(
-                                payload_id="pc",
-                                surfaces=[_surface(template_id="unknown_tpl")],
-                            )
-                        ],
-                    ),
                 ]
             },
-            _config(surface_templates=[{"id": "cfg_tpl", "surface_type": "tooltip"}]),
+            _config(surface_templates=[{"id": "cfg_tpl", "surface_type": "modal_optional"}]),
         )
         a = resolver({"placement_id": "p", "user_id": "u"}, _rec(name="pl_a"), _ctx())
         b = resolver({"placement_id": "p", "user_id": "u"}, _rec(name="pl_b"), _ctx())
-        c = resolver({"placement_id": "p", "user_id": "u"}, _rec(name="pl_c"), _ctx())
-        assert a["output"]["surface"]["type"] == "email"  # DEFAULT map
-        assert b["output"]["surface"]["type"] == "tooltip"  # config override
-        assert c["output"]["surface"]["type"] == "custom"  # unknown → custom
-        assert DEFAULT_TEMPLATE_TO_SURFACE["modal_overlay"] == "modal"
+        assert a["output"]["surface"]["type"] == "email"
+        assert b["output"]["surface"]["type"] == "modal"
+        assert BUILT_IN_TEMPLATE_COMPONENT_TYPES["modal_overlay"] == "modal"
+        assert set(DEFAULT_TEMPLATE_COMPONENT_TYPES) == {
+            "button",
+            "plans_page_ctas",
+            "plans_page_full",
+            "inline_gate_message",
+            "tooltip",
+            "in_page_card",
+            "usage_counter",
+            "credit_counter",
+            "trial_counter",
+            "banner",
+            "modal_optional",
+            "modal_blocking",
+            "toast",
+            "email",
+            "sms",
+            "push",
+            "cli",
+            "agent_connector",
+            "custom_in_app",
+        }
+
+    def test_unknown_authored_template_fails_loudly(self) -> None:
+        with pytest.raises(ValueError, match="unknown_tpl has no canonical ComponentType"):
+            create_static_placement_resolver(
+                {
+                    "placements": [
+                        _entry(payloads=[_payload(surfaces=[_surface(template_id="unknown_tpl")])])
+                    ]
+                },
+                _config(),
+            )
 
 
 # ── Resolver: candidate path ────────────────────────────────────────────────
@@ -879,13 +901,17 @@ class TestLocalResolverPilotCorpus:
             _js_string(2.0) == "2" and _js_string(None) == "null",
         ),
         (
-            "unknown_template_is_custom",
+            "inline_template_uses_precise_component_subtype",
             _decide(
-                [_entry(payloads=[_payload(surfaces=[_surface(template_id="zz")])])],
+                [
+                    _entry(
+                        payloads=[_payload(surfaces=[_surface(template_id="inline_gate_message")])]
+                    )
+                ],
                 _rec(name="pl_foo"),
                 _ctx(),
             )["output"]["surface"]["type"]
-            == "custom",
+            == "inline",
         ),
         (
             "no_candidates_fallback",

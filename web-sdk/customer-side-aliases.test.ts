@@ -7,7 +7,7 @@
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { RevTurbineCustomerSdk, RECOGNIZED_UPDATE_KEYS } from './customer-side';
 import type { EntitlementResult, RevTurbineInitOptions, RevTurbineUpdateInput } from './customer-side';
-import { RTSlot, Slot, Gate } from './index';
+import { RTSlot, Slot, Gate, BannerComponent, BannerSlot, ModalComponent, ModalSlot } from './index';
 import { SurfaceSlotComponent } from './placements/SurfaceSlotComponent';
 import { AccessGateSurfaceSlot } from './placements/AccessGateSurfaceSlot';
 
@@ -147,5 +147,10 @@ describe('advertised hero-API aliases (plan 84)', () => {
 
   it('Gate is the AccessGateSurfaceSlot (advertised name)', () => {
     expect(Gate).toBe(AccessGateSurfaceSlot);
+  });
+
+  it('exports *Component names with working deprecated *Slot aliases', () => {
+    expect(BannerComponent).toBe(BannerSlot);
+    expect(ModalComponent).toBe(ModalSlot);
   });
 });

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { PlacementOutput } from '../customer-side';
+import type { PlacementOutput, RevTurbineComponentType } from '../customer-side';
 import type {
   PlacementSlotProps,
   PersonalizationContext,
@@ -30,6 +30,8 @@ export interface PlacementRendererProps {
   personalization?: PersonalizationContext;
   /** Custom registry; defaults to the global singleton. */
   registry?: PlacementTypeRegistry;
+  /** Component types this render location accepts. Matching is exact. */
+  acceptedComponentTypes?: readonly RevTurbineComponentType[];
   /**
    * Custom CTA resolver registry; defaults to the global singleton. When a
    * resolver is registered for the activated CTA's action type, it is invoked
@@ -90,6 +92,7 @@ export function PlacementRenderer({
   placement,
   personalization = {},
   registry,
+  acceptedComponentTypes,
   ctaResolvers,
   onCtaClick,
   onSecondaryCtaClick,
@@ -150,7 +153,7 @@ export function PlacementRenderer({
     }
   }, [visible, slotType, onImpression, placement.output_id]);
 
-  if (!slotType) {
+  if (!slotType || (acceptedComponentTypes && !acceptedComponentTypes.includes(slotType.componentType))) {
     return <>{fallback}</>;
   }
 

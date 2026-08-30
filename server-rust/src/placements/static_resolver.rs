@@ -44,18 +44,61 @@ use crate::rules::plan_eligibility::{
     evaluate_plan_eligibility, PlanEligibilityContext, PlanEligibilityRule,
 };
 
-/// Built-in surface-template → surface-type mapping, extended by the
-/// Playbook's own `surface_templates`.
-const DEFAULT_TEMPLATE_TO_SURFACE: &[(&str, &str)] = &[
+/// Vendored from @revt-eng/schema 0.1.260 DEFAULT_TEMPLATE_COMPONENT_TYPES.
+const DEFAULT_TEMPLATE_COMPONENT_TYPES: &[(&str, &str)] = &[
+    ("button", "button"),
+    ("plans_page_ctas", "in_page"),
+    ("plans_page_full", "full_page"),
+    ("inline_gate_message", "inline"),
+    ("tooltip", "tooltip"),
+    ("in_page_card", "in_page"),
+    ("usage_counter", "in_page"),
+    ("credit_counter", "in_page"),
+    ("trial_counter", "in_page"),
+    ("banner", "banner"),
+    ("modal_optional", "modal"),
+    ("modal_blocking", "modal"),
+    ("toast", "toast"),
+    ("email", "email"),
+    ("sms", "sms"),
+    ("push", "push"),
+    ("cli", "cli"),
+    ("agent_connector", "agent"),
+    ("custom_in_app", "custom"),
+];
+
+const LEGACY_TEMPLATE_COMPONENT_TYPES: &[(&str, &str)] = &[
     ("modal_overlay", "modal"),
     ("banner_placement", "banner"),
-    ("in_page_card", "in_page"),
-    ("inline_gate_message", "in_page"),
-    ("usage_counter", "in_page"),
-    ("button", "button"),
-    ("email", "email"),
     ("full_page", "full_page"),
 ];
+
+fn resolve_component_type(value: &str) -> Option<&str> {
+    const COMPONENT_TYPES: &[&str] = &[
+        "banner",
+        "modal",
+        "tooltip",
+        "sidebar",
+        "inline",
+        "toast",
+        "fullscreen",
+        "email",
+        "sms",
+        "push",
+        "in_page",
+        "button",
+        "full_page",
+        "agent",
+        "cli",
+        "custom",
+    ];
+    if COMPONENT_TYPES.contains(&value) {
+        return Some(value);
+    }
+    DEFAULT_TEMPLATE_COMPONENT_TYPES
+        .iter()
+        .find_map(|(template, component)| (*template == value).then_some(*component))
+}
 
 /// Slot category → the entry categories it prefers.
 fn preferred_categories(slot_category: &str) -> Option<&'static [&'static str]> {
@@ -253,8 +296,9 @@ impl StaticPlacementResolver {
     /// Build the candidate index from a Playbook and its placement dataset.
     #[must_use]
     pub fn new(placements: &[Value], exported_config: &Value) -> Self {
-        let mut template_to_surface: HashMap<String, String> = DEFAULT_TEMPLATE_TO_SURFACE
+        let mut template_to_surface: HashMap<String, String> = DEFAULT_TEMPLATE_COMPONENT_TYPES
             .iter()
+            .chain(LEGACY_TEMPLATE_COMPONENT_TYPES.iter())
             .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
             .collect();
         for t in exported_config
@@ -263,7 +307,10 @@ impl StaticPlacementResolver {
             .unwrap_or(&vec![])
         {
             if let (Some(id), Some(st)) = (s(t, "id"), s(t, "surface_type")) {
-                template_to_surface.insert(id, st);
+                let component_type = resolve_component_type(&st).unwrap_or_else(|| {
+                    panic!("Surface template {id} has no canonical ComponentType for {st}")
+                });
+                template_to_surface.insert(id, component_type.to_string());
             }
         }
 
@@ -339,7 +386,9 @@ impl StaticPlacementResolver {
             let surface_type = template_to_surface
                 .get(&template_id)
                 .cloned()
-                .unwrap_or_else(|| "custom".to_string());
+                .unwrap_or_else(|| {
+                    panic!("Surface template {template_id} has no canonical ComponentType")
+                });
 
             let mut content = surface
                 .get("fields")

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { TooltipSlot } from './TooltipSlot';
+import { TooltipComponent } from '.';
 import type { PlacementSlotProps } from '../types';
 
 const basePlacement: PlacementSlotProps['placement'] = {
@@ -15,8 +15,8 @@ const basePlacement: PlacementSlotProps['placement'] = {
 };
 
 const meta = {
-  title: 'SDK/Placements/TooltipSlot',
-  component: TooltipSlot,
+  title: 'SDK/Placements/TooltipComponent',
+  component: TooltipComponent,
   args: {
     placement: basePlacement,
     content: {
@@ -33,7 +33,7 @@ const meta = {
   parameters: {
     layout: 'fullscreen',
   },
-} satisfies Meta<typeof TooltipSlot>;
+} satisfies Meta<typeof TooltipComponent>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -64,7 +64,7 @@ export const AnchoredRight: Story = {
       >
         Feature Target
       </button>
-      <TooltipSlot
+      <TooltipComponent
         {...args}
         content={{
           ...args.content,

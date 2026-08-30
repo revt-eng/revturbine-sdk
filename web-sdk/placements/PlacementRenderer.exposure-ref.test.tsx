@@ -23,7 +23,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { PlacementRenderer } from './PlacementRenderer';
 import { PlacementTypeRegistry } from './registry';
 import type { PlacementSlotProps } from './types';
-import type { PlacementOutput } from '../customer-side';
+import type { PlacementOutput, RevTurbineComponentType } from '../customer-side';
 
 let container: HTMLDivElement | null = null;
 let root: Root | null = null;
@@ -55,7 +55,7 @@ function makeRegistry(): PlacementTypeRegistry {
     id: 'exposure_probe',
     label: 'Exposure probe',
     description: 'Test slot that attaches the exposure ref to its root.',
-    surfaceType: 'banner',
+    componentType: 'banner',
     component: ExposureProbeSlot,
   });
   return registry;
@@ -73,7 +73,10 @@ const placement: PlacementOutput = {
   present_upsell: false,
 };
 
-async function mount(exposureRef?: (element: Element | null) => void): Promise<void> {
+async function mount(
+  exposureRef?: (element: Element | null) => void,
+  acceptedComponentTypes?: readonly RevTurbineComponentType[],
+): Promise<void> {
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -82,6 +85,7 @@ async function mount(exposureRef?: (element: Element | null) => void): Promise<v
       <PlacementRenderer
         placement={placement}
         registry={makeRegistry()}
+        acceptedComponentTypes={acceptedComponentTypes}
         {...(exposureRef ? { exposureRef } : {})}
       />,
     );
@@ -104,5 +108,10 @@ describe('PlacementRenderer exposureRef threading (AC-15)', () => {
     await mount(undefined);
     expect(received.props?.exposureRef).toBeUndefined();
     expect(container?.textContent).toContain('probe');
+  });
+
+  it('matches accepted component types exactly', async () => {
+    await mount(undefined, ['modal']);
+    expect(container?.textContent).not.toContain('probe');
   });
 });

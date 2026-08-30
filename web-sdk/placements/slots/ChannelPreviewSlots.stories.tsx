@@ -1,5 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { EmailPreviewSlot, SmsPreviewSlot, PushPreviewSlot } from './ChannelPreviewSlots';
+import {
+  EmailPreviewComponent,
+  PushPreviewComponent,
+  SmsPreviewComponent,
+} from '.';
 import type { PlacementSlotProps } from '../types';
 
 const placementFor = (
@@ -20,7 +24,7 @@ const placementFor = (
 
 const emailMeta = {
   title: 'SDK/Placements/ChannelPreview/Email',
-  component: EmailPreviewSlot,
+  component: EmailPreviewComponent,
   args: {
     placement: placementFor('email'),
     content: {
@@ -36,7 +40,7 @@ const emailMeta = {
     visible: true,
   },
   argTypes: { visible: { control: 'boolean' } },
-} satisfies Meta<typeof EmailPreviewSlot>;
+} satisfies Meta<typeof EmailPreviewComponent>;
 
 export default emailMeta;
 type EmailStory = StoryObj<typeof emailMeta>;
@@ -55,10 +59,10 @@ export const EmailPrimaryOnly: EmailStory = {
 
 // ── SMS ──────────────────────────────────────────────────────────────────────
 
-type SmsStory = StoryObj<typeof SmsPreviewSlot>;
+type SmsStory = StoryObj<typeof SmsPreviewComponent>;
 
 export const Sms: SmsStory = {
-  render: (args) => <SmsPreviewSlot {...args} />,
+  render: (args) => <SmsPreviewComponent {...args} />,
   args: {
     placement: placementFor('sms'),
     content: {
@@ -74,10 +78,10 @@ export const Sms: SmsStory = {
 
 // ── Push ─────────────────────────────────────────────────────────────────────
 
-type PushStory = StoryObj<typeof PushPreviewSlot>;
+type PushStory = StoryObj<typeof PushPreviewComponent>;
 
 export const Push: PushStory = {
-  render: (args) => <PushPreviewSlot {...args} />,
+  render: (args) => <PushPreviewComponent {...args} />,
   args: {
     placement: placementFor('push'),
     content: {

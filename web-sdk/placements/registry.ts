@@ -1,4 +1,5 @@
-import type { RevTurbineSurfaceType, PlacementOutput } from '../customer-side';
+import { DEFAULT_TEMPLATE_COMPONENT_TYPES } from '@revt-eng/schema';
+import type { RevTurbineComponentType, PlacementOutput } from '../customer-side';
 import type {
   PlacementSlotType,
   PlacementSlotProps,
@@ -21,6 +22,16 @@ const UI_PATH_TYPED_KEYS: ReadonlySet<string> = new Set([
   'tour_id',
 ]);
 
+function registrationComponentType(
+  options: Pick<RegisterPlacementSlotTypeOptions, 'componentType' | 'surfaceType'>,
+): RevTurbineComponentType {
+  const componentType = options.componentType ?? options.surfaceType;
+  if (!componentType) {
+    throw new Error('[RevTurbine] Placement component registration requires componentType.');
+  }
+  return componentType;
+}
+
 /**
  * Registry for placement slot types.
  *
@@ -30,36 +41,39 @@ const UI_PATH_TYPED_KEYS: ReadonlySet<string> = new Set([
  */
 export class PlacementTypeRegistry {
   private readonly types = new Map<string, PlacementSlotType>();
-  private readonly surfaceIndex = new Map<RevTurbineSurfaceType, string[]>();
+  private readonly componentIndex = new Map<RevTurbineComponentType, string[]>();
 
   /**
    * Register a placement slot type. If a type with the same id already exists,
    * it is replaced (allows customer overrides of built-in types).
    */
   register<P extends PlacementSlotProps>(options: RegisterPlacementSlotTypeOptions<P>): void {
+    const componentType = registrationComponentType(options);
     const existingType = this.types.get(options.id);
     if (existingType) {
       console.warn(
         `[RevTurbine] Replacing existing placement slot type id ${options.id}.`,
         {
-          previousSurfaceType: existingType.surfaceType,
-          nextSurfaceType: options.surfaceType,
+          previousComponentType: existingType.componentType,
+          nextComponentType: componentType,
         },
       );
     }
 
     const slotType: PlacementSlotType<P> = {
       ...options,
+      componentType,
       priority: options.priority ?? 0,
-      accepts: options.accepts ?? ((output) => output.surface.type === options.surfaceType),
+      renderedFields: options.renderedFields ?? [],
+      accepts: options.accepts ?? ((output) => output.surface.type === componentType),
     };
 
     this.types.set(slotType.id, slotType as PlacementSlotType);
 
-    const existing = this.surfaceIndex.get(slotType.surfaceType) ?? [];
+    const existing = this.componentIndex.get(slotType.componentType) ?? [];
     if (!existing.includes(slotType.id)) {
       existing.push(slotType.id);
-      this.surfaceIndex.set(slotType.surfaceType, existing);
+      this.componentIndex.set(slotType.componentType, existing);
     }
   }
 
@@ -73,13 +87,13 @@ export class PlacementTypeRegistry {
 
     this.types.delete(id);
 
-    const existing = this.surfaceIndex.get(slotType.surfaceType);
+    const existing = this.componentIndex.get(slotType.componentType);
     if (existing) {
       const filtered = existing.filter((typeId) => typeId !== id);
       if (filtered.length > 0) {
-        this.surfaceIndex.set(slotType.surfaceType, filtered);
+        this.componentIndex.set(slotType.componentType, filtered);
       } else {
-        this.surfaceIndex.delete(slotType.surfaceType);
+        this.componentIndex.delete(slotType.componentType);
       }
     }
 
@@ -108,10 +122,15 @@ export class PlacementTypeRegistry {
     if (output.surface.template) {
       const byTemplate = this.types.get(output.surface.template);
       if (byTemplate) return byTemplate;
+
+      const mappedType = DEFAULT_TEMPLATE_COMPONENT_TYPES[
+        output.surface.template as keyof typeof DEFAULT_TEMPLATE_COMPONENT_TYPES
+      ];
+      if (mappedType && mappedType !== output.surface.type) return undefined;
     }
 
     // 2. Surface type match with accepts predicate, sorted by priority desc
-    const candidateIds = this.surfaceIndex.get(output.surface.type) ?? [];
+    const candidateIds = this.componentIndex.get(output.surface.type) ?? [];
     const candidates = candidateIds
       .map((id) => this.types.get(id))
       .filter((t): t is PlacementSlotType => t != null)
@@ -135,9 +154,14 @@ export class PlacementTypeRegistry {
   /**
    * List slot types for a specific surface type.
    */
-  listBySurfaceType(surfaceType: RevTurbineSurfaceType): PlacementSlotType[] {
-    const ids = this.surfaceIndex.get(surfaceType) ?? [];
+  listByComponentType(componentType: RevTurbineComponentType): PlacementSlotType[] {
+    const ids = this.componentIndex.get(componentType) ?? [];
     return ids.map((id) => this.types.get(id)).filter(Boolean) as PlacementSlotType[];
+  }
+
+  /** @deprecated Use {@link listByComponentType}. */
+  listBySurfaceType(componentType: RevTurbineComponentType): PlacementSlotType[] {
+    return this.listByComponentType(componentType);
   }
 
   /**

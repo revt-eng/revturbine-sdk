@@ -5,6 +5,7 @@ import type {
   RevTurbinePlacementRequestConfig,
   EntitlementStatus,
 } from '../customer-side';
+import { resolvePlacementComponentType } from '@revt-eng/core';
 
 export type HarnessSlotId = string;
 
@@ -458,7 +459,7 @@ export function buildHarnessPlacementCatalog(
 export function buildLookupConfigKey(config: RevTurbinePlacementRequestConfig): string {
   return [
     config.slotId || '',
-    config.surfaceType || '',
+    resolvePlacementComponentType(config) || '',
     config.entitlementHandle || '',
     config.planHandle || '',
     config.placementHandle || '',

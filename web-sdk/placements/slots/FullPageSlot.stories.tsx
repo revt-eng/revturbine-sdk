@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { FullPageSlot } from './FullPageSlot';
+import { FullPageComponent } from '.';
 import type { PlacementSlotProps } from '../types';
 
 const basePlacement: PlacementSlotProps['placement'] = {
@@ -15,8 +15,8 @@ const basePlacement: PlacementSlotProps['placement'] = {
 };
 
 const meta = {
-  title: 'SDK/Placements/FullPageSlot',
-  component: FullPageSlot,
+  title: 'SDK/Placements/FullPageComponent',
+  component: FullPageComponent,
   args: {
     placement: basePlacement,
     content: {
@@ -34,7 +34,7 @@ const meta = {
   argTypes: {
     visible: { control: 'boolean' },
   },
-} satisfies Meta<typeof FullPageSlot>;
+} satisfies Meta<typeof FullPageComponent>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

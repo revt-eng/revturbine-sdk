@@ -76,6 +76,28 @@ fn an_unknown_placement_reports_not_found() {
 }
 
 #[test]
+fn a_non_seed_modal_template_resolves_to_the_modal_component_type() {
+    let mut c = config();
+    c["surface_templates"] = json!([{ "id": "customer_modal", "surface_type": "modal_optional" }]);
+    let mut e = entry("pl_modal", "gated", 0, "Upgrade");
+    e["payloads"][0]["surfaces"][0]["template_id"] = json!("customer_modal");
+
+    let r = StaticPlacementResolver::new(&[e], &c);
+    assert_eq!(
+        r.resolve("pl_modal", None, None)["output"]["surface"]["type"],
+        json!("modal"),
+    );
+}
+
+#[test]
+#[should_panic(expected = "unknown_tpl has no canonical ComponentType")]
+fn an_unknown_authored_template_fails_loudly() {
+    let mut e = entry("pl_unknown", "fixed", 0, "Unknown");
+    e["payloads"][0]["surfaces"][0]["template_id"] = json!("unknown_tpl");
+    let _ = StaticPlacementResolver::new(&[e], &config());
+}
+
+#[test]
 fn a_payload_that_is_not_active_is_never_indexed() {
     let mut e = entry("pl_banner", "fixed", 0, "Hello");
     e["payloads"][0]["status"] = json!("draft");

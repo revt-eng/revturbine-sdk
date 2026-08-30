@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { QuotaMeterSlot } from './QuotaMeterSlot';
+import { QuotaMeterComponent } from '.';
 import type { PlacementSlotProps } from '../types';
 
 const basePlacement: PlacementSlotProps['placement'] = {
@@ -15,8 +15,8 @@ const basePlacement: PlacementSlotProps['placement'] = {
 };
 
 const meta = {
-  title: 'SDK/Placements/QuotaMeterSlot',
-  component: QuotaMeterSlot,
+  title: 'SDK/Placements/QuotaMeterComponent',
+  component: QuotaMeterComponent,
   args: {
     placement: basePlacement,
     content: {
@@ -41,7 +41,7 @@ const meta = {
       </div>
     ),
   ],
-} satisfies Meta<typeof QuotaMeterSlot>;
+} satisfies Meta<typeof QuotaMeterComponent>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

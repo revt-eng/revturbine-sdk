@@ -66,6 +66,7 @@ from revturbine.core.placements import (
     ExportedConfig,
     LocalPlacementDataset,
     create_static_placement_resolver,
+    resolve_placement_component_type,
 )
 from revturbine.core.providers import (
     DomainProvider,
@@ -227,7 +228,8 @@ class LocalRuntime:
         resolver pipeline runs. Returns ``None`` when no slot matches.
 
         Config keys arrive snake_case (the parity harness snake-cases the
-        canonical camelCase fixture args): ``slot_id`` / ``surface_type`` /
+        canonical camelCase fixture args): ``slot_id`` / ``component_type`` /
+        deprecated ``surface_type`` /
         ``entitlement_handle`` / ``placement_handle`` / ``fixed_only``.
 
         Source: local-runtime.ts:195-225
@@ -449,14 +451,14 @@ class LocalRuntime:
             if existing is not None:
                 return existing
 
-        surface_type = config.get("surface_type")
+        component_type = resolve_placement_component_type(config)
         slots = self._exported_config.get("placement_slots") or []
 
         def _matches(s: dict[str, Any]) -> bool:
             if slot_id:
                 return bool(s.get("id") == slot_id)
-            if surface_type:
-                return bool(s.get("surface_type") == surface_type)
+            if component_type:
+                return bool(s.get("surface_type") == component_type)
             return False
 
         slot = next((s for s in slots if _matches(s)), None)

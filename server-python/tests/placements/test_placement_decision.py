@@ -70,6 +70,14 @@ class TestLocalPlacementLookupKey:
     def test_empty_segments(self) -> None:
         assert local_placement_lookup_key({"slot_id": "s"}) == "s::::::::"
 
+    def test_component_type_is_canonical_and_surface_type_is_an_alias(self) -> None:
+        assert local_placement_lookup_key({"component_type": "modal"}) == "::modal::::::"
+        assert local_placement_lookup_key({"surface_type": "banner"}) == "::banner::::::"
+        assert (
+            local_placement_lookup_key({"component_type": "modal", "surface_type": "banner"})
+            == "::modal::::::"
+        )
+
     def test_all_empty(self) -> None:
         assert local_placement_lookup_key({}) == "::::::::"
 

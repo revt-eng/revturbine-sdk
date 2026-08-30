@@ -1,4 +1,4 @@
-import type { RevTurbineSurfaceType, PlacementOutput } from '../customer-side';
+import type { RevTurbineComponentType, PlacementOutput } from '../customer-side';
 import type { RevTurbineConfigUiPathActionType, RuntimePromotionSnapshot } from '../generated';
 
 /**
@@ -157,15 +157,20 @@ export interface PlacementSlotType<P extends PlacementSlotProps = PlacementSlotP
   label: string;
   /** Description of this placement type. */
   description: string;
-  /** The surface type this slot type handles, or 'custom' for custom types. */
-  surfaceType: RevTurbineSurfaceType;
+  /** The canonical component type this renderer handles. */
+  componentType: RevTurbineComponentType;
+  /**
+   * Canonical content fields this component renders. Validation and Studio
+   * previews use this contract to identify authored fields the component ignores.
+   */
+  renderedFields: readonly string[];
   /** The React component that renders this placement type. */
   component: React.ComponentType<P>;
   /** Default props merged with resolved props before rendering. */
   defaultProps?: Partial<P>;
   /**
    * Predicate to determine if this slot type can handle a given output.
-   * Defaults to matching on `surfaceType`. Custom implementations can
+   * Defaults to matching on `componentType`. Custom implementations can
    * match on template name, content shape, etc.
    */
   accepts?: (output: PlacementOutput) => boolean;
@@ -183,9 +188,15 @@ export interface PlacementSlotType<P extends PlacementSlotProps = PlacementSlotP
  * Identical to PlacementSlotType but all fields are required except defaultProps, accepts, and priority.
  */
 export type RegisterPlacementSlotTypeOptions<P extends PlacementSlotProps = PlacementSlotProps> =
-  Omit<PlacementSlotType<P>, 'accepts' | 'defaultProps' | 'priority'> & {
+  Omit<PlacementSlotType<P>, 'componentType' | 'accepts' | 'defaultProps' | 'priority' | 'renderedFields'> & {
+    /** Canonical component type handled by this renderer. */
+    componentType?: RevTurbineComponentType;
+    /** @deprecated Use `componentType`. */
+    surfaceType?: RevTurbineComponentType;
     defaultProps?: Partial<P>;
     accepts?: (output: PlacementOutput) => boolean;
+    /** Machine-readable fields rendered by this component. */
+    renderedFields?: readonly string[];
     /** Resolution priority (default `0`). Higher values are evaluated first. */
     priority?: number;
   };

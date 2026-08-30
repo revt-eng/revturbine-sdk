@@ -15,6 +15,12 @@ fn config() -> Value {
     json!({
         "version": "1",
         "entitlements": [{ "unique_handle": "exports", "type": "usage_limit" }],
+        "placement_slots": [{
+            "id": "slot_banner",
+            "surface_type": "banner",
+            "template": "banner_placement",
+            "placement_handle": "pl_banner"
+        }],
         "placements": [{
             "id": "pl_banner",
             "category": "fixed",
@@ -73,6 +79,27 @@ fn resolves_a_placement_through_the_full_pipeline() {
     assert_eq!(d["visible"], json!(true));
     assert_eq!(d["content"]["header"], json!("Hello"));
     assert_eq!(d["decision_source"], json!("fallback"));
+}
+
+#[test]
+fn component_type_is_canonical_and_surface_type_remains_an_alias() {
+    let mut rt = runtime(plan_opts());
+    let canonical = rt.get_placement(&json!({ "component_type": "banner" }));
+    let alias = rt.get_placement(&json!({ "surface_type": "banner" }));
+    let precedence = rt.get_placement(&json!({
+        "component_type": "banner",
+        "surface_type": "modal"
+    }));
+
+    assert_eq!(
+        canonical.as_ref().map(|d| &d["visible"]),
+        Some(&json!(true))
+    );
+    assert_eq!(alias.as_ref().map(|d| &d["visible"]), Some(&json!(true)));
+    assert_eq!(
+        precedence.as_ref().map(|d| &d["visible"]),
+        Some(&json!(true))
+    );
 }
 
 #[test]

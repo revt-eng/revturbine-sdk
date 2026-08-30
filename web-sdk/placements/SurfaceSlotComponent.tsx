@@ -5,6 +5,7 @@ import type {
   RevTurbineContextMode,
   RevTurbinePlacementDecisionOverrides,
   RevTurbineSurfaceSlotConfig,
+  RevTurbineComponentType,
 } from '../customer-side';
 import { useSurfaceSlot } from './useSurfaceSlot';
 import type { PersonalizationContext, PlacementUiPath } from './types';
@@ -41,6 +42,8 @@ export type SurfaceSlotComponentProps = {
    * Only placements matching one of these templates can render here.
    */
   surfaceTemplateIds?: string[];
+  /** Canonical component types accepted at this location. Matching is exact. */
+  acceptedComponentTypes?: readonly RevTurbineComponentType[];
   /** Optional metadata included in slot registration/upsert payloads. */
   metadata?: Record<string, unknown>; // sdk-ok: boundary-parse — customer-provided interaction metadata
   contextMode?: RevTurbineContextMode;

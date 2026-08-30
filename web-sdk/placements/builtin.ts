@@ -1,16 +1,39 @@
 import type { PlacementTypeRegistry } from './registry';
-import { BannerSlot } from './slots/BannerSlot';
-import { ModalSlot } from './slots/ModalSlot';
-import { InPageSlot } from './slots/InPageSlot';
-import { ToastSlot } from './slots/ToastSlot';
-import { ButtonSlot } from './slots/ButtonSlot';
-import { QuotaMeterSlot } from './slots/QuotaMeterSlot';
-import { FullPageSlot } from './slots/FullPageSlot';
-import { CliSlot } from './slots/CliSlot';
-import { CreditBalanceSlot } from './slots/CreditBalanceSlot';
-import { TooltipSlot } from './slots/TooltipSlot';
-import { AgentConnectorSlot } from './slots/AgentConnectorSlot';
-import { EmailPreviewSlot, SmsPreviewSlot, PushPreviewSlot } from './slots/ChannelPreviewSlots';
+import { BannerSlot as BannerComponent } from './slots/BannerSlot';
+import { ModalSlot as ModalComponent } from './slots/ModalSlot';
+import { InPageSlot as InPageComponent } from './slots/InPageSlot';
+import { ToastSlot as ToastComponent } from './slots/ToastSlot';
+import { ButtonSlot as ButtonComponent } from './slots/ButtonSlot';
+import { QuotaMeterSlot as QuotaMeterComponent } from './slots/QuotaMeterSlot';
+import { FullPageSlot as FullPageComponent } from './slots/FullPageSlot';
+import { CliSlot as CliComponent } from './slots/CliSlot';
+import { CreditBalanceSlot as CreditBalanceComponent } from './slots/CreditBalanceSlot';
+import { TooltipSlot as TooltipComponent } from './slots/TooltipSlot';
+import { AgentConnectorSlot as AgentConnectorComponent } from './slots/AgentConnectorSlot';
+import {
+  EmailPreviewSlot as EmailPreviewComponent,
+  SmsPreviewSlot as SmsPreviewComponent,
+  PushPreviewSlot as PushPreviewComponent,
+} from './slots/ChannelPreviewSlots';
+
+/** Canonical fields each built-in component visibly consumes. */
+export const COMPONENT_FIELD_CONTRACTS = {
+  banner: ['header', 'body', 'cta_label', 'secondary_cta_label', 'image_url', 'dismissible', 'position'],
+  modal: ['header', 'body', 'cta_label', 'secondary_cta_label', 'image_url', 'dismissible', 'benefits', 'modal_type'],
+  in_page: ['header', 'body', 'cta_label', 'secondary_cta_label', 'image_url', 'style'],
+  inline: ['header', 'body', 'cta_label', 'secondary_cta_label', 'message'],
+  tooltip: ['header', 'body', 'message', 'position', 'duration'],
+  toast: ['header', 'body', 'message', 'cta_label', 'position', 'duration', 'dismissible'],
+  button: ['cta_label', 'style'],
+  full_page: ['header', 'body', 'cta_label', 'secondary_cta_label', 'image_url', 'benefits'],
+  quota_meter: ['header', 'body', 'cta_label', 'usage_current', 'usage_limit', 'usage_percent', 'display_style'],
+  credit_balance: ['header', 'body', 'cta_label', 'credits_remaining', 'credit_limit', 'display_style'],
+  cli: ['header', 'body', 'message', 'cta_label', 'secondary_cta_label'],
+  email: ['header', 'body', 'message', 'cta_label', 'secondary_cta_label'],
+  sms: ['body', 'message', 'cta_label'],
+  push: ['header', 'body', 'message', 'cta_label'],
+  agent: ['header', 'body', 'message', 'cta_label', 'secondary_cta_label'],
+} as const;
 
 /**
  * Register all built-in slot types on the given registry.
@@ -32,8 +55,9 @@ export function registerBuiltinSlotTypes(registry: PlacementTypeRegistry): void 
     id: 'banner',
     label: 'Banner',
     description: 'Full-width banner placement at the top or bottom of the page.',
-    surfaceType: 'banner',
-    component: BannerSlot,
+    componentType: 'banner',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.banner,
+    component: BannerComponent,
     defaultProps: {
       content: { position: 'top', dismissible: true },
     },
@@ -43,16 +67,18 @@ export function registerBuiltinSlotTypes(registry: PlacementTypeRegistry): void 
     id: 'modal',
     label: 'Modal Overlay',
     description: 'Centered overlay dialog. Supports optional (dismissible) and blocking modes.',
-    surfaceType: 'modal',
-    component: ModalSlot,
+    componentType: 'modal',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.modal,
+    component: ModalComponent,
   });
 
   registry.register({
     id: 'in_page',
     label: 'Inline Embed',
     description: 'Content card or message embedded in the page flow.',
-    surfaceType: 'in_page',
-    component: InPageSlot,
+    componentType: 'in_page',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.in_page,
+    component: InPageComponent,
   });
 
   // Specialized in_page variant for plans/pricing CTA blocks.
@@ -60,8 +86,9 @@ export function registerBuiltinSlotTypes(registry: PlacementTypeRegistry): void 
     id: 'plans_cta',
     label: 'Plans CTA',
     description: 'Pricing page CTA-focused module with concise upgrade actions.',
-    surfaceType: 'in_page',
-    component: InPageSlot,
+    componentType: 'in_page',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.in_page,
+    component: InPageComponent,
     priority: 30,
     accepts: (output) =>
       output.surface.type === 'in_page' &&
@@ -74,8 +101,9 @@ export function registerBuiltinSlotTypes(registry: PlacementTypeRegistry): void 
     id: 'plans_full',
     label: 'Plans Full Page',
     description: 'Dedicated plans and pricing full-page experience.',
-    surfaceType: 'full_page',
-    component: FullPageSlot,
+    componentType: 'full_page',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.full_page,
+    component: FullPageComponent,
     priority: 30,
     accepts: (output) =>
       typeof output.surface.template === 'string' &&
@@ -87,11 +115,12 @@ export function registerBuiltinSlotTypes(registry: PlacementTypeRegistry): void 
     id: 'inline_gate_message',
     label: 'Inline Gate Message',
     description: 'Inline entitlement gate message with upgrade CTA.',
-    surfaceType: 'in_page',
-    component: InPageSlot,
+    componentType: 'inline',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.inline,
+    component: InPageComponent,
     priority: 40,
     accepts: (output) =>
-      output.surface.type === 'in_page' &&
+      output.surface.type === 'inline' &&
       typeof output.surface.template === 'string' &&
       ['inline_gate_message', 'inline_feature_gate', 'feature_gate_inline'].includes(output.surface.template),
   });
@@ -101,8 +130,9 @@ export function registerBuiltinSlotTypes(registry: PlacementTypeRegistry): void 
     id: 'tooltip',
     label: 'Tooltip',
     description: 'Compact tooltip-like guidance near a feature surface.',
-    surfaceType: 'toast',
-    component: TooltipSlot,
+    componentType: 'tooltip',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.tooltip,
+    component: TooltipComponent,
     priority: 50,
     accepts: (output) => {
       const template = typeof output.surface.template === 'string' ? output.surface.template : '';
@@ -117,8 +147,9 @@ export function registerBuiltinSlotTypes(registry: PlacementTypeRegistry): void 
     id: 'toast',
     label: 'Toast Notification',
     description: 'Small transient notification that auto-dismisses.',
-    surfaceType: 'toast',
-    component: ToastSlot,
+    componentType: 'toast',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.toast,
+    component: ToastComponent,
     defaultProps: {
       content: { position: 'bottom-right', duration: 5 },
     },
@@ -128,8 +159,9 @@ export function registerBuiltinSlotTypes(registry: PlacementTypeRegistry): void 
     id: 'button',
     label: 'Button',
     description: 'Persistent button in the product navigation or UI.',
-    surfaceType: 'button',
-    component: ButtonSlot,
+    componentType: 'button',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.button,
+    component: ButtonComponent,
     defaultProps: {
       content: { style: 'primary' },
     },
@@ -139,8 +171,9 @@ export function registerBuiltinSlotTypes(registry: PlacementTypeRegistry): void 
     id: 'full_page',
     label: 'Full Page',
     description: 'Dedicated managed page (e.g. plans & pricing).',
-    surfaceType: 'full_page',
-    component: FullPageSlot,
+    componentType: 'full_page',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.full_page,
+    component: FullPageComponent,
   });
 
   // Specialized in_page variant for quota/usage meters
@@ -148,8 +181,9 @@ export function registerBuiltinSlotTypes(registry: PlacementTypeRegistry): void 
     id: 'quota_meter',
     label: 'Quota Meter',
     description: 'Visual usage meter with upgrade CTA. Triggers at configurable threshold.',
-    surfaceType: 'in_page',
-    component: QuotaMeterSlot,
+    componentType: 'in_page',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.quota_meter,
+    component: QuotaMeterComponent,
     accepts: (output) =>
       output.surface.type === 'in_page' &&
       (output.surface.template === 'quota_meter' ||
@@ -161,8 +195,9 @@ export function registerBuiltinSlotTypes(registry: PlacementTypeRegistry): void 
     id: 'trial_counter',
     label: 'Trial Counter',
     description: 'Trial countdown/counter with conversion CTA.',
-    surfaceType: 'in_page',
-    component: QuotaMeterSlot,
+    componentType: 'in_page',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.quota_meter,
+    component: QuotaMeterComponent,
     priority: 35,
     accepts: (output) =>
       output.surface.type === 'in_page' &&
@@ -179,8 +214,9 @@ export function registerBuiltinSlotTypes(registry: PlacementTypeRegistry): void 
     id: 'cli',
     label: 'CLI Message',
     description: 'Message in a CLI or chat-style interface with action links.',
-    surfaceType: 'cli',
-    component: CliSlot,
+    componentType: 'cli',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.cli,
+    component: CliComponent,
   });
 
   // Out-of-band channel previews (plan 76 TASK-15). These surface types are
@@ -191,24 +227,27 @@ export function registerBuiltinSlotTypes(registry: PlacementTypeRegistry): void 
     id: 'email',
     label: 'Email Preview',
     description: 'Static email channel preview (subject + body + CTAs).',
-    surfaceType: 'email',
-    component: EmailPreviewSlot,
+    componentType: 'email',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.email,
+    component: EmailPreviewComponent,
   });
 
   registry.register({
     id: 'sms',
     label: 'SMS Preview',
     description: 'Static SMS channel preview (message bubble + CTAs).',
-    surfaceType: 'sms',
-    component: SmsPreviewSlot,
+    componentType: 'sms',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.sms,
+    component: SmsPreviewComponent,
   });
 
   registry.register({
     id: 'push',
     label: 'Push Preview',
     description: 'Static push-notification channel preview (title + body + CTAs).',
-    surfaceType: 'push',
-    component: PushPreviewSlot,
+    componentType: 'push',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.push,
+    component: PushPreviewComponent,
   });
 
   // Agent connector renderer variant (agent surface parity).
@@ -216,8 +255,9 @@ export function registerBuiltinSlotTypes(registry: PlacementTypeRegistry): void 
     id: 'agent_connector',
     label: 'Agent Connector',
     description: 'Agent-surface placement for assistant/connector experiences.',
-    surfaceType: 'agent',
-    component: AgentConnectorSlot,
+    componentType: 'agent',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.agent,
+    component: AgentConnectorComponent,
     priority: 30,
     accepts: (output) => {
       const template = typeof output.surface.template === 'string' ? output.surface.template : '';
@@ -230,8 +270,9 @@ export function registerBuiltinSlotTypes(registry: PlacementTypeRegistry): void 
     id: 'credit_balance',
     label: 'Credit Balance Counter',
     description: 'Depleting credit balance display with purchase/upgrade CTA.',
-    surfaceType: 'in_page',
-    component: CreditBalanceSlot,
+    componentType: 'in_page',
+    renderedFields: COMPONENT_FIELD_CONTRACTS.credit_balance,
+    component: CreditBalanceComponent,
     accepts: (output) =>
       output.surface.type === 'in_page' &&
       (output.surface.template === 'credit_balance_counter' ||

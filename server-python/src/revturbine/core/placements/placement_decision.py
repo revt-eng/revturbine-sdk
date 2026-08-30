@@ -11,6 +11,7 @@ Source: revturbine-scaffold/src/placements/controllers/placement-decision.ts
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from functools import cmp_to_key
 from typing import Any, Literal, TypedDict
 
@@ -60,6 +61,7 @@ __all__ = [
     "normalize_decision_from_response",
     "normalize_placement_output",  # re-exported from normalization (TS parity)
     "resolve_local_placement_from_candidates",
+    "resolve_placement_component_type",
 ]
 
 
@@ -73,7 +75,10 @@ class PlacementRequestConfig(TypedDict, total=False):
     """Source: placement-decision.ts:33-39"""
 
     slot_id: str
+    component_type: str
+    """Canonical component type used to match a placement slot."""
     surface_type: str
+    """Deprecated alias for ``component_type``."""
     entitlement_handle: str
     plan_handle: str
     placement_handle: str
@@ -146,12 +151,23 @@ class FilteredSlotDecision(_SlotDecisionRequired, total=False):
 # ── Lookup key ──────────────────────────────────────────────────────────────
 
 
+def resolve_placement_component_type(config: Mapping[str, Any]) -> str | None:
+    """Resolve the component type at the sole compatibility boundary.
+
+    Canonical ``component_type`` wins when both names are supplied.
+    """
+    value = (
+        config.get("component_type") if "component_type" in config else config.get("surface_type")
+    )
+    return value if isinstance(value, str) else None
+
+
 def local_placement_lookup_key(config: PlacementRequestConfig) -> str:
     """Source: placement-decision.ts:57-65"""
     return "::".join(
         [
             config.get("slot_id") or "",
-            config.get("surface_type") or "",
+            resolve_placement_component_type(config) or "",
             config.get("entitlement_handle") or "",
             config.get("plan_handle") or "",
             config.get("placement_handle") or "",
