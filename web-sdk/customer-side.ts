@@ -3484,7 +3484,7 @@ export class RevTurbineCustomerSdk {
     const configuredSegments = [...(exportedConfig?.segments ?? [])];
     const configuredTraitFields = Array.from(new Set(
       configuredSegments.flatMap((segment) => (segment.predicates ?? []).map((predicate) => predicate.field)),
-    )).sort((a, b) => a.localeCompare(b));
+    )).sort();
 
     const traits: SdkTraits = {
       ...(cachedContext?.traits ?? {}),

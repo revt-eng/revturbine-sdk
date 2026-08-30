@@ -20,6 +20,7 @@ function loadJourneySets(): JourneySet[] {
   return sets.sort((a, b) => {
     if (a.id === 'built-in') return -1;
     if (b.id === 'built-in') return 1;
+    // eslint-disable-next-line no-restricted-syntax -- Picker labels are display-only locale sorting.
     return a.label.localeCompare(b.label);
   });
 }

@@ -128,6 +128,20 @@ class TestDecisionCacheKey:
         b = decision_cache_key({**base, "runtime_context_fingerprint": "fp1"})
         assert a != b
 
+    def test_matches_typescript_for_divergence_prone_keys(self) -> None:
+        value: DecisionCacheKeyInput = {
+            "tenant_id": "tenant_1",
+            "placement_id": "placement_1",
+            "user_id": "user_1",
+            "route": "/dashboard",
+            "traits": {"a": 1, "B": 2, "é": 3, "😀": 4, "Ａ": 5},
+            "overrides": {"A": True, "a": False},
+        }
+
+        # Captured from @revt-eng/core 0.1.258 decisionCacheKey. This fails if
+        # either port returns to locale/code-point ordering beneath the hash.
+        assert decision_cache_key(value) == "tenant_1:placement_1:user_1:cfZPGNaI_gA"
+
 
 # ── apply_milestone_supersession ────────────────────────────────────────────
 

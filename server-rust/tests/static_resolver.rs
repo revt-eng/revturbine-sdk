@@ -384,6 +384,7 @@ fn content_linked_copy_overlays_the_inline_content() {
         json!("Linked default"),
         "the linked block's copy replaces the inline surface copy",
     );
+    assert_eq!(d["output"]["message_block_handle"], json!("blk_1"));
 }
 
 #[test]

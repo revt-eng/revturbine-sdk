@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.229/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.258/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -106,6 +106,22 @@ class AnalyticsCatalogDeprecation(BaseModel):
     replaced_by: (
         constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
     ) = None
+
+
+class AnalyticsCatalogProvenanceKind(Enum):
+    event_taxonomy = "event_taxonomy"
+    openapi_identity = "openapi_identity"
+    tinybird_project = "tinybird_project"
+
+
+class AnalyticsCatalogProvenance(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: AnalyticsCatalogProvenanceKind
+    location: constr(min_length=1, max_length=240)
+    version: constr(min_length=1, max_length=64) | None = None
+    entry_count: conint(ge=0, le=9007199254740991)
 
 
 class AnalyticsCatalogSource(Enum):
@@ -484,6 +500,24 @@ class AnalyticsValidationIssue(BaseModel):
     suggested_patch: list[AnalyticsSuggestedPatchOp] | None = Field(None, max_length=10)
 
 
+class AnalyticsViewAccessRole(Enum):
+    viewer = "viewer"
+    editor = "editor"
+
+
+class AnalyticsViewAccess(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    environment_id: constr(min_length=1)
+    view_id: constr(min_length=1)
+    principal_type: constr(pattern=r"^[a-z][a-z0-9_]{0,49}$")
+    principal_id: constr(min_length=1)
+    role: AnalyticsViewAccessRole
+
+
 class GroupByItem(
     RootModel[constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)]
 ):
@@ -554,7 +588,7 @@ class AnalyticsViewQuery(BaseModel):
     concept: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
     family: AnalyticsQueryFamily
     metrics: list[Metric] = Field(..., max_length=10, min_length=1)
-    group_by: list[GroupByItem] | None = Field(None, max_length=3)
+    group_by: list[GroupByItem] | None = Field(None, max_length=8)
     time: Time | None = None
     filters_from: list[FiltersFromItem] | None = Field(None, max_length=20)
     fixed_filters: list[AnalyticsSemanticFilter] | None = Field(None, max_length=20)
@@ -1242,6 +1276,23 @@ class Methodology(Enum):
     bayesian = "bayesian"
 
 
+class Sequential(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    method: Literal["always_valid"]
+    look_count: conint(le=9007199254740991, gt=0)
+    alpha: confloat(lt=1.0, gt=0.0) | None = 0.05
+
+
+class MultipleComparisons(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    method: Literal["holm"]
+    family_scope: Literal["primary_and_guardrails_separate"]
+
+
 class VarianceReduction(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -1251,16 +1302,32 @@ class VarianceReduction(BaseModel):
     lookback_days: conint(le=9007199254740991, gt=0)
 
 
+class VarianceReduction1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    method: Literal["regression_adjustment"]
+    covariate_metric: AnalyticsSemanticId
+    lookback_days: conint(le=9007199254740991, gt=0)
+
+
+class PracticalSignificance(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    minimum_revenue_effect: confloat(ge=0.0)
+
+
 class ExperimentAnalysisConfig(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
     methodology: Methodology
     analysis_unit: AnalyticsAnalyticalUnit
-    sequential: dict[str, str | float | bool | None] | None = None
-    multiple_comparisons: dict[str, str | float | bool | None] | None = None
-    variance_reduction: VarianceReduction | None = None
-    practical_significance: dict[str, str | float | bool | None] | None = None
+    sequential: Sequential | None = None
+    multiple_comparisons: MultipleComparisons | None = None
+    variance_reduction: VarianceReduction | VarianceReduction1 | None = None
+    practical_significance: PracticalSignificance | None = None
 
 
 class Status2(Enum):
@@ -3355,11 +3422,23 @@ class ExperimentConfidenceInterval(RootModel[Any]):
     root: Any
 
 
+class ExperimentCovariateProvenance(RootModel[Any]):
+    root: Any
+
+
 class ExperimentEvidenceProvenance(RootModel[Any]):
     root: Any
 
 
+class ExperimentMultipleComparisonResult(RootModel[Any]):
+    root: Any
+
+
 class ExperimentObservationWindow(RootModel[Any]):
+    root: Any
+
+
+class ExperimentPracticalSignificanceResult(RootModel[Any]):
     root: Any
 
 
@@ -3574,6 +3653,7 @@ class AnalyticsCatalog(BaseModel):
     catalog_version: constr(min_length=1, max_length=64)
     source: AnalyticsCatalogSource
     generated_at: AwareDatetime | None = None
+    provenance: list[AnalyticsCatalogProvenance] | None = None
     concepts: list[AnalyticsCatalogConcept] = Field(..., min_length=1)
     dimensions: list[AnalyticsCatalogDimension] = Field(..., min_length=1)
     metrics: list[AnalyticsCatalogMetric] = Field(..., min_length=1)
@@ -3651,6 +3731,25 @@ class AnalyticsSafeChartOptions(BaseModel):
     x_axis_format: AnalyticsFormatSpec | None = None
     y_axis_format: AnalyticsFormatSpec | None = None
     empty_state: EmptyState | None = None
+
+
+class AnalyticsSavedView(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    environment_id: constr(min_length=1)
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    owner_user_id: constr(min_length=1)
+    name: constr(min_length=1, max_length=300)
+    visibility: AnalyticsViewVisibility
+    base_template_id: constr(min_length=1, max_length=100) | None = None
+    base_template_version: conint(ge=1, le=9007199254740991) | None = None
+    current_revision: conint(ge=1, le=9007199254740991)
+    is_default: bool | None = False
+    idempotency_key: constr(min_length=1, max_length=200) | None = None
 
 
 class AnalyticsTemplateSummary(BaseModel):
@@ -4111,9 +4210,11 @@ class ExperimentMetricResult(BaseModel):
     standard_error: confloat(ge=0.0) | None = None
     confidence_interval: ExperimentConfidenceInterval | None = None
     p_value: confloat(ge=0.0, le=1.0) | None = None
+    multiple_comparison: ExperimentMultipleComparisonResult | None = None
     probability_positive: confloat(ge=0.0, le=1.0) | None = None
     expected_loss: confloat(ge=0.0) | None = None
     sequential: ExperimentSequentialResult | None = None
+    practical_significance: ExperimentPracticalSignificanceResult | None = None
     sample_size: conint(ge=0, le=9007199254740991) | None = None
 
 
@@ -4313,6 +4414,8 @@ class PlacementDecisionOutput(BaseModel):
     decision_id: str
     config_version: str
     present_upsell: bool
+    message_block_handle: str | None = None
+    message_block_id: str | None = None
     experiment_id: str | None = None
     variant_key: str | None = None
     experiment_version_id: str | None = None
@@ -4949,7 +5052,7 @@ class AnalyticsViewBlockDraft(BaseModel):
     concept: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
     family: AnalyticsQueryFamily
     metrics: list[Metric] = Field(..., max_length=10, min_length=1)
-    group_by: list[GroupByItem] | None = Field(None, max_length=3)
+    group_by: list[GroupByItem] | None = Field(None, max_length=8)
     time: Time | None = None
     filters_from: list[FiltersFromItem] | None = Field(None, max_length=20)
     fixed_filters: list[AnalyticsSemanticFilter] | None = Field(None, max_length=20)
@@ -5043,6 +5146,7 @@ class ExperimentEvidence(BaseModel):
     analysis_unit: AnalyticsAnalyticalUnit
     variants: list[VariantStatisticalSummary] = Field(..., min_length=1)
     observation_window: ExperimentObservationWindow
+    covariate: ExperimentCovariateProvenance | None = None
     data_watermark: AwareDatetime
     source_scope: AnalyticsSourceScope
     provider: ProviderProvenance
@@ -5232,6 +5336,23 @@ class UserContext(BaseModel):
     activity_score: conint(ge=0, le=9007199254740991) | None = None
     activity_score_computed_at: AwareDatetime | None = None
     experiments: dict[str, str] | None = None
+
+
+class AnalyticsViewRevision(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    environment_id: constr(min_length=1)
+    view_id: constr(min_length=1)
+    revision: conint(ge=1, le=9007199254740991)
+    schema_version: constr(pattern=r"^\d+\.\d+$")
+    catalog_version: constr(min_length=1, max_length=64)
+    document_jsonb: AnalyticsView
+    content_hash: constr(pattern=r"^[a-f0-9]{64}$")
+    created_by: constr(min_length=1)
+    created_at: AwareDatetime
 
 
 class ExperimentAnalysisResultRecord(BaseModel):

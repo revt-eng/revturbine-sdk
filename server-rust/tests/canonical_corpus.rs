@@ -20,7 +20,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
-use revturbine::canonical_json::canonicalize_json;
+use revturbine::canonical_json::{canonical_hash_key, canonicalize_json};
 
 #[derive(Deserialize)]
 struct Documents {
@@ -104,8 +104,12 @@ fn matches_typescript_reference() {
     let mut failures = Vec::new();
 
     for entry in &documents {
-        let canonical = canonicalize_json(&entry.doc)
-            .unwrap_or_else(|e| panic!("canonicalization failed for {}: {e}", entry.name));
+        let canonical = if entry.name.starts_with("hash_key__") {
+            canonical_hash_key(&entry.doc)
+        } else {
+            canonicalize_json(&entry.doc)
+        }
+        .unwrap_or_else(|e| panic!("canonicalization failed for {}: {e}", entry.name));
         let actual = format!("{:x}", Sha256::digest(canonical.as_bytes()));
         let expected = &golden[&entry.name];
         if &actual != expected {
@@ -141,6 +145,7 @@ fn corpus_covers_both_edge_cases_and_real_configs() {
     assert!(count("number__") >= 5, "too few number cases: {names:?}");
     assert!(count("sort__") >= 1, "no sort cases: {names:?}");
     assert!(count("string__") >= 1, "no string cases: {names:?}");
+    assert_eq!(count("hash_key__"), 2, "hash-key cases drifted: {names:?}");
 }
 
 /// Re-canonicalizing canonical output must be a no-op.

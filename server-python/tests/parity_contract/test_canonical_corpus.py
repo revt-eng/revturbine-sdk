@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 
-from revturbine.core.canonical_json import canonicalize_json
+from revturbine.core.canonical_json import canonical_hash_key, canonicalize_json
 
 # server-python/tests/parity_contract/<f> -> parents[3] = sdk-internal root
 _CANONICAL_DIR = Path(__file__).resolve().parents[3] / "tests" / "parity" / "canonical"
@@ -59,7 +59,7 @@ _CORPUS = _load()
     ids=[name for name, _, _ in _CORPUS],
 )
 def test_matches_typescript_reference(name: str, doc: object, expected_sha: str) -> None:
-    canonical = canonicalize_json(doc)
+    canonical = canonical_hash_key(doc) if name.startswith("hash_key__") else canonicalize_json(doc)
     actual = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
     assert actual == expected_sha, (
         f"canonicalization diverged from the TypeScript reference for {name!r}.\n"
@@ -82,6 +82,7 @@ def test_corpus_covers_both_edge_cases_and_real_configs() -> None:
     assert sum(n.startswith("number__") for n in names) >= 5, names
     assert any(n.startswith("sort__") for n in names), names
     assert any(n.startswith("string__") for n in names), names
+    assert sum(n.startswith("hash_key__") for n in names) == 2, names
 
 
 def test_canonicalization_is_idempotent() -> None:

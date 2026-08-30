@@ -795,6 +795,11 @@ impl StaticPlacementResolver {
             return selected_output;
         };
 
+        let message_block_handle = resolved
+            .message_block
+            .get("block_id")
+            .and_then(Value::as_str)
+            .map(str::to_string);
         let mut out = selected_output;
         if let Some(content) = out.get_mut("content").and_then(Value::as_object_mut) {
             // Spread the existing content first so the `__`-prefixed meta keys
@@ -802,6 +807,9 @@ impl StaticPlacementResolver {
             for (k, v) in resolved.resolved_content {
                 content.insert(k, v);
             }
+        }
+        if let (Some(handle), Some(output)) = (message_block_handle, out.as_object_mut()) {
+            output.insert("message_block_handle".into(), json!(handle));
         }
         out
     }

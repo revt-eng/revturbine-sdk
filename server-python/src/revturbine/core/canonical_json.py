@@ -39,7 +39,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
-__all__ = ["canonicalize_json", "js_number_to_string"]
+__all__ = ["canonical_hash_key", "canonicalize_json", "js_number_to_string"]
 
 # JSON short escapes, per RFC 8785 §3.2.2.2 (identical to JS JSON.stringify).
 _SHORT_ESCAPES = {
@@ -202,3 +202,12 @@ def canonicalize_json(value: Any) -> str:
         return "{" + ",".join(parts) + "}"
 
     raise ValueError(f"canonicalize_json: unsupported type {type(value).__name__}")
+
+
+def canonical_hash_key(value: Any) -> str:
+    """Serialize JSON-compatible input beneath a hash or cache key.
+
+    This semantic boundary mirrors TypeScript ``canonicalHashKey`` and uses
+    the same RFC 8785 bytes, including UTF-16 code-unit key ordering.
+    """
+    return canonicalize_json(value)

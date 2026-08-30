@@ -31,7 +31,9 @@ export function UserProfile({
   style,
 }: UserProfileProps) {
   const c = useRevTurbineTheme().colors;
+  // eslint-disable-next-line no-restricted-syntax -- Profile rows are display-only locale sorting.
   const usageEntries = Object.entries(targeting.usage ?? {}).sort(([left], [right]) => left.localeCompare(right));
+  // eslint-disable-next-line no-restricted-syntax -- Profile rows are display-only locale sorting.
   const traitEntries = Object.entries(targeting.traits ?? {}).sort(([left], [right]) => left.localeCompare(right));
 
   return (

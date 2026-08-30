@@ -182,6 +182,14 @@ pub fn canonicalize_json(value: &Value) -> Result<String> {
     Ok(out)
 }
 
+/// Serialize JSON-compatible input beneath a hash or cache key.
+///
+/// This semantic boundary mirrors TypeScript `canonicalHashKey` and uses the
+/// same RFC 8785 bytes, including UTF-16 code-unit key ordering.
+pub fn canonical_hash_key(value: &Value) -> Result<String> {
+    canonicalize_json(value)
+}
+
 fn write_value(value: &Value, out: &mut String) -> Result<()> {
     match value {
         Value::Null => out.push_str("null"),

@@ -14,6 +14,7 @@ import math
 from functools import cmp_to_key
 from typing import Any, Literal, TypedDict
 
+from revturbine.core.canonical_json import canonical_hash_key
 from revturbine.core.crypto import fallback_hash_base64url
 from revturbine.core.helpers import (
     PlacementOutput,
@@ -28,7 +29,6 @@ from revturbine.core.helpers import (
     placement_score,
     proximity_score,
     server_order,
-    stable_stringify,
     superseded_versions,
 )
 from revturbine.core.normalization import normalize_placement_output
@@ -179,7 +179,7 @@ def decision_cache_key(input_data: DecisionCacheKeyInput) -> str:
     rcf = input_data.get("runtime_context_fingerprint")
     if rcf:
         fingerprint_obj["runtimeContextFingerprint"] = rcf
-    fingerprint = stable_stringify(fingerprint_obj)
+    fingerprint = canonical_hash_key(fingerprint_obj)
     return (
         f"{input_data['tenant_id']}:{input_data['placement_id']}:"
         f"{input_data['user_id']}:{fallback_hash_base64url(fingerprint)}"

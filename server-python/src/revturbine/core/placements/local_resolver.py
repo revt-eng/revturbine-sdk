@@ -899,6 +899,7 @@ def create_static_placement_resolver(
                 selected_output = {
                     **selected_output,
                     "content": {**prev, **resolved_payload["resolved_content"]},
+                    "message_block_handle": resolved_payload["message_block"]["block_id"],
                 }
 
         # ── Enrich with usage data & interpolation ───────────────────────

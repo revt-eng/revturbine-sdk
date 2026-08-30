@@ -25,6 +25,7 @@ function groupRulesByPlanScope(
   }
 
   return Array.from(byScope.entries())
+    // eslint-disable-next-line no-restricted-syntax -- Inspector grouping is display-only locale sorting.
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([planScope, groupedRules]) => ({ planScope, rules: groupedRules }));
 }

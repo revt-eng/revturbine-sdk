@@ -836,10 +836,10 @@ export interface components {
         ExperimentAnalysisConfig: {
             methodology: components["schemas"]["Anon_2ac4674f0f05"];
             analysis_unit: components["schemas"]["AnalyticsAnalyticalUnit"];
-            sequential?: components["schemas"]["Anon_3e68c99eb87d"];
-            multiple_comparisons?: components["schemas"]["Anon_3e68c99eb87d_1"];
-            variance_reduction?: components["schemas"]["Anon_86f1f5629405"];
-            practical_significance?: components["schemas"]["Anon_3e68c99eb87d_2"];
+            sequential?: components["schemas"]["Anon_57a392ab5110"];
+            multiple_comparisons?: components["schemas"]["Anon_fbd64c1da313"];
+            variance_reduction?: components["schemas"]["Anon_1b3044dd99cd"];
+            practical_significance?: components["schemas"]["Anon_4ddd554c2330"];
         };
         Promotion: {
             id: components["schemas"]["Anon_fb248bf5a9f7"];
@@ -1628,18 +1628,33 @@ export interface components {
         Anon_c16adc49fe17: components["schemas"]["ExperimentAnalysisConfig"];
         /** @enum {string} */
         Anon_2ac4674f0f05: "frequentist" | "bayesian";
-        Anon_3e68c99eb87d: components["schemas"]["Anon_8f28cdffdece"];
-        Anon_8f28cdffdece: {
-            [key: string]: string | number | boolean | null;
+        Anon_57a392ab5110: {
+            /** @constant */
+            method: "always_valid";
+            look_count: number;
+            /** @default 0.05 */
+            alpha: number;
         };
-        Anon_3e68c99eb87d_1: components["schemas"]["Anon_8f28cdffdece"];
-        Anon_86f1f5629405: {
+        Anon_fbd64c1da313: {
+            /** @constant */
+            method: "holm";
+            /** @constant */
+            family_scope: "primary_and_guardrails_separate";
+        };
+        Anon_1b3044dd99cd: {
             /** @constant */
             method: "cuped";
             covariate_metric: components["schemas"]["AnalyticsSemanticId"];
             lookback_days: number;
+        } | {
+            /** @constant */
+            method: "regression_adjustment";
+            covariate_metric: components["schemas"]["AnalyticsSemanticId"];
+            lookback_days: number;
         };
-        Anon_3e68c99eb87d_2: components["schemas"]["Anon_8f28cdffdece"];
+        Anon_4ddd554c2330: {
+            minimum_revenue_effect: number;
+        };
         /** @default 0.05 */
         Anon_f46a509a677a: components["schemas"]["Anon_cddf8275afa1_2"];
         Anon_cddf8275afa1_2: number;
@@ -2120,8 +2135,8 @@ export interface components {
             [key: string]: boolean | components["schemas"]["EntitlementGrant"];
         };
         /** @default {} */
-        Anon_890507589b5c: components["schemas"]["Anon_8f28cdffdece_1"];
-        Anon_8f28cdffdece_1: {
+        Anon_890507589b5c: components["schemas"]["Anon_8f28cdffdece"];
+        Anon_8f28cdffdece: {
             [key: string]: string | number | boolean | null;
         };
         /** @default {} */
@@ -2639,6 +2654,17 @@ export interface components {
             n: components["schemas"]["Anon_274ba4ca49d5_8"];
             sum_y: components["schemas"]["Anon_b92c27ea8f08"];
             sum_y2: components["schemas"]["Anon_391e8f2f18f6_1"];
+            clustered?: components["schemas"]["Anon_28ef3e3c7555"];
+        };
+        ExperimentClusteredSufficientStatistics: {
+            assignment_unit: components["schemas"]["Anon_612059bf001c_3"];
+            clusters: components["schemas"]["Anon_12cae30adeb7"];
+        };
+        ExperimentClusterAggregate: {
+            n: components["schemas"]["Anon_d5798e9f7f97"];
+            sum_numerator: components["schemas"]["Anon_b92c27ea8f08_1"];
+            sum_denominator: components["schemas"]["Anon_d544cfb8615e"];
+            sum_covariate?: components["schemas"]["Anon_9c7f41b09bde_6"];
         };
         BinaryVariantStatisticalSummary: {
             variant_id: components["schemas"]["Anon_57796118d046_48"];
@@ -2649,6 +2675,7 @@ export interface components {
             statistic_type: "binary";
             n: components["schemas"]["Anon_274ba4ca49d5_9"];
             successes: components["schemas"]["Anon_274ba4ca49d5_10"];
+            clustered?: components["schemas"]["Anon_28ef3e3c7555"];
         };
         RatioVariantStatisticalSummary: {
             variant_id: components["schemas"]["Anon_57796118d046_48"];
@@ -2658,11 +2685,12 @@ export interface components {
              */
             statistic_type: "ratio";
             n: components["schemas"]["Anon_274ba4ca49d5_11"];
-            sum_numerator: components["schemas"]["Anon_b92c27ea8f08_1"];
-            sum_denominator: components["schemas"]["Anon_b92c27ea8f08_2"];
+            sum_numerator: components["schemas"]["Anon_b92c27ea8f08_2"];
+            sum_denominator: components["schemas"]["Anon_b92c27ea8f08_3"];
             sum_numerator2: components["schemas"]["Anon_391e8f2f18f6_2"];
             sum_denominator2: components["schemas"]["Anon_391e8f2f18f6_3"];
-            sum_cross: components["schemas"]["Anon_b92c27ea8f08_3"];
+            sum_cross: components["schemas"]["Anon_b92c27ea8f08_4"];
+            clustered?: components["schemas"]["Anon_28ef3e3c7555"];
         };
         CovarianceVariantStatisticalSummary: {
             variant_id: components["schemas"]["Anon_57796118d046_48"];
@@ -2672,15 +2700,20 @@ export interface components {
              */
             statistic_type: "covariance";
             n: components["schemas"]["Anon_274ba4ca49d5_12"];
-            sum_x: components["schemas"]["Anon_b92c27ea8f08_4"];
-            sum_y: components["schemas"]["Anon_b92c27ea8f08_5"];
+            sum_x: components["schemas"]["Anon_b92c27ea8f08_5"];
+            sum_y: components["schemas"]["Anon_b92c27ea8f08_6"];
             sum_x2: components["schemas"]["Anon_391e8f2f18f6_4"];
             sum_y2: components["schemas"]["Anon_391e8f2f18f6_5"];
-            sum_xy: components["schemas"]["Anon_b92c27ea8f08_6"];
+            sum_xy: components["schemas"]["Anon_b92c27ea8f08_7"];
+            clustered?: components["schemas"]["Anon_28ef3e3c7555"];
         };
         ExperimentObservationWindow: {
             start: components["schemas"]["Anon_3c179513a5d9_5"];
             end: components["schemas"]["Anon_3c179513a5d9_6"];
+        };
+        ExperimentCovariateProvenance: {
+            metric: components["schemas"]["Anon_53c09eaf03ab_2"];
+            observation_window: components["schemas"]["Anon_d7062f16dbf8_1"];
         };
         /** @enum {string} */
         AnalyticsSourceScope: "total" | "revturbine_tracked" | "revturbine_influenced";
@@ -2701,6 +2734,7 @@ export interface components {
             analysis_unit: components["schemas"]["Anon_612059bf001c_2"];
             variants: components["schemas"]["Anon_8b6d23602a1b"];
             observation_window: components["schemas"]["Anon_d7062f16dbf8"];
+            covariate?: components["schemas"]["Anon_f9fcd1c6daa9"];
             data_watermark: components["schemas"]["Anon_3c179513a5d9_7"];
             source_scope: components["schemas"]["Anon_a3ffad10d15c"];
             provider: components["schemas"]["Anon_3404cfc4bdd0"];
@@ -2736,36 +2770,50 @@ export interface components {
             result: components["schemas"]["Anon_67f3be501bc2"];
         };
         ExperimentMetricResult: {
-            metric: components["schemas"]["Anon_53c09eaf03ab_2"];
+            metric: components["schemas"]["Anon_53c09eaf03ab_3"];
             control_variant_id: components["schemas"]["Anon_57796118d046_50"];
             variant_id: components["schemas"]["Anon_57796118d046_51"];
             estimator: components["schemas"]["Anon_3b8fc1cd9e8b_16"];
             estimator_version: components["schemas"]["Anon_3b8fc1cd9e8b_17"];
-            estimate: components["schemas"]["Anon_b92c27ea8f08_7"];
-            control_estimate: components["schemas"]["Anon_b92c27ea8f08_8"];
-            absolute_effect: components["schemas"]["Anon_b92c27ea8f08_9"];
-            relative_effect?: components["schemas"]["Anon_9c7f41b09bde_6"];
+            estimate: components["schemas"]["Anon_b92c27ea8f08_8"];
+            control_estimate: components["schemas"]["Anon_b92c27ea8f08_9"];
+            absolute_effect: components["schemas"]["Anon_b92c27ea8f08_10"];
+            relative_effect?: components["schemas"]["Anon_9c7f41b09bde_7"];
             standard_error?: components["schemas"]["Anon_3d3fd40aec74_1"];
             confidence_interval?: components["schemas"]["Anon_8818e57c1481"];
             p_value?: components["schemas"]["Anon_cb2987460940"];
+            multiple_comparison?: components["schemas"]["Anon_e774ceb00399"];
             probability_positive?: components["schemas"]["Anon_cb2987460940_1"];
             expected_loss?: components["schemas"]["Anon_3d3fd40aec74_2"];
             sequential?: components["schemas"]["Anon_7abf4ad42dcf"];
+            practical_significance?: components["schemas"]["Anon_18475babc32e"];
             sample_size?: components["schemas"]["Anon_7e1e37293611_12"];
         };
         ExperimentConfidenceInterval: {
-            lower: components["schemas"]["Anon_b92c27ea8f08_10"];
-            upper: components["schemas"]["Anon_b92c27ea8f08_11"];
+            lower: components["schemas"]["Anon_b92c27ea8f08_11"];
+            upper: components["schemas"]["Anon_b92c27ea8f08_12"];
             level: components["schemas"]["Anon_2b7ce0f730b2"];
         };
+        ExperimentMultipleComparisonResult: {
+            method: components["schemas"]["Anon_5ee0bfa1182a"];
+            family: components["schemas"]["Anon_008ed7549326"];
+            family_size: components["schemas"]["Anon_d5798e9f7f97_1"];
+            unadjusted_p_value: components["schemas"]["Anon_2b7ce0f730b2_1"];
+        };
         ExperimentSequentialResult: {
-            status: components["schemas"]["Anon_3b8fc1cd9e8b_18"];
-            look_count?: components["schemas"]["Anon_9717c0445e52_6"];
-            spending_state?: components["schemas"]["Anon_d0eee45cbb8b"];
+            method: components["schemas"]["Anon_7d92947c6bae"];
+            status: components["schemas"]["Anon_47eb122b11ff"];
+            look_count: components["schemas"]["Anon_492895348dbd_9"];
+            spending_state: components["schemas"]["Anon_804c748cb4dc"];
+        };
+        ExperimentPracticalSignificanceResult: {
+            minimum_revenue_effect: components["schemas"]["Anon_7ab7b70b014d_5"];
+            revenue_effect: components["schemas"]["Anon_ff8cc8201c59"];
+            status: components["schemas"]["Anon_c21695398136"];
         };
         ExperimentSampleRatioMismatch: {
             status: components["schemas"]["Anon_a81921b599ca"];
-            p_value?: components["schemas"]["Anon_cb2987460940_2"];
+            p_value?: components["schemas"]["Anon_cb2987460940_3"];
             chi_squared?: components["schemas"]["Anon_3d3fd40aec74_3"];
             variants: components["schemas"]["Anon_8b41a49b3189"];
             reason?: components["schemas"]["Anon_0740f78f474a"];
@@ -2776,8 +2824,8 @@ export interface components {
             issues: components["schemas"]["Anon_904b239b53b6"];
         };
         ExperimentEvidenceProvenance: {
-            metric: components["schemas"]["Anon_53c09eaf03ab_3"];
-            summary_schema_version: components["schemas"]["Anon_492895348dbd_9"];
+            metric: components["schemas"]["Anon_53c09eaf03ab_4"];
+            summary_schema_version: components["schemas"]["Anon_492895348dbd_10"];
             data_watermark: components["schemas"]["Anon_3c179513a5d9_9"];
             provider: components["schemas"]["Anon_3404cfc4bdd0_2"];
         };
@@ -2807,7 +2855,7 @@ export interface components {
             title: components["schemas"]["Anon_f7f3658e6095"];
             description: components["schemas"]["Anon_529174cd85fc"];
             suggested_action?: components["schemas"]["Anon_796ec99afe20_5"];
-            estimated_impact?: components["schemas"]["Anon_9c7f41b09bde_7"];
+            estimated_impact?: components["schemas"]["Anon_9c7f41b09bde_8"];
             detector_id?: components["schemas"]["Anon_94b7b4f4c44a"];
             detector_version?: components["schemas"]["Anon_987b4efd36dc"];
             opportunity_type?: components["schemas"]["Anon_94b7b4f4c44a_1"];
@@ -2820,10 +2868,10 @@ export interface components {
         /** @enum {string} */
         Severity: "info" | "warning" | "critical";
         OpportunityEvidence: {
-            metric: components["schemas"]["Anon_53c09eaf03ab_5"];
-            current: components["schemas"]["Anon_b92c27ea8f08_12"];
-            baseline?: components["schemas"]["Anon_9c7f41b09bde_8"];
-            relative_delta?: components["schemas"]["Anon_9c7f41b09bde_9"];
+            metric: components["schemas"]["Anon_53c09eaf03ab_6"];
+            current: components["schemas"]["Anon_b92c27ea8f08_13"];
+            baseline?: components["schemas"]["Anon_9c7f41b09bde_9"];
+            relative_delta?: components["schemas"]["Anon_9c7f41b09bde_10"];
             window: components["schemas"]["Anon_9436426bae27"];
             sample_size?: components["schemas"]["Anon_7e1e37293611_13"];
             source_scope: components["schemas"]["Anon_a3ffad10d15c_1"];
@@ -2923,7 +2971,7 @@ export interface components {
             base_sequence: components["schemas"]["Anon_71a2fb329804_1"];
             handle: components["schemas"]["Anon_2457cccd64aa_9"];
             entitlement_id: components["schemas"]["Anon_57796118d046_56"];
-            meter_key: components["schemas"]["Anon_3b8fc1cd9e8b_19"];
+            meter_key: components["schemas"]["Anon_3b8fc1cd9e8b_18"];
             aggregation_type: components["schemas"]["Anon_b5e0b68a9ffd_1"];
             reset_period: components["schemas"]["Anon_bd34b4bd6c0e_1"];
             stripe_meter_id: components["schemas"]["Anon_f7fb9744a6e4_21"];
@@ -2982,7 +3030,7 @@ export interface components {
             updated_at: components["schemas"]["Anon_be3e2585472d_3"];
             tenant_id: components["schemas"]["Anon_fb248bf5a9f7_10"];
             action: components["schemas"]["Anon_d1719c72541d"];
-            resource_type: components["schemas"]["Anon_3b8fc1cd9e8b_20"];
+            resource_type: components["schemas"]["Anon_3b8fc1cd9e8b_19"];
             resource_id: components["schemas"]["Anon_57796118d046_60"];
             resource_name?: components["schemas"]["Anon_1f4f12b25127"];
             actor_id: components["schemas"]["Anon_57796118d046_61"];
@@ -2996,7 +3044,7 @@ export interface components {
         KpiAggregate: {
             metric_key: components["schemas"]["Anon_57796118d046_62"];
             label: components["schemas"]["Anon_127eb78cd9c0"];
-            current_value: components["schemas"]["Anon_ff8cc8201c59"];
+            current_value: components["schemas"]["Anon_ff8cc8201c59_1"];
             previous_value: components["schemas"]["Anon_3840a7694f3b"];
             change_percent: components["schemas"]["Anon_bb5d3c3618df"];
             period: components["schemas"]["Anon_127eb78cd9c0_1"];
@@ -3025,15 +3073,15 @@ export interface components {
             month: components["schemas"]["Anon_127eb78cd9c0_5"];
             cohort_size: components["schemas"]["Anon_274ba4ca49d5_16"];
             retained: components["schemas"]["Anon_274ba4ca49d5_17"];
-            retention_rate: components["schemas"]["Anon_2b7ce0f730b2_1"];
+            retention_rate: components["schemas"]["Anon_2b7ce0f730b2_2"];
             revenue_cents: components["schemas"]["Anon_60b8dbf9476e_6"];
         };
         FunnelStep: {
             step: components["schemas"]["Anon_127eb78cd9c0_6"];
             label: components["schemas"]["Anon_127eb78cd9c0_7"];
             count: components["schemas"]["Anon_274ba4ca49d5_18"];
-            conversion_rate: components["schemas"]["Anon_2b7ce0f730b2_2"];
-            drop_off_rate: components["schemas"]["Anon_2b7ce0f730b2_3"];
+            conversion_rate: components["schemas"]["Anon_2b7ce0f730b2_3"];
+            drop_off_rate: components["schemas"]["Anon_2b7ce0f730b2_4"];
         };
         DriftReport: {
             id: components["schemas"]["Anon_fb248bf5a9f7_9"];
@@ -3068,185 +3116,81 @@ export interface components {
             acknowledged_by: components["schemas"]["Anon_f7fb9744a6e4_22"];
             metadata: components["schemas"]["Anon_f27cb44c32f6_31"];
         };
-        AnalyticsCatalog: {
+        AnalyticsSavedView: {
+            id: components["schemas"]["Anon_fb248bf5a9f7_9"];
+            tenant_id: components["schemas"]["Anon_fb248bf5a9f7_10"];
+            environment_id: components["schemas"]["Anon_fb248bf5a9f7_32"];
+            created_at: components["schemas"]["Anon_be3e2585472d_2"];
+            updated_at: components["schemas"]["Anon_be3e2585472d_3"];
+            owner_user_id: components["schemas"]["Anon_57796118d046_65"];
+            name: components["schemas"]["Anon_f7f3658e6095_2"];
+            visibility: components["schemas"]["Anon_0c6209595eb3"];
+            base_template_id?: components["schemas"]["Anon_da99dad85270"];
+            base_template_version?: components["schemas"]["Anon_987b4efd36dc_1"];
+            current_revision: components["schemas"]["Anon_492895348dbd_12"];
+            is_default: components["schemas"]["Anon_062d958a93c4_17"];
+            idempotency_key?: components["schemas"]["Anon_2c442fbfed9b"];
+        };
+        /** @enum {string} */
+        AnalyticsViewVisibility: "private" | "team" | "tenant";
+        AnalyticsViewRevision: {
+            id: components["schemas"]["Anon_fb248bf5a9f7_9"];
+            tenant_id: components["schemas"]["Anon_fb248bf5a9f7_10"];
+            environment_id: components["schemas"]["Anon_fb248bf5a9f7_32"];
+            view_id: components["schemas"]["Anon_57796118d046_66"];
+            revision: components["schemas"]["Anon_492895348dbd_13"];
+            schema_version: components["schemas"]["Anon_539fcc6d91b0"];
             catalog_version: components["schemas"]["Anon_0c649f0987df_1"];
-            source: components["schemas"]["Anon_58595c887e8e"];
-            generated_at?: components["schemas"]["Anon_e077e17ea982_7"];
-            concepts: components["schemas"]["Anon_7af4e0f62fe5"];
-            dimensions: components["schemas"]["Anon_02464e23ff2d"];
-            metrics: components["schemas"]["Anon_3f6610e7064e"];
-        };
-        /** @enum {string} */
-        AnalyticsCatalogSource: "fixture" | "generated";
-        AnalyticsCatalogConcept: {
-            id: components["schemas"]["Anon_473e554f0735"];
-            version: components["schemas"]["Anon_492895348dbd_11"];
-            label: components["schemas"]["Anon_cd76cef95ac8_1"];
-            description?: components["schemas"]["Anon_7e1c99abdd77_5"];
-            when_to_use?: components["schemas"]["Anon_7e1c99abdd77_6"];
-            do_not_use_for?: components["schemas"]["Anon_7e1c99abdd77_7"];
-            grain: components["schemas"]["Anon_33727e5081dd"];
-            analytical_units: components["schemas"]["Anon_d62061afe78d"];
-            primary_time_dimension: components["schemas"]["Anon_473e554f0735_1"];
-            historical_mode: components["schemas"]["Anon_2d080ce873f8"];
-            dimensions: components["schemas"]["Anon_9d858dae66d4"];
-            metrics: components["schemas"]["Anon_9d858dae66d4_1"];
-            query_families: components["schemas"]["Anon_54e2154d1e2d"];
-            source_scope: components["schemas"]["Anon_a3ffad10d15c_2"];
-            coverage_metric?: components["schemas"]["Anon_473e554f0735_2"];
-            deprecation?: components["schemas"]["Anon_8f09b448c37f"];
-        };
-        /** @enum {string} */
-        AnalyticsHistoricalMode: "as_of_event" | "current";
-        /** @enum {string} */
-        AnalyticsQueryFamily: "scalar" | "timeseries" | "breakdown" | "funnel" | "table" | "timeline";
-        AnalyticsCatalogDeprecation: {
-            deprecated: components["schemas"]["Anon_a2b04841bdf1_1"];
-            replaced_by?: components["schemas"]["Anon_473e554f0735_3"];
-        };
-        AnalyticsCatalogDimension: {
-            id: components["schemas"]["Anon_473e554f0735_4"];
-            label: components["schemas"]["Anon_cd76cef95ac8_2"];
-            description?: components["schemas"]["Anon_7e1c99abdd77_8"];
-            when_to_use?: components["schemas"]["Anon_7e1c99abdd77_9"];
-            do_not_use_for?: components["schemas"]["Anon_7e1c99abdd77_10"];
-            type: components["schemas"]["Anon_8cca1c007123"];
-            operators: components["schemas"]["Anon_ee64da9ff212"];
-            control: components["schemas"]["Anon_1461c1108c5a"];
-            capabilities: components["schemas"]["Anon_9608bbcc8c3c"];
-            cardinality: components["schemas"]["Anon_60ea4f2fb8ec"];
-            classification: components["schemas"]["Anon_d2d465584350"];
-            historical_mode?: components["schemas"]["Anon_2d080ce873f8_1"];
-            allowed_concepts?: components["schemas"]["Anon_7587b25862b7"];
-            exclude_from_segment_picker: components["schemas"]["Anon_062d958a93c4_17"];
-            deprecation?: components["schemas"]["Anon_8f09b448c37f_1"];
-        };
-        /** @enum {string} */
-        AnalyticsDimensionType: "string" | "number" | "boolean" | "date" | "datetime" | "id" | "enum";
-        /** @enum {string} */
-        AnalyticsFilterOperator: "eq" | "neq" | "in" | "not_in" | "between" | "gte" | "lte" | "is_null" | "is_not_null" | "contains";
-        /** @enum {string} */
-        AnalyticsFilterControl: "date_range" | "single_select" | "multi_select" | "search_select" | "number_range";
-        /** @enum {string} */
-        AnalyticsDimensionCapability: "filter" | "group" | "split" | "sort";
-        /** @enum {string} */
-        AnalyticsCardinalityClass: "low" | "medium" | "high";
-        /** @enum {string} */
-        AnalyticsClassification: "unrestricted" | "pii" | "financial" | "operational";
-        AnalyticsCatalogMetric: {
-            id: components["schemas"]["Anon_473e554f0735_5"];
-            label: components["schemas"]["Anon_cd76cef95ac8_3"];
-            description?: components["schemas"]["Anon_7e1c99abdd77_11"];
-            when_to_use?: components["schemas"]["Anon_7e1c99abdd77_12"];
-            do_not_use_for?: components["schemas"]["Anon_7e1c99abdd77_13"];
-            value_type: components["schemas"]["Anon_65ce7e0d8aee"];
-            format?: components["schemas"]["Anon_7a61cd1caede"];
-            source_scope?: components["schemas"]["Anon_a3ffad10d15c_3"];
-            direction?: components["schemas"]["Anon_ca88983f41ae"];
-            statistical_type?: components["schemas"]["Anon_34eccd68143e"];
-            aggregation_semantics?: components["schemas"]["Anon_6a4e149367f5"];
-            preferred_analysis_unit?: components["schemas"]["Anon_612059bf001c_4"];
-            deprecation?: components["schemas"]["Anon_8f09b448c37f_2"];
-        };
-        /** @enum {string} */
-        AnalyticsFieldType: "string" | "number" | "currency" | "percent" | "date" | "datetime" | "boolean";
-        AnalyticsFormatSpec: {
-            type: components["schemas"]["Anon_94839c0509bd"];
-            decimals?: components["schemas"]["Anon_c896ad2c01f0"];
-            compact?: components["schemas"]["Anon_fb9ddeea992e_8"];
-        };
-        /** @enum {string} */
-        AnalyticsMetricDirection: "increase" | "decrease" | "neutral";
-        /** @enum {string} */
-        AnalyticsMetricStatisticalType: "binary" | "count" | "continuous" | "ratio" | "revenue";
-        /** @enum {string} */
-        AnalyticsMetricAggregationSemantics: "additive" | "semi_additive" | "non_additive";
-        AnalyticsCatalogSearchResult: {
-            catalog_version: components["schemas"]["Anon_0c649f0987df_2"];
-            query: components["schemas"]["Anon_872e58432369_4"];
-            entries: components["schemas"]["Anon_57df4039d087"];
-        };
-        AnalyticsAgentCatalogEntry: {
-            id: components["schemas"]["Anon_53c09eaf03ab_6"];
-            kind: components["schemas"]["Anon_33085dabcc5b"];
-            label: components["schemas"]["Anon_cd76cef95ac8_4"];
-            description: components["schemas"]["Anon_439566ae782f"];
-            when_to_use?: components["schemas"]["Anon_7e1c99abdd77_14"];
-            do_not_use_for?: components["schemas"]["Anon_7e1c99abdd77_15"];
-            value_type?: components["schemas"]["Anon_65ce7e0d8aee_1"];
-            format?: components["schemas"]["Anon_7a61cd1caede_1"];
-            capabilities?: components["schemas"]["Anon_7706669f91c3"];
-            compatible_concepts?: components["schemas"]["Anon_fa93268b3365_1"];
-            compatible_families?: components["schemas"]["Anon_0333fee54353"];
-            analytical_units?: components["schemas"]["Anon_f4eb50803f77"];
-            source_scope?: components["schemas"]["Anon_a3ffad10d15c_4"];
-            example?: components["schemas"]["Anon_e648d024ff54"];
-            deprecation?: components["schemas"]["Anon_8f09b448c37f_3"];
-        };
-        /** @enum {string} */
-        AnalyticsAgentCatalogEntryKind: "concept" | "dimension" | "metric" | "query_family";
-        AnalyticsTemplateSummary: {
-            id: components["schemas"]["Anon_a42d262cd3ca_2"];
-            version: components["schemas"]["Anon_492895348dbd_12"];
-            title: components["schemas"]["Anon_08bc067910e8"];
-            description?: components["schemas"]["Anon_08bc067910e8_1"];
-            block_count: components["schemas"]["Anon_492895348dbd_13"];
+            document_jsonb: components["schemas"]["Anon_8a0d78353546"];
+            content_hash: components["schemas"]["Anon_89e74b579cb7"];
+            created_by: components["schemas"]["Anon_57796118d046_67"];
+            created_at: components["schemas"]["Anon_be3e2585472d_8"];
         };
         LocalizedText: {
-            value: components["schemas"]["Anon_f7f3658e6095_2"];
+            value: components["schemas"]["Anon_f7f3658e6095_3"];
             key?: components["schemas"]["Anon_1a96b72f6169"];
         };
-        AnalyticsView: {
-            kind: components["schemas"]["Anon_983865dbfb22"];
-            schema_version: components["schemas"]["Anon_539fcc6d91b0"];
-            id: components["schemas"]["Anon_a42d262cd3ca_3"];
-            revision: components["schemas"]["Anon_492895348dbd_14"];
-            title: components["schemas"]["Anon_08bc067910e8_2"];
-            description?: components["schemas"]["Anon_08bc067910e8_3"];
-            analytical_unit: components["schemas"]["Anon_612059bf001c_5"];
-            base_template?: components["schemas"]["Anon_42ca9dcfc804"];
-            catalog_version: components["schemas"]["Anon_0c649f0987df_3"];
-            filters: components["schemas"]["Anon_f5bc4b9c7cf3"];
-            layout: components["schemas"]["Anon_a99ad7aecf25"];
-            blocks: components["schemas"]["Anon_1045ab243378"];
-            handoffs?: components["schemas"]["Anon_085d58b82580"];
-            customization_policy: components["schemas"]["Anon_69cb1378719c"];
-        };
         AnalyticsViewFilter: {
-            id: components["schemas"]["Anon_a42d262cd3ca_4"];
-            dimension: components["schemas"]["Anon_473e554f0735_6"];
-            control: components["schemas"]["Anon_1461c1108c5a_1"];
-            label?: components["schemas"]["Anon_08bc067910e8_4"];
-            operators: components["schemas"]["Anon_ee64da9ff212_1"];
+            id: components["schemas"]["Anon_a42d262cd3ca_3"];
+            dimension: components["schemas"]["Anon_473e554f0735"];
+            control: components["schemas"]["Anon_1461c1108c5a"];
+            label?: components["schemas"]["Anon_08bc067910e8_2"];
+            operators: components["schemas"]["Anon_ee64da9ff212"];
             default_value?: components["schemas"]["Anon_972936582d54"];
             required: components["schemas"]["Anon_062d958a93c4_18"];
             pinned: components["schemas"]["Anon_062d958a93c4_19"];
             applies_to: components["schemas"]["Anon_e4e72df2ab85"];
         };
+        /** @enum {string} */
+        AnalyticsFilterControl: "date_range" | "single_select" | "multi_select" | "search_select" | "number_range";
+        /** @enum {string} */
+        AnalyticsFilterOperator: "eq" | "neq" | "in" | "not_in" | "between" | "gte" | "lte" | "is_null" | "is_not_null" | "contains";
         AnalyticsViewLayout: {
             type: components["schemas"]["Anon_322aa249f2e5"];
             columns: components["schemas"]["Anon_724e5097e193"];
             items: components["schemas"]["Anon_1413a3a717f4"];
         };
         AnalyticsViewBlock: {
-            id: components["schemas"]["Anon_a42d262cd3ca_5"];
-            title?: components["schemas"]["Anon_08bc067910e8_5"];
-            description?: components["schemas"]["Anon_08bc067910e8_6"];
+            id: components["schemas"]["Anon_a42d262cd3ca_4"];
+            title?: components["schemas"]["Anon_08bc067910e8_3"];
+            description?: components["schemas"]["Anon_08bc067910e8_4"];
             query: components["schemas"]["Anon_e9ffed65fc4f"];
             render: components["schemas"]["Anon_93132f30dbdc"];
         };
         /** @enum {string} */
+        AnalyticsQueryFamily: "scalar" | "timeseries" | "breakdown" | "funnel" | "table" | "timeline";
+        /** @enum {string} */
         AnalyticsTimeGrain: "hour" | "day" | "week" | "month" | "quarter";
         AnalyticsSemanticFilter: {
-            dimension: components["schemas"]["Anon_473e554f0735_8"];
+            dimension: components["schemas"]["Anon_473e554f0735_2"];
             operator: components["schemas"]["Anon_307923732876"];
             value?: components["schemas"]["Anon_972936582d54_1"];
         };
         AnalyticsViewQuery: {
-            concept: components["schemas"]["Anon_473e554f0735_7"];
+            concept: components["schemas"]["Anon_473e554f0735_1"];
             family: components["schemas"]["Anon_a9324c0abdd2"];
             metrics: components["schemas"]["Anon_515e808fd802"];
-            group_by?: components["schemas"]["Anon_36fc42275aaf"];
+            group_by?: components["schemas"]["Anon_e8dea5d0d6ba"];
             time?: components["schemas"]["Anon_ad21ab4a74dd"];
             filters_from?: components["schemas"]["Anon_f02dd988a13b"];
             fixed_filters?: components["schemas"]["Anon_6529c678041a"];
@@ -3260,9 +3204,14 @@ export interface components {
              * @enum {string}
              */
             type: "metric";
-            value: components["schemas"]["Anon_473e554f0735_9"];
-            comparison?: components["schemas"]["Anon_473e554f0735_10"];
-            format?: components["schemas"]["Anon_7a61cd1caede_2"];
+            value: components["schemas"]["Anon_473e554f0735_3"];
+            comparison?: components["schemas"]["Anon_473e554f0735_4"];
+            format?: components["schemas"]["Anon_7a61cd1caede"];
+        };
+        AnalyticsFormatSpec: {
+            type: components["schemas"]["Anon_94839c0509bd"];
+            decimals?: components["schemas"]["Anon_c896ad2c01f0"];
+            compact?: components["schemas"]["Anon_fb9ddeea992e_8"];
         };
         AnalyticsRenderCartesian: {
             /**
@@ -3278,8 +3227,8 @@ export interface components {
             legend?: components["schemas"]["Anon_62bb63262a64"];
             value_labels?: components["schemas"]["Anon_fb9ddeea992e_9"];
             reference_lines?: components["schemas"]["Anon_a80e45915805"];
-            x_axis_format?: components["schemas"]["Anon_7a61cd1caede_3"];
-            y_axis_format?: components["schemas"]["Anon_7a61cd1caede_4"];
+            x_axis_format?: components["schemas"]["Anon_7a61cd1caede_1"];
+            y_axis_format?: components["schemas"]["Anon_7a61cd1caede_2"];
             empty_state?: components["schemas"]["Anon_454ddba6bb69"];
         };
         AnalyticsRenderFunnel: {
@@ -3289,7 +3238,7 @@ export interface components {
              */
             type: "funnel";
             stages: components["schemas"]["Anon_5142ac15e995"];
-            split_by?: components["schemas"]["Anon_473e554f0735_14"];
+            split_by?: components["schemas"]["Anon_473e554f0735_8"];
         };
         AnalyticsRenderTable: {
             /**
@@ -3305,8 +3254,8 @@ export interface components {
              * @enum {string}
              */
             type: "timeline";
-            timestamp: components["schemas"]["Anon_473e554f0735_15"];
-            event_type: components["schemas"]["Anon_473e554f0735_16"];
+            timestamp: components["schemas"]["Anon_473e554f0735_9"];
+            event_type: components["schemas"]["Anon_473e554f0735_10"];
         };
         AnalyticsRenderRecommendations: {
             /**
@@ -3318,9 +3267,9 @@ export interface components {
         };
         AnalyticsRenderSpec: components["schemas"]["AnalyticsRenderMetric"] | components["schemas"]["AnalyticsRenderCartesian"] | components["schemas"]["AnalyticsRenderFunnel"] | components["schemas"]["AnalyticsRenderTable"] | components["schemas"]["AnalyticsRenderTimeline"] | components["schemas"]["AnalyticsRenderRecommendations"];
         AnalyticsViewHandoff: {
-            id: components["schemas"]["Anon_a42d262cd3ca_6"];
-            label: components["schemas"]["Anon_08bc067910e8_7"];
-            target: components["schemas"]["Anon_473e554f0735_17"];
+            id: components["schemas"]["Anon_a42d262cd3ca_5"];
+            label: components["schemas"]["Anon_08bc067910e8_5"];
+            target: components["schemas"]["Anon_473e554f0735_11"];
             bindings: components["schemas"]["Anon_14b6bcad70d8"];
         };
         /** @enum {string} */
@@ -3329,10 +3278,159 @@ export interface components {
             allow: components["schemas"]["Anon_0c549228e81e"];
             deny: components["schemas"]["Anon_0c549228e81e_1"];
         };
+        AnalyticsView: {
+            kind: components["schemas"]["Anon_983865dbfb22"];
+            schema_version: components["schemas"]["Anon_539fcc6d91b0_1"];
+            id: components["schemas"]["Anon_a42d262cd3ca_2"];
+            revision: components["schemas"]["Anon_492895348dbd_14"];
+            title: components["schemas"]["Anon_08bc067910e8"];
+            description?: components["schemas"]["Anon_08bc067910e8_1"];
+            analytical_unit: components["schemas"]["Anon_612059bf001c_5"];
+            base_template?: components["schemas"]["Anon_42ca9dcfc804"];
+            catalog_version: components["schemas"]["Anon_0c649f0987df_2"];
+            filters: components["schemas"]["Anon_f5bc4b9c7cf3"];
+            layout: components["schemas"]["Anon_a99ad7aecf25"];
+            blocks: components["schemas"]["Anon_1045ab243378"];
+            handoffs?: components["schemas"]["Anon_085d58b82580"];
+            customization_policy: components["schemas"]["Anon_69cb1378719c"];
+        };
+        AnalyticsViewAccess: {
+            id: components["schemas"]["Anon_fb248bf5a9f7_9"];
+            tenant_id: components["schemas"]["Anon_fb248bf5a9f7_10"];
+            environment_id: components["schemas"]["Anon_fb248bf5a9f7_32"];
+            view_id: components["schemas"]["Anon_57796118d046_68"];
+            principal_type: components["schemas"]["Anon_49526ff098b2"];
+            principal_id: components["schemas"]["Anon_57796118d046_69"];
+            role: components["schemas"]["Anon_49ac461d2029"];
+        };
+        /** @enum {string} */
+        AnalyticsViewAccessRole: "viewer" | "editor";
+        AnalyticsCatalog: {
+            catalog_version: components["schemas"]["Anon_0c649f0987df_3"];
+            source: components["schemas"]["Anon_58595c887e8e"];
+            generated_at?: components["schemas"]["Anon_e077e17ea982_7"];
+            provenance?: components["schemas"]["Anon_9af7148e8624"];
+            concepts: components["schemas"]["Anon_7af4e0f62fe5"];
+            dimensions: components["schemas"]["Anon_02464e23ff2d"];
+            metrics: components["schemas"]["Anon_3f6610e7064e"];
+        };
+        /** @enum {string} */
+        AnalyticsCatalogSource: "fixture" | "generated";
+        AnalyticsCatalogProvenance: {
+            kind: components["schemas"]["Anon_f09baf95c30f"];
+            location: components["schemas"]["Anon_8aa2c848efaf"];
+            version?: components["schemas"]["Anon_e17de468dbc9_11"];
+            entry_count: components["schemas"]["Anon_274ba4ca49d5_19"];
+        };
+        /** @enum {string} */
+        AnalyticsCatalogProvenanceKind: "event_taxonomy" | "openapi_identity" | "tinybird_project";
+        AnalyticsCatalogConcept: {
+            id: components["schemas"]["Anon_473e554f0735_12"];
+            version: components["schemas"]["Anon_492895348dbd_15"];
+            label: components["schemas"]["Anon_cd76cef95ac8_1"];
+            description?: components["schemas"]["Anon_7e1c99abdd77_5"];
+            when_to_use?: components["schemas"]["Anon_7e1c99abdd77_6"];
+            do_not_use_for?: components["schemas"]["Anon_7e1c99abdd77_7"];
+            grain: components["schemas"]["Anon_33727e5081dd"];
+            analytical_units: components["schemas"]["Anon_d62061afe78d"];
+            primary_time_dimension: components["schemas"]["Anon_473e554f0735_13"];
+            historical_mode: components["schemas"]["Anon_2d080ce873f8"];
+            dimensions: components["schemas"]["Anon_9d858dae66d4"];
+            metrics: components["schemas"]["Anon_9d858dae66d4_1"];
+            query_families: components["schemas"]["Anon_54e2154d1e2d"];
+            source_scope: components["schemas"]["Anon_a3ffad10d15c_2"];
+            coverage_metric?: components["schemas"]["Anon_473e554f0735_14"];
+            deprecation?: components["schemas"]["Anon_8f09b448c37f"];
+        };
+        /** @enum {string} */
+        AnalyticsHistoricalMode: "as_of_event" | "current";
+        AnalyticsCatalogDeprecation: {
+            deprecated: components["schemas"]["Anon_a2b04841bdf1_1"];
+            replaced_by?: components["schemas"]["Anon_473e554f0735_15"];
+        };
+        AnalyticsCatalogDimension: {
+            id: components["schemas"]["Anon_473e554f0735_16"];
+            label: components["schemas"]["Anon_cd76cef95ac8_2"];
+            description?: components["schemas"]["Anon_7e1c99abdd77_8"];
+            when_to_use?: components["schemas"]["Anon_7e1c99abdd77_9"];
+            do_not_use_for?: components["schemas"]["Anon_7e1c99abdd77_10"];
+            type: components["schemas"]["Anon_8cca1c007123"];
+            operators: components["schemas"]["Anon_ee64da9ff212_1"];
+            control: components["schemas"]["Anon_1461c1108c5a_1"];
+            capabilities: components["schemas"]["Anon_9608bbcc8c3c"];
+            cardinality: components["schemas"]["Anon_60ea4f2fb8ec"];
+            classification: components["schemas"]["Anon_d2d465584350"];
+            historical_mode?: components["schemas"]["Anon_2d080ce873f8_1"];
+            allowed_concepts?: components["schemas"]["Anon_7587b25862b7"];
+            exclude_from_segment_picker: components["schemas"]["Anon_062d958a93c4_20"];
+            deprecation?: components["schemas"]["Anon_8f09b448c37f_1"];
+        };
+        /** @enum {string} */
+        AnalyticsDimensionType: "string" | "number" | "boolean" | "date" | "datetime" | "id" | "enum";
+        /** @enum {string} */
+        AnalyticsDimensionCapability: "filter" | "group" | "split" | "sort";
+        /** @enum {string} */
+        AnalyticsCardinalityClass: "low" | "medium" | "high";
+        /** @enum {string} */
+        AnalyticsClassification: "unrestricted" | "pii" | "financial" | "operational";
+        AnalyticsCatalogMetric: {
+            id: components["schemas"]["Anon_473e554f0735_17"];
+            label: components["schemas"]["Anon_cd76cef95ac8_3"];
+            description?: components["schemas"]["Anon_7e1c99abdd77_11"];
+            when_to_use?: components["schemas"]["Anon_7e1c99abdd77_12"];
+            do_not_use_for?: components["schemas"]["Anon_7e1c99abdd77_13"];
+            value_type: components["schemas"]["Anon_65ce7e0d8aee"];
+            format?: components["schemas"]["Anon_7a61cd1caede_3"];
+            source_scope?: components["schemas"]["Anon_a3ffad10d15c_3"];
+            direction?: components["schemas"]["Anon_ca88983f41ae"];
+            statistical_type?: components["schemas"]["Anon_34eccd68143e"];
+            aggregation_semantics?: components["schemas"]["Anon_6a4e149367f5"];
+            preferred_analysis_unit?: components["schemas"]["Anon_612059bf001c_6"];
+            deprecation?: components["schemas"]["Anon_8f09b448c37f_2"];
+        };
+        /** @enum {string} */
+        AnalyticsFieldType: "string" | "number" | "currency" | "percent" | "date" | "datetime" | "boolean";
+        /** @enum {string} */
+        AnalyticsMetricDirection: "increase" | "decrease" | "neutral";
+        /** @enum {string} */
+        AnalyticsMetricStatisticalType: "binary" | "count" | "continuous" | "ratio" | "revenue";
+        /** @enum {string} */
+        AnalyticsMetricAggregationSemantics: "additive" | "semi_additive" | "non_additive";
+        AnalyticsCatalogSearchResult: {
+            catalog_version: components["schemas"]["Anon_0c649f0987df_4"];
+            query: components["schemas"]["Anon_872e58432369_4"];
+            entries: components["schemas"]["Anon_57df4039d087"];
+        };
+        AnalyticsAgentCatalogEntry: {
+            id: components["schemas"]["Anon_53c09eaf03ab_7"];
+            kind: components["schemas"]["Anon_33085dabcc5b"];
+            label: components["schemas"]["Anon_cd76cef95ac8_4"];
+            description: components["schemas"]["Anon_439566ae782f"];
+            when_to_use?: components["schemas"]["Anon_7e1c99abdd77_14"];
+            do_not_use_for?: components["schemas"]["Anon_7e1c99abdd77_15"];
+            value_type?: components["schemas"]["Anon_65ce7e0d8aee_1"];
+            format?: components["schemas"]["Anon_7a61cd1caede_4"];
+            capabilities?: components["schemas"]["Anon_7706669f91c3"];
+            compatible_concepts?: components["schemas"]["Anon_fa93268b3365_1"];
+            compatible_families?: components["schemas"]["Anon_0333fee54353"];
+            analytical_units?: components["schemas"]["Anon_f4eb50803f77"];
+            source_scope?: components["schemas"]["Anon_a3ffad10d15c_4"];
+            example?: components["schemas"]["Anon_e648d024ff54"];
+            deprecation?: components["schemas"]["Anon_8f09b448c37f_3"];
+        };
+        /** @enum {string} */
+        AnalyticsAgentCatalogEntryKind: "concept" | "dimension" | "metric" | "query_family";
+        AnalyticsTemplateSummary: {
+            id: components["schemas"]["Anon_a42d262cd3ca_6"];
+            version: components["schemas"]["Anon_492895348dbd_16"];
+            title: components["schemas"]["Anon_08bc067910e8_6"];
+            description?: components["schemas"]["Anon_08bc067910e8_7"];
+            block_count: components["schemas"]["Anon_492895348dbd_17"];
+        };
         AnalyticsQueryResponse: {
             view_id: components["schemas"]["Anon_a42d262cd3ca_7"];
-            revision: components["schemas"]["Anon_492895348dbd_15"];
-            catalog_version: components["schemas"]["Anon_0c649f0987df_4"];
+            revision: components["schemas"]["Anon_492895348dbd_18"];
+            catalog_version: components["schemas"]["Anon_0c649f0987df_5"];
             results: components["schemas"]["Anon_d1ee5d662ae8"];
             errors: components["schemas"]["Anon_d9d8133c6dc1"];
         };
@@ -3346,9 +3444,9 @@ export interface components {
             nullable: components["schemas"]["Anon_a2b04841bdf1_2"];
         };
         AnalyticsCoverage: {
-            numerator: components["schemas"]["Anon_274ba4ca49d5_19"];
-            denominator: components["schemas"]["Anon_274ba4ca49d5_20"];
-            rate: components["schemas"]["Anon_2b7ce0f730b2_4"];
+            numerator: components["schemas"]["Anon_274ba4ca49d5_20"];
+            denominator: components["schemas"]["Anon_274ba4ca49d5_21"];
+            rate: components["schemas"]["Anon_2b7ce0f730b2_5"];
         };
         AnalyticsWarning: {
             code: components["schemas"]["Anon_52d01828671f"];
@@ -3357,11 +3455,11 @@ export interface components {
         AnalyticsResultMeta: {
             query_hash: components["schemas"]["Anon_4e975b8486b2_1"];
             concept: components["schemas"]["Anon_473e554f0735_19"];
-            analytical_unit: components["schemas"]["Anon_612059bf001c_6"];
+            analytical_unit: components["schemas"]["Anon_612059bf001c_7"];
             source_scope: components["schemas"]["Anon_a3ffad10d15c_5"];
             coverage?: components["schemas"]["Anon_46875cb51ec3"];
             as_of: components["schemas"]["Anon_3c179513a5d9_12"];
-            freshness_seconds: components["schemas"]["Anon_274ba4ca49d5_21"];
+            freshness_seconds: components["schemas"]["Anon_274ba4ca49d5_22"];
             applied_filters: components["schemas"]["Anon_0d4ef59d2c98"];
             next_cursor?: components["schemas"]["Anon_7e1c99abdd77_16"];
             warnings: components["schemas"]["Anon_3e88c47d5b52"];
@@ -3389,8 +3487,8 @@ export interface components {
             cloned_from_environment_id: components["schemas"]["Anon_7f83d3357e9c"];
             cloned_at: components["schemas"]["Anon_24a0ac3f017b"];
             cloned_at_sequence: components["schemas"]["Anon_f11abbefcf83"];
-            requires_approval: components["schemas"]["Anon_062d958a93c4_20"];
-            auto_deploy_on_approval: components["schemas"]["Anon_062d958a93c4_21"];
+            requires_approval: components["schemas"]["Anon_062d958a93c4_21"];
+            auto_deploy_on_approval: components["schemas"]["Anon_062d958a93c4_22"];
             created_by?: components["schemas"]["Anon_96f9066c2fdc_60"];
             metadata: components["schemas"]["Anon_f27cb44c32f6_33"];
         };
@@ -3399,12 +3497,12 @@ export interface components {
             created_at: components["schemas"]["Anon_be3e2585472d_2"];
             updated_at: components["schemas"]["Anon_be3e2585472d_3"];
             tenant_id: components["schemas"]["Anon_fb248bf5a9f7_10"];
-            environment_id: components["schemas"]["Anon_57796118d046_65"];
+            environment_id: components["schemas"]["Anon_57796118d046_70"];
             name: components["schemas"]["Anon_4c26b3baab05_30"];
             description?: components["schemas"]["Anon_e648d024ff54_1"];
             status: components["schemas"]["Anon_d7211f687316"];
             labels: components["schemas"]["Anon_f8dbfffc0ce2_23"];
-            created_by: components["schemas"]["Anon_57796118d046_66"];
+            created_by: components["schemas"]["Anon_57796118d046_71"];
             submitted_by: components["schemas"]["Anon_7f83d3357e9c_1"];
             reviewed_by: components["schemas"]["Anon_7f83d3357e9c_2"];
             deployed_by: components["schemas"]["Anon_7f83d3357e9c_3"];
@@ -3426,16 +3524,16 @@ export interface components {
         PlaybookVersionStatus: "draft" | "awaiting_approval" | "approved" | "deploying" | "deployed" | "rejected" | "archived";
         PlaybookVersionDeployResult: {
             playbook_version_id: components["schemas"]["Anon_127eb78cd9c0_8"];
-            deployed_count: components["schemas"]["Anon_274ba4ca49d5_22"];
-            superseded_count: components["schemas"]["Anon_274ba4ca49d5_23"];
-            skipped_conflicts: components["schemas"]["Anon_274ba4ca49d5_24"];
+            deployed_count: components["schemas"]["Anon_274ba4ca49d5_23"];
+            superseded_count: components["schemas"]["Anon_274ba4ca49d5_24"];
+            skipped_conflicts: components["schemas"]["Anon_274ba4ca49d5_25"];
             deployed_at: components["schemas"]["Anon_3c179513a5d9_13"];
         };
         PlaybookVersionDiff: {
             playbook_version_id: components["schemas"]["Anon_127eb78cd9c0_9"];
             entries: components["schemas"]["Anon_9d85ce48d708"];
-            total_entries: components["schemas"]["Anon_274ba4ca49d5_25"];
-            total_conflicts: components["schemas"]["Anon_274ba4ca49d5_26"];
+            total_entries: components["schemas"]["Anon_274ba4ca49d5_26"];
+            total_conflicts: components["schemas"]["Anon_274ba4ca49d5_27"];
             deployable: components["schemas"]["Anon_a2b04841bdf1_4"];
         };
         PlaybookVersionEntrySummary: {
@@ -3463,7 +3561,7 @@ export interface components {
             created_at: components["schemas"]["Anon_be3e2585472d_2"];
             updated_at: components["schemas"]["Anon_be3e2585472d_3"];
             tenant_id: components["schemas"]["Anon_fb248bf5a9f7_10"];
-            key: components["schemas"]["Anon_3b8fc1cd9e8b_21"];
+            key: components["schemas"]["Anon_3b8fc1cd9e8b_20"];
             value_type: components["schemas"]["Anon_95bcb0caba53_1"];
             value: components["schemas"]["Anon_6ef9da7c03d1_1"];
             description?: components["schemas"]["Anon_ee9224780226_9"];
@@ -3492,18 +3590,18 @@ export interface components {
             tenant_id: components["schemas"]["Anon_fb248bf5a9f7_10"];
             server_url: components["schemas"]["Anon_e263ce55cb2f"];
             api_token_hint: components["schemas"]["Anon_26f9ae47e188"];
-            allow_write_actions: components["schemas"]["Anon_062d958a93c4_22"];
+            allow_write_actions: components["schemas"]["Anon_062d958a93c4_23"];
             enabled_tools: components["schemas"]["Anon_39888a32a8f7"];
-            enabled: components["schemas"]["Anon_062d958a93c4_23"];
+            enabled: components["schemas"]["Anon_062d958a93c4_24"];
         };
         OnboardingChecklist: {
             id: components["schemas"]["Anon_fb248bf5a9f7_9"];
             created_at: components["schemas"]["Anon_be3e2585472d_2"];
             updated_at: components["schemas"]["Anon_be3e2585472d_3"];
             tenant_id: components["schemas"]["Anon_fb248bf5a9f7_10"];
-            step_key: components["schemas"]["Anon_3b8fc1cd9e8b_22"];
+            step_key: components["schemas"]["Anon_3b8fc1cd9e8b_21"];
             label: components["schemas"]["Anon_872e58432369_6"];
-            done: components["schemas"]["Anon_062d958a93c4_24"];
+            done: components["schemas"]["Anon_062d958a93c4_25"];
             completed_at: components["schemas"]["Anon_24a0ac3f017b_5"];
         };
         AuditEvent: {
@@ -3516,7 +3614,7 @@ export interface components {
             object_type: components["schemas"]["Anon_c8b3e7377e39"];
             object_id: components["schemas"]["Anon_4d8c172ed637"];
             payload: components["schemas"]["Anon_9d87a4763d87"];
-            occurred_at: components["schemas"]["Anon_be3e2585472d_8"];
+            occurred_at: components["schemas"]["Anon_be3e2585472d_9"];
         };
         /** @enum {string} */
         AuditActorType: "user" | "agent" | "system" | "webhook";
@@ -3560,24 +3658,24 @@ export interface components {
         /** @enum {string} */
         ProviderAvailability: "available" | "stale" | "unavailable" | "unsupported" | "partial";
         null: {
-            accepted: components["schemas"]["Anon_274ba4ca49d5_27"];
+            accepted: components["schemas"]["Anon_274ba4ca49d5_28"];
         };
         PaginatedResponse: {
             items: components["schemas"]["Anon_0b2583b9b222"];
-            total: components["schemas"]["Anon_274ba4ca49d5_28"];
-            page: components["schemas"]["Anon_492895348dbd_16"];
-            per_page: components["schemas"]["Anon_492895348dbd_17"];
+            total: components["schemas"]["Anon_274ba4ca49d5_29"];
+            page: components["schemas"]["Anon_492895348dbd_19"];
+            per_page: components["schemas"]["Anon_492895348dbd_20"];
             has_more: components["schemas"]["Anon_a2b04841bdf1_5"];
         };
         IngestedEvent: {
             id: components["schemas"]["Anon_fb248bf5a9f7_9"];
-            event_type: components["schemas"]["Anon_57796118d046_67"];
+            event_type: components["schemas"]["Anon_57796118d046_72"];
             source: components["schemas"]["Anon_eabbbb727ad3"];
             tenant_id?: components["schemas"]["Anon_4e04ec5cc4e6_17"];
             user_id?: components["schemas"]["Anon_0a729b73253d"];
             session_id?: components["schemas"]["Anon_0a729b73253d_1"];
             occurred_at: components["schemas"]["Anon_3c179513a5d9_14"];
-            request_id: components["schemas"]["Anon_57796118d046_68"];
+            request_id: components["schemas"]["Anon_57796118d046_73"];
             attributes: components["schemas"]["Anon_5142f8473790_13"];
             payload: components["schemas"]["Anon_5142f8473790_14"];
             ingested_at: components["schemas"]["Anon_3c179513a5d9_15"];
@@ -4167,6 +4265,14 @@ export interface components {
         Anon_274ba4ca49d5_8: number;
         Anon_b92c27ea8f08: number;
         Anon_391e8f2f18f6_1: number;
+        Anon_28ef3e3c7555: components["schemas"]["ExperimentClusteredSufficientStatistics"];
+        Anon_612059bf001c_3: components["schemas"]["AnalyticsAnalyticalUnit"];
+        Anon_12cae30adeb7: components["schemas"]["ExperimentClusterAggregate"][];
+        Anon_d5798e9f7f97: number;
+        Anon_b92c27ea8f08_1: number;
+        Anon_d544cfb8615e: number;
+        Anon_9c7f41b09bde_6: components["schemas"]["Anon_cddf8275afa1_9"];
+        Anon_cddf8275afa1_9: number;
         /** @constant */
         Anon_64ef44535dee: "binary";
         Anon_274ba4ca49d5_9: number;
@@ -4174,24 +4280,27 @@ export interface components {
         /** @constant */
         Anon_54fb2cbe784e: "ratio";
         Anon_274ba4ca49d5_11: number;
-        Anon_b92c27ea8f08_1: number;
         Anon_b92c27ea8f08_2: number;
+        Anon_b92c27ea8f08_3: number;
         Anon_391e8f2f18f6_2: number;
         Anon_391e8f2f18f6_3: number;
-        Anon_b92c27ea8f08_3: number;
+        Anon_b92c27ea8f08_4: number;
         /** @constant */
         Anon_31d3628a71e6: "covariance";
         Anon_274ba4ca49d5_12: number;
-        Anon_b92c27ea8f08_4: number;
         Anon_b92c27ea8f08_5: number;
+        Anon_b92c27ea8f08_6: number;
         Anon_391e8f2f18f6_4: number;
         Anon_391e8f2f18f6_5: number;
-        Anon_b92c27ea8f08_6: number;
+        Anon_b92c27ea8f08_7: number;
         Anon_d7062f16dbf8: components["schemas"]["ExperimentObservationWindow"];
         /** Format: date-time */
         Anon_3c179513a5d9_5: string;
         /** Format: date-time */
         Anon_3c179513a5d9_6: string;
+        Anon_f9fcd1c6daa9: components["schemas"]["ExperimentCovariateProvenance"];
+        Anon_53c09eaf03ab_2: components["schemas"]["AnalyticsSemanticIdOutput"];
+        Anon_d7062f16dbf8_1: components["schemas"]["ExperimentObservationWindow"];
         /** Format: date-time */
         Anon_3c179513a5d9_7: string;
         Anon_a3ffad10d15c: components["schemas"]["AnalyticsSourceScope"];
@@ -4219,54 +4328,92 @@ export interface components {
         Anon_e4c9d539e5ef: components["schemas"]["ExperimentAnalysisConfigOutput"];
         /** @enum {string} */
         Anon_2ac4674f0f05_1: "frequentist" | "bayesian";
-        Anon_3e68c99eb87d_3: components["schemas"]["Anon_8f28cdffdece_2"];
-        Anon_8f28cdffdece_2: {
-            [key: string]: string | number | boolean | null;
+        Anon_b85ce44ab0a9: {
+            /** @constant */
+            method: "always_valid";
+            look_count: number;
+            /** @default 0.05 */
+            alpha: number;
         };
-        Anon_3e68c99eb87d_4: components["schemas"]["Anon_8f28cdffdece_2"];
-        Anon_4903d99d0462: {
+        Anon_cd6bb211be86: {
+            /** @constant */
+            method: "holm";
+            /** @constant */
+            family_scope: "primary_and_guardrails_separate";
+        };
+        Anon_613da80633a0: {
             /** @constant */
             method: "cuped";
             covariate_metric: components["schemas"]["AnalyticsSemanticIdOutput"];
             lookback_days: number;
+        } | {
+            /** @constant */
+            method: "regression_adjustment";
+            covariate_metric: components["schemas"]["AnalyticsSemanticIdOutput"];
+            lookback_days: number;
         };
-        Anon_3e68c99eb87d_5: components["schemas"]["Anon_8f28cdffdece_2"];
+        Anon_4ddd554c2330_1: {
+            minimum_revenue_effect: number;
+        };
         Anon_67f3be501bc2: components["schemas"]["ExperimentAnalysisResult"];
         Anon_492895348dbd_8: number;
         Anon_3b8fc1cd9e8b_13: string;
         Anon_3b8fc1cd9e8b_14: string;
         Anon_3b8fc1cd9e8b_15: string;
         Anon_29a38f76c7dc: components["schemas"]["ExperimentMetricResult"][];
-        Anon_53c09eaf03ab_2: components["schemas"]["AnalyticsSemanticIdOutput"];
+        Anon_53c09eaf03ab_3: components["schemas"]["AnalyticsSemanticIdOutput"];
         Anon_57796118d046_50: string;
         Anon_57796118d046_51: string;
         Anon_3b8fc1cd9e8b_16: string;
         Anon_3b8fc1cd9e8b_17: string;
-        Anon_b92c27ea8f08_7: number;
         Anon_b92c27ea8f08_8: number;
         Anon_b92c27ea8f08_9: number;
-        Anon_9c7f41b09bde_6: components["schemas"]["Anon_cddf8275afa1_9"];
-        Anon_cddf8275afa1_9: number;
+        Anon_b92c27ea8f08_10: number;
+        Anon_9c7f41b09bde_7: components["schemas"]["Anon_cddf8275afa1_10"];
+        Anon_cddf8275afa1_10: number;
         Anon_3d3fd40aec74_1: components["schemas"]["Anon_33527092b4d7_1"];
         Anon_33527092b4d7_1: number;
         Anon_8818e57c1481: components["schemas"]["ExperimentConfidenceInterval"];
-        Anon_b92c27ea8f08_10: number;
         Anon_b92c27ea8f08_11: number;
+        Anon_b92c27ea8f08_12: number;
         Anon_2b7ce0f730b2: number;
         Anon_cb2987460940: components["schemas"]["Anon_9ec61191bcef_2"];
         Anon_9ec61191bcef_2: number;
+        Anon_e774ceb00399: components["schemas"]["ExperimentMultipleComparisonResult"];
+        /** @constant */
+        Anon_5ee0bfa1182a: "holm";
+        /** @enum {string} */
+        Anon_008ed7549326: "primary" | "guardrails";
+        Anon_d5798e9f7f97_1: number;
+        Anon_2b7ce0f730b2_1: number;
         Anon_cb2987460940_1: components["schemas"]["Anon_9ec61191bcef_3"];
         Anon_9ec61191bcef_3: number;
         Anon_3d3fd40aec74_2: components["schemas"]["Anon_33527092b4d7_2"];
         Anon_33527092b4d7_2: number;
         Anon_7abf4ad42dcf: components["schemas"]["ExperimentSequentialResult"];
-        Anon_3b8fc1cd9e8b_18: string;
-        Anon_9717c0445e52_6: components["schemas"]["Anon_ea288f4ef558_16"];
-        Anon_ea288f4ef558_16: number;
-        Anon_d0eee45cbb8b: components["schemas"]["Anon_8f28cdffdece_3"];
-        Anon_8f28cdffdece_3: {
-            [key: string]: string | number | boolean | null;
+        /** @constant */
+        Anon_7d92947c6bae: "always_valid";
+        /** @enum {string} */
+        Anon_47eb122b11ff: "continue" | "significant_positive" | "significant_negative";
+        Anon_492895348dbd_9: number;
+        Anon_804c748cb4dc: {
+            alpha: components["schemas"]["Anon_5442dad6366f"];
+            look_alpha: components["schemas"]["Anon_5442dad6366f_1"];
+            cumulative_alpha_spent: components["schemas"]["Anon_5442dad6366f_2"];
+            alpha_remaining: components["schemas"]["Anon_5442dad6366f_3"];
+            unadjusted_p_value?: components["schemas"]["Anon_cb2987460940_2"];
         };
+        Anon_5442dad6366f: number;
+        Anon_5442dad6366f_1: number;
+        Anon_5442dad6366f_2: number;
+        Anon_5442dad6366f_3: number;
+        Anon_cb2987460940_2: components["schemas"]["Anon_9ec61191bcef_4"];
+        Anon_9ec61191bcef_4: number;
+        Anon_18475babc32e: components["schemas"]["ExperimentPracticalSignificanceResult"];
+        Anon_7ab7b70b014d_5: number;
+        Anon_ff8cc8201c59: number;
+        /** @enum {string} */
+        Anon_c21695398136: "meaningful_positive" | "meaningful_negative" | "not_demonstrated";
         Anon_7e1e37293611_12: components["schemas"]["Anon_97cc9ecfdea9_28"];
         Anon_97cc9ecfdea9_28: number;
         Anon_6faa6e1959ae: components["schemas"]["ExperimentHealth"];
@@ -4275,8 +4422,8 @@ export interface components {
         Anon_d7efc3552341: components["schemas"]["ExperimentSampleRatioMismatch"];
         /** @enum {string} */
         Anon_a81921b599ca: "not_evaluated" | "pass" | "fail";
-        Anon_cb2987460940_2: components["schemas"]["Anon_9ec61191bcef_4"];
-        Anon_9ec61191bcef_4: number;
+        Anon_cb2987460940_3: components["schemas"]["Anon_9ec61191bcef_5"];
+        Anon_9ec61191bcef_5: number;
         Anon_3d3fd40aec74_3: components["schemas"]["Anon_33527092b4d7_3"];
         Anon_33527092b4d7_3: number;
         /** @default [] */
@@ -4297,8 +4444,8 @@ export interface components {
         Anon_0c72cd944e13: components["schemas"]["AnalysisProvenance"];
         Anon_3404cfc4bdd0_1: components["schemas"]["ProviderProvenance"];
         Anon_23dec9820798: components["schemas"]["ExperimentEvidenceProvenance"][];
-        Anon_53c09eaf03ab_3: components["schemas"]["AnalyticsSemanticIdOutput"];
-        Anon_492895348dbd_9: number;
+        Anon_53c09eaf03ab_4: components["schemas"]["AnalyticsSemanticIdOutput"];
+        Anon_492895348dbd_10: number;
         /** Format: date-time */
         Anon_3c179513a5d9_9: string;
         Anon_3404cfc4bdd0_2: components["schemas"]["ProviderProvenance"];
@@ -4377,10 +4524,10 @@ export interface components {
         Anon_c1e92d6018bd_1: {
             [key: string]: unknown;
         };
-        Anon_53c09eaf03ab_4: components["schemas"]["AnalyticsSemanticIdOutput"];
+        Anon_53c09eaf03ab_5: components["schemas"]["AnalyticsSemanticIdOutput"];
         Anon_fa93268b3365: components["schemas"]["Anon_398b49f8c04a"];
         Anon_398b49f8c04a: components["schemas"]["AnalyticsSemanticIdOutput"][];
-        Anon_612059bf001c_3: components["schemas"]["AnalyticsAnalyticalUnit"];
+        Anon_612059bf001c_4: components["schemas"]["AnalyticsAnalyticalUnit"];
         Anon_570ae33fb746: components["schemas"]["Anon_6ac3ec40d3a6"];
         Anon_6ac3ec40d3a6: {
             provider_handle: components["schemas"]["Anon_af12d548dbee_34"];
@@ -4403,19 +4550,19 @@ export interface components {
         };
         Anon_e4c9d539e5ef_1: components["schemas"]["ExperimentAnalysisConfigOutput"];
         /** @default 0.05 */
-        Anon_f46a509a677a_1: components["schemas"]["Anon_cddf8275afa1_10"];
-        Anon_cddf8275afa1_10: number;
+        Anon_f46a509a677a_1: components["schemas"]["Anon_cddf8275afa1_11"];
+        Anon_cddf8275afa1_11: number;
         /** @default [] */
         Anon_88a215d65c9f: components["schemas"]["Anon_398b49f8c04a_1"];
         Anon_398b49f8c04a_1: components["schemas"]["AnalyticsSemanticIdOutput"][];
         /** @default 1 */
-        Anon_8b55a726ae42_1: components["schemas"]["Anon_9ec61191bcef_5"];
-        Anon_9ec61191bcef_5: number;
+        Anon_8b55a726ae42_1: components["schemas"]["Anon_9ec61191bcef_6"];
+        Anon_9ec61191bcef_6: number;
         Anon_711dc9708535_11: components["schemas"]["Anon_11c9ad639448_1"];
         Anon_711dc9708535_12: components["schemas"]["Anon_11c9ad639448_1"];
         /** @default 0.95 */
-        Anon_0d432eba6d26_1: components["schemas"]["Anon_9ec61191bcef_6"];
-        Anon_9ec61191bcef_6: number;
+        Anon_0d432eba6d26_1: components["schemas"]["Anon_9ec61191bcef_7"];
+        Anon_9ec61191bcef_7: number;
         /** @default null */
         Anon_f7fb9744a6e4_15: components["schemas"]["Anon_f090cb615c84_32"];
         Anon_f090cb615c84_32: string | null;
@@ -4430,8 +4577,8 @@ export interface components {
         Anon_529174cd85fc: string;
         Anon_796ec99afe20_5: components["schemas"]["Anon_333f67ffab65_5"];
         Anon_333f67ffab65_5: string;
-        Anon_9c7f41b09bde_7: components["schemas"]["Anon_cddf8275afa1_11"];
-        Anon_cddf8275afa1_11: number;
+        Anon_9c7f41b09bde_8: components["schemas"]["Anon_cddf8275afa1_12"];
+        Anon_cddf8275afa1_12: number;
         Anon_94b7b4f4c44a: components["schemas"]["Anon_904af497346b_1"];
         Anon_904af497346b_1: string | null;
         Anon_987b4efd36dc: components["schemas"]["Anon_01d5d54a2833"];
@@ -4440,12 +4587,12 @@ export interface components {
         Anon_904af497346b_2: string | null;
         Anon_a5bbdb086c0b: components["schemas"]["Anon_334bf0f8d964"];
         Anon_334bf0f8d964: components["schemas"]["OpportunityEvidence"][] | null;
-        Anon_53c09eaf03ab_5: components["schemas"]["AnalyticsSemanticIdOutput"];
-        Anon_b92c27ea8f08_12: number;
-        Anon_9c7f41b09bde_8: components["schemas"]["Anon_cddf8275afa1_12"];
-        Anon_cddf8275afa1_12: number;
+        Anon_53c09eaf03ab_6: components["schemas"]["AnalyticsSemanticIdOutput"];
+        Anon_b92c27ea8f08_13: number;
         Anon_9c7f41b09bde_9: components["schemas"]["Anon_cddf8275afa1_13"];
         Anon_cddf8275afa1_13: number;
+        Anon_9c7f41b09bde_10: components["schemas"]["Anon_cddf8275afa1_14"];
+        Anon_cddf8275afa1_14: number;
         Anon_9436426bae27: {
             start: components["schemas"]["Anon_3c179513a5d9_10"];
             end: components["schemas"]["Anon_3c179513a5d9_11"];
@@ -4474,7 +4621,7 @@ export interface components {
         /** @default draft */
         Anon_10bb933cb85b_1: components["schemas"]["PromotionStatus"];
         Anon_7ea89241716b_1: components["schemas"]["DiscountType"];
-        Anon_7ab7b70b014d_5: number;
+        Anon_7ab7b70b014d_6: number;
         /** @default USD */
         Anon_ef7b4ee94f77_1: components["schemas"]["Anon_9b3712d35cb1_3"];
         Anon_9b3712d35cb1_3: string;
@@ -4587,7 +4734,7 @@ export interface components {
         Anon_f27cb44c32f6_27: components["schemas"]["Anon_f2d1b3e449b4_1"];
         Anon_2457cccd64aa_9: components["schemas"]["Anon_0eb2e3b6e08c_1"];
         Anon_57796118d046_56: string;
-        Anon_3b8fc1cd9e8b_19: string;
+        Anon_3b8fc1cd9e8b_18: string;
         /** @default sum */
         Anon_b5e0b68a9ffd_1: components["schemas"]["Anon_830a3c3d0f65_1"];
         /** @enum {string} */
@@ -4645,10 +4792,10 @@ export interface components {
         Anon_4e04ec5cc4e6_16: components["schemas"]["Anon_9ac136edb99a_24"];
         Anon_9ac136edb99a_24: string;
         Anon_c65e883b4e4a: {
-            count: components["schemas"]["Anon_492895348dbd_10"];
+            count: components["schemas"]["Anon_492895348dbd_11"];
             period: components["schemas"]["Anon_e78ca35ebc33_1"];
         };
-        Anon_492895348dbd_10: number;
+        Anon_492895348dbd_11: number;
         /** @enum {string} */
         Anon_e78ca35ebc33_1: "session" | "day" | "week" | "month";
         /** @default 30 */
@@ -4676,7 +4823,7 @@ export interface components {
         /** @enum {string} */
         Anon_be07849383a6_1: "highest_priority" | "most_recent" | "random";
         Anon_d1719c72541d: components["schemas"]["ChangeLogAction"];
-        Anon_3b8fc1cd9e8b_20: string;
+        Anon_3b8fc1cd9e8b_19: string;
         Anon_57796118d046_60: string;
         Anon_1f4f12b25127: components["schemas"]["Anon_603c6e9671b0"];
         Anon_603c6e9671b0: string;
@@ -4698,7 +4845,7 @@ export interface components {
         Anon_f27cb44c32f6_29: components["schemas"]["Anon_f2d1b3e449b4_1"];
         Anon_57796118d046_62: string;
         Anon_127eb78cd9c0: string;
-        Anon_ff8cc8201c59: number;
+        Anon_ff8cc8201c59_1: number;
         /** @default null */
         Anon_3840a7694f3b: components["schemas"]["Anon_647f607e81dc"];
         Anon_647f607e81dc: number | null;
@@ -4728,13 +4875,13 @@ export interface components {
         Anon_127eb78cd9c0_5: string;
         Anon_274ba4ca49d5_16: number;
         Anon_274ba4ca49d5_17: number;
-        Anon_2b7ce0f730b2_1: number;
+        Anon_2b7ce0f730b2_2: number;
         Anon_60b8dbf9476e_6: number;
         Anon_127eb78cd9c0_6: string;
         Anon_127eb78cd9c0_7: string;
         Anon_274ba4ca49d5_18: number;
-        Anon_2b7ce0f730b2_2: number;
         Anon_2b7ce0f730b2_3: number;
+        Anon_2b7ce0f730b2_4: number;
         /** @enum {string} */
         Anon_a47531460a58: "plan_drift" | "entitlement_drift" | "usage_anomaly" | "revenue_anomaly";
         Anon_f7452ebec2a5: components["schemas"]["Severity"];
@@ -4770,135 +4917,49 @@ export interface components {
         Anon_f7fb9744a6e4_22: components["schemas"]["Anon_f090cb615c84_39"];
         Anon_f090cb615c84_39: string | null;
         Anon_f27cb44c32f6_31: components["schemas"]["Anon_f2d1b3e449b4_1"];
-        Anon_0c649f0987df_1: string;
-        Anon_58595c887e8e: components["schemas"]["AnalyticsCatalogSource"];
-        Anon_e077e17ea982_7: components["schemas"]["Anon_02ecf48bed22_7"];
-        /** Format: date-time */
-        Anon_02ecf48bed22_7: string;
-        Anon_7af4e0f62fe5: components["schemas"]["AnalyticsCatalogConcept"][];
-        Anon_473e554f0735: components["schemas"]["Anon_c8d24748191b"];
-        Anon_492895348dbd_11: number;
-        Anon_cd76cef95ac8_1: string;
-        Anon_7e1c99abdd77_5: components["schemas"]["Anon_373775e26848_9"];
-        Anon_373775e26848_9: string;
-        Anon_7e1c99abdd77_6: components["schemas"]["Anon_373775e26848_10"];
-        Anon_373775e26848_10: string;
-        Anon_7e1c99abdd77_7: components["schemas"]["Anon_373775e26848_11"];
-        Anon_373775e26848_11: string;
-        Anon_33727e5081dd: components["schemas"]["Anon_88ba2f37575a"][];
-        Anon_88ba2f37575a: string;
-        Anon_d62061afe78d: components["schemas"]["AnalyticsAnalyticalUnit"][];
-        Anon_473e554f0735_1: components["schemas"]["Anon_c8d24748191b"];
-        Anon_2d080ce873f8: components["schemas"]["AnalyticsHistoricalMode"];
-        Anon_9d858dae66d4: components["schemas"]["Anon_c8d24748191b"][];
-        Anon_9d858dae66d4_1: components["schemas"]["Anon_c8d24748191b"][];
-        Anon_54e2154d1e2d: components["schemas"]["AnalyticsQueryFamily"][];
-        Anon_a3ffad10d15c_2: components["schemas"]["AnalyticsSourceScope"];
-        Anon_473e554f0735_2: components["schemas"]["Anon_c8d24748191b"];
-        Anon_8f09b448c37f: components["schemas"]["AnalyticsCatalogDeprecation"];
-        Anon_a2b04841bdf1_1: boolean;
-        Anon_473e554f0735_3: components["schemas"]["Anon_c8d24748191b"];
-        Anon_02464e23ff2d: components["schemas"]["AnalyticsCatalogDimension"][];
-        Anon_473e554f0735_4: components["schemas"]["Anon_c8d24748191b"];
-        Anon_cd76cef95ac8_2: string;
-        Anon_7e1c99abdd77_8: components["schemas"]["Anon_373775e26848_12"];
-        Anon_373775e26848_12: string;
-        Anon_7e1c99abdd77_9: components["schemas"]["Anon_373775e26848_13"];
-        Anon_373775e26848_13: string;
-        Anon_7e1c99abdd77_10: components["schemas"]["Anon_373775e26848_14"];
-        Anon_373775e26848_14: string;
-        Anon_8cca1c007123: components["schemas"]["AnalyticsDimensionType"];
-        Anon_ee64da9ff212: components["schemas"]["AnalyticsFilterOperator"][];
-        Anon_1461c1108c5a: components["schemas"]["AnalyticsFilterControl"];
-        Anon_9608bbcc8c3c: components["schemas"]["AnalyticsDimensionCapability"][];
-        Anon_60ea4f2fb8ec: components["schemas"]["AnalyticsCardinalityClass"];
-        /** @default unrestricted */
-        Anon_d2d465584350: components["schemas"]["AnalyticsClassification"];
-        Anon_2d080ce873f8_1: components["schemas"]["AnalyticsHistoricalMode"];
-        Anon_7587b25862b7: components["schemas"]["Anon_9ae2c7f4489d"];
-        Anon_9ae2c7f4489d: components["schemas"]["Anon_c8d24748191b"][];
+        Anon_fb248bf5a9f7_32: string;
+        Anon_57796118d046_65: string;
+        Anon_f7f3658e6095_2: string;
+        Anon_0c6209595eb3: components["schemas"]["AnalyticsViewVisibility"];
+        Anon_da99dad85270: components["schemas"]["Anon_9d742a18735a"];
+        Anon_9d742a18735a: string | null;
+        Anon_987b4efd36dc_1: components["schemas"]["Anon_01d5d54a2833_1"];
+        Anon_01d5d54a2833_1: number | null;
+        Anon_492895348dbd_12: number;
         /** @default false */
         Anon_062d958a93c4_17: components["schemas"]["Anon_7cb541e84f22_65"];
         Anon_7cb541e84f22_65: boolean;
-        Anon_8f09b448c37f_1: components["schemas"]["AnalyticsCatalogDeprecation"];
-        Anon_3f6610e7064e: components["schemas"]["AnalyticsCatalogMetric"][];
-        Anon_473e554f0735_5: components["schemas"]["Anon_c8d24748191b"];
-        Anon_cd76cef95ac8_3: string;
-        Anon_7e1c99abdd77_11: components["schemas"]["Anon_373775e26848_15"];
-        Anon_373775e26848_15: string;
-        Anon_7e1c99abdd77_12: components["schemas"]["Anon_373775e26848_16"];
-        Anon_373775e26848_16: string;
-        Anon_7e1c99abdd77_13: components["schemas"]["Anon_373775e26848_17"];
-        Anon_373775e26848_17: string;
-        Anon_65ce7e0d8aee: components["schemas"]["AnalyticsFieldType"];
-        Anon_7a61cd1caede: components["schemas"]["AnalyticsFormatSpec"];
-        /** @enum {string} */
-        Anon_94839c0509bd: "number" | "currency" | "percent" | "duration";
-        Anon_c896ad2c01f0: components["schemas"]["Anon_9137e04166d3"];
-        Anon_9137e04166d3: number;
-        Anon_fb9ddeea992e_8: components["schemas"]["Anon_7cb541e84f22_66"];
-        Anon_7cb541e84f22_66: boolean;
-        Anon_a3ffad10d15c_3: components["schemas"]["AnalyticsSourceScope"];
-        Anon_ca88983f41ae: components["schemas"]["AnalyticsMetricDirection"];
-        Anon_34eccd68143e: components["schemas"]["AnalyticsMetricStatisticalType"];
-        Anon_6a4e149367f5: components["schemas"]["AnalyticsMetricAggregationSemantics"];
-        Anon_612059bf001c_4: components["schemas"]["AnalyticsAnalyticalUnit"];
-        Anon_8f09b448c37f_2: components["schemas"]["AnalyticsCatalogDeprecation"];
-        Anon_0c649f0987df_2: string;
-        Anon_872e58432369_4: string;
-        Anon_57df4039d087: components["schemas"]["AnalyticsAgentCatalogEntry"][];
-        Anon_53c09eaf03ab_6: components["schemas"]["AnalyticsSemanticIdOutput"];
-        Anon_33085dabcc5b: components["schemas"]["AnalyticsAgentCatalogEntryKind"];
-        Anon_cd76cef95ac8_4: string;
-        Anon_439566ae782f: string;
-        Anon_7e1c99abdd77_14: components["schemas"]["Anon_373775e26848_18"];
-        Anon_373775e26848_18: string;
-        Anon_7e1c99abdd77_15: components["schemas"]["Anon_373775e26848_19"];
-        Anon_373775e26848_19: string;
-        Anon_65ce7e0d8aee_1: components["schemas"]["AnalyticsFieldType"];
-        Anon_7a61cd1caede_1: components["schemas"]["AnalyticsFormatSpec"];
-        Anon_7706669f91c3: components["schemas"]["Anon_65220c6dfe96"];
-        Anon_65220c6dfe96: components["schemas"]["AnalyticsDimensionCapability"][];
-        Anon_fa93268b3365_1: components["schemas"]["Anon_398b49f8c04a_2"];
-        Anon_398b49f8c04a_2: components["schemas"]["AnalyticsSemanticIdOutput"][];
-        Anon_0333fee54353: components["schemas"]["Anon_18f2c37a1cce"];
-        Anon_18f2c37a1cce: components["schemas"]["AnalyticsQueryFamily"][];
-        Anon_f4eb50803f77: components["schemas"]["Anon_34924af8d452"];
-        Anon_34924af8d452: components["schemas"]["AnalyticsAnalyticalUnit"][];
-        Anon_a3ffad10d15c_4: components["schemas"]["AnalyticsSourceScope"];
-        Anon_e648d024ff54: components["schemas"]["Anon_60f70effff39"];
-        Anon_60f70effff39: string;
-        Anon_8f09b448c37f_3: components["schemas"]["AnalyticsCatalogDeprecation"];
+        Anon_2c442fbfed9b: components["schemas"]["Anon_8c923fd28c9a"];
+        Anon_8c923fd28c9a: string | null;
+        Anon_57796118d046_66: string;
+        Anon_492895348dbd_13: number;
+        Anon_539fcc6d91b0: string;
+        Anon_0c649f0987df_1: string;
+        Anon_8a0d78353546: components["schemas"]["AnalyticsView"];
+        /** @constant */
+        Anon_983865dbfb22: "revturbine.analytics-view";
+        Anon_539fcc6d91b0_1: string;
         Anon_a42d262cd3ca_2: components["schemas"]["Anon_2b5910d5b25b_1"];
         Anon_2b5910d5b25b_1: string;
-        Anon_492895348dbd_12: number;
+        Anon_492895348dbd_14: number;
         Anon_08bc067910e8: components["schemas"]["LocalizedText"];
-        Anon_f7f3658e6095_2: string;
+        Anon_f7f3658e6095_3: string;
         Anon_1a96b72f6169: components["schemas"]["Anon_d6e25d5c4e0e"];
         Anon_d6e25d5c4e0e: string;
         Anon_08bc067910e8_1: components["schemas"]["LocalizedText"];
-        Anon_492895348dbd_13: number;
-        /** @constant */
-        Anon_983865dbfb22: "revturbine.analytics-view";
-        Anon_539fcc6d91b0: string;
-        Anon_a42d262cd3ca_3: components["schemas"]["Anon_2b5910d5b25b_2"];
-        Anon_2b5910d5b25b_2: string;
-        Anon_492895348dbd_14: number;
-        Anon_08bc067910e8_2: components["schemas"]["LocalizedText"];
-        Anon_08bc067910e8_3: components["schemas"]["LocalizedText"];
         Anon_612059bf001c_5: components["schemas"]["AnalyticsAnalyticalUnit"];
         Anon_42ca9dcfc804: components["schemas"]["Anon_05b3b35d7734"];
         Anon_05b3b35d7734: {
-            id: components["schemas"]["Anon_2b5910d5b25b_2"];
+            id: components["schemas"]["Anon_2b5910d5b25b_1"];
             version: number;
         };
-        Anon_0c649f0987df_3: string;
+        Anon_0c649f0987df_2: string;
         Anon_f5bc4b9c7cf3: components["schemas"]["AnalyticsViewFilter"][];
-        Anon_a42d262cd3ca_4: components["schemas"]["Anon_2b5910d5b25b_2"];
-        Anon_473e554f0735_6: components["schemas"]["Anon_c8d24748191b"];
-        Anon_1461c1108c5a_1: components["schemas"]["AnalyticsFilterControl"];
-        Anon_08bc067910e8_4: components["schemas"]["LocalizedText"];
-        Anon_ee64da9ff212_1: components["schemas"]["AnalyticsFilterOperator"][];
+        Anon_a42d262cd3ca_3: components["schemas"]["Anon_2b5910d5b25b_1"];
+        Anon_473e554f0735: components["schemas"]["Anon_c8d24748191b"];
+        Anon_1461c1108c5a: components["schemas"]["AnalyticsFilterControl"];
+        Anon_08bc067910e8_2: components["schemas"]["LocalizedText"];
+        Anon_ee64da9ff212: components["schemas"]["AnalyticsFilterOperator"][];
         Anon_972936582d54: components["schemas"]["AnalyticsFilterValueOutput"];
         Anon_db3039b96a51_1: string | number | boolean | null;
         Anon_32ef433f4ee4_1: components["schemas"]["Anon_db3039b96a51_1"][];
@@ -4907,20 +4968,20 @@ export interface components {
             compare?: components["schemas"]["AnalyticsCompareMode"];
         };
         Anon_6dcff20eb273_1: {
-            min?: components["schemas"]["Anon_cddf8275afa1_14"];
-            max?: components["schemas"]["Anon_cddf8275afa1_15"];
+            min?: components["schemas"]["Anon_cddf8275afa1_15"];
+            max?: components["schemas"]["Anon_cddf8275afa1_16"];
         };
-        Anon_cddf8275afa1_14: number;
         Anon_cddf8275afa1_15: number;
+        Anon_cddf8275afa1_16: number;
         /** @default false */
-        Anon_062d958a93c4_18: components["schemas"]["Anon_7cb541e84f22_67"];
+        Anon_062d958a93c4_18: components["schemas"]["Anon_7cb541e84f22_66"];
+        Anon_7cb541e84f22_66: boolean;
+        /** @default false */
+        Anon_062d958a93c4_19: components["schemas"]["Anon_7cb541e84f22_67"];
         Anon_7cb541e84f22_67: boolean;
-        /** @default false */
-        Anon_062d958a93c4_19: components["schemas"]["Anon_7cb541e84f22_68"];
-        Anon_7cb541e84f22_68: boolean;
         /** @default all */
         Anon_e4e72df2ab85: components["schemas"]["Anon_058312df93ef"];
-        Anon_058312df93ef: "all" | components["schemas"]["Anon_2b5910d5b25b_2"][];
+        Anon_058312df93ef: "all" | components["schemas"]["Anon_2b5910d5b25b_1"][];
         Anon_a99ad7aecf25: components["schemas"]["AnalyticsViewLayout"];
         /** @constant */
         Anon_322aa249f2e5: "grid";
@@ -4929,32 +4990,32 @@ export interface components {
         Anon_a774bc6df013: number;
         Anon_1413a3a717f4: components["schemas"]["Anon_d2fe6b60c505"][];
         Anon_d2fe6b60c505: {
-            block_id: components["schemas"]["Anon_2b5910d5b25b_2"];
+            block_id: components["schemas"]["Anon_2b5910d5b25b_1"];
             x: number;
             y: number;
             w: number;
             h: number;
         };
         Anon_1045ab243378: components["schemas"]["AnalyticsViewBlock"][];
-        Anon_a42d262cd3ca_5: components["schemas"]["Anon_2b5910d5b25b_2"];
-        Anon_08bc067910e8_5: components["schemas"]["LocalizedText"];
-        Anon_08bc067910e8_6: components["schemas"]["LocalizedText"];
+        Anon_a42d262cd3ca_4: components["schemas"]["Anon_2b5910d5b25b_1"];
+        Anon_08bc067910e8_3: components["schemas"]["LocalizedText"];
+        Anon_08bc067910e8_4: components["schemas"]["LocalizedText"];
         Anon_e9ffed65fc4f: components["schemas"]["AnalyticsViewQuery"];
-        Anon_473e554f0735_7: components["schemas"]["Anon_c8d24748191b"];
+        Anon_473e554f0735_1: components["schemas"]["Anon_c8d24748191b"];
         Anon_a9324c0abdd2: components["schemas"]["AnalyticsQueryFamily"];
         Anon_515e808fd802: components["schemas"]["Anon_c8d24748191b"][];
-        Anon_36fc42275aaf: components["schemas"]["Anon_586f6421b33a"];
-        Anon_586f6421b33a: components["schemas"]["Anon_c8d24748191b"][];
+        Anon_e8dea5d0d6ba: components["schemas"]["Anon_fbf3d4b49408"];
+        Anon_fbf3d4b49408: components["schemas"]["Anon_c8d24748191b"][];
         Anon_ad21ab4a74dd: components["schemas"]["Anon_8a21984bbb3e"];
         Anon_8a21984bbb3e: {
             dimension: components["schemas"]["Anon_c8d24748191b"];
             grain: components["schemas"]["AnalyticsTimeGrain"];
         };
         Anon_f02dd988a13b: components["schemas"]["Anon_4bef69eb6f78"];
-        Anon_4bef69eb6f78: components["schemas"]["Anon_2b5910d5b25b_2"][];
+        Anon_4bef69eb6f78: components["schemas"]["Anon_2b5910d5b25b_1"][];
         Anon_6529c678041a: components["schemas"]["Anon_8833dcf1530e"];
         Anon_8833dcf1530e: components["schemas"]["AnalyticsSemanticFilter"][];
-        Anon_473e554f0735_8: components["schemas"]["Anon_c8d24748191b"];
+        Anon_473e554f0735_2: components["schemas"]["Anon_c8d24748191b"];
         Anon_307923732876: components["schemas"]["AnalyticsFilterOperator"];
         Anon_972936582d54_1: components["schemas"]["AnalyticsFilterValueOutput"];
         Anon_7e61734f9a3b: components["schemas"]["AnalyticsCompareMode"];
@@ -4970,24 +5031,30 @@ export interface components {
         Anon_93132f30dbdc: components["schemas"]["AnalyticsRenderSpec"];
         /** @constant */
         Anon_8fb827c920bd: "metric";
-        Anon_473e554f0735_9: components["schemas"]["Anon_c8d24748191b"];
-        Anon_473e554f0735_10: components["schemas"]["Anon_c8d24748191b"];
-        Anon_7a61cd1caede_2: components["schemas"]["AnalyticsFormatSpec"];
+        Anon_473e554f0735_3: components["schemas"]["Anon_c8d24748191b"];
+        Anon_473e554f0735_4: components["schemas"]["Anon_c8d24748191b"];
+        Anon_7a61cd1caede: components["schemas"]["AnalyticsFormatSpec"];
+        /** @enum {string} */
+        Anon_94839c0509bd: "number" | "currency" | "percent" | "duration";
+        Anon_c896ad2c01f0: components["schemas"]["Anon_9137e04166d3"];
+        Anon_9137e04166d3: number;
+        Anon_fb9ddeea992e_8: components["schemas"]["Anon_7cb541e84f22_68"];
+        Anon_7cb541e84f22_68: boolean;
         /** @constant */
         Anon_6a0a611546eb: "cartesian";
         /** @enum {string} */
         Anon_4596ecf7ed9b: "line" | "area" | "bar" | "stacked_bar" | "scatter";
         Anon_23f8fbab2ab7: {
-            x: components["schemas"]["Anon_473e554f0735_11"];
+            x: components["schemas"]["Anon_473e554f0735_5"];
             y: components["schemas"]["Anon_d1dc6392d0ad"];
-            color?: components["schemas"]["Anon_473e554f0735_12"];
-            facet?: components["schemas"]["Anon_473e554f0735_13"];
+            color?: components["schemas"]["Anon_473e554f0735_6"];
+            facet?: components["schemas"]["Anon_473e554f0735_7"];
         };
-        Anon_473e554f0735_11: components["schemas"]["Anon_c8d24748191b"];
+        Anon_473e554f0735_5: components["schemas"]["Anon_c8d24748191b"];
         Anon_d1dc6392d0ad: components["schemas"]["Anon_c8d24748191b"] | components["schemas"]["Anon_df2d03245c9c"];
         Anon_df2d03245c9c: components["schemas"]["Anon_c8d24748191b"][];
-        Anon_473e554f0735_12: components["schemas"]["Anon_c8d24748191b"];
-        Anon_473e554f0735_13: components["schemas"]["Anon_c8d24748191b"];
+        Anon_473e554f0735_6: components["schemas"]["Anon_c8d24748191b"];
+        Anon_473e554f0735_7: components["schemas"]["Anon_c8d24748191b"];
         Anon_bb36a31f18a0: components["schemas"]["AnalyticsSafeChartOptions"];
         Anon_62bb63262a64: components["schemas"]["Anon_c38ae879d781"];
         /** @enum {string} */
@@ -5000,31 +5067,31 @@ export interface components {
             value: number;
             label?: components["schemas"]["LocalizedText"];
         };
-        Anon_7a61cd1caede_3: components["schemas"]["AnalyticsFormatSpec"];
-        Anon_7a61cd1caede_4: components["schemas"]["AnalyticsFormatSpec"];
+        Anon_7a61cd1caede_1: components["schemas"]["AnalyticsFormatSpec"];
+        Anon_7a61cd1caede_2: components["schemas"]["AnalyticsFormatSpec"];
         Anon_454ddba6bb69: components["schemas"]["Anon_2bb3e16615e3"];
         /** @enum {string} */
         Anon_2bb3e16615e3: "blank" | "message";
         /** @constant */
         Anon_4ad47adc46d9: "funnel";
         Anon_5142ac15e995: components["schemas"]["Anon_c8d24748191b"][];
-        Anon_473e554f0735_14: components["schemas"]["Anon_c8d24748191b"];
+        Anon_473e554f0735_8: components["schemas"]["Anon_c8d24748191b"];
         /** @constant */
         Anon_51f96765fc39: "table";
         Anon_57f1cc33beca: components["schemas"]["Anon_c8d24748191b"][];
         /** @constant */
         Anon_e86dab68695b: "timeline";
-        Anon_473e554f0735_15: components["schemas"]["Anon_c8d24748191b"];
-        Anon_473e554f0735_16: components["schemas"]["Anon_c8d24748191b"];
+        Anon_473e554f0735_9: components["schemas"]["Anon_c8d24748191b"];
+        Anon_473e554f0735_10: components["schemas"]["Anon_c8d24748191b"];
         /** @constant */
         Anon_7a9a47851ff5: "recommendations";
         /** @enum {string} */
         Anon_1a1a436f6c9f: "list" | "ranked_cards";
         Anon_085d58b82580: components["schemas"]["Anon_04c4cd8be94e"];
         Anon_04c4cd8be94e: components["schemas"]["AnalyticsViewHandoff"][];
-        Anon_a42d262cd3ca_6: components["schemas"]["Anon_2b5910d5b25b_2"];
-        Anon_08bc067910e8_7: components["schemas"]["LocalizedText"];
-        Anon_473e554f0735_17: components["schemas"]["Anon_c8d24748191b"];
+        Anon_a42d262cd3ca_5: components["schemas"]["Anon_2b5910d5b25b_1"];
+        Anon_08bc067910e8_5: components["schemas"]["LocalizedText"];
+        Anon_473e554f0735_11: components["schemas"]["Anon_c8d24748191b"];
         /** @default {} */
         Anon_14b6bcad70d8: components["schemas"]["Anon_b44800f4a886"];
         Anon_b44800f4a886: {
@@ -5037,11 +5104,125 @@ export interface components {
         /** @default [] */
         Anon_0c549228e81e_1: components["schemas"]["Anon_e53090f139b7_1"];
         Anon_e53090f139b7_1: components["schemas"]["AnalyticsCustomizationCapability"][];
-        Anon_a42d262cd3ca_7: components["schemas"]["Anon_2b5910d5b25b_1"];
+        Anon_89e74b579cb7: string;
+        Anon_57796118d046_67: string;
+        /** Format: date-time */
+        Anon_be3e2585472d_8: string;
+        Anon_57796118d046_68: string;
+        Anon_49526ff098b2: string;
+        Anon_57796118d046_69: string;
+        Anon_49ac461d2029: components["schemas"]["AnalyticsViewAccessRole"];
+        Anon_0c649f0987df_3: string;
+        Anon_58595c887e8e: components["schemas"]["AnalyticsCatalogSource"];
+        Anon_e077e17ea982_7: components["schemas"]["Anon_02ecf48bed22_7"];
+        /** Format: date-time */
+        Anon_02ecf48bed22_7: string;
+        Anon_9af7148e8624: components["schemas"]["Anon_cb7e0dd428ab"];
+        Anon_cb7e0dd428ab: components["schemas"]["AnalyticsCatalogProvenance"][];
+        Anon_f09baf95c30f: components["schemas"]["AnalyticsCatalogProvenanceKind"];
+        Anon_8aa2c848efaf: string;
+        Anon_e17de468dbc9_11: components["schemas"]["Anon_520c691f88f7_11"];
+        Anon_520c691f88f7_11: string;
+        Anon_274ba4ca49d5_19: number;
+        Anon_7af4e0f62fe5: components["schemas"]["AnalyticsCatalogConcept"][];
+        Anon_473e554f0735_12: components["schemas"]["Anon_c8d24748191b"];
         Anon_492895348dbd_15: number;
+        Anon_cd76cef95ac8_1: string;
+        Anon_7e1c99abdd77_5: components["schemas"]["Anon_373775e26848_9"];
+        Anon_373775e26848_9: string;
+        Anon_7e1c99abdd77_6: components["schemas"]["Anon_373775e26848_10"];
+        Anon_373775e26848_10: string;
+        Anon_7e1c99abdd77_7: components["schemas"]["Anon_373775e26848_11"];
+        Anon_373775e26848_11: string;
+        Anon_33727e5081dd: components["schemas"]["Anon_88ba2f37575a"][];
+        Anon_88ba2f37575a: string;
+        Anon_d62061afe78d: components["schemas"]["AnalyticsAnalyticalUnit"][];
+        Anon_473e554f0735_13: components["schemas"]["Anon_c8d24748191b"];
+        Anon_2d080ce873f8: components["schemas"]["AnalyticsHistoricalMode"];
+        Anon_9d858dae66d4: components["schemas"]["Anon_c8d24748191b"][];
+        Anon_9d858dae66d4_1: components["schemas"]["Anon_c8d24748191b"][];
+        Anon_54e2154d1e2d: components["schemas"]["AnalyticsQueryFamily"][];
+        Anon_a3ffad10d15c_2: components["schemas"]["AnalyticsSourceScope"];
+        Anon_473e554f0735_14: components["schemas"]["Anon_c8d24748191b"];
+        Anon_8f09b448c37f: components["schemas"]["AnalyticsCatalogDeprecation"];
+        Anon_a2b04841bdf1_1: boolean;
+        Anon_473e554f0735_15: components["schemas"]["Anon_c8d24748191b"];
+        Anon_02464e23ff2d: components["schemas"]["AnalyticsCatalogDimension"][];
+        Anon_473e554f0735_16: components["schemas"]["Anon_c8d24748191b"];
+        Anon_cd76cef95ac8_2: string;
+        Anon_7e1c99abdd77_8: components["schemas"]["Anon_373775e26848_12"];
+        Anon_373775e26848_12: string;
+        Anon_7e1c99abdd77_9: components["schemas"]["Anon_373775e26848_13"];
+        Anon_373775e26848_13: string;
+        Anon_7e1c99abdd77_10: components["schemas"]["Anon_373775e26848_14"];
+        Anon_373775e26848_14: string;
+        Anon_8cca1c007123: components["schemas"]["AnalyticsDimensionType"];
+        Anon_ee64da9ff212_1: components["schemas"]["AnalyticsFilterOperator"][];
+        Anon_1461c1108c5a_1: components["schemas"]["AnalyticsFilterControl"];
+        Anon_9608bbcc8c3c: components["schemas"]["AnalyticsDimensionCapability"][];
+        Anon_60ea4f2fb8ec: components["schemas"]["AnalyticsCardinalityClass"];
+        /** @default unrestricted */
+        Anon_d2d465584350: components["schemas"]["AnalyticsClassification"];
+        Anon_2d080ce873f8_1: components["schemas"]["AnalyticsHistoricalMode"];
+        Anon_7587b25862b7: components["schemas"]["Anon_9ae2c7f4489d"];
+        Anon_9ae2c7f4489d: components["schemas"]["Anon_c8d24748191b"][];
+        /** @default false */
+        Anon_062d958a93c4_20: components["schemas"]["Anon_7cb541e84f22_70"];
+        Anon_7cb541e84f22_70: boolean;
+        Anon_8f09b448c37f_1: components["schemas"]["AnalyticsCatalogDeprecation"];
+        Anon_3f6610e7064e: components["schemas"]["AnalyticsCatalogMetric"][];
+        Anon_473e554f0735_17: components["schemas"]["Anon_c8d24748191b"];
+        Anon_cd76cef95ac8_3: string;
+        Anon_7e1c99abdd77_11: components["schemas"]["Anon_373775e26848_15"];
+        Anon_373775e26848_15: string;
+        Anon_7e1c99abdd77_12: components["schemas"]["Anon_373775e26848_16"];
+        Anon_373775e26848_16: string;
+        Anon_7e1c99abdd77_13: components["schemas"]["Anon_373775e26848_17"];
+        Anon_373775e26848_17: string;
+        Anon_65ce7e0d8aee: components["schemas"]["AnalyticsFieldType"];
+        Anon_7a61cd1caede_3: components["schemas"]["AnalyticsFormatSpec"];
+        Anon_a3ffad10d15c_3: components["schemas"]["AnalyticsSourceScope"];
+        Anon_ca88983f41ae: components["schemas"]["AnalyticsMetricDirection"];
+        Anon_34eccd68143e: components["schemas"]["AnalyticsMetricStatisticalType"];
+        Anon_6a4e149367f5: components["schemas"]["AnalyticsMetricAggregationSemantics"];
+        Anon_612059bf001c_6: components["schemas"]["AnalyticsAnalyticalUnit"];
+        Anon_8f09b448c37f_2: components["schemas"]["AnalyticsCatalogDeprecation"];
         Anon_0c649f0987df_4: string;
+        Anon_872e58432369_4: string;
+        Anon_57df4039d087: components["schemas"]["AnalyticsAgentCatalogEntry"][];
+        Anon_53c09eaf03ab_7: components["schemas"]["AnalyticsSemanticIdOutput"];
+        Anon_33085dabcc5b: components["schemas"]["AnalyticsAgentCatalogEntryKind"];
+        Anon_cd76cef95ac8_4: string;
+        Anon_439566ae782f: string;
+        Anon_7e1c99abdd77_14: components["schemas"]["Anon_373775e26848_18"];
+        Anon_373775e26848_18: string;
+        Anon_7e1c99abdd77_15: components["schemas"]["Anon_373775e26848_19"];
+        Anon_373775e26848_19: string;
+        Anon_65ce7e0d8aee_1: components["schemas"]["AnalyticsFieldType"];
+        Anon_7a61cd1caede_4: components["schemas"]["AnalyticsFormatSpec"];
+        Anon_7706669f91c3: components["schemas"]["Anon_65220c6dfe96"];
+        Anon_65220c6dfe96: components["schemas"]["AnalyticsDimensionCapability"][];
+        Anon_fa93268b3365_1: components["schemas"]["Anon_398b49f8c04a_2"];
+        Anon_398b49f8c04a_2: components["schemas"]["AnalyticsSemanticIdOutput"][];
+        Anon_0333fee54353: components["schemas"]["Anon_18f2c37a1cce"];
+        Anon_18f2c37a1cce: components["schemas"]["AnalyticsQueryFamily"][];
+        Anon_f4eb50803f77: components["schemas"]["Anon_34924af8d452"];
+        Anon_34924af8d452: components["schemas"]["AnalyticsAnalyticalUnit"][];
+        Anon_a3ffad10d15c_4: components["schemas"]["AnalyticsSourceScope"];
+        Anon_e648d024ff54: components["schemas"]["Anon_60f70effff39"];
+        Anon_60f70effff39: string;
+        Anon_8f09b448c37f_3: components["schemas"]["AnalyticsCatalogDeprecation"];
+        Anon_a42d262cd3ca_6: components["schemas"]["Anon_2b5910d5b25b_2"];
+        Anon_2b5910d5b25b_2: string;
+        Anon_492895348dbd_16: number;
+        Anon_08bc067910e8_6: components["schemas"]["LocalizedText"];
+        Anon_08bc067910e8_7: components["schemas"]["LocalizedText"];
+        Anon_492895348dbd_17: number;
+        Anon_a42d262cd3ca_7: components["schemas"]["Anon_2b5910d5b25b_2"];
+        Anon_492895348dbd_18: number;
+        Anon_0c649f0987df_5: string;
         Anon_d1ee5d662ae8: components["schemas"]["AnalyticsBlockResult"][];
-        Anon_a42d262cd3ca_8: components["schemas"]["Anon_2b5910d5b25b_1"];
+        Anon_a42d262cd3ca_8: components["schemas"]["Anon_2b5910d5b25b_2"];
         Anon_56fff7881fad: components["schemas"]["AnalyticsResult"];
         Anon_9835348a971c: components["schemas"]["Anon_c65c1fbd5acf_20"][];
         Anon_c65c1fbd5acf_20: {
@@ -5054,15 +5235,15 @@ export interface components {
         Anon_de5c7379be05: components["schemas"]["AnalyticsResultMeta"];
         Anon_4e975b8486b2_1: string;
         Anon_473e554f0735_19: components["schemas"]["Anon_c8d24748191b"];
-        Anon_612059bf001c_6: components["schemas"]["AnalyticsAnalyticalUnit"];
+        Anon_612059bf001c_7: components["schemas"]["AnalyticsAnalyticalUnit"];
         Anon_a3ffad10d15c_5: components["schemas"]["AnalyticsSourceScope"];
         Anon_46875cb51ec3: components["schemas"]["AnalyticsCoverage"];
-        Anon_274ba4ca49d5_19: number;
         Anon_274ba4ca49d5_20: number;
-        Anon_2b7ce0f730b2_4: number;
+        Anon_274ba4ca49d5_21: number;
+        Anon_2b7ce0f730b2_5: number;
         /** Format: date-time */
         Anon_3c179513a5d9_12: string;
-        Anon_274ba4ca49d5_21: number;
+        Anon_274ba4ca49d5_22: number;
         /** @default [] */
         Anon_0d4ef59d2c98: components["schemas"]["Anon_6ea935a5b555"];
         Anon_6ea935a5b555: components["schemas"]["AnalyticsSemanticFilter"][];
@@ -5076,7 +5257,7 @@ export interface components {
         /** @default [] */
         Anon_d9d8133c6dc1: components["schemas"]["Anon_a04fa2038c3e"];
         Anon_a04fa2038c3e: components["schemas"]["AnalyticsBlockError"][];
-        Anon_a42d262cd3ca_9: components["schemas"]["Anon_2b5910d5b25b_1"];
+        Anon_a42d262cd3ca_9: components["schemas"]["Anon_2b5910d5b25b_2"];
         Anon_52d01828671f_1: string;
         Anon_439566ae782f_2: string;
         Anon_4c26b3baab05_28: components["schemas"]["Anon_52ba84a4bbf3_2"];
@@ -5088,8 +5269,8 @@ export interface components {
         Anon_af12d548dbee_39: components["schemas"]["Anon_0eb2e3b6e08c_1"];
         Anon_ee9224780226_8: components["schemas"]["Anon_853cc883e392_1"];
         /** @default false */
-        Anon_4dc549443053_7: components["schemas"]["Anon_7cb541e84f22_70"];
-        Anon_7cb541e84f22_70: boolean;
+        Anon_4dc549443053_7: components["schemas"]["Anon_7cb541e84f22_71"];
+        Anon_7cb541e84f22_71: boolean;
         /** @default active */
         Anon_0dd6689843fe: components["schemas"]["EnvironmentStatus"];
         /** @default null */
@@ -5100,15 +5281,15 @@ export interface components {
         Anon_f11abbefcf83: components["schemas"]["Anon_c648138a0918_10"];
         Anon_c648138a0918_10: number | null;
         /** @default false */
-        Anon_062d958a93c4_20: components["schemas"]["Anon_7cb541e84f22_71"];
-        Anon_7cb541e84f22_71: boolean;
-        /** @default false */
         Anon_062d958a93c4_21: components["schemas"]["Anon_7cb541e84f22_72"];
         Anon_7cb541e84f22_72: boolean;
+        /** @default false */
+        Anon_062d958a93c4_22: components["schemas"]["Anon_7cb541e84f22_73"];
+        Anon_7cb541e84f22_73: boolean;
         Anon_96f9066c2fdc_60: components["schemas"]["Anon_00404e686415_64"];
         Anon_00404e686415_64: string;
         Anon_f27cb44c32f6_33: components["schemas"]["Anon_f2d1b3e449b4_1"];
-        Anon_57796118d046_65: string;
+        Anon_57796118d046_70: string;
         Anon_4c26b3baab05_30: components["schemas"]["Anon_52ba84a4bbf3_2"];
         Anon_e648d024ff54_1: components["schemas"]["Anon_60f70effff39_1"];
         Anon_60f70effff39_1: string;
@@ -5117,7 +5298,7 @@ export interface components {
         /** @default [] */
         Anon_f8dbfffc0ce2_23: components["schemas"]["Anon_681004346c78_28"];
         Anon_681004346c78_28: string[];
-        Anon_57796118d046_66: string;
+        Anon_57796118d046_71: string;
         /** @default null */
         Anon_7f83d3357e9c_1: components["schemas"]["Anon_f090cb615c84_41"];
         Anon_f090cb615c84_41: string | null;
@@ -5159,9 +5340,9 @@ export interface components {
         Anon_f090cb615c84_46: string | null;
         Anon_f27cb44c32f6_34: components["schemas"]["Anon_f2d1b3e449b4_1"];
         Anon_127eb78cd9c0_8: string;
-        Anon_274ba4ca49d5_22: number;
         Anon_274ba4ca49d5_23: number;
         Anon_274ba4ca49d5_24: number;
+        Anon_274ba4ca49d5_25: number;
         /** Format: date-time */
         Anon_3c179513a5d9_13: string;
         Anon_127eb78cd9c0_9: string;
@@ -5173,8 +5354,8 @@ export interface components {
         /** @enum {string} */
         Anon_2dd4ddc8b727: "create" | "update" | "delete";
         Anon_a2b04841bdf1_3: boolean;
-        Anon_274ba4ca49d5_25: number;
         Anon_274ba4ca49d5_26: number;
+        Anon_274ba4ca49d5_27: number;
         Anon_a2b04841bdf1_4: boolean;
         Anon_4c26b3baab05_31: components["schemas"]["Anon_52ba84a4bbf3_2"];
         Anon_9f5eba431f05: string;
@@ -5184,7 +5365,7 @@ export interface components {
         Anon_669ca3b468dc: components["schemas"]["ApiKeyStatus"];
         Anon_24a0ac3f017b_4: components["schemas"]["Anon_11c9ad639448_1"];
         Anon_711dc9708535_17: components["schemas"]["Anon_11c9ad639448_1"];
-        Anon_3b8fc1cd9e8b_21: string;
+        Anon_3b8fc1cd9e8b_20: string;
         /** @default boolean */
         Anon_95bcb0caba53_1: components["schemas"]["FlagValueType"];
         /** @default false */
@@ -5192,8 +5373,8 @@ export interface components {
         Anon_1c33d69dbfa9_1: string;
         Anon_ee9224780226_9: components["schemas"]["Anon_853cc883e392_1"];
         /** @default true */
-        Anon_493deecc809a_15: components["schemas"]["Anon_7cb541e84f22_73"];
-        Anon_7cb541e84f22_73: boolean;
+        Anon_493deecc809a_15: components["schemas"]["Anon_7cb541e84f22_74"];
+        Anon_7cb541e84f22_74: boolean;
         Anon_872e58432369_5: string;
         /** @default null */
         Anon_7dbd1de5e9ee: components["schemas"]["Anon_39a43881005e_2"];
@@ -5208,39 +5389,39 @@ export interface components {
         Anon_4ea2be32d6f6: components["schemas"]["Anon_0401cc56cccf_1"];
         Anon_0401cc56cccf_1: string | null;
         /** @default 30 */
-        Anon_cc13e27bffac: components["schemas"]["Anon_ea288f4ef558_17"];
-        Anon_ea288f4ef558_17: number;
+        Anon_cc13e27bffac: components["schemas"]["Anon_ea288f4ef558_16"];
+        Anon_ea288f4ef558_16: number;
         /** @default 10 */
-        Anon_22f56f3bbe54: components["schemas"]["Anon_ea288f4ef558_18"];
-        Anon_ea288f4ef558_18: number;
+        Anon_22f56f3bbe54: components["schemas"]["Anon_ea288f4ef558_17"];
+        Anon_ea288f4ef558_17: number;
         /** @default 3 */
-        Anon_e569072f1780: components["schemas"]["Anon_ea288f4ef558_19"];
-        Anon_ea288f4ef558_19: number;
+        Anon_e569072f1780: components["schemas"]["Anon_ea288f4ef558_18"];
+        Anon_ea288f4ef558_18: number;
         /** @default 1 */
-        Anon_d7461958625e_2: components["schemas"]["Anon_ea288f4ef558_20"];
-        Anon_ea288f4ef558_20: number;
+        Anon_d7461958625e_2: components["schemas"]["Anon_ea288f4ef558_19"];
+        Anon_ea288f4ef558_19: number;
         /** @default 365 */
-        Anon_1264693bdb59: components["schemas"]["Anon_ea288f4ef558_21"];
-        Anon_ea288f4ef558_21: number;
+        Anon_1264693bdb59: components["schemas"]["Anon_ea288f4ef558_20"];
+        Anon_ea288f4ef558_20: number;
         /** Format: uri */
         Anon_e263ce55cb2f: string;
         /** @default null */
         Anon_26f9ae47e188: components["schemas"]["Anon_f5f914e20719_1"];
         Anon_f5f914e20719_1: string | null;
         /** @default false */
-        Anon_062d958a93c4_22: components["schemas"]["Anon_7cb541e84f22_74"];
-        Anon_7cb541e84f22_74: boolean;
+        Anon_062d958a93c4_23: components["schemas"]["Anon_7cb541e84f22_75"];
+        Anon_7cb541e84f22_75: boolean;
         /** @default [] */
         Anon_39888a32a8f7: components["schemas"]["Anon_7618621a871f_1"];
         Anon_7618621a871f_1: string[];
         /** @default false */
-        Anon_062d958a93c4_23: components["schemas"]["Anon_7cb541e84f22_75"];
-        Anon_7cb541e84f22_75: boolean;
-        Anon_3b8fc1cd9e8b_22: string;
-        Anon_872e58432369_6: string;
-        /** @default false */
         Anon_062d958a93c4_24: components["schemas"]["Anon_7cb541e84f22_76"];
         Anon_7cb541e84f22_76: boolean;
+        Anon_3b8fc1cd9e8b_21: string;
+        Anon_872e58432369_6: string;
+        /** @default false */
+        Anon_062d958a93c4_25: components["schemas"]["Anon_7cb541e84f22_77"];
+        Anon_7cb541e84f22_77: boolean;
         Anon_24a0ac3f017b_5: components["schemas"]["Anon_11c9ad639448_1"];
         /** @default production */
         Anon_a2f8ac1ffbf6: components["schemas"]["Anon_9ac136edb99a_25"];
@@ -5262,7 +5443,7 @@ export interface components {
             [key: string]: unknown;
         } | null;
         /** Format: date-time */
-        Anon_be3e2585472d_8: string;
+        Anon_be3e2585472d_9: string;
         Anon_2457cccd64aa_12: components["schemas"]["Anon_0eb2e3b6e08c_1"];
         Anon_872e58432369_7: string;
         /** @default user_id */
@@ -5288,9 +5469,9 @@ export interface components {
         /** @default {} */
         Anon_6b38be8d7409: components["schemas"]["Anon_b6fc00bafe95"];
         Anon_b6fc00bafe95: {
-            [key: string]: components["schemas"]["Anon_ea288f4ef558_22"][];
+            [key: string]: components["schemas"]["Anon_ea288f4ef558_21"][];
         };
-        Anon_ea288f4ef558_22: number;
+        Anon_ea288f4ef558_21: number;
         /** @default null */
         Anon_8f1996a1f1f2_2: components["schemas"]["Anon_bd30afa229b5_3"];
         Anon_bd30afa229b5_3: string | null;
@@ -5301,14 +5482,14 @@ export interface components {
         Anon_0b3d9fcf2af0_1: components["schemas"]["Anon_37b7e7536a56_1"];
         Anon_37b7e7536a56_1: number;
         /** @default 300000 */
-        Anon_6811d86d4103_1: components["schemas"]["Anon_ea288f4ef558_23"];
-        Anon_ea288f4ef558_23: number;
+        Anon_6811d86d4103_1: components["schemas"]["Anon_ea288f4ef558_22"];
+        Anon_ea288f4ef558_22: number;
         /** @default 3 */
         Anon_7655e793cbe5_1: components["schemas"]["Anon_e238f277e0a0_1"];
         Anon_e238f277e0a0_1: number;
-        Anon_274ba4ca49d5_27: number;
+        Anon_274ba4ca49d5_28: number;
         Anon_0b2583b9b222: components["schemas"]["IngestedEvent"][];
-        Anon_57796118d046_67: string;
+        Anon_57796118d046_72: string;
         /** @default sdk */
         Anon_eabbbb727ad3: components["schemas"]["EventSource"];
         Anon_4e04ec5cc4e6_17: components["schemas"]["Anon_9ac136edb99a_26"];
@@ -5319,7 +5500,7 @@ export interface components {
         Anon_9ac136edb99a_28: string;
         /** Format: date-time */
         Anon_3c179513a5d9_14: string;
-        Anon_57796118d046_68: string;
+        Anon_57796118d046_73: string;
         /** @default {} */
         Anon_5142f8473790_13: components["schemas"]["Anon_c65c1fbd5acf_21"];
         Anon_c65c1fbd5acf_21: {
@@ -5332,12 +5513,12 @@ export interface components {
         };
         /** Format: date-time */
         Anon_3c179513a5d9_15: string;
-        Anon_274ba4ca49d5_28: number;
-        Anon_492895348dbd_16: number;
-        Anon_492895348dbd_17: number;
+        Anon_274ba4ca49d5_29: number;
+        Anon_492895348dbd_19: number;
+        Anon_492895348dbd_20: number;
         Anon_a2b04841bdf1_5: boolean;
-        Anon_57796118d046_69: string;
-        Anon_57796118d046_70: string;
+        Anon_57796118d046_74: string;
+        Anon_57796118d046_75: string;
         Anon_cb4b0a4af297_1: components["schemas"]["WebhookEventSource"];
         /** @default {} */
         Anon_5142f8473790_15: components["schemas"]["Anon_c65c1fbd5acf_23"];
@@ -5361,8 +5542,8 @@ export interface components {
         Anon_4e04ec5cc4e6_18: components["schemas"]["Anon_9ac136edb99a_29"];
         Anon_9ac136edb99a_29: string;
         Anon_f104771c9d3e: components["schemas"]["UserPlanContextOutput"];
-        Anon_57796118d046_71: string;
-        Anon_57796118d046_72: string;
+        Anon_57796118d046_76: string;
+        Anon_57796118d046_77: string;
         Anon_96f9066c2fdc_64: components["schemas"]["Anon_00404e686415_68"];
         Anon_00404e686415_68: string;
         Anon_420b7fe77e22_1: components["schemas"]["Anon_4b89646ddc87_1"];
@@ -5373,8 +5554,8 @@ export interface components {
         Anon_405406c799d8: {
             [key: string]: components["schemas"]["UserUsageEntryOutput"];
         };
-        Anon_57796118d046_73: string;
-        Anon_57796118d046_74: string;
+        Anon_57796118d046_78: string;
+        Anon_57796118d046_79: string;
         Anon_391e8f2f18f6_8: number;
         Anon_3d3fd40aec74_4: components["schemas"]["Anon_33527092b4d7_4"];
         Anon_33527092b4d7_4: number;
@@ -5406,10 +5587,10 @@ export interface components {
         Anon_97cc9ecfdea9_41: number;
         Anon_7e1e37293611_18: components["schemas"]["Anon_97cc9ecfdea9_42"];
         Anon_97cc9ecfdea9_42: number;
-        Anon_fb9ddeea992e_10: components["schemas"]["Anon_7cb541e84f22_77"];
-        Anon_7cb541e84f22_77: boolean;
-        Anon_fb9ddeea992e_11: components["schemas"]["Anon_7cb541e84f22_78"];
+        Anon_fb9ddeea992e_10: components["schemas"]["Anon_7cb541e84f22_78"];
         Anon_7cb541e84f22_78: boolean;
+        Anon_fb9ddeea992e_11: components["schemas"]["Anon_7cb541e84f22_79"];
+        Anon_7cb541e84f22_79: boolean;
         Anon_f86c1754c55e_2: components["schemas"]["Anon_86408dfcaaac_4"];
         Anon_86408dfcaaac_4: {
             [key: string]: string;
@@ -5419,13 +5600,13 @@ export interface components {
         Anon_905f7e00de54: {
             [key: string]: boolean | components["schemas"]["EntitlementGrantOutput"];
         };
-        Anon_57796118d046_75: string;
-        Anon_57796118d046_76: string;
+        Anon_57796118d046_80: string;
+        Anon_57796118d046_81: string;
         Anon_75edd6fbcecc_1: components["schemas"]["EntitlementGrantStatus"];
-        Anon_9c7f41b09bde_10: components["schemas"]["Anon_cddf8275afa1_16"];
-        Anon_cddf8275afa1_16: number;
         Anon_9c7f41b09bde_11: components["schemas"]["Anon_cddf8275afa1_17"];
         Anon_cddf8275afa1_17: number;
+        Anon_9c7f41b09bde_12: components["schemas"]["Anon_cddf8275afa1_18"];
+        Anon_cddf8275afa1_18: number;
         Anon_a7c491664ac5_5: components["schemas"]["UsageAllocation"];
         Anon_25c82cf56487_3: components["schemas"]["EnforcementMode"];
         Anon_589b52ae1ab1_1: components["schemas"]["EntitlementGrantSource"];
@@ -5439,7 +5620,7 @@ export interface components {
         Anon_00404e686415_76: string;
         Anon_ef1dd07b9cb1: components["schemas"]["Anon_88ee5035b041"];
         Anon_88ee5035b041: components["schemas"]["UserInstanceContextOutput"][];
-        Anon_57796118d046_77: string;
+        Anon_57796118d046_82: string;
         Anon_761f976a1da1_10: string;
         Anon_f104771c9d3e_1: components["schemas"]["UserPlanContextOutput"];
         /** @default {} */
@@ -5454,8 +5635,8 @@ export interface components {
             [key: string]: boolean | components["schemas"]["EntitlementGrantOutput"];
         };
         /** @default {} */
-        Anon_890507589b5c_1: components["schemas"]["Anon_8f28cdffdece_4"];
-        Anon_8f28cdffdece_4: {
+        Anon_890507589b5c_1: components["schemas"]["Anon_8f28cdffdece_1"];
+        Anon_8f28cdffdece_1: {
             [key: string]: string | number | boolean | null;
         };
         /** @default {} */
@@ -5659,10 +5840,10 @@ export interface components {
         ExperimentAnalysisConfigOutput: {
             methodology: components["schemas"]["Anon_2ac4674f0f05_1"];
             analysis_unit: components["schemas"]["AnalyticsAnalyticalUnit"];
-            sequential?: components["schemas"]["Anon_3e68c99eb87d_3"];
-            multiple_comparisons?: components["schemas"]["Anon_3e68c99eb87d_4"];
-            variance_reduction?: components["schemas"]["Anon_4903d99d0462"];
-            practical_significance?: components["schemas"]["Anon_3e68c99eb87d_5"];
+            sequential?: components["schemas"]["Anon_b85ce44ab0a9"];
+            multiple_comparisons?: components["schemas"]["Anon_cd6bb211be86"];
+            variance_reduction?: components["schemas"]["Anon_613da80633a0"];
+            practical_significance?: components["schemas"]["Anon_4ddd554c2330_1"];
         };
         ExperimentOutput: {
             id: components["schemas"]["Anon_fb248bf5a9f7_9"];
@@ -5686,9 +5867,9 @@ export interface components {
             target_segments?: components["schemas"]["Anon_052253c90fb3_1"];
             target_segment_ids: components["schemas"]["Anon_f8dbfffc0ce2_18"];
             variants: components["schemas"]["Anon_544a3bc583b1"];
-            primary_metric: components["schemas"]["Anon_53c09eaf03ab_4"];
+            primary_metric: components["schemas"]["Anon_53c09eaf03ab_5"];
             guardrail_metrics?: components["schemas"]["Anon_fa93268b3365"];
-            assignment_unit?: components["schemas"]["Anon_612059bf001c_3"];
+            assignment_unit?: components["schemas"]["Anon_612059bf001c_4"];
             assignment_provider_binding?: components["schemas"]["Anon_570ae33fb746"];
             evidence_provider_binding?: components["schemas"]["Anon_6710ffdf3e7d"];
             analysis_provider_binding?: components["schemas"]["Anon_c5f383647807"];
@@ -5729,7 +5910,7 @@ export interface components {
             description?: components["schemas"]["Anon_796ec99afe20_6"];
             rt_status: components["schemas"]["Anon_10bb933cb85b_1"];
             discount_type: components["schemas"]["Anon_7ea89241716b_1"];
-            discount_value: components["schemas"]["Anon_7ab7b70b014d_5"];
+            discount_value: components["schemas"]["Anon_7ab7b70b014d_6"];
             currency: components["schemas"]["Anon_ef7b4ee94f77_1"];
             applicable_plan_ids: components["schemas"]["Anon_f8dbfffc0ce2_19"];
             applicable_addon_ids: components["schemas"]["Anon_f8dbfffc0ce2_20"];
@@ -5775,8 +5956,8 @@ export interface components {
             created_at: components["schemas"]["Anon_be3e2585472d_2"];
             updated_at: components["schemas"]["Anon_be3e2585472d_3"];
             tenant_id: components["schemas"]["Anon_fb248bf5a9f7_10"];
-            event_id: components["schemas"]["Anon_57796118d046_69"];
-            event_type: components["schemas"]["Anon_57796118d046_70"];
+            event_id: components["schemas"]["Anon_57796118d046_74"];
+            event_type: components["schemas"]["Anon_57796118d046_75"];
             source: components["schemas"]["Anon_cb4b0a4af297_1"];
             payload: components["schemas"]["Anon_5142f8473790_15"];
             status: components["schemas"]["Anon_c1288a1f2dc9_1"];
@@ -5811,14 +5992,14 @@ export interface components {
             experiments?: components["schemas"]["Anon_f86c1754c55e_3"];
         };
         UserPlanContextOutput: {
-            handle: components["schemas"]["Anon_57796118d046_71"];
-            name: components["schemas"]["Anon_57796118d046_72"];
+            handle: components["schemas"]["Anon_57796118d046_76"];
+            name: components["schemas"]["Anon_57796118d046_77"];
             price?: components["schemas"]["Anon_96f9066c2fdc_64"];
             billing_period?: components["schemas"]["Anon_420b7fe77e22_1"];
         };
         UserUsageEntryOutput: {
-            entitlement_handle: components["schemas"]["Anon_57796118d046_73"];
-            unit: components["schemas"]["Anon_57796118d046_74"];
+            entitlement_handle: components["schemas"]["Anon_57796118d046_78"];
+            unit: components["schemas"]["Anon_57796118d046_79"];
             amount: components["schemas"]["Anon_391e8f2f18f6_8"];
             limit?: components["schemas"]["Anon_3d3fd40aec74_4"];
             reset_date?: components["schemas"]["Anon_96f9066c2fdc_65"];
@@ -5838,11 +6019,11 @@ export interface components {
             usage_limit?: components["schemas"]["Anon_7e1e37293611_18"];
         };
         EntitlementGrantOutput: {
-            entitlement_id: components["schemas"]["Anon_57796118d046_75"];
-            entitlement_handle: components["schemas"]["Anon_57796118d046_76"];
+            entitlement_id: components["schemas"]["Anon_57796118d046_80"];
+            entitlement_handle: components["schemas"]["Anon_57796118d046_81"];
             status: components["schemas"]["Anon_75edd6fbcecc_1"];
-            limit?: components["schemas"]["Anon_9c7f41b09bde_10"];
-            used?: components["schemas"]["Anon_9c7f41b09bde_11"];
+            limit?: components["schemas"]["Anon_9c7f41b09bde_11"];
+            used?: components["schemas"]["Anon_9c7f41b09bde_12"];
             allocation?: components["schemas"]["Anon_a7c491664ac5_5"];
             enforcement?: components["schemas"]["Anon_25c82cf56487_3"];
             source?: components["schemas"]["Anon_589b52ae1ab1_1"];
@@ -5852,7 +6033,7 @@ export interface components {
             rule_id?: components["schemas"]["Anon_96f9066c2fdc_72"];
         };
         UserInstanceContextOutput: {
-            product_instance_id: components["schemas"]["Anon_57796118d046_77"];
+            product_instance_id: components["schemas"]["Anon_57796118d046_82"];
             user_id: components["schemas"]["Anon_761f976a1da1_10"];
             plan?: components["schemas"]["Anon_f104771c9d3e_1"];
             usage: components["schemas"]["Anon_6e82965b87e8_1"];
