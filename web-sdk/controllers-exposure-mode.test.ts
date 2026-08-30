@@ -251,3 +251,56 @@ describe('experiment attribution flows from the decision (plan 183 AC-4)', () =>
     expect(conversion).toMatchObject({ experimentId: 'pricing_test', variantKey: 'variant_b' });
   });
 });
+
+describe('message attribution flows from the decision (plan 182 AC-1)', () => {
+  function mkMessageSdk(): AnySdk {
+    const sdk = mkSdk();
+    sdk.getPlacementDecision = vi.fn().mockResolvedValue({
+      visible: true,
+      placementId: 'pl_1',
+      decisionSource: 'remote',
+      content: { header: 'Hi' },
+      output: {
+        surface: { slot_id: 'slot_1', template: 'tpl_1' },
+        output_id: 'pay_1',
+        message_block_handle: 'welcome_banner',
+        message_block_id: 'mb_version_3',
+      },
+    });
+    return sdk;
+  }
+
+  it('stamps canonical and version message identities on the impression', async () => {
+    const sdk = mkMessageSdk();
+    await loadCtrl(sdk, {});
+    expect(impressions(sdk)[0]?.[0]).toMatchObject({
+      interactionType: 'impression',
+      messageBlockHandle: 'welcome_banner',
+      messageBlockId: 'mb_version_3',
+    });
+  });
+
+  it('carries message attribution onto later interactions', async () => {
+    const sdk = mkMessageSdk();
+    const ctrl = await loadCtrl(sdk, {});
+    await ctrl.trackInteraction('cta_clicked');
+    const click = sdk.trackTreatmentInteraction.mock.calls
+      .map((call: unknown[]) => call[0] as { interactionType?: string })
+      .find((interaction) => interaction.interactionType === 'cta_clicked');
+    expect(click).toMatchObject({
+      messageBlockHandle: 'welcome_banner',
+      messageBlockId: 'mb_version_3',
+    });
+  });
+
+  it('leaves message identities absent for inline decisions', async () => {
+    const sdk = mkSdk();
+    await loadCtrl(sdk, {});
+    const call = impressions(sdk)[0]?.[0] as {
+      messageBlockHandle?: string;
+      messageBlockId?: string;
+    };
+    expect(call.messageBlockHandle).toBeUndefined();
+    expect(call.messageBlockId).toBeUndefined();
+  });
+});

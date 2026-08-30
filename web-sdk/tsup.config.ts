@@ -38,7 +38,9 @@ export default defineConfig({
   entry: {
     index: 'index.ts',
     headless: 'headless.ts',
+    ...(process.env.REVT_SDK_BASE_ONLY === '1' ? {} : { growthbook: 'growthbook.ts' }),
   },
+  outDir: process.env.REVT_SDK_OUT_DIR ?? 'dist',
   format: ['esm'],
   target: 'es2020',
   platform: 'browser',

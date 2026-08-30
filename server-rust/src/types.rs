@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.225/rust/revturbine_types.rs
+//   published/v0.1.229/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -68262,6 +68262,963 @@ impl ::std::convert::TryFrom<::std::string::String> for ProviderCapability {
         value.parse()
     }
 }
+#[doc = "`ProviderConnection`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"created_at\","]
+#[doc = "    \"id\","]
+#[doc = "    \"provider_handle\","]
+#[doc = "    \"provider_type\","]
+#[doc = "    \"tenant_id\","]
+#[doc = "    \"updated_at\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"created_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"credential_reference\": {"]
+#[doc = "      \"default\": null,"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"endpoint\": {"]
+#[doc = "      \"default\": null,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"uri\","]
+#[doc = "          \"maxLength\": 2048"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"environment_id\": {"]
+#[doc = "      \"default\": \"production\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 200,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"external_project_id\": {"]
+#[doc = "      \"default\": null,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"external_workspace_id\": {"]
+#[doc = "      \"default\": null,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"health_state\": {"]
+#[doc = "      \"default\": \"unavailable\","]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/ProviderAvailability\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"last_health_check_at\": {"]
+#[doc = "      \"default\": null,"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"provider_handle\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 100,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"provider_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 100,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"stale_after_ms\": {"]
+#[doc = "      \"default\": 300000,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"supported_capability_versions\": {"]
+#[doc = "      \"default\": {},"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"additionalProperties\": {"]
+#[doc = "        \"type\": \"array\","]
+#[doc = "        \"items\": {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 9007199254740991.0,"]
+#[doc = "          \"minimum\": 1.0"]
+#[doc = "        },"]
+#[doc = "        \"minItems\": 1"]
+#[doc = "      },"]
+#[doc = "      \"propertyNames\": {"]
+#[doc = "        \"type\": \"string\","]
+#[doc = "        \"maxLength\": 100,"]
+#[doc = "        \"minLength\": 1"]
+#[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"tenant_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"timeout_ms\": {"]
+#[doc = "      \"default\": 10000,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 120000.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"unavailable_after_failures\": {"]
+#[doc = "      \"default\": 3,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 100.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"updated_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-context\": \"customer_operations\","]
+#[doc = "  \"x-revturbine-in-config\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"persisted\","]
+#[doc = "  \"x-revturbine-sdk-input\": false,"]
+#[doc = "  \"x-revturbine-source\": \"customer\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct ProviderConnection {
+    pub created_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub credential_reference: ::std::option::Option<ProviderConnectionCredentialReference>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub endpoint: ::std::option::Option<ProviderConnectionEndpoint>,
+    #[serde(default = "defaults::provider_connection_environment_id")]
+    pub environment_id: ProviderConnectionEnvironmentId,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub external_project_id: ::std::option::Option<ProviderConnectionExternalProjectId>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub external_workspace_id: ::std::option::Option<ProviderConnectionExternalWorkspaceId>,
+    #[serde(default = "defaults::provider_connection_health_state")]
+    pub health_state: ProviderAvailability,
+    pub id: ProviderConnectionId,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub last_health_check_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    pub provider_handle: ProviderConnectionProviderHandle,
+    pub provider_type: ProviderConnectionProviderType,
+    #[serde(default = "defaults::default_nzu64::<::std::num::NonZeroU64, 300000>")]
+    pub stale_after_ms: ::std::num::NonZeroU64,
+    #[serde(
+        default,
+        skip_serializing_if = ":: std :: collections :: HashMap::is_empty"
+    )]
+    pub supported_capability_versions: ::std::collections::HashMap<
+        ProviderConnectionSupportedCapabilityVersionsKey,
+        ::std::vec::Vec<::std::num::NonZeroU64>,
+    >,
+    pub tenant_id: ProviderConnectionTenantId,
+    #[serde(default = "defaults::default_nzu64::<::std::num::NonZeroU64, 10000>")]
+    pub timeout_ms: ::std::num::NonZeroU64,
+    #[serde(default = "defaults::default_nzu64::<::std::num::NonZeroU64, 3>")]
+    pub unavailable_after_failures: ::std::num::NonZeroU64,
+    pub updated_at: ::chrono::DateTime<::chrono::offset::Utc>,
+}
+#[doc = "`ProviderConnectionCredentialReference`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ProviderConnectionCredentialReference(::std::string::String);
+impl ::std::ops::Deref for ProviderConnectionCredentialReference {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ProviderConnectionCredentialReference> for ::std::string::String {
+    fn from(value: ProviderConnectionCredentialReference) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ProviderConnectionCredentialReference {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ProviderConnectionCredentialReference {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ProviderConnectionCredentialReference {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ProviderConnectionCredentialReference {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ProviderConnectionCredentialReference {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ProviderConnectionEndpoint`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"format\": \"uri\","]
+#[doc = "  \"maxLength\": 2048"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ProviderConnectionEndpoint(::std::string::String);
+impl ::std::ops::Deref for ProviderConnectionEndpoint {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ProviderConnectionEndpoint> for ::std::string::String {
+    fn from(value: ProviderConnectionEndpoint) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ProviderConnectionEndpoint {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 2048usize {
+            return Err("longer than 2048 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ProviderConnectionEndpoint {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ProviderConnectionEndpoint {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ProviderConnectionEndpoint {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ProviderConnectionEndpoint {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ProviderConnectionEnvironmentId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"default\": \"production\","]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 200,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ProviderConnectionEnvironmentId(::std::string::String);
+impl ::std::ops::Deref for ProviderConnectionEnvironmentId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ProviderConnectionEnvironmentId> for ::std::string::String {
+    fn from(value: ProviderConnectionEnvironmentId) -> Self {
+        value.0
+    }
+}
+impl ::std::default::Default for ProviderConnectionEnvironmentId {
+    fn default() -> Self {
+        ProviderConnectionEnvironmentId("production".to_string())
+    }
+}
+impl ::std::str::FromStr for ProviderConnectionEnvironmentId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 200usize {
+            return Err("longer than 200 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ProviderConnectionEnvironmentId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ProviderConnectionEnvironmentId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ProviderConnectionEnvironmentId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ProviderConnectionEnvironmentId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ProviderConnectionExternalProjectId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ProviderConnectionExternalProjectId(::std::string::String);
+impl ::std::ops::Deref for ProviderConnectionExternalProjectId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ProviderConnectionExternalProjectId> for ::std::string::String {
+    fn from(value: ProviderConnectionExternalProjectId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ProviderConnectionExternalProjectId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ProviderConnectionExternalProjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ProviderConnectionExternalProjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ProviderConnectionExternalProjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ProviderConnectionExternalProjectId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ProviderConnectionExternalWorkspaceId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ProviderConnectionExternalWorkspaceId(::std::string::String);
+impl ::std::ops::Deref for ProviderConnectionExternalWorkspaceId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ProviderConnectionExternalWorkspaceId> for ::std::string::String {
+    fn from(value: ProviderConnectionExternalWorkspaceId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ProviderConnectionExternalWorkspaceId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ProviderConnectionExternalWorkspaceId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ProviderConnectionExternalWorkspaceId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ProviderConnectionExternalWorkspaceId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ProviderConnectionExternalWorkspaceId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ProviderConnectionId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ProviderConnectionId(::std::string::String);
+impl ::std::ops::Deref for ProviderConnectionId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ProviderConnectionId> for ::std::string::String {
+    fn from(value: ProviderConnectionId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ProviderConnectionId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ProviderConnectionId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ProviderConnectionId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ProviderConnectionId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ProviderConnectionId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ProviderConnectionProviderHandle`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 100,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ProviderConnectionProviderHandle(::std::string::String);
+impl ::std::ops::Deref for ProviderConnectionProviderHandle {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ProviderConnectionProviderHandle> for ::std::string::String {
+    fn from(value: ProviderConnectionProviderHandle) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ProviderConnectionProviderHandle {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ProviderConnectionProviderHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ProviderConnectionProviderHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ProviderConnectionProviderHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ProviderConnectionProviderHandle {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ProviderConnectionProviderType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 100,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ProviderConnectionProviderType(::std::string::String);
+impl ::std::ops::Deref for ProviderConnectionProviderType {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ProviderConnectionProviderType> for ::std::string::String {
+    fn from(value: ProviderConnectionProviderType) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ProviderConnectionProviderType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ProviderConnectionProviderType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ProviderConnectionProviderType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ProviderConnectionProviderType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ProviderConnectionProviderType {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ProviderConnectionSupportedCapabilityVersionsKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 100,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ProviderConnectionSupportedCapabilityVersionsKey(::std::string::String);
+impl ::std::ops::Deref for ProviderConnectionSupportedCapabilityVersionsKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ProviderConnectionSupportedCapabilityVersionsKey>
+    for ::std::string::String
+{
+    fn from(value: ProviderConnectionSupportedCapabilityVersionsKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ProviderConnectionSupportedCapabilityVersionsKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ProviderConnectionSupportedCapabilityVersionsKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ProviderConnectionSupportedCapabilityVersionsKey
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ProviderConnectionSupportedCapabilityVersionsKey
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ProviderConnectionSupportedCapabilityVersionsKey {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ProviderConnectionTenantId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ProviderConnectionTenantId(::std::string::String);
+impl ::std::ops::Deref for ProviderConnectionTenantId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ProviderConnectionTenantId> for ::std::string::String {
+    fn from(value: ProviderConnectionTenantId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ProviderConnectionTenantId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ProviderConnectionTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ProviderConnectionTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ProviderConnectionTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ProviderConnectionTenantId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`ProviderProvenance`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -88369,6 +89326,13 @@ pub struct Tenant {
 #[doc = "      \"minimum\": 1.0,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"analytics_retention_days\": {"]
+#[doc = "      \"default\": 365,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"created_at\": {"]
 #[doc = "      \"readOnly\": true,"]
 #[doc = "      \"type\": \"string\","]
@@ -88459,6 +89423,8 @@ pub struct TenantConfig {
     pub activity_medium_min: ::std::num::NonZeroU64,
     #[serde(default = "defaults::default_nzu64::<::std::num::NonZeroU64, 30>")]
     pub activity_window_days: ::std::num::NonZeroU64,
+    #[serde(default = "defaults::default_nzu64::<::std::num::NonZeroU64, 365>")]
+    pub analytics_retention_days: ::std::num::NonZeroU64,
     pub created_at: ::chrono::DateTime<::chrono::offset::Utc>,
     #[serde(default = "defaults::tenant_config_default_currency")]
     pub default_currency: TenantConfigDefaultCurrency,
@@ -96304,6 +97270,12 @@ pub mod defaults {
     }
     pub(super) fn promotion_rt_status() -> super::PromotionStatus {
         super::PromotionStatus::Draft
+    }
+    pub(super) fn provider_connection_environment_id() -> super::ProviderConnectionEnvironmentId {
+        super::ProviderConnectionEnvironmentId("production".to_string())
+    }
+    pub(super) fn provider_connection_health_state() -> super::ProviderAvailability {
+        super::ProviderAvailability::Unavailable
     }
     pub(super) fn rev_turbine_config_playbook_handle() -> super::RevTurbineConfigPlaybookHandle {
         super::RevTurbineConfigPlaybookHandle("default".to_string())

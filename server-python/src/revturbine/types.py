@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.225/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.229/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -2211,6 +2211,36 @@ class ProviderCapability(Enum):
     optimization = "optimization"
 
 
+class SupportedCapabilityVersion(RootModel[conint(ge=1, le=9007199254740991)]):
+    root: conint(ge=1, le=9007199254740991)
+
+
+class ProviderConnection(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    tenant_id: constr(min_length=1)
+    provider_handle: constr(min_length=1, max_length=100)
+    provider_type: constr(min_length=1, max_length=100)
+    endpoint: AnyUrl | None = None
+    credential_reference: constr(min_length=1, max_length=255) | None = None
+    environment_id: constr(min_length=1, max_length=200) | None = "production"
+    health_state: ProviderAvailability | None = "unavailable"
+    last_health_check_at: AwareDatetime | None = None
+    supported_capability_versions: (
+        dict[constr(min_length=1, max_length=100), list[SupportedCapabilityVersion]]
+        | None
+    ) = Field({}, validate_default=True)
+    external_project_id: constr(min_length=1, max_length=255) | None = None
+    external_workspace_id: constr(min_length=1, max_length=255) | None = None
+    timeout_ms: conint(ge=1, le=120000) | None = 10000
+    stale_after_ms: conint(ge=1, le=9007199254740991) | None = 300000
+    unavailable_after_failures: conint(ge=1, le=100) | None = 3
+
+
 class ProviderProvenance(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -3027,6 +3057,7 @@ class TenantConfig(BaseModel):
     activity_high_min: conint(ge=1, le=9007199254740991) | None = 10
     activity_medium_min: conint(ge=1, le=9007199254740991) | None = 3
     activity_low_min: conint(ge=1, le=9007199254740991) | None = 1
+    analytics_retention_days: conint(ge=1, le=9007199254740991) | None = 365
 
 
 class TenantStatus(Enum):

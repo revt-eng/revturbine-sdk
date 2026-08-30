@@ -9,7 +9,13 @@
 import { fileURLToPath } from 'node:url';
 import dts from 'rollup-plugin-dts';
 
-const external = [/^react($|\/)/, /^react-dom($|\/)/, /^zod($|\/)/, /^posthog-js($|\/)/];
+const external = [
+  /^@growthbook\/growthbook($|\/)/,
+  /^react($|\/)/,
+  /^react-dom($|\/)/,
+  /^zod($|\/)/,
+  /^posthog-js($|\/)/,
+];
 
 // `web-sdk/generated/*.d.ts` are checked-in generated type sources excluded
 // from tsc's declaration emit, so refs to them dangle inside dist/types —
@@ -41,4 +47,5 @@ const entry = (input, file) => ({
 export default [
   entry('dist/types/web-sdk/index.d.ts', 'dist/index.d.ts'),
   entry('dist/types/web-sdk/headless.d.ts', 'dist/headless.d.ts'),
+  entry('dist/types/web-sdk/growthbook.d.ts', 'dist/growthbook.d.ts'),
 ];

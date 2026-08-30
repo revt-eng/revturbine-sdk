@@ -64,6 +64,17 @@ import { loadTheme } from './theme/theme-loader';
 /** Callback used to subscribe to state changes in controllers. */
 export type ChangeListener = () => void;
 
+/**
+ * Additive decision provenance introduced after this SDK's current core pin.
+ * Keep the compatibility shape local until the normal dependency cascade
+ * reaches the matching core release; the runtime decision may already carry
+ * these optional fields without making older decisions invalid.
+ */
+type MessageBlockDecisionProvenance = PlacementOutput & {
+  message_block_handle?: string;
+  message_block_id?: string;
+};
+
 // ── Placement controller ────────────────────────────────────────────────────
 
 /**
@@ -254,6 +265,7 @@ export class PlacementController {
     const userId = this.options.userId || this.sdk.getUserContext().user_id;
     if (!userId) return;
     this._impressionTracked = true;
+    const output = decision.output as MessageBlockDecisionProvenance | undefined;
     void this.sdk.trackTreatmentInteraction({
       userId,
       placementId: this._placementId,
@@ -262,6 +274,10 @@ export class PlacementController {
       surfaceSlotId: decision.output?.surface?.slot_id,
       surfaceTemplateId: decision.output?.surface?.template,
       payloadId: decision.output?.output_id,
+      // Message attribution (plan 182). The resolver stamps the canonical
+      // handle, plus a version id only when it genuinely knows one.
+      messageBlockHandle: output?.message_block_handle,
+      messageBlockId: output?.message_block_id,
       // Experiment attribution (plan 183). Read off the decision that produced
       // this treatment, so `experiment_perf` / `message_impact_by_variant` key
       // correctly without customer code supplying anything. Undefined when the
@@ -578,6 +594,7 @@ export class PlacementController {
     // column (plan 144 TASK-10). Added only when the decision carries one, so
     // interactions without a decision keep their bare metadata shape.
     const decisionId = this._decision?.output?.decision_id ?? null;
+    const output = this._decision?.output as MessageBlockDecisionProvenance | undefined;
 
     await this.sdk.trackTreatmentInteraction({
       userId: resolvedUserId,
@@ -588,6 +605,8 @@ export class PlacementController {
       surfaceSlotId: this._decision?.output?.surface?.slot_id,
       surfaceTemplateId: this._decision?.output?.surface?.template,
       payloadId: this._decision?.output?.output_id,
+      messageBlockHandle: output?.message_block_handle,
+      messageBlockId: output?.message_block_id,
       experimentId: this._decision?.output?.experiment_id,
       variantKey: this._decision?.output?.variant_key,
       metadata: decisionId ? { ...metadata, decision_id: decisionId } : metadata,
