@@ -56,7 +56,7 @@ if (ctrl.state.error) {
 Most SDK methods fail silently and return sensible defaults:
 
 ```ts
-// Returns allowed on API failure
+// Returns false on API failure
 await sdk.can('data_export');
 
 // Silently drops event on delivery failure
@@ -123,7 +123,7 @@ Entitlement checks are **fail-closed**. When the SDK cannot produce an
 affirmative grant — the Playbook never arrived, no rule grants the entitlement
 to the user's plan, the SDK was disabled — it returns
 `{ status: 'denied', allowed: false }` with a `reason` naming the cause. It
-never defaults to allowed. Treat `allowed` as the answer and `reason` as the
+never invents a grant. Treat `allowed` as the answer and `reason` as the
 explanation; the codes below are the complete set the SDK emits.
 
 ### Denied because a rule said so

@@ -201,7 +201,20 @@ The SDK follows [Semantic Versioning](https://semver.org/):
 
 ---
 
-## 0.1.x (Current)
+## 0.2.30
+
+### Breaking changes
+
+- **Entitlement checks now fail closed when the SDK cannot produce an
+  affirmative grant.** Server configuration failures, an unavailable local
+  Playbook, and provider-chain failures return
+  `{ status: 'denied', allowed: false }` with a reason naming the cause instead
+  of granting access. Re-check billing-critical and abuse-sensitive actions on
+  your server; see [Client vs Server Enforcement](/concepts/enforcement/).
+
+---
+
+## 0.1.x (Historical)
 
 ### 0.1.0 — Initial Release
 
@@ -221,7 +234,7 @@ The SDK follows [Semantic Versioning](https://semver.org/):
 - Client-side cap enforcement
 - Impression history and suppression management
 - localStorage persistence with custom storage support
-- Fail-open error handling — **reversed in 0.2.29**: entitlement checks are
+- Fail-open error handling — **reversed in 0.2.30**: entitlement checks are
   fail-*closed*. A check that cannot produce an affirmative grant denies rather
   than granting, and the `reason` names the cause. Listed here as the 0.1.0
   behaviour for historical accuracy; see

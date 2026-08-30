@@ -59,7 +59,7 @@ They sound alike but do different jobs:
   ```
 
 <Aside type="caution" title="The client check is convenient, not authoritative">
-`can()`, `gate()`, and `<Gate>` run in the browser, where a determined user can tamper with the result. For **billing-critical or abuse-sensitive** actions, treat the client check as a UX convenience and **re-run the same entitlement check on your server** (or via a server SDK) before you actually grant access. The UI failing open keeps RevTurbine downtime from breaking your app; your server owns the money-safe decision.
+`can()`, `gate()`, and `<Gate>` run in the browser, where a determined user can tamper with the result. For **billing-critical or abuse-sensitive** actions, treat the client check as a UX convenience and **re-run the same entitlement check on your server** (or via a server SDK) before you actually grant access. See [Client vs Server Enforcement](/concepts/enforcement/) for the authoritative placement, entitlement, and outage behavior; your server owns the money-safe decision.
 </Aside>
 
 ## The vocabulary: Slot · Gate · Playbook

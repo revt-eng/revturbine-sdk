@@ -32,6 +32,10 @@ The SDK gives you three ways to act on an entitlement. They sound alike; they ar
 
 `<Gate>` and `gate()` are convenience wrappers around a `can()`/`checkEntitlement()` call. All three run in the browser and are **fail-closed** — a check that can't affirm a grant denies. The check itself — `checkEntitlement` / `can` — is also what you run on your server (via the server SDK or your own logic) when the decision has to be trusted.
 
+<Aside type="caution" title="Custom resolvers own their network behavior">
+The built-in evaluator decides from the loaded Playbook in memory, so an entitlement check makes no per-check network call. If you inject `localRuntime.resolvers`, your resolver can introduce network I/O; its caching, timeout, and failure behavior are your responsibility. The SDK still requires an affirmative result before granting access.
+</Aside>
+
 ## When do I need the server?
 
 | Action | Client check enough? |
