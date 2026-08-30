@@ -126,7 +126,12 @@ import {
 } from './config-artifact';
 import { PlacementTypeRegistry } from './placements/registry';
 import { applyPlacementRegistrySeed } from './placements/registry';
-import { bridgeUiPathResolversIntoRegistry, registerBuiltinSnoozeResolver } from './placements/cta-resolvers';
+import {
+  bridgeUiPathResolversIntoRegistry,
+  registerBuiltinSnoozeResolver,
+  registerServerActionResolvers,
+  type ServerActionMap,
+} from './placements/cta-resolvers';
 import {
   resolveRecommendedPlanTokens,
   type RecommendationStrategy,
@@ -144,6 +149,12 @@ import type { TelemetryCounters } from './telemetry';
 
 // Re-export core JSON types for public SDK surface
 export type { JsonValue, JsonObject } from '@revt-eng/core';
+export type {
+  ServerActionContext,
+  ServerActionHandler,
+  ServerActionMap,
+  ServerActionResult,
+} from './placements/cta-resolvers';
 
 /** Extensible metadata bag attached to placements, events, and interactions. */
 export type SdkMetadata = Record<string, JsonValue>;
@@ -698,6 +709,22 @@ function sanitizeUiPathResolverMap(
   return normalized;
 }
 
+function sanitizeServerActionMap(actions: ServerActionMap | undefined): ServerActionMap {
+  if (!actions) return {};
+  const normalized: ServerActionMap = {};
+  for (const [actionType, handler] of Object.entries(actions)) {
+    const normalizedActionType = String(actionType || '').trim();
+    if (!normalizedActionType) {
+      throw new Error('[RevTurbine] RevTurbineInitOptions.serverActions contains an empty action type key.');
+    }
+    if (typeof handler !== 'function') {
+      throw new Error(`[RevTurbine] RevTurbineInitOptions.serverActions contains a non-function handler for action type '${normalizedActionType}'.`);
+    }
+    normalized[normalizedActionType] = handler;
+  }
+  return normalized;
+}
+
 export interface RevTurbineUiPathResolverValidationIssue {
   uiPathId?: string;
   name?: string;
@@ -917,6 +944,16 @@ export interface RevTurbineInitOptions {
   domainProviders?: AnyDomainProvider[];
   /** Optional UI path resolver map used by `validateUiPathResolvers()`. */
   uiPathResolvers?: RevTurbineUiPathResolverMap;
+  /**
+   * App-owned handlers for CTA-triggered server mutations.
+   *
+   * A handler calls your backend and returns fresh server-authoritative user
+   * context. On success the SDK merges that context and re-evaluates mounted
+   * decisions. `extend_trial` is the documented v1 action. A matching
+   * `uiPathResolvers` or explicit `registerCtaResolver()` entry takes
+   * precedence.
+   */
+  serverActions?: ServerActionMap;
   user?: RevTurbineUserContext;
   /**
    * Mint a short-lived client-session token (`rt_client_`, plan 157) for the
@@ -1267,7 +1304,7 @@ export function createLocalRuntimeConfig(
  *
  * Unlike {@link createLocalRuntimeConfig}, this helper always requires
  * `exportedConfig.content_ui_paths` and complete `uiPathResolvers` coverage at
- * compile time for action types present in that exported config.
+ * compile time for action types present in that Playbook.
  */
 export function createStrictLocalRuntimeConfig<const TUiPaths extends readonly unknown[]>(
   options: RevTurbineInitBaseOptions & {
@@ -2156,8 +2193,10 @@ export class RevTurbineCustomerSdk {
   } | null = null;
   private readonly providerFailureSlotBehavior: RevTurbineProviderFailureSlotBehavior;
   private readonly uiPathResolvers: RevTurbineUiPathResolverMap;
+  private readonly serverActions: ServerActionMap;
   private unbridgeUiPathCtaResolvers: () => void = () => {};
   private unregisterBuiltinSnoozeResolver: () => void = () => {};
+  private unregisterServerActionResolvers: () => void = () => {};
   private readonly persistentStore: RevTurbineStorage;
   private readonly sessionStore: RevTurbineStorage;
   private readonly anonymousId: string;
@@ -2279,6 +2318,7 @@ export class RevTurbineCustomerSdk {
     this.placementBehaviorOverrides = { ...options.placementBehavior };
     this.providerFailureSlotBehavior = options.providerFailureSlotBehavior ?? 'invisible';
     this.uiPathResolvers = sanitizeUiPathResolverMap(options.uiPathResolvers, 'RevTurbineInitOptions.uiPathResolvers');
+    this.serverActions = sanitizeServerActionMap(options.serverActions);
     this.persistentStore = resolvePersistentStorage(options.persistentStorage);
     this.sessionStore = resolveSessionStorage(options.sessionStorage);
     this.userContext = {
@@ -2343,6 +2383,24 @@ export class RevTurbineCustomerSdk {
     // verb by default; registered after the bridge so a customer resolver wins.
     this.unregisterBuiltinSnoozeResolver = registerBuiltinSnoozeResolver((outputId, seconds) => {
       void this.snooze(outputId, seconds);
+    });
+    // Plan 176: server-owned mutations use the same CTA dispatch path, after
+    // customer uiPathResolvers and built-ins so those existing registrations
+    // keep precedence. A successful response merges server-authoritative
+    // context and notifies mounted decisions through setUserContext().
+    this.unregisterServerActionResolvers = registerServerActionResolvers(this.serverActions, {
+      applyUserContext: (context) => this.setUserContext(context as RevTurbineUserContext), // sdk-ok: boundary-parse — generated UserContextInput is the public handler contract
+      trackResult: (context, success, error) => this.emitSemantic('placement_interaction', {
+        interaction_type: 'cta_clicked',
+        action_type: context.actionType,
+        action_success: success,
+        payload_id: context.placement.output_id,
+        placement_id: context.placement.surface?.slot_id ?? null,
+        decision_id: context.placement.decision_id ?? null,
+        user_id: this.userContext.id ?? null,
+        interaction_at: new Date().toISOString(),
+        action_outcome: error ? 'rejected' : success ? 'success' : 'failure',
+      }, { immediate: false }),
     });
     this.hydrateDecisionCache();
     this.hydrateInteractionState();
@@ -4811,6 +4869,7 @@ export class RevTurbineCustomerSdk {
   dispose(): void {
     this.unbridgeUiPathCtaResolvers();
     this.unregisterBuiltinSnoozeResolver();
+    this.unregisterServerActionResolvers();
     if (this.flushTimer !== undefined) {
       clearInterval(this.flushTimer);
       this.flushTimer = undefined;
@@ -6687,7 +6746,7 @@ export class RevTurbineCustomerSdk {
    * `trial_converted` placements. The same evaluator runs in the Python server
    * SDK, so both decide identically.
    *
-   * Requires an initialized exported config (static mode, or any mode with a
+   * Requires an initialized Playbook (static mode, or any mode with a
    * config provider). Returns the derived status, or `{ in_trial: false }`
    * when no active trial instance applies.
    *

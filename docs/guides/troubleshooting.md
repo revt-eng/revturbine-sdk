@@ -5,7 +5,7 @@ Use this table for common integration failures.
 | Symptom | Likely Cause | Fix |
 |---|---|---|
 | `getPlacement` returns `null` unexpectedly | Slot/surface mismatch or no eligible payload | Verify `slotId`, `surfaceType`, and payload targeting. Start with `createSlotPlacementRequest(...)`. |
-| Entitlement checks always allow | Runtime fallback path active due endpoint failure | Verify endpoint availability and auth headers. In local-only mode, seed `entitlementByHandle`. |
+| Entitlement check denies with `config_unavailable` or `sdk_disabled_provider_failure` | Playbook fetch or configured provider failed | Verify endpoint availability, auth headers, and provider health. See [Client vs Server Enforcement](https://revturbine.com/docs/concepts/enforcement/) for the authoritative fallback contract. |
 | CTA path not firing expected action | Payload action field mismatch (`cta_path` vs legacy shape) | Use canonical `cta_path` in payloads and parse via `PlacementRenderer`. |
 | Decisions feel stale | Cache TTL too long | Lower `ttlMs` in decision requests or call refresh flows explicitly. |
 | Interactions not visible in backend telemetry | Ingestion endpoint misconfigured | Validate `ingestEvents`/`touchpointTransition` endpoint wiring and auth. |
@@ -22,7 +22,7 @@ In this state:
 
 1. The SDK logs warning messages to the console.
 2. Placements render as hidden (`invisible`) or safe placeholders (`placeholder`) depending on `providerFailureSlotBehavior`.
-3. Entitlement checks return allowed with a fallback reason so the app can keep functioning safely.
+3. Entitlement checks return a denied result with `sdk_disabled_provider_failure`; see [Client vs Server Enforcement](https://revturbine.com/docs/concepts/enforcement/) for why checks and additive placements have different fallback behavior.
 
 ## Quick Checks
 

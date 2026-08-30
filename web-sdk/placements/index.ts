@@ -14,6 +14,12 @@ export type {
   CtaResolver,
   CtaResolverContext,
 } from './types';
+export type {
+  ServerActionContext,
+  ServerActionHandler,
+  ServerActionMap,
+  ServerActionResult,
+} from './cta-resolvers';
 
 // Registry
 export {
@@ -36,6 +42,7 @@ export {
   dispatchCtaClick,
   bridgeUiPathResolversIntoRegistry,
   registerBuiltinSnoozeResolver,
+  registerServerActionResolvers,
 } from './cta-resolvers';
 
 // Built-in slot type registration

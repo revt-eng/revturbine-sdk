@@ -1,5 +1,33 @@
-import type { JsonObject } from '../customer-side';
+import type { JsonObject, UserContextInput } from '../customer-side';
 import type { CtaResolver, CtaResolverContext, PlacementUiPath } from './types';
+
+/** Context supplied to an app-owned server mutation handler. */
+export interface ServerActionContext {
+  /** The placement whose CTA initiated the action. */
+  placement: CtaResolverContext['placement'];
+  /** The authored CTA action type (v1 documents `extend_trial`). */
+  actionType: string;
+  /** Tenant-authored custom CTA parameters, when present. */
+  params: Record<string, unknown>; // sdk-ok: type-definition
+}
+
+/** Result returned after the app's backend accepts or refuses the mutation. */
+export interface ServerActionResult {
+  success: boolean;
+  /** Fresh server-authoritative context to merge after a successful mutation. */
+  userContext?: UserContextInput;
+}
+
+/** App handler that calls its own backend for a server-owned mutation. */
+export type ServerActionHandler = (context: ServerActionContext) => Promise<ServerActionResult>;
+
+/** Map of authored CTA action type to app-owned server mutation handler. */
+export type ServerActionMap = Record<string, ServerActionHandler>;
+
+export interface ServerActionResolverCallbacks {
+  applyUserContext: (context: UserContextInput) => void;
+  trackResult: (context: ServerActionContext, success: boolean, error?: Error) => void | Promise<void>;
+}
 
 /**
  * Registry mapping CTA action types to resolver functions.
@@ -163,6 +191,64 @@ export function registerBuiltinSnoozeResolver(
   return () => {
     if (registry.get('snooze') === resolver) {
       registry.unregister('snooze');
+    }
+  };
+}
+
+/**
+ * Register app-owned server actions behind the existing CTA registry.
+ *
+ * Called after the init `uiPathResolvers` bridge and built-ins, so any resolver
+ * the customer registered through those surfaces wins. A later explicit
+ * `registerCtaResolver()` still replaces this entry normally. Handler failures
+ * are contained, reported, and tracked without applying context.
+ */
+export function registerServerActionResolvers(
+  actions: ServerActionMap,
+  callbacks: ServerActionResolverCallbacks,
+  registry: CtaResolverRegistry = getDefaultCtaResolverRegistry(),
+): () => void {
+  const registered = new Map<string, CtaResolver>();
+  for (const [actionType, handler] of Object.entries(actions)) {
+    if (registry.has(actionType)) continue;
+    const resolver: CtaResolver = (uiPath, resolverContext) => {
+      const context: ServerActionContext = {
+        placement: resolverContext.placement,
+        actionType,
+        params: uiPath.params ?? {},
+      };
+      const trackSafely = async (success: boolean, error?: Error) => {
+        try {
+          await callbacks.trackResult(context, success, error);
+        } catch (trackingError) {
+          console.error(`[RevTurbine] serverActions.${actionType} telemetry failed:`, trackingError);
+        }
+      };
+      void (async () => {
+        let result: ServerActionResult;
+        try {
+          result = await handler(context);
+        } catch (error) {
+          const failure = error instanceof Error ? error : new Error(String(error));
+          console.error(`[RevTurbine] serverActions.${actionType} failed:`, failure);
+          await trackSafely(false, failure);
+          return;
+        }
+        if (!result || result.success !== true) {
+          console.error(`[RevTurbine] serverActions.${actionType} reported failure.`);
+          await trackSafely(false);
+          return;
+        }
+        if (result.userContext) callbacks.applyUserContext(result.userContext);
+        await trackSafely(true);
+      })();
+    };
+    registry.register(actionType, resolver);
+    registered.set(actionType, resolver);
+  }
+  return () => {
+    for (const [actionType, resolver] of registered) {
+      if (registry.get(actionType) === resolver) registry.unregister(actionType);
     }
   };
 }

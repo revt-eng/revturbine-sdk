@@ -176,7 +176,7 @@ Every placement payload includes a `cta_path` object that tells the app what to 
 | `update_payment_method` | — | Opening payment method update (includes backup payment in v1) |
 | `enable_auto_renewal` | — | Prompting user to turn on auto-renewal |
 | `manage_subscription` | — | Opening subscription/billing management |
-| `extend_trial` | — | App-handled: your resolver calls your backend, which performs the extension (trial state is app-owned today; a RevTurbine `serverActions` construct for this is planned — plan 176) |
+| `extend_trial` | custom `params` | `serverActions.extend_trial` calls your backend; a successful response returns fresh user context for immediate re-evaluation |
 | `open_rt_placement` | `placement_handle` | Calling `rt.getPlacement({ placementHandle })` to evaluate a chained placement. See Placement Chaining below. |
 | `custom` | `handle` | App-defined action — the handle is defined centrally in Content Studio |
 | `dismiss` | — | Closing the placement. Only for explicit dismiss buttons — standard close (X) is app UI, not a CTA Path. |
@@ -209,13 +209,43 @@ function handleCTA(placement) {
     case "update_payment_method": return openPaymentSettings();
     case "enable_auto_renewal": return openAutoRenewalPrompt();
     case "manage_subscription": return openSubscriptionSettings();
-    case "extend_trial":        return extendTrialViaYourBackend(); // app-owned: call your API; no rt.extendTrial() exists
+    case "extend_trial":        return; // handled by serverActions.extend_trial at SDK init
     case "custom":              return handleCustomPath(cta_path.handle);
     case "dismiss":             return rt.dismiss(placement.output_id);
     case "snooze":              return rt.snooze(placement.output_id);
   }
 }
 ```
+
+Server-owned mutations use a separate init map. The browser calls only your
+route; your backend re-checks the relevant entitlement before mutating trial
+state, then returns fresh context so the SDK can re-evaluate immediately:
+
+```ts
+const rt = initRevTurbine({
+  // ...normal provider options
+  serverActions: {
+    extend_trial: async ({ placement, actionType, params }) => {
+      const response = await fetch('/api/trial/extend', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          decisionId: placement.decision_id,
+          actionType,
+          extensionDays: params.extension_days,
+        }),
+      });
+      if (!response.ok) return { success: false };
+      const userContext = await response.json();
+      return { success: true, userContext };
+    },
+  },
+});
+```
+
+There is deliberately no client-side trial-mutation verb. A
+`uiPathResolvers.extend_trial` handler or explicit `registerCtaResolver()`
+registration wins when an app needs custom dispatch instead.
 
 ## Placement Chaining
 
