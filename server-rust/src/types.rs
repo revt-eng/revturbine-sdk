@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.261/rust/revturbine_types.rs
+//   published/v0.1.262/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -769,6 +769,7 @@ impl<'de> ::serde::Deserialize<'de> for AddOnTenantId {
 #[doc = "    \"anchor_id\","]
 #[doc = "    \"billing_period\","]
 #[doc = "    \"created_at\","]
+#[doc = "    \"currency\","]
 #[doc = "    \"handle\","]
 #[doc = "    \"id\","]
 #[doc = "    \"price_amount\","]
@@ -819,6 +820,10 @@ impl<'de> ::serde::Deserialize<'de> for AddOnTenantId {
 #[doc = "      \"format\": \"date-time\","]
 #[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"currency\": {"]
+#[doc = "      \"$ref\": \"#/$defs/Currency\","]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\""]
 #[doc = "    },"]
 #[doc = "    \"delete_date\": {"]
 #[doc = "      \"default\": null,"]
@@ -959,6 +964,7 @@ pub struct AddOnVariation {
     pub base_sequence: ::std::option::Option<i64>,
     pub billing_period: AddOnVariationBillingPeriod,
     pub created_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub currency: Currency,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub delete_date: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
     #[serde(default = "defaults::add_on_variation_environment_id")]
@@ -28714,54 +28720,40 @@ impl ::std::convert::TryFrom<::std::string::String> for CtaPathType {
 #[doc = "{"]
 #[doc = "  \"default\": \"usd\","]
 #[doc = "  \"type\": \"string\","]
-#[doc = "  \"enum\": ["]
-#[doc = "    \"usd\","]
-#[doc = "    \"eur\","]
-#[doc = "    \"gbp\""]
-#[doc = "  ],"]
+#[doc = "  \"pattern\": \"^[a-z]{3}$\","]
 #[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
 #[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
-#[derive(
-    :: serde :: Deserialize,
-    :: serde :: Serialize,
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    Hash,
-    Ord,
-    PartialEq,
-    PartialOrd,
-)]
-pub enum Currency {
-    #[serde(rename = "usd")]
-    Usd,
-    #[serde(rename = "eur")]
-    Eur,
-    #[serde(rename = "gbp")]
-    Gbp,
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct Currency(::std::string::String);
+impl ::std::ops::Deref for Currency {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
 }
-impl ::std::fmt::Display for Currency {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        match *self {
-            Self::Usd => f.write_str("usd"),
-            Self::Eur => f.write_str("eur"),
-            Self::Gbp => f.write_str("gbp"),
-        }
+impl ::std::convert::From<Currency> for ::std::string::String {
+    fn from(value: Currency) -> Self {
+        value.0
+    }
+}
+impl ::std::default::Default for Currency {
+    fn default() -> Self {
+        Currency("usd".to_string())
     }
 }
 impl ::std::str::FromStr for Currency {
     type Err = self::error::ConversionError;
     fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        match value {
-            "usd" => Ok(Self::Usd),
-            "eur" => Ok(Self::Eur),
-            "gbp" => Ok(Self::Gbp),
-            _ => Err("invalid value".into()),
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z]{3}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z]{3}$\"".into());
         }
+        Ok(Self(value.to_string()))
     }
 }
 impl ::std::convert::TryFrom<&str> for Currency {
@@ -28786,9 +28778,16 @@ impl ::std::convert::TryFrom<::std::string::String> for Currency {
         value.parse()
     }
 }
-impl ::std::default::Default for Currency {
-    fn default() -> Self {
-        Currency::Usd
+impl<'de> ::serde::Deserialize<'de> for Currency {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
     }
 }
 #[doc = "`Customer`"]
@@ -45651,7 +45650,7 @@ impl<'de> ::serde::Deserialize<'de> for ExperimentVariantVariantId {
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"addons\": {"]
@@ -45662,7 +45661,7 @@ impl<'de> ::serde::Deserialize<'de> for ExperimentVariantVariantId {
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"artifact_type\": {"]
@@ -45927,7 +45926,7 @@ impl<'de> ::serde::Deserialize<'de> for ExperimentVariantVariantId {
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"plans\": {"]
@@ -63665,6 +63664,7 @@ impl<'de> ::serde::Deserialize<'de> for PlanTenantId {
 #[doc = "    \"anchor_id\","]
 #[doc = "    \"billing_period\","]
 #[doc = "    \"created_at\","]
+#[doc = "    \"currency\","]
 #[doc = "    \"handle\","]
 #[doc = "    \"id\","]
 #[doc = "    \"plan_id\","]
@@ -63711,6 +63711,10 @@ impl<'de> ::serde::Deserialize<'de> for PlanTenantId {
 #[doc = "      \"format\": \"date-time\","]
 #[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"currency\": {"]
+#[doc = "      \"$ref\": \"#/$defs/Currency\","]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\""]
 #[doc = "    },"]
 #[doc = "    \"delete_date\": {"]
 #[doc = "      \"default\": null,"]
@@ -63855,6 +63859,7 @@ pub struct PlanVariation {
     pub base_sequence: ::std::option::Option<i64>,
     pub billing_period: PlanVariationBillingPeriod,
     pub created_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub currency: Currency,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub delete_date: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
     #[serde(default = "defaults::plan_variation_environment_id")]
@@ -64499,7 +64504,7 @@ impl ::std::convert::TryFrom<::std::string::String> for PlanVisibility {
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"addons\": {"]
@@ -64510,7 +64515,7 @@ impl ::std::convert::TryFrom<::std::string::String> for PlanVisibility {
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"artifact_type\": {"]
@@ -64775,7 +64780,7 @@ impl ::std::convert::TryFrom<::std::string::String> for PlanVisibility {
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"plans\": {"]
@@ -65062,7 +65067,7 @@ pub struct Playbook {
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"addons\": {"]
@@ -65073,7 +65078,7 @@ pub struct Playbook {
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"content_overrides\": {"]
@@ -65275,7 +65280,7 @@ pub struct Playbook {
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"plans\": {"]
@@ -66127,7 +66132,7 @@ impl<'de> ::serde::Deserialize<'de> for PlaybookHeaderTenantId {
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"addons\": {"]
@@ -66138,7 +66143,7 @@ impl<'de> ::serde::Deserialize<'de> for PlaybookHeaderTenantId {
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"artifact_type\": {"]
@@ -66403,7 +66408,7 @@ impl<'de> ::serde::Deserialize<'de> for PlaybookHeaderTenantId {
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"plans\": {"]
@@ -67342,7 +67347,7 @@ impl ::std::default::Default for PlaybookSignalCatalog {
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"addons\": {"]
@@ -67353,7 +67358,7 @@ impl ::std::default::Default for PlaybookSignalCatalog {
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"artifact_type\": {"]
@@ -67618,7 +67623,7 @@ impl ::std::default::Default for PlaybookSignalCatalog {
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"plans\": {"]
@@ -72712,7 +72717,7 @@ impl<'de> ::serde::Deserialize<'de> for RatioVariantStatisticalSummaryVariantId 
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"addons\": {"]
@@ -72723,7 +72728,7 @@ impl<'de> ::serde::Deserialize<'de> for RatioVariantStatisticalSummaryVariantId 
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"artifact_type\": {"]
@@ -72988,7 +72993,7 @@ impl<'de> ::serde::Deserialize<'de> for RatioVariantStatisticalSummaryVariantId 
 #[doc = "      \"x-revturbine-context\": \"playbook\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-in-config\": true,"]
-#[doc = "      \"x-revturbine-sdk-input\": false,"]
+#[doc = "      \"x-revturbine-sdk-input\": true,"]
 #[doc = "      \"x-revturbine-source\": \"customer\""]
 #[doc = "    },"]
 #[doc = "    \"plans\": {"]
@@ -73262,6 +73267,7 @@ pub struct RevTurbineConfig {
 #[doc = "  \"required\": ["]
 #[doc = "    \"addon_handle\","]
 #[doc = "    \"billing_period\","]
+#[doc = "    \"currency\","]
 #[doc = "    \"handle\","]
 #[doc = "    \"price_amount\","]
 #[doc = "    \"price_source\","]
@@ -73281,6 +73287,10 @@ pub struct RevTurbineConfig {
 #[doc = "        \"one_time\","]
 #[doc = "        \"custom\""]
 #[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"currency\": {"]
+#[doc = "      \"$ref\": \"#/$defs/Currency\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"handle\": {"]
@@ -73333,10 +73343,10 @@ pub struct RevTurbineConfig {
 #[doc = "  },"]
 #[doc = "  \"additionalProperties\": false,"]
 #[doc = "  \"x-revturbine-context\": \"playbook\","]
-#[doc = "  \"x-revturbine-in-config\": false,"]
+#[doc = "  \"x-revturbine-in-config\": true,"]
 #[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
 #[doc = "  \"x-revturbine-schema-persistence\": \"transient\","]
-#[doc = "  \"x-revturbine-sdk-input\": false,"]
+#[doc = "  \"x-revturbine-sdk-input\": true,"]
 #[doc = "  \"x-revturbine-source\": \"customer\""]
 #[doc = "}"]
 #[doc = r" ```"]
@@ -73346,6 +73356,7 @@ pub struct RevTurbineConfig {
 pub struct RevTurbineConfigAddonVariationsItem {
     pub addon_handle: RevTurbineConfigAddonVariationsItemAddonHandle,
     pub billing_period: RevTurbineConfigAddonVariationsItemBillingPeriod,
+    pub currency: Currency,
     pub handle: RevTurbineConfigAddonVariationsItemHandle,
     pub price_amount: f64,
     pub price_source: PriceSource,
@@ -73628,7 +73639,7 @@ impl<'de> ::serde::Deserialize<'de> for RevTurbineConfigAddonVariationsItemHandl
 #[doc = "  \"x-revturbine-in-config\": true,"]
 #[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
 #[doc = "  \"x-revturbine-schema-persistence\": \"transient\","]
-#[doc = "  \"x-revturbine-sdk-input\": false,"]
+#[doc = "  \"x-revturbine-sdk-input\": true,"]
 #[doc = "  \"x-revturbine-source\": \"customer\""]
 #[doc = "}"]
 #[doc = r" ```"]
@@ -78158,6 +78169,7 @@ impl ::std::convert::TryFrom<::std::string::String> for RevTurbineConfigPlacemen
 #[doc = "  \"type\": \"object\","]
 #[doc = "  \"required\": ["]
 #[doc = "    \"billing_period\","]
+#[doc = "    \"currency\","]
 #[doc = "    \"handle\","]
 #[doc = "    \"plan_handle\","]
 #[doc = "    \"price_amount\","]
@@ -78173,6 +78185,10 @@ impl ::std::convert::TryFrom<::std::string::String> for RevTurbineConfigPlacemen
 #[doc = "        \"one_time\","]
 #[doc = "        \"custom\""]
 #[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"currency\": {"]
+#[doc = "      \"$ref\": \"#/$defs/Currency\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"handle\": {"]
@@ -78230,10 +78246,10 @@ impl ::std::convert::TryFrom<::std::string::String> for RevTurbineConfigPlacemen
 #[doc = "  },"]
 #[doc = "  \"additionalProperties\": false,"]
 #[doc = "  \"x-revturbine-context\": \"playbook\","]
-#[doc = "  \"x-revturbine-in-config\": false,"]
+#[doc = "  \"x-revturbine-in-config\": true,"]
 #[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
 #[doc = "  \"x-revturbine-schema-persistence\": \"transient\","]
-#[doc = "  \"x-revturbine-sdk-input\": false,"]
+#[doc = "  \"x-revturbine-sdk-input\": true,"]
 #[doc = "  \"x-revturbine-source\": \"customer\""]
 #[doc = "}"]
 #[doc = r" ```"]
@@ -78242,6 +78258,7 @@ impl ::std::convert::TryFrom<::std::string::String> for RevTurbineConfigPlacemen
 #[serde(deny_unknown_fields)]
 pub struct RevTurbineConfigPlanVariationsItem {
     pub billing_period: RevTurbineConfigPlanVariationsItemBillingPeriod,
+    pub currency: Currency,
     pub handle: RevTurbineConfigPlanVariationsItemHandle,
     pub plan_handle: RevTurbineConfigPlanVariationsItemPlanHandle,
     pub price_amount: f64,

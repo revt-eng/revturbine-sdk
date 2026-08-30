@@ -54,6 +54,10 @@ import type {
   PredicateEvaluationResult,
 } from '@revt-eng/core';
 import { resolvePlacementComponentType } from '@revt-eng/core';
+import {
+  getEligibleAddons as coreGetEligibleAddons,
+  getEligiblePlans as coreGetEligiblePlans,
+} from '@revt-eng/core/plans';
 // Plan 177 TASK-5: Server mode consumes the canonical-JSON payload artifact —
 // integrity-checked against its content address, version-refused before any
 // evaluation. (Replaces plan 160's client-side binary-bundle decode.)
@@ -149,6 +153,46 @@ import type { TelemetryCounters } from './telemetry';
 
 // Re-export core JSON types for public SDK surface
 export type { JsonValue, JsonObject } from '@revt-eng/core';
+/** Non-authoritative display price carried by an eligible variation. */
+export interface EligiblePrice {
+  price: number;
+  currency: string;
+  pricingModel: 'flat' | 'per_unit' | 'tiered' | 'metered';
+  billingPeriod: 'monthly' | 'annual' | 'one_time' | 'custom';
+}
+
+/** A public plan variation eligible for the active targeting context. */
+export interface EligiblePlan {
+  handle: string;
+  name: string;
+  tierPosition: number;
+  sortOrder: number;
+  variationHandle: string;
+  segmentHandle: string | null;
+  price: EligiblePrice;
+}
+
+/** A public add-on variation eligible for the active targeting context. */
+export interface EligibleAddon {
+  handle: string;
+  name: string;
+  sortOrder: number;
+  variationHandle: string;
+  segmentHandle: string | null;
+  price: EligiblePrice;
+}
+
+/** Format an integer minor-unit amount for Playbook-backed display tokens. */
+export function formatCurrencyMinorUnits(amount: number, currencyCode: string, locale?: string): string {
+  const currency = currencyCode.toUpperCase();
+  try {
+    const formatter = new Intl.NumberFormat(locale, { style: 'currency', currency });
+    const fractionDigits = formatter.resolvedOptions().maximumFractionDigits ?? 2;
+    return formatter.format(amount / (10 ** fractionDigits));
+  } catch {
+    return `${currency} ${amount}`;
+  }
+}
 export type {
   ServerActionContext,
   ServerActionHandler,
@@ -835,6 +879,11 @@ export interface RevTurbineInitOptions {
    * `'default'` when omitted.
    */
   environmentId?: string;
+  /**
+   * Locale used to format Playbook-backed price tokens. When omitted, the
+   * host runtime locale is used by `Intl.NumberFormat`.
+   */
+  locale?: string;
   /**
    * Test-traffic marker (plan 164).
    *
@@ -2161,6 +2210,7 @@ export class RevTurbineCustomerSdk {
   private readonly apiKey: string;
   private readonly ingestPublicKey?: string;
   private readonly environmentId: string;
+  private readonly locale?: string;
   // Caller-declared test traffic (plan 164) — stamps `test: true` on every
   // emitted event; analytics default-exclude those rows.
   private readonly testTraffic: boolean;
@@ -2287,6 +2337,7 @@ export class RevTurbineCustomerSdk {
     this.apiKey = options.apiKey;
     this.ingestPublicKey = options.ingestPublicKey;
     this.environmentId = options.environmentId?.trim() || 'default';
+    this.locale = options.locale?.trim() || undefined;
     this.testTraffic = options.test === true;
     this.analyticsEnabled = options.analytics !== false;
     this.anonymousTelemetryEnabled = options.anonymousTelemetry !== false;
@@ -3368,6 +3419,10 @@ export class RevTurbineCustomerSdk {
       tokens.recommended_plan_name = recommended.recommended_plan_name;
     }
 
+    const priceTokens = this.priceTokensForProviders();
+    if (tokens.plan_price === undefined) tokens.plan_price = priceTokens.plan_price;
+    if (tokens.upgrade_plan_price === undefined) tokens.upgrade_plan_price = priceTokens.upgrade_plan_price;
+
     return tokens;
   }
 
@@ -3410,6 +3465,121 @@ export class RevTurbineCustomerSdk {
     }
 
     return snapshot;
+  }
+
+  private catalogEligibilityContext(segmentIds?: readonly string[]): {
+    segmentIds: readonly string[];
+    segmentDimensions: Record<string, string>;
+  } {
+    const exportedConfig = this.getConfiguredExportedConfig();
+    const segmentDimensions: Record<string, string> = {};
+    for (const segment of exportedConfig?.segments ?? []) {
+      if (segment.dimension_id) segmentDimensions[segment.handle] = segment.dimension_id;
+    }
+    return {
+      segmentIds: segmentIds ?? this.getTargeting().segmentIds,
+      segmentDimensions,
+    };
+  }
+
+  private eligiblePlansForSegments(segmentIds?: readonly string[]): EligiblePlan[] {
+    const config = this.getConfiguredExportedConfig();
+    if (!config) return [];
+    return coreGetEligiblePlans(
+      config.plans ?? [],
+      config.plan_variations ?? [],
+      this.catalogEligibilityContext(segmentIds),
+    );
+  }
+
+  private eligibleAddonsForSegments(segmentIds?: readonly string[]): EligibleAddon[] {
+    const config = this.getConfiguredExportedConfig();
+    if (!config) return [];
+    return coreGetEligibleAddons(
+      config.addons ?? [],
+      config.addon_variations ?? [],
+      this.catalogEligibilityContext(segmentIds),
+    );
+  }
+
+  /** Return the public plan variations eligible for the active user. */
+  async getEligiblePlans(): Promise<EligiblePlan[]> {
+    if (!this.getConfiguredExportedConfig() && !this.isLocalOnlyMode()) {
+      await this.refreshExportedConfigSnapshot();
+    }
+    const providers = this.providerRegistry.size > 0
+      ? await this.providerRegistry.resolveAll()
+      : undefined;
+    return this.eligiblePlansForSegments(providers?.segments?.segmentIds);
+  }
+
+  /** Return the public add-on variations eligible for the active user. */
+  async getEligibleAddons(): Promise<EligibleAddon[]> {
+    if (!this.getConfiguredExportedConfig() && !this.isLocalOnlyMode()) {
+      await this.refreshExportedConfigSnapshot();
+    }
+    const providers = this.providerRegistry.size > 0
+      ? await this.providerRegistry.resolveAll()
+      : undefined;
+    return this.eligibleAddonsForSegments(providers?.segments?.segmentIds);
+  }
+
+  private formatEligiblePrice(plan: EligiblePlan): string {
+    return formatCurrencyMinorUnits(plan.price.price, plan.price.currency, this.locale);
+  }
+
+  private priceTokensForProviders(
+    providers?: Awaited<ReturnType<DomainProviderRegistry['resolveAll']>>,
+  ): { plan_price: string; upgrade_plan_price: string } {
+    const eligible = this.eligiblePlansForSegments(providers?.segments?.segmentIds);
+    const currentHandle = providers?.plan?.currentPlanHandle || this.resolveContextPlanRaw();
+    const billingPeriod = providers?.plan?.billingPeriod;
+    const selectVariation = (handle: string | undefined): EligiblePlan | undefined => {
+      const candidates = eligible.filter((plan) => plan.handle === handle);
+      return candidates.find((plan) => plan.price.billingPeriod === billingPeriod) ?? candidates[0];
+    };
+    const current = selectVariation(currentHandle || undefined);
+    const recommendation = this.deriveRecommendedPlanTokens(this.getConfiguredExportedConfig());
+    const upgrade = selectVariation(recommendation.recommended_plan_handle || undefined);
+    return {
+      plan_price: current
+        ? this.formatEligiblePrice(current)
+        : (providers?.plan?.currentPlanPrice ?? ''),
+      upgrade_plan_price: upgrade ? this.formatEligiblePrice(upgrade) : '',
+    };
+  }
+
+  private applyPriceTokens(
+    decision: RevTurbinePlacementDecision,
+    providers?: Awaited<ReturnType<DomainProviderRegistry['resolveAll']>>,
+  ): RevTurbinePlacementDecision {
+    const tokens = this.priceTokensForProviders(providers);
+    const replace = (value: string | undefined): string => typeof value === 'string'
+      ? value.replace(
+        /\{\{\s*(plan_price|upgrade_plan_price)\s*\}\}/g,
+        (_match, key: 'plan_price' | 'upgrade_plan_price') => tokens[key],
+      )
+      : '';
+    return {
+      ...decision,
+      content: {
+        ...decision.content,
+        header: replace(decision.content.header),
+        body: replace(decision.content.body),
+        cta_label: replace(decision.content.cta_label),
+        title: replace(decision.content.title),
+        cta: replace(decision.content.cta),
+      },
+      ...(decision.output ? {
+        output: {
+          ...decision.output,
+          content: Object.fromEntries(Object.entries(decision.output.content).map(([key, value]) => [
+            key,
+            typeof value === 'string' ? replace(value) : value,
+          ])),
+        },
+      } : {}),
+    };
   }
 
   /**
@@ -5541,7 +5711,10 @@ export class RevTurbineCustomerSdk {
           ...legacyCtx,
           ...(providerCtx ? { __providers: providerCtx } : {}),
         } as JsonObject;
-        const decision = this.gateDecisionByCaps(await resolver(input, placement, ctx));
+        const decision = this.applyPriceTokens(
+          this.gateDecisionByCaps(await resolver(input, placement, ctx)),
+          providerCtx,
+        );
         this.localDecisionsByPlacementId.set(input.placementId, decision);
         this.writeDecisionCache(key, decision, input.ttlMs);
         this.persistLocalRuntimeState();

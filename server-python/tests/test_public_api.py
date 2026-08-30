@@ -105,6 +105,8 @@ class TestPublicSurface:
             "get_placement_decision",
             "get_placement_decisions",
             "get_placement",
+            "get_eligible_plans",
+            "get_eligible_addons",
         ):
             assert callable(getattr(sdk, name))
 

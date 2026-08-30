@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.261/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.262/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -1030,10 +1030,8 @@ class CtaPathType(Enum):
     custom = "custom"
 
 
-class Currency(Enum):
-    usd = "usd"
-    eur = "eur"
-    gbp = "gbp"
+class Currency(RootModel[constr(pattern=r"^[a-z]{3}$")]):
+    root: constr(pattern=r"^[a-z]{3}$") = "usd"
 
 
 class CustomerOverrideDuration(Enum):
@@ -2402,6 +2400,7 @@ class RevTurbineConfigAddonVariationsItem(BaseModel):
     billing_period: BillingPeriod
     segment_handle: str | None = None
     price_amount: confloat(ge=0.0)
+    currency: Currency
     pricing_model: PricingModel
     visibility: PlanVisibility | None = "public"
     stripe_price_id: str | None = None
@@ -2650,6 +2649,7 @@ class RevTurbineConfigPlanVariationsItem(BaseModel):
     billing_period: BillingPeriod
     segment_handle: str | None = None
     price_amount: confloat(ge=0.0)
+    currency: Currency
     pricing_model: PricingModel
     visibility: PlanVisibility | None = "public"
     stripe_price_id: str | None = None
@@ -3646,6 +3646,7 @@ class AddOnVariation(BaseModel):
     billing_period: BillingPeriod
     segment_id: str | None = None
     price_amount: confloat(ge=0.0)
+    currency: Currency
     pricing_model: PricingModel
     visibility: PlanVisibility | None = "public"
     stripe_price_id: str | None = None
@@ -4642,6 +4643,7 @@ class PlanVariation(BaseModel):
     billing_period: BillingPeriod
     segment_id: str | None = None
     price_amount: confloat(ge=0.0)
+    currency: Currency
     pricing_model: PricingModel
     visibility: PlanVisibility | None = "public"
     stripe_price_id: str | None = None

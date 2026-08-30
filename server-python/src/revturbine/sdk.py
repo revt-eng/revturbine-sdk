@@ -54,6 +54,7 @@ from revturbine.core.decisions import (
     PlacementDecision,
     PlacementDecisionInput,
 )
+from revturbine.core.plans import get_eligible_addons, get_eligible_plans
 from revturbine.core.providers.types import DomainProvider, DomainProviderName
 from revturbine.core.runtime import LocalRuntime
 from revturbine.core.trials import evaluate_trial_status as _evaluate_trial_status
@@ -105,6 +106,7 @@ class UserContext(_UserContextRequired, total=False):
     # Current tier per capability_tier entitlement handle, for the
     # entitlement_gate.tier_threshold gate (plan 138 TASK-4).
     tiers: dict[str, str] | None
+    segment_ids: list[str] | None
 
 
 class RevTurbineCustomerSdk:
@@ -152,6 +154,8 @@ class RevTurbineCustomerSdk:
         )
         if playbook is None:
             raise ValueError("exported_config is required")
+        self._playbook = playbook
+        self._segment_ids = user_context.get("segment_ids") or []
 
         # Trial-rule arrays for config-driven trial evaluation
         # (:meth:`evaluate_trial_status`). The Playbook carries them as
@@ -187,6 +191,31 @@ class RevTurbineCustomerSdk:
             user_id=user_id,
             exported_config=playbook,
             providers=providers,
+        )
+
+    def _segment_dimensions(self) -> dict[str, str]:
+        return {
+            segment["handle"]: segment["dimension_id"]
+            for segment in self._playbook.get("segments") or []
+            if segment.get("handle") and segment.get("dimension_id")
+        }
+
+    def get_eligible_plans(self) -> list[dict[str, Any]]:
+        """Return public plan variations eligible for this user."""
+        return get_eligible_plans(
+            self._playbook.get("plans") or [],
+            self._playbook.get("plan_variations") or [],
+            segment_ids=self._segment_ids,
+            segment_dimensions=self._segment_dimensions(),
+        )
+
+    def get_eligible_addons(self) -> list[dict[str, Any]]:
+        """Return public add-on variations eligible for this user."""
+        return get_eligible_addons(
+            self._playbook.get("addons") or [],
+            self._playbook.get("addon_variations") or [],
+            segment_ids=self._segment_ids,
+            segment_dimensions=self._segment_dimensions(),
         )
 
     def check_entitlement(

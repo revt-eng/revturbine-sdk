@@ -15,4 +15,6 @@ export * from './useGatedAction';
 export * from './Track';
 export * from './useCan';
 export * from './useUsageSnapshot';
+export * from './usePlans';
+export * from './useAddons';
 export { useRevTurbineTheme } from '../theme/ThemeContext';

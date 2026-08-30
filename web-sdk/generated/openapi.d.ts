@@ -552,14 +552,14 @@ export interface components {
     schemas: {
         /** @enum {string} */
         PlanVisibility: "public" | "unlisted" | "legacy";
+        /** @default usd */
+        Currency: components["schemas"]["Anon_063c0cce3710"];
         /** @enum {string} */
         PricingModel: "flat" | "per_unit" | "tiered" | "metered";
         /** @enum {string} */
         PriceSource: "stripe" | "static";
         /** @enum {string} */
         StripePriceBillingPeriod: "monthly" | "annual" | "one_time" | "custom";
-        /** @default usd */
-        Currency: components["schemas"]["Anon_93bacb23d436"];
         /** @enum {string} */
         EntitlementType: "feature" | "capability_tier" | "usage_limit" | "price_per_unit" | "rate_limit" | "credits" | "seat";
         /** @enum {string} */
@@ -1151,6 +1151,8 @@ export interface components {
         Anon_f7fb9744a6e4_1: components["schemas"]["Anon_f090cb615c84_1"];
         Anon_f090cb615c84_1: string | null;
         Anon_7ab7b70b014d: number;
+        Anon_86ff5762cd58: components["schemas"]["Currency"];
+        Anon_063c0cce3710: string;
         Anon_1b09b93e2f83: components["schemas"]["PricingModel"];
         /** @default public */
         Anon_a5e31586a542_1: components["schemas"]["PlanVisibility"];
@@ -1173,6 +1175,7 @@ export interface components {
         Anon_f7fb9744a6e4_2: components["schemas"]["Anon_f090cb615c84_2"];
         Anon_f090cb615c84_2: string | null;
         Anon_7ab7b70b014d_1: number;
+        Anon_86ff5762cd58_1: components["schemas"]["Currency"];
         Anon_1b09b93e2f83_1: components["schemas"]["PricingModel"];
         /** @default public */
         Anon_a5e31586a542_3: components["schemas"]["PlanVisibility"];
@@ -1186,9 +1189,7 @@ export interface components {
         /** @default null */
         Anon_79391150fda1: components["schemas"]["Anon_c648138a0918"];
         Anon_c648138a0918: number | null;
-        Anon_86ff5762cd58: components["schemas"]["Currency"];
-        /** @enum {string} */
-        Anon_93bacb23d436: "usd" | "eur" | "gbp";
+        Anon_86ff5762cd58_2: components["schemas"]["Currency"];
         Anon_1b09b93e2f83_2: components["schemas"]["PricingModel"];
         /** @default null */
         Anon_f7fb9744a6e4_3: components["schemas"]["Anon_f090cb615c84_3"];
@@ -2199,6 +2200,7 @@ export interface components {
             billing_period: components["schemas"]["Anon_129e203b1449_2"];
             segment_id: components["schemas"]["Anon_f7fb9744a6e4_12"];
             price_amount: components["schemas"]["Anon_7ab7b70b014d_3"];
+            currency: components["schemas"]["Anon_1788a9a8a0b9"];
             pricing_model: components["schemas"]["Anon_1b09b93e2f83_3"];
             visibility: components["schemas"]["Anon_a5e31586a542_5"];
             stripe_price_id?: components["schemas"]["Anon_96f9066c2fdc_34"];
@@ -2243,6 +2245,7 @@ export interface components {
             billing_period: components["schemas"]["Anon_129e203b1449_3"];
             segment_id: components["schemas"]["Anon_f7fb9744a6e4_13"];
             price_amount: components["schemas"]["Anon_7ab7b70b014d_4"];
+            currency: components["schemas"]["Anon_1788a9a8a0b9_1"];
             pricing_model: components["schemas"]["Anon_1b09b93e2f83_4"];
             visibility: components["schemas"]["Anon_a5e31586a542_7"];
             stripe_price_id?: components["schemas"]["Anon_96f9066c2fdc_35"];
@@ -2257,7 +2260,7 @@ export interface components {
             stripe_product_id: components["schemas"]["Anon_57796118d046_31"];
             billing_period: components["schemas"]["Anon_cf08caa6d850_1"];
             unit_amount_cents: components["schemas"]["Anon_79391150fda1_1"];
-            currency: components["schemas"]["Anon_1788a9a8a0b9"];
+            currency: components["schemas"]["Anon_1788a9a8a0b9_2"];
             pricing_model: components["schemas"]["Anon_1b09b93e2f83_5"];
             nickname: components["schemas"]["Anon_f7fb9744a6e4_14"];
             is_mock: components["schemas"]["Anon_062d958a93c4_4"];
@@ -3755,6 +3758,8 @@ export interface components {
         Anon_f7fb9744a6e4_12: components["schemas"]["Anon_f090cb615c84_26"];
         Anon_f090cb615c84_26: string | null;
         Anon_7ab7b70b014d_3: number;
+        Anon_1788a9a8a0b9: components["schemas"]["CurrencyOutput"];
+        Anon_063c0cce3710_1: string;
         Anon_1b09b93e2f83_3: components["schemas"]["PricingModel"];
         /** @default public */
         Anon_a5e31586a542_5: components["schemas"]["PlanVisibility"];
@@ -3780,6 +3785,7 @@ export interface components {
         Anon_f7fb9744a6e4_13: components["schemas"]["Anon_f090cb615c84_27"];
         Anon_f090cb615c84_27: string | null;
         Anon_7ab7b70b014d_4: number;
+        Anon_1788a9a8a0b9_1: components["schemas"]["CurrencyOutput"];
         Anon_1b09b93e2f83_4: components["schemas"]["PricingModel"];
         /** @default public */
         Anon_a5e31586a542_7: components["schemas"]["PlanVisibility"];
@@ -3793,9 +3799,7 @@ export interface components {
         /** @default null */
         Anon_79391150fda1_1: components["schemas"]["Anon_c648138a0918_6"];
         Anon_c648138a0918_6: number | null;
-        Anon_1788a9a8a0b9: components["schemas"]["CurrencyOutput"];
-        /** @enum {string} */
-        Anon_93bacb23d436_1: "usd" | "eur" | "gbp";
+        Anon_1788a9a8a0b9_2: components["schemas"]["CurrencyOutput"];
         Anon_1b09b93e2f83_5: components["schemas"]["PricingModel"];
         /** @default null */
         Anon_f7fb9744a6e4_14: components["schemas"]["Anon_f090cb615c84_28"];
@@ -5658,7 +5662,7 @@ export interface components {
             [key: string]: string;
         };
         /** @default usd */
-        CurrencyOutput: components["schemas"]["Anon_93bacb23d436_1"];
+        CurrencyOutput: components["schemas"]["Anon_063c0cce3710_1"];
         EntitlementRuleTargetOutput: {
             kind: components["schemas"]["Anon_70ee2ddbc798_1"];
             id: components["schemas"]["Anon_57796118d046_33"];
@@ -6301,6 +6305,7 @@ export interface operations {
                     billing_period: components["schemas"]["Anon_129e203b1449"];
                     segment_id?: components["schemas"]["Anon_f7fb9744a6e4_1"];
                     price_amount: components["schemas"]["Anon_7ab7b70b014d"];
+                    currency?: components["schemas"]["Anon_86ff5762cd58"];
                     pricing_model: components["schemas"]["Anon_1b09b93e2f83"];
                     visibility?: components["schemas"]["Anon_a5e31586a542_1"];
                     stripe_price_id?: components["schemas"]["Anon_96f9066c2fdc"];
@@ -6379,6 +6384,7 @@ export interface operations {
                     billing_period: components["schemas"]["Anon_129e203b1449"];
                     segment_id?: components["schemas"]["Anon_f7fb9744a6e4_1"];
                     price_amount: components["schemas"]["Anon_7ab7b70b014d"];
+                    currency?: components["schemas"]["Anon_86ff5762cd58"];
                     pricing_model: components["schemas"]["Anon_1b09b93e2f83"];
                     visibility?: components["schemas"]["Anon_a5e31586a542_1"];
                     stripe_price_id?: components["schemas"]["Anon_96f9066c2fdc"];
@@ -6579,6 +6585,7 @@ export interface operations {
                     billing_period: components["schemas"]["Anon_129e203b1449_1"];
                     segment_id?: components["schemas"]["Anon_f7fb9744a6e4_2"];
                     price_amount: components["schemas"]["Anon_7ab7b70b014d_1"];
+                    currency?: components["schemas"]["Anon_86ff5762cd58_1"];
                     pricing_model: components["schemas"]["Anon_1b09b93e2f83_1"];
                     visibility?: components["schemas"]["Anon_a5e31586a542_3"];
                     stripe_price_id?: components["schemas"]["Anon_96f9066c2fdc_1"];
@@ -6657,6 +6664,7 @@ export interface operations {
                     billing_period: components["schemas"]["Anon_129e203b1449_1"];
                     segment_id?: components["schemas"]["Anon_f7fb9744a6e4_2"];
                     price_amount: components["schemas"]["Anon_7ab7b70b014d_1"];
+                    currency?: components["schemas"]["Anon_86ff5762cd58_1"];
                     pricing_model: components["schemas"]["Anon_1b09b93e2f83_1"];
                     visibility?: components["schemas"]["Anon_a5e31586a542_3"];
                     stripe_price_id?: components["schemas"]["Anon_96f9066c2fdc_1"];
@@ -6718,7 +6726,7 @@ export interface operations {
                     stripe_product_id: components["schemas"]["Anon_57796118d046_3"];
                     billing_period: components["schemas"]["Anon_cf08caa6d850"];
                     unit_amount_cents?: components["schemas"]["Anon_79391150fda1"];
-                    currency?: components["schemas"]["Anon_86ff5762cd58"];
+                    currency?: components["schemas"]["Anon_86ff5762cd58_2"];
                     pricing_model: components["schemas"]["Anon_1b09b93e2f83_2"];
                     nickname?: components["schemas"]["Anon_f7fb9744a6e4_3"];
                     is_mock?: components["schemas"]["Anon_062d958a93c4"];
@@ -6796,7 +6804,7 @@ export interface operations {
                     stripe_product_id: components["schemas"]["Anon_57796118d046_3"];
                     billing_period: components["schemas"]["Anon_cf08caa6d850"];
                     unit_amount_cents?: components["schemas"]["Anon_79391150fda1"];
-                    currency?: components["schemas"]["Anon_86ff5762cd58"];
+                    currency?: components["schemas"]["Anon_86ff5762cd58_2"];
                     pricing_model: components["schemas"]["Anon_1b09b93e2f83_2"];
                     nickname?: components["schemas"]["Anon_f7fb9744a6e4_3"];
                     is_mock?: components["schemas"]["Anon_062d958a93c4"];
