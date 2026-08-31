@@ -932,8 +932,6 @@ export interface components {
             strategy?: components["schemas"]["Anon_28108a0fc5c3"];
         };
         /** @enum {string} */
-        ApiKeyStatus: "active" | "revoked" | "rotating";
-        /** @enum {string} */
         FlagValueType: "boolean" | "string" | "number" | "json";
         /** @enum {string} */
         PlacementTestUserIdentifierType: "user_id" | "account_id" | "email";
@@ -3517,6 +3515,7 @@ export interface components {
             rejection_reason?: components["schemas"]["Anon_e648d024ff54_3"];
             snapshot: components["schemas"]["Anon_24c687f9b9af"];
             bundle: components["schemas"]["Anon_7f83d3357e9c_4"];
+            bundle_sha256: components["schemas"]["Anon_0879675a88c9"];
             metadata: components["schemas"]["Anon_f27cb44c32f6_34"];
         };
         /** @enum {string} */
@@ -3541,19 +3540,6 @@ export interface components {
             resource_name?: components["schemas"]["Anon_96f9066c2fdc_61"];
             action: components["schemas"]["Anon_2dd4ddc8b727"];
             has_conflict: components["schemas"]["Anon_a2b04841bdf1_3"];
-        };
-        ApiKey: {
-            id: components["schemas"]["Anon_fb248bf5a9f7_9"];
-            created_at: components["schemas"]["Anon_be3e2585472d_2"];
-            updated_at: components["schemas"]["Anon_be3e2585472d_3"];
-            tenant_id: components["schemas"]["Anon_fb248bf5a9f7_10"];
-            name: components["schemas"]["Anon_4c26b3baab05_31"];
-            key_hash: components["schemas"]["Anon_9f5eba431f05"];
-            key_prefix: components["schemas"]["Anon_1e785866125e"];
-            key_last4: components["schemas"]["Anon_e83e9e4262ab"];
-            status: components["schemas"]["Anon_669ca3b468dc"];
-            last_used_at: components["schemas"]["Anon_24a0ac3f017b_4"];
-            expires_at: components["schemas"]["Anon_711dc9708535_17"];
         };
         FeatureFlag: {
             id: components["schemas"]["Anon_fb248bf5a9f7_9"];
@@ -3601,7 +3587,7 @@ export interface components {
             step_key: components["schemas"]["Anon_3b8fc1cd9e8b_21"];
             label: components["schemas"]["Anon_872e58432369_6"];
             done: components["schemas"]["Anon_062d958a93c4_25"];
-            completed_at: components["schemas"]["Anon_24a0ac3f017b_5"];
+            completed_at: components["schemas"]["Anon_24a0ac3f017b_4"];
         };
         AuditEvent: {
             id: components["schemas"]["Anon_fb248bf5a9f7_9"];
@@ -3646,7 +3632,7 @@ export interface components {
             credential_reference: components["schemas"]["Anon_5039ee734b40"];
             environment_id: components["schemas"]["Anon_e43b94a532cf_1"];
             health_state: components["schemas"]["Anon_11d59db73568"];
-            last_health_check_at: components["schemas"]["Anon_24a0ac3f017b_6"];
+            last_health_check_at: components["schemas"]["Anon_24a0ac3f017b_5"];
             supported_capability_versions: components["schemas"]["Anon_6b38be8d7409"];
             external_project_id: components["schemas"]["Anon_8f1996a1f1f2_2"];
             external_workspace_id: components["schemas"]["Anon_8f1996a1f1f2_3"];
@@ -5335,6 +5321,9 @@ export interface components {
         /** @default null */
         Anon_7f83d3357e9c_4: components["schemas"]["Anon_f090cb615c84_46"];
         Anon_f090cb615c84_46: string | null;
+        /** @default null */
+        Anon_0879675a88c9: components["schemas"]["Anon_8575e887fe28"];
+        Anon_8575e887fe28: string | null;
         Anon_f27cb44c32f6_34: components["schemas"]["Anon_f2d1b3e449b4_1"];
         Anon_127eb78cd9c0_8: string;
         Anon_274ba4ca49d5_23: number;
@@ -5354,14 +5343,6 @@ export interface components {
         Anon_274ba4ca49d5_26: number;
         Anon_274ba4ca49d5_27: number;
         Anon_a2b04841bdf1_4: boolean;
-        Anon_4c26b3baab05_31: components["schemas"]["Anon_52ba84a4bbf3_2"];
-        Anon_9f5eba431f05: string;
-        Anon_1e785866125e: string;
-        Anon_e83e9e4262ab: string;
-        /** @default active */
-        Anon_669ca3b468dc: components["schemas"]["ApiKeyStatus"];
-        Anon_24a0ac3f017b_4: components["schemas"]["Anon_11c9ad639448_1"];
-        Anon_711dc9708535_17: components["schemas"]["Anon_11c9ad639448_1"];
         Anon_3b8fc1cd9e8b_20: string;
         /** @default boolean */
         Anon_95bcb0caba53_1: components["schemas"]["FlagValueType"];
@@ -5419,7 +5400,7 @@ export interface components {
         /** @default false */
         Anon_062d958a93c4_25: components["schemas"]["Anon_7cb541e84f22_77"];
         Anon_7cb541e84f22_77: boolean;
-        Anon_24a0ac3f017b_5: components["schemas"]["Anon_11c9ad639448_1"];
+        Anon_24a0ac3f017b_4: components["schemas"]["Anon_11c9ad639448_1"];
         /** @default production */
         Anon_a2f8ac1ffbf6: components["schemas"]["Anon_9ac136edb99a_25"];
         Anon_9ac136edb99a_25: string;
@@ -5462,7 +5443,7 @@ export interface components {
         Anon_52ba84a4bbf3_4: string;
         /** @default unavailable */
         Anon_11d59db73568: components["schemas"]["ProviderAvailability"];
-        Anon_24a0ac3f017b_6: components["schemas"]["Anon_11c9ad639448_1"];
+        Anon_24a0ac3f017b_5: components["schemas"]["Anon_11c9ad639448_1"];
         /** @default {} */
         Anon_6b38be8d7409: components["schemas"]["Anon_b6fc00bafe95"];
         Anon_b6fc00bafe95: {
@@ -5645,7 +5626,7 @@ export interface components {
         Anon_f090cb615c84_48: string | null;
         Anon_4fc4bfa2adad_17: components["schemas"]["Anon_f090cb615c84_49"];
         Anon_f090cb615c84_49: string | null;
-        Anon_711dc9708535_18: components["schemas"]["Anon_11c9ad639448_1"];
+        Anon_711dc9708535_17: components["schemas"]["Anon_11c9ad639448_1"];
         Anon_9f0494e90be4_1: components["schemas"]["Anon_c648138a0918_11"];
         Anon_c648138a0918_11: number | null;
         Anon_8b48719136dc_2: components["schemas"]["Anon_b0c21ae8f968_6"];
@@ -5982,7 +5963,7 @@ export interface components {
             personalization: components["schemas"]["Anon_9176ec69fff5_1"];
             derived_config_version?: components["schemas"]["Anon_4fc4bfa2adad_16"];
             context_hash?: components["schemas"]["Anon_4fc4bfa2adad_17"];
-            derived_computed_at: components["schemas"]["Anon_711dc9708535_18"];
+            derived_computed_at: components["schemas"]["Anon_711dc9708535_17"];
             activity_score?: components["schemas"]["Anon_9f0494e90be4_1"];
             activity_score_computed_at?: components["schemas"]["Anon_8b48719136dc_2"];
             experiments?: components["schemas"]["Anon_f86c1754c55e_3"];

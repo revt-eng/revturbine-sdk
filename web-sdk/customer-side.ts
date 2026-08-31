@@ -61,7 +61,15 @@ import {
 // Plan 177 TASK-5: Server mode consumes the canonical-JSON payload artifact —
 // integrity-checked against its content address, version-refused before any
 // evaluation. (Replaces plan 160's client-side binary-bundle decode.)
-import { assertPlaybookPayloadReadable, sha256Hex } from '@revt-eng/core/bundle';
+import {
+  assertPlaybookPayloadReadable,
+  BundleManifestSchema,
+  checkManifestWindow,
+  sha256Hex,
+  verifyManifest,
+  type BundleManifest,
+  type TrustedKey,
+} from '@revt-eng/core/bundle';
 import {
   ImpressionHistory,
   StorageImpressionStore,
@@ -872,6 +880,15 @@ export interface RevTurbineInitOptions {
    * rejected. Set this for any integration that emits events.
    */
   ingestPublicKey?: string;
+  /**
+   * Optional Ed25519 trust store for signed Playbook manifests.
+   *
+   * When supplied, hosted delivery activates a manifest only after its
+   * detached signature verifies against one of these keys. When omitted,
+   * transport and content-hash integrity still apply. Manifest activation
+   * windows are enforced in both modes, so an expired manifest is never used.
+   */
+  trustedManifestKeys?: readonly TrustedKey[];
   /**
    * Environment identifier stamped on every ingested clickstream event
    * (`TrackEvent.environment_id`, e.g. `'prod'` / `'staging'`). Lets a
@@ -2041,18 +2058,17 @@ class StaticExportedConfigProvider implements RuntimeConfigProvider {
 }
 
 /**
- * Server-mode launched-config provider (plan 159). Fetches the tenant's active
- * launched Playbook from the control plane (`GET /api/sdk/config`) so the SDK
- * can evaluate entitlements LOCALLY in Server mode — the integrator never
- * passes the Playbook. Polled with `refresh()` (TTL-gated, ETag revalidation)
- * so a new release is picked up without a per-check round-trip. Authenticated
- * with the public ingest token (the same key as `/api/track`); the launched
- * Playbook carries no per-user/PII data (that is `/api/sdk/client-context`).
+ * Server-mode launched-config provider. The primary path exchanges the public
+ * token once at `/api/sdk/bootstrap`, then fetches signed manifest and bundle
+ * URLs from the CDN. Every decision still evaluates locally. The legacy
+ * `/api/sdk/config` endpoint remains the fail-soft fallback for any bootstrap,
+ * manifest, integrity, decode, or compatibility failure.
  */
 class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
   private cached?: RevTurbineConfig;
   private etag?: string;
   private lastFetchedAt = 0;
+  private inFlight?: Promise<RevTurbineConfig | undefined>;
   private static readonly REFRESH_TTL_MS = 60_000;
 
   constructor(
@@ -2060,6 +2076,7 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
     private readonly tenantId: string,
     private readonly token: string,
     private readonly legacyTargetDefaults: LegacyConfigTargetDefaults,
+    private readonly trustedManifestKeys: readonly TrustedKey[],
   ) {}
 
   getExportedConfig(): RevTurbineConfig | undefined {
@@ -2073,6 +2090,99 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
     if (this.cached && now - this.lastFetchedAt < ServerLaunchedConfigProvider.REFRESH_TTL_MS) {
       return this.cached;
     }
+    if (this.inFlight) return this.inFlight;
+    this.lastFetchedAt = now;
+    const refresh = this.refreshOnce(now);
+    this.inFlight = refresh;
+    try {
+      return await refresh;
+    } finally {
+      if (this.inFlight === refresh) this.inFlight = undefined;
+    }
+  }
+
+  private async refreshOnce(nowMs: number): Promise<RevTurbineConfig | undefined> {
+    try {
+      const cdnConfig = await this.fetchCdnConfig(nowMs);
+      if (cdnConfig) {
+        this.cached = cdnConfig;
+        return this.cached;
+      }
+      return await this.fetchLegacyConfig();
+    } catch {
+      // Network/parse/refusal failure — keep last-known-good; never throw.
+      return this.cached;
+    }
+  }
+
+  private async fetchCdnConfig(nowMs: number): Promise<RevTurbineConfig | undefined> {
+    try {
+      const bootstrap = await fetch(`${this.endpoint}/api/sdk/bootstrap`, {
+        method: 'GET',
+        headers: {
+          accept: 'application/json',
+          authorization: `Bearer ${this.token}`,
+        },
+      });
+      if (!bootstrap.ok) return undefined;
+
+      const bootstrapRaw: unknown = await bootstrap.json(); // sdk-ok: boundary-parse
+      if (!isRecord(bootstrapRaw) || typeof bootstrapRaw.manifest_url !== 'string') {
+        return undefined;
+      }
+
+      let manifest = await this.acceptManifest(bootstrapRaw.manifest, nowMs);
+      if (!manifest) {
+        const manifestResponse = await fetch(this.resolveDeliveryUrl(bootstrapRaw.manifest_url), {
+          method: 'GET',
+          headers: { accept: 'application/json' },
+        });
+        if (!manifestResponse.ok) return undefined;
+        const manifestRaw: unknown = await manifestResponse.json(); // sdk-ok: boundary-parse
+        manifest = await this.acceptManifest(manifestRaw, nowMs);
+      }
+      if (!manifest) return undefined;
+
+      const bundleResponse = await fetch(this.resolveDeliveryUrl(manifest.active.url), {
+        method: 'GET',
+        headers: { accept: 'application/json' },
+      });
+      if (!bundleResponse.ok) return undefined;
+      const bytes = new Uint8Array(await bundleResponse.arrayBuffer());
+      if (await sha256Hex(bytes) !== manifest.active.sha256) return undefined;
+      // The bundle fetch itself may cross the activation boundary. Re-check
+      // immediately before decode so even a just-expired manifest cannot
+      // activate after a slow network response.
+      if (!checkManifestWindow(manifest, new Date(Date.now())).ok) return undefined;
+
+      const text = new TextDecoder().decode(bytes);
+      const raw: unknown = JSON.parse(text); // sdk-ok: boundary-parse
+      assertPlaybookPayloadReadable(raw);
+      return configArtifactForRuntime(raw, 'signed Playbook bundle', this.legacyTargetDefaults);
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async acceptManifest(
+    raw: unknown, // sdk-ok: boundary-parse
+    nowMs: number,
+  ): Promise<BundleManifest | undefined> {
+    const parsed = BundleManifestSchema.safeParse(raw);
+    if (!parsed.success || parsed.data.tenant_id !== this.tenantId) return undefined;
+    if (!checkManifestWindow(parsed.data, new Date(nowMs)).ok) return undefined;
+    if (this.trustedManifestKeys.length > 0) {
+      const verified = await verifyManifest(parsed.data, this.trustedManifestKeys);
+      if (!verified.ok) return undefined;
+    }
+    return parsed.data;
+  }
+
+  private resolveDeliveryUrl(url: string): string {
+    return new URL(url, `${this.endpoint}/`).toString();
+  }
+
+  private async fetchLegacyConfig(): Promise<RevTurbineConfig | undefined> {
     try {
       const response = await fetch(`${this.endpoint}/api/sdk/config`, {
         method: 'GET',
@@ -2083,7 +2193,6 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
           ...(this.etag ? { 'if-none-match': this.etag } : {}),
         },
       });
-      this.lastFetchedAt = now;
       // 304 (unchanged) or any non-2xx: keep the last-known-good config. A
       // caller with no config at all fails closed at the check site.
       if (response.status === 304 || !response.ok) return this.cached;
@@ -2112,7 +2221,6 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
       }
       return this.cached;
     } catch {
-      // Network/parse/refusal failure — keep last-known-good; never throw.
       return this.cached;
     }
   }
@@ -2534,6 +2642,7 @@ export class RevTurbineCustomerSdk {
         options.tenantId,
         configToken,
         legacyTargetDefaults,
+        options.trustedManifestKeys ?? [],
       );
     }
 
@@ -6263,7 +6372,7 @@ export class RevTurbineCustomerSdk {
         this.persistLocalRuntimeState();
         return result;
       }
-    } else if (!this.getConfiguredExportedConfig()) {
+    } else {
       // Server mode (plan 159): fetch the launched Playbook from the control
       // plane so entitlements evaluate LOCALLY — no per-check round-trip. The
       // config provider is TTL-gated + ETag-revalidated, so this is a cheap poll.

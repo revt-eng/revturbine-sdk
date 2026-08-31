@@ -110,7 +110,7 @@ describe('Server-mode placement decisions are local (plan 159 TASK-4)', () => {
     expect(decision.visible).toBe(false);
     expect(decision.reasonCodes).toContain('config_unavailable');
     // The fetch was kicked (fire-and-forget) so a later call can resolve.
-    expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/sdk/config'))).toBe(true);
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/sdk/bootstrap'))).toBe(true);
     // No retired endpoint was consulted as a fallback.
     for (const retired of RETIRED) {
       expect(fetchMock.mock.calls.some(([u]) => String(u).includes(retired))).toBe(false);
@@ -123,6 +123,6 @@ describe('Server-mode placement decisions are local (plan 159 TASK-4)', () => {
     const result = await sdk.getPlacement({ placementHandle: 'upsell' });
     expect(result).toBeNull();
     expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/sdk/get-placement'))).toBe(false);
-    expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/sdk/config'))).toBe(true);
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/sdk/bootstrap'))).toBe(true);
   });
 });

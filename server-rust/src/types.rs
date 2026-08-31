@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.263/rust/revturbine_types.rs
+//   published/v0.1.265/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -18357,645 +18357,6 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsWarningMessage 
     }
 }
 impl<'de> ::serde::Deserialize<'de> for AnalyticsWarningMessage {
-    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
-    where
-        D: ::serde::Deserializer<'de>,
-    {
-        ::std::string::String::deserialize(deserializer)?
-            .parse()
-            .map_err(|e: self::error::ConversionError| {
-                <D::Error as ::serde::de::Error>::custom(e.to_string())
-            })
-    }
-}
-#[doc = "`ApiKey`"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"type\": \"object\","]
-#[doc = "  \"required\": ["]
-#[doc = "    \"created_at\","]
-#[doc = "    \"id\","]
-#[doc = "    \"key_hash\","]
-#[doc = "    \"key_last4\","]
-#[doc = "    \"key_prefix\","]
-#[doc = "    \"name\","]
-#[doc = "    \"tenant_id\","]
-#[doc = "    \"updated_at\""]
-#[doc = "  ],"]
-#[doc = "  \"properties\": {"]
-#[doc = "    \"created_at\": {"]
-#[doc = "      \"readOnly\": true,"]
-#[doc = "      \"type\": \"string\","]
-#[doc = "      \"format\": \"date-time\","]
-#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    },"]
-#[doc = "    \"expires_at\": {"]
-#[doc = "      \"default\": null,"]
-#[doc = "      \"anyOf\": ["]
-#[doc = "        {"]
-#[doc = "          \"type\": \"string\","]
-#[doc = "          \"format\": \"date-time\","]
-#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
-#[doc = "        },"]
-#[doc = "        {"]
-#[doc = "          \"type\": \"null\""]
-#[doc = "        }"]
-#[doc = "      ],"]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    },"]
-#[doc = "    \"id\": {"]
-#[doc = "      \"readOnly\": true,"]
-#[doc = "      \"type\": \"string\","]
-#[doc = "      \"minLength\": 1,"]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    },"]
-#[doc = "    \"key_hash\": {"]
-#[doc = "      \"readOnly\": true,"]
-#[doc = "      \"type\": \"string\","]
-#[doc = "      \"minLength\": 1,"]
-#[doc = "      \"x-revturbine-data-classification\": \"pii\""]
-#[doc = "    },"]
-#[doc = "    \"key_last4\": {"]
-#[doc = "      \"readOnly\": true,"]
-#[doc = "      \"type\": \"string\","]
-#[doc = "      \"maxLength\": 4,"]
-#[doc = "      \"minLength\": 4,"]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    },"]
-#[doc = "    \"key_prefix\": {"]
-#[doc = "      \"readOnly\": true,"]
-#[doc = "      \"type\": \"string\","]
-#[doc = "      \"maxLength\": 20,"]
-#[doc = "      \"minLength\": 1,"]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    },"]
-#[doc = "    \"last_used_at\": {"]
-#[doc = "      \"default\": null,"]
-#[doc = "      \"readOnly\": true,"]
-#[doc = "      \"anyOf\": ["]
-#[doc = "        {"]
-#[doc = "          \"type\": \"string\","]
-#[doc = "          \"format\": \"date-time\","]
-#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
-#[doc = "        },"]
-#[doc = "        {"]
-#[doc = "          \"type\": \"null\""]
-#[doc = "        }"]
-#[doc = "      ],"]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    },"]
-#[doc = "    \"name\": {"]
-#[doc = "      \"type\": \"string\","]
-#[doc = "      \"maxLength\": 200,"]
-#[doc = "      \"minLength\": 1,"]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    },"]
-#[doc = "    \"status\": {"]
-#[doc = "      \"default\": \"active\","]
-#[doc = "      \"$ref\": \"#/$defs/ApiKeyStatus\","]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    },"]
-#[doc = "    \"tenant_id\": {"]
-#[doc = "      \"readOnly\": true,"]
-#[doc = "      \"type\": \"string\","]
-#[doc = "      \"minLength\": 1,"]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    },"]
-#[doc = "    \"updated_at\": {"]
-#[doc = "      \"readOnly\": true,"]
-#[doc = "      \"type\": \"string\","]
-#[doc = "      \"format\": \"date-time\","]
-#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    }"]
-#[doc = "  },"]
-#[doc = "  \"additionalProperties\": false,"]
-#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
-#[doc = "  \"x-revturbine-schema-persistence\": \"persisted\""]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
-#[serde(deny_unknown_fields)]
-pub struct ApiKey {
-    pub created_at: ::chrono::DateTime<::chrono::offset::Utc>,
-    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
-    pub expires_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
-    pub id: ApiKeyId,
-    pub key_hash: ApiKeyKeyHash,
-    pub key_last4: ApiKeyKeyLast4,
-    pub key_prefix: ApiKeyKeyPrefix,
-    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
-    pub last_used_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
-    pub name: ApiKeyName,
-    #[serde(default = "defaults::api_key_status")]
-    pub status: ApiKeyStatus,
-    pub tenant_id: ApiKeyTenantId,
-    pub updated_at: ::chrono::DateTime<::chrono::offset::Utc>,
-}
-#[doc = "`ApiKeyId`"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"readOnly\": true,"]
-#[doc = "  \"type\": \"string\","]
-#[doc = "  \"minLength\": 1,"]
-#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[serde(transparent)]
-pub struct ApiKeyId(::std::string::String);
-impl ::std::ops::Deref for ApiKeyId {
-    type Target = ::std::string::String;
-    fn deref(&self) -> &::std::string::String {
-        &self.0
-    }
-}
-impl ::std::convert::From<ApiKeyId> for ::std::string::String {
-    fn from(value: ApiKeyId) -> Self {
-        value.0
-    }
-}
-impl ::std::str::FromStr for ApiKeyId {
-    type Err = self::error::ConversionError;
-    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        if value.chars().count() < 1usize {
-            return Err("shorter than 1 characters".into());
-        }
-        Ok(Self(value.to_string()))
-    }
-}
-impl ::std::convert::TryFrom<&str> for ApiKeyId {
-    type Error = self::error::ConversionError;
-    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<&::std::string::String> for ApiKeyId {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: &::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<::std::string::String> for ApiKeyId {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: ::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl<'de> ::serde::Deserialize<'de> for ApiKeyId {
-    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
-    where
-        D: ::serde::Deserializer<'de>,
-    {
-        ::std::string::String::deserialize(deserializer)?
-            .parse()
-            .map_err(|e: self::error::ConversionError| {
-                <D::Error as ::serde::de::Error>::custom(e.to_string())
-            })
-    }
-}
-#[doc = "`ApiKeyKeyHash`"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"readOnly\": true,"]
-#[doc = "  \"type\": \"string\","]
-#[doc = "  \"minLength\": 1,"]
-#[doc = "  \"x-revturbine-data-classification\": \"pii\""]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[serde(transparent)]
-pub struct ApiKeyKeyHash(::std::string::String);
-impl ::std::ops::Deref for ApiKeyKeyHash {
-    type Target = ::std::string::String;
-    fn deref(&self) -> &::std::string::String {
-        &self.0
-    }
-}
-impl ::std::convert::From<ApiKeyKeyHash> for ::std::string::String {
-    fn from(value: ApiKeyKeyHash) -> Self {
-        value.0
-    }
-}
-impl ::std::str::FromStr for ApiKeyKeyHash {
-    type Err = self::error::ConversionError;
-    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        if value.chars().count() < 1usize {
-            return Err("shorter than 1 characters".into());
-        }
-        Ok(Self(value.to_string()))
-    }
-}
-impl ::std::convert::TryFrom<&str> for ApiKeyKeyHash {
-    type Error = self::error::ConversionError;
-    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<&::std::string::String> for ApiKeyKeyHash {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: &::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<::std::string::String> for ApiKeyKeyHash {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: ::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl<'de> ::serde::Deserialize<'de> for ApiKeyKeyHash {
-    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
-    where
-        D: ::serde::Deserializer<'de>,
-    {
-        ::std::string::String::deserialize(deserializer)?
-            .parse()
-            .map_err(|e: self::error::ConversionError| {
-                <D::Error as ::serde::de::Error>::custom(e.to_string())
-            })
-    }
-}
-#[doc = "`ApiKeyKeyLast4`"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"readOnly\": true,"]
-#[doc = "  \"type\": \"string\","]
-#[doc = "  \"maxLength\": 4,"]
-#[doc = "  \"minLength\": 4,"]
-#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[serde(transparent)]
-pub struct ApiKeyKeyLast4(::std::string::String);
-impl ::std::ops::Deref for ApiKeyKeyLast4 {
-    type Target = ::std::string::String;
-    fn deref(&self) -> &::std::string::String {
-        &self.0
-    }
-}
-impl ::std::convert::From<ApiKeyKeyLast4> for ::std::string::String {
-    fn from(value: ApiKeyKeyLast4) -> Self {
-        value.0
-    }
-}
-impl ::std::str::FromStr for ApiKeyKeyLast4 {
-    type Err = self::error::ConversionError;
-    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        if value.chars().count() > 4usize {
-            return Err("longer than 4 characters".into());
-        }
-        if value.chars().count() < 4usize {
-            return Err("shorter than 4 characters".into());
-        }
-        Ok(Self(value.to_string()))
-    }
-}
-impl ::std::convert::TryFrom<&str> for ApiKeyKeyLast4 {
-    type Error = self::error::ConversionError;
-    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<&::std::string::String> for ApiKeyKeyLast4 {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: &::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<::std::string::String> for ApiKeyKeyLast4 {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: ::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl<'de> ::serde::Deserialize<'de> for ApiKeyKeyLast4 {
-    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
-    where
-        D: ::serde::Deserializer<'de>,
-    {
-        ::std::string::String::deserialize(deserializer)?
-            .parse()
-            .map_err(|e: self::error::ConversionError| {
-                <D::Error as ::serde::de::Error>::custom(e.to_string())
-            })
-    }
-}
-#[doc = "`ApiKeyKeyPrefix`"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"readOnly\": true,"]
-#[doc = "  \"type\": \"string\","]
-#[doc = "  \"maxLength\": 20,"]
-#[doc = "  \"minLength\": 1,"]
-#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[serde(transparent)]
-pub struct ApiKeyKeyPrefix(::std::string::String);
-impl ::std::ops::Deref for ApiKeyKeyPrefix {
-    type Target = ::std::string::String;
-    fn deref(&self) -> &::std::string::String {
-        &self.0
-    }
-}
-impl ::std::convert::From<ApiKeyKeyPrefix> for ::std::string::String {
-    fn from(value: ApiKeyKeyPrefix) -> Self {
-        value.0
-    }
-}
-impl ::std::str::FromStr for ApiKeyKeyPrefix {
-    type Err = self::error::ConversionError;
-    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        if value.chars().count() > 20usize {
-            return Err("longer than 20 characters".into());
-        }
-        if value.chars().count() < 1usize {
-            return Err("shorter than 1 characters".into());
-        }
-        Ok(Self(value.to_string()))
-    }
-}
-impl ::std::convert::TryFrom<&str> for ApiKeyKeyPrefix {
-    type Error = self::error::ConversionError;
-    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<&::std::string::String> for ApiKeyKeyPrefix {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: &::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<::std::string::String> for ApiKeyKeyPrefix {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: ::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl<'de> ::serde::Deserialize<'de> for ApiKeyKeyPrefix {
-    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
-    where
-        D: ::serde::Deserializer<'de>,
-    {
-        ::std::string::String::deserialize(deserializer)?
-            .parse()
-            .map_err(|e: self::error::ConversionError| {
-                <D::Error as ::serde::de::Error>::custom(e.to_string())
-            })
-    }
-}
-#[doc = "`ApiKeyName`"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"type\": \"string\","]
-#[doc = "  \"maxLength\": 200,"]
-#[doc = "  \"minLength\": 1,"]
-#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[serde(transparent)]
-pub struct ApiKeyName(::std::string::String);
-impl ::std::ops::Deref for ApiKeyName {
-    type Target = ::std::string::String;
-    fn deref(&self) -> &::std::string::String {
-        &self.0
-    }
-}
-impl ::std::convert::From<ApiKeyName> for ::std::string::String {
-    fn from(value: ApiKeyName) -> Self {
-        value.0
-    }
-}
-impl ::std::str::FromStr for ApiKeyName {
-    type Err = self::error::ConversionError;
-    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        if value.chars().count() > 200usize {
-            return Err("longer than 200 characters".into());
-        }
-        if value.chars().count() < 1usize {
-            return Err("shorter than 1 characters".into());
-        }
-        Ok(Self(value.to_string()))
-    }
-}
-impl ::std::convert::TryFrom<&str> for ApiKeyName {
-    type Error = self::error::ConversionError;
-    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<&::std::string::String> for ApiKeyName {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: &::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<::std::string::String> for ApiKeyName {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: ::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl<'de> ::serde::Deserialize<'de> for ApiKeyName {
-    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
-    where
-        D: ::serde::Deserializer<'de>,
-    {
-        ::std::string::String::deserialize(deserializer)?
-            .parse()
-            .map_err(|e: self::error::ConversionError| {
-                <D::Error as ::serde::de::Error>::custom(e.to_string())
-            })
-    }
-}
-#[doc = "`ApiKeyStatus`"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"type\": \"string\","]
-#[doc = "  \"enum\": ["]
-#[doc = "    \"active\","]
-#[doc = "    \"revoked\","]
-#[doc = "    \"rotating\""]
-#[doc = "  ],"]
-#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
-#[doc = "  \"x-revturbine-schema-persistence\": \"persisted\""]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(
-    :: serde :: Deserialize,
-    :: serde :: Serialize,
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    Hash,
-    Ord,
-    PartialEq,
-    PartialOrd,
-)]
-pub enum ApiKeyStatus {
-    #[serde(rename = "active")]
-    Active,
-    #[serde(rename = "revoked")]
-    Revoked,
-    #[serde(rename = "rotating")]
-    Rotating,
-}
-impl ::std::fmt::Display for ApiKeyStatus {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        match *self {
-            Self::Active => f.write_str("active"),
-            Self::Revoked => f.write_str("revoked"),
-            Self::Rotating => f.write_str("rotating"),
-        }
-    }
-}
-impl ::std::str::FromStr for ApiKeyStatus {
-    type Err = self::error::ConversionError;
-    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        match value {
-            "active" => Ok(Self::Active),
-            "revoked" => Ok(Self::Revoked),
-            "rotating" => Ok(Self::Rotating),
-            _ => Err("invalid value".into()),
-        }
-    }
-}
-impl ::std::convert::TryFrom<&str> for ApiKeyStatus {
-    type Error = self::error::ConversionError;
-    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<&::std::string::String> for ApiKeyStatus {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: &::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<::std::string::String> for ApiKeyStatus {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: ::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-#[doc = "`ApiKeyTenantId`"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"readOnly\": true,"]
-#[doc = "  \"type\": \"string\","]
-#[doc = "  \"minLength\": 1,"]
-#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[serde(transparent)]
-pub struct ApiKeyTenantId(::std::string::String);
-impl ::std::ops::Deref for ApiKeyTenantId {
-    type Target = ::std::string::String;
-    fn deref(&self) -> &::std::string::String {
-        &self.0
-    }
-}
-impl ::std::convert::From<ApiKeyTenantId> for ::std::string::String {
-    fn from(value: ApiKeyTenantId) -> Self {
-        value.0
-    }
-}
-impl ::std::str::FromStr for ApiKeyTenantId {
-    type Err = self::error::ConversionError;
-    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        if value.chars().count() < 1usize {
-            return Err("shorter than 1 characters".into());
-        }
-        Ok(Self(value.to_string()))
-    }
-}
-impl ::std::convert::TryFrom<&str> for ApiKeyTenantId {
-    type Error = self::error::ConversionError;
-    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<&::std::string::String> for ApiKeyTenantId {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: &::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<::std::string::String> for ApiKeyTenantId {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: ::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl<'de> ::serde::Deserialize<'de> for ApiKeyTenantId {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -68312,6 +67673,20 @@ impl<'de> ::serde::Deserialize<'de> for PlaybookTenantId {
 #[doc = "      ],"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"bundle_sha256\": {"]
+#[doc = "      \"default\": null,"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"pattern\": \"^[a-f0-9]{64}$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"cherry_picked_from_playbook_version_id\": {"]
 #[doc = "      \"default\": null,"]
 #[doc = "      \"anyOf\": ["]
@@ -68547,6 +67922,8 @@ pub struct PlaybookVersion {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub bundle: ::std::option::Option<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub bundle_sha256: ::std::option::Option<PlaybookVersionBundleSha256>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub cherry_picked_from_playbook_version_id: ::std::option::Option<::std::string::String>,
     #[serde(default)]
     pub conflict_count: i64,
@@ -68588,6 +67965,76 @@ pub struct PlaybookVersion {
     pub submitted_by: ::std::option::Option<::std::string::String>,
     pub tenant_id: PlaybookVersionTenantId,
     pub updated_at: ::chrono::DateTime<::chrono::offset::Utc>,
+}
+#[doc = "`PlaybookVersionBundleSha256`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[a-f0-9]{64}$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PlaybookVersionBundleSha256(::std::string::String);
+impl ::std::ops::Deref for PlaybookVersionBundleSha256 {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PlaybookVersionBundleSha256> for ::std::string::String {
+    fn from(value: PlaybookVersionBundleSha256) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PlaybookVersionBundleSha256 {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-f0-9]{64}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-f0-9]{64}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PlaybookVersionBundleSha256 {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PlaybookVersionBundleSha256 {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PlaybookVersionBundleSha256 {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PlaybookVersionBundleSha256 {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
 }
 #[doc = "`PlaybookVersionCreatedBy`"]
 #[doc = r""]
@@ -99861,9 +99308,6 @@ pub mod defaults {
     }
     pub(super) fn analytics_view_filter_applies_to() -> super::AnalyticsViewFilterAppliesTo {
         super::AnalyticsViewFilterAppliesTo::String("all".to_string())
-    }
-    pub(super) fn api_key_status() -> super::ApiKeyStatus {
-        super::ApiKeyStatus::Active
     }
     pub(super) fn audit_event_environment_id() -> super::AuditEventEnvironmentId {
         super::AuditEventEnvironmentId("production".to_string())

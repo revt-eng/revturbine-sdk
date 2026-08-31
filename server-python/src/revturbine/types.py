@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.263/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.265/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -617,12 +617,6 @@ class AnalyticsWarning(BaseModel):
     )
     code: constr(pattern=r"^[A-Z][A-Z0-9_]{2,79}$")
     message: constr(min_length=1, max_length=500)
-
-
-class ApiKeyStatus(Enum):
-    active = "active"
-    revoked = "revoked"
-    rotating = "rotating"
 
 
 class AuditActorType(Enum):
@@ -3960,23 +3954,6 @@ class AnalyticsViewHandoff(BaseModel):
     ) = {}
 
 
-class ApiKey(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-    tenant_id: constr(min_length=1)
-    name: constr(min_length=1, max_length=200)
-    key_hash: constr(min_length=1)
-    key_prefix: constr(min_length=1, max_length=20)
-    key_last4: constr(min_length=4, max_length=4)
-    status: ApiKeyStatus | None = "active"
-    last_used_at: AwareDatetime | None = None
-    expires_at: AwareDatetime | None = None
-
-
 class AuthInvitation(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -4687,6 +4664,7 @@ class PlaybookVersion(BaseModel):
     rejection_reason: constr(max_length=2000) | None = None
     snapshot: dict[str, Any] | None = None
     bundle: str | None = None
+    bundle_sha256: constr(pattern=r"^[a-f0-9]{64}$") | None = None
     metadata: dict[str, Any] | None = {}
 
 
