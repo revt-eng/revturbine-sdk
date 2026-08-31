@@ -2,6 +2,7 @@
 export type {
   DomainProviderName,
   DomainProvider,
+  DomainProviderResolutionInput,
   AnyDomainProvider,
   ResolvedProviderContext,
   ResolvedDomainType,
@@ -21,6 +22,9 @@ export type {
   ExperimentAssignmentProvider,
   ExperimentProvider,
   ExperimentProviderState,
+  ExperimentVariantNonAssignmentReason,
+  ExperimentVariantSelection,
+  EffectiveUserContextResolution,
   // Content
   ContentProvider,
   ContentProviderState,
@@ -53,6 +57,12 @@ export type {
 } from './types';
 
 export { DomainProviderRegistry } from './registry';
+
+export {
+  composeEffectiveExperimentContext,
+  createCompositeExperimentProvider,
+} from './experiment-context';
+export type { CompositeExperimentProviderOptions } from './experiment-context';
 
 // Server-user-context provider (`traits:server`) — plan 165 TASK-4. Auto-wired by
 // the SDK from the `/api/sdk/client-context` fetch; surfaces server-authoritative

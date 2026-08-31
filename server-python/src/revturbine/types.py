@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.265/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.267/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -1361,6 +1361,11 @@ class ExperimentAnalysisConfig(BaseModel):
     multiple_comparisons: MultipleComparisons | None = None
     variance_reduction: VarianceReduction | VarianceReduction1 | None = None
     practical_significance: PracticalSignificance | None = None
+
+
+class ExperimentAssignmentSource(Enum):
+    native = "native"
+    customer_sdk = "customer_sdk"
 
 
 class Status2(Enum):
@@ -5434,7 +5439,10 @@ class Experiment(BaseModel):
     primary_metric: AnalyticsSemanticId
     guardrail_metrics: list[AnalyticsSemanticId] | None = None
     assignment_unit: AnalyticsAnalyticalUnit | None = None
-    assignment_provider_binding: AssignmentProviderBinding | None = None
+    assignment_source: ExperimentAssignmentSource | None = None
+    assignment_provider_binding: AssignmentProviderBinding | None = Field(
+        None, deprecated=True
+    )
     evidence_provider_binding: EvidenceProviderBinding | None = None
     analysis_provider_binding: AnalysisProviderBinding | None = None
     analysis_config: ExperimentAnalysisConfig | None = None

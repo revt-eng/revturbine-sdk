@@ -7,6 +7,7 @@ import {
   createGrowthBookExperimentAssignmentProvider,
   GrowthBookAssignmentError,
 } from './providers/growthbook-experiment-provider';
+import { createCompositeExperimentProvider } from './providers/experiment-context';
 
 const CONTRACT_FIXTURE = {
   experimentHandle: 'pricing_test',
@@ -109,5 +110,27 @@ describe('GrowthBook experiment assignment adapter', () => {
     });
 
     expect(() => provider.resolve()).toThrowError(/outside the configured allowlist/);
+  });
+
+  it('normalizes an unexpected vendor value for the SDK variant API', async () => {
+    const growthbook = new GrowthBook<Record<string, string>>().initSync({
+      payload: { features: { flag: { defaultValue: 'surprise' } } },
+    });
+    const provider = createGrowthBookExperimentAssignmentProvider({
+      client: growthbook,
+      bindings: [{
+        experimentHandle: 'experiment',
+        featureKey: 'flag',
+        allowedVariants: ['control', 'treatment'],
+      }],
+    });
+
+    const state = await createCompositeExperimentProvider([provider]).resolve();
+    expect(state.assignments).toEqual({});
+    expect(state.selections?.experiment).toMatchObject({
+      status: 'unsupported',
+      reason: 'unknown_variant',
+      providerHandle: 'growthbook',
+    });
   });
 });

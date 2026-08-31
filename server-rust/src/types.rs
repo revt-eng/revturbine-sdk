@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.265/rust/revturbine_types.rs
+//   published/v0.1.267/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -37567,6 +37567,8 @@ impl ::std::default::Default for EvidenceRequirement {
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"assignment_provider_binding\": {"]
+#[doc = "      \"deprecated\": true,"]
+#[doc = "      \"readOnly\": true,"]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
 #[doc = "        \"allocation_mode\","]
@@ -37589,6 +37591,10 @@ impl ::std::default::Default for EvidenceRequirement {
 #[doc = "        }"]
 #[doc = "      },"]
 #[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"assignment_source\": {"]
+#[doc = "      \"$ref\": \"#/$defs/ExperimentAssignmentSource\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"assignment_unit\": {"]
@@ -37868,6 +37874,8 @@ pub struct Experiment {
     pub anchor_id: ExperimentAnchorId,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub assignment_provider_binding: ::std::option::Option<ExperimentAssignmentProviderBinding>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub assignment_source: ::std::option::Option<ExperimentAssignmentSource>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub assignment_unit: ::std::option::Option<AnalyticsAnalyticalUnit>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -40413,6 +40421,8 @@ impl<'de> ::serde::Deserialize<'de> for ExperimentAnchorId {
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
+#[doc = "  \"deprecated\": true,"]
+#[doc = "  \"readOnly\": true,"]
 #[doc = "  \"type\": \"object\","]
 #[doc = "  \"required\": ["]
 #[doc = "    \"allocation_mode\","]
@@ -40523,6 +40533,84 @@ impl<'de> ::serde::Deserialize<'de> for ExperimentAssignmentProviderBindingProvi
             .map_err(|e: self::error::ConversionError| {
                 <D::Error as ::serde::de::Error>::custom(e.to_string())
             })
+    }
+}
+#[doc = "`ExperimentAssignmentSource`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"native\","]
+#[doc = "    \"customer_sdk\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-context\": \"playbook\","]
+#[doc = "  \"x-revturbine-in-config\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"persisted\","]
+#[doc = "  \"x-revturbine-sdk-input\": true,"]
+#[doc = "  \"x-revturbine-source\": \"customer\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ExperimentAssignmentSource {
+    #[serde(rename = "native")]
+    Native,
+    #[serde(rename = "customer_sdk")]
+    CustomerSdk,
+}
+impl ::std::fmt::Display for ExperimentAssignmentSource {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Native => f.write_str("native"),
+            Self::CustomerSdk => f.write_str("customer_sdk"),
+        }
+    }
+}
+impl ::std::str::FromStr for ExperimentAssignmentSource {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "native" => Ok(Self::Native),
+            "customer_sdk" => Ok(Self::CustomerSdk),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ExperimentAssignmentSource {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ExperimentAssignmentSource {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ExperimentAssignmentSource {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
     }
 }
 #[doc = "`ExperimentClusterAggregate`"]

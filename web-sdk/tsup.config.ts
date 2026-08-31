@@ -38,7 +38,9 @@ export default defineConfig({
   entry: {
     index: 'index.ts',
     headless: 'headless.ts',
-    ...(process.env.REVT_SDK_BASE_ONLY === '1' ? {} : { growthbook: 'growthbook.ts' }),
+    ...(process.env.REVT_SDK_BASE_ONLY === '1'
+      ? {}
+      : { growthbook: 'growthbook.ts', optimizely: 'optimizely.ts' }),
   },
   outDir: process.env.REVT_SDK_OUT_DIR ?? 'dist',
   format: ['esm'],

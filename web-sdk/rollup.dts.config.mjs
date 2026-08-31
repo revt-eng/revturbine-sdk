@@ -11,6 +11,7 @@ import dts from 'rollup-plugin-dts';
 
 const external = [
   /^@growthbook\/growthbook($|\/)/,
+  /^@optimizely\/optimizely-sdk($|\/)/,
   /^react($|\/)/,
   /^react-dom($|\/)/,
   /^zod($|\/)/,
@@ -48,4 +49,5 @@ export default [
   entry('dist/types/web-sdk/index.d.ts', 'dist/index.d.ts'),
   entry('dist/types/web-sdk/headless.d.ts', 'dist/headless.d.ts'),
   entry('dist/types/web-sdk/growthbook.d.ts', 'dist/growthbook.d.ts'),
+  entry('dist/types/web-sdk/optimizely.d.ts', 'dist/optimizely.d.ts'),
 ];

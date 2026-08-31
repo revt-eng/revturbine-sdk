@@ -803,7 +803,8 @@ export interface components {
             primary_metric: components["schemas"]["Anon_76f6bc2425cd"];
             guardrail_metrics?: components["schemas"]["Anon_1617b0c336e0"];
             assignment_unit?: components["schemas"]["Anon_612059bf001c"];
-            assignment_provider_binding?: components["schemas"]["Anon_75f0cca02ed3"];
+            assignment_source?: components["schemas"]["Anon_3779643c24e1"];
+            assignment_provider_binding?: components["schemas"]["Anon_a1e4b0c4236b"];
             evidence_provider_binding?: components["schemas"]["Anon_b2e1a0d7ec7a"];
             analysis_provider_binding?: components["schemas"]["Anon_7bde8d223aab"];
             analysis_config?: components["schemas"]["Anon_c16adc49fe17"];
@@ -832,6 +833,8 @@ export interface components {
         AnalyticsSemanticId: string;
         /** @enum {string} */
         AnalyticsAnalyticalUnit: "account" | "user" | "billing_unit" | "organization";
+        /** @enum {string} */
+        ExperimentAssignmentSource: "native" | "customer_sdk";
         /** @enum {string} */
         ExperimentAllocationMode: "managed" | "observed";
         ExperimentAnalysisConfig: {
@@ -1602,7 +1605,9 @@ export interface components {
         Anon_1617b0c336e0: components["schemas"]["Anon_9cffa22a7102"];
         Anon_9cffa22a7102: components["schemas"]["AnalyticsSemanticId"][];
         Anon_612059bf001c: components["schemas"]["AnalyticsAnalyticalUnit"];
-        Anon_75f0cca02ed3: components["schemas"]["Anon_24e60e6badb3"];
+        Anon_3779643c24e1: components["schemas"]["ExperimentAssignmentSource"];
+        /** @deprecated */
+        Anon_a1e4b0c4236b: components["schemas"]["Anon_24e60e6badb3"];
         Anon_24e60e6badb3: {
             provider_handle: components["schemas"]["Anon_af12d548dbee_10"];
             /** @constant */
@@ -4511,7 +4516,9 @@ export interface components {
         Anon_fa93268b3365: components["schemas"]["Anon_398b49f8c04a"];
         Anon_398b49f8c04a: components["schemas"]["AnalyticsSemanticIdOutput"][];
         Anon_612059bf001c_4: components["schemas"]["AnalyticsAnalyticalUnit"];
-        Anon_570ae33fb746: components["schemas"]["Anon_6ac3ec40d3a6"];
+        Anon_3779643c24e1_1: components["schemas"]["ExperimentAssignmentSource"];
+        /** @deprecated */
+        Anon_f786ef526cfd: components["schemas"]["Anon_6ac3ec40d3a6"];
         Anon_6ac3ec40d3a6: {
             provider_handle: components["schemas"]["Anon_af12d548dbee_34"];
             /** @constant */
@@ -5847,7 +5854,8 @@ export interface components {
             primary_metric: components["schemas"]["Anon_53c09eaf03ab_5"];
             guardrail_metrics?: components["schemas"]["Anon_fa93268b3365"];
             assignment_unit?: components["schemas"]["Anon_612059bf001c_4"];
-            assignment_provider_binding?: components["schemas"]["Anon_570ae33fb746"];
+            assignment_source?: components["schemas"]["Anon_3779643c24e1_1"];
+            assignment_provider_binding?: components["schemas"]["Anon_f786ef526cfd"];
             evidence_provider_binding?: components["schemas"]["Anon_6710ffdf3e7d"];
             analysis_provider_binding?: components["schemas"]["Anon_c5f383647807"];
             analysis_config?: components["schemas"]["Anon_e4c9d539e5ef_1"];

@@ -254,6 +254,8 @@ export function createBasicExperimentProvider(
 
   return {
     domain: 'experiments',
+    providerHandle: 'revturbine:native',
+    ownedExperimentHandles: Object.keys(experiments),
     resolve(): ExperimentProviderState {
       const resolvedSubject = typeof subject === 'function' ? subject() : subject;
       if (!resolvedSubject) return { assignments: {} };

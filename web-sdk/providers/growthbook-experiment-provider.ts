@@ -27,11 +27,14 @@ export interface GrowthBookExperimentAssignmentOptions {
   client: Pick<GrowthBook<Record<string, string>>, 'evalFeature'>;
   /** Explicit experiment-to-feature mappings; no naming convention is assumed. */
   bindings: readonly GrowthBookExperimentBinding[];
+  /** Customer-controlled revision for feature/config changes. */
+  providerRevision?: string | number;
 }
 
 /** Machine-readable reasons a GrowthBook assignment cannot be normalized. */
 export type GrowthBookAssignmentErrorReason =
   | 'duplicate_experiment_handle'
+  | 'invalid_binding'
   | 'unknown_feature'
   | 'invalid_variant'
   | 'unexpected_variant';
@@ -65,6 +68,13 @@ export class GrowthBookAssignmentError extends Error {
 function validateBindings(bindings: readonly GrowthBookExperimentBinding[]): void {
   const handles = new Set<string>();
   for (const binding of bindings) {
+    if (!binding.experimentHandle.trim() || !binding.featureKey.trim()) {
+      throw new GrowthBookAssignmentError(
+        'invalid_binding',
+        binding,
+        'experiment handles and GrowthBook feature keys must be non-empty',
+      );
+    }
     if (handles.has(binding.experimentHandle)) {
       throw new GrowthBookAssignmentError(
         'duplicate_experiment_handle',
@@ -90,6 +100,9 @@ export function createGrowthBookExperimentAssignmentProvider(
 
   return {
     domain: 'experiments',
+    providerHandle: 'growthbook',
+    providerRevision: options.providerRevision,
+    ownedExperimentHandles: options.bindings.map((binding) => binding.experimentHandle),
     resolve(): ExperimentProviderState {
       const assignments: Record<string, string> = {};
 

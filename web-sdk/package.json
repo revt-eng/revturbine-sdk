@@ -1,6 +1,6 @@
 {
   "name": "@revt-eng/sdk",
-  "version": "0.7.8",
+  "version": "0.7.9",
   "description": "RevTurbine customer-facing SDK — placement decisioning, entitlement checks, and usage tracking.",
   "type": "module",
   "packageManager": "pnpm@11.12.0",
@@ -20,9 +20,14 @@
       "import": "./dist/growthbook.js",
       "types": "./dist/growthbook.d.ts"
     },
+    "./optimizely": {
+      "import": "./dist/optimizely.js",
+      "types": "./dist/optimizely.d.ts"
+    },
     "./source": "./index.ts",
     "./source/headless": "./headless.ts",
-    "./source/growthbook": "./growthbook.ts"
+    "./source/growthbook": "./growthbook.ts",
+    "./source/optimizely": "./optimizely.ts"
   },
   "files": [
     "dist"
@@ -38,11 +43,15 @@
   },
   "peerDependencies": {
     "@growthbook/growthbook": ">=1.0.0",
+    "@optimizely/optimizely-sdk": ">=6.0.0",
     "react": ">=18",
     "react-dom": ">=18"
   },
   "peerDependenciesMeta": {
     "@growthbook/growthbook": {
+      "optional": true
+    },
+    "@optimizely/optimizely-sdk": {
       "optional": true
     },
     "react": {
@@ -54,9 +63,10 @@
   },
   "devDependencies": {
     "@growthbook/growthbook": "^1.7.0",
-    "@revt-eng/core": "0.1.265",
-    "@revt-eng/schema": "0.1.265",
-    "@revt-eng/schema-external": "0.1.265",
+    "@optimizely/optimizely-sdk": "^6.5.0",
+    "@revt-eng/core": "0.1.267",
+    "@revt-eng/schema": "0.1.267",
+    "@revt-eng/schema-external": "0.1.267",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "openapi-fetch": "^0.17.0",

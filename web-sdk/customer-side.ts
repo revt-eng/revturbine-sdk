@@ -1,6 +1,17 @@
 import { DomainProviderRegistry } from './providers/registry';
 import { ServerUserContextProvider } from './providers/server-user-context-provider';
-import type { AnyDomainProvider } from './providers/types';
+import {
+  composeEffectiveExperimentContext,
+  createCompositeExperimentProvider,
+} from './providers/experiment-context';
+import type {
+  AnyDomainProvider,
+  DomainProviderResolutionInput,
+  EffectiveUserContextResolution,
+  ExperimentAssignmentProvider,
+  ExperimentVariantSelection,
+  ResolvedProviderContext,
+} from './providers/types';
 import { resolveBranding, type ResolvedBranding } from './branding';
 import type { BrandingConfig } from './generated';
 import { isServer, isBrowser } from './env';
@@ -1008,6 +1019,8 @@ export interface RevTurbineInitOptions {
   providerFailureSlotBehavior?: RevTurbineProviderFailureSlotBehavior;
   /** Typed domain providers (plan, entitlements, segments, content, rules, traits). */
   domainProviders?: AnyDomainProvider[];
+  /** Maximum time for one client experiment provider resolution. Default: 5000ms. */
+  experimentProviderTimeoutMs?: number;
   /** Optional UI path resolver map used by `validateUiPathResolvers()`. */
   uiPathResolvers?: RevTurbineUiPathResolverMap;
   /**
@@ -2378,6 +2391,11 @@ export class RevTurbineCustomerSdk {
   private readonly placements = new Map<string, RevTurbinePlacementRecord>();
   private readonly syncedSurfaceSlotIds = new Set<string>();
   private userContext: RevTurbineUserContext;
+  private contextRevision = 0;
+  private providerResolutionController = new AbortController();
+  private lastEffectiveContext?: EffectiveUserContextResolution & {
+    readonly userContext: Readonly<RevTurbineUserContext>;
+  };
   private pageContext: RevTurbinePageContext;
   /**
    * Secure per-user client token (`rt_client_`, plan 157). Minted by the
@@ -2520,6 +2538,7 @@ export class RevTurbineCustomerSdk {
     }
     this.sessionId = requestId();
     this.providerRegistry = new DomainProviderRegistry();
+    const configuredDomainProviders = [...(options.domainProviders ?? [])];
     this.placementTypeRegistry = new PlacementTypeRegistry();
     this.impressionHistory = new ImpressionHistory({
       store: new StorageImpressionStore({
@@ -2529,10 +2548,16 @@ export class RevTurbineCustomerSdk {
       userId: this.userContext.id ?? this.anonymousId,
     });
     applyPlacementRegistrySeed(this.placementTypeRegistry);
-    if (options.domainProviders) {
-      for (const p of options.domainProviders) {
-        this.providerRegistry.register(p);
-      }
+    const experimentProviders = configuredDomainProviders.filter(
+      (provider): provider is ExperimentAssignmentProvider => provider.domain === 'experiments',
+    );
+    for (const provider of configuredDomainProviders) {
+      if (provider.domain !== 'experiments') this.providerRegistry.register(provider);
+    }
+    if (experimentProviders.length > 0) {
+      this.providerRegistry.register(createCompositeExperimentProvider(experimentProviders, {
+        timeoutMs: options.experimentProviderTimeoutMs,
+      }));
     }
     this.warnOnUiPathResolverCoverageGaps();
     // Plan 174 TASK-1 (F-70): init-supplied resolvers drive runtime CTA
@@ -2651,8 +2676,12 @@ export class RevTurbineCustomerSdk {
 
   private async refreshExportedConfigSnapshot(): Promise<void> {
     try {
+      const previousConfig = this.getConfiguredExportedConfig();
       await this.configProvider?.refresh?.();
       this.rebuildSegmentPredicateFieldIndex();
+      if (previousConfig !== this.getConfiguredExportedConfig()) {
+        this.invalidateEffectiveContext();
+      }
     } catch {
       // Config refresh is best-effort; keep SDK operational without throwing.
     }
@@ -2856,6 +2885,134 @@ export class RevTurbineCustomerSdk {
       } : {}),
       ...(hasExperiments ? { experiments: { assignments: experiments } } : {}),
     };
+  }
+
+  private immutableProviderUserContext(): Readonly<RevTurbineUserContext> {
+    const snapshot = {
+      ...this.userContext,
+      ...(this.userContext.custom
+        ? { custom: Object.freeze({ ...this.userContext.custom }) }
+        : {}),
+      ...(this.userContext.entitlements
+        ? { entitlements: Object.freeze({ ...this.userContext.entitlements }) }
+        : {}),
+      ...(this.userContext.usage
+        ? { usage: Object.freeze({ ...this.userContext.usage }) }
+        : {}),
+      ...(this.userContext.personalization
+        ? { personalization: Object.freeze({ ...this.userContext.personalization }) }
+        : {}),
+      ...(this.userContext.experiments
+        ? { experiments: Object.freeze({ ...this.userContext.experiments }) }
+        : {}),
+    };
+    return Object.freeze(snapshot);
+  }
+
+  private invalidateEffectiveContext(): void {
+    this.providerResolutionController.abort();
+    this.providerResolutionController = new AbortController();
+    this.contextRevision += 1;
+    this.lastEffectiveContext = undefined;
+    this.providerRegistry.invalidateAll();
+    this.decisionCache.clear();
+  }
+
+  private async resolveEffectiveProviderContext(): Promise<{
+    providers: ResolvedProviderContext | undefined;
+    effective: EffectiveUserContextResolution & {
+      readonly userContext: Readonly<RevTurbineUserContext>;
+    };
+  }> {
+    const revision = String(this.contextRevision);
+    const signal = this.providerResolutionController.signal;
+    const userContext = this.immutableProviderUserContext();
+    const input: DomainProviderResolutionInput = {
+      userContext,
+      contextRevision: revision,
+      signal,
+    };
+    const synthesized = this.synthesizeProviderContext();
+
+    return (async () => {
+      const resolved = this.providerRegistry.size > 0
+        ? await this.providerRegistry.resolveAll(input)
+        : undefined;
+      if (signal.aborted || revision !== String(this.contextRevision)) {
+        return this.resolveEffectiveProviderContext();
+      }
+
+      const effective = composeEffectiveExperimentContext(
+        userContext,
+        resolved?.experiments,
+        revision,
+      );
+      const experimentSelections = effective.experimentSelections;
+      const experimentAssignments = effective.userContext.experiments ?? {};
+      const hasExperimentState = Object.keys(experimentSelections).length > 0
+        || Object.keys(experimentAssignments).length > 0;
+      const configuredSegments = this.getConfiguredExportedConfig()?.segments ?? [];
+      const targetingState = this.buildTargetingState(effective.userContext);
+      const evaluatedSegmentIds = evaluateSegments(
+        configuredSegments,
+        targetingState.segmentTraits,
+        experimentAssignments,
+      );
+      const segmentIds = [...new Set([
+        ...(resolved?.segments?.segmentIds ?? []),
+        ...evaluatedSegmentIds,
+      ])];
+      const hasSegmentState = segmentIds.length > 0 || resolved?.segments !== undefined;
+      const providers: ResolvedProviderContext | undefined = (
+        synthesized || resolved || hasExperimentState || hasSegmentState
+      ) ? {
+          ...synthesized,
+          ...resolved,
+          ...(hasExperimentState ? {
+            experiments: {
+              assignments: { ...experimentAssignments },
+              selections: { ...experimentSelections },
+            },
+          } : {}),
+          ...(hasSegmentState ? {
+            segments: {
+              ...resolved?.segments,
+              segmentIds,
+            },
+          } : {}),
+        } : undefined;
+
+      this.markAllSegmentsDirty();
+      this.lastEffectiveContext = effective;
+      return { providers, effective };
+    })();
+  }
+
+  /**
+   * Resolve the normalized variant used by RevTurbine decisions and telemetry.
+   * Missing, conflicting, and unavailable assignments remain explicit and are
+   * never converted to a control variant.
+   */
+  async getExperimentVariant(experimentHandle: string): Promise<ExperimentVariantSelection> {
+    const handle = experimentHandle.trim();
+    if (!handle) {
+      return {
+        status: 'unsupported',
+        experimentHandle,
+        reason: 'invalid_handle',
+      };
+    }
+    const { effective } = await this.resolveEffectiveProviderContext();
+    return effective.experimentSelections[handle] ?? {
+      status: 'unsupported',
+      experimentHandle: handle,
+      reason: 'provider_missing',
+    };
+  }
+
+  /** Return the immutable ephemeral context currently entering local evaluation. */
+  async getEffectiveUserContext(): Promise<Readonly<RevTurbineUserContext>> {
+    return (await this.resolveEffectiveProviderContext()).effective.userContext;
   }
 
   private markAllSegmentsDirty(): void {
@@ -3616,9 +3773,7 @@ export class RevTurbineCustomerSdk {
     if (!this.getConfiguredExportedConfig() && !this.isLocalOnlyMode()) {
       await this.refreshExportedConfigSnapshot();
     }
-    const providers = this.providerRegistry.size > 0
-      ? await this.providerRegistry.resolveAll()
-      : undefined;
+    const { providers } = await this.resolveEffectiveProviderContext();
     return this.eligiblePlansForSegments(providers?.segments?.segmentIds);
   }
 
@@ -3627,9 +3782,7 @@ export class RevTurbineCustomerSdk {
     if (!this.getConfiguredExportedConfig() && !this.isLocalOnlyMode()) {
       await this.refreshExportedConfigSnapshot();
     }
-    const providers = this.providerRegistry.size > 0
-      ? await this.providerRegistry.resolveAll()
-      : undefined;
+    const { providers } = await this.resolveEffectiveProviderContext();
     return this.eligibleAddonsForSegments(providers?.segments?.segmentIds);
   }
 
@@ -3886,7 +4039,11 @@ export class RevTurbineCustomerSdk {
           continue;
         }
 
-        const matched = evaluateSegments([segment], segmentEvaluationTraits).length > 0;
+        const matched = evaluateSegments(
+          [segment],
+          segmentEvaluationTraits,
+          this.lastEffectiveContext?.userContext.experiments ?? this.userContext.experiments,
+        ).length > 0;
         this.segmentMembershipBySegmentId.set(segmentId, matched);
       }
       this.dirtySegmentIds.clear();
@@ -4502,6 +4659,11 @@ export class RevTurbineCustomerSdk {
       }
     })();
 
+    const experimentAssignments = this.lastEffectiveContext?.userContext.experiments;
+    const effectiveProperties = experimentAssignments && Object.keys(experimentAssignments).length > 0
+      ? { ...properties, experiment_assignments: { ...experimentAssignments } }
+      : properties;
+
     return {
       tenant_id: this.tenantId,
       type,
@@ -4523,7 +4685,7 @@ export class RevTurbineCustomerSdk {
         // carry the custom VALUES that other events attach as traits (AC-9).
         traits: type === USER_CONTEXT_FIELDS_EVENT ? {} : { ...(this.userContext.custom || {}) },
       },
-      properties,
+      properties: effectiveProperties,
     };
   }
 
@@ -4965,7 +5127,8 @@ export class RevTurbineCustomerSdk {
 
   private dispatchToEventConsumers(events: RevTurbineEventEnvelope[]): void {
     if (!this.providerRegistry.has('events')) return;
-    void this.providerRegistry.get('events').then((resolved) => {
+    void this.resolveEffectiveProviderContext().then(({ providers }) => {
+      const resolved = providers?.events;
       const consumers = (resolved as { consumers?: Array<{ consume(events: RevTurbineEventEnvelope[]): void | Promise<void> }> } | undefined)?.consumers;
       if (!consumers || consumers.length === 0) return;
       for (const consumer of consumers) {
@@ -5269,6 +5432,7 @@ export class RevTurbineCustomerSdk {
    * every mounted gate's check on an interaction record.
    */
   private notifyUserContextChanged(): void {
+    this.invalidateEffectiveContext();
     for (const listener of [...this.userContextListeners]) {
       try {
         listener();
@@ -5384,6 +5548,7 @@ export class RevTurbineCustomerSdk {
     }
 
     this.markSegmentsDirtyFromContextChange(previousContext, this.userContext);
+    this.invalidateEffectiveContext();
   }
 
   async generatePlacementId(input: {
@@ -5793,9 +5958,7 @@ export class RevTurbineCustomerSdk {
     // localRuntime or the Server-mode fetch. `getContext` stays localRuntime-
     // specific.
     const legacyCtx = await this.localRuntime?.getContext?.();
-    const providerCtx = this.providerRegistry.size > 0
-      ? await this.providerRegistry.resolveAll()
-      : this.synthesizeProviderContext();
+    const { providers: providerCtx } = await this.resolveEffectiveProviderContext();
     if (legacyCtx || providerCtx) {
       runtimeContextFingerprint = this.stableStringify({
         legacyCtx: legacyCtx ?? {},
@@ -6546,6 +6709,9 @@ export class RevTurbineCustomerSdk {
       plan: this.userContext.plan,
       usage: this.userContext.usage ?? {},
       entitlements: this.userContext.entitlements ?? {},
+      experiments: {
+        ...(this.lastEffectiveContext?.userContext.experiments ?? this.userContext.experiments ?? {}),
+      },
       custom: Object.fromEntries(
         Object.entries(this.userContext.custom ?? {}).filter(
           ([, v]) => typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' || v === null,
@@ -6826,6 +6992,7 @@ export class RevTurbineCustomerSdk {
     this.markSegmentsDirtyFromContextChange(previousContext, this.userContext);
     this.persistLocalRuntimeState();
     void this.evaluateUserSegmentsAndUsage(this.userContext, false);
+    this.notifyUserContextChanged();
   }
 
   /**
@@ -7103,8 +7270,8 @@ export class RevTurbineCustomerSdk {
 
     if (includeProviderHandlers && this.providerRegistry.has('cta')) {
       try {
-        const ctx = await this.providerRegistry.resolveAll();
-        if (isRecord(ctx.cta) && isRecord(ctx.cta.handlers)) {
+        const { providers: ctx } = await this.resolveEffectiveProviderContext();
+        if (isRecord(ctx?.cta) && isRecord(ctx.cta.handlers)) {
           Object.assign(mergedResolvers, ctx.cta.handlers);
         }
       } catch {
