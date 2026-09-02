@@ -2084,6 +2084,7 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
   private lastFetchedAt = 0;
   private inFlight?: Promise<RevTurbineConfig | undefined>;
   private static readonly REFRESH_TTL_MS = 60_000;
+  private static readonly MANIFEST_NOT_BEFORE_SKEW_MS = 60_000;
 
   constructor(
     private readonly endpoint: string,
@@ -2106,7 +2107,7 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
     }
     if (this.inFlight) return this.inFlight;
     this.lastFetchedAt = now;
-    const refresh = this.refreshOnce(now);
+    const refresh = this.refreshOnce();
     this.inFlight = refresh;
     try {
       return await refresh;
@@ -2115,9 +2116,9 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
     }
   }
 
-  private async refreshOnce(nowMs: number): Promise<RevTurbineConfig | undefined> {
+  private async refreshOnce(): Promise<RevTurbineConfig | undefined> {
     try {
-      const cdnConfig = await this.fetchCdnConfig(nowMs);
+      const cdnConfig = await this.fetchCdnConfig();
       if (cdnConfig) {
         this.cached = cdnConfig;
         return this.cached;
@@ -2129,7 +2130,7 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
     }
   }
 
-  private async fetchCdnConfig(nowMs: number): Promise<RevTurbineConfig | undefined> {
+  private async fetchCdnConfig(): Promise<RevTurbineConfig | undefined> {
     try {
       const bootstrap = await fetch(`${this.endpoint}/api/sdk/bootstrap`, {
         method: 'GET',
@@ -2145,7 +2146,9 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
         return undefined;
       }
 
-      let manifest = await this.acceptManifest(bootstrapRaw.manifest, nowMs);
+      // The server issues `not_before` during this request, so validate against
+      // a post-response clock instead of the TTL timestamp captured pre-fetch.
+      let manifest = await this.acceptManifest(bootstrapRaw.manifest, Date.now());
       if (!manifest) {
         const manifestResponse = await fetch(this.resolveDeliveryUrl(bootstrapRaw.manifest_url), {
           method: 'GET',
@@ -2153,7 +2156,7 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
         });
         if (!manifestResponse.ok) return undefined;
         const manifestRaw: unknown = await manifestResponse.json(); // sdk-ok: boundary-parse
-        manifest = await this.acceptManifest(manifestRaw, nowMs);
+        manifest = await this.acceptManifest(manifestRaw, Date.now());
       }
       if (!manifest) return undefined;
 
@@ -2167,7 +2170,7 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
       // The bundle fetch itself may cross the activation boundary. Re-check
       // immediately before decode so even a just-expired manifest cannot
       // activate after a slow network response.
-      if (!checkManifestWindow(manifest, new Date(Date.now())).ok) return undefined;
+      if (!this.manifestWindowIsValid(manifest, Date.now())) return undefined;
 
       const text = new TextDecoder().decode(bytes);
       const raw: unknown = JSON.parse(text); // sdk-ok: boundary-parse
@@ -2184,7 +2187,7 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
   ): Promise<BundleManifest | undefined> {
     const parsed = BundleManifestSchema.safeParse(raw);
     if (!parsed.success || parsed.data.tenant_id !== this.tenantId) return undefined;
-    if (!checkManifestWindow(parsed.data, new Date(nowMs)).ok) return undefined;
+    if (!this.manifestWindowIsValid(parsed.data, nowMs)) return undefined;
     if (this.trustedManifestKeys.length > 0) {
       const verified = await verifyManifest(parsed.data, this.trustedManifestKeys);
       if (!verified.ok) return undefined;
@@ -2192,8 +2195,27 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
     return parsed.data;
   }
 
+  private manifestWindowIsValid(manifest: BundleManifest, nowMs: number): boolean {
+    const notBeforeMs = Date.parse(manifest.not_before);
+    const validationTime = notBeforeMs > nowMs
+      && notBeforeMs - nowMs <= ServerLaunchedConfigProvider.MANIFEST_NOT_BEFORE_SKEW_MS
+      ? notBeforeMs
+      : nowMs;
+    // Allow only bounded client/server skew at the opening edge. Expiry stays
+    // strict because validationTime never moves backward from the client clock.
+    return checkManifestWindow(manifest, new Date(validationTime)).ok;
+  }
+
   private resolveDeliveryUrl(url: string): string {
-    return new URL(url, `${this.endpoint}/`).toString();
+    const endpoint = new URL(this.endpoint);
+    if (url.startsWith('//')) return new URL(url, endpoint).toString();
+    if (!url.startsWith('/')) return new URL(url, `${this.endpoint.replace(/\/+$/, '')}/`).toString();
+
+    const endpointPath = endpoint.pathname.replace(/\/+$/, '');
+    const path = endpointPath && (url === endpointPath || url.startsWith(`${endpointPath}/`))
+      ? url
+      : `${endpointPath}${url}`;
+    return new URL(path, endpoint.origin).toString();
   }
 
   private async fetchLegacyConfig(): Promise<RevTurbineConfig | undefined> {

@@ -9,7 +9,7 @@
   "description": "RevTurbine Node.js server-side SDK \u2014 server evaluation, placement decisions, and entitlement checks.",
   "main": "index.ts",
   "dependencies": {
-    "@revt-eng/schema": "0.1.272",
-    "@revt-eng/core": "0.1.272"
+    "@revt-eng/schema": "0.1.273",
+    "@revt-eng/core": "0.1.273"
   }
 }

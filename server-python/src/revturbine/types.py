@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.272/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.273/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -1398,6 +1398,114 @@ class ExperimentAssignmentSource(Enum):
     customer_sdk = "customer_sdk"
 
 
+class ExperimentDecisionFindingCode(Enum):
+    srm_fail = "srm_fail"
+    guardrail_harm = "guardrail_harm"
+    exposure_integrity_failure = "exposure_integrity_failure"
+    assignment_collision = "assignment_collision"
+    immature_observation = "immature_observation"
+    carryover_fail = "carryover_fail"
+    validity_signal_unavailable = "validity_signal_unavailable"
+    followup_required = "followup_required"
+
+
+class MinimumRuntime(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    days: conint(ge=0, le=9007199254740991) | None = None
+    analysis_units: conint(ge=0, le=9007199254740991) | None = None
+
+
+class Validity(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    fail_on_srm: bool
+    fail_on_assignment_collision: bool
+    fail_on_exposure_integrity: bool
+    fail_on_carryover: bool
+
+
+class PrimarySuccess(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    method: Literal["frequentist"]
+    require_statistical_significance: bool
+    require_practical_significance: bool | None = None
+
+
+class PrimarySuccess1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    method: Literal["bayesian"]
+    minimum_probability_positive: confloat(ge=0.0, le=1.0)
+    maximum_expected_loss: confloat(ge=0.0) | None = None
+
+
+class Guardrails(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    require_no_material_harm: bool
+    allowed_guardrail_failures: conint(ge=0, le=9007199254740991) | None = 0
+
+
+class Segments(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    allow_segment_decisions: bool
+    allowed_segments: list[constr(min_length=1, max_length=100)] | None = None
+
+
+class Action(Enum):
+    hold_inconclusive = "hold_inconclusive"
+    iterate_followup = "iterate_followup"
+
+
+class Inconclusive(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    action: Action
+
+
+class ExperimentDecisionPolicy(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    schema_version: conint(ge=1, le=9007199254740991)
+    minimum_runtime: MinimumRuntime | None = None
+    validity: Validity
+    primary_success: PrimarySuccess | PrimarySuccess1
+    guardrails: Guardrails
+    segments: Segments
+    inconclusive: Inconclusive
+
+
+class Evaluator(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    name: constr(min_length=1, max_length=100)
+    version: constr(min_length=1, max_length=100)
+
+
+class ExperimentDecisionType(Enum):
+    ship_all = "ship_all"
+    ship_segment = "ship_segment"
+    ramp_with_guardrails = "ramp_with_guardrails"
+    iterate_followup = "iterate_followup"
+    hold_inconclusive = "hold_inconclusive"
+    reject_harm = "reject_harm"
+    neutral_no_material_effect = "neutral_no_material_effect"
+    invalid_experiment = "invalid_experiment"
+    redesign_randomization = "redesign_randomization"
+
+
 class Status2(Enum):
     healthy = "healthy"
     warning = "warning"
@@ -1411,6 +1519,13 @@ class Issue(BaseModel):
     )
     code: constr(min_length=1, max_length=100)
     message: constr(min_length=1, max_length=500)
+
+
+class Role1(Enum):
+    primary = "primary"
+    guardrail = "guardrail"
+    diagnostic = "diagnostic"
+    exploratory = "exploratory"
 
 
 class EvidenceProviderBinding(BaseModel):
@@ -1903,6 +2018,18 @@ class MeteringConfig(BaseModel):
     metadata: dict[str, Any] | None = {}
 
 
+class ObservationMaturity(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    observed_through: AwareDatetime
+    runtime_days: confloat(ge=0.0)
+    complete_windows: list[constr(min_length=1)]
+    incomplete_windows: list[constr(min_length=1)]
+    eligible_for_decision: bool
+    reasons: list[constr(min_length=1)]
+
+
 class OnboardingChecklist(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -2303,7 +2430,7 @@ class PlaybookVersionDeployResult(BaseModel):
     deployed_at: AwareDatetime
 
 
-class Action(Enum):
+class Action1(Enum):
     create = "create"
     update = "update"
     delete = "delete"
@@ -2316,7 +2443,7 @@ class PlaybookVersionEntrySummary(BaseModel):
     handle: str
     resource_type: str
     resource_name: str | None = None
-    action: Action
+    action: Action1
     has_conflict: bool
 
 
@@ -3525,6 +3652,85 @@ class UserUsageEntry(BaseModel):
     reset_date: str | None = None
 
 
+class Treatment(Enum):
+    placement = "placement"
+    entitlement = "entitlement"
+    plan = "plan"
+    pricing = "pricing"
+    custom = "custom"
+
+
+class WarGameCategory(Enum):
+    content = "content"
+    placement = "placement"
+    entitlement = "entitlement"
+    packaging = "packaging"
+    pricing = "pricing"
+    trial = "trial"
+    promotion = "promotion"
+    activation = "activation"
+    collaboration = "collaboration"
+    retention = "retention"
+    validity = "validity"
+    custom = "custom"
+
+
+class Sections(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    validity: confloat(ge=0.0, le=20.0)
+    causal_conclusion: confloat(ge=0.0, le=25.0)
+    business_decision: confloat(ge=0.0, le=20.0)
+    guardrails: confloat(ge=0.0, le=15.0)
+    heterogeneity: confloat(ge=0.0, le=10.0)
+    delayed_outcomes: confloat(ge=0.0, le=5.0)
+    explanation: confloat(ge=0.0, le=5.0)
+
+
+class WarGameGrade(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    scenario_id: constr(pattern=r"^WG-[A-Z0-9_]+-\d{3}$")
+    passed: bool
+    hard_failure: bool
+    score: confloat(ge=0.0, le=100.0)
+    sections: Sections
+    failures: list[constr(min_length=1)]
+    warnings: list[constr(min_length=1)]
+
+
+class BusinessTruth(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    expected_decision: ExperimentDecisionType
+    acceptable_alternatives: list[ExperimentDecisionType] | None = None
+    forbidden_decisions: list[ExperimentDecisionType] | None = None
+    required_findings: list[ExperimentDecisionFindingCode] | None = None
+    required_segments: list[constr(min_length=1, max_length=100)] | None = None
+
+
+class ObservabilityTruth(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    earliest_valid_decision_at: AwareDatetime | None = None
+    required_windows: list[constr(min_length=1)] | None = None
+    intentionally_missing_signals: list[constr(min_length=1)] | None = None
+
+
+class WarGameQualificationLevel(Enum):
+    evidence_replay = "evidence_replay"
+    event_replay = "event_replay"
+    interactive = "interactive"
+
+
+class ExperimentHandle(RootModel[constr(min_length=1, max_length=100)]):
+    root: constr(min_length=1, max_length=100)
+
+
 class WebhookEventSource(Enum):
     stripe = "stripe"
     apple = "apple"
@@ -3569,11 +3775,23 @@ class ExperimentAllocationMode(RootModel[Any]):
     root: Any
 
 
+class ExperimentAnalysisVariantDefinition(RootModel[Any]):
+    root: Any
+
+
+class ExperimentAssignmentCount(RootModel[Any]):
+    root: Any
+
+
 class ExperimentConfidenceInterval(RootModel[Any]):
     root: Any
 
 
 class ExperimentCovariateProvenance(RootModel[Any]):
+    root: Any
+
+
+class ExperimentDecisionFinding(RootModel[Any]):
     root: Any
 
 
@@ -3626,6 +3844,22 @@ class TrialLimitType(RootModel[Any]):
 
 
 class FieldSchema0(RootModel[Any]):
+    root: Any
+
+
+class FieldSchema1(RootModel[Any]):
+    root: Any
+
+
+class FieldSchema2(RootModel[Any]):
+    root: Any
+
+
+class FieldSchema3(RootModel[Any]):
+    root: Any
+
+
+class FieldSchema4(RootModel[Any]):
     root: Any
 
 
@@ -4382,6 +4616,65 @@ class EventTaxonomy(BaseModel):
     prefix_families: list[EventPrefixFamily]
 
 
+class ExperimentAnalysisDefinition(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    experiment_handle: constr(min_length=1, max_length=100)
+    experiment_version: conint(ge=1, le=9007199254740991)
+    variants: list[ExperimentAnalysisVariantDefinition] = Field(..., min_length=2)
+    assignment_counts: list[ExperimentAssignmentCount] | None = Field(
+        [], validate_default=True
+    )
+    analysis_provider: ProviderProvenance
+    assignment_unit: AnalyticsAnalyticalUnit | None = None
+    primary_metric: AnalyticsSemanticId | None = None
+    guardrail_metrics: list[AnalyticsSemanticId] | None = Field(
+        [], validate_default=True
+    )
+
+
+class ExperimentAssignmentFact(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    schema_version: Literal[1]
+    tenant_id: constr(min_length=1)
+    environment_id: constr(min_length=1)
+    assignment_id: constr(min_length=1)
+    experiment_handle: constr(min_length=1, max_length=100)
+    experiment_version: conint(ge=1, le=9007199254740991)
+    assignment_unit: AnalyticsAnalyticalUnit
+    subject_id: constr(min_length=1)
+    variant_key: constr(min_length=1)
+    provider: ProviderProvenance
+    assigned_at: AwareDatetime
+    playbook_version: constr(min_length=1) | None = None
+    decision_id: constr(min_length=1) | None = None
+    simulation_id: constr(min_length=1) | None = None
+    test: bool | None = None
+
+
+class ExperimentDecisionRecord(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    created_at: AwareDatetime
+    experiment_handle: constr(min_length=1, max_length=100)
+    experiment_version: conint(ge=1, le=9007199254740991)
+    decision: ExperimentDecisionType
+    selected_variant_keys: list[constr(min_length=1)] | None = None
+    selected_segments: list[constr(min_length=1, max_length=100)] | None = None
+    analysis_result_ids: list[constr(min_length=1)]
+    policy_schema_version: conint(ge=1, le=9007199254740991)
+    health_state: constr(min_length=1, max_length=100)
+    findings: list[ExperimentDecisionFinding]
+    decided_at: AwareDatetime
+    evaluator: Evaluator
+
+
 class ExperimentHealth(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -4389,6 +4682,30 @@ class ExperimentHealth(BaseModel):
     status: Status2
     sample_ratio_mismatch: ExperimentSampleRatioMismatch | None = None
     issues: list[Issue] | None = Field([], validate_default=True)
+
+
+class ProviderQuery(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    endpoint: constr(min_length=1, max_length=100)
+    version: conint(ge=1, le=9007199254740991)
+    parameters: dict[str, FieldSchema0]
+
+
+class ExperimentMetricEvidencePlan(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    metric: AnalyticsSemanticId
+    role: Role1
+    statistical_type: AnalyticsMetricStatisticalType
+    analysis_unit: AnalyticsAnalyticalUnit
+    source_scope: AnalyticsSourceScope
+    numerator_metric: AnalyticsSemanticId | None = None
+    denominator_metric: AnalyticsSemanticId | None = None
+    observation_window: ExperimentObservationWindow
+    provider_query: ProviderQuery
 
 
 class ExperimentMetricResult(BaseModel):
@@ -5092,6 +5409,61 @@ class VariantStatisticalSummary(
     )
 
 
+class WarGameCapabilityRequirements(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    level: WarGameQualificationLevel
+    assignment_units: list[AnalyticsAnalyticalUnit]
+    treatments: list[Treatment]
+    evidence: list[AnalyticsMetricStatisticalType]
+    analysis: list[constr(min_length=1)]
+    decisions: list[constr(min_length=1)]
+    advanced: list[constr(min_length=1)]
+
+
+class StatisticalTruth(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    treatment_effects: list[dict[str, FieldSchema0]]
+    interactions: list[dict[str, FieldSchema1]] | None = None
+    delayed_effects: list[dict[str, FieldSchema2]] | None = None
+    contamination: dict[str, FieldSchema3] | None = None
+    validity_faults: list[dict[str, FieldSchema4]] | None = None
+
+
+class WarGameOracle(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    scenario_id: constr(pattern=r"^WG-[A-Z0-9_]+-\d{3}$")
+    scenario_version: conint(ge=1, le=9007199254740991)
+    statistical_truth: StatisticalTruth
+    business_truth: BusinessTruth
+    observability_truth: ObservabilityTruth
+
+
+class WarGameScenario(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(pattern=r"^WG-[A-Z0-9_]+-\d{3}$")
+    version: conint(ge=1, le=9007199254740991)
+    title: constr(min_length=1, max_length=300)
+    description: constr(max_length=2000)
+    category: WarGameCategory
+    qualification_level: WarGameQualificationLevel
+    hypothesis: constr(min_length=1, max_length=2000)
+    experiment_handles: list[ExperimentHandle] = Field(..., min_length=1)
+    population: dict[str, FieldSchema0]
+    observation: dict[str, FieldSchema1]
+    faults: list[dict[str, FieldSchema2]] | None = None
+    requires: WarGameCapabilityRequirements
+    seed: constr(min_length=1)
+    simulation_id: constr(min_length=1)
+
+
 class WebhookEventLog(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -5583,8 +5955,12 @@ class Experiment(BaseModel):
     evidence_provider_binding: EvidenceProviderBinding | None = None
     analysis_provider_binding: AnalysisProviderBinding | None = None
     analysis_config: ExperimentAnalysisConfig | None = None
+    decision_policy: ExperimentDecisionPolicy | None = None
     metric_threshold: float | None = 0.05
     secondary_metrics: list[AnalyticsSemanticId] | None = Field(
+        [], validate_default=True
+    )
+    diagnostic_metrics: list[AnalyticsSemanticId] | None = Field(
         [], validate_default=True
     )
     traffic_allocation: confloat(ge=0.0, le=1.0) | None = 1

@@ -49,6 +49,15 @@ interface RecordedRequest {
   headers: Headers;
 }
 
+function deliveryRequests(requests: RecordedRequest[]): RecordedRequest[] {
+  return requests.filter(({ url }) =>
+    url.includes('/api/sdk/bootstrap')
+    || url.includes('/api/config/manifest/')
+    || url.includes('/api/bundles/')
+    || url.includes('/api/sdk/config'),
+  );
+}
+
 async function deliveryFixture(
   nowMs: number,
   window: { notBeforeMs: number; expiresAtMs: number } = {
@@ -97,11 +106,13 @@ function responseRouter(args: {
   bundleBody: string;
   legacy?: Response;
   requests: RecordedRequest[];
+  onBootstrap?: () => void;
 }) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     args.requests.push({ url, headers: new Headers(init?.headers) });
     if (url.endsWith('/api/sdk/bootstrap')) {
+      args.onBootstrap?.();
       return Response.json({
         manifest_url: `/api/config/manifest/${TENANT}?e=9999999999&s=test`,
         trusted_key_ids: [],
@@ -140,18 +151,96 @@ describe('hosted CDN Playbook delivery', () => {
 
     const result = await sdk().checkEntitlement('generations');
     expect(result.allowed).toBe(true);
-    const deliveryRequests = requests.filter(({ url }) =>
-      url.includes('/api/sdk/bootstrap')
-      || url.includes('/api/config/manifest/')
-      || url.includes('/api/bundles/')
-      || url.includes('/api/sdk/config'),
-    );
-    expect(deliveryRequests.map(({ url }) => url)).toEqual([
+    const delivery = deliveryRequests(requests);
+    expect(delivery.map(({ url }) => url)).toEqual([
       `${ENDPOINT}/api/sdk/bootstrap`,
       expect.stringContaining('/api/bundles/'),
     ]);
-    expect(deliveryRequests[0]?.headers.get('authorization')).toBe('Bearer pub_test');
-    expect(deliveryRequests[1]?.headers.get('authorization')).toBeNull();
+    expect(delivery[0]?.headers.get('authorization')).toBe('Bearer pub_test');
+    expect(delivery[1]?.headers.get('authorization')).toBeNull();
+  });
+
+  it('validates a manifest against the response-time clock', async () => {
+    const requestStartedAt = Date.UTC(2026, 7, 30, 12);
+    const manifestIssuedAt = requestStartedAt + 1_000;
+    let now = requestStartedAt;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const fixture = await deliveryFixture(manifestIssuedAt);
+    const requests: RecordedRequest[] = [];
+    vi.stubGlobal('fetch', responseRouter({
+      inlineManifest: fixture.manifest,
+      bundleBody: fixture.body,
+      requests,
+      onBootstrap: () => {
+        now = manifestIssuedAt;
+      },
+    }));
+
+    expect((await sdk().checkEntitlement('generations')).allowed).toBe(true);
+    expect(deliveryRequests(requests).map(({ url }) => url)).toEqual([
+      `${ENDPOINT}/api/sdk/bootstrap`,
+      expect.stringContaining('/api/bundles/'),
+    ]);
+  });
+
+  it('accepts bounded server clock skew but rejects a far-future manifest', async () => {
+    const clientNow = Date.UTC(2026, 7, 30, 12);
+    vi.spyOn(Date, 'now').mockReturnValue(clientNow);
+    const withinSkew = await deliveryFixture(clientNow, {
+      notBeforeMs: clientNow + 5_000,
+      expiresAtMs: clientNow + 60 * 60_000,
+    });
+    const acceptedRequests: RecordedRequest[] = [];
+    vi.stubGlobal('fetch', responseRouter({
+      inlineManifest: withinSkew.manifest,
+      bundleBody: withinSkew.body,
+      requests: acceptedRequests,
+    }));
+
+    expect((await sdk().checkEntitlement('generations')).allowed).toBe(true);
+    expect(acceptedRequests.some(({ url }) => url.includes('/api/bundles/'))).toBe(true);
+    expect(acceptedRequests.some(({ url }) => url.endsWith('/api/sdk/config'))).toBe(false);
+
+    const outsideSkew = await deliveryFixture(clientNow, {
+      notBeforeMs: clientNow + 60_001,
+      expiresAtMs: clientNow + 60 * 60_000,
+    });
+    const rejectedRequests: RecordedRequest[] = [];
+    vi.stubGlobal('fetch', responseRouter({
+      inlineManifest: outsideSkew.manifest,
+      fetchedManifest: outsideSkew.manifest,
+      bundleBody: outsideSkew.body,
+      legacy: new Response(outsideSkew.body, { status: 200 }),
+      requests: rejectedRequests,
+    }));
+
+    expect((await sdk().checkEntitlement('generations')).allowed).toBe(true);
+    expect(rejectedRequests.some(({ url }) => url.includes('/api/bundles/'))).toBe(false);
+    expect(rejectedRequests.some(({ url }) => url.endsWith('/api/sdk/config'))).toBe(true);
+  });
+
+  it('preserves the endpoint pathname for signed manifest and bundle URLs', async () => {
+    const now = Date.UTC(2026, 7, 30, 12);
+    vi.spyOn(Date, 'now').mockReturnValue(now);
+    const expired = await deliveryFixture(now, {
+      notBeforeMs: now - 2 * 60 * 60_000,
+      expiresAtMs: now - 60 * 60_000,
+    });
+    const fresh = await deliveryFixture(now);
+    const requests: RecordedRequest[] = [];
+    vi.stubGlobal('fetch', responseRouter({
+      inlineManifest: expired.manifest,
+      fetchedManifest: fresh.manifest,
+      bundleBody: fresh.body,
+      requests,
+    }));
+
+    expect((await sdk({ endpoint: `${ENDPOINT}/app` }).checkEntitlement('generations')).allowed).toBe(true);
+    expect(deliveryRequests(requests).map(({ url }) => url)).toEqual([
+      `${ENDPOINT}/app/api/sdk/bootstrap`,
+      expect.stringContaining(`${ENDPOINT}/app/api/config/manifest/`),
+      expect.stringContaining(`${ENDPOINT}/app/api/bundles/`),
+    ]);
   });
 
   it('refetches an expired inline manifest before activating a bundle', async () => {
