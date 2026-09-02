@@ -61,6 +61,8 @@ from revturbine.core.trials import evaluate_trial_status as _evaluate_trial_stat
 
 __all__ = ["RevTurbineCustomerSdk", "UserContext"]
 
+_PRODUCTION_ENVIRONMENT_ID = "production"
+
 
 class _UserContextRequired(TypedDict):
     """Identity required for every decision."""
@@ -149,7 +151,7 @@ class RevTurbineCustomerSdk:
             "exported_config",
             {
                 "tenant_id": tenant_id,
-                "environment_id": "default",
+                "environment_id": _PRODUCTION_ENVIRONMENT_ID,
             },
         )
         if playbook is None:

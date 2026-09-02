@@ -131,10 +131,14 @@ describe('web-SDK clickstream ingest → /api/track', () => {
     expect(headers.authorization).toBe('Bearer sk_secret_key');
   });
 
-  it("defaults environment_id to 'default' when environmentId is omitted", async () => {
-    const sdk = makeSdk({ environmentId: undefined });
+  it.each([
+    ['omitted', undefined],
+    ['empty', ''],
+    ['whitespace-only', '   '],
+  ])("defaults environment_id to 'production' when environmentId is %s", async (_label, environmentId) => {
+    const sdk = makeSdk({ environmentId });
     await sdk.capture('feature_used', {}, { immediate: true });
     const ev = trackCall().body.events.find((e) => e.event_name === 'feature_used')!;
-    expect(ev.environment_id).toBe('default');
+    expect(ev.environment_id).toBe('production');
   });
 });

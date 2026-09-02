@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.267/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.272/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -23,6 +23,7 @@ from pydantic import (
 )
 from enum import Enum
 from typing import Any, Literal
+from datetime import date as date_aliased
 
 
 class RevTurbineSchemas(BaseModel):
@@ -67,6 +68,40 @@ class AnalyticsAnalyticalUnit(Enum):
     organization = "organization"
 
 
+class AnalyticsAnnotationKind(Enum):
+    playbook_published = "playbook_published"
+    entitlement_change = "entitlement_change"
+    price_change = "price_change"
+    plan_change = "plan_change"
+    experiment_started = "experiment_started"
+    experiment_ended = "experiment_ended"
+    sdk_release = "sdk_release"
+    sdk_error_rate = "sdk_error_rate"
+
+
+class AnalyticsAnnotationMarker(Enum):
+    point = "point"
+    region = "region"
+
+
+class AnalyticsAnnotationRequest(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    start: AwareDatetime
+    end: AwareDatetime
+    kinds: list[AnalyticsAnnotationKind] | None = Field(
+        None, max_length=8, min_length=1
+    )
+
+
+class AnalyticsAnnotationSource(Enum):
+    control_plane = "control_plane"
+    events_billing = "events_billing"
+    events_sdk_meta = "events_sdk_meta"
+    events_sdk_diagnostics = "events_sdk_diagnostics"
+
+
 class AnalyticsBlockError(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -80,6 +115,17 @@ class AnalyticsCardinalityClass(Enum):
     low = "low"
     medium = "medium"
     high = "high"
+
+
+class AnalyticsCatalogAnnotationKind(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: AnalyticsAnnotationKind
+    label: constr(min_length=1, max_length=120)
+    description: constr(min_length=1, max_length=500)
+    source: AnalyticsAnnotationSource
+    marker: AnalyticsAnnotationMarker
 
 
 class GrainItem(RootModel[constr(pattern=r"^[a-z][a-z0-9_]{0,49}$")]):
@@ -112,6 +158,7 @@ class AnalyticsCatalogProvenanceKind(Enum):
     event_taxonomy = "event_taxonomy"
     openapi_identity = "openapi_identity"
     tinybird_project = "tinybird_project"
+    annotation_kinds = "annotation_kinds"
 
 
 class AnalyticsCatalogProvenance(BaseModel):
@@ -136,10 +183,38 @@ class AnalyticsClassification(Enum):
     operational = "operational"
 
 
+class AnalyticsCompareDelta(Enum):
+    absolute = "absolute"
+    percentage = "percentage"
+
+
+class AnalyticsCompareExperiment(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    experiment: constr(min_length=1, max_length=100)
+    baseline: constr(min_length=1, max_length=100) | None = None
+    against: constr(min_length=1, max_length=100) | None = None
+
+
 class AnalyticsCompareMode(Enum):
     none = "none"
     previous_period = "previous_period"
     previous_year = "previous_year"
+    custom_period = "custom_period"
+    segment = "segment"
+    variant = "variant"
+    scope = "scope"
+    intervention = "intervention"
+
+
+class AnalyticsCompareSegment(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    dimension: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    baseline: constr(max_length=200) | float | bool | None
+    against: constr(max_length=200) | float | bool | None
 
 
 class AnalyticsCompileResolution(BaseModel):
@@ -174,6 +249,7 @@ class AnalyticsCustomizationCapability(Enum):
     handoff_target = "handoff_target"
     hidden_scope = "hidden_scope"
     raw_expression = "raw_expression"
+    cross_filter = "cross_filter"
 
 
 class AnalyticsCustomizationPolicy(BaseModel):
@@ -217,6 +293,8 @@ class AnalyticsFilterControl(Enum):
     multi_select = "multi_select"
     search_select = "search_select"
     number_range = "number_range"
+    entity_picker = "entity_picker"
+    toggle = "toggle"
 
 
 class AnalyticsFilterOperator(Enum):
@@ -232,42 +310,12 @@ class AnalyticsFilterOperator(Enum):
     contains = "contains"
 
 
-class AnalyticsFilterValue1(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    preset: constr(pattern=r"^[a-z0-9_]{1,20}$")
-    compare: AnalyticsCompareMode | None = None
-
-
 class AnalyticsFilterValue2(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
     min: float | None = None
     max: float | None = None
-
-
-class AnalyticsFilterValue(
-    RootModel[
-        constr(max_length=200)
-        | float
-        | bool
-        | list[constr(max_length=200) | float | bool | None]
-        | AnalyticsFilterValue1
-        | AnalyticsFilterValue2
-        | None
-    ]
-):
-    root: (
-        constr(max_length=200)
-        | float
-        | bool
-        | list[constr(max_length=200) | float | bool | None]
-        | AnalyticsFilterValue1
-        | AnalyticsFilterValue2
-        | None
-    )
 
 
 class Type(Enum):
@@ -309,6 +357,13 @@ class AnalyticsMetricStatisticalType(Enum):
     continuous = "continuous"
     ratio = "ratio"
     revenue = "revenue"
+
+
+class AnalyticsPeriodCompareMode(Enum):
+    none = "none"
+    previous_period = "previous_period"
+    previous_year = "previous_year"
+    custom_period = "custom_period"
 
 
 class AnalyticsQueryFamily(Enum):
@@ -442,15 +497,6 @@ class EmptyState(Enum):
     message = "message"
 
 
-class AnalyticsSemanticFilter(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    dimension: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
-    operator: AnalyticsFilterOperator
-    value: AnalyticsFilterValue | None = None
-
-
 class AnalyticsSemanticId(
     RootModel[constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)]
 ):
@@ -579,22 +625,6 @@ class OrderByItem1(BaseModel):
     )
     field: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
     direction: Direction
-
-
-class AnalyticsViewQuery(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    concept: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
-    family: AnalyticsQueryFamily
-    metrics: list[Metric] = Field(..., max_length=10, min_length=1)
-    group_by: list[GroupByItem] | None = Field(None, max_length=8)
-    time: Time | None = None
-    filters_from: list[FiltersFromItem] | None = Field(None, max_length=20)
-    fixed_filters: list[AnalyticsSemanticFilter] | None = Field(None, max_length=20)
-    compare: AnalyticsCompareMode | None = None
-    order_by: list[OrderByItem1] | None = Field(None, max_length=3)
-    limit: conint(ge=1, le=1000) | None = None
 
 
 class BaseTemplate(BaseModel):
@@ -3699,6 +3729,19 @@ class AnalyticsAgentCatalogEntry(BaseModel):
     deprecation: AnalyticsCatalogDeprecation | None = None
 
 
+class AnalyticsAnnotation(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: AnalyticsAnnotationKind
+    at: AwareDatetime
+    until: AwareDatetime | None = None
+    label: constr(min_length=1, max_length=160)
+    description: constr(max_length=500) | None = None
+    source: AnalyticsAnnotationSource
+    subject: constr(min_length=1, max_length=100) | None = None
+
+
 class AnalyticsCatalogConcept(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -3779,6 +3822,7 @@ class AnalyticsCatalog(BaseModel):
     concepts: list[AnalyticsCatalogConcept] = Field(..., min_length=1)
     dimensions: list[AnalyticsCatalogDimension] = Field(..., min_length=1)
     metrics: list[AnalyticsCatalogMetric] = Field(..., min_length=1)
+    annotations: list[AnalyticsCatalogAnnotationKind] | None = None
 
 
 class AnalyticsCatalogSearchResult(BaseModel):
@@ -3790,49 +3834,51 @@ class AnalyticsCatalogSearchResult(BaseModel):
     entries: list[AnalyticsAgentCatalogEntry] = Field(..., max_length=50)
 
 
-class AnalyticsFilterState(BaseModel):
+class AnalyticsFilterValue1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    filter_id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
-    value: AnalyticsFilterValue | None
+    preset: constr(pattern=r"^[a-z0-9_]{1,20}$")
+    compare: AnalyticsPeriodCompareMode | None = None
+    compare_start: date_aliased | None = None
+    compare_end: date_aliased | None = None
 
 
-class AnalyticsQueryRequest(BaseModel):
+class AnalyticsFilterValue(
+    RootModel[
+        constr(max_length=200)
+        | float
+        | bool
+        | list[constr(max_length=200) | float | bool | None]
+        | AnalyticsFilterValue1
+        | AnalyticsFilterValue2
+        | None
+    ]
+):
+    root: (
+        constr(max_length=200)
+        | float
+        | bool
+        | list[constr(max_length=200) | float | bool | None]
+        | AnalyticsFilterValue1
+        | AnalyticsFilterValue2
+        | None
+    )
+
+
+class AnalyticsQueryOverrides(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    view_id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
-    revision: conint(ge=1, le=9007199254740991) | None = None
-    block_ids: list[BlockId] | None = Field(None, max_length=24, min_length=1)
-    filter_state: list[AnalyticsFilterState] | None = Field(None, max_length=20)
-
-
-class AnalyticsResultMeta(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    query_hash: constr(min_length=1, max_length=128)
-    concept: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
-    analytical_unit: AnalyticsAnalyticalUnit
-    source_scope: AnalyticsSourceScope
-    coverage: AnalyticsCoverage | None = None
-    as_of: AwareDatetime
-    freshness_seconds: conint(ge=0, le=9007199254740991)
-    applied_filters: list[AnalyticsSemanticFilter] | None = Field(
-        [], validate_default=True
-    )
-    next_cursor: constr(max_length=500) | None = None
-    warnings: list[AnalyticsWarning] | None = Field([], validate_default=True)
-
-
-class AnalyticsResult(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    data: list[dict[str, Any]]
-    fields: list[AnalyticsResultField]
-    meta: AnalyticsResultMeta
+    time_grain: AnalyticsTimeGrain | None = None
+    compare: AnalyticsCompareMode | None = None
+    compare_delta: AnalyticsCompareDelta | None = None
+    compare_segment: AnalyticsCompareSegment | None = None
+    compare_experiment: AnalyticsCompareExperiment | None = None
+    compare_scope: AnalyticsSourceScope | None = None
+    compare_anchor: AwareDatetime | None = None
+    source_scope: AnalyticsSourceScope | None = None
+    historical_mode: AnalyticsHistoricalMode | None = None
 
 
 class ReferenceLine(BaseModel):
@@ -3872,6 +3918,15 @@ class AnalyticsSavedView(BaseModel):
     current_revision: conint(ge=1, le=9007199254740991)
     is_default: bool | None = False
     idempotency_key: constr(min_length=1, max_length=200) | None = None
+
+
+class AnalyticsSemanticFilter(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    dimension: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    operator: AnalyticsFilterOperator
+    value: AnalyticsFilterValue | None = None
 
 
 class AnalyticsTemplateSummary(BaseModel):
@@ -3925,6 +3980,8 @@ class AnalyticsViewFilter(BaseModel):
     applies_to: Literal["all"] | list[AppliesToItem] | None = Field(
         "all", validate_default=True
     )
+    depends_on: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$") | None = None
+    url_safe: bool | None = None
 
 
 class AnalyticsViewHandoffDraft(BaseModel):
@@ -3957,6 +4014,27 @@ class AnalyticsViewHandoff(BaseModel):
         ]
         | None
     ) = {}
+
+
+class AnalyticsViewQuery(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    concept: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    family: AnalyticsQueryFamily
+    metrics: list[Metric] = Field(..., max_length=10, min_length=1)
+    group_by: list[GroupByItem] | None = Field(None, max_length=8)
+    time: Time | None = None
+    filters_from: list[FiltersFromItem] | None = Field(None, max_length=20)
+    fixed_filters: list[AnalyticsSemanticFilter] | None = Field(None, max_length=20)
+    compare: AnalyticsCompareMode | None = None
+    compare_delta: AnalyticsCompareDelta | None = None
+    compare_segment: AnalyticsCompareSegment | None = None
+    compare_experiment: AnalyticsCompareExperiment | None = None
+    compare_scope: AnalyticsSourceScope | None = None
+    compare_anchor: AwareDatetime | None = None
+    order_by: list[OrderByItem1] | None = Field(None, max_length=3)
+    limit: conint(ge=1, le=1000) | None = None
 
 
 class AuthInvitation(BaseModel):
@@ -5031,23 +5109,31 @@ class WebhookEventLog(BaseModel):
     error_message: str | None = None
 
 
-class AnalyticsBlockResult(BaseModel):
+class AnalyticsAnnotationResponse(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    block_id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
-    result: AnalyticsResult
+    annotations: list[AnalyticsAnnotation]
+    as_of: AwareDatetime
 
 
-class AnalyticsQueryResponse(BaseModel):
+class AnalyticsFilterState(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    filter_id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+    value: AnalyticsFilterValue | None
+
+
+class AnalyticsQueryRequest(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
     view_id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
-    revision: conint(ge=1, le=9007199254740991)
-    catalog_version: constr(min_length=1, max_length=64)
-    results: list[AnalyticsBlockResult]
-    errors: list[AnalyticsBlockError] | None = Field([], validate_default=True)
+    revision: conint(ge=1, le=9007199254740991) | None = None
+    block_ids: list[BlockId] | None = Field(None, max_length=24, min_length=1)
+    filter_state: list[AnalyticsFilterState] | None = Field(None, max_length=20)
+    overrides: AnalyticsQueryOverrides | None = None
 
 
 class AnalyticsRenderCartesian(BaseModel):
@@ -5080,6 +5166,33 @@ class AnalyticsRenderSpec(
     )
 
 
+class AnalyticsResultMeta(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    query_hash: constr(min_length=1, max_length=128)
+    concept: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    analytical_unit: AnalyticsAnalyticalUnit
+    source_scope: AnalyticsSourceScope
+    coverage: AnalyticsCoverage | None = None
+    as_of: AwareDatetime
+    freshness_seconds: conint(ge=0, le=9007199254740991)
+    applied_filters: list[AnalyticsSemanticFilter] | None = Field(
+        [], validate_default=True
+    )
+    next_cursor: constr(max_length=500) | None = None
+    warnings: list[AnalyticsWarning] | None = Field([], validate_default=True)
+
+
+class AnalyticsResult(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    data: list[dict[str, Any]]
+    fields: list[AnalyticsResultField]
+    meta: AnalyticsResultMeta
+
+
 class AnalyticsViewBlockDraft(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -5094,6 +5207,11 @@ class AnalyticsViewBlockDraft(BaseModel):
     filters_from: list[FiltersFromItem] | None = Field(None, max_length=20)
     fixed_filters: list[AnalyticsSemanticFilter] | None = Field(None, max_length=20)
     compare: AnalyticsCompareMode | None = None
+    compare_delta: AnalyticsCompareDelta | None = None
+    compare_segment: AnalyticsCompareSegment | None = None
+    compare_experiment: AnalyticsCompareExperiment | None = None
+    compare_scope: AnalyticsSourceScope | None = None
+    compare_anchor: AwareDatetime | None = None
     order_by: list[OrderByItem] | None = Field(None, max_length=3)
     limit: conint(ge=1, le=1000) | None = None
     render: Literal["auto"] | AnalyticsRenderSpec | None = None
@@ -5359,6 +5477,25 @@ class UserContext(BaseModel):
     activity_score: conint(ge=0, le=9007199254740991) | None = None
     activity_score_computed_at: AwareDatetime | None = None
     experiments: dict[str, str] | None = None
+
+
+class AnalyticsBlockResult(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    block_id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+    result: AnalyticsResult
+
+
+class AnalyticsQueryResponse(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    view_id: constr(pattern=r"^[a-z][a-z0-9_-]{0,99}$")
+    revision: conint(ge=1, le=9007199254740991)
+    catalog_version: constr(min_length=1, max_length=64)
+    results: list[AnalyticsBlockResult]
+    errors: list[AnalyticsBlockError] | None = Field([], validate_default=True)
 
 
 class AnalyticsViewRevision(BaseModel):

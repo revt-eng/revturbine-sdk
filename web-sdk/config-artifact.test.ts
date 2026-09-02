@@ -25,7 +25,7 @@ describe('config artifact dual-read normalization', () => {
       ...BODY,
     }, 'fixture', {
       tenantId: 'tenant_sdk',
-      environmentId: 'default',
+      environmentId: 'production',
     });
 
     expect(normalized).toMatchObject({
@@ -34,7 +34,7 @@ describe('config artifact dual-read normalization', () => {
       playbook_handle: 'default',
       playbook_version_id: 'pbv_legacy',
       tenant_id: 'tenant_sdk',
-      environment_id: 'default',
+      environment_id: 'production',
     });
     expect(normalized && 'version' in normalized).toBe(false);
     expect(normalized && 'change_set_id' in normalized).toBe(false);
@@ -109,7 +109,7 @@ describe('config artifact dual-read normalization', () => {
       ...BODY,
     }, 'legacy fixture', {
       tenantId: 'tenant_sdk',
-      environmentId: 'default',
+      environmentId: 'production',
     });
 
     expect(warn).toHaveBeenCalledOnce();
@@ -126,7 +126,7 @@ describe('config artifact dual-read normalization', () => {
       ...BODY,
     }, 'legacy fixture', {
       tenantId: 'tenant_sdk',
-      environmentId: 'default',
+      environmentId: 'production',
     });
 
     expect(warn).not.toHaveBeenCalled();

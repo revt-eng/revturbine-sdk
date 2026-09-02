@@ -37,6 +37,7 @@ import {
   configArtifactForRuntime,
   type ConfigArtifact,
 } from './config-artifact';
+import { normalizeEnvironmentId } from './environment';
 
 /* ------------------------------------------------------------------ */
 /*  Options                                                            */
@@ -49,7 +50,7 @@ export interface BrowserRuntimeOptions extends Omit<
   /** Canonical Playbook or deprecated RevTurbineConfig input. */
   exportedConfig: ConfigArtifact;
 
-  /** Target fallback for legacy configs that predate environment stamping. */
+  /** Target fallback for legacy configs. Omitted or blank resolves to `production`. */
   environmentId?: string;
 
   /**
@@ -91,7 +92,7 @@ export class BrowserRuntime extends LocalRuntime {
       'BrowserRuntime.exportedConfig',
       {
         tenantId: options.tenantId,
-        environmentId: environmentId ?? 'default',
+        environmentId: normalizeEnvironmentId(environmentId),
       },
     );
     if (!exportedConfig) {

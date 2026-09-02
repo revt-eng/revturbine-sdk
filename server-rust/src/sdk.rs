@@ -30,6 +30,8 @@ use crate::config::{parse_playbook_or_throw, LegacyConfigTargetDefaults};
 use crate::decisions::EntitlementCheckResult;
 use crate::runtime::{LocalRuntime, PlacementDecisionInput};
 
+const PRODUCTION_ENVIRONMENT_ID: &str = "production";
+
 /// The server-supplied user context.
 ///
 /// Plan and usage are supplied at construction and never fetched — that is the
@@ -110,7 +112,7 @@ impl RevTurbineCustomerSdk {
         // Source: server-python/src/revturbine/sdk.py — same two defaults.
         let defaults = LegacyConfigTargetDefaults {
             tenant_id: user_context.tenant_id.clone(),
-            environment_id: "default".to_string(),
+            environment_id: PRODUCTION_ENVIRONMENT_ID.to_string(),
         };
         let config = parse_playbook_or_throw(Some(playbook), "playbook", Some(&defaults))?
             .ok_or_else(|| "Invalid playbook: expected an artifact, got null".to_string())?;
@@ -230,16 +232,17 @@ mod tests {
     /// test above proves the SDK passes defaults at all; this proves the
     /// defaults it builds carry the caller's tenant rather than a placeholder.
     #[test]
-    fn legacy_tenant_is_taken_from_the_user_context() {
+    fn legacy_target_defaults_use_context_tenant_and_production_environment() {
         let defaults = LegacyConfigTargetDefaults {
             tenant_id: "tenant_abc".to_string(),
-            environment_id: "default".to_string(),
+            environment_id: PRODUCTION_ENVIRONMENT_ID.to_string(),
         };
         let normalized =
             parse_playbook_or_throw(Some(&legacy_playbook()), "playbook", Some(&defaults))
                 .expect("legacy playbook parses")
                 .expect("artifact present");
         assert_eq!(normalized["tenant_id"], json!("tenant_abc"));
+        assert_eq!(normalized["environment_id"], json!("production"));
     }
 
     #[test]

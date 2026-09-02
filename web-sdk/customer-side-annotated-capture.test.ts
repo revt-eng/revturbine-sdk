@@ -42,7 +42,7 @@ function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerS
     tenantId: 'tenant_abc',
     apiKey: 'sk',
     ingestPublicKey: 'pub',
-    environmentId: 'prod',
+    environmentId: 'production',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },

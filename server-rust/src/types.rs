@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.267/rust/revturbine_types.rs
+//   published/v0.1.272/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -2717,6 +2717,641 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsAnalyticalUnit 
         value.parse()
     }
 }
+#[doc = "`AnalyticsAnnotation`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"at\","]
+#[doc = "    \"kind\","]
+#[doc = "    \"label\","]
+#[doc = "    \"source\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"description\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 500,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"kind\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsAnnotationKind\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"label\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 160,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"source\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsAnnotationSource\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"subject\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 100,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"until\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticsAnnotation {
+    pub at: ::chrono::DateTime<::chrono::offset::Utc>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub description: ::std::option::Option<AnalyticsAnnotationDescription>,
+    pub kind: AnalyticsAnnotationKind,
+    pub label: AnalyticsAnnotationLabel,
+    pub source: AnalyticsAnnotationSource,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub subject: ::std::option::Option<AnalyticsAnnotationSubject>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub until: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+}
+#[doc = "`AnalyticsAnnotationDescription`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 500,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsAnnotationDescription(::std::string::String);
+impl ::std::ops::Deref for AnalyticsAnnotationDescription {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsAnnotationDescription> for ::std::string::String {
+    fn from(value: AnalyticsAnnotationDescription) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsAnnotationDescription {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 500usize {
+            return Err("longer than 500 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsAnnotationDescription {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsAnnotationDescription {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsAnnotationDescription {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsAnnotationDescription {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsAnnotationKind`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"playbook_published\","]
+#[doc = "    \"entitlement_change\","]
+#[doc = "    \"price_change\","]
+#[doc = "    \"plan_change\","]
+#[doc = "    \"experiment_started\","]
+#[doc = "    \"experiment_ended\","]
+#[doc = "    \"sdk_release\","]
+#[doc = "    \"sdk_error_rate\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AnalyticsAnnotationKind {
+    #[serde(rename = "playbook_published")]
+    PlaybookPublished,
+    #[serde(rename = "entitlement_change")]
+    EntitlementChange,
+    #[serde(rename = "price_change")]
+    PriceChange,
+    #[serde(rename = "plan_change")]
+    PlanChange,
+    #[serde(rename = "experiment_started")]
+    ExperimentStarted,
+    #[serde(rename = "experiment_ended")]
+    ExperimentEnded,
+    #[serde(rename = "sdk_release")]
+    SdkRelease,
+    #[serde(rename = "sdk_error_rate")]
+    SdkErrorRate,
+}
+impl ::std::fmt::Display for AnalyticsAnnotationKind {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::PlaybookPublished => f.write_str("playbook_published"),
+            Self::EntitlementChange => f.write_str("entitlement_change"),
+            Self::PriceChange => f.write_str("price_change"),
+            Self::PlanChange => f.write_str("plan_change"),
+            Self::ExperimentStarted => f.write_str("experiment_started"),
+            Self::ExperimentEnded => f.write_str("experiment_ended"),
+            Self::SdkRelease => f.write_str("sdk_release"),
+            Self::SdkErrorRate => f.write_str("sdk_error_rate"),
+        }
+    }
+}
+impl ::std::str::FromStr for AnalyticsAnnotationKind {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "playbook_published" => Ok(Self::PlaybookPublished),
+            "entitlement_change" => Ok(Self::EntitlementChange),
+            "price_change" => Ok(Self::PriceChange),
+            "plan_change" => Ok(Self::PlanChange),
+            "experiment_started" => Ok(Self::ExperimentStarted),
+            "experiment_ended" => Ok(Self::ExperimentEnded),
+            "sdk_release" => Ok(Self::SdkRelease),
+            "sdk_error_rate" => Ok(Self::SdkErrorRate),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsAnnotationKind {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsAnnotationKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsAnnotationKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AnalyticsAnnotationLabel`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 160,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsAnnotationLabel(::std::string::String);
+impl ::std::ops::Deref for AnalyticsAnnotationLabel {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsAnnotationLabel> for ::std::string::String {
+    fn from(value: AnalyticsAnnotationLabel) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsAnnotationLabel {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 160usize {
+            return Err("longer than 160 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsAnnotationLabel {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsAnnotationLabel {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsAnnotationLabel {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsAnnotationLabel {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsAnnotationMarker`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"point\","]
+#[doc = "    \"region\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AnalyticsAnnotationMarker {
+    #[serde(rename = "point")]
+    Point,
+    #[serde(rename = "region")]
+    Region,
+}
+impl ::std::fmt::Display for AnalyticsAnnotationMarker {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Point => f.write_str("point"),
+            Self::Region => f.write_str("region"),
+        }
+    }
+}
+impl ::std::str::FromStr for AnalyticsAnnotationMarker {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "point" => Ok(Self::Point),
+            "region" => Ok(Self::Region),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsAnnotationMarker {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsAnnotationMarker {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsAnnotationMarker {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AnalyticsAnnotationRequest`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"end\","]
+#[doc = "    \"start\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"end\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"kinds\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"$ref\": \"#/$defs/AnalyticsAnnotationKind\""]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 8,"]
+#[doc = "      \"minItems\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"start\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticsAnnotationRequest {
+    pub end: ::chrono::DateTime<::chrono::offset::Utc>,
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub kinds: ::std::vec::Vec<AnalyticsAnnotationKind>,
+    pub start: ::chrono::DateTime<::chrono::offset::Utc>,
+}
+#[doc = "`AnalyticsAnnotationResponse`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"annotations\","]
+#[doc = "    \"as_of\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"annotations\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"$ref\": \"#/$defs/AnalyticsAnnotation\""]
+#[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"as_of\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticsAnnotationResponse {
+    pub annotations: ::std::vec::Vec<AnalyticsAnnotation>,
+    pub as_of: ::chrono::DateTime<::chrono::offset::Utc>,
+}
+#[doc = "`AnalyticsAnnotationSource`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"control_plane\","]
+#[doc = "    \"events_billing\","]
+#[doc = "    \"events_sdk_meta\","]
+#[doc = "    \"events_sdk_diagnostics\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AnalyticsAnnotationSource {
+    #[serde(rename = "control_plane")]
+    ControlPlane,
+    #[serde(rename = "events_billing")]
+    EventsBilling,
+    #[serde(rename = "events_sdk_meta")]
+    EventsSdkMeta,
+    #[serde(rename = "events_sdk_diagnostics")]
+    EventsSdkDiagnostics,
+}
+impl ::std::fmt::Display for AnalyticsAnnotationSource {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::ControlPlane => f.write_str("control_plane"),
+            Self::EventsBilling => f.write_str("events_billing"),
+            Self::EventsSdkMeta => f.write_str("events_sdk_meta"),
+            Self::EventsSdkDiagnostics => f.write_str("events_sdk_diagnostics"),
+        }
+    }
+}
+impl ::std::str::FromStr for AnalyticsAnnotationSource {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "control_plane" => Ok(Self::ControlPlane),
+            "events_billing" => Ok(Self::EventsBilling),
+            "events_sdk_meta" => Ok(Self::EventsSdkMeta),
+            "events_sdk_diagnostics" => Ok(Self::EventsSdkDiagnostics),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsAnnotationSource {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsAnnotationSource {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsAnnotationSource {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AnalyticsAnnotationSubject`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 100,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsAnnotationSubject(::std::string::String);
+impl ::std::ops::Deref for AnalyticsAnnotationSubject {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsAnnotationSubject> for ::std::string::String {
+    fn from(value: AnalyticsAnnotationSubject) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsAnnotationSubject {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsAnnotationSubject {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsAnnotationSubject {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsAnnotationSubject {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsAnnotationSubject {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`AnalyticsBlockError`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -3178,6 +3813,13 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCardinalityClas
 #[doc = "    \"source\""]
 #[doc = "  ],"]
 #[doc = "  \"properties\": {"]
+#[doc = "    \"annotations\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"$ref\": \"#/$defs/AnalyticsCatalogAnnotationKind\""]
+#[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"catalog_version\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 64,"]
@@ -3235,6 +3877,8 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCardinalityClas
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct AnalyticsCatalog {
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub annotations: ::std::vec::Vec<AnalyticsCatalogAnnotationKind>,
     pub catalog_version: AnalyticsCatalogCatalogVersion,
     pub concepts: ::std::vec::Vec<AnalyticsCatalogConcept>,
     pub dimensions: ::std::vec::Vec<AnalyticsCatalogDimension>,
@@ -3244,6 +3888,207 @@ pub struct AnalyticsCatalog {
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
     pub provenance: ::std::vec::Vec<AnalyticsCatalogProvenance>,
     pub source: AnalyticsCatalogSource,
+}
+#[doc = "`AnalyticsCatalogAnnotationKind`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"description\","]
+#[doc = "    \"kind\","]
+#[doc = "    \"label\","]
+#[doc = "    \"marker\","]
+#[doc = "    \"source\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"description\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 500,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"kind\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsAnnotationKind\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"label\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 120,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"marker\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsAnnotationMarker\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"source\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsAnnotationSource\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticsCatalogAnnotationKind {
+    pub description: AnalyticsCatalogAnnotationKindDescription,
+    pub kind: AnalyticsAnnotationKind,
+    pub label: AnalyticsCatalogAnnotationKindLabel,
+    pub marker: AnalyticsAnnotationMarker,
+    pub source: AnalyticsAnnotationSource,
+}
+#[doc = "`AnalyticsCatalogAnnotationKindDescription`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 500,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCatalogAnnotationKindDescription(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCatalogAnnotationKindDescription {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCatalogAnnotationKindDescription> for ::std::string::String {
+    fn from(value: AnalyticsCatalogAnnotationKindDescription) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCatalogAnnotationKindDescription {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 500usize {
+            return Err("longer than 500 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCatalogAnnotationKindDescription {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCatalogAnnotationKindDescription {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogAnnotationKindDescription {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogAnnotationKindDescription {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsCatalogAnnotationKindLabel`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCatalogAnnotationKindLabel(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCatalogAnnotationKindLabel {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCatalogAnnotationKindLabel> for ::std::string::String {
+    fn from(value: AnalyticsCatalogAnnotationKindLabel) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCatalogAnnotationKindLabel {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCatalogAnnotationKindLabel {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCatalogAnnotationKindLabel {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogAnnotationKindLabel {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogAnnotationKindLabel {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
 }
 #[doc = "`AnalyticsCatalogCatalogVersion`"]
 #[doc = r""]
@@ -5417,7 +6262,8 @@ pub struct AnalyticsCatalogProvenance {
 #[doc = "  \"enum\": ["]
 #[doc = "    \"event_taxonomy\","]
 #[doc = "    \"openapi_identity\","]
-#[doc = "    \"tinybird_project\""]
+#[doc = "    \"tinybird_project\","]
+#[doc = "    \"annotation_kinds\""]
 #[doc = "  ],"]
 #[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
 #[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
@@ -5443,6 +6289,8 @@ pub enum AnalyticsCatalogProvenanceKind {
     OpenapiIdentity,
     #[serde(rename = "tinybird_project")]
     TinybirdProject,
+    #[serde(rename = "annotation_kinds")]
+    AnnotationKinds,
 }
 impl ::std::fmt::Display for AnalyticsCatalogProvenanceKind {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -5450,6 +6298,7 @@ impl ::std::fmt::Display for AnalyticsCatalogProvenanceKind {
             Self::EventTaxonomy => f.write_str("event_taxonomy"),
             Self::OpenapiIdentity => f.write_str("openapi_identity"),
             Self::TinybirdProject => f.write_str("tinybird_project"),
+            Self::AnnotationKinds => f.write_str("annotation_kinds"),
         }
     }
 }
@@ -5460,6 +6309,7 @@ impl ::std::str::FromStr for AnalyticsCatalogProvenanceKind {
             "event_taxonomy" => Ok(Self::EventTaxonomy),
             "openapi_identity" => Ok(Self::OpenapiIdentity),
             "tinybird_project" => Ok(Self::TinybirdProject),
+            "annotation_kinds" => Ok(Self::AnnotationKinds),
             _ => Err("invalid value".into()),
         }
     }
@@ -5985,6 +6835,344 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsClassification 
         value.parse()
     }
 }
+#[doc = "`AnalyticsCompareDelta`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"absolute\","]
+#[doc = "    \"percentage\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AnalyticsCompareDelta {
+    #[serde(rename = "absolute")]
+    Absolute,
+    #[serde(rename = "percentage")]
+    Percentage,
+}
+impl ::std::fmt::Display for AnalyticsCompareDelta {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Absolute => f.write_str("absolute"),
+            Self::Percentage => f.write_str("percentage"),
+        }
+    }
+}
+impl ::std::str::FromStr for AnalyticsCompareDelta {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "absolute" => Ok(Self::Absolute),
+            "percentage" => Ok(Self::Percentage),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCompareDelta {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCompareDelta {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCompareDelta {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AnalyticsCompareExperiment`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"experiment\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"against\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 100,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"baseline\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 100,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"experiment\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 100,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticsCompareExperiment {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub against: ::std::option::Option<AnalyticsCompareExperimentAgainst>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub baseline: ::std::option::Option<AnalyticsCompareExperimentBaseline>,
+    pub experiment: AnalyticsCompareExperimentExperiment,
+}
+#[doc = "`AnalyticsCompareExperimentAgainst`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 100,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCompareExperimentAgainst(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCompareExperimentAgainst {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCompareExperimentAgainst> for ::std::string::String {
+    fn from(value: AnalyticsCompareExperimentAgainst) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCompareExperimentAgainst {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCompareExperimentAgainst {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCompareExperimentAgainst {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCompareExperimentAgainst {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCompareExperimentAgainst {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsCompareExperimentBaseline`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 100,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCompareExperimentBaseline(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCompareExperimentBaseline {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCompareExperimentBaseline> for ::std::string::String {
+    fn from(value: AnalyticsCompareExperimentBaseline) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCompareExperimentBaseline {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCompareExperimentBaseline {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCompareExperimentBaseline {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCompareExperimentBaseline {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCompareExperimentBaseline {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsCompareExperimentExperiment`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 100,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCompareExperimentExperiment(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCompareExperimentExperiment {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCompareExperimentExperiment> for ::std::string::String {
+    fn from(value: AnalyticsCompareExperimentExperiment) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCompareExperimentExperiment {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCompareExperimentExperiment {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCompareExperimentExperiment {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCompareExperimentExperiment {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCompareExperimentExperiment {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`AnalyticsCompareMode`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -5995,7 +7183,12 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsClassification 
 #[doc = "  \"enum\": ["]
 #[doc = "    \"none\","]
 #[doc = "    \"previous_period\","]
-#[doc = "    \"previous_year\""]
+#[doc = "    \"previous_year\","]
+#[doc = "    \"custom_period\","]
+#[doc = "    \"segment\","]
+#[doc = "    \"variant\","]
+#[doc = "    \"scope\","]
+#[doc = "    \"intervention\""]
 #[doc = "  ],"]
 #[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
 #[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
@@ -6021,6 +7214,16 @@ pub enum AnalyticsCompareMode {
     PreviousPeriod,
     #[serde(rename = "previous_year")]
     PreviousYear,
+    #[serde(rename = "custom_period")]
+    CustomPeriod,
+    #[serde(rename = "segment")]
+    Segment,
+    #[serde(rename = "variant")]
+    Variant,
+    #[serde(rename = "scope")]
+    Scope,
+    #[serde(rename = "intervention")]
+    Intervention,
 }
 impl ::std::fmt::Display for AnalyticsCompareMode {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -6028,6 +7231,11 @@ impl ::std::fmt::Display for AnalyticsCompareMode {
             Self::None => f.write_str("none"),
             Self::PreviousPeriod => f.write_str("previous_period"),
             Self::PreviousYear => f.write_str("previous_year"),
+            Self::CustomPeriod => f.write_str("custom_period"),
+            Self::Segment => f.write_str("segment"),
+            Self::Variant => f.write_str("variant"),
+            Self::Scope => f.write_str("scope"),
+            Self::Intervention => f.write_str("intervention"),
         }
     }
 }
@@ -6038,6 +7246,11 @@ impl ::std::str::FromStr for AnalyticsCompareMode {
             "none" => Ok(Self::None),
             "previous_period" => Ok(Self::PreviousPeriod),
             "previous_year" => Ok(Self::PreviousYear),
+            "custom_period" => Ok(Self::CustomPeriod),
+            "segment" => Ok(Self::Segment),
+            "variant" => Ok(Self::Variant),
+            "scope" => Ok(Self::Scope),
+            "intervention" => Ok(Self::Intervention),
             _ => Err("invalid value".into()),
         }
     }
@@ -6062,6 +7275,386 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCompareMode {
         value: ::std::string::String,
     ) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
+    }
+}
+#[doc = "`AnalyticsCompareSegment`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"against\","]
+#[doc = "    \"baseline\","]
+#[doc = "    \"dimension\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"against\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 200"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"number\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"baseline\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 200"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"number\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"dimension\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 120,"]
+#[doc = "      \"pattern\": \"^[a-z][a-z0-9_]*(\\\\.[a-z][a-z0-9_]*)+$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticsCompareSegment {
+    pub against: AnalyticsCompareSegmentAgainst,
+    pub baseline: AnalyticsCompareSegmentBaseline,
+    pub dimension: AnalyticsCompareSegmentDimension,
+}
+#[doc = "`AnalyticsCompareSegmentAgainst`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"anyOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 200"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"number\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"null\""]
+#[doc = "    }"]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(untagged)]
+pub enum AnalyticsCompareSegmentAgainst {
+    String(AnalyticsCompareSegmentAgainstString),
+    Number(f64),
+    Boolean(bool),
+    Null,
+}
+impl ::std::convert::From<AnalyticsCompareSegmentAgainstString> for AnalyticsCompareSegmentAgainst {
+    fn from(value: AnalyticsCompareSegmentAgainstString) -> Self {
+        Self::String(value)
+    }
+}
+impl ::std::convert::From<f64> for AnalyticsCompareSegmentAgainst {
+    fn from(value: f64) -> Self {
+        Self::Number(value)
+    }
+}
+impl ::std::convert::From<bool> for AnalyticsCompareSegmentAgainst {
+    fn from(value: bool) -> Self {
+        Self::Boolean(value)
+    }
+}
+#[doc = "`AnalyticsCompareSegmentAgainstString`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 200"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCompareSegmentAgainstString(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCompareSegmentAgainstString {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCompareSegmentAgainstString> for ::std::string::String {
+    fn from(value: AnalyticsCompareSegmentAgainstString) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCompareSegmentAgainstString {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 200usize {
+            return Err("longer than 200 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCompareSegmentAgainstString {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCompareSegmentAgainstString {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCompareSegmentAgainstString {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCompareSegmentAgainstString {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsCompareSegmentBaseline`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"anyOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 200"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"number\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"null\""]
+#[doc = "    }"]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(untagged)]
+pub enum AnalyticsCompareSegmentBaseline {
+    String(AnalyticsCompareSegmentBaselineString),
+    Number(f64),
+    Boolean(bool),
+    Null,
+}
+impl ::std::convert::From<AnalyticsCompareSegmentBaselineString>
+    for AnalyticsCompareSegmentBaseline
+{
+    fn from(value: AnalyticsCompareSegmentBaselineString) -> Self {
+        Self::String(value)
+    }
+}
+impl ::std::convert::From<f64> for AnalyticsCompareSegmentBaseline {
+    fn from(value: f64) -> Self {
+        Self::Number(value)
+    }
+}
+impl ::std::convert::From<bool> for AnalyticsCompareSegmentBaseline {
+    fn from(value: bool) -> Self {
+        Self::Boolean(value)
+    }
+}
+#[doc = "`AnalyticsCompareSegmentBaselineString`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 200"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCompareSegmentBaselineString(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCompareSegmentBaselineString {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCompareSegmentBaselineString> for ::std::string::String {
+    fn from(value: AnalyticsCompareSegmentBaselineString) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCompareSegmentBaselineString {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 200usize {
+            return Err("longer than 200 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCompareSegmentBaselineString {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCompareSegmentBaselineString {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCompareSegmentBaselineString {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCompareSegmentBaselineString {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsCompareSegmentDimension`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"pattern\": \"^[a-z][a-z0-9_]*(\\\\.[a-z][a-z0-9_]*)+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCompareSegmentDimension(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCompareSegmentDimension {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCompareSegmentDimension> for ::std::string::String {
+    fn from(value: AnalyticsCompareSegmentDimension) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCompareSegmentDimension {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| {
+                ::regress::Regex::new("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$").unwrap()
+            });
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCompareSegmentDimension {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCompareSegmentDimension {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCompareSegmentDimension {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCompareSegmentDimension {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
     }
 }
 #[doc = "`AnalyticsCompileResolution`"]
@@ -6319,7 +7912,8 @@ pub struct AnalyticsCoverage {
 #[doc = "    \"source_scope\","]
 #[doc = "    \"handoff_target\","]
 #[doc = "    \"hidden_scope\","]
-#[doc = "    \"raw_expression\""]
+#[doc = "    \"raw_expression\","]
+#[doc = "    \"cross_filter\""]
 #[doc = "  ],"]
 #[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
 #[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
@@ -6365,6 +7959,8 @@ pub enum AnalyticsCustomizationCapability {
     HiddenScope,
     #[serde(rename = "raw_expression")]
     RawExpression,
+    #[serde(rename = "cross_filter")]
+    CrossFilter,
 }
 impl ::std::fmt::Display for AnalyticsCustomizationCapability {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -6382,6 +7978,7 @@ impl ::std::fmt::Display for AnalyticsCustomizationCapability {
             Self::HandoffTarget => f.write_str("handoff_target"),
             Self::HiddenScope => f.write_str("hidden_scope"),
             Self::RawExpression => f.write_str("raw_expression"),
+            Self::CrossFilter => f.write_str("cross_filter"),
         }
     }
 }
@@ -6402,6 +7999,7 @@ impl ::std::str::FromStr for AnalyticsCustomizationCapability {
             "handoff_target" => Ok(Self::HandoffTarget),
             "hidden_scope" => Ok(Self::HiddenScope),
             "raw_expression" => Ok(Self::RawExpression),
+            "cross_filter" => Ok(Self::CrossFilter),
             _ => Err("invalid value".into()),
         }
     }
@@ -6769,7 +8367,9 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsFieldType {
 #[doc = "    \"single_select\","]
 #[doc = "    \"multi_select\","]
 #[doc = "    \"search_select\","]
-#[doc = "    \"number_range\""]
+#[doc = "    \"number_range\","]
+#[doc = "    \"entity_picker\","]
+#[doc = "    \"toggle\""]
 #[doc = "  ],"]
 #[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
 #[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
@@ -6799,6 +8399,10 @@ pub enum AnalyticsFilterControl {
     SearchSelect,
     #[serde(rename = "number_range")]
     NumberRange,
+    #[serde(rename = "entity_picker")]
+    EntityPicker,
+    #[serde(rename = "toggle")]
+    Toggle,
 }
 impl ::std::fmt::Display for AnalyticsFilterControl {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -6808,6 +8412,8 @@ impl ::std::fmt::Display for AnalyticsFilterControl {
             Self::MultiSelect => f.write_str("multi_select"),
             Self::SearchSelect => f.write_str("search_select"),
             Self::NumberRange => f.write_str("number_range"),
+            Self::EntityPicker => f.write_str("entity_picker"),
+            Self::Toggle => f.write_str("toggle"),
         }
     }
 }
@@ -6820,6 +8426,8 @@ impl ::std::str::FromStr for AnalyticsFilterControl {
             "multi_select" => Ok(Self::MultiSelect),
             "search_select" => Ok(Self::SearchSelect),
             "number_range" => Ok(Self::NumberRange),
+            "entity_picker" => Ok(Self::EntityPicker),
+            "toggle" => Ok(Self::Toggle),
             _ => Err("invalid value".into()),
         }
     }
@@ -7126,7 +8734,19 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsFilterStateFilterId {
 #[doc = "      ],"]
 #[doc = "      \"properties\": {"]
 #[doc = "        \"compare\": {"]
-#[doc = "          \"$ref\": \"#/$defs/AnalyticsCompareMode\","]
+#[doc = "          \"$ref\": \"#/$defs/AnalyticsPeriodCompareMode\","]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"compare_end\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"compare_start\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))$\","]
 #[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "        },"]
 #[doc = "        \"preset\": {"]
@@ -7164,7 +8784,11 @@ pub enum AnalyticsFilterValue {
     Variant1(::std::vec::Vec<AnalyticsFilterValueVariant1Item>),
     Variant2 {
         #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
-        compare: ::std::option::Option<AnalyticsCompareMode>,
+        compare: ::std::option::Option<AnalyticsPeriodCompareMode>,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        compare_end: ::std::option::Option<::chrono::naive::NaiveDate>,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        compare_start: ::std::option::Option<::chrono::naive::NaiveDate>,
         preset: AnalyticsFilterValueVariant2Preset,
     },
     Variant3 {
@@ -7941,6 +9565,90 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsMetricStatistic
         value.parse()
     }
 }
+#[doc = "`AnalyticsPeriodCompareMode`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"previous_period\","]
+#[doc = "    \"previous_year\","]
+#[doc = "    \"custom_period\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AnalyticsPeriodCompareMode {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "previous_period")]
+    PreviousPeriod,
+    #[serde(rename = "previous_year")]
+    PreviousYear,
+    #[serde(rename = "custom_period")]
+    CustomPeriod,
+}
+impl ::std::fmt::Display for AnalyticsPeriodCompareMode {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::PreviousPeriod => f.write_str("previous_period"),
+            Self::PreviousYear => f.write_str("previous_year"),
+            Self::CustomPeriod => f.write_str("custom_period"),
+        }
+    }
+}
+impl ::std::str::FromStr for AnalyticsPeriodCompareMode {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "previous_period" => Ok(Self::PreviousPeriod),
+            "previous_year" => Ok(Self::PreviousYear),
+            "custom_period" => Ok(Self::CustomPeriod),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsPeriodCompareMode {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsPeriodCompareMode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsPeriodCompareMode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 #[doc = "`AnalyticsQueryFamily`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -8035,6 +9743,96 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsQueryFamily {
         value.parse()
     }
 }
+#[doc = "`AnalyticsQueryOverrides`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"compare\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsCompareMode\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"compare_anchor\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"compare_delta\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsCompareDelta\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"compare_experiment\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsCompareExperiment\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"compare_scope\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsSourceScope\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"compare_segment\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsCompareSegment\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"historical_mode\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsHistoricalMode\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"source_scope\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsSourceScope\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"time_grain\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsTimeGrain\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticsQueryOverrides {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub compare: ::std::option::Option<AnalyticsCompareMode>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub compare_anchor: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub compare_delta: ::std::option::Option<AnalyticsCompareDelta>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub compare_experiment: ::std::option::Option<AnalyticsCompareExperiment>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub compare_scope: ::std::option::Option<AnalyticsSourceScope>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub compare_segment: ::std::option::Option<AnalyticsCompareSegment>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub historical_mode: ::std::option::Option<AnalyticsHistoricalMode>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub source_scope: ::std::option::Option<AnalyticsSourceScope>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub time_grain: ::std::option::Option<AnalyticsTimeGrain>,
+}
+impl ::std::default::Default for AnalyticsQueryOverrides {
+    fn default() -> Self {
+        Self {
+            compare: Default::default(),
+            compare_anchor: Default::default(),
+            compare_delta: Default::default(),
+            compare_experiment: Default::default(),
+            compare_scope: Default::default(),
+            compare_segment: Default::default(),
+            historical_mode: Default::default(),
+            source_scope: Default::default(),
+            time_grain: Default::default(),
+        }
+    }
+}
 #[doc = "`AnalyticsQueryRequest`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -8064,6 +9862,10 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsQueryFamily {
 #[doc = "      \"maxItems\": 20,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"overrides\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsQueryOverrides\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"revision\": {"]
 #[doc = "      \"type\": \"integer\","]
 #[doc = "      \"maximum\": 9007199254740991.0,"]
@@ -8089,6 +9891,8 @@ pub struct AnalyticsQueryRequest {
     pub block_ids: ::std::vec::Vec<AnalyticsQueryRequestBlockIdsItem>,
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
     pub filter_state: ::std::vec::Vec<AnalyticsFilterState>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub overrides: ::std::option::Option<AnalyticsQueryOverrides>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub revision: ::std::option::Option<::std::num::NonZeroU64>,
     pub view_id: AnalyticsQueryRequestViewId,
@@ -13586,6 +15390,28 @@ pub struct AnalyticsViewBlock {
 #[doc = "      \"$ref\": \"#/$defs/AnalyticsCompareMode\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"compare_anchor\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"compare_delta\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsCompareDelta\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"compare_experiment\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsCompareExperiment\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"compare_scope\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsSourceScope\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"compare_segment\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsCompareSegment\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"concept\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 120,"]
@@ -13723,6 +15549,16 @@ pub struct AnalyticsViewBlock {
 pub struct AnalyticsViewBlockDraft {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub compare: ::std::option::Option<AnalyticsCompareMode>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub compare_anchor: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub compare_delta: ::std::option::Option<AnalyticsCompareDelta>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub compare_experiment: ::std::option::Option<AnalyticsCompareExperiment>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub compare_scope: ::std::option::Option<AnalyticsSourceScope>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub compare_segment: ::std::option::Option<AnalyticsCompareSegment>,
     pub concept: AnalyticsViewBlockDraftConcept,
     pub family: AnalyticsQueryFamily,
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
@@ -14935,6 +16771,11 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsViewDraftSchemaVersion {
 #[doc = "      \"$ref\": \"#/$defs/AnalyticsFilterValue\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"depends_on\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^[a-z][a-z0-9_-]{0,99}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"dimension\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 120,"]
@@ -14967,6 +16808,10 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsViewDraftSchemaVersion {
 #[doc = "      \"default\": false,"]
 #[doc = "      \"type\": \"boolean\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"url_safe\": {"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    }"]
 #[doc = "  },"]
 #[doc = "  \"additionalProperties\": false,"]
@@ -14983,6 +16828,8 @@ pub struct AnalyticsViewFilter {
     pub control: AnalyticsFilterControl,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub default_value: ::std::option::Option<AnalyticsFilterValue>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub depends_on: ::std::option::Option<AnalyticsViewFilterDependsOn>,
     pub dimension: AnalyticsViewFilterDimension,
     pub id: AnalyticsViewFilterId,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -14992,6 +16839,8 @@ pub struct AnalyticsViewFilter {
     pub pinned: bool,
     #[serde(default)]
     pub required: bool,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub url_safe: ::std::option::Option<bool>,
 }
 #[doc = "`AnalyticsViewFilterAppliesTo`"]
 #[doc = r""]
@@ -15098,6 +16947,79 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsViewFilterAppli
     }
 }
 impl<'de> ::serde::Deserialize<'de> for AnalyticsViewFilterAppliesToArrayItem {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsViewFilterDependsOn`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[a-z][a-z0-9_-]{0,99}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsViewFilterDependsOn(::std::string::String);
+impl ::std::ops::Deref for AnalyticsViewFilterDependsOn {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsViewFilterDependsOn> for ::std::string::String {
+    fn from(value: AnalyticsViewFilterDependsOn) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsViewFilterDependsOn {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| {
+                ::regress::Regex::new("^[a-z][a-z0-9_-]{0,99}$").unwrap()
+            });
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z][a-z0-9_-]{0,99}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsViewFilterDependsOn {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsViewFilterDependsOn {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsViewFilterDependsOn {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsViewFilterDependsOn {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -16636,6 +18558,28 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsViewLayoutItemsItemBlockId {
 #[doc = "      \"$ref\": \"#/$defs/AnalyticsCompareMode\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"compare_anchor\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"compare_delta\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsCompareDelta\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"compare_experiment\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsCompareExperiment\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"compare_scope\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsSourceScope\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"compare_segment\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsCompareSegment\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"concept\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 120,"]
@@ -16752,6 +18696,16 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsViewLayoutItemsItemBlockId {
 pub struct AnalyticsViewQuery {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub compare: ::std::option::Option<AnalyticsCompareMode>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub compare_anchor: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub compare_delta: ::std::option::Option<AnalyticsCompareDelta>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub compare_experiment: ::std::option::Option<AnalyticsCompareExperiment>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub compare_scope: ::std::option::Option<AnalyticsSourceScope>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub compare_segment: ::std::option::Option<AnalyticsCompareSegment>,
     pub concept: AnalyticsViewQueryConcept,
     pub family: AnalyticsQueryFamily,
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]

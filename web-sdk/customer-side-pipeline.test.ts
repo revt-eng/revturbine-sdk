@@ -53,7 +53,7 @@ function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerS
     tenantId: 'tenant_abc',
     apiKey: 'sk_secret_key',
     ingestPublicKey: 'pub_ingest_key',
-    environmentId: 'prod',
+    environmentId: 'production',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
@@ -158,7 +158,7 @@ describe('telemetry pipeline — event_id, retry, fan-out isolation', () => {
 
     const row = rowsOf(trackPosts()[0])[0];
     expect(row.event_name).toBe('feature_used');
-    expect(row.environment_id).toBe('prod');
+    expect(row.environment_id).toBe('production');
     expect(row).toHaveProperty('request_id');
     expect(row).toHaveProperty('event_id');
     expect(typeof row.properties).toBe('string'); // still the serialized bag

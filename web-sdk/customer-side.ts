@@ -15,6 +15,7 @@ import type {
 import { resolveBranding, type ResolvedBranding } from './branding';
 import type { BrandingConfig } from './generated';
 import { isServer, isBrowser } from './env';
+import { normalizeEnvironmentId } from './environment';
 import { isDevelopmentBuild } from './build-mode';
 import { redactPii, redactIdentityField, redactEnvelope } from './pii-redact';
 import { evaluateSegments } from './segments';
@@ -902,9 +903,9 @@ export interface RevTurbineInitOptions {
   trustedManifestKeys?: readonly TrustedKey[];
   /**
    * Environment identifier stamped on every ingested clickstream event
-   * (`TrackEvent.environment_id`, e.g. `'prod'` / `'staging'`). Lets a
+   * (`TrackEvent.environment_id`, e.g. `'production'` / `'staging'`). Lets a
    * tenant separate analytics by deployment environment. Defaults to
-   * `'default'` when omitted.
+   * `'production'` when omitted, empty, or whitespace-only.
    */
   environmentId?: string;
   /**
@@ -2462,7 +2463,7 @@ export class RevTurbineCustomerSdk {
     this.tenantId = options.tenantId;
     this.apiKey = options.apiKey;
     this.ingestPublicKey = options.ingestPublicKey;
-    this.environmentId = options.environmentId?.trim() || 'default';
+    this.environmentId = normalizeEnvironmentId(options.environmentId);
     this.locale = options.locale?.trim() || undefined;
     this.testTraffic = options.test === true;
     this.analyticsEnabled = options.analytics !== false;
@@ -2631,7 +2632,7 @@ export class RevTurbineCustomerSdk {
   private resolveConfigProvider(options: RevTurbineInitOptions): RuntimeConfigProvider | undefined {
     const legacyTargetDefaults: LegacyConfigTargetDefaults = {
       tenantId: options.tenantId,
-      environmentId: options.environmentId ?? 'default',
+      environmentId: normalizeEnvironmentId(options.environmentId),
     };
 
     if (options.configProvider) {

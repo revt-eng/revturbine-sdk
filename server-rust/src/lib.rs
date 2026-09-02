@@ -77,7 +77,6 @@ mod tests {
 
     #[test]
     fn version_is_populated() {
-        assert!(!VERSION.is_empty());
         // Lockstep versions are plain semver — no pre-release suffixes.
         assert_eq!(
             VERSION.split('.').count(),

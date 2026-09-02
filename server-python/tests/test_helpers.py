@@ -737,7 +737,7 @@ class TestParseExportedConfigOrThrow:
             "version": "1.0.0",
             "exported_at": "2026-05-14T00:00:00Z",
             "tenant_id": "tenant_test",
-            "environment_id": "default",
+            "environment_id": "production",
             "plans": [],
             "entitlements": [],
             "entitlement_rules": [],

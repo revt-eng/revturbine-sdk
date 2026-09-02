@@ -51,7 +51,7 @@ function makeSdk(
     tenantId: 'tenant_abc',
     apiKey: 'sk_secret_key',
     ingestPublicKey: 'pub_ingest_key',
-    environmentId: 'prod',
+    environmentId: 'production',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },

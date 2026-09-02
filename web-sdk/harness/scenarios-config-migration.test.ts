@@ -89,7 +89,7 @@ describe('harness Playbook projection migration', () => {
       playbook_handle: 'default',
       playbook_version_id: null,
       tenant_id: 'tenant_harness',
-      environment_id: 'default',
+      environment_id: 'production',
       ...BODY,
     });
 
@@ -103,7 +103,7 @@ describe('harness Playbook projection migration', () => {
       playbook_handle: 'default',
       playbook_version_id: null,
       tenant_id: 'tenant_harness',
-      environment_id: 'default',
+      environment_id: 'production',
       ...BODY,
     })).toThrow('unsupported "format_version"');
   });

@@ -129,6 +129,25 @@ class TestPublicSurface:
             assert p.kind is inspect.Parameter.KEYWORD_ONLY
         assert "storage" not in params and "impression_store" not in params
 
+    def test_legacy_playbook_defaults_environment_to_production(self) -> None:
+        sdk = RevTurbineCustomerSdk(user_context=_user_ctx(), exported_config=_config())
+        assert sdk._playbook["environment_id"] == "production"
+
+    def test_canonical_playbook_preserves_explicit_environment(self) -> None:
+        cfg = _config()
+        cfg.update(
+            {
+                "artifact_type": "playbook",
+                "format_version": "1.0.0",
+                "playbook_handle": "growth",
+                "playbook_version_id": None,
+                "tenant_id": "tenant_t",
+                "environment_id": "staging",
+            }
+        )
+        sdk = RevTurbineCustomerSdk(user_context=_user_ctx(), exported_config=cfg)
+        assert sdk._playbook["environment_id"] == "staging"
+
     def test_future_playbook_format_rejects_before_evaluation(self) -> None:
         cfg = _config()
         cfg.update(
@@ -138,7 +157,7 @@ class TestPublicSurface:
                 "playbook_handle": "default",
                 "playbook_version_id": None,
                 "tenant_id": "tenant_t",
-                "environment_id": "default",
+                "environment_id": "production",
             }
         )
         with pytest.raises(ValueError, match='unsupported "format_version"'):

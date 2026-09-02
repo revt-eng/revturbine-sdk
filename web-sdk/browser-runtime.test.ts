@@ -115,6 +115,35 @@ describe('BrowserRuntime', () => {
 
       expect(runtime).toBeDefined();
     });
+
+    it('normalizes an omitted legacy environment to production', () => {
+      const runtime = new BrowserRuntime({
+        tenantId: 'tenant_test',
+        userId: 'user_1',
+        exportedConfig: config,
+        providers: createStaticProviders({ config, planHandle: 'starter' }),
+        autoHydrate: false,
+      });
+
+      expect(Reflect.get(runtime, 'exportedConfig')).toMatchObject({
+        environment_id: 'production',
+      });
+    });
+
+    it('preserves an explicit legacy environment', () => {
+      const stagingConfig = createTestConfig({ environment_id: 'staging' });
+      const runtime = new BrowserRuntime({
+        tenantId: 'tenant_test',
+        userId: 'user_1',
+        exportedConfig: stagingConfig,
+        providers: createStaticProviders({ config: stagingConfig, planHandle: 'starter' }),
+        autoHydrate: false,
+      });
+
+      expect(Reflect.get(runtime, 'exportedConfig')).toMatchObject({
+        environment_id: 'staging',
+      });
+    });
   });
 
   describe('ready()', () => {

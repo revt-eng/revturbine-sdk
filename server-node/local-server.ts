@@ -34,6 +34,7 @@ import {
   configArtifactForRuntime,
   type ConfigArtifact,
 } from '../web-sdk/config-artifact';
+import { normalizeEnvironmentId } from '../web-sdk/environment';
 
 import type {
   ServerEvaluationPayload,
@@ -54,7 +55,7 @@ export interface LocalEvaluationServerOptions {
   providers: AnyDomainProvider[];
   /** RevTurbineConfig for local placement resolution. */
   exportedConfig?: ConfigArtifact;
-  /** Target fallback for legacy configs that predate environment stamping. */
+  /** Target fallback for legacy configs. Omitted or blank resolves to `production`. */
   environmentId?: string;
   /** Optional storage for interaction state (defaults to in-memory). */
   storage?: RevTurbineStorage;
@@ -90,7 +91,7 @@ export class LocalEvaluationServer {
       'LocalEvaluationServer.exportedConfig',
       {
         tenantId: options.tenantId,
-        environmentId: options.environmentId ?? 'default',
+        environmentId: normalizeEnvironmentId(options.environmentId),
       },
     );
     if (!exportedConfig) {

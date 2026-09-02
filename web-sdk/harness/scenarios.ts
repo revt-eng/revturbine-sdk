@@ -1064,7 +1064,7 @@ export function buildExportedConfig(params: {
     playbook_handle: 'default',
     playbook_version_id: null,
     tenant_id: 'tenant_harness',
-    environment_id: 'default',
+    environment_id: 'production',
     exported_at: nowIso,
     plans: params.plans.map((p, index) => ({
       unique_handle: p.unique_handle,
@@ -1274,7 +1274,7 @@ export function loadExportedConfig(raw: unknown): {
 } {
   const cfg = normalizeConfigArtifactOrThrow(raw, 'harness config', {
     tenantId: 'tenant_harness',
-    environmentId: 'default',
+    environmentId: 'production',
   });
   if (!cfg) throw new Error('Invalid config: not an object');
   if (!Array.isArray(cfg.plans)) throw new Error('Invalid config: plans must be an array');
