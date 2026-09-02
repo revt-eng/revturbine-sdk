@@ -12,6 +12,14 @@ the launched Playbook and evaluates each entitlement and placement in-process;
 in `LocalOnly` mode you bundle the Playbook yourself and make no decisioning
 network calls.
 
+<Aside type="note" title="TypeScript uses RevTurbineUserContext">
+The `./headless` entry point accepts the same canonical, flat user shape as the
+browser and React SDKs. Put the tenant in the top-level `tenantId` option and
+the identity in `user.id`; do not use the compact Python/Rust
+`{tenant_id, user_id}` shape here. See the
+[cross-language context mapping](/user-context/#server-sdk-context-shapes).
+</Aside>
+
 ## When to Use Server-Side
 
 | Use case | Client SDK | Server SDK |
@@ -28,20 +36,33 @@ Use the `./headless` entry so a server or edge function does not load React.
 Always repeat money-, data-, or compute-sensitive checks at this boundary:
 
 ```ts
-import { initRevTurbine, RuntimeMode } from '@revturbine/sdk/headless';
+import {
+  initRevTurbine,
+  RuntimeMode,
+  type RevTurbineUserContext,
+} from '@revturbine/sdk/headless';
 
 async function handleExport(req) {
+  const user: RevTurbineUserContext = {
+    id: req.user.id,
+    plan_handle: req.user.planHandle,
+    usage: {
+      api_calls: {
+        entitlement_handle: 'api_calls',
+        unit: 'calls',
+        amount: req.user.apiCallCount,
+        limit: req.user.apiCallLimit,
+      },
+    },
+  };
+
   const rt = await initRevTurbine({
     tenantId: process.env.REVTURBINE_TENANT_ID!,
     apiKey: process.env.REVTURBINE_API_KEY!,
     endpoint: process.env.REVTURBINE_ENDPOINT!,
     mode: 'snippet',
     runtimeMode: RuntimeMode.Server,
-    user: {
-      id: req.user.id,
-      plan_handle: req.user.planHandle,
-      usage: req.user.usage,
-    },
+    user,
   });
 
   const result = await rt.can('data_export');
@@ -57,6 +78,10 @@ async function handleExport(req) {
 
 `Server` mode refreshes the launched Playbook from the control plane, then
 evaluates locally. A fetch failure denies access rather than granting it.
+
+Initial `user.usage` entries use the rich `UserUsageEntry` shape shown above.
+After initialization, call `rt.update({ usage: { api_calls: total } })` with
+absolute numeric balances, not deltas.
 
 ## Server-Owned CTA Actions
 
@@ -242,6 +267,7 @@ See the [Python SDK guide](/getting-started/python/) for setup and usage.
 
 ## Next Steps
 
+- [User Context](/user-context/) — canonical fields and cross-language shapes
 - [Entitlements Guide](/guides/entitlements/) — entitlement types and checking patterns
 - [Runtime Modes](/guides/runtime-modes/) — choosing the right runtime mode
 - [Headless API](/guides/headless-api/) — imperative SDK usage without React

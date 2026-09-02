@@ -1,0 +1,308 @@
+---
+title: RevTurbineUserContext
+description: Identify users and keep plan, usage, traits, experiments, and server-derived signals current.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+`RevTurbineUserContext` is the user snapshot RevTurbine evaluates against the
+active Playbook. Entitlement checks, Segment targeting, placements,
+personalization, and experiment assignment all depend on this context.
+
+For most integrations, start with a stable user id and the current plan handle.
+Add only the fields your Playbook reads.
+
+```ts
+import type { RevTurbineUserContext } from '@revturbine/sdk';
+
+export const user: RevTurbineUserContext = {
+  id: 'usr_01J8M4X9Q2',
+  plan_handle: 'starter',
+  custom: {
+    role: 'editor',
+    company_size: 42,
+  },
+};
+```
+
+<Aside type="caution" title="User context is flat">
+There is no nested `context` wrapper. `plan_handle` is a direct property of
+the user object.
+
+```diff
+- user: { id: 'user_123', context: { plan_handle: 'pro' } }
++ user: { id: 'user_123', plan_handle: 'pro' }
+```
+
+The TypeScript context types reject unknown top-level keys. `identify()` and
+`update()` also warn and drop unknown keys from plain JavaScript callers. Put
+customer-defined fields under `custom`.
+</Aside>
+
+## Choose the right entry point
+
+| Situation | API | Behavior |
+|---|---|---|
+| Initialize React or the browser SDK | `options.user` | Sets the initial `RevTurbineUserContext` |
+| A user logs in or you switch accounts | `identify(userId, context?)` | Establishes the identity, invalidates cached decisions, and applies identity-safe context fields |
+| Data changes for the same user | `update(patch)` | Merges plan, usage, custom traits, and other supported session fields without changing identity |
+| Merge a low-level context snapshot | `setUserContext(context)` | Merges a `RevTurbineUserContext`; React's `setContext` calls this method |
+| A user logs out | `reset()` | Clears the known identity and returns to inferred anonymous state |
+| A demo or test needs a blank slate | `resetUserContext()` | Clears all user values, usage, decisions, and interaction history without anonymous inference |
+| Inspect held SDK state | `getUserContext()` | Returns the current context with `tenant_id`, `user_id`, and persistence-envelope fields |
+| Inspect what decisions actually read | `getEffectiveUserContext()` | Returns the immutable context after customer and experiment providers resolve |
+
+Use `identify()` whenever the identity changes. Use `update()` for later changes
+to the same user:
+
+```ts
+import type { RevTurbineCustomerSdk } from '@revturbine/sdk';
+
+type SignedInUser = {
+  id: string;
+  accountId: string;
+  planHandle: string;
+  role: string;
+};
+
+export function syncSignedInUser(rt: RevTurbineCustomerSdk, user: SignedInUser) {
+  rt.identify(user.id, {
+    account_id: user.accountId,
+    plan_handle: user.planHandle,
+    custom: { role: user.role },
+  });
+}
+
+export function applyPlanChange(rt: RevTurbineCustomerSdk, planHandle: string) {
+  rt.update({ plan_handle: planHandle });
+}
+
+export function signOut(rt: RevTurbineCustomerSdk) {
+  rt.reset();
+}
+```
+
+Context updates notify mounted hooks and components, so active entitlement
+checks and placements re-evaluate for the new snapshot.
+
+The optional context passed to `identify()` accepts `account_id`, `email`,
+`plan_handle`, `plan`, `usage`, `entitlements`, `custom`, and
+`personalization`. Set trial, tier, billing-recovery, and instance changes at
+initialization or with `update()`. Supply direct `experiments` assignments at
+initialization, through an experiment provider, or through the lower-level
+`setUserContext()` merge.
+
+## Field reference
+
+### Identity and account
+
+| Field | Type | Guidance |
+|---|---|---|
+| `id` | `string` | Your stable, opaque user identifier. Supply it in `options.user`; pass it as the first argument to `identify()`. Avoid emails and other guessable identifiers |
+| `account_id` | `string \| null` | The organization, workspace, or account the user is acting in |
+| `email` | `string \| null` | Optional contact identity. Put email here, never in `id` |
+| `email_type` | `string` | Optional classification such as `business` or `personal` |
+
+`id` is optional at the type boundary because the browser SDK can operate with
+anonymous state. Once your app knows the user, identify them with the same
+stable internal id on every device and session.
+
+### Plan
+
+| Field | Type | Guidance |
+|---|---|---|
+| `plan_handle` | `string` | Preferred plan identity. It must equal the plan's `unique_handle` in the Playbook, such as `starter` or `pro` |
+| `plan` | `{ handle, name, price?, billing_period? }` | Optional display metadata. `plan.handle` is a fallback identity when `plan_handle` is absent; the flat field wins when both are present |
+
+Plan ids from your database or RevTurbine's internal records do not belong in
+user context. `plan.id` is a retired shape and is rejected. Use the plan's
+stable handle:
+
+```ts
+import type { RevTurbineUserContext } from '@revturbine/sdk';
+
+export const professionalUser: RevTurbineUserContext = {
+  id: 'usr_01J8M4X9Q2',
+  plan_handle: 'pro',
+  plan: {
+    handle: 'pro',
+    name: 'Professional',
+    price: '$49',
+    billing_period: 'monthly',
+  },
+};
+```
+
+### Decision and presentation inputs
+
+| Field | Type | What reads it |
+|---|---|---|
+| `custom` | `Record<string, JsonValue>` | Customer-owned attributes for Segment targeting, such as role, region, or company size. Use string, number, or boolean values for predicates |
+| `usage` | `Record<string, UserUsageEntry>` | Usage-limit and credit entitlements. Keys are entitlement handles; see [Report usage](#report-usage) |
+| `trial` | `RevTurbineTrialContext` | Trial entitlements and trial-lifecycle placements |
+| `tiers` | `Record<string, string>` | Current tier handle per capability-tier entitlement handle |
+| `entitlements` | `Record<string, boolean>` | Precomputed grants. Most apps should let the Playbook derive these rather than asserting them in the browser |
+| `experiments` | `Record<string, string>` | Experiment handle to variant handle assignments; see [Use Experiment Assignments](/guides/experiments/) |
+| `payment_failed` | `boolean` | Hard-failure recovery placements |
+| `payment_at_risk` | `boolean` | Soft billing-attention placements |
+| `instances` | `UserInstanceContext[]` | Per-product-instance plans, usage, trials, and entitlements for multi-instance accounts |
+| `personalization` | `Record<string, string \| number>` | Transient tokens used in placement copy. It is rebuilt for each SDK session and is not an access-control input |
+
+Browser values can be changed by the person running the browser. Use them for
+UI decisions, but re-run value-bearing entitlement checks in a server SDK over
+the same Playbook before spending money, provisioning seats, or granting
+sensitive access. See [Client vs Server Enforcement](/concepts/enforcement/).
+
+## Server SDK context shapes
+
+The TypeScript headless entry point accepts this same canonical
+`RevTurbineUserContext`. The Python and Rust local evaluators instead expose
+smaller, request-scoped `UserContext` facade types. Map your application user
+into the shape for the SDK you are calling:
+
+| Concept | TypeScript headless | Python and Rust server facade |
+|---|---|---|
+| Identity | `user.id`; tenant is the top-level `tenantId` initialization option | `tenant_id` and `user_id` inside the facade object |
+| Plan | `plan_handle`, with optional `plan: { handle, name, ... }` metadata | `plan_handle`, with optional `plan_name`; no `plan` object |
+| Usage at construction | `{handle: {entitlement_handle, unit, amount, limit?}}` | `{handle: {used, limit}}` |
+| Trial | `trial` | `trial_status`, containing already-derived trial state |
+| Targeting | `custom`, `experiments`, and other canonical context fields | No raw-trait or experiment derivation; Python also accepts pre-resolved `segment_ids` for eligible plan and add-on helpers |
+| Shared signals | `payment_failed`, `payment_at_risk`, and `tiers` | The same three fields |
+
+<Aside type="caution" title="Use the facade type, not the persisted model">
+For Python, import `UserContext` from `revturbine`. For Rust, import it from
+`revturbine::sdk`. Do not pass the generated persisted models
+`revturbine.types.UserContext` or `revturbine::types::UserContext` to the local
+evaluator constructor. Those models include database envelope fields and use
+the broader canonical schema; they are not constructor inputs.
+</Aside>
+
+See the detailed [TypeScript server guide](/getting-started/server-side/),
+[Python guide](/getting-started/python/), and [Rust guide](/getting-started/rust/).
+
+## Report usage
+
+Initial user context uses rich `UserUsageEntry` objects. The record key and
+`entitlement_handle` both refer to the entitlement's `unique_handle`:
+
+```ts
+import type { RevTurbineUserContext } from '@revturbine/sdk';
+
+export const userWithUsage: RevTurbineUserContext = {
+  id: 'usr_01J8M4X9Q2',
+  plan_handle: 'pro',
+  usage: {
+    api_calls: {
+      entitlement_handle: 'api_calls',
+      unit: 'calls',
+      amount: 42,
+      limit: 1_000,
+    },
+  },
+};
+```
+
+Runtime updates use the simpler `Record<string, number>` shape:
+
+```ts
+import type { RevTurbineCustomerSdk } from '@revturbine/sdk';
+
+export function reportApiCallTotal(rt: RevTurbineCustomerSdk, total: number) {
+  rt.update({ usage: { api_calls: total } });
+}
+```
+
+Usage numbers are **absolute balances, not deltas**. If the user has made 43
+API calls, report `43`, not `1`. A usage key that does not match an entitlement
+handle is stored but cannot affect a rule; once a Playbook is loaded, the SDK
+warns about unmatched keys.
+
+## Merge behavior
+
+Context changes use upsert semantics:
+
+- Omitted fields and fields set to `undefined` keep their current values.
+- `setUserContext()` merges `custom`, `entitlements`, `usage`,
+  `personalization`, and `experiments` by key; supplied keys win.
+- `update()` applies the same merge behavior to its supported non-usage fields
+  and routes its simple numeric `usage` map through the usage update path.
+- `update()` cannot change `id`. Call `identify(newId, context)` to switch users.
+- An empty object does not erase a previously populated nested map. Use
+  `reset()` for logout or `resetUserContext()` when you need a completely blank
+  context.
+
+Treat the object you pass to RevTurbine as immutable. Create a new object for
+each meaningful change instead of mutating an earlier value in place.
+
+## Add server-derived context
+
+Some signals should come from a trusted backend: the plan last updated by a
+Stripe webhook, trial status, or coarse payment health. Supply a
+`clientSession` callback and the SDK will fetch the signed-in user's client-safe
+context automatically:
+
+```ts
+import { initRevTurbine } from '@revturbine/sdk';
+
+export const rt = initRevTurbine({
+  tenantId: 'tenant_abc',
+  apiKey: 'rt_live_xxx',
+  endpoint: 'https://app.revturbine.com',
+  mode: 'snippet',
+  user: { id: 'user_123', plan_handle: 'free' },
+  clientSession: () =>
+    fetch('/api/revturbine/client-session', { method: 'POST' })
+      .then((response) => {
+        if (!response.ok) throw new Error('Could not create RevTurbine client session');
+        return response.json();
+      })
+      .then((body) => body.client_token),
+});
+```
+
+Your backend—not the browser—mints the short-lived `rt_client_…` token. The SDK
+requests one when needed, requests a fresh token after `identify()`, and retries
+with a new token after expiry. Server-derived plan and trial state then join the
+effective user context used for local evaluation. If enrichment is unavailable,
+the SDK keeps using the context your app supplied.
+
+See [Configuration Reference: server-derived context](/reference/configuration/#server-derived-context-clientsession)
+for the complete token flow.
+
+## SDK-managed TypeScript fields
+
+The broader generated TypeScript user schema also contains persistence and
+cache metadata. Application code using `RevTurbineUserContext` should not
+author these fields:
+
+- `tenant_id`, `user_id`, `created_at`, and `updated_at` are added by
+  `getUserContext()` and the persistence layer.
+- `derived_config_version`, `context_hash`, and `derived_computed_at` describe
+  the server-computed entitlement cache.
+- `activity_score` and `activity_score_computed_at` are server-computed activity
+  signals.
+
+Keep application-specific values under `custom`; do not repurpose SDK-managed
+fields.
+
+## Privacy and validation
+
+- Use an opaque internal id. If `identify()` receives an email-shaped id, the
+  SDK warns and tells you to use the `email` field instead.
+- Do not put secrets, access tokens, payment details, or raw provider records in
+  user context.
+- Keep Segment-targeted `custom` values scalar. Nested JSON may be accepted at
+  the SDK boundary, but it is not a scalar Segment predicate.
+- `RevTurbineProvider` options, `identify()`, and `update()` exact-check context
+  objects even when they come through an intermediate variable. Plain
+  JavaScript calls to `identify()` and `update()` receive visible warnings for
+  unknown keys, which are dropped rather than silently becoming traits.
+
+## Related
+
+- [Core Concepts](/concepts/core-concepts/) — where user context fits in the decision loop
+- [React Integration](/getting-started/react/) — provider and hook setup
+- [Configuration Reference](/reference/configuration/) — initialization options
+- [Entitlements](/guides/entitlements/) — how plan and usage become access decisions
+- [Use Experiment Assignments](/guides/experiments/) — direct and provider-owned assignments
+- [`RevTurbineUserContext` API reference](/api/interfaces/revturbineusercontext/) — generated type details

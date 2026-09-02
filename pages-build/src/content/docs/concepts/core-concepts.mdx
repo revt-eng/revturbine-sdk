@@ -25,7 +25,13 @@ All three primitives are driven by your **Playbook** — the portable config Rev
 
 ## User context
 
-RevTurbine decides for a *specific* user, so you tell it who's asking: an id, the user's current plan, reported usage, and any custom traits. You set this with `rt.identify(userId, { plan, usage, …})` or the `<RevTurbineProvider>` `user` prop. Entitlement checks and [segment targeting](/guides/experiments/) both read from it.
+RevTurbine decides for a *specific* user, so you tell it who's asking: an id,
+the user's current plan handle, reported usage, and any custom traits. You set
+this with `rt.identify(userId, { plan_handle, usage, …})` or the
+`<RevTurbineProvider>` `user` prop. Entitlement checks and
+[segment targeting](/guides/experiments/) both read from it. The dedicated
+[`RevTurbineUserContext` guide](/user-context/) covers every field, update
+semantics, and server-derived context.
 
 ## Runtime modes
 

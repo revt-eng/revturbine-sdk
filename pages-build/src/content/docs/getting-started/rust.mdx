@@ -109,7 +109,22 @@ would wrongly block a user who is meant to be served a degraded experience.
 | `tiers` | — | Current tier per `capability_tier` entitlement, for the tier gate. |
 
 `UserContext` implements `Default`, so `..Default::default()` covers every
-field you do not set. Only `tenant_id` and `user_id` are required.
+field you do not set. Only `tenant_id` and `user_id` are required; construction
+rejects either one when it is empty.
+
+`plan_handle` must equal the plan's `unique_handle` in the Playbook. Usage keys
+must equal entitlement handles, and `used` is the current absolute balance,
+not an increment.
+
+<Aside type="caution" title="This is the compact server facade">
+Import `UserContext` from `revturbine::sdk`, as shown above. Do not substitute
+the generated persisted model at `revturbine::types::UserContext`, and do not
+copy TypeScript's broader `RevTurbineUserContext` shape. The local evaluator
+accepts `plan_handle` plus optional `plan_name` rather than a `plan` object,
+and `trial_status` rather than `trial`; it does not accept raw `custom`,
+`entitlements`, `experiments`, or `instances`. See the
+[cross-language context mapping](/user-context/#server-sdk-context-shapes).
+</Aside>
 
 Omitting `trial_status` is the one easy mistake: without it every `trial_*`
 gate reads "no trial" and silently declines rather than erroring. Supply it

@@ -196,6 +196,7 @@ export default defineConfig({
             { label: 'Rust SDK', slug: 'getting-started/rust' },
           ],
         },
+        { label: 'RevTurbineUserContext', slug: 'user-context' },
         {
           label: 'Concepts',
           items: [

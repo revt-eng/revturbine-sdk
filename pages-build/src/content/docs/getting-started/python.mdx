@@ -47,19 +47,21 @@ entitlements and decide placements:
 
 ```python
 import json
-from revturbine import RevTurbineCustomerSdk
+from revturbine import RevTurbineCustomerSdk, UserContext
 
 with open("revturbine.playbook.json") as f:
     exported_config = json.load(f)
 
+user_context: UserContext = {
+    "tenant_id": "tenant_abc",
+    "user_id": "user_123",
+    # Optional — the user's current plan and usage:
+    "plan_handle": "pro",
+    "usage": {"api_calls": {"used": 900.0, "limit": 1000.0}},
+}
+
 sdk = RevTurbineCustomerSdk(
-    user_context={
-        "tenant_id": "tenant_abc",
-        "user_id": "user_123",
-        # optional — the user's current plan + usage:
-        "plan_handle": "pro",
-        "usage": {"api_calls": {"used": 900.0, "limit": 1000.0}},
-    },
+    user_context=user_context,
     exported_config=exported_config,
 )
 
@@ -93,9 +95,28 @@ decisions = sdk.get_placement_decisions(
 | `plan_handle` | — | The user's current plan handle (feeds the plan + entitlements providers). |
 | `plan_name` | — | Display name; defaults to `plan_handle`. |
 | `usage` | — | Per-entitlement overrides: `{handle: {"used": float, "limit": float}}`. |
+| `trial_status` | — | Already-derived trial state, overlaid onto the plan provider. |
+| `payment_failed` | — | Hard-failure billing-recovery signal. |
+| `payment_at_risk` | — | Soft billing-attention signal. |
+| `tiers` | — | Current tier handle per `capability_tier` entitlement handle. |
+| `segment_ids` | — | Pre-resolved segment memberships used by eligible plan and add-on helpers. |
 
 `tenant_id` and `user_id` are the only required fields; an empty/missing one
 raises `ValueError` at construction.
+
+`plan_handle` must equal the plan's `unique_handle` in the Playbook. Usage keys
+must equal entitlement handles, and `used` is the current absolute balance,
+not an increment.
+
+<Aside type="caution" title="This is the compact server facade">
+Import `UserContext` from `revturbine`, as shown above. It is a `TypedDict` for
+the local evaluator constructor—not the generated persisted model at
+`revturbine.types.UserContext`, and not TypeScript's broader
+`RevTurbineUserContext`. It intentionally has no `id`, `plan`, `trial`,
+`custom`, `entitlements`, `experiments`, or `instances` fields. Map those app
+values into the supported fields before construction. See the
+[cross-language context mapping](/user-context/#server-sdk-context-shapes).
+</Aside>
 
 ### Public surface
 
