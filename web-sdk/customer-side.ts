@@ -4,6 +4,8 @@ import {
   composeEffectiveExperimentContext,
   createCompositeExperimentProvider,
 } from './providers/experiment-context';
+import { collectAssignmentFactDeclarations } from './providers/assignment-facts';
+import type { AssignmentFactUnit, ExperimentAssignmentFactDeclaration } from './providers/assignment-facts';
 import type {
   AnyDomainProvider,
   DomainProviderResolutionInput,
@@ -1022,6 +1024,23 @@ export interface RevTurbineInitOptions {
   domainProviders?: AnyDomainProvider[];
   /** Maximum time for one client experiment provider resolution. Default: 5000ms. */
   experimentProviderTimeoutMs?: number;
+  /**
+   * Canonical-version declarations for `experiment_assigned` assignment facts
+   * (plan 224, war-games spec §9.1).
+   *
+   * The assignment fact's (experiment handle, experiment version) pair is the
+   * SRM join key, and the runtime assignment snapshot deliberately carries
+   * handles only — so a fact is emitted **only** for experiments declared
+   * here (or via `CanonicalExperimentAllocation.sequence` on the native
+   * provider, which declares automatically). Works for ANY assignment source:
+   * native bucketer, external adapters (GrowthBook, Optimizely, custom), and
+   * caller-supplied `user.experiments` assignments alike. An assigned
+   * experiment with no declaration emits no fact rather than one with a
+   * fabricated version; unenrolled subjects emit nothing — not-enrolled is
+   * absence. Entries here override a provider-derived declaration for the
+   * same handle.
+   */
+  experimentAssignmentFacts?: readonly ExperimentAssignmentFactDeclaration[];
   /** Optional UI path resolver map used by `validateUiPathResolvers()`. */
   uiPathResolvers?: RevTurbineUiPathResolverMap;
   /**
@@ -2415,6 +2434,11 @@ export class RevTurbineCustomerSdk {
   private readonly syncedSurfaceSlotIds = new Set<string>();
   private userContext: RevTurbineUserContext;
   private contextRevision = 0;
+  // Assignment-fact state (plan 224 TASK-8): declarations gate emission; the
+  // key set dedupes per context revision — cleared on every revision change.
+  private assignmentFactDeclarationsByHandle: ReadonlyMap<string, ExperimentAssignmentFactDeclaration> = new Map();
+  private readonly emittedAssignmentFactKeys = new Set<string>();
+  private emittedAssignmentFactRevision?: string;
   private providerResolutionController = new AbortController();
   private lastEffectiveContext?: EffectiveUserContextResolution & {
     readonly userContext: Readonly<RevTurbineUserContext>;
@@ -2582,6 +2606,12 @@ export class RevTurbineCustomerSdk {
         timeoutMs: options.experimentProviderTimeoutMs,
       }));
     }
+    // Assignment-fact declarations (plan 224 TASK-8): provider-carried
+    // metadata first, explicit init declarations last so they win per handle.
+    this.assignmentFactDeclarationsByHandle = collectAssignmentFactDeclarations(
+      experimentProviders,
+      options.experimentAssignmentFacts,
+    );
     this.warnOnUiPathResolverCoverageGaps();
     // Plan 174 TASK-1 (F-70): init-supplied resolvers drive runtime CTA
     // dispatch; explicit registerCtaResolver() registrations keep precedence.
@@ -3007,6 +3037,7 @@ export class RevTurbineCustomerSdk {
 
       this.markAllSegmentsDirty();
       this.lastEffectiveContext = effective;
+      this.emitExperimentAssignmentFacts(effective);
       return { providers, effective };
     })();
   }
@@ -3036,6 +3067,91 @@ export class RevTurbineCustomerSdk {
   /** Return the immutable ephemeral context currently entering local evaluation. */
   async getEffectiveUserContext(): Promise<Readonly<RevTurbineUserContext>> {
     return (await this.resolveEffectiveProviderContext()).effective.userContext;
+  }
+
+  /**
+   * Emit `experiment_assigned` assignment facts for the resolved snapshot
+   * (plan 224 TASK-8, war-games spec §9.1). One fact per (experiment handle,
+   * experiment version, subject), declaration-gated and deduped per context
+   * revision: re-resolution within one revision emits nothing new, and a new
+   * revision re-emits the same idempotent `assignment_id`, which collapses in
+   * storage. Only `status: 'assigned'` selections emit — an unenrolled
+   * subject is absence (assignment spec §4), and provider failures
+   * (`unavailable` / `unsupported` / `not_assigned`) never fabricate a fact.
+   */
+  private emitExperimentAssignmentFacts(effective: EffectiveUserContextResolution): void {
+    if (this.assignmentFactDeclarationsByHandle.size === 0) return;
+    if (this.emittedAssignmentFactRevision !== effective.contextRevision) {
+      this.emittedAssignmentFactRevision = effective.contextRevision;
+      this.emittedAssignmentFactKeys.clear();
+    }
+    for (const selection of Object.values(effective.experimentSelections)) {
+      if (selection.status !== 'assigned') continue;
+      const declaration = this.assignmentFactDeclarationsByHandle.get(selection.experimentHandle);
+      // No declared canonical version → no fact. A fabricated (handle,
+      // version) join key poisons SRM; a missing row does not.
+      if (!declaration) continue;
+      const declaredSubject =
+        typeof declaration.subject === 'function' ? declaration.subject() : declaration.subject;
+      const subjectId = (declaredSubject ?? this.userContext.id ?? '').trim();
+      if (!subjectId) continue; // no stable subject → no fact; absent beats wrong
+      const assignmentUnit = declaration.assignmentUnit ?? 'user';
+      // JSON-array encoding keeps tuple fields unambiguous without relying
+      // on a separator character the values could themselves contain.
+      const dedupeKey = JSON.stringify([
+        selection.experimentHandle,
+        declaration.experimentVersion,
+        assignmentUnit,
+        subjectId,
+        selection.variantHandle,
+      ]);
+      if (this.emittedAssignmentFactKeys.has(dedupeKey)) continue;
+      this.emittedAssignmentFactKeys.add(dedupeKey);
+      void this.emitExperimentAssignmentFact(declaration, selection, assignmentUnit, subjectId);
+    }
+  }
+
+  /** Hash and emit one assignment fact; best-effort, never throws into the app. */
+  private async emitExperimentAssignmentFact(
+    declaration: ExperimentAssignmentFactDeclaration,
+    selection: Extract<ExperimentVariantSelection, { status: 'assigned' }>,
+    assignmentUnit: AssignmentFactUnit,
+    subjectId: string,
+  ): Promise<void> {
+    try {
+      // Idempotency key per ExperimentAssignmentFactSchema: a stable hash of
+      // (tenant, experiment_handle, experiment_version, assignment_unit,
+      // subject_id). Algorithm, fixed for every emitter of this fact:
+      // SHA-256 over the UTF-8 bytes of the JSON array of the five fields
+      // (version as a number), hex-encoded. JSON-array encoding keeps the
+      // tuple unambiguous regardless of the characters ids contain, so
+      // re-resolution of the same subject collapses in storage.
+      const assignmentId = await sha256Hex(new TextEncoder().encode(JSON.stringify([
+        this.tenantId,
+        selection.experimentHandle,
+        declaration.experimentVersion,
+        assignmentUnit,
+        subjectId,
+      ])));
+      await this.emitSemantic('experiment_assigned', {
+        schema_version: 1,
+        assignment_id: assignmentId,
+        // Wire vocabulary is telemetry's (assignment spec §8): `experiment_id`
+        // carries the experiment HANDLE; `variant_key` the variant identifier.
+        experiment_id: selection.experimentHandle,
+        experiment_version: declaration.experimentVersion,
+        variant_key: selection.variantHandle,
+        assignment_unit: assignmentUnit,
+        subject_id: subjectId,
+        assigned_at: new Date().toISOString(),
+        ...(selection.providerHandle ? { provider_handle: selection.providerHandle } : {}),
+        ...(selection.providerRevision !== undefined
+          ? { provider_revision: String(selection.providerRevision) }
+          : {}),
+      }, { immediate: false });
+    } catch {
+      // Telemetry must never break the calling app.
+    }
   }
 
   private markAllSegmentsDirty(): void {

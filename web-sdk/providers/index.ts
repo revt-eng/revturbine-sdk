@@ -90,3 +90,16 @@ export type {
   NativeExperimentAssignmentOptions,
   NativeExperimentAssignmentUnit,
 } from './basic-experiment-provider';
+
+// Assignment-fact carriage (plan 224, war-games spec §9.1) — binds an
+// experiment handle to the canonical version its `experiment_assigned`
+// facts must carry. Declaration-gated: no declaration, no fact.
+export {
+  collectAssignmentFactDeclarations,
+  isExperimentAssignmentFactDeclaration,
+} from './assignment-facts';
+export type {
+  AssignmentFactUnit,
+  ExperimentAssignmentFactDeclaration,
+  ExperimentAssignmentFactMetadataCarrier,
+} from './assignment-facts';

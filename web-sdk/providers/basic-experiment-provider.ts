@@ -13,6 +13,10 @@ import type {
   ExperimentProviderState,
 } from '@revt-eng/core';
 import type { Experiment } from '@revt-eng/schema';
+import type {
+  ExperimentAssignmentFactDeclaration,
+  ExperimentAssignmentFactMetadataCarrier,
+} from './assignment-facts';
 
 /** One experiment's arms, and optionally how much of the population sees it. */
 export interface BasicBucketerExperiment {
@@ -63,6 +67,16 @@ export interface CanonicalExperimentAllocation {
   /** Unit represented by the stable subject identifier; defaults to `user`. */
   assignment_unit?: Experiment['assignment_unit'];
   variants: ReadonlyArray<Pick<Experiment['variants'][number], 'variant_id' | 'weight'>>;
+  /**
+   * Canonical experiment version — the `Experiment.sequence` this allocation
+   * was taken from (plan 224, war-games spec §9.1). When present, the native
+   * provider derives an {@link ExperimentAssignmentFactDeclaration} so
+   * assignments emit the `experiment_assigned` assignment fact with the real
+   * (handle, version) SRM join key. When absent, assignment still works but
+   * no fact is emitted for this experiment — a fact with a fabricated
+   * version is worse than a missing one.
+   */
+  sequence?: Experiment['sequence'];
 }
 
 /** One supported canonical experiment assignment unit. */
@@ -216,9 +230,10 @@ export function adaptExperimentVersionToBucketer(
  */
 export function createNativeExperimentAssignmentProvider(
   options: NativeExperimentAssignmentOptions,
-): ExperimentAssignmentProvider {
+): ExperimentAssignmentProvider & ExperimentAssignmentFactMetadataCarrier {
   const subjectUnit = options.subjectUnit ?? 'user';
   const experiments: Record<string, BasicBucketerExperiment> = {};
+  const assignmentFactDeclarations: ExperimentAssignmentFactDeclaration[] = [];
   for (const experiment of options.experiments) {
     const requestedUnit = experiment.assignment_unit ?? 'user';
     if (requestedUnit !== subjectUnit) {
@@ -229,8 +244,23 @@ export function createNativeExperimentAssignmentProvider(
       );
     }
     experiments[experiment.handle] = adaptExperimentVersionToBucketer(experiment);
+    // Version carriage for the assignment plane (plan 224, spec §9.1): only an
+    // allocation that states its canonical version can produce a truthful
+    // (handle, version) fact — the others assign but emit nothing.
+    const sequence = experiment.sequence;
+    if (typeof sequence === 'number' && Number.isInteger(sequence) && sequence >= 1) {
+      assignmentFactDeclarations.push({
+        experimentHandle: experiment.handle,
+        experimentVersion: sequence,
+        assignmentUnit: requestedUnit,
+        subject: options.subject,
+      });
+    }
   }
-  return createBasicExperimentProvider({ experiments, subject: options.subject });
+  return {
+    ...createBasicExperimentProvider({ experiments, subject: options.subject }),
+    ...(assignmentFactDeclarations.length > 0 ? { assignmentFactDeclarations } : {}),
+  };
 }
 
 /**

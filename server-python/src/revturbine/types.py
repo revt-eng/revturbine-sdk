@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.273/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.279/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -316,6 +316,15 @@ class AnalyticsFilterValue2(BaseModel):
     )
     min: float | None = None
     max: float | None = None
+
+
+class AnalyticsFilterValue3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["date_range"]
+    start: date_aliased
+    end: date_aliased
 
 
 class Type(Enum):
@@ -4042,6 +4051,37 @@ class AnalyticsCatalogMetric(BaseModel):
     statistical_type: AnalyticsMetricStatisticalType | None = None
     aggregation_semantics: AnalyticsMetricAggregationSemantics | None = None
     preferred_analysis_unit: AnalyticsAnalyticalUnit | None = None
+    numerator_metric: (
+        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
+    ) = None
+    denominator_metric: (
+        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
+    ) = None
+    deprecation: AnalyticsCatalogDeprecation | None = None
+
+
+class AnalyticsCatalogMetricValidated(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    label: constr(min_length=1, max_length=120)
+    description: constr(max_length=500) | None = None
+    when_to_use: constr(max_length=500) | None = None
+    do_not_use_for: constr(max_length=500) | None = None
+    value_type: AnalyticsFieldType
+    format: AnalyticsFormatSpec | None = None
+    source_scope: AnalyticsSourceScope | None = None
+    direction: AnalyticsMetricDirection | None = None
+    statistical_type: AnalyticsMetricStatisticalType | None = None
+    aggregation_semantics: AnalyticsMetricAggregationSemantics | None = None
+    preferred_analysis_unit: AnalyticsAnalyticalUnit | None = None
+    numerator_metric: (
+        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
+    ) = None
+    denominator_metric: (
+        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
+    ) = None
     deprecation: AnalyticsCatalogDeprecation | None = None
 
 
@@ -4086,6 +4126,7 @@ class AnalyticsFilterValue(
         | list[constr(max_length=200) | float | bool | None]
         | AnalyticsFilterValue1
         | AnalyticsFilterValue2
+        | AnalyticsFilterValue3
         | None
     ]
 ):
@@ -4096,6 +4137,7 @@ class AnalyticsFilterValue(
         | list[constr(max_length=200) | float | bool | None]
         | AnalyticsFilterValue1
         | AnalyticsFilterValue2
+        | AnalyticsFilterValue3
         | None
     )
 

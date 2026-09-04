@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.273/rust/revturbine_types.rs
+//   published/v0.1.279/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -5755,6 +5755,12 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogDimensionWhenToUse {
 #[doc = "      \"$ref\": \"#/$defs/AnalyticsMetricAggregationSemantics\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"denominator_metric\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 120,"]
+#[doc = "      \"pattern\": \"^[a-z][a-z0-9_]*(\\\\.[a-z][a-z0-9_]*)+$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"deprecation\": {"]
 #[doc = "      \"$ref\": \"#/$defs/AnalyticsCatalogDeprecation\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
@@ -5787,6 +5793,12 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogDimensionWhenToUse {
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 120,"]
 #[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"numerator_metric\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 120,"]
+#[doc = "      \"pattern\": \"^[a-z][a-z0-9_]*(\\\\.[a-z][a-z0-9_]*)+$\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"preferred_analysis_unit\": {"]
@@ -5823,6 +5835,8 @@ pub struct AnalyticsCatalogMetric {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub aggregation_semantics: ::std::option::Option<AnalyticsMetricAggregationSemantics>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub denominator_metric: ::std::option::Option<AnalyticsCatalogMetricDenominatorMetric>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub deprecation: ::std::option::Option<AnalyticsCatalogDeprecation>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub description: ::std::option::Option<AnalyticsCatalogMetricDescription>,
@@ -5835,6 +5849,8 @@ pub struct AnalyticsCatalogMetric {
     pub id: AnalyticsCatalogMetricId,
     pub label: AnalyticsCatalogMetricLabel,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub numerator_metric: ::std::option::Option<AnalyticsCatalogMetricNumeratorMetric>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub preferred_analysis_unit: ::std::option::Option<AnalyticsAnalyticalUnit>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub source_scope: ::std::option::Option<AnalyticsSourceScope>,
@@ -5843,6 +5859,83 @@ pub struct AnalyticsCatalogMetric {
     pub value_type: AnalyticsFieldType,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub when_to_use: ::std::option::Option<AnalyticsCatalogMetricWhenToUse>,
+}
+#[doc = "`AnalyticsCatalogMetricDenominatorMetric`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"pattern\": \"^[a-z][a-z0-9_]*(\\\\.[a-z][a-z0-9_]*)+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCatalogMetricDenominatorMetric(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCatalogMetricDenominatorMetric {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCatalogMetricDenominatorMetric> for ::std::string::String {
+    fn from(value: AnalyticsCatalogMetricDenominatorMetric) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCatalogMetricDenominatorMetric {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| {
+                ::regress::Regex::new("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$").unwrap()
+            });
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCatalogMetricDenominatorMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCatalogMetricDenominatorMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogMetricDenominatorMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogMetricDenominatorMetric {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
 }
 #[doc = "`AnalyticsCatalogMetricDescription`"]
 #[doc = r""]
@@ -6121,6 +6214,708 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogMetricLa
     }
 }
 impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogMetricLabel {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsCatalogMetricNumeratorMetric`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"pattern\": \"^[a-z][a-z0-9_]*(\\\\.[a-z][a-z0-9_]*)+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCatalogMetricNumeratorMetric(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCatalogMetricNumeratorMetric {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCatalogMetricNumeratorMetric> for ::std::string::String {
+    fn from(value: AnalyticsCatalogMetricNumeratorMetric) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCatalogMetricNumeratorMetric {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| {
+                ::regress::Regex::new("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$").unwrap()
+            });
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCatalogMetricNumeratorMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCatalogMetricNumeratorMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogMetricNumeratorMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogMetricNumeratorMetric {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsCatalogMetricValidated`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"id\","]
+#[doc = "    \"label\","]
+#[doc = "    \"value_type\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"aggregation_semantics\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsMetricAggregationSemantics\""]
+#[doc = "    },"]
+#[doc = "    \"denominator_metric\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 120,"]
+#[doc = "      \"pattern\": \"^[a-z][a-z0-9_]*(\\\\.[a-z][a-z0-9_]*)+$\""]
+#[doc = "    },"]
+#[doc = "    \"deprecation\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsCatalogDeprecation\""]
+#[doc = "    },"]
+#[doc = "    \"description\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 500"]
+#[doc = "    },"]
+#[doc = "    \"direction\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsMetricDirection\""]
+#[doc = "    },"]
+#[doc = "    \"do_not_use_for\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 500"]
+#[doc = "    },"]
+#[doc = "    \"format\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsFormatSpec\""]
+#[doc = "    },"]
+#[doc = "    \"id\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 120,"]
+#[doc = "      \"pattern\": \"^[a-z][a-z0-9_]*(\\\\.[a-z][a-z0-9_]*)+$\""]
+#[doc = "    },"]
+#[doc = "    \"label\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 120,"]
+#[doc = "      \"minLength\": 1"]
+#[doc = "    },"]
+#[doc = "    \"numerator_metric\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 120,"]
+#[doc = "      \"pattern\": \"^[a-z][a-z0-9_]*(\\\\.[a-z][a-z0-9_]*)+$\""]
+#[doc = "    },"]
+#[doc = "    \"preferred_analysis_unit\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsAnalyticalUnit\""]
+#[doc = "    },"]
+#[doc = "    \"source_scope\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsSourceScope\""]
+#[doc = "    },"]
+#[doc = "    \"statistical_type\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsMetricStatisticalType\""]
+#[doc = "    },"]
+#[doc = "    \"value_type\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsFieldType\""]
+#[doc = "    },"]
+#[doc = "    \"when_to_use\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 500"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticsCatalogMetricValidated {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub aggregation_semantics: ::std::option::Option<AnalyticsMetricAggregationSemantics>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub denominator_metric: ::std::option::Option<AnalyticsCatalogMetricValidatedDenominatorMetric>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub deprecation: ::std::option::Option<AnalyticsCatalogDeprecation>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub description: ::std::option::Option<AnalyticsCatalogMetricValidatedDescription>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub direction: ::std::option::Option<AnalyticsMetricDirection>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub do_not_use_for: ::std::option::Option<AnalyticsCatalogMetricValidatedDoNotUseFor>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub format: ::std::option::Option<AnalyticsFormatSpec>,
+    pub id: AnalyticsCatalogMetricValidatedId,
+    pub label: AnalyticsCatalogMetricValidatedLabel,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub numerator_metric: ::std::option::Option<AnalyticsCatalogMetricValidatedNumeratorMetric>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub preferred_analysis_unit: ::std::option::Option<AnalyticsAnalyticalUnit>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub source_scope: ::std::option::Option<AnalyticsSourceScope>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub statistical_type: ::std::option::Option<AnalyticsMetricStatisticalType>,
+    pub value_type: AnalyticsFieldType,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub when_to_use: ::std::option::Option<AnalyticsCatalogMetricValidatedWhenToUse>,
+}
+#[doc = "`AnalyticsCatalogMetricValidatedDenominatorMetric`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"pattern\": \"^[a-z][a-z0-9_]*(\\\\.[a-z][a-z0-9_]*)+$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCatalogMetricValidatedDenominatorMetric(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCatalogMetricValidatedDenominatorMetric {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCatalogMetricValidatedDenominatorMetric>
+    for ::std::string::String
+{
+    fn from(value: AnalyticsCatalogMetricValidatedDenominatorMetric) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCatalogMetricValidatedDenominatorMetric {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| {
+                ::regress::Regex::new("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$").unwrap()
+            });
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCatalogMetricValidatedDenominatorMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for AnalyticsCatalogMetricValidatedDenominatorMetric
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for AnalyticsCatalogMetricValidatedDenominatorMetric
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogMetricValidatedDenominatorMetric {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsCatalogMetricValidatedDescription`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 500"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCatalogMetricValidatedDescription(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCatalogMetricValidatedDescription {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCatalogMetricValidatedDescription> for ::std::string::String {
+    fn from(value: AnalyticsCatalogMetricValidatedDescription) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCatalogMetricValidatedDescription {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 500usize {
+            return Err("longer than 500 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCatalogMetricValidatedDescription {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for AnalyticsCatalogMetricValidatedDescription
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogMetricValidatedDescription {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogMetricValidatedDescription {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsCatalogMetricValidatedDoNotUseFor`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 500"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCatalogMetricValidatedDoNotUseFor(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCatalogMetricValidatedDoNotUseFor {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCatalogMetricValidatedDoNotUseFor> for ::std::string::String {
+    fn from(value: AnalyticsCatalogMetricValidatedDoNotUseFor) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCatalogMetricValidatedDoNotUseFor {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 500usize {
+            return Err("longer than 500 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCatalogMetricValidatedDoNotUseFor {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for AnalyticsCatalogMetricValidatedDoNotUseFor
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogMetricValidatedDoNotUseFor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogMetricValidatedDoNotUseFor {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsCatalogMetricValidatedId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"pattern\": \"^[a-z][a-z0-9_]*(\\\\.[a-z][a-z0-9_]*)+$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCatalogMetricValidatedId(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCatalogMetricValidatedId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCatalogMetricValidatedId> for ::std::string::String {
+    fn from(value: AnalyticsCatalogMetricValidatedId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCatalogMetricValidatedId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| {
+                ::regress::Regex::new("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$").unwrap()
+            });
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCatalogMetricValidatedId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCatalogMetricValidatedId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogMetricValidatedId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogMetricValidatedId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsCatalogMetricValidatedLabel`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCatalogMetricValidatedLabel(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCatalogMetricValidatedLabel {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCatalogMetricValidatedLabel> for ::std::string::String {
+    fn from(value: AnalyticsCatalogMetricValidatedLabel) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCatalogMetricValidatedLabel {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCatalogMetricValidatedLabel {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCatalogMetricValidatedLabel {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogMetricValidatedLabel {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogMetricValidatedLabel {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsCatalogMetricValidatedNumeratorMetric`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"pattern\": \"^[a-z][a-z0-9_]*(\\\\.[a-z][a-z0-9_]*)+$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCatalogMetricValidatedNumeratorMetric(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCatalogMetricValidatedNumeratorMetric {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCatalogMetricValidatedNumeratorMetric>
+    for ::std::string::String
+{
+    fn from(value: AnalyticsCatalogMetricValidatedNumeratorMetric) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCatalogMetricValidatedNumeratorMetric {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| {
+                ::regress::Regex::new("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$").unwrap()
+            });
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCatalogMetricValidatedNumeratorMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for AnalyticsCatalogMetricValidatedNumeratorMetric
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for AnalyticsCatalogMetricValidatedNumeratorMetric
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogMetricValidatedNumeratorMetric {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsCatalogMetricValidatedWhenToUse`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 500"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCatalogMetricValidatedWhenToUse(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCatalogMetricValidatedWhenToUse {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCatalogMetricValidatedWhenToUse> for ::std::string::String {
+    fn from(value: AnalyticsCatalogMetricValidatedWhenToUse) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCatalogMetricValidatedWhenToUse {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 500usize {
+            return Err("longer than 500 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCatalogMetricValidatedWhenToUse {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCatalogMetricValidatedWhenToUse {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogMetricValidatedWhenToUse {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogMetricValidatedWhenToUse {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -8770,6 +9565,34 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsFilterStateFilterId {
 #[doc = "        }"]
 #[doc = "      },"]
 #[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"end\","]
+#[doc = "        \"start\","]
+#[doc = "        \"type\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"end\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"start\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"type\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"date_range\","]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
 #[doc = "    }"]
 #[doc = "  ],"]
 #[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
@@ -8796,6 +9619,12 @@ pub enum AnalyticsFilterValue {
         max: ::std::option::Option<f64>,
         #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
         min: ::std::option::Option<f64>,
+    },
+    Variant4 {
+        end: ::chrono::naive::NaiveDate,
+        start: ::chrono::naive::NaiveDate,
+        #[serde(rename = "type")]
+        type_: ::std::string::String,
     },
 }
 impl ::std::convert::From<AnalyticsFilterValueVariant0> for AnalyticsFilterValue {
