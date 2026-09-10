@@ -19,7 +19,7 @@ function createMockSdk(over: Record<string, unknown> = {}): AnySdk {
   return {
     getUserContext: vi.fn().mockReturnValue({ user_id: 'user_1' }),
     checkEntitlement: vi.fn().mockResolvedValue({ status: 'allowed' }),
-    emitSemantic: vi.fn().mockResolvedValue(undefined),
+    emitPlatformEvent: vi.fn().mockResolvedValue(undefined),
     getPlacement: vi.fn().mockResolvedValue(null),
     ...over,
   };
@@ -61,7 +61,7 @@ async function mount(options: UseEntitlementOptions, sdk: AnySdk): Promise<void>
   });
 }
 
-const semanticNames = (sdk: AnySdk): string[] => sdk.emitSemantic.mock.calls.map((c: unknown[]) => c[0]);
+const semanticNames = (sdk: AnySdk): string[] => sdk.emitPlatformEvent.mock.calls.map((c: unknown[]) => c[0]);
 
 describe('useEntitlement — passive gate telemetry (AC-11)', () => {
   it('emits gate_evaluated on mount and never gate_attempted', async () => {
@@ -79,7 +79,7 @@ describe('useEntitlement — passive gate telemetry (AC-11)', () => {
     });
     await mount({ handle: 'brand_kit' }, sdk);
 
-    const evaluated = sdk.emitSemantic.mock.calls.find((c: unknown[]) => c[0] === 'gate_evaluated');
+    const evaluated = sdk.emitPlatformEvent.mock.calls.find((c: unknown[]) => c[0] === 'gate_evaluated');
     expect(evaluated?.[1]).toMatchObject({ outcome: 'denied', gated: true });
   });
 });

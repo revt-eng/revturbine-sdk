@@ -49,7 +49,7 @@ function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerS
 
 /** Spy on the semantic-emit funnel; short-circuits the network entirely. */
 function spyOnEmits(sdk: RevTurbineCustomerSdk) {
-  return vi.spyOn(sdk, 'emitSemantic').mockResolvedValue(undefined);
+  return vi.spyOn(sdk, 'emitPlatformEvent').mockResolvedValue(undefined);
 }
 
 type EmitSpy = ReturnType<typeof spyOnEmits>;

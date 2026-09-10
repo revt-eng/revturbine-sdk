@@ -110,7 +110,7 @@ describe('RevTurbineInitOptions.serverActions', () => {
 
   it('tracks success on the canonical placement_interaction event', async () => {
     const sdk = makeSdk(async () => ({ success: true }));
-    const emitted = vi.spyOn(sdk, 'emitSemantic').mockResolvedValue(undefined);
+    const emitted = vi.spyOn(sdk, 'emitPlatformEvent').mockResolvedValue(undefined);
     click();
     await settle();
     expect(emitted).toHaveBeenCalledWith('placement_interaction', expect.objectContaining({
@@ -123,7 +123,7 @@ describe('RevTurbineInitOptions.serverActions', () => {
 
   it('leaves context unchanged and tracks a reported failure', async () => {
     const sdk = makeSdk(async () => ({ success: false, userContext: { plan_handle: 'pro' } }));
-    const emitted = vi.spyOn(sdk, 'emitSemantic').mockResolvedValue(undefined);
+    const emitted = vi.spyOn(sdk, 'emitPlatformEvent').mockResolvedValue(undefined);
     vi.spyOn(console, 'error').mockImplementation(() => {});
     click();
     await settle();
@@ -137,7 +137,7 @@ describe('RevTurbineInitOptions.serverActions', () => {
   it('contains a rejected handler, logs it, and leaves context unchanged', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const sdk = makeSdk(async () => { throw new Error('backend unavailable'); });
-    const emitted = vi.spyOn(sdk, 'emitSemantic').mockResolvedValue(undefined);
+    const emitted = vi.spyOn(sdk, 'emitPlatformEvent').mockResolvedValue(undefined);
     expect(() => click()).not.toThrow();
     await settle();
     expect((await sdk.can('advanced_export')).allowed).toBe(false);

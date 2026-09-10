@@ -48,9 +48,15 @@ import {
   EVENT_PREFIX_FAMILIES,
   SDK_AUTOMATIC_NON_EMITTED_NAMES,
   SDK_CLIENT_EVENT_NAMES,
+  CONTROL_PLANE_EVENT_NAMES,
+  PLATFORM_EVENT_TAXONOMY,
+  EVENT_PAYLOAD_CONTRACTS,
+  namespacePlatformCollision,
+  validateEventPayload,
   ComponentTypeSchema,
   TriggerEventTypeSchema,
 } from '@revt-eng/schema';
+import type { EventPayloadInput, PlatformEventName } from '@revt-eng/schema';
 import type { components } from './generated/openapi';
 import { version as SDK_VERSION } from './package.json';
 import type {
@@ -1191,7 +1197,14 @@ export interface RevTurbineEndpointOverrides {
   /** Keyless anonymous SDK telemetry endpoint (`POST /api/sdk/meta`). */
   ingestSdkMeta: string;
   touchpointTransition: string;
-  legacyInteractions: string;
+  /**
+   * @deprecated Ignored since plan 232. This pointed at a fallback the SDK
+   * retried when the interactions POST failed — against a route the app does
+   * not serve, with the internal queue shape rather than the wire shape, so it
+   * could only ever 404. Setting it has no effect; the key remains so an
+   * existing integration that passes it still compiles.
+   */
+  legacyInteractions?: string;
   placementTypes: string;
   surfaceSlots: string;
 }
@@ -1825,7 +1838,6 @@ const SDK_META_GATEWAY_PATH = '/api/sdk/meta';
 // `touchpointTransition` endpoint-override key is kept for back-compat; the
 // default target is the events interactions route.
 const TOUCHPOINT_TRANSITION_PATH = '/api/events/interactions';
-const LEGACY_INTERACTIONS_PATH = '/api/placements/interactions';
 const SDK_EVENT_SOURCE = 'revturbine-web-sdk';
 
 /**
@@ -1954,6 +1966,44 @@ const SDK_AUTOMATIC_EVENT_NAMES = new Set<string>([
   ...SDK_CLIENT_EVENT_NAMES,
   ...SDK_AUTOMATIC_NON_EMITTED_NAMES,
 ]);
+
+// ── Typed platform emit surface (plan 228 TASK-4) ───────────────────────────
+
+/**
+ * Every event name on the taxonomy's `control_plane` surface — emitted via
+ * {@link RevTurbineCustomerSdk.trackControlPlaneEvent}, never the platform
+ * surface. The TYPE is the CP ingest enum; the runtime set below derives
+ * from the taxonomy's surface field, so a scaffold surface reclassification
+ * (plan 228's dogfood ruling moved `area_viewed`/`feature_gated` OUT of
+ * this surface) flows through on a pin bump with no SDK edit.
+ */
+type ControlPlaneEventName = (typeof CONTROL_PLANE_EVENT_NAMES)[number];
+
+/**
+ * Every platform event the typed emit surface accepts: the full taxonomy
+ * MINUS the control-plane surface (structural exclusion — the CP has its own
+ * typed path with source classification, and a customer emitting
+ * `playbook_version_deployed` would be forging RevTurbine's own product
+ * telemetry). Includes the R-2 billing vocabulary: billing facts consumed
+ * from Stripe must be equally emittable first-party (plan 228 R-1).
+ */
+export type EmittablePlatformEventName = Exclude<PlatformEventName, ControlPlaneEventName>;
+
+const CONTROL_PLANE_EVENT_NAME_SET: ReadonlySet<string> = new Set(
+  PLATFORM_EVENT_TAXONOMY.events
+    .filter((entry) => entry.surface === 'control_plane')
+    .map((entry) => entry.name),
+);
+
+/**
+ * Runtime mirror of {@link EmittablePlatformEventName}, derived from the
+ * payload-contract map so the emit surface and the taxonomy cannot drift —
+ * the parity test asserts this set plus the control-plane surface IS the
+ * taxonomy.
+ */
+export const EMITTABLE_PLATFORM_EVENT_NAMES: readonly string[] = Object.keys(
+  EVENT_PAYLOAD_CONTRACTS,
+).filter((name) => !CONTROL_PLANE_EVENT_NAME_SET.has(name)).sort();
 
 /**
  * Classify an event's `origin` for the lifted column (plan 144 TASK-10 / REQ-8).
@@ -2351,7 +2401,9 @@ class ExternalRuntimeConfigProvider implements RuntimeConfigProvider {
  * - **Placements** — `registerPlacement()`, `getPlacementDecision()`, `getPlacement()`
  * - **Entitlements** — `checkEntitlement()`, `updateUsage()`
  * - **Trials** — `getTrialStatus()`
- * - **Events** — `capture()`, `trackEvent()`, `emitSemantic()`
+ * - **Events** — `track()` / `capture()` (generic lane; platform-name
+ *   collisions are namespaced), `emitPlatformEvent()` (typed platform lane,
+ *   contract-validated payloads)
  * - **Interactions** — `trackTreatmentInteraction()`, `dismiss()`, `convert()`
  * - **Context** — `setUserContext()`, `setPageContext()`, `refreshPageContext()`
  *
@@ -2443,6 +2495,14 @@ export class RevTurbineCustomerSdk {
   private lastEffectiveContext?: EffectiveUserContextResolution & {
     readonly userContext: Readonly<RevTurbineUserContext>;
   };
+  /**
+   * The effective segment memberships from the most recent provider
+   * resolution — resolved provider segments ∪ locally evaluated segments.
+   * Stamped onto every event envelope as `segment_ids`, exactly as
+   * `experiment_assignments` is stamped (plan 228 TASK-4 / REQ-11a), so
+   * segment cuts read as-of-event truth instead of requiring a config join.
+   */
+  private lastEffectiveSegmentIds: readonly string[] = [];
   private pageContext: RevTurbinePageContext;
   /**
    * Secure per-user client token (`rt_client_`, plan 157). Minted by the
@@ -2577,11 +2637,7 @@ export class RevTurbineCustomerSdk {
           'that anonymous id, not to your user. Pass a stable internal user id, or ' +
           'omit `user` entirely if the visitor really is signed out.',
       );
-      try {
-        void this.capture(SDK_WARNING_EVENT_TYPE, { reason: 'init received a blank user id' });
-      } catch {
-        // Telemetry must never break the calling app.
-      }
+      this.emitSdkWarning('init received a blank user id');
     }
     this.sessionId = requestId();
     this.providerRegistry = new DomainProviderRegistry();
@@ -2627,7 +2683,7 @@ export class RevTurbineCustomerSdk {
     // context and notifies mounted decisions through setUserContext().
     this.unregisterServerActionResolvers = registerServerActionResolvers(this.serverActions, {
       applyUserContext: (context) => this.setUserContext(context as RevTurbineUserContext), // sdk-ok: boundary-parse — generated UserContextInput is the public handler contract
-      trackResult: (context, success, error) => this.emitSemantic('placement_interaction', {
+      trackResult: (context, success, error) => this.emitPlatformEvent('placement_interaction', {
         interaction_type: 'cta_clicked',
         action_type: context.actionType,
         action_success: success,
@@ -2967,6 +3023,7 @@ export class RevTurbineCustomerSdk {
     this.providerResolutionController = new AbortController();
     this.contextRevision += 1;
     this.lastEffectiveContext = undefined;
+    this.lastEffectiveSegmentIds = [];
     this.providerRegistry.invalidateAll();
     this.decisionCache.clear();
   }
@@ -3037,6 +3094,7 @@ export class RevTurbineCustomerSdk {
 
       this.markAllSegmentsDirty();
       this.lastEffectiveContext = effective;
+      this.lastEffectiveSegmentIds = segmentIds;
       this.emitExperimentAssignmentFacts(effective);
       return { providers, effective };
     })();
@@ -3133,7 +3191,7 @@ export class RevTurbineCustomerSdk {
         assignmentUnit,
         subjectId,
       ])));
-      await this.emitSemantic('experiment_assigned', {
+      await this.emitPlatformEvent('experiment_assigned', {
         schema_version: 1,
         assignment_id: assignmentId,
         // Wire vocabulary is telemetry's (assignment spec §8): `experiment_id`
@@ -4771,6 +4829,8 @@ export class RevTurbineCustomerSdk {
     payload: unknown, // sdk-ok: boundary-parse
   ): RevTurbineEventEnvelope {
     return this.toEventEnvelope(SDK_WARNING_EVENT_TYPE, {
+      // `message` is the payload contract's required field (plan 228 TASK-1).
+      message: `${issues.length} validation warning(s) for ${normalizedEventType}`,
       source_event_type: normalizedEventType,
       warning_count: issues.length,
       warning_codes: issues.map((issue) => issue.code),
@@ -4799,9 +4859,15 @@ export class RevTurbineCustomerSdk {
     })();
 
     const experimentAssignments = this.lastEffectiveContext?.userContext.experiments;
-    const effectiveProperties = experimentAssignments && Object.keys(experimentAssignments).length > 0
+    const withAssignments = experimentAssignments && Object.keys(experimentAssignments).length > 0
       ? { ...properties, experiment_assignments: { ...experimentAssignments } }
       : properties;
+    // Effective segment memberships, stamped exactly as experiment
+    // assignments are (plan 228 TASK-4 / REQ-11a): as-of-event truth on the
+    // envelope, so segment cuts never need a mutable config join.
+    const effectiveProperties = this.lastEffectiveSegmentIds.length > 0
+      ? { ...withAssignments, segment_ids: [...this.lastEffectiveSegmentIds] }
+      : withAssignments;
 
     return {
       tenant_id: this.tenantId,
@@ -5326,6 +5392,70 @@ export class RevTurbineCustomerSdk {
   }
 
   async capture(eventName: string, properties: SdkEventProperties, options?: RevTurbineEventOptions): Promise<void> {
+    // The GENERIC string lane (plan 228 TASK-4): any name that collides with
+    // platform vocabulary is namespaced `clickstream_*`, so platform events
+    // are unforgeable from untyped paths — track()/trackEvent()/
+    // emitSemantic()/emitTrigger() all land here. The typed surfaces
+    // ({@link emitPlatformEvent}, {@link trackControlPlaneEvent}) go through
+    // {@link captureRaw} instead and keep their names raw.
+    await this.captureRaw(namespacePlatformCollision(normalizeEventType(eventName)), properties, options);
+  }
+
+  /**
+   * Emit a typed platform event (plan 228 TASK-4).
+   *
+   * The sanctioned first-party path for every platform event OUTSIDE the
+   * control plane — SDK lifecycle, gates, placements, milestones, growth
+   * signals, and the R-2 billing vocabulary (a billing fact consumed from
+   * Stripe is equally emittable here; the ingest path dedupes on the
+   * contract's identity keys, e.g. `billing_ref`). The payload parameter type
+   * is inferred from the event's payload contract, so the API cannot drift
+   * from the schema the payload is validated against.
+   *
+   * The name is sent RAW — no `clickstream_*` namespacing — which is exactly
+   * what distinguishes this from {@link track}: the generic lane namespaces
+   * platform collisions, the typed lane IS the platform.
+   *
+   * In development/test builds the payload is validated against its contract
+   * at emit time; a violation emits an `sdk_validation_warning` alongside
+   * (never a throw — telemetry must not break the host app). Production
+   * builds skip validation; the ingest boundary re-validates authoritatively.
+   */
+  async emitPlatformEvent<K extends EmittablePlatformEventName>(
+    eventName: K,
+    payload: EventPayloadInput<K>,
+    options?: RevTurbineEventOptions,
+  ): Promise<void> {
+    if (IS_DEV_ENV) {
+      const verdict = validateEventPayload(eventName, payload);
+      // `in`-narrowing rather than the `ok` discriminant: the docs-examples
+      // gate compiles this file under `strict: false`, where boolean-literal
+      // discriminant narrowing does not apply.
+      if ('reason' in verdict) {
+        this.emitSdkWarning(`typed emit payload violates the ${eventName} contract`, {
+          source_event_type: eventName,
+          violation: verdict.reason,
+          ...(verdict.detail ? { detail: verdict.detail } : {}),
+        });
+      }
+    }
+    await this.captureRaw(eventName, payload as SdkEventProperties, options);
+  }
+
+  /**
+   * Emit an `sdk_validation_warning` conforming to its own payload contract
+   * (`message` is the contract's required field; `reason` rides along for
+   * pre-228 consumers). Fire-and-forget — never throws into the host app.
+   */
+  private emitSdkWarning(message: string, extra: SdkEventProperties = {}): void {
+    try {
+      void this.captureRaw(SDK_WARNING_EVENT_TYPE, { message, reason: message, ...extra });
+    } catch {
+      // Telemetry must never break the calling app.
+    }
+  }
+
+  private async captureRaw(eventName: string, properties: SdkEventProperties, options?: RevTurbineEventOptions): Promise<void> {
     // Consent gate (plan 144 TASK-8 / REQ-11, AC-3): `denied` / `pending`
     // prevent event CREATION — no envelope is built, buffered, or delivered to
     // any destination. Checked live, so a `setTelemetryConsent('granted')`
@@ -5384,7 +5514,7 @@ export class RevTurbineCustomerSdk {
    * @example
    * ```ts
    * sdk.identify('operator_42', { account_id: 'tn_acme' });
-   * await sdk.trackControlPlaneEvent('changeset_deployed', { change_set_id: 'cs_9' });
+   * await sdk.trackControlPlaneEvent('playbook_version_deployed', { change_set_id: 'cs_9' });
    * ```
    */
   async trackControlPlaneEvent(
@@ -5393,7 +5523,9 @@ export class RevTurbineCustomerSdk {
     options?: RevTurbineEventOptions,
   ): Promise<void> {
     const { eventName, properties } = buildControlPlaneEvent(eventType, payload);
-    await this.capture(eventName, properties, options);
+    // Typed lane: the name is already constrained to the CP taxonomy, so it
+    // bypasses the generic lane's collision namespacing (plan 228 TASK-4).
+    await this.captureRaw(eventName, properties, options);
   }
 
   /**
@@ -5465,12 +5597,38 @@ export class RevTurbineCustomerSdk {
     void this.flushEvents();
   }
 
+  /**
+   * Emit a semantic event through the GENERIC string lane.
+   *
+   * Since plan 228 TASK-4 this is a customer-lane API, not a platform one: it
+   * rides {@link capture}, so a name colliding with platform vocabulary is
+   * namespaced `clickstream_*` — platform events cannot be forged from here.
+   * The SDK's own platform emissions use {@link emitPlatformEvent}, whose
+   * payloads are typed and contract-validated.
+   *
+   * The fields are passed to {@link capture} DIRECTLY, exactly as a customer's
+   * own `capture(name, {...})` call would. Anything else double-wraps them.
+   *
+   * This used to send `{semantic: true, payload: fields}`. The wire mapping
+   * already stores an envelope's properties under the key `payload`, so that
+   * inner wrapper landed the fields at `properties.payload.payload.<field>` in
+   * `events_clickstream` — one level deeper than every `capture()` event and
+   * than the canonical carrier this SDK documents. Readers that followed the
+   * documented shape (`user_context_fields`, any analytics pipe) found nothing
+   * on a semantic event, which is why gate telemetry was invisible to the
+   * entitlement metrics despite being emitted correctly.
+   *
+   * The `semantic: true` marker went with it: it was written here and read
+   * nowhere in the SDK, the web app, or any pipe. It marked nothing and cost a
+   * whole nesting level.
+   *
+   * `liftClickstreamFields` / `pickClickstreamField` are unaffected — they
+   * resolve top-level first and fall back to the nested bag, so they read the
+   * fields either way. Only the STORED JSON changes shape, and it changes to
+   * the shape everything else already expects.
+   */
   async emitSemantic(eventType: string, payload: SdkEventProperties, options?: RevTurbineEventOptions): Promise<void> {
-    const semanticPayload = isRecord(payload) ? payload : {};
-    await this.capture(eventType, {
-      semantic: true,
-      payload: semanticPayload,
-    }, options);
+    await this.capture(eventType, isRecord(payload) ? payload : {}, options);
   }
 
 
@@ -5502,10 +5660,10 @@ export class RevTurbineCustomerSdk {
     const unenrolled = Array.from(prevSegments).filter(s => !newSegments.has(s));
     // Fire events for changes
     for (const seg of enrolled) {
-      await this.emitSemantic('segment_enrolled', { segment_id: seg, user_id: nextContext.id ?? null });
+      await this.emitPlatformEvent('segment_enrolled', { segment_id: seg, user_id: nextContext.id ?? null });
     }
     for (const seg of unenrolled) {
-      await this.emitSemantic('segment_unenrolled', { segment_id: seg, user_id: nextContext.id ?? null });
+      await this.emitPlatformEvent('segment_unenrolled', { segment_id: seg, user_id: nextContext.id ?? null });
     }
     // If usage update, check for threshold triggers
     if (isUsageUpdate) {
@@ -5530,7 +5688,7 @@ export class RevTurbineCustomerSdk {
       .sort();
     if (fieldNames.length === 0) return;
     // context_fields is an array of field NAMES only — no values are included.
-    void this.capture(USER_CONTEXT_FIELDS_EVENT, { context_fields: fieldNames });
+    void this.emitPlatformEvent(USER_CONTEXT_FIELDS_EVENT, { context_fields: fieldNames });
   }
 
   setUserContext(userContext: RevTurbineUserContext): void {
@@ -6329,24 +6487,32 @@ export class RevTurbineCustomerSdk {
       });
 
       if (!response.ok) {
-        const fallbackResponse = await fetch(this.endpointFor('legacyInteractions', LEGACY_INTERACTIONS_PATH), {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            authorization: `Bearer ${this.apiKey}`,
-            'x-tenant-id': this.tenantId,
-            'x-request-id': requestId(),
-          },
-          body: JSON.stringify(pending.length === 1 ? pending[0] : pending),
-        });
-
-        if (!fallbackResponse.ok) {
-          this.interactionQueue.unshift(...pending);
-        }
+        this.failInteractionFlush(pending, `status_${response.status}`);
+        return;
       }
+      this.telemetryCounters.sent += pending.length;
     } catch {
-      this.interactionQueue.unshift(...pending);
+      this.failInteractionFlush(pending, 'network_error');
     }
+  }
+
+  /**
+   * Re-queue a failed interaction flush and make the failure VISIBLE.
+   *
+   * This used to retry against a legacy path that does not exist in the app,
+   * with the internal queue shape rather than the wire shape — so a failure
+   * produced a silent 404, the batch went back on the queue, and it was
+   * discarded at page unload with nothing recorded anywhere. That is how a
+   * whole class of dropped presentations stayed invisible (plan 232).
+   *
+   * Re-queuing is still right — a transient failure should retry on the next
+   * flush — but it is now paired with a counter and a diagnostic, so a
+   * persistent failure is observable instead of merely quiet.
+   */
+  private failInteractionFlush(pending: readonly RevTurbineTreatmentInteractionInput[], reason: string): void {
+    this.telemetryCounters.failed += pending.length;
+    this.interactionQueue.unshift(...pending);
+    this.reportSdkError('interaction_flush_failed', reason);
   }
 
   async trackTreatmentInteraction(input: RevTurbineTreatmentInteractionInput): Promise<void> {
@@ -6393,7 +6559,7 @@ export class RevTurbineCustomerSdk {
     // Hoist `decision_id` from the caller's metadata to the top level so it
     // lifts to the wire `decision_id` column (plan 144 TASK-10 / REQ-8).
     const decisionId = typeof interactionMeta.decision_id === 'string' ? interactionMeta.decision_id : null;
-    await this.emitSemantic('placement_interaction', {
+    await this.emitPlatformEvent('placement_interaction', {
       user_id: normalized.userId,
       placement_id: normalized.placementId,
       treatment_id: normalized.treatmentId ?? null,
@@ -6544,16 +6710,11 @@ export class RevTurbineCustomerSdk {
             : 'No handle was supplied, so this user has NO plan for entitlement-rule matching ' +
               'and plan-targeted rules will not match.'),
       );
-      try {
-        // Key name only — never the value, which is customer data.
-        void this.capture(SDK_WARNING_EVENT_TYPE, {
-          reason: `${verb} received removed plan.id key`,
-          unrecognized_keys: 'plan.id',
-          plan_handle_present: hasHandle ? '1' : '0',
-        });
-      } catch {
-        // Telemetry must never break the calling app.
-      }
+      // Key name only — never the value, which is customer data.
+      this.emitSdkWarning(`${verb} received removed plan.id key`, {
+        unrecognized_keys: 'plan.id',
+        plan_handle_present: hasHandle ? '1' : '0',
+      });
     }
     void legacyId;
     return rest as RevTurbineUserContext['plan'];
@@ -6575,24 +6736,16 @@ export class RevTurbineCustomerSdk {
       `[RevTurbine] ${verb}() dropped unrecognized user-context key(s): ${unrecognized.join(', ')}. ` +
         `Recognized keys: ${recognizedKeys.join(', ')}. Pass free-form values under { custom: { … } }.${guidance}`,
     );
-    try {
-      // `void` alone swallows a rejected promise but not a synchronous throw,
-      // and this sits on the identify/update hot path.
-      void this.capture(SDK_WARNING_EVENT_TYPE, {
-        reason: `${verb} received unrecognized user-context key(s)`,
-        // Key NAMES only — never their values, which are customer data.
-        unrecognized_keys: unrecognized.join(','),
-      });
-    } catch {
-      // Telemetry must never break the calling app.
-    }
+    // Key NAMES only — never their values, which are customer data.
+    this.emitSdkWarning(`${verb} received unrecognized user-context key(s)`, {
+      unrecognized_keys: unrecognized.join(','),
+    });
   }
 
   private normalizePlacementOutput(data: unknown): PlacementOutput | null { // sdk-ok: boundary-parse
     const result = coreNormalizePlacementOutput(data, requestId);
     if (result && isRecord(data) && typeof data.decision_id !== 'string') {
-      void this.capture(SDK_WARNING_EVENT_TYPE, {
-        reason: 'placement response missing decision_id; generated synthetic',
+      this.emitSdkWarning('placement response missing decision_id; generated synthetic', {
         output_id: result.output_id,
         synthetic_decision_id: result.decision_id,
       });
@@ -6619,8 +6772,7 @@ export class RevTurbineCustomerSdk {
     // Runtime check is required: the SDK is exposed as window.RevTurbine for plain JS callers
     // who bypass TypeScript's compile-time guarantees. The spec requires the SDK reject unknown values.
     if (componentType && !VALID_COMPONENT_TYPES.has(componentType)) {
-      void this.capture(SDK_WARNING_EVENT_TYPE, {
-        reason: `getPlacement called with unknown componentType: ${String(componentType)}`,
+      this.emitSdkWarning(`getPlacement called with unknown componentType: ${String(componentType)}`, {
         slot_id: slotId ?? null,
       });
       return null;
@@ -6764,15 +6916,10 @@ export class RevTurbineCustomerSdk {
         'or an entry object carrying a numeric `amount`. The reported balance was NOT applied, ' +
         'so any limit on these entitlements is still evaluating the previous value.',
     );
-    try {
-      void this.capture(SDK_WARNING_EVENT_TYPE, {
-        reason: 'updateUsage received unusable usage value(s)',
-        // Key NAMES only — never their values, which are customer data.
-        unrecognized_keys: unusable.join(','),
-      });
-    } catch {
-      // Telemetry must never break the calling app.
-    }
+    // Key NAMES only — never their values, which are customer data.
+    this.emitSdkWarning('updateUsage received unusable usage value(s)', {
+      unrecognized_keys: unusable.join(','),
+    });
   }
 
   /**
@@ -6819,15 +6966,10 @@ export class RevTurbineCustomerSdk {
         'entitlement you meant is still evaluating zero consumed. Usage keys are entitlement ' +
         `unique_handles — check for a typo. Known handles: ${[...known].sort().join(', ')}.`,
     );
-    try {
-      void this.capture(SDK_WARNING_EVENT_TYPE, {
-        reason: 'updateUsage received usage key(s) matching no entitlement handle',
-        // Key NAMES only — never their values, which are customer data.
-        unrecognized_keys: unmatched.join(','),
-      });
-    } catch {
-      // Telemetry must never break the calling app.
-    }
+    // Key NAMES only — never their values, which are customer data.
+    this.emitSdkWarning('updateUsage received usage key(s) matching no entitlement handle', {
+      unrecognized_keys: unmatched.join(','),
+    });
   }
 
   /**
@@ -7537,7 +7679,7 @@ export class RevTurbineCustomerSdk {
   // names are retired.
 
   async dismiss(outputId: string): Promise<void> {
-    await this.emitSemantic('placement_interaction', {
+    await this.emitPlatformEvent('placement_interaction', {
       interaction_type: 'dismiss',
       payload_id: outputId,
       user_id: this.userContext.id ?? null,
@@ -7546,7 +7688,7 @@ export class RevTurbineCustomerSdk {
   }
 
   async snooze(outputId: string, seconds = 3600): Promise<void> {
-    await this.emitSemantic('placement_interaction', {
+    await this.emitPlatformEvent('placement_interaction', {
       interaction_type: 'remind_me_later',
       payload_id: outputId,
       user_id: this.userContext.id ?? null,
@@ -7556,7 +7698,7 @@ export class RevTurbineCustomerSdk {
   }
 
   async convert(outputId: string): Promise<void> {
-    await this.emitSemantic('placement_interaction', {
+    await this.emitPlatformEvent('placement_interaction', {
       interaction_type: 'cta_completed',
       payload_id: outputId,
       user_id: this.userContext.id ?? null,
@@ -7571,10 +7713,22 @@ export class RevTurbineCustomerSdk {
    * name to {@link RevTurbineTriggerEvent} and attaches standard context
    * (user_id, plan, timestamp) automatically.
    *
+   * **Three trigger names land namespaced on the wire.** This rides the
+   * generic emit lane, which prefixes `clickstream_` to any name the platform
+   * taxonomy already declares — the rule that stops a client forging a
+   * first-party fact by naming an event after one. `trial_expired`,
+   * `payment_failed` and `feature_gated` collide, so they are stored as
+   * `clickstream_trial_expired`, `clickstream_payment_failed` and
+   * `clickstream_feature_gated`. Query those names, not the raw ones. The
+   * remaining triggers are unaffected, and the platform's own versions of the
+   * three are emitted first-party through the typed surface. Pinned by
+   * `trigger-namespacing-parity.test.ts` (plan 231 REQ-4).
+   *
    * @example
    * ```ts
    * await sdk.emitTrigger('usage_limit_approaching', { usage_percent: 85, threshold: 80 });
    * await sdk.emitTrigger('trial_expiring', { days_remaining: 2 });
+   * // stored as `clickstream_feature_gated` — see the collision note above
    * await sdk.emitTrigger('feature_gated', { feature: 'advanced_automation' });
    * ```
    */
@@ -7784,14 +7938,14 @@ export class RevTurbineCustomerSdk {
     // `gate_attempted`, then `gate_allowed` or `gate_denied` — distinct from the
     // passive `gate_evaluated` a rendered <Gate> emits. The React `useGatedAction`
     // delegates here rather than forking this sequence. Best-effort.
-    void this.emitSemantic('gate_attempted', { entitlement_handle: action }, { immediate: false });
+    void this.emitPlatformEvent('gate_attempted', { entitlement_handle: action }, { immediate: false });
     const entitlement = await this.checkEntitlement(action, context);
     if (entitlement.allowed) {
-      void this.emitSemantic('gate_allowed', { entitlement_handle: action }, { immediate: false });
+      void this.emitPlatformEvent('gate_allowed', { entitlement_handle: action }, { immediate: false });
       const result = await fn();
       return { ran: true, result, entitlement };
     }
-    void this.emitSemantic(
+    void this.emitPlatformEvent(
       'gate_denied',
       { entitlement_handle: action, reason: entitlement.reason ?? null },
       { immediate: false },

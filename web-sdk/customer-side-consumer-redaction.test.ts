@@ -114,8 +114,10 @@ describe('external-destination delivery', () => {
     const sdk = makeSdk(captured);
     sdk.identify('jane.doe@acme.com');
 
+    // `plan_viewed` is platform vocabulary since plan 228 — the generic lane
+    // namespaces it, so the consumer sees the wire name.
     await sdk.capture('plan_viewed', {}, { immediate: true });
-    const props = await awaitCaptured(captured, 'plan_viewed');
+    const props = await awaitCaptured(captured, 'clickstream_plan_viewed');
 
     expect(props.user_id).not.toBe('jane.doe@acme.com');
     expect(String(props.user_id)).toMatch(/^eml_[0-9a-f]{16}$/);

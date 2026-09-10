@@ -1,10 +1,10 @@
 /**
  * Control-plane semantic events (plan 112).
  *
- * A typed layer over the SDK's generic event emit path for RevTurbine's OWN
- * control-plane activity — web/CLI auth, change-set lifecycle, config, and
- * product-entity actions. This is the "dogfood" surface: RevTurbine emits its
- * product usage through the same SDK a customer uses.
+ * A typed layer over the SDK's raw event emit path for RevTurbine's OWN
+ * control-plane activity — web/CLI auth, playbook-version lifecycle, playbook
+ * transfer, and product-entity actions. This is the "dogfood" surface:
+ * RevTurbine emits its product usage through the same SDK a customer uses.
  *
  * The taxonomy itself is the canonical `ControlPlaneEventType` /
  * `ControlPlaneEventSource` enums from `@revt-eng/schema`; this module adds the
@@ -27,7 +27,8 @@ export type { ControlPlaneEventType, ControlPlaneEventSource };
 /**
  * Canonical source classification for every control-plane event type — mirrors
  * the scaffold taxonomy. `system` covers identity/auth + CLI command telemetry;
- * `workflow` covers change-set lifecycle, config, and product-entity actions.
+ * `workflow` covers playbook-version lifecycle, playbook transfer, and
+ * product-entity actions.
  *
  * Typed as a total `Record`, so adding a new `ControlPlaneEventType` in scaffold
  * without classifying it here is a compile error.
@@ -40,19 +41,20 @@ export const CONTROL_PLANE_EVENT_SOURCE: Record<ControlPlaneEventType, ControlPl
   cli_signed_in: 'system',
   // CLI commands — system
   cli_command_executed: 'system',
-  // Change-set lifecycle — workflow
-  changeset_submitted: 'workflow',
-  changeset_approved: 'workflow',
-  changeset_rejected: 'workflow',
-  changeset_deployed: 'workflow',
-  changeset_launched: 'workflow',
-  changeset_parked: 'workflow',
-  changeset_resumed: 'workflow',
-  changeset_discarded: 'workflow',
-  changeset_archived: 'workflow',
-  // Config — workflow
-  config_imported: 'workflow',
-  config_exported: 'workflow',
+  // Playbook-version lifecycle — workflow (plan 228 R-3 hard cut: the
+  // changeset_* names are gone; the domain object is a playbook version)
+  playbook_version_submitted: 'workflow',
+  playbook_version_approved: 'workflow',
+  playbook_version_rejected: 'workflow',
+  playbook_version_deployed: 'workflow',
+  playbook_version_launched: 'workflow',
+  playbook_version_parked: 'workflow',
+  playbook_version_resumed: 'workflow',
+  playbook_version_discarded: 'workflow',
+  playbook_version_archived: 'workflow',
+  // Playbook transfer — workflow
+  playbook_imported: 'workflow',
+  playbook_exported: 'workflow',
   // Product-entity CRUD — workflow
   entity_created: 'workflow',
   entity_updated: 'workflow',

@@ -38,11 +38,11 @@ describe('createPostHogAnalyticsProvider', () => {
     const posthog: PostHogLike = { capture };
     const provider = createPostHogAnalyticsProvider({ posthog });
 
-    consumerOf(provider).consume([envelope('changeset_deployed', { control_plane_source: 'workflow', change_set_id: 'cs_9' })]);
+    consumerOf(provider).consume([envelope('playbook_version_deployed', { control_plane_source: 'workflow', change_set_id: 'cs_9' })]);
 
     expect(capture).toHaveBeenCalledTimes(1);
     const [eventName, props] = capture.mock.calls[0];
-    expect(eventName).toBe('changeset_deployed');
+    expect(eventName).toBe('playbook_version_deployed');
     // The analytics consumer flattens envelope + properties to top level.
     expect(props).toMatchObject({
       user_id: 'operator_42',
@@ -55,16 +55,16 @@ describe('createPostHogAnalyticsProvider', () => {
     const capture = vi.fn();
     const provider = createPostHogAnalyticsProvider({
       posthog: { capture },
-      filter: ['changeset_deployed'],
+      filter: ['playbook_version_deployed'],
     });
 
     consumerOf(provider).consume([
-      envelope('changeset_deployed'),
+      envelope('playbook_version_deployed'),
       envelope('placement_impression'),
     ]);
 
     expect(capture).toHaveBeenCalledTimes(1);
-    expect(capture.mock.calls[0][0]).toBe('changeset_deployed');
+    expect(capture.mock.calls[0][0]).toBe('playbook_version_deployed');
   });
 
   it('swallows a throwing posthog.capture — never crashes the pipeline', () => {

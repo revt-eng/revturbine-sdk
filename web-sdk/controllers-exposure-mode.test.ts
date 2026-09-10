@@ -48,7 +48,7 @@ function mkSdk(): AnySdk {
       output: { surface: { slot_id: 'slot_1', template: 'tpl_1' }, output_id: 'pay_1' },
     }),
     trackTreatmentInteraction: vi.fn().mockResolvedValue(undefined),
-    emitSemantic: vi.fn().mockResolvedValue(undefined),
+    emitPlatformEvent: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -64,7 +64,7 @@ const impressions = (sdk: AnySdk) =>
   );
 const basisOf = (sdk: AnySdk) => (impressions(sdk)[0]?.[0] as { metadata?: { exposure_basis?: string } })?.metadata?.exposure_basis;
 const semantic = (sdk: AnySdk, name: string) =>
-  sdk.emitSemantic.mock.calls.filter((c: unknown[]) => c[0] === name);
+  sdk.emitPlatformEvent.mock.calls.filter((c: unknown[]) => c[0] === name);
 
 beforeEach(() => {
   ioMock.supported = true;

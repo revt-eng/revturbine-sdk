@@ -55,14 +55,15 @@ function trackedRows(): Array<Record<string, unknown>> {
 }
 
 /**
- * The semantic payload a row carries. `emitSemantic` wraps data as
- * `{ semantic, payload }`, and the wire mapping nests the whole envelope bag
- * under `properties.payload`, so the authored fields land at
- * `properties.payload.payload.*`.
+ * The semantic payload a row carries. The wire mapping nests an envelope's
+ * properties under `properties.payload`, and `emitSemantic` passes its fields
+ * to `capture` unwrapped, so the authored fields land at
+ * `properties.payload.*` — the same place a customer's own `capture()` fields
+ * land, and the canonical carrier this SDK documents.
  */
 function semanticBag(row: Record<string, unknown>): Record<string, unknown> {
-  const props = JSON.parse(String(row.properties)) as { payload?: { payload?: Record<string, unknown> } };
-  return props.payload?.payload ?? {};
+  const props = JSON.parse(String(row.properties)) as { payload?: Record<string, unknown> };
+  return props.payload ?? {};
 }
 
 describe('canonical placement_interaction (Q-3)', () => {
@@ -111,5 +112,26 @@ describe('canonical placement_interaction (Q-3)', () => {
     expect(names).not.toContain('placement_converted');
     // All three collapsed onto the one canonical event.
     expect(names.filter((n) => n === 'placement_interaction')).toHaveLength(3);
+  });
+
+  // A semantic event's fields must sit exactly one level under `payload`, the
+  // same depth a customer's own capture() fields sit at. `emitSemantic` used to
+  // add a `{semantic, payload}` wrapper of its own, which the wire mapping then
+  // nested again — burying every platform event's fields one level deeper than
+  // the canonical carrier. Readers that followed the documented shape found
+  // nothing, so gate and placement telemetry was emitted correctly and read as
+  // empty. Nothing anywhere consumed the `semantic` marker that cost that level.
+  it('nests semantic fields at properties.payload, never payload.payload', async () => {
+    const sdk = makeSdk();
+    await sdk.dismiss('out_1');
+    await sdk.flushEvents();
+
+    const ev = trackedRows().find((r) => r.event_name === 'placement_interaction');
+    const props = JSON.parse(String(ev!.properties)) as Record<string, unknown>;
+    const bag = props.payload as Record<string, unknown>;
+
+    expect(bag.interaction_type).toBe('dismiss');
+    expect(bag.payload, 'semantic fields must not be double-wrapped').toBeUndefined();
+    expect(bag.semantic, 'the unread `semantic` marker must not come back').toBeUndefined();
   });
 });

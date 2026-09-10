@@ -15,6 +15,12 @@
  * `eml_<sha256-16>` hashing of email-shaped ids. Best-effort by design —
  * obfuscated PII, unusual formats, and non-email/non-card PII are NOT caught.
  *
+ * That id hashing now applies inside the property bag too (plan 224 TASK-9):
+ * an email under an IDENTITY key (`id`, `*_id`, `*_ids` — see
+ * `isIdentityKey`) is masked with the stable hash rather than the sentinel,
+ * because the sentinel is a constant and would merge distinct subjects into
+ * one, corrupting downstream distinct-counts. Card numbers are never hashed.
+ *
  * A self-contained synchronous SHA-256 is bundled here (rather than
  * `crypto.subtle`, which is async and needs a secure context) so the redactor
  * is a pure sync function that produces identical hashes in the browser, SSR,
@@ -54,9 +60,48 @@ function luhnValid(digits: string): boolean {
   return sum % 10 === 0;
 }
 
-function redactStringValue(input: string): { value: string; count: number } {
+/**
+ * True for a property key that names an identifier: `id` exactly, or any
+ * `*_id` / `*_ids` key (`user_id`, `subject_id`, `customer_id`, …).
+ *
+ * Identifiers are join keys, so an email-shaped value under one of these keys
+ * is hashed (deterministically, via {@link hashEmailId}) rather than replaced
+ * with the constant `[REDACTED]` sentinel. Collapsing them would merge every
+ * email-identified subject into a single value — silently destroying any
+ * distinct-count taken over that field downstream (plan 224 TASK-9).
+ *
+ * Byte-aligned with the server twin's `isIdentityKey`.
+ */
+export function isIdentityKey(key: string): boolean {
+  const normalized = key.trim().toLowerCase();
+  return (
+    normalized === 'id'
+    || normalized === 'ids'
+    || normalized.endsWith('_id')
+    // Plural id lists (`user_ids: [...]`) hold ids in every element.
+    || normalized.endsWith('_ids')
+  );
+}
+
+/**
+ * Redact emails + Luhn-valid cards from a single string value.
+ *
+ * `identityKey` switches EMAIL handling from the sentinel to a stable hash
+ * (see {@link isIdentityKey}). Card numbers are never hashed regardless: a card
+ * is never a legitimate join key, and a stable hash of one would still be a
+ * linkable token.
+ */
+function redactStringValue(
+  input: string,
+  identityKey = false,
+): { value: string; count: number } {
+  if (identityKey && looksLikeEmail(input)) {
+    return { value: hashEmailId(input), count: 1 };
+  }
   let count = 0;
   let out = input.replace(EMAIL_RE, () => {
+    // Non-identity keys (and substrings inside a larger sentence) keep the
+    // sentinel — only a whole-value email under an identity key is hashed.
     count += 1;
     return REDACTED;
   });
@@ -92,25 +137,30 @@ export function redactPii<T>(input: T): RedactionResult<T> {
   // Walks arbitrary JSON-shaped event data at the serialization boundary —
   // the value shape is genuinely dynamic, so `unknown` is the honest type
   // (sanctioned boundary-parse use, kept byte-aligned with the server twin).
-  const walk = (v: unknown): unknown => { // sdk-ok: boundary-parse
+  // `identityKey` carries the enclosing property key's identity-ness down to
+  // the leaf, so `{ user_id: "a@b.com" }` hashes while `{ note: "a@b.com" }`
+  // gets the sentinel. It propagates through arrays — `{ user_ids: [...] }`
+  // holds ids in every element — but resets at a nested object, whose own keys
+  // then decide for themselves.
+  const walk = (v: unknown, identityKey: boolean): unknown => { // sdk-ok: boundary-parse
     if (typeof v === 'string') {
-      const r = redactStringValue(v);
+      const r = redactStringValue(v, identityKey);
       redactions += r.count;
       return r.value;
     }
     if (Array.isArray(v)) {
-      return v.map(walk);
+      return v.map((item) => walk(item, identityKey));
     }
     if (v && typeof v === 'object') {
       const out: Record<string, unknown> = {}; // sdk-ok: boundary-parse
       for (const [k, val] of Object.entries(v as Record<string, unknown>)) { // sdk-ok: boundary-parse
-        out[k] = walk(val);
+        out[k] = walk(val, isIdentityKey(k));
       }
       return out;
     }
     return v;
   };
-  return { value: walk(input) as T, redactions };
+  return { value: walk(input, false) as T, redactions };
 }
 
 /** True when the whole (trimmed) value is an email address. */

@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.279/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.302/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -972,17 +972,17 @@ class ControlPlaneEventType(Enum):
     cli_signed_up = "cli_signed_up"
     cli_signed_in = "cli_signed_in"
     cli_command_executed = "cli_command_executed"
-    changeset_submitted = "changeset_submitted"
-    changeset_approved = "changeset_approved"
-    changeset_rejected = "changeset_rejected"
-    changeset_deployed = "changeset_deployed"
-    changeset_launched = "changeset_launched"
-    changeset_parked = "changeset_parked"
-    changeset_resumed = "changeset_resumed"
-    changeset_discarded = "changeset_discarded"
-    changeset_archived = "changeset_archived"
-    config_imported = "config_imported"
-    config_exported = "config_exported"
+    playbook_version_submitted = "playbook_version_submitted"
+    playbook_version_approved = "playbook_version_approved"
+    playbook_version_rejected = "playbook_version_rejected"
+    playbook_version_deployed = "playbook_version_deployed"
+    playbook_version_launched = "playbook_version_launched"
+    playbook_version_parked = "playbook_version_parked"
+    playbook_version_resumed = "playbook_version_resumed"
+    playbook_version_discarded = "playbook_version_discarded"
+    playbook_version_archived = "playbook_version_archived"
+    playbook_imported = "playbook_imported"
+    playbook_exported = "playbook_exported"
     entity_created = "entity_created"
     entity_updated = "entity_updated"
     entity_deleted = "entity_deleted"
@@ -3752,6 +3752,14 @@ class WebhookEventStatus(Enum):
     skipped = "skipped"
 
 
+class AnalyticsDimensionGrounding(RootModel[Any]):
+    root: Any
+
+
+class AnalyticsMetricDerivation(RootModel[Any]):
+    root: Any
+
+
 class BinaryVariantStatisticalSummary(RootModel[Any]):
     root: Any
 
@@ -4008,6 +4016,13 @@ class AnalyticsCatalogConcept(BaseModel):
     coverage_metric: (
         constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
     ) = None
+    dimension_groundings: (
+        dict[
+            constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120),
+            AnalyticsDimensionGrounding,
+        ]
+        | None
+    ) = None
     deprecation: AnalyticsCatalogDeprecation | None = None
 
 
@@ -4057,6 +4072,7 @@ class AnalyticsCatalogMetric(BaseModel):
     denominator_metric: (
         constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
     ) = None
+    derivation: AnalyticsMetricDerivation | None = None
     deprecation: AnalyticsCatalogDeprecation | None = None
 
 
@@ -4082,6 +4098,7 @@ class AnalyticsCatalogMetricValidated(BaseModel):
     denominator_metric: (
         constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
     ) = None
+    derivation: AnalyticsMetricDerivation | None = None
     deprecation: AnalyticsCatalogDeprecation | None = None
 
 
@@ -5858,6 +5875,16 @@ class ServerEvaluationPayload(BaseModel):
     theme: dict[str, Any] | None = None
     trial_status: ServerEvaluationPayloadTrialStatus | None = None
     user_context: ServerEvaluationPayloadUserContext | None = None
+
+
+class TreatmentInteractionBatch(RootModel[list[TreatmentInteractionInput]]):
+    root: list[TreatmentInteractionInput] = Field(..., max_length=500, min_length=1)
+
+
+class TreatmentInteractionRequest(
+    RootModel[TreatmentInteractionInput | TreatmentInteractionBatch]
+):
+    root: TreatmentInteractionInput | TreatmentInteractionBatch
 
 
 class UserContext(BaseModel):

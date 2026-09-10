@@ -36,7 +36,7 @@ function mkSdk(): AnySdk {
       },
     }),
     trackTreatmentInteraction: vi.fn().mockResolvedValue(undefined),
-    emitSemantic: vi.fn().mockResolvedValue(undefined),
+    emitPlatformEvent: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -47,7 +47,7 @@ async function loadCtrl(sdk: AnySdk, opts: Partial<PlacementControllerOptions> =
 }
 
 const semantic = (sdk: AnySdk, name: string) =>
-  sdk.emitSemantic.mock.calls.filter((c: unknown[]) => c[0] === name);
+  sdk.emitPlatformEvent.mock.calls.filter((c: unknown[]) => c[0] === name);
 const payloadOf = (sdk: AnySdk, name: string) => semantic(sdk, name)[0]?.[1] as Record<string, unknown> | undefined;
 
 beforeEach(() => {

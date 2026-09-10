@@ -27,6 +27,7 @@
  * ```
  */
 
+import type { EventPayloadInput } from '@revt-eng/schema';
 import type {
   RevTurbineCustomerSdk,
   RevTurbineInitInputOptions,
@@ -302,7 +303,7 @@ export class PlacementController {
   ): void {
     const decision = this._decision;
     try {
-      void this.sdk.emitSemantic(event, {
+      void this.sdk.emitPlatformEvent(event, {
         placement_id: this._placementId,
         surface_slot_id: decision?.output?.surface?.slot_id ?? null,
         payload_id: decision?.output?.output_id ?? null,
@@ -322,7 +323,9 @@ export class PlacementController {
    * identity, resolved decision facts, and the lifted `decision_id`. Best-effort
    * fields default to `null` before a decision resolves.
    */
-  private slotContext(): SdkEventProperties {
+  // Return type inferred: the literal shape must satisfy the slot events'
+  // payload contract, which the typed emit surface checks at compile time.
+  private slotContext() {
     const decision = this._decision;
     const slot = this.options.surfaceSlot;
     return {
@@ -379,9 +382,11 @@ export class PlacementController {
   }
 
   /** Emit one slot lifecycle event with the shared context. Best-effort. */
-  private emitSlotEvent(event: SlotLifecycleEvent, context: SdkEventProperties): void {
+  private emitSlotEvent(event: SlotLifecycleEvent, context: EventPayloadInput<SlotLifecycleEvent>): void {
     try {
-      void this.sdk.emitSemantic(event, context, { immediate: false });
+      // Typed platform lane (plan 228 TASK-4): slot diagnostics are taxonomy
+      // vocabulary and must land raw, not through the namespacing generic lane.
+      void this.sdk.emitPlatformEvent(event, context, { immediate: false });
     } catch {
       // Best-effort diagnostics — never surface a placement error from this.
     }
@@ -396,7 +401,7 @@ export class PlacementController {
   private emitPlacementOutcome(ctaTarget: string | null): void {
     const decision = this._decision;
     try {
-      void this.sdk.emitSemantic('placement_outcome', {
+      void this.sdk.emitPlatformEvent('placement_outcome', {
         placement_id: this._placementId,
         surface_slot_id: decision?.output?.surface?.slot_id ?? null,
         payload_id: decision?.output?.output_id ?? null,
@@ -805,7 +810,7 @@ export class EntitlementGate {
     if (this._lastEvaluatedKey === key) return;
     this._lastEvaluatedKey = key;
     try {
-      void this.sdk.emitSemantic('gate_evaluated', {
+      void this.sdk.emitPlatformEvent('gate_evaluated', {
         entitlement_handle: handle,
         outcome: res.status, // 'allowed' | 'limited' | 'denied'
         gated: entitlementResultDenies(res),

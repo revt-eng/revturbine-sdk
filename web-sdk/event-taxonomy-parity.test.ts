@@ -25,6 +25,9 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { normalizeEventType } from '@revt-eng/core';
+import { namespacePlatformCollision } from '@revt-eng/schema';
+import { EMITTABLE_PLATFORM_EVENT_NAMES } from './customer-side';
 
 const require_ = createRequire(import.meta.url);
 
@@ -91,19 +94,39 @@ function lifecycleUnionMembers(src: string): string[] {
   return out;
 }
 
-const EMIT_CALL = /(?:emitSemantic|capture|postAnonMeta|emitAnonMeta|emitSlotEvent|emitSlotResolution|emitPlacementLifecycle|emitGateEvaluated|emitPlacementOutcome)\(\s*(?:'([a-z][a-z0-9_]*)'|([A-Z][A-Z0-9_]*))/g;
+// `emitSdkWarning` is deliberately NOT scanned: its first argument is a
+// human message, not an event name — the event it emits
+// (`sdk_validation_warning`) resolves through its internal `captureRaw`
+// call's constant argument.
+const EMIT_CALL = /(emitSemantic|emitPlatformEvent|captureRaw|capture|postAnonMeta|emitAnonMeta|emitSlotEvent|emitSlotResolution|emitPlacementLifecycle|emitGateEvaluated|emitPlacementOutcome)\(\s*(?:'([a-z][a-z0-9_]*)'|([A-Z][A-Z0-9_]*))/g;
 
-/** Every platform event name the SDK actually emits, per source. */
+/**
+ * The GENERIC-lane callees, whose argument is a customer-style name that the
+ * wire canonicalizes (alias normalization + platform-collision namespacing,
+ * plan 228 TASK-4) before it lands. Every other callee is a typed/raw lane
+ * whose argument IS the wire name. Direction 1 compares WIRE names — the
+ * SDK's internal `capture('page_view', …)` emits `clickstream_page_view`,
+ * and scanning the raw literal would report a name that never lands.
+ */
+const GENERIC_LANE_CALLEES = new Set(['capture', 'emitSemantic']);
+
+/** Every platform event name the SDK actually emits ON THE WIRE, per source. */
 function scanEmittedNames(): Set<string> {
   const emitted = new Set<string>();
   for (const file of sdkSourceFiles()) {
     const src = readFileSync(file, 'utf8');
     const consts = stringConstants(src);
     for (const m of src.matchAll(EMIT_CALL)) {
-      const literal = m[1];
-      const identifier = m[2];
-      if (literal) emitted.add(literal);
-      else if (identifier && consts.has(identifier)) emitted.add(consts.get(identifier) as string);
+      const callee = m[1];
+      const literal = m[2];
+      const identifier = m[3];
+      const rawName = literal ?? (identifier ? consts.get(identifier) : undefined);
+      if (!rawName) continue;
+      emitted.add(
+        GENERIC_LANE_CALLEES.has(callee)
+          ? namespacePlatformCollision(normalizeEventType(rawName))
+          : rawName,
+      );
     }
     for (const name of lifecycleUnionMembers(src)) emitted.add(name);
   }
@@ -118,9 +141,6 @@ const isPrefixFamilyMember = (name: string) => prefixes.some((p) => name.startsW
 // revturbine-web, so they are out of scope for THIS repo's parity.
 const declaredHere = new Set(
   taxonomy.events.filter((e) => e.surface === 'sdk_client').map((e) => e.name),
-);
-const deprecated = new Set(
-  taxonomy.events.filter((e) => e.stability === 'deprecated').map((e) => e.name),
 );
 
 describe('event taxonomy parity (plan 181 AC-2)', () => {
@@ -148,15 +168,29 @@ describe('event taxonomy parity (plan 181 AC-2)', () => {
     ).toEqual([]);
   });
 
-  it('declares nothing it no longer emits (direction 2)', () => {
-    const emitted = scanEmittedNames();
-    const neverEmitted = [...declaredHere]
-      .filter((n) => !emitted.has(n))
-      .filter((n) => !deprecated.has(n));
-    expect(
-      neverEmitted,
-      `the taxonomy declares ${neverEmitted.join(', ')} but no SDK emit site produces them — remove them or mark them deprecated`,
-    ).toEqual([]);
+  it('every non-control-plane taxonomy name is emittable via the typed surface (direction 2)', () => {
+    // Direction 2 was a source scan ("declares nothing it no longer emits")
+    // when the SDK's fixed emit sites were the only producers. Plan 228
+    // TASK-4 replaced that world: the typed emit surface makes EVERY non-CP
+    // taxonomy name first-party emittable — promoted milestones, billing
+    // vocabulary, growth signals included — so the honest parity claim is
+    // totality of the typed surface, checked as runtime set equality here
+    // and structurally by the Exclude<> type. The old scan direction would
+    // now be vacuous, not stricter: a declared name with no internal emit
+    // site is exactly what a customer-emitted milestone looks like.
+    const declaredNonCp = taxonomy.events
+      .filter((e) => e.surface !== 'control_plane')
+      .map((e) => e.name)
+      .sort();
+    expect([...EMITTABLE_PLATFORM_EVENT_NAMES]).toEqual(declaredNonCp);
+  });
+
+  it('the typed surface structurally excludes the control plane (direction 2, CP half)', () => {
+    const cpNames = taxonomy.events.filter((e) => e.surface === 'control_plane').map((e) => e.name);
+    expect(cpNames.length).toBeGreaterThan(0);
+    for (const name of cpNames) {
+      expect(EMITTABLE_PLATFORM_EVENT_NAMES, `${name} must not be typed-emittable`).not.toContain(name);
+    }
   });
 
   it('does not declare fixed names inside an open prefix family (REQ-3)', () => {

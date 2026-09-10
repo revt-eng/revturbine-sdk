@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.279/rust/revturbine_types.rs
+//   published/v0.1.302/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -4207,6 +4207,18 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogCatalogVersion {
 #[doc = "      \"maxLength\": 500,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"dimension_groundings\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"additionalProperties\": {"]
+#[doc = "        \"$ref\": \"#/$defs/AnalyticsDimensionGrounding\""]
+#[doc = "      },"]
+#[doc = "      \"propertyNames\": {"]
+#[doc = "        \"type\": \"string\","]
+#[doc = "        \"maxLength\": 120,"]
+#[doc = "        \"pattern\": \"^[a-z][a-z0-9_]*(\\\\.[a-z][a-z0-9_]*)+$\""]
+#[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"dimensions\": {"]
 #[doc = "      \"type\": \"array\","]
 #[doc = "      \"items\": {"]
@@ -4303,6 +4315,14 @@ pub struct AnalyticsCatalogConcept {
     pub deprecation: ::std::option::Option<AnalyticsCatalogDeprecation>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub description: ::std::option::Option<AnalyticsCatalogConceptDescription>,
+    #[serde(
+        default,
+        skip_serializing_if = ":: std :: collections :: HashMap::is_empty"
+    )]
+    pub dimension_groundings: ::std::collections::HashMap<
+        AnalyticsCatalogConceptDimensionGroundingsKey,
+        AnalyticsDimensionGrounding,
+    >,
     pub dimensions: ::std::vec::Vec<AnalyticsCatalogConceptDimensionsItem>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub do_not_use_for: ::std::option::Option<AnalyticsCatalogConceptDoNotUseFor>,
@@ -4453,6 +4473,86 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogConceptD
     }
 }
 impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogConceptDescription {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsCatalogConceptDimensionGroundingsKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"pattern\": \"^[a-z][a-z0-9_]*(\\\\.[a-z][a-z0-9_]*)+$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCatalogConceptDimensionGroundingsKey(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCatalogConceptDimensionGroundingsKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCatalogConceptDimensionGroundingsKey> for ::std::string::String {
+    fn from(value: AnalyticsCatalogConceptDimensionGroundingsKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCatalogConceptDimensionGroundingsKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| {
+                ::regress::Regex::new("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$").unwrap()
+            });
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCatalogConceptDimensionGroundingsKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for AnalyticsCatalogConceptDimensionGroundingsKey
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for AnalyticsCatalogConceptDimensionGroundingsKey
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogConceptDimensionGroundingsKey {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -5765,6 +5865,10 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogDimensionWhenToUse {
 #[doc = "      \"$ref\": \"#/$defs/AnalyticsCatalogDeprecation\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"derivation\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsMetricDerivation\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"description\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 500,"]
@@ -5838,6 +5942,8 @@ pub struct AnalyticsCatalogMetric {
     pub denominator_metric: ::std::option::Option<AnalyticsCatalogMetricDenominatorMetric>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub deprecation: ::std::option::Option<AnalyticsCatalogDeprecation>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub derivation: ::std::option::Option<AnalyticsMetricDerivation>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub description: ::std::option::Option<AnalyticsCatalogMetricDescription>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -6326,6 +6432,9 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogMetricNumeratorMetric {
 #[doc = "    \"deprecation\": {"]
 #[doc = "      \"$ref\": \"#/$defs/AnalyticsCatalogDeprecation\""]
 #[doc = "    },"]
+#[doc = "    \"derivation\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsMetricDerivation\""]
+#[doc = "    },"]
 #[doc = "    \"description\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 500"]
@@ -6385,6 +6494,8 @@ pub struct AnalyticsCatalogMetricValidated {
     pub denominator_metric: ::std::option::Option<AnalyticsCatalogMetricValidatedDenominatorMetric>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub deprecation: ::std::option::Option<AnalyticsCatalogDeprecation>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub derivation: ::std::option::Option<AnalyticsMetricDerivation>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub description: ::std::option::Option<AnalyticsCatalogMetricValidatedDescription>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -8952,6 +9063,274 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsDimensionCapabi
         value.parse()
     }
 }
+#[doc = "`AnalyticsDimensionGrounding`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"kind\","]
+#[doc = "    \"source\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"kind\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsDimensionGroundingKind\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"note\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 400,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"source\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 200,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticsDimensionGrounding {
+    pub kind: AnalyticsDimensionGroundingKind,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub note: ::std::option::Option<AnalyticsDimensionGroundingNote>,
+    pub source: AnalyticsDimensionGroundingSource,
+}
+#[doc = "`AnalyticsDimensionGroundingKind`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"stamped\","]
+#[doc = "    \"membership_join\","]
+#[doc = "    \"config_join\","]
+#[doc = "    \"derived\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AnalyticsDimensionGroundingKind {
+    #[serde(rename = "stamped")]
+    Stamped,
+    #[serde(rename = "membership_join")]
+    MembershipJoin,
+    #[serde(rename = "config_join")]
+    ConfigJoin,
+    #[serde(rename = "derived")]
+    Derived,
+}
+impl ::std::fmt::Display for AnalyticsDimensionGroundingKind {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Stamped => f.write_str("stamped"),
+            Self::MembershipJoin => f.write_str("membership_join"),
+            Self::ConfigJoin => f.write_str("config_join"),
+            Self::Derived => f.write_str("derived"),
+        }
+    }
+}
+impl ::std::str::FromStr for AnalyticsDimensionGroundingKind {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "stamped" => Ok(Self::Stamped),
+            "membership_join" => Ok(Self::MembershipJoin),
+            "config_join" => Ok(Self::ConfigJoin),
+            "derived" => Ok(Self::Derived),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsDimensionGroundingKind {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsDimensionGroundingKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsDimensionGroundingKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AnalyticsDimensionGroundingNote`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 400,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsDimensionGroundingNote(::std::string::String);
+impl ::std::ops::Deref for AnalyticsDimensionGroundingNote {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsDimensionGroundingNote> for ::std::string::String {
+    fn from(value: AnalyticsDimensionGroundingNote) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsDimensionGroundingNote {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 400usize {
+            return Err("longer than 400 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsDimensionGroundingNote {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsDimensionGroundingNote {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsDimensionGroundingNote {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsDimensionGroundingNote {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsDimensionGroundingSource`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 200,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsDimensionGroundingSource(::std::string::String);
+impl ::std::ops::Deref for AnalyticsDimensionGroundingSource {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsDimensionGroundingSource> for ::std::string::String {
+    fn from(value: AnalyticsDimensionGroundingSource) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsDimensionGroundingSource {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 200usize {
+            return Err("longer than 200 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsDimensionGroundingSource {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsDimensionGroundingSource {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsDimensionGroundingSource {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsDimensionGroundingSource {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`AnalyticsDimensionType`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -10147,6 +10526,90 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsHistoricalMode 
         value.parse()
     }
 }
+#[doc = "`AnalyticsIngestedInputOrigin`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"platform\","]
+#[doc = "    \"customer_authored\","]
+#[doc = "    \"mixed\","]
+#[doc = "    \"none\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AnalyticsIngestedInputOrigin {
+    #[serde(rename = "platform")]
+    Platform,
+    #[serde(rename = "customer_authored")]
+    CustomerAuthored,
+    #[serde(rename = "mixed")]
+    Mixed,
+    #[serde(rename = "none")]
+    None,
+}
+impl ::std::fmt::Display for AnalyticsIngestedInputOrigin {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Platform => f.write_str("platform"),
+            Self::CustomerAuthored => f.write_str("customer_authored"),
+            Self::Mixed => f.write_str("mixed"),
+            Self::None => f.write_str("none"),
+        }
+    }
+}
+impl ::std::str::FromStr for AnalyticsIngestedInputOrigin {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "platform" => Ok(Self::Platform),
+            "customer_authored" => Ok(Self::CustomerAuthored),
+            "mixed" => Ok(Self::Mixed),
+            "none" => Ok(Self::None),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsIngestedInputOrigin {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsIngestedInputOrigin {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsIngestedInputOrigin {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 #[doc = "`AnalyticsMetricAggregationSemantics`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -10224,6 +10687,462 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsMetricAggregati
         value: ::std::string::String,
     ) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
+    }
+}
+#[doc = "`AnalyticsMetricDerivation`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"ingested_events\","]
+#[doc = "    \"input_origin\","]
+#[doc = "    \"kind\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"carried_by\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"string\","]
+#[doc = "        \"maxLength\": 120,"]
+#[doc = "        \"pattern\": \"^[a-z][a-z0-9_]*$\""]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 10,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"ingested_datasources\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"string\","]
+#[doc = "        \"maxLength\": 120,"]
+#[doc = "        \"pattern\": \"^[a-z][a-z0-9_]*$\""]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 20,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"ingested_events\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"string\","]
+#[doc = "        \"maxLength\": 120,"]
+#[doc = "        \"pattern\": \"^[a-z][a-z0-9_]*$\""]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 20,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"input_origin\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsIngestedInputOrigin\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"kind\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsMetricDerivationKind\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"note\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 600,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticsMetricDerivation {
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub carried_by: ::std::vec::Vec<AnalyticsMetricDerivationCarriedByItem>,
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub ingested_datasources: ::std::vec::Vec<AnalyticsMetricDerivationIngestedDatasourcesItem>,
+    pub ingested_events: ::std::vec::Vec<AnalyticsMetricDerivationIngestedEventsItem>,
+    pub input_origin: AnalyticsIngestedInputOrigin,
+    pub kind: AnalyticsMetricDerivationKind,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub note: ::std::option::Option<AnalyticsMetricDerivationNote>,
+}
+#[doc = "`AnalyticsMetricDerivationCarriedByItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"pattern\": \"^[a-z][a-z0-9_]*$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsMetricDerivationCarriedByItem(::std::string::String);
+impl ::std::ops::Deref for AnalyticsMetricDerivationCarriedByItem {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsMetricDerivationCarriedByItem> for ::std::string::String {
+    fn from(value: AnalyticsMetricDerivationCarriedByItem) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsMetricDerivationCarriedByItem {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z][a-z0-9_]*$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z][a-z0-9_]*$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsMetricDerivationCarriedByItem {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsMetricDerivationCarriedByItem {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsMetricDerivationCarriedByItem {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsMetricDerivationCarriedByItem {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsMetricDerivationIngestedDatasourcesItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"pattern\": \"^[a-z][a-z0-9_]*$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsMetricDerivationIngestedDatasourcesItem(::std::string::String);
+impl ::std::ops::Deref for AnalyticsMetricDerivationIngestedDatasourcesItem {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsMetricDerivationIngestedDatasourcesItem>
+    for ::std::string::String
+{
+    fn from(value: AnalyticsMetricDerivationIngestedDatasourcesItem) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsMetricDerivationIngestedDatasourcesItem {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z][a-z0-9_]*$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z][a-z0-9_]*$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsMetricDerivationIngestedDatasourcesItem {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for AnalyticsMetricDerivationIngestedDatasourcesItem
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for AnalyticsMetricDerivationIngestedDatasourcesItem
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsMetricDerivationIngestedDatasourcesItem {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsMetricDerivationIngestedEventsItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"pattern\": \"^[a-z][a-z0-9_]*$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsMetricDerivationIngestedEventsItem(::std::string::String);
+impl ::std::ops::Deref for AnalyticsMetricDerivationIngestedEventsItem {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsMetricDerivationIngestedEventsItem> for ::std::string::String {
+    fn from(value: AnalyticsMetricDerivationIngestedEventsItem) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsMetricDerivationIngestedEventsItem {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z][a-z0-9_]*$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z][a-z0-9_]*$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsMetricDerivationIngestedEventsItem {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for AnalyticsMetricDerivationIngestedEventsItem
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for AnalyticsMetricDerivationIngestedEventsItem
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsMetricDerivationIngestedEventsItem {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsMetricDerivationKind`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"derived\","]
+#[doc = "    \"observed\","]
+#[doc = "    \"unavailable\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AnalyticsMetricDerivationKind {
+    #[serde(rename = "derived")]
+    Derived,
+    #[serde(rename = "observed")]
+    Observed,
+    #[serde(rename = "unavailable")]
+    Unavailable,
+}
+impl ::std::fmt::Display for AnalyticsMetricDerivationKind {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Derived => f.write_str("derived"),
+            Self::Observed => f.write_str("observed"),
+            Self::Unavailable => f.write_str("unavailable"),
+        }
+    }
+}
+impl ::std::str::FromStr for AnalyticsMetricDerivationKind {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "derived" => Ok(Self::Derived),
+            "observed" => Ok(Self::Observed),
+            "unavailable" => Ok(Self::Unavailable),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsMetricDerivationKind {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsMetricDerivationKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsMetricDerivationKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AnalyticsMetricDerivationNote`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 600,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsMetricDerivationNote(::std::string::String);
+impl ::std::ops::Deref for AnalyticsMetricDerivationNote {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsMetricDerivationNote> for ::std::string::String {
+    fn from(value: AnalyticsMetricDerivationNote) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsMetricDerivationNote {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 600usize {
+            return Err("longer than 600 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsMetricDerivationNote {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsMetricDerivationNote {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsMetricDerivationNote {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsMetricDerivationNote {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
     }
 }
 #[doc = "`AnalyticsMetricDirection`"]
@@ -29448,17 +30367,17 @@ impl ::std::convert::TryFrom<::std::string::String> for ControlPlaneEventSource 
 #[doc = "    \"cli_signed_up\","]
 #[doc = "    \"cli_signed_in\","]
 #[doc = "    \"cli_command_executed\","]
-#[doc = "    \"changeset_submitted\","]
-#[doc = "    \"changeset_approved\","]
-#[doc = "    \"changeset_rejected\","]
-#[doc = "    \"changeset_deployed\","]
-#[doc = "    \"changeset_launched\","]
-#[doc = "    \"changeset_parked\","]
-#[doc = "    \"changeset_resumed\","]
-#[doc = "    \"changeset_discarded\","]
-#[doc = "    \"changeset_archived\","]
-#[doc = "    \"config_imported\","]
-#[doc = "    \"config_exported\","]
+#[doc = "    \"playbook_version_submitted\","]
+#[doc = "    \"playbook_version_approved\","]
+#[doc = "    \"playbook_version_rejected\","]
+#[doc = "    \"playbook_version_deployed\","]
+#[doc = "    \"playbook_version_launched\","]
+#[doc = "    \"playbook_version_parked\","]
+#[doc = "    \"playbook_version_resumed\","]
+#[doc = "    \"playbook_version_discarded\","]
+#[doc = "    \"playbook_version_archived\","]
+#[doc = "    \"playbook_imported\","]
+#[doc = "    \"playbook_exported\","]
 #[doc = "    \"entity_created\","]
 #[doc = "    \"entity_updated\","]
 #[doc = "    \"entity_deleted\","]
@@ -29492,28 +30411,28 @@ pub enum ControlPlaneEventType {
     CliSignedIn,
     #[serde(rename = "cli_command_executed")]
     CliCommandExecuted,
-    #[serde(rename = "changeset_submitted")]
-    ChangesetSubmitted,
-    #[serde(rename = "changeset_approved")]
-    ChangesetApproved,
-    #[serde(rename = "changeset_rejected")]
-    ChangesetRejected,
-    #[serde(rename = "changeset_deployed")]
-    ChangesetDeployed,
-    #[serde(rename = "changeset_launched")]
-    ChangesetLaunched,
-    #[serde(rename = "changeset_parked")]
-    ChangesetParked,
-    #[serde(rename = "changeset_resumed")]
-    ChangesetResumed,
-    #[serde(rename = "changeset_discarded")]
-    ChangesetDiscarded,
-    #[serde(rename = "changeset_archived")]
-    ChangesetArchived,
-    #[serde(rename = "config_imported")]
-    ConfigImported,
-    #[serde(rename = "config_exported")]
-    ConfigExported,
+    #[serde(rename = "playbook_version_submitted")]
+    PlaybookVersionSubmitted,
+    #[serde(rename = "playbook_version_approved")]
+    PlaybookVersionApproved,
+    #[serde(rename = "playbook_version_rejected")]
+    PlaybookVersionRejected,
+    #[serde(rename = "playbook_version_deployed")]
+    PlaybookVersionDeployed,
+    #[serde(rename = "playbook_version_launched")]
+    PlaybookVersionLaunched,
+    #[serde(rename = "playbook_version_parked")]
+    PlaybookVersionParked,
+    #[serde(rename = "playbook_version_resumed")]
+    PlaybookVersionResumed,
+    #[serde(rename = "playbook_version_discarded")]
+    PlaybookVersionDiscarded,
+    #[serde(rename = "playbook_version_archived")]
+    PlaybookVersionArchived,
+    #[serde(rename = "playbook_imported")]
+    PlaybookImported,
+    #[serde(rename = "playbook_exported")]
+    PlaybookExported,
     #[serde(rename = "entity_created")]
     EntityCreated,
     #[serde(rename = "entity_updated")]
@@ -29531,17 +30450,17 @@ impl ::std::fmt::Display for ControlPlaneEventType {
             Self::CliSignedUp => f.write_str("cli_signed_up"),
             Self::CliSignedIn => f.write_str("cli_signed_in"),
             Self::CliCommandExecuted => f.write_str("cli_command_executed"),
-            Self::ChangesetSubmitted => f.write_str("changeset_submitted"),
-            Self::ChangesetApproved => f.write_str("changeset_approved"),
-            Self::ChangesetRejected => f.write_str("changeset_rejected"),
-            Self::ChangesetDeployed => f.write_str("changeset_deployed"),
-            Self::ChangesetLaunched => f.write_str("changeset_launched"),
-            Self::ChangesetParked => f.write_str("changeset_parked"),
-            Self::ChangesetResumed => f.write_str("changeset_resumed"),
-            Self::ChangesetDiscarded => f.write_str("changeset_discarded"),
-            Self::ChangesetArchived => f.write_str("changeset_archived"),
-            Self::ConfigImported => f.write_str("config_imported"),
-            Self::ConfigExported => f.write_str("config_exported"),
+            Self::PlaybookVersionSubmitted => f.write_str("playbook_version_submitted"),
+            Self::PlaybookVersionApproved => f.write_str("playbook_version_approved"),
+            Self::PlaybookVersionRejected => f.write_str("playbook_version_rejected"),
+            Self::PlaybookVersionDeployed => f.write_str("playbook_version_deployed"),
+            Self::PlaybookVersionLaunched => f.write_str("playbook_version_launched"),
+            Self::PlaybookVersionParked => f.write_str("playbook_version_parked"),
+            Self::PlaybookVersionResumed => f.write_str("playbook_version_resumed"),
+            Self::PlaybookVersionDiscarded => f.write_str("playbook_version_discarded"),
+            Self::PlaybookVersionArchived => f.write_str("playbook_version_archived"),
+            Self::PlaybookImported => f.write_str("playbook_imported"),
+            Self::PlaybookExported => f.write_str("playbook_exported"),
             Self::EntityCreated => f.write_str("entity_created"),
             Self::EntityUpdated => f.write_str("entity_updated"),
             Self::EntityDeleted => f.write_str("entity_deleted"),
@@ -29558,17 +30477,17 @@ impl ::std::str::FromStr for ControlPlaneEventType {
             "cli_signed_up" => Ok(Self::CliSignedUp),
             "cli_signed_in" => Ok(Self::CliSignedIn),
             "cli_command_executed" => Ok(Self::CliCommandExecuted),
-            "changeset_submitted" => Ok(Self::ChangesetSubmitted),
-            "changeset_approved" => Ok(Self::ChangesetApproved),
-            "changeset_rejected" => Ok(Self::ChangesetRejected),
-            "changeset_deployed" => Ok(Self::ChangesetDeployed),
-            "changeset_launched" => Ok(Self::ChangesetLaunched),
-            "changeset_parked" => Ok(Self::ChangesetParked),
-            "changeset_resumed" => Ok(Self::ChangesetResumed),
-            "changeset_discarded" => Ok(Self::ChangesetDiscarded),
-            "changeset_archived" => Ok(Self::ChangesetArchived),
-            "config_imported" => Ok(Self::ConfigImported),
-            "config_exported" => Ok(Self::ConfigExported),
+            "playbook_version_submitted" => Ok(Self::PlaybookVersionSubmitted),
+            "playbook_version_approved" => Ok(Self::PlaybookVersionApproved),
+            "playbook_version_rejected" => Ok(Self::PlaybookVersionRejected),
+            "playbook_version_deployed" => Ok(Self::PlaybookVersionDeployed),
+            "playbook_version_launched" => Ok(Self::PlaybookVersionLaunched),
+            "playbook_version_parked" => Ok(Self::PlaybookVersionParked),
+            "playbook_version_resumed" => Ok(Self::PlaybookVersionResumed),
+            "playbook_version_discarded" => Ok(Self::PlaybookVersionDiscarded),
+            "playbook_version_archived" => Ok(Self::PlaybookVersionArchived),
+            "playbook_imported" => Ok(Self::PlaybookImported),
+            "playbook_exported" => Ok(Self::PlaybookExported),
             "entity_created" => Ok(Self::EntityCreated),
             "entity_updated" => Ok(Self::EntityUpdated),
             "entity_deleted" => Ok(Self::EntityDeleted),
@@ -99947,6 +100866,46 @@ impl<'de> ::serde::Deserialize<'de> for TrackEventUserId {
 pub struct TrackIngestBatch {
     pub events: ::std::vec::Vec<TrackEvent>,
 }
+#[doc = "`TreatmentInteractionBatch`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"array\","]
+#[doc = "  \"items\": {"]
+#[doc = "    \"$ref\": \"#/$defs/TreatmentInteractionInput\""]
+#[doc = "  },"]
+#[doc = "  \"maxItems\": 500,"]
+#[doc = "  \"minItems\": 1,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(transparent)]
+pub struct TreatmentInteractionBatch(pub ::std::vec::Vec<TreatmentInteractionInput>);
+impl ::std::ops::Deref for TreatmentInteractionBatch {
+    type Target = ::std::vec::Vec<TreatmentInteractionInput>;
+    fn deref(&self) -> &::std::vec::Vec<TreatmentInteractionInput> {
+        &self.0
+    }
+}
+impl ::std::convert::From<TreatmentInteractionBatch>
+    for ::std::vec::Vec<TreatmentInteractionInput>
+{
+    fn from(value: TreatmentInteractionBatch) -> Self {
+        value.0
+    }
+}
+impl ::std::convert::From<::std::vec::Vec<TreatmentInteractionInput>>
+    for TreatmentInteractionBatch
+{
+    fn from(value: ::std::vec::Vec<TreatmentInteractionInput>) -> Self {
+        Self(value)
+    }
+}
 #[doc = "`TreatmentInteractionInput`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -100762,6 +101721,41 @@ impl<'de> ::serde::Deserialize<'de> for TreatmentInteractionInputVariantKey {
             .map_err(|e: self::error::ConversionError| {
                 <D::Error as ::serde::de::Error>::custom(e.to_string())
             })
+    }
+}
+#[doc = "`TreatmentInteractionRequest`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"anyOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"$ref\": \"#/$defs/TreatmentInteractionInput\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"$ref\": \"#/$defs/TreatmentInteractionBatch\""]
+#[doc = "    }"]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(untagged)]
+pub enum TreatmentInteractionRequest {
+    Input(TreatmentInteractionInput),
+    Batch(TreatmentInteractionBatch),
+}
+impl ::std::convert::From<TreatmentInteractionInput> for TreatmentInteractionRequest {
+    fn from(value: TreatmentInteractionInput) -> Self {
+        Self::Input(value)
+    }
+}
+impl ::std::convert::From<TreatmentInteractionBatch> for TreatmentInteractionRequest {
+    fn from(value: TreatmentInteractionBatch) -> Self {
+        Self::Batch(value)
     }
 }
 #[doc = "`TreatmentInteractionType`"]

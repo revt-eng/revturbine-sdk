@@ -19,7 +19,7 @@ function createMockSdk(overrides: Record<string, unknown> = {}) {
       content: { header: 'Upgrade now', body: 'Get 50% off', cta_label: 'Upgrade' },
     }),
     trackTreatmentInteraction: vi.fn().mockResolvedValue(undefined),
-    emitSemantic: vi.fn().mockResolvedValue(undefined),
+    emitPlatformEvent: vi.fn().mockResolvedValue(undefined),
     checkEntitlement: vi.fn().mockResolvedValue({ status: 'allowed' }),
     getPlacement: vi.fn().mockResolvedValue(null),
     identify: vi.fn(),
@@ -496,14 +496,14 @@ describe('EntitlementGate', () => {
 
     // Plan 144 TASK-10 / REQ-20 / AC-11 — a passive gate evaluation.
     const gateEvaluatedCalls = () =>
-      sdk.emitSemantic.mock.calls.filter((c: unknown[]) => c[0] === 'gate_evaluated');
+      sdk.emitPlatformEvent.mock.calls.filter((c: unknown[]) => c[0] === 'gate_evaluated');
 
     it('emits gate_evaluated on a passive check, never gate_attempted (AC-11)', async () => {
       sdk.checkEntitlement.mockResolvedValue({ status: 'allowed' });
       const gate = new EntitlementGate(sdk, { handle: 'brand_kit' });
       await gate.check();
 
-      const names = sdk.emitSemantic.mock.calls.map((c: unknown[]) => c[0]);
+      const names = sdk.emitPlatformEvent.mock.calls.map((c: unknown[]) => c[0]);
       expect(names).toContain('gate_evaluated');
       expect(names).not.toContain('gate_attempted');
       expect(gateEvaluatedCalls()[0][1]).toMatchObject({
@@ -524,7 +524,7 @@ describe('EntitlementGate', () => {
       sdk.checkEntitlement.mockResolvedValue({ status: 'limited', used: 9, limit: 10, remaining: 1 });
       const gate = new EntitlementGate(sdk, { handle: 'api_calls' });
       await gate.check();
-      const names = sdk.emitSemantic.mock.calls.map((c: unknown[]) => c[0]);
+      const names = sdk.emitPlatformEvent.mock.calls.map((c: unknown[]) => c[0]);
       expect(names).not.toContain('gate_limited');
       expect(gateEvaluatedCalls()[0][1]).toMatchObject({ outcome: 'limited', remaining: 1 });
     });

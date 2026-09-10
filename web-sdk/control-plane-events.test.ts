@@ -22,7 +22,7 @@ describe('CONTROL_PLANE_EVENT_SOURCE', () => {
     for (const t of ['web_signed_in', 'cli_signed_up', 'cli_command_executed'] as const) {
       expect(CONTROL_PLANE_EVENT_SOURCE[t]).toBe('system');
     }
-    for (const t of ['changeset_deployed', 'config_imported', 'entity_created'] as const) {
+    for (const t of ['playbook_version_deployed', 'playbook_imported', 'entity_created'] as const) {
       expect(CONTROL_PLANE_EVENT_SOURCE[t]).toBe('workflow');
     }
   });
@@ -92,9 +92,9 @@ function trackBody(): { events: Array<Record<string, unknown>> } {
 describe('RevTurbineCustomerSdk.trackControlPlaneEvent', () => {
   it('emits the event_type as event_name through /api/track', async () => {
     const sdk = makeSdk();
-    await sdk.trackControlPlaneEvent('changeset_deployed', { change_set_id: 'cs_9' }, { immediate: true });
+    await sdk.trackControlPlaneEvent('playbook_version_deployed', { change_set_id: 'cs_9' }, { immediate: true });
 
-    const ev = trackBody().events.find((e) => e.event_name === 'changeset_deployed');
+    const ev = trackBody().events.find((e) => e.event_name === 'playbook_version_deployed');
     expect(ev).toBeDefined();
     // The /api/track envelope nests the emit properties under `payload`.
     const props = JSON.parse(String(ev!.properties)) as { payload: Record<string, unknown> };
@@ -118,7 +118,7 @@ describe('RevTurbineCustomerSdk.trackControlPlaneEvent', () => {
     vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('network down'))));
     const sdk = makeSdk();
     await expect(
-      sdk.trackControlPlaneEvent('config_exported', {}, { immediate: true }),
+      sdk.trackControlPlaneEvent('playbook_exported', {}, { immediate: true }),
     ).resolves.toBeUndefined();
   });
 

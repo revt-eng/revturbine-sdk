@@ -98,16 +98,32 @@ describe('plan 144 TASK-10 — provenance columns on the wire', () => {
       expect(wireEvent('feature_used').origin).toBe('explicit');
     });
 
-    it("classifies the placement lifecycle as 'automatic'", async () => {
+    it("classifies the platform-emitted placement lifecycle as 'automatic'", async () => {
+      // The TYPED lane is the real producer path (plan 228 TASK-4): the
+      // generic capture() now namespaces platform names, and a namespaced
+      // customer collision correctly classifies as 'explicit', not
+      // 'automatic' — forged names must not inherit platform provenance.
       const sdk = makeSdk();
-      await sdk.capture('placement_exposed', { payload: { placement_id: 'pl_1' } }, { immediate: true });
+      await sdk.emitPlatformEvent('placement_exposed', {
+        placement_id: 'pl_1',
+        surface_slot_id: null,
+        payload_id: null,
+        decision_id: null,
+        decision_source: null,
+      }, { immediate: true });
       expect(wireEvent('placement_exposed').origin).toBe('automatic');
     });
 
     it("classifies a gate event as 'automatic'", async () => {
       const sdk = makeSdk();
-      await sdk.capture('gate_denied', {}, { immediate: true });
+      await sdk.emitPlatformEvent('gate_denied', { entitlement_handle: 'seats', reason: null }, { immediate: true });
       expect(wireEvent('gate_denied').origin).toBe('automatic');
+    });
+
+    it("classifies a forged platform name from the generic lane as 'explicit'", async () => {
+      const sdk = makeSdk();
+      await sdk.capture('placement_exposed', {}, { immediate: true });
+      expect(wireEvent('clickstream_placement_exposed').origin).toBe('explicit');
     });
 
     it("classifies impression as 'automatic'", async () => {
@@ -119,13 +135,15 @@ describe('plan 144 TASK-10 — provenance columns on the wire', () => {
 
   describe('decision_id lifting', () => {
     it('lifts decision_id from the nested payload bag alongside placement_id', async () => {
+      // Lifting is lane-independent envelope mechanics; the generic lane's
+      // carrier lands under its namespaced wire name (plan 228 TASK-4).
       const sdk = makeSdk();
       await sdk.capture(
         'placement_exposed',
         { payload: { decision_id: 'dec_1', placement_id: 'pl_1' } },
         { immediate: true },
       );
-      const ev = wireEvent('placement_exposed');
+      const ev = wireEvent('clickstream_placement_exposed');
       expect(ev.decision_id).toBe('dec_1');
       expect(ev.placement_id).toBe('pl_1');
     });
@@ -133,7 +151,7 @@ describe('plan 144 TASK-10 — provenance columns on the wire', () => {
     it('lifts a top-level decision_id', async () => {
       const sdk = makeSdk();
       await sdk.capture('placement_exposed', { decision_id: 'dec_top' }, { immediate: true });
-      expect(wireEvent('placement_exposed').decision_id).toBe('dec_top');
+      expect(wireEvent('clickstream_placement_exposed').decision_id).toBe('dec_top');
     });
 
     it('leaves decision_id null when the event carries none', async () => {
