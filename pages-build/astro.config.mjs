@@ -221,6 +221,7 @@ export default defineConfig({
             { label: 'Add RevTurbine with a Coding Agent', slug: 'guides/coding-agent' },
             { label: 'Error Handling', slug: 'guides/error-handling' },
             { label: 'Headless API', slug: 'guides/headless-api' },
+            { label: 'Paywall Host Pattern', slug: 'guides/paywall-host' },
             // Tutorials (step-by-step) folded in from the former standalone Tutorials section.
             { label: 'Tutorial: Add an Upgrade Button', slug: 'tutorials/upgrade-button' },
             { label: 'Tutorial: Show a Banner Placement', slug: 'tutorials/banner-placement' },
