@@ -14,10 +14,20 @@ from revturbine.core.rules.plan_eligibility import (
     PlanEligibilityRule,
     evaluate_plan_eligibility,
 )
+from revturbine.core.rules.segment_eligibility import (
+    SegmentEligibilityContext,
+    SegmentEligibilityOutcome,
+    SegmentEligibilityRule,
+    evaluate_segment_eligibility,
+)
 
 __all__ = [
     "PlanEligibilityContext",
     "PlanEligibilityOutcome",
     "PlanEligibilityRule",
     "evaluate_plan_eligibility",
+    "evaluate_segment_eligibility",
+    "SegmentEligibilityContext",
+    "SegmentEligibilityOutcome",
+    "SegmentEligibilityRule",
 ]

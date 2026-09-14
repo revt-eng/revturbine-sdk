@@ -4,8 +4,13 @@
 //! rule-kind registry are not, matching the Python port's scope.
 
 pub mod plan_eligibility;
+pub mod segment_eligibility;
 
 pub use plan_eligibility::{
     evaluate_plan_eligibility, PlanEligibilityContext, PlanEligibilityOutcome,
     PlanEligibilityReason, PlanEligibilityRule,
+};
+pub use segment_eligibility::{
+    evaluate_segment_eligibility, SegmentEligibilityContext, SegmentEligibilityOutcome,
+    SegmentEligibilityRule,
 };

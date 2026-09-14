@@ -59,6 +59,7 @@ pub mod placements;
 pub mod rules;
 pub mod runtime;
 pub mod sdk;
+pub mod segments;
 pub mod state;
 pub mod trials;
 

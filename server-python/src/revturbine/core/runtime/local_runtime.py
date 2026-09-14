@@ -73,6 +73,7 @@ from revturbine.core.providers import (
     DomainProviderRegistry,
     ResolvedProviderContext,
 )
+from revturbine.core.segments import evaluate_segments
 from revturbine.core.state import (
     CapEnforcer,
     ImpressionHistory,
@@ -312,23 +313,19 @@ class LocalRuntime:
     def evaluate_segments(
         self,
         traits: dict[str, str | int | bool],
+        assignments: dict[str, str] | None = None,
     ) -> list[str]:
         """Evaluate segments for a set of user traits.
 
-        Deferred: ``evaluateSegments`` (segments/controllers/segments.ts)
-        is not ported — out of the plan-33 headless server SDK scope
-        (REQ-14 browser/segments non-goal).
+        Ported in plan 233: segment targeting is a decision input in every
+        runtime now, so a headless SDK that could not derive membership could
+        not make the same selection the browser SDK does. Parity is asserted
+        byte-for-byte by tests/parity.
 
         Source: local-runtime.ts:249-257
         """
-        raise NotImplementedError(
-            "LocalRuntime.evaluate_segments requires the segments "
-            "evaluator port (evaluateSegments / "
-            "segments/controllers/segments.ts) — not part of the "
-            "plan-33 headless server SDK scope (REQ-14 browser/segments "
-            "non-goal; the narrowed TASK-7 ships only check_entitlement "
-            "+ placement decisions)."
-        )
+        segments = self._exported_config.get("segments") or []
+        return evaluate_segments(segments, traits, assignments)
 
     # ── Targeting state (deferred — REQ-14 non-goal) ──────────────────────
 

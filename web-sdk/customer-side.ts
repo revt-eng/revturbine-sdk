@@ -153,7 +153,7 @@ import {
 import {
   configArtifactForRuntime,
   type ConfigArtifact,
-  type LegacyConfigTargetDefaults,
+  type ConfigTargetDefaults,
   type UnvalidatedConfigArtifact,
 } from './config-artifact';
 import { PlacementTypeRegistry } from './placements/registry';
@@ -333,6 +333,47 @@ export type RevTurbineLocalOnlyMinimalInitOptions = Omit<
 export type RevTurbineInitInputOptions =
   | RevTurbineInitWithProviderOptions
   | (RevTurbineLocalOnlyMinimalInitOptions & RevTurbineProviderOptionAugmentations);
+
+/**
+ * Every key any init-options branch accepts.
+ *
+ * Built from the branches rather than written as `keyof RevTurbineInitInputOptions`:
+ * `keyof` over a union yields the INTERSECTION of its members' keys, so that
+ * form would reject `localRuntime` (local-only branch) and `provider`
+ * (augmentation branch) — every key that makes the union worth having.
+ */
+type RevTurbineInitOptionKey =
+  | keyof RevTurbineInitOptions
+  | keyof RevTurbineProviderOptionAugmentations;
+
+/**
+ * Exact-check for init options (plan 233 REQ-2b).
+ *
+ * A key the options do not declare becomes `never`, which turns a typo or a
+ * stale option into a compile error instead of a value the SDK silently ignores.
+ *
+ * The motivating shape is the same one `Exact` was introduced for in plan 191:
+ * TypeScript's excess-property check applies only to fresh object literals, so
+ * options assembled in a variable — or in an un-annotated `useMemo`, which is
+ * exactly how React integrations build them — carried unknown keys with no
+ * diagnostic at all.
+ *
+ * Scope limit worth stating: this cannot catch a wrong VALUE. The escalated
+ * `tenant_id` defect was never reachable from here — that one is caught by
+ * init-time validation (REQ-1/REQ-2) and the reachable init status (REQ-3).
+ *
+ * It is *not* true that a Playbook is beyond compile-time reach. An earlier
+ * version of this note claimed a served artifact is `Record<string, unknown>`
+ * “by necessity”; that was wrong. {@link UnvalidatedConfigArtifact} structurally
+ * requires the body arrays, so a truncated Playbook fails to compile at the
+ * `localRuntime` boundary. What genuinely cannot be checked is the artifact's
+ * *contents* — whether a plan handle exists, whether a rule is satisfiable.
+ *
+ * @public
+ */
+export type ExactInitOptions<T> = {
+  [K in keyof T]: K extends RevTurbineInitOptionKey ? T[K] : never;
+};
 
 /**
  * SDK integration mode.
@@ -1729,6 +1770,70 @@ export interface RevTurbineEventOptions {
 }
 
 /**
+ * One surface slot this app currently has mounted.
+ *
+ * @public
+ */
+export interface RevTurbineRegisteredSlot {
+  /**
+   * The author-facing slot id — what a Playbook placement's `trigger.slot_id`
+   * must equal. NOT the internal hashed registry key.
+   */
+  slotId: string;
+  /** Display name supplied at registration. */
+  name: string;
+  /** Normalized route the slot was mounted on. */
+  route: string;
+  /** The SDK's internal registry id (hashed). Useful when correlating logs. */
+  internalId: string;
+  /** Surface template ids the slot declared it can render, if any. */
+  surfaceTemplateIds: string[];
+}
+
+/**
+ * A Playbook placement that targets a surface slot.
+ *
+ * @public
+ */
+export interface RevTurbineAuthoredSlotRef {
+  /** The slot id the placement targets (`trigger.slot_id`). */
+  slotId: string;
+  /** The authored placement's id. */
+  placementId: string;
+  /** The placement's category, when the Playbook declares one. */
+  category?: string;
+}
+
+/**
+ * Result of {@link RevTurbineCustomerSdk.diagnoseSlotInventory}.
+ *
+ * @public
+ */
+export interface RevTurbineSlotInventoryDiagnosis {
+  /** Every slot mounted by this app right now. */
+  mounted: RevTurbineRegisteredSlot[];
+  /** Every slot-targeted placement in the Playbook. */
+  authored: RevTurbineAuthoredSlotRef[];
+  /**
+   * Placements targeting a slot no code renders. **These can never show**, and
+   * nothing else reports them — the decision path is never asked about a slot
+   * that was never mounted, so there is no error and no reason code.
+   */
+  authoredButUnmounted: RevTurbineAuthoredSlotRef[];
+  /**
+   * Slots mounted that no placement targets. They render their fallback
+   * forever; usually a typo in the slot id, or config that was never deployed.
+   */
+  mountedButUnauthored: RevTurbineRegisteredSlot[];
+  /**
+   * Whether a Playbook was available to diff against. When `false`, `authored`
+   * is empty because nothing could be read — which is NOT the same as "nothing
+   * is authored", and a caller must not treat the two alike.
+   */
+  configAvailable: boolean;
+}
+
+/**
  * User targeting context for payload eligibility.
  * Re-exported from `@revt-eng/core`.
  */
@@ -1829,6 +1934,7 @@ interface HistoryWithPatchMarker extends History {
 const ROUTE_CHANGE_EVENT = 'revturbine:sdk-route-change';
 const SDK_WARNING_EVENT_TYPE = 'sdk_validation_warning';
 const DECISION_CACHE_STORAGE_PREFIX = 'revturbine:decision-cache';
+const OUTPUT_PLACEMENT_INDEX_STORAGE_PREFIX = 'revturbine:output-placement-index';
 const INTERACTION_STATE_STORAGE_PREFIX = 'revturbine:interaction-state';
 const PRESENTATION_CAPS_STORAGE_PREFIX = 'revturbine:presentation-caps';
 const INGEST_GATEWAY_PATH = '/api/track';
@@ -1863,6 +1969,20 @@ interface ValidationIssue {
   code: string;
   reason: string;
   details?: JsonObject;
+}
+
+/**
+ * What the SDK remembers about an output so a later `convert()` / `dismiss()` /
+ * `snooze()` — which receive only an output id — can reach the interaction path.
+ */
+interface OutputPlacementRef {
+  placementId: string;
+  treatmentId?: string;
+  surfaceSlotId?: string;
+  surfaceTemplateId?: string;
+  decisionId?: string;
+  experimentId?: string;
+  variantKey?: string;
 }
 
 interface CacheEntry<T> {
@@ -2159,7 +2279,7 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
     private readonly endpoint: string,
     private readonly tenantId: string,
     private readonly token: string,
-    private readonly legacyTargetDefaults: LegacyConfigTargetDefaults,
+    private readonly targetDefaults: ConfigTargetDefaults,
     private readonly trustedManifestKeys: readonly TrustedKey[],
   ) {}
 
@@ -2244,7 +2364,7 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
       const text = new TextDecoder().decode(bytes);
       const raw: unknown = JSON.parse(text); // sdk-ok: boundary-parse
       assertPlaybookPayloadReadable(raw);
-      return configArtifactForRuntime(raw, 'signed Playbook bundle', this.legacyTargetDefaults);
+      return configArtifactForRuntime(raw, 'signed Playbook bundle', this.targetDefaults);
     } catch {
       return undefined;
     }
@@ -2319,7 +2439,7 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
       // runtime cannot fully understand is never partially applied — the
       // throw lands in the fail-soft catch below, keeping last-known-good.
       assertPlaybookPayloadReadable(raw);
-      const next = configArtifactForRuntime(raw, 'GET /api/sdk/config', this.legacyTargetDefaults);
+      const next = configArtifactForRuntime(raw, 'GET /api/sdk/config', this.targetDefaults);
       if (next) {
         this.cached = next;
         this.etag = response.headers.get('etag') ?? undefined;
@@ -2334,16 +2454,16 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
 class ResolverBackedExportedConfigProvider implements RuntimeConfigProvider {
   private cached?: RevTurbineConfig;
   private readonly resolver: () => ConfigArtifact | Promise<ConfigArtifact>;
-  private readonly legacyTargetDefaults: LegacyConfigTargetDefaults;
+  private readonly targetDefaults: ConfigTargetDefaults;
 
   constructor(
     resolver: () => ConfigArtifact | Promise<ConfigArtifact>,
-    legacyTargetDefaults: LegacyConfigTargetDefaults,
+    targetDefaults: ConfigTargetDefaults,
     initialConfig?: RevTurbineConfig,
   ) {
     this.resolver = resolver;
     this.cached = initialConfig;
-    this.legacyTargetDefaults = legacyTargetDefaults;
+    this.targetDefaults = targetDefaults;
   }
 
   getExportedConfig(): RevTurbineConfig | undefined {
@@ -2354,7 +2474,7 @@ class ResolverBackedExportedConfigProvider implements RuntimeConfigProvider {
     const next = configArtifactForRuntime(
       await this.resolver(),
       'localRuntime.resolvers.resolveExportedConfig()',
-      this.legacyTargetDefaults,
+      this.targetDefaults,
     );
     if (next) {
       this.cached = next;
@@ -2365,21 +2485,21 @@ class ResolverBackedExportedConfigProvider implements RuntimeConfigProvider {
 
 class ExternalRuntimeConfigProvider implements RuntimeConfigProvider {
   private readonly source: RevTurbineConfigProvider;
-  private readonly legacyTargetDefaults: LegacyConfigTargetDefaults;
+  private readonly targetDefaults: ConfigTargetDefaults;
 
   constructor(
     source: RevTurbineConfigProvider,
-    legacyTargetDefaults: LegacyConfigTargetDefaults,
+    targetDefaults: ConfigTargetDefaults,
   ) {
     this.source = source;
-    this.legacyTargetDefaults = legacyTargetDefaults;
+    this.targetDefaults = targetDefaults;
   }
 
   getExportedConfig(): RevTurbineConfig | undefined {
     return configArtifactForRuntime(
       this.source.getExportedConfig(),
       'configProvider.getExportedConfig()',
-      this.legacyTargetDefaults,
+      this.targetDefaults,
     );
   }
 
@@ -2388,7 +2508,7 @@ class ExternalRuntimeConfigProvider implements RuntimeConfigProvider {
     return configArtifactForRuntime(
       refreshed ?? this.source.getExportedConfig(),
       'configProvider.refresh()',
-      this.legacyTargetDefaults,
+      this.targetDefaults,
     );
   }
 }
@@ -2467,6 +2587,22 @@ export class RevTurbineCustomerSdk {
   private readonly anonymousId: string;
   private readonly sessionId: string;
   private readonly decisionCache = new Map<string, CacheEntry<RevTurbinePlacementDecision>>();
+  /**
+   * `output_id` → the placement it was decided for, plus the attribution fields
+   * the interaction path needs.
+   *
+   * The public `dismiss()` / `snooze()` / `convert()` take an **output** id,
+   * while every terminal-state write is keyed by the **placement** id. Without
+   * this index those three methods cannot reach the interaction path at all,
+   * which is why `convert()` only ever emitted an event (plan 233 TASK-14).
+   *
+   * It outlives the decision cache deliberately. A conversion is confirmed after
+   * the user comes back from a checkout redirect, long after a 60-second
+   * decision TTL has expired and often in a fresh page load — so this persists,
+   * and is bounded so a long session cannot grow it without limit.
+   */
+  private readonly outputPlacementIndex = new Map<string, OutputPlacementRef>();
+  private readonly outputPlacementIndexLimit = 200;
   private readonly interactionState = new Map<string, InteractionState>();
   private readonly interactionQueue: RevTurbineTreatmentInteractionInput[] = [];
   private readonly defaultDecisionTtlMs = 60_000;
@@ -2697,6 +2833,7 @@ export class RevTurbineCustomerSdk {
     });
     this.hydrateDecisionCache();
     this.hydrateInteractionState();
+    this.hydrateOutputPlacementIndex();
     this.hydratePresentationCaps();
     this.hydrateLocalRuntimeState();
     // Hydrate impression history so retired-placement cache is warm before resolutions.
@@ -2738,26 +2875,26 @@ export class RevTurbineCustomerSdk {
   }
 
   private resolveConfigProvider(options: RevTurbineInitOptions): RuntimeConfigProvider | undefined {
-    const legacyTargetDefaults: LegacyConfigTargetDefaults = {
+    const targetDefaults: ConfigTargetDefaults = {
       tenantId: options.tenantId,
       environmentId: normalizeEnvironmentId(options.environmentId),
     };
 
     if (options.configProvider) {
-      return new ExternalRuntimeConfigProvider(options.configProvider, legacyTargetDefaults);
+      return new ExternalRuntimeConfigProvider(options.configProvider, targetDefaults);
     }
 
     const initialConfig = configArtifactForRuntime(
       resolveLocalPlaybook(options.localRuntime),
       'localRuntime.playbook',
-      legacyTargetDefaults,
+      targetDefaults,
     );
     const configResolver = options.localRuntime?.resolvers?.resolveExportedConfig;
 
     if (configResolver) {
       return new ResolverBackedExportedConfigProvider(
         configResolver,
-        legacyTargetDefaults,
+        targetDefaults,
         initialConfig,
       );
     }
@@ -2775,7 +2912,7 @@ export class RevTurbineCustomerSdk {
         options.endpoint,
         options.tenantId,
         configToken,
-        legacyTargetDefaults,
+        targetDefaults,
         options.trustedManifestKeys ?? [],
       );
     }
@@ -3072,6 +3209,16 @@ export class RevTurbineCustomerSdk {
         ...(resolved?.segments?.segmentIds ?? []),
         ...evaluatedSegmentIds,
       ])];
+      // `segmentSlugs` is the handle-bearing field, and it is the same field in
+      // every runtime: the server ports key segment matching off `segment_slugs`
+      // and treat `segment_ids` as minted ids. `evaluateSegments` returns
+      // `segment.handle`, so the evaluated set belongs here — without it a
+      // payload's `segment_chips` (which are handles) would match nothing once
+      // the resolver enforces them (plan 233 TASK-7).
+      const segmentSlugs = [...new Set([
+        ...(resolved?.segments?.segmentSlugs ?? []),
+        ...evaluatedSegmentIds,
+      ])];
       const hasSegmentState = segmentIds.length > 0 || resolved?.segments !== undefined;
       const providers: ResolvedProviderContext | undefined = (
         synthesized || resolved || hasExperimentState || hasSegmentState
@@ -3088,6 +3235,7 @@ export class RevTurbineCustomerSdk {
             segments: {
               ...resolved?.segments,
               segmentIds,
+              segmentSlugs,
             },
           } : {}),
         } : undefined;
@@ -3563,6 +3711,70 @@ export class RevTurbineCustomerSdk {
 
   private presentationCapsStorageKey(): string {
     return `${PRESENTATION_CAPS_STORAGE_PREFIX}:${this.tenantId}:${this.anonymousId}`;
+  }
+
+  private outputPlacementIndexStorageKey(): string {
+    return `${OUTPUT_PLACEMENT_INDEX_STORAGE_PREFIX}:${this.tenantId}:${this.anonymousId}`;
+  }
+
+  /**
+   * Remember which placement an output belonged to.
+   *
+   * Called from every path that hands a decision to a caller, because any
+   * output a caller can see is an output they can later pass to `convert()`.
+   */
+  private indexDecisionOutput(decision: RevTurbinePlacementDecision): void {
+    const outputId = decision.output?.output_id;
+    if (typeof outputId !== 'string' || outputId.length === 0) return;
+    if (typeof decision.placementId !== 'string' || decision.placementId.length === 0) return;
+
+    // Re-inserting moves the key to the end of the Map's insertion order, so
+    // the eviction below drops the least recently decided output rather than
+    // whichever one happened to be indexed first.
+    this.outputPlacementIndex.delete(outputId);
+    this.outputPlacementIndex.set(outputId, {
+      placementId: decision.placementId,
+      treatmentId: decision.output?.rule_id,
+      surfaceSlotId: decision.output?.surface?.slot_id,
+      surfaceTemplateId: decision.output?.surface?.template,
+      decisionId: decision.output?.decision_id,
+      experimentId: decision.output?.experiment_id,
+      variantKey: decision.output?.variant_key,
+    });
+
+    while (this.outputPlacementIndex.size > this.outputPlacementIndexLimit) {
+      const oldest = this.outputPlacementIndex.keys().next();
+      if (oldest.done) break;
+      this.outputPlacementIndex.delete(oldest.value);
+    }
+    this.persistOutputPlacementIndex();
+  }
+
+  private hydrateOutputPlacementIndex(): void {
+    const raw = this.persistentStore.getItem(this.outputPlacementIndexStorageKey());
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as Record<string, OutputPlacementRef>;
+      Object.entries(parsed).forEach(([outputId, ref]) => {
+        if (!ref || typeof ref !== 'object') return;
+        if (typeof ref.placementId !== 'string' || ref.placementId.length === 0) return;
+        this.outputPlacementIndex.set(outputId, ref);
+      });
+    } catch {
+      this.persistentStore.removeItem(this.outputPlacementIndexStorageKey());
+    }
+  }
+
+  private persistOutputPlacementIndex(): void {
+    try {
+      this.persistentStore.setItem(
+        this.outputPlacementIndexStorageKey(),
+        JSON.stringify(Object.fromEntries(this.outputPlacementIndex.entries())),
+      );
+    } catch {
+      // Quota/serialization issues are non-fatal; the in-memory index still works
+      // for the rest of this page load.
+    }
   }
 
   private hydrateDecisionCache(): void {
@@ -5865,6 +6077,104 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
+   * Every surface slot this SDK instance currently has mounted.
+   *
+   * Plan 233 TASK-10. `verify-integration` names the gap this closes in its own
+   * text: *"A placement targeting a slot no code renders can never show, and
+   * nothing reports this; there is no probe, so walk the Playbook's placement
+   * triggers against your inventory of rendered slots."* There was no way to
+   * obtain that inventory at runtime — the registry is private and keyed by a
+   * hashed id, not by the slot id the author wrote.
+   *
+   * `slotId` is the author-facing identity (what a Playbook's
+   * `trigger.slot_id` must match), not the internal hash. That distinction is
+   * the whole point: a diff against authored config is meaningless in hash
+   * space.
+   *
+   * @public
+   */
+  getRegisteredSlots(): RevTurbineRegisteredSlot[] {
+    return Array.from(this.placements.values()).map((record) => {
+      const metadata = isRecord(record.metadata) ? record.metadata : {};
+      const templateIds = Array.isArray(metadata.surface_template_ids)
+        ? metadata.surface_template_ids.filter((value): value is string => typeof value === 'string')
+        : [];
+      return {
+        slotId: record.placementScopeKey ?? firstStringValue(metadata.surface_slot_id) ?? record.name,
+        name: record.name,
+        route: record.route,
+        internalId: record.id,
+        surfaceTemplateIds: templateIds,
+      };
+    });
+  }
+
+  /**
+   * Diff the authored Playbook against what this app actually mounted, in both
+   * directions.
+   *
+   * Plan 233 TASK-10 / AC-12. Both directions matter and they fail differently:
+   *
+   * - **authoredButUnmounted** — a placement targets a slot no code renders. It
+   *   can never show. Nothing reports this today; the decision path is never
+   *   even asked about a slot that was never mounted, so there is no error, no
+   *   warning, and no reason code. This is the silent one.
+   * - **mountedButUnauthored** — a slot is mounted that no placement targets. It
+   *   renders its fallback forever, which usually means a typo in the slot id
+   *   or config that was never deployed.
+   *
+   * This is a diagnostic and deliberately reports rather than throws: it is run
+   * against a live app, and an integration with a stale slot should keep
+   * working while someone reads the output.
+   *
+   * A config-side audit **cannot** produce this. That is the lesson from the
+   * August diagnosis of the escalated integration, which concluded the fixed
+   * slots were unmounted: they were mounted, and the call sites passed slot ids
+   * that no placement targeted. Only the running app knows what it mounted.
+   *
+   * @public
+   */
+  diagnoseSlotInventory(): RevTurbineSlotInventoryDiagnosis {
+    const mounted = this.getRegisteredSlots();
+    const mountedIds = new Set(mounted.map((slot) => slot.slotId).filter((id) => id.length > 0));
+
+    const authored: RevTurbineAuthoredSlotRef[] = [];
+    const exportedConfig = this.getConfiguredExportedConfig();
+    const placements = Array.isArray(exportedConfig?.placements) ? exportedConfig.placements : [];
+    for (const placement of placements) {
+      if (!isRecord(placement)) continue;
+      const trigger: Record<string, unknown> = isRecord(placement.trigger) // sdk-ok: boundary-parse
+        ? placement.trigger
+        : {};
+      // `trigger.slot_id` is the field the resolvers match against
+      // (server-python `local_resolver.py` compares it to the registered
+      // record's `surface_slot_id`). A placement with no slot_id is not
+      // slot-targeted at all, so it is not a candidate for either direction.
+      const slotId = firstStringValue(trigger.slot_id);
+      if (!slotId) continue;
+      authored.push({
+        slotId,
+        placementId: firstStringValue(placement.id) ?? slotId,
+        ...(firstStringValue(placement.category) ? { category: firstStringValue(placement.category) as string } : {}),
+      });
+    }
+
+    const authoredIds = new Set(authored.map((entry) => entry.slotId));
+
+    return {
+      mounted,
+      authored,
+      authoredButUnmounted: authored.filter((entry) => !mountedIds.has(entry.slotId)),
+      mountedButUnauthored: mounted.filter((slot) => slot.slotId.length > 0 && !authoredIds.has(slot.slotId)),
+      // A config the SDK never received cannot be diffed. Saying so is not the
+      // same as reporting "nothing authored", which is what an empty list would
+      // imply to a caller — and is exactly the both-look-the-same trap this
+      // plan keeps running into.
+      configAvailable: exportedConfig !== undefined,
+    };
+  }
+
+  /**
    * @deprecated Use `registerSurfaceSlot`.
    */
   async registerPlacement(config: RevTurbinePlacementConfig): Promise<string> {
@@ -6111,6 +6421,7 @@ export class RevTurbineCustomerSdk {
   private writeDecisionCache(key: string, value: RevTurbinePlacementDecision, ttlMs?: number): void {
     const expiresAt = Date.now() + Math.max(5_000, ttlMs ?? this.defaultDecisionTtlMs);
     this.decisionCache.set(key, { expiresAt, value });
+    this.indexDecisionOutput(value);
     this.persistDecisionCache();
   }
 
@@ -6222,6 +6533,35 @@ export class RevTurbineCustomerSdk {
           'Placement not found',
           'Register the placement before requesting a decision.',
           'Register placement',
+        ),
+      };
+    }
+
+    // Permanent retirement, checked BEFORE the time-window suppression below.
+    //
+    // Plan 233 TASK-14. `recordConversion` has written a retired-placement set
+    // since plan 167, and nothing in web-sdk ever read it — `isRetired` /
+    // `isRetiredSync` / `shouldNotShow` had no caller here. The only thing
+    // hiding a converted placement was the 5-minute `suppressedUntil` that
+    // `updateInteractionState` writes for `cta_completed` to cover the in-flight
+    // action, whose own comment says permanent retirement is "owned by the
+    // impression history". It was owned there and never consulted, so the upsell
+    // came back five minutes after checkout.
+    //
+    // `isRetiredSync` reads the hot cache warmed by `impressionHistory.hydrate()`
+    // at construction, so this stays synchronous on the decision path.
+    if (this.impressionHistory.isRetiredSync(input.placementId)) {
+      return {
+        placementId: input.placementId,
+        requestId: rid,
+        visible: false,
+        decisionSource: 'cache',
+        reasonCodes: ['retired_by_conversion'],
+        suppressionReason: 'retired_by_conversion',
+        content: decisionContent(
+          `${placement.name} retired`,
+          'The user already converted on this placement.',
+          'Continue',
         ),
       };
     }
@@ -6386,11 +6726,69 @@ export class RevTurbineCustomerSdk {
     }
   }
 
+  /**
+   * The authored suppression windows for a payload, in milliseconds.
+   *
+   * Plan 233 TASK-8b/8c. `caps.cooldown_days` and `remind_later_minutes` are
+   * authored per payload and round-trip through export/import (plan 167 AC-8,
+   * AC-11), but nothing ever read them back: the only consumer was the
+   * `hasAuthoredCaps` feature-flag derivation, which uses their PRESENCE to
+   * switch caps enforcement on and discards their values. So a Playbook saying
+   * `cooldown_days: 7` flipped a boolean and otherwise did nothing.
+   *
+   * The decision's `output_id` is the payload id (the resolver sets
+   * `output_id: payload.id`), so the authored values are recoverable from the
+   * loaded config at interaction time.
+   */
+  private authoredSuppressionWindows(
+    payloadId?: string,
+  ): { cooldownMs?: number; remindMs?: number } {
+    if (!payloadId) return {};
+    const config = this.getConfiguredExportedConfig();
+    if (!config) return {};
+
+    // The two payload lanes key their id differently — `placements[].payloads[]`
+    // uses `id`, the top-level `placement_payloads[]` uses `payload_id` — while
+    // both carry `caps` and `remind_later_minutes`. Matching only `id` would
+    // silently skip every payload authored in the second lane.
+    const payloads = [
+      ...(config.placements ?? []).flatMap((placement) => placement.payloads ?? []),
+      ...(config.placement_payloads ?? []),
+    ];
+    const payload = payloads.find((item) => {
+      const identity = 'id' in item ? item.id : item.payload_id;
+      return String(identity ?? '') === payloadId;
+    });
+    if (!payload) return {};
+
+    const cooldownDays = Number(payload.caps?.cooldown_days);
+    const remindMinutes = Number(payload.remind_later_minutes);
+
+    return {
+      ...(Number.isFinite(cooldownDays) && cooldownDays > 0
+        ? { cooldownMs: cooldownDays * 24 * 60 * 60 * 1000 }
+        : {}),
+      ...(Number.isFinite(remindMinutes) && remindMinutes > 0
+        ? { remindMs: remindMinutes * 60 * 1000 }
+        : {}),
+    };
+  }
+
   private updateInteractionState(input: RevTurbineTreatmentInteractionInput): void {
+    // Plan 233 TASK-8a: NO `treatmentId`. The read side at decision time cannot
+    // know which treatment will be selected — it is deciding whether to show
+    // anything at all — so including it here wrote to a key the reader never
+    // looked at, and dismissal suppression was a no-op for every React
+    // integration (the controllers always populate `treatmentId`).
+    //
+    // Omitting it is also the right semantics: dismissing a placement suppresses
+    // THE PLACEMENT for that user. Keyed per treatment, "No thanks" would just
+    // show a different payload variant, which is the opposite of what the user
+    // asked for. The interaction QUEUE still carries `treatmentId` for
+    // attribution — this is only the local suppression key.
     const key = this.interactionStateKey({
       placementId: input.placementId,
       userId: input.userId,
-      treatmentId: input.treatmentId,
     });
     const now = Date.now();
     const metadata = input.metadata ?? {};
@@ -6401,26 +6799,36 @@ export class RevTurbineCustomerSdk {
       updatedAt: input.interactionAt ?? new Date(now).toISOString(),
     };
 
+    // Resolution order for every window (plan 233 REQ-9b): an explicit
+    // caller-supplied value, then the AUTHORED config, then the SDK default.
+    // The authored rung is new — it was written, exported and imported, and
+    // never read (plan 167 follow-up #1).
+    const authored = this.authoredSuppressionWindows(input.payloadId);
+
     if (input.interactionType === 'dismiss') {
-      // Resolve from the payload's cooldown_after_dismiss_days (via cooldown_ms);
-      // default 7 days — NOT the legacy 24h. This window equals the one written
-      // to the impression history below, so the two stores agree (plan 167 AC-3).
-      const cooldownMs = Number(metadata.cooldown_ms);
-      next.suppressedUntil = now + (Number.isFinite(cooldownMs) && cooldownMs > 0 ? cooldownMs : this.dismissCooldownDefaultMs);
+      const explicitMs = Number(metadata.cooldown_ms);
+      next.suppressedUntil = now + (Number.isFinite(explicitMs) && explicitMs > 0
+        ? explicitMs
+        : authored.cooldownMs ?? this.dismissCooldownDefaultMs);
     }
 
     if (input.interactionType === 'remind_me_later') {
-      const remindAfterSeconds = Number(metadata.remind_after_seconds);
-      next.suppressedUntil = now + (Number.isFinite(remindAfterSeconds) && remindAfterSeconds > 0
-        ? remindAfterSeconds * 1000
-        : this.defaultRemindLaterMs);
+      // Plan 233 TASK-8c: remind-me-later is its own window, resolved from its
+      // own authored field. Falling back to the dismiss window would make
+      // "remind me" mean "hide for a week".
+      const explicitSeconds = Number(metadata.remind_after_seconds);
+      next.suppressedUntil = now + (Number.isFinite(explicitSeconds) && explicitSeconds > 0
+        ? explicitSeconds * 1000
+        : authored.remindMs ?? this.defaultRemindLaterMs);
     }
 
     if (input.interactionType === 'cta_clicked') {
       // Bare click — clicked but not confirmed complete (e.g. abandoned checkout).
       // Treated as a dismiss cooldown; the placement may return (plan 167 Q-1).
-      const cooldownMs = Number(metadata.cooldown_ms);
-      next.suppressedUntil = now + (Number.isFinite(cooldownMs) && cooldownMs > 0 ? cooldownMs : this.dismissCooldownDefaultMs);
+      const explicitMs = Number(metadata.cooldown_ms);
+      next.suppressedUntil = now + (Number.isFinite(explicitMs) && explicitMs > 0
+        ? explicitMs
+        : authored.cooldownMs ?? this.dismissCooldownDefaultMs);
     }
 
     if (input.interactionType === 'cta_completed') {
@@ -7674,36 +8082,84 @@ export class RevTurbineCustomerSdk {
   // Plan 144 TASK-10 — `placement_interaction` is the ONE canonical placement
   // event, discriminated by `interaction_type`. These three convenience methods
   // used to emit standalone `placement_dismissed`/`_snoozed`/`_converted`
-  // events, which had no consumer anywhere (plan 144 Q-3). They now route
-  // through the canonical event with the mapped interaction type; the standalone
-  // names are retired.
+  // events, which had no consumer anywhere (plan 144 Q-3); the standalone names
+  // are retired.
+  //
+  // Plan 233 TASK-14 — emitting was ALL they did. Reporting an interaction and
+  // acting on it are different things, and these three only ever reported, so
+  // `sdk.dismiss()` never suppressed and `sdk.convert()` never retired. They now
+  // route through `trackTreatmentInteraction`, which owns both, so the terminal
+  // state is written in exactly one place regardless of which entry point the
+  // host calls.
+
+  /**
+   * Route an output-addressed interaction through the one interaction path.
+   *
+   * Plan 233 TASK-14. These three methods each emitted a `placement_interaction`
+   * event and stopped, so none of them wrote any terminal state:
+   * `sdk.dismiss()` did not suppress, and `sdk.convert()` did not retire. Only
+   * the controller path (`trackTreatmentInteraction`) ever did, which is why the
+   * defect was invisible to every React integration test.
+   *
+   * The public API takes an **output** id while every terminal-state write is
+   * keyed by the **placement** id, so the output is resolved through
+   * `outputPlacementIndex`. When it cannot be resolved — an output this SDK
+   * instance never decided, or one evicted from a very long session — we emit
+   * the bare event as before and say so. Silently doing nothing is what shipped;
+   * being loud about the one case we cannot serve is the point.
+   */
+  private async trackOutputInteraction(
+    outputId: string,
+    interactionType: 'dismiss' | 'remind_me_later' | 'cta_completed',
+    metadata: SdkMetadata = {},
+  ): Promise<void> {
+    const ref = this.outputPlacementIndex.get(outputId);
+
+    if (!ref) {
+      console.warn(
+        `[RevTurbine] ${interactionType} for unknown output "${outputId}": no decision from this SDK `
+          + 'produced it, so the interaction was reported but no suppression or retirement was written. '
+          + 'Pass the `output_id` from a `getPlacementDecision` result on this instance, or call '
+          + '`trackTreatmentInteraction` with the placement id directly.',
+      );
+      await this.emitPlatformEvent('placement_interaction', {
+        interaction_type: interactionType,
+        payload_id: outputId,
+        user_id: this.userContext.id ?? null,
+        interaction_at: new Date().toISOString(),
+        ...metadata,
+      }, { immediate: false });
+      return;
+    }
+
+    // `trackTreatmentInteraction` emits the canonical event itself, so this must
+    // NOT also emit one — that would double-count every interaction.
+    await this.trackTreatmentInteraction({
+      userId: this.userContext.id ?? this.anonymousId,
+      placementId: ref.placementId,
+      treatmentId: ref.treatmentId,
+      interactionType,
+      surfaceSlotId: ref.surfaceSlotId,
+      surfaceTemplateId: ref.surfaceTemplateId,
+      payloadId: outputId,
+      experimentId: ref.experimentId,
+      variantKey: ref.variantKey,
+      metadata: ref.decisionId ? { ...metadata, decision_id: ref.decisionId } : metadata,
+    });
+  }
 
   async dismiss(outputId: string): Promise<void> {
-    await this.emitPlatformEvent('placement_interaction', {
-      interaction_type: 'dismiss',
-      payload_id: outputId,
-      user_id: this.userContext.id ?? null,
-      interaction_at: new Date().toISOString(),
-    }, { immediate: false });
+    await this.trackOutputInteraction(outputId, 'dismiss');
   }
 
   async snooze(outputId: string, seconds = 3600): Promise<void> {
-    await this.emitPlatformEvent('placement_interaction', {
-      interaction_type: 'remind_me_later',
-      payload_id: outputId,
-      user_id: this.userContext.id ?? null,
-      interaction_at: new Date().toISOString(),
+    await this.trackOutputInteraction(outputId, 'remind_me_later', {
       remind_after_seconds: seconds,
-    }, { immediate: false });
+    });
   }
 
   async convert(outputId: string): Promise<void> {
-    await this.emitPlatformEvent('placement_interaction', {
-      interaction_type: 'cta_completed',
-      payload_id: outputId,
-      user_id: this.userContext.id ?? null,
-      interaction_at: new Date().toISOString(),
-    }, { immediate: false });
+    await this.trackOutputInteraction(outputId, 'cta_completed');
   }
 
   /**
@@ -8053,7 +8509,9 @@ export class RevTurbineCustomerSdk {
  * });
  * ```
  */
-export function initRevTurbine(options: RevTurbineInitInputOptions): RevTurbineCustomerSdk {
+export function initRevTurbine<T extends RevTurbineInitInputOptions>(
+  options: T & ExactInitOptions<T>,
+): RevTurbineCustomerSdk {
   const normalizedOptions = normalizeInitOptions(options);
   const sdk = new RevTurbineCustomerSdk(normalizedOptions);
 

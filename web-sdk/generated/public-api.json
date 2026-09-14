@@ -1,0 +1,168 @@
+{
+  "schema": 1,
+  "count": 27,
+  "exports": [
+    {
+      "name": "baseThemeForScheme",
+      "kind": "function",
+      "file": "web-sdk/theme/defaults.ts",
+      "signature": "export function baseThemeForScheme(scheme: 'light' | 'dark'): Readonly<RevTurbineTheme>"
+    },
+    {
+      "name": "BrandingResolutionInput",
+      "kind": "interface",
+      "file": "web-sdk/branding.ts",
+      "signature": "export interface BrandingResolutionInput { explicit?: BrandingConfig; legacyConfigTheme?: BrandingConfig['theme']; apiBranding?: BrandingConfig; warnOnLegacy?: boolean; }"
+    },
+    {
+      "name": "BrandingSource",
+      "kind": "type",
+      "file": "web-sdk/branding.ts",
+      "signature": "export type BrandingSource = 'explicit' | 'legacy-config' | 'branding-api' | 'default'"
+    },
+    {
+      "name": "ConfigTargetDefaults",
+      "kind": "interface",
+      "file": "web-sdk/config-artifact.ts",
+      "signature": "export interface ConfigTargetDefaults { tenantId: string; environmentId: string; }"
+    },
+    {
+      "name": "DARK_THEME",
+      "kind": "const",
+      "file": "web-sdk/theme/defaults.ts",
+      "signature": "export const DARK_THEME: Readonly<RevTurbineTheme> = Object.freeze("
+    },
+    {
+      "name": "DEFAULT_BRANDING",
+      "kind": "const",
+      "file": "web-sdk/branding.ts",
+      "signature": "export const DEFAULT_BRANDING: Required<Pick<BrandingConfig, 'workspace_name'>> & BrandingConfig = {"
+    },
+    {
+      "name": "ExactInitOptions",
+      "kind": "type",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "export type ExactInitOptions<T> = { [K in keyof T]: K extends RevTurbineInitOptionKey ? T[K] : never; }"
+    },
+    {
+      "name": "InitFailureDiagnostic",
+      "kind": "function",
+      "file": "web-sdk/react/InitFailureDiagnostic.tsx",
+      "signature": "export function InitFailureDiagnostic("
+    },
+    {
+      "name": "InitFailureDiagnosticProps",
+      "kind": "interface",
+      "file": "web-sdk/react/InitFailureDiagnostic.tsx",
+      "signature": "export interface InitFailureDiagnosticProps { status: RevTurbineInitStatus; }"
+    },
+    {
+      "name": "initStatusForError",
+      "kind": "function",
+      "file": "web-sdk/react/init-status.ts",
+      "signature": "export function initStatusForError( phase: RevTurbineInitPhase, error: unknown, ): RevTurbineInitStatus"
+    },
+    {
+      "name": "LegacyConfigTargetDefaults",
+      "kind": "type",
+      "file": "web-sdk/config-artifact.ts",
+      "signature": "export type LegacyConfigTargetDefaults = ConfigTargetDefaults"
+    },
+    {
+      "name": "remediationFor",
+      "kind": "function",
+      "file": "web-sdk/react/init-status.ts",
+      "signature": "export function remediationFor(message: string): string"
+    },
+    {
+      "name": "resolveBranding",
+      "kind": "function",
+      "file": "web-sdk/branding.ts",
+      "signature": "export function resolveBranding(input: BrandingResolutionInput ="
+    },
+    {
+      "name": "ResolvedBranding",
+      "kind": "interface",
+      "file": "web-sdk/branding.ts",
+      "signature": "export interface ResolvedBranding { readonly branding: BrandingConfig; readonly source: BrandingSource; }"
+    },
+    {
+      "name": "RevTurbineAuthoredSlotRef",
+      "kind": "interface",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "export interface RevTurbineAuthoredSlotRef { slotId: string; placementId: string; category?: string; }"
+    },
+    {
+      "name": "RevTurbineColorScheme",
+      "kind": "type",
+      "file": "web-sdk/theme/defaults.ts",
+      "signature": "export type RevTurbineColorScheme = 'light' | 'dark' | 'system'"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.diagnoseSlotInventory",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "diagnoseSlotInventory(): RevTurbineSlotInventoryDiagnosis"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.getBranding",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "getBranding(): ResolvedBranding"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.getRegisteredSlots",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "getRegisteredSlots(): RevTurbineRegisteredSlot[]"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.setApiBranding",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "setApiBranding(branding: BrandingConfig | undefined): void"
+    },
+    {
+      "name": "RevTurbineInitPhase",
+      "kind": "type",
+      "file": "web-sdk/react/init-status.ts",
+      "signature": "export type RevTurbineInitPhase = | 'construct' | 'identify' | 'theme' | 'placements' | 'bootstrap'"
+    },
+    {
+      "name": "RevTurbineInitStatus",
+      "kind": "interface",
+      "file": "web-sdk/react/init-status.ts",
+      "signature": "export interface RevTurbineInitStatus { readonly ok: boolean; readonly phase?: RevTurbineInitPhase; readonly message?: string; readonly remediation?: string; }"
+    },
+    {
+      "name": "RevTurbineRegisteredSlot",
+      "kind": "interface",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "export interface RevTurbineRegisteredSlot { slotId: string; name: string; route: string; internalId: string; surfaceTemplateIds: string[]; }"
+    },
+    {
+      "name": "RevTurbineSlotInventoryDiagnosis",
+      "kind": "interface",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "export interface RevTurbineSlotInventoryDiagnosis { mounted: RevTurbineRegisteredSlot[]; authored: RevTurbineAuthoredSlotRef[]; authoredButUnmounted: RevTurbineAuthoredSlotRef[]; mountedButUnauthored: RevTurbineRegisteredSlot[]; configAvailable: boolean; }"
+    },
+    {
+      "name": "SurfaceSlotHiddenReason",
+      "kind": "type",
+      "file": "web-sdk/placements/useSurfaceSlot.tsx",
+      "signature": "export type SurfaceSlotHiddenReason = 'dismissed' | 'no_match' | null"
+    },
+    {
+      "name": "useResolvedColorScheme",
+      "kind": "function",
+      "file": "web-sdk/theme/useColorScheme.ts",
+      "signature": "export function useResolvedColorScheme(preference: RevTurbineColorScheme): 'light' | 'dark'"
+    },
+    {
+      "name": "useRevTurbineThemeProviderPresent",
+      "kind": "function",
+      "file": "web-sdk/theme/ThemeContext.tsx",
+      "signature": "export function useRevTurbineThemeProviderPresent(): boolean"
+    }
+  ]
+}

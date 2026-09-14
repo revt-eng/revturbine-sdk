@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import type {
   RevTurbineContextMode,
   RevTurbinePlacementDecisionOverrides,
@@ -33,15 +33,40 @@ export type UseSurfaceSlotOptions = {
   acceptedComponentTypes?: readonly RevTurbineComponentType[];
   /** Callback when CTA is clicked. Receives the parsed ui_path. */
   onCtaClick?: (uiPath: PlacementUiPath) => void;
+  /**
+   * Called after the user dismisses the placement (plan 233 TASK-9).
+   *
+   * Fires once per dismissal, after the interaction is recorded.
+   */
+  onDismissed?: () => void;
   /** Custom CSS class for the rendered placement. */
   className?: string;
   /** Custom inline styles for the rendered placement. */
   style?: React.CSSProperties;
 };
 
+/**
+ * Why a slot is rendering nothing.
+ *
+ * `null` while visible. The distinction matters because a slot that always
+ * renders `fallback` when `!visible` shows its fallback content the instant the
+ * user dismisses — a "ghost" that reappears in place of the thing just closed.
+ * The escalated integration needed three attempts and a MutationObserver to
+ * work around it (plan 233 TASK-9).
+ *
+ * @public
+ */
+export type SurfaceSlotHiddenReason = 'dismissed' | 'no_match' | null;
+
 export type UseSurfaceSlotResult = UsePlacementResult & {
   /** Pre-built React element that renders the placement using the correct slot type. */
   element: React.ReactNode;
+  /**
+   * Why nothing is rendering — `'dismissed'`, `'no_match'`, or `null` when
+   * visible. Lets a slot distinguish "the user closed this" from "nothing
+   * matched", which are the same `visible: false` but want opposite UI.
+   */
+  hiddenReason: SurfaceSlotHiddenReason;
 };
 
 /**
@@ -77,6 +102,7 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
     registry,
     acceptedComponentTypes,
     onCtaClick,
+    onDismissed,
     className,
     style: inlineStyle,
     ...placementOptions
@@ -99,9 +125,22 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
     [result.ctaClick, onCtaClick],
   );
 
+  // Dismissal is a local fact the moment it happens — the next decision has not
+  // been made yet, so the only other signal (the decision's suppressionReason)
+  // arrives a beat later or after a reload. Track it here so the slot can react
+  // immediately.
+  const [dismissedHere, setDismissedHere] = useState(false);
+  const onDismissedRef = useRef(onDismissed);
+  onDismissedRef.current = onDismissed;
+
   const handleDismiss = useCallback(
     () => {
+      setDismissedHere(true);
       void result.dismiss();
+      // Previously built and then discarded with `void handleDismissWrap` in
+      // MessageSurfaceSlot, so `onDismissed` was an advertised prop that never
+      // fired. Wired here, once, for every slot that uses this hook.
+      onDismissedRef.current?.();
     },
     [result.dismiss],
   );
@@ -169,8 +208,20 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
     inlineStyle,
   ]);
 
+  // A suppression the runtime already knows about — a dismiss cooldown still in
+  // force from a previous session — counts as dismissed too, so a reload does
+  // not resurrect the fallback the user already closed past.
+  const suppressedByInteraction =
+    result.decision?.suppressionReason === 'suppressed_by_dismiss_cooldown'
+    || result.decision?.suppressionReason === 'suppressed_until_remind_window';
+
+  const hiddenReason: SurfaceSlotHiddenReason = result.visible
+    ? null
+    : (dismissedHere || suppressedByInteraction) ? 'dismissed' : 'no_match';
+
   return {
     ...result,
     element,
+    hiddenReason,
   };
 }

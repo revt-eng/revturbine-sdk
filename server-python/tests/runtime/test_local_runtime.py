@@ -318,12 +318,23 @@ class TestDeferredLeafContract:
     @pytest.mark.parametrize(
         "call",
         [
-            lambda r: r.evaluate_segments({"plan": "pro"}),
             lambda r: r.build_targeting_state({}),
             lambda r: r.derive_personalization_tokens(),
         ],
     )
-    def test_segment_targeting_token_leaves_are_headless_non_goals(self, call: Any) -> None:
+    def test_targeting_token_leaves_are_headless_non_goals(self, call: Any) -> None:
         runtime = _make_runtime()
         with pytest.raises(NotImplementedError, match="headless server SDK scope"):
             call(runtime)
+
+    def test_evaluate_segments_is_no_longer_deferred(self) -> None:
+        """Plan 233 lifted this specific non-goal.
+
+        Segment targeting became a decision input in every runtime, so a
+        headless SDK that could not derive membership could not make the same
+        selection the browser SDK does. `build_targeting_state` and
+        `derive_personalization_tokens` remain deferred — this case is removed
+        from the list above deliberately, not by attrition.
+        """
+        runtime = _make_runtime()
+        assert runtime.evaluate_segments({"plan": "pro"}) == []

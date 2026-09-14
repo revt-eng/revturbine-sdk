@@ -21,21 +21,60 @@ export type ConfigArtifact = Playbook | RevTurbineConfig;
  * A config artifact as raw parsed JSON — what
  * `import playbook from './revturbine.playbook.json'` produces.
  *
- * TypeScript widens JSON modules to plain `string`/`number` property types,
- * which can never satisfy the literal-typed {@link ConfigArtifact}
- * (`artifact_type: "playbook"` etc.), so a strict-mode project could not pass
- * the imported JSON without a cast. The SDK therefore accepts this raw shape
- * everywhere a {@link ConfigArtifact} is accepted at the `localRuntime`
- * boundary and validates it at runtime ({@link normalizeConfigArtifactOrThrow}
- * — a malformed artifact fails fast at init with a descriptive error).
+ * This exists because TypeScript widens JSON modules to plain `string`/`number`
+ * property types, which can never satisfy the literal-typed
+ * {@link ConfigArtifact} (`artifact_type: "playbook"` etc.), so a strict-mode
+ * project could not pass the imported JSON without a cast.
+ *
+ * Widening affects only *literal* types, so it is no reason to give up on the
+ * rest of the shape. The body arrays are structurally required here, which
+ * makes a truncated artifact a **compile** error at the `localRuntime`
+ * boundary rather than a runtime one — the whole point of plan 233. The header
+ * fields stay unconstrained because those are exactly the widened ones.
+ *
+ * The required-field list is *derived* from {@link REQUIRED_BODY_ARRAY_FIELDS},
+ * the same constant {@link normalizeConfigArtifactOrThrow} validates against at
+ * runtime, so the compile-time and runtime contracts cannot drift apart.
+ *
+ * The index signature keeps every other field open: a Playbook carries many
+ * optional header fields, and a *fetched* artifact (`await res.json()`, typed
+ * `any`) still satisfies this, so the served path is not made harder to write —
+ * only harder to get silently wrong. Values are still validated at runtime by
+ * {@link normalizeConfigArtifactOrThrow}, which fails fast with a descriptive
+ * error; this type constrains the *shape*, never the values.
  */
-export type UnvalidatedConfigArtifact = Record<string, unknown>; // sdk-ok: type-definition
+export type UnvalidatedConfigArtifact =
+  & { [K in (typeof REQUIRED_BODY_ARRAY_FIELDS)[number]]: unknown[] } // sdk-ok: type-definition
+  & { [key: string]: unknown }; // sdk-ok: type-definition
 
-/** Target values used only when an older legacy artifact predates target stamping. */
-export interface LegacyConfigTargetDefaults {
+/**
+ * The target (tenant + environment) the SDK was initialized against.
+ *
+ * These are the **authority** on which tenant a runtime decides for. An
+ * artifact's own `tenant_id` / `environment_id` are a *guard*: they exist so the
+ * CLI can refuse to upload a config to the wrong tenant while setting up demo
+ * environments, and they are not a runtime input (plan 233 REQ-2, Kent 2026-09-10).
+ *
+ * A disagreement between the two warns and proceeds on these values — it never
+ * fails init. See {@link normalizeConfigArtifactOrThrow}.
+ *
+ * @public
+ */
+export interface ConfigTargetDefaults {
+  /** Tenant the SDK was initialized with. Wins over the artifact's `tenant_id`. */
   tenantId: string;
+  /** Environment the SDK was initialized with. Wins over the artifact's `environment_id`. */
   environmentId: string;
 }
+
+/**
+ * @deprecated Renamed to {@link ConfigTargetDefaults} in plan 233 — these values
+ * are no longer "legacy defaults" applied only to pre-stamping artifacts; they
+ * are the authoritative target for every artifact shape. Kept as an alias so the
+ * already-shipped export keeps resolving.
+ * @public
+ */
+export type LegacyConfigTargetDefaults = ConfigTargetDefaults;
 
 function isRecord(value: unknown): value is Record<string, unknown> { // sdk-ok: boundary-parse
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -85,6 +124,56 @@ function optionalHeaderFieldsAreValid(value: Record<string, unknown>): boolean {
 }
 
 /**
+ * Resolve one target field, with the init option as the authority.
+ *
+ * Plan 233 REQ-2. The previous rule was the inverse — the artifact won, and the
+ * init option was a fallback applied only to legacy artifacts
+ * (`canonical ? undefined : legacyTargetDefaults?.tenantId`). That combination
+ * killed every integration that served a canonical Playbook and passed the
+ * tenant at init: the artifact had no `tenant_id` to win with, and the option
+ * was withheld because the artifact was canonical, so init threw. The provider
+ * logged it and rendered children anyway, so the SDK simply never started.
+ *
+ * The artifact's value is now a *guard*, not an input: when the two disagree we
+ * warn (naming both, so the mismatch is actionable) and proceed on the init
+ * option. A mismatch never fails init — a config uploaded to the wrong tenant is
+ * a CLI-time concern, and refusing to start is a worse outcome at runtime than
+ * deciding against the tenant the host explicitly asked for.
+ */
+function resolveTarget(
+  artifactValue: unknown, // sdk-ok: boundary-parse
+  initValue: string | undefined,
+  field: 'tenant_id' | 'environment_id',
+  source: string,
+): string | undefined {
+  const fromArtifact = typeof artifactValue === 'string' && artifactValue.length > 0
+    ? artifactValue
+    : undefined;
+
+  // `environment_id` is deliberately NOT inverted. Callers route it through
+  // `normalizeEnvironmentId`, which substitutes 'production' whenever the host
+  // omitted it — so by the time it reaches here an explicit environment and a
+  // defaulted one are indistinguishable, and treating it as authoritative would
+  // silently rewrite a Playbook stamped `staging` to `production` for every
+  // integration that never passed one. It stays a fallback, which is what
+  // `normalizeEnvironmentId` documents it as ("used to normalize an unstamped
+  // legacy Playbook"). Warning on an environment mismatch needs the caller to
+  // carry explicitness down; that is tracked separately, not assumed here.
+  if (field === 'environment_id') return fromArtifact ?? initValue;
+
+  if (initValue && fromArtifact && initValue !== fromArtifact) {
+    console.warn(
+      `[RevTurbine] ${source} declares ${field} "${fromArtifact}" but the SDK was initialized with `
+        + `"${initValue}". Using "${initValue}" — the init option is the authority; the Playbook's `
+        + `${field} is a guard against loading another tenant's config. Re-export the Playbook for `
+        + `"${initValue}", or correct the value passed at init.`,
+    );
+  }
+
+  return initValue ?? fromArtifact;
+}
+
+/**
  * Parse either supported wire shape into the canonical Playbook shape.
  *
  * Presence of either canonical discriminator selects the canonical parser, so
@@ -93,7 +182,7 @@ function optionalHeaderFieldsAreValid(value: Record<string, unknown>): boolean {
 export function normalizeConfigArtifactOrThrow(
   raw: unknown, // sdk-ok: boundary-parse
   source: string,
-  legacyTargetDefaults?: LegacyConfigTargetDefaults,
+  targetDefaults?: ConfigTargetDefaults,
 ): Playbook | undefined {
   if (raw === undefined) return undefined;
   if (!isRecord(raw)) {
@@ -113,14 +202,25 @@ export function normalizeConfigArtifactOrThrow(
     throw new Error(`Invalid ${source}: unsupported legacy "version" ${String(raw.version)}`);
   }
 
-  const tenantId = typeof raw.tenant_id === 'string' && raw.tenant_id.length > 0
-    ? raw.tenant_id
-    : canonical ? undefined : legacyTargetDefaults?.tenantId;
-  const environmentId = typeof raw.environment_id === 'string' && raw.environment_id.length > 0
-    ? raw.environment_id
-    : canonical ? undefined : legacyTargetDefaults?.environmentId;
-  if (!tenantId) throw new Error(`Invalid ${source}: missing non-empty string "tenant_id"`);
-  if (!environmentId) throw new Error(`Invalid ${source}: missing non-empty string "environment_id"`);
+  const tenantId = resolveTarget(raw.tenant_id, targetDefaults?.tenantId, 'tenant_id', source);
+  const environmentId = resolveTarget(
+    raw.environment_id,
+    targetDefaults?.environmentId,
+    'environment_id',
+    source,
+  );
+  if (!tenantId) {
+    throw new Error(
+      `Invalid ${source}: missing non-empty string "tenant_id", and no "tenantId" was passed to the SDK. `
+        + 'Pass tenantId in the init options, or stamp tenant_id into the Playbook.',
+    );
+  }
+  if (!environmentId) {
+    throw new Error(
+      `Invalid ${source}: missing non-empty string "environment_id", and no "environmentId" was passed to the SDK. `
+        + 'Pass environmentId in the init options, or stamp environment_id into the Playbook.',
+    );
+  }
   if (raw.playbook_handle !== undefined
     && (typeof raw.playbook_handle !== 'string' || raw.playbook_handle.length === 0)) {
     throw new Error(`Invalid ${source}: malformed "playbook_handle"`);
@@ -164,7 +264,7 @@ export function normalizeConfigArtifactOrThrow(
 export function configArtifactForRuntime(
   raw: unknown, // sdk-ok: boundary-parse
   source: string,
-  legacyTargetDefaults?: LegacyConfigTargetDefaults,
+  targetDefaults?: ConfigTargetDefaults,
 ): RevTurbineConfig | undefined {
-  return normalizeConfigArtifactOrThrow(raw, source, legacyTargetDefaults);
+  return normalizeConfigArtifactOrThrow(raw, source, targetDefaults);
 }

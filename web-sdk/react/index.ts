@@ -1,5 +1,18 @@
 export * from './RevTurbineProvider';
 export { useRevTurbine } from './useRevTurbine';
+// Init status — the only diagnostic reachable when the SDK instance is not
+// (plan 233 TASK-2).
+export {
+  INIT_STATUS_OK,
+  initStatusForError,
+  remediationFor,
+  type RevTurbineInitPhase,
+  type RevTurbineInitStatus,
+} from './init-status';
+export {
+  InitFailureDiagnostic,
+  type InitFailureDiagnosticProps,
+} from './InitFailureDiagnostic';
 export * from './usePlacement';
 export * from './Placement';
 export * from './SurfaceTypes';

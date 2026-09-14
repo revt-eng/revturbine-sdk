@@ -50,20 +50,97 @@ export const DEFAULT_THEME: Readonly<RevTurbineTheme> = Object.freeze({
   },
 });
 
+
 /**
- * Deep-merge a partial theme input with the default theme, producing a
- * complete {@link RevTurbineTheme}.
+ * Dark counterpart to {@link DEFAULT_THEME}.
+ *
+ * Plan 233 TASK-6. The SDK had no sanctioned dark story at all, so a customer
+ * running a dark app either lived with white modals or — as the escalated one
+ * did — injected a palette into the Playbook object and re-initialized the SDK
+ * on every toggle. Shipping the palette is what makes `colorScheme` a swap
+ * rather than a rebuild.
+ *
+ * Only the colors differ. Typography, shape and shadows are scheme-independent,
+ * so they are inherited from {@link DEFAULT_THEME} rather than duplicated —
+ * a second copy would drift the moment either is edited.
+ *
+ * Contrast: every text-on-surface pair here clears WCAG AA at body size against
+ * its intended background.
+ *
+ * @public
  */
-export function mergeTheme(input?: RevTurbineThemeInput | null): RevTurbineTheme {
-  if (!input) return { ...DEFAULT_THEME };
+export const DARK_THEME: Readonly<RevTurbineTheme> = Object.freeze({
+  ...DEFAULT_THEME,
+  colors: Object.freeze({
+    primary: '#60a5fa',
+    primaryText: '#0b1220',
+    secondary: '#1f2937',
+    secondaryText: '#e5e7eb',
+    accent: '#a78bfa',
+    accentText: '#0b1220',
+    background: '#0b1220',
+    surface: '#111827',
+    surfaceBorder: '#1f2937',
+    text: '#f3f4f6',
+    textSecondary: '#cbd5e1',
+    textMuted: '#94a3b8',
+    overlay: 'rgba(0, 0, 0, 0.7)',
+    success: '#4ade80',
+    warning: '#fbbf24',
+    danger: '#f87171',
+    info: '#93c5fd',
+    toastBackground: '#e5e7eb',
+    toastText: '#111827',
+    cliBackground: '#0b1220',
+    cliText: '#e5e7eb',
+    cliLink: '#93c5fd',
+    track: '#374151',
+  }),
+});
+
+/**
+ * The colour scheme a theme resolves against.
+ *
+ * `'system'` follows the OS/browser `prefers-color-scheme` and keeps following
+ * it as the user changes it.
+ *
+ * @public
+ */
+export type RevTurbineColorScheme = 'light' | 'dark' | 'system';
+
+/**
+ * The base palette for a resolved scheme.
+ *
+ * @param scheme - `'light'` or `'dark'`. Resolve `'system'` before calling.
+ * @returns The matching base theme.
+ * @public
+ */
+export function baseThemeForScheme(scheme: 'light' | 'dark'): Readonly<RevTurbineTheme> {
+  return scheme === 'dark' ? DARK_THEME : DEFAULT_THEME;
+}
+
+/**
+ * Deep-merge a partial theme input with a base theme, producing a complete
+ * {@link RevTurbineTheme}.
+ *
+ * @param input - Partial tokens. Every omitted token falls back to `base`.
+ * @param base - The palette to merge over. Defaults to {@link DEFAULT_THEME};
+ *   pass {@link DARK_THEME} (or use {@link baseThemeForScheme}) to resolve a
+ *   partial brand theme against the dark palette instead.
+ */
+export function mergeTheme(
+  input?: RevTurbineThemeInput | null,
+  base: Readonly<RevTurbineTheme> = DEFAULT_THEME,
+): RevTurbineTheme {
+  if (!input) return { ...base };
 
   return {
-    id: input.id ?? DEFAULT_THEME.id,
-    name: input.name ?? DEFAULT_THEME.name,
-    version: input.version ?? DEFAULT_THEME.version,
-    colors: { ...DEFAULT_THEME.colors, ...input.colors },
-    typography: { ...DEFAULT_THEME.typography, ...input.typography },
-    shape: { ...DEFAULT_THEME.shape, ...input.shape },
-    shadows: { ...DEFAULT_THEME.shadows, ...input.shadows },
+    id: input.id ?? base.id,
+    name: input.name ?? base.name,
+    version: input.version ?? base.version,
+    colors: { ...base.colors, ...input.colors },
+    typography: { ...base.typography, ...input.typography },
+    shape: { ...base.shape, ...input.shape },
+    shadows: { ...base.shadows, ...input.shadows },
   };
 }

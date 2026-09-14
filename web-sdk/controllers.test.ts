@@ -285,16 +285,36 @@ describe('PlacementController', () => {
       sdk.trackTreatmentInteraction.mockClear();
     });
 
-    it('dismiss() tracks and hides', async () => {
+    it('dismiss() tracks and hides, sending NO window of its own', async () => {
+      // Plan 233 TASK-8b. This used to assert `cooldown_ms: 86400000` — the
+      // controller defaulted to 24h and passed it on every dismissal, so the
+      // payload's authored `caps.cooldown_days` and the SDK's 7-day default
+      // were both unreachable. Plan 167 had already called 24h "the legacy"
+      // value while this test pinned it.
+      //
+      // Omitting the metadata is what lets the SDK resolve authored → default.
       await ctrl.dismiss();
 
       expect(sdk.trackTreatmentInteraction).toHaveBeenCalledWith(
         expect.objectContaining({
           interactionType: 'dismiss',
-          metadata: { cooldown_ms: 86400000 },
+          metadata: {},
         }),
       );
       expect(ctrl.visible).toBe(false);
+    });
+
+    it('snooze() sends no window of its own either', async () => {
+      // Remind-later resolves from its own authored field (TASK-8c); a default
+      // here would make "remind me" mean whatever this file happened to say.
+      await ctrl.snooze();
+
+      expect(sdk.trackTreatmentInteraction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          interactionType: 'remind_me_later',
+          metadata: {},
+        }),
+      );
     });
 
     it('dismiss() accepts custom cooldown', async () => {

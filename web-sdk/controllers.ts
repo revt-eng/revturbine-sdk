@@ -531,17 +531,40 @@ export class PlacementController {
   }
 
   /** Record a dismiss interaction and hide the placement. */
-  async dismiss(cooldownMs = 24 * 60 * 60 * 1000): Promise<void> {
-    await this.trackInteraction('dismiss', { cooldown_ms: cooldownMs });
+  /**
+   * Record a dismissal.
+   *
+   * @param cooldownMs - Optional explicit window. Omit it — which is the normal
+   *   case — and the SDK resolves the payload's authored `caps.cooldown_days`,
+   *   falling back to the 7-day default. This used to default to 24h here and
+   *   pass it ALWAYS, so the authored value and the 7-day default were both
+   *   unreachable from React (plan 233 TASK-8b).
+   */
+  async dismiss(cooldownMs?: number): Promise<void> {
+    await this.trackInteraction(
+      'dismiss',
+      cooldownMs === undefined ? {} : { cooldown_ms: cooldownMs },
+    );
   }
 
   /** Record a snooze/remind-me-later interaction and hide the placement. */
-  async snooze(seconds = 3600): Promise<void> {
-    await this.trackInteraction('remind_me_later', { remind_after_seconds: seconds });
+  /**
+   * Record a snooze / remind-me-later.
+   *
+   * @param seconds - Optional explicit window. Omit it and the SDK resolves the
+   *   payload's authored `remind_later_minutes`, falling back to the tenant
+   *   default (plan 233 TASK-8c). Remind-later is a DIFFERENT window from
+   *   dismiss and resolves independently.
+   */
+  async snooze(seconds?: number): Promise<void> {
+    await this.trackInteraction(
+      'remind_me_later',
+      seconds === undefined ? {} : { remind_after_seconds: seconds },
+    );
   }
 
   /** Alias for {@link snooze}. */
-  async remindMeLater(seconds = 3600): Promise<void> {
+  async remindMeLater(seconds?: number): Promise<void> {
     await this.snooze(seconds);
   }
 

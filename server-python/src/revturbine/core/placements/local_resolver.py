@@ -60,6 +60,7 @@ from revturbine.core.placements.trial_gating import (
     normalize_json_trigger,
 )
 from revturbine.core.rules.plan_eligibility import evaluate_plan_eligibility
+from revturbine.core.rules.segment_eligibility import evaluate_segment_eligibility
 from revturbine.core.state.impression_history import ImpressionHistory
 
 __all__ = [
@@ -553,9 +554,11 @@ def create_static_placement_resolver(
         target = payload.get("target")
         if target is not None:
             plan_ids = target.get("plan_ids") if is_record(target) else None
+            chips = target.get("segment_chips") if is_record(target) else None
             output["content"] = {
                 **output["content"],
                 "__target_plan_ids": plan_ids if isinstance(plan_ids, list) else [],
+                "__target_segment_chips": chips if isinstance(chips, list) else [],
             }
 
         trigger = entry.get("trigger")
@@ -603,7 +606,30 @@ def create_static_placement_resolver(
     for bucket in outputs_by_template.values():
         bucket.sort(key=lambda c: c["entry_order"])
 
-    # ── Eligibility helper ──────────────────────────────────────────────
+    # ── Eligibility helpers ─────────────────────────────────────────────
+    def _segment_handles(providers: Any) -> list[str]:
+        """Segment handles the user belongs to, for chip matching.
+
+        ``segment_slugs`` is the handle-bearing field and is the SAME field in
+        every runtime (plan 233 TASK-7). ``segment_ids`` is deliberately not
+        consulted: it carries minted ids here, and matching a handle against an
+        id set would silently match nothing. Parity depends on all three
+        languages reading the same field, not analogous ones.
+        """
+        segments = providers.get("segments") if is_record(providers) else None
+        raw = segments.get("segment_slugs") if is_record(segments) else None
+        return [s for s in raw if isinstance(s, str)] if isinstance(raw, list) else []
+
+    def _is_eligible_for_segments(output: PlacementOutput, providers: Any) -> bool:
+        oc = output.get("content")
+        oc = oc if is_record(oc) else {}
+        raw = oc.get("__target_segment_chips")
+        chips = [c for c in raw if isinstance(c, str)] if isinstance(raw, list) else []
+        return evaluate_segment_eligibility(
+            {"target_segment_chips": chips},
+            {"segment_ids": _segment_handles(providers)},
+        )["eligible"]
+
     def _is_eligible_for_plan(
         output: PlacementOutput,
         current_plan_id: str | None,
@@ -799,13 +825,20 @@ def create_static_placement_resolver(
                     ]
 
             selected_candidate: _CandidateOutput | None = None
+            saw_segment_mismatch = False
             for cand in filtered:
-                if _is_eligible_for_plan(
+                if not _is_eligible_for_plan(
                     cand["output"], current_plan_id, plan_handle, billing_period
                 ):
-                    selected_output = cand["output"]
-                    selected_candidate = cand
-                    break
+                    continue
+                # Plan 233 TASK-7: segment targeting is ANDed with plan
+                # targeting, matching the TS resolver.
+                if not _is_eligible_for_segments(cand["output"], providers):
+                    saw_segment_mismatch = True
+                    continue
+                selected_output = cand["output"]
+                selected_candidate = cand
+                break
 
             if (
                 selected_candidate is not None
@@ -824,7 +857,12 @@ def create_static_placement_resolver(
                 selected_output = {**selected_output, "content": merged_content}
 
             if selected_output is None:
-                reason_codes = ["no_eligible_candidate"]
+                # Keep the specific reason when there is one: "no eligible
+                # candidate" and "every candidate was chipped to a segment you
+                # are not in" are the same outcome with very different fixes.
+                reason_codes = [
+                    "segment_target_mismatch" if saw_segment_mismatch else "no_eligible_candidate"
+                ]
         else:
             # Direct lookup: try placement.name first (registered surface-slot
             # path), then fall back to input.placementId. The fallback lets
@@ -886,10 +924,20 @@ def create_static_placement_resolver(
                 # Plan 138 TASK-4: entitlement-gate tier gating on direct lookup
                 # too — symmetric with the trial/threshold/qualifier gates.
                 reason_codes = ["entitlement_gate_unmet"]
+            elif (
+                direct_output
+                and _is_eligible_for_plan(
+                    direct_output, current_plan_id, plan_handle, billing_period
+                )
+                and _is_eligible_for_segments(direct_output, providers)
+            ):
+                selected_output = direct_output
             elif direct_output and _is_eligible_for_plan(
                 direct_output, current_plan_id, plan_handle, billing_period
             ):
-                selected_output = direct_output
+                # Gating only the slot path would leave direct lookup an
+                # unguarded back door, as plan 138 found for entitlement gates.
+                reason_codes = ["segment_target_mismatch"]
             elif direct_output:
                 reason_codes = ["plan_target_mismatch"]
             else:

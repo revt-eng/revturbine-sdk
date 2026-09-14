@@ -43,6 +43,9 @@ use crate::js_num::js_math_round;
 use crate::rules::plan_eligibility::{
     evaluate_plan_eligibility, PlanEligibilityContext, PlanEligibilityRule,
 };
+use crate::rules::segment_eligibility::{
+    evaluate_segment_eligibility, SegmentEligibilityContext, SegmentEligibilityRule,
+};
 
 /// Vendored from @revt-eng/schema 0.1.260 DEFAULT_TEMPLATE_COMPONENT_TYPES.
 const DEFAULT_TEMPLATE_COMPONENT_TYPES: &[(&str, &str)] = &[
@@ -430,6 +433,15 @@ impl StaticPlacementResolver {
                 };
                 content.insert("__target_plan_ids".into(), ids);
             }
+            // Plan 233 TASK-7: segment targeting rides on content the same way.
+            if let Some(chips) = payload
+                .get("target")
+                .filter(|t| t.is_object())
+                .map(|t| t.get("segment_chips").cloned().unwrap_or(json!([])))
+            {
+                let chips = if chips.is_array() { chips } else { json!([]) };
+                content.insert("__target_segment_chips".into(), chips);
+            }
             if let Some(h) = trigger_entitlement_handle.as_ref() {
                 content.insert("__trigger_entitlement_handle".into(), json!(h));
             }
@@ -495,6 +507,51 @@ impl StaticPlacementResolver {
             plan_handle_to_id,
             content_linked: build_content_linked(exported_config, placements),
         }
+    }
+
+    /// Segment handles the user belongs to, for chip matching.
+    ///
+    /// `segment_slugs` is the handle-bearing field and is the SAME field in
+    /// every runtime (plan 233 TASK-7). `segment_ids` is deliberately not
+    /// consulted: it carries minted ids, and matching a handle against an id
+    /// set would silently match nothing. Parity depends on all three languages
+    /// reading the same field, not analogous ones.
+    fn segment_handles(providers: Option<&Value>) -> Vec<String> {
+        providers
+            .and_then(|p| p.get("segments"))
+            .and_then(|s| s.get("segment_slugs"))
+            .and_then(Value::as_array)
+            .map(|a| {
+                a.iter()
+                    .filter_map(Value::as_str)
+                    .map(str::to_string)
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    fn is_eligible_for_segments(&self, output: &Value, providers: Option<&Value>) -> bool {
+        let chips: Vec<String> = output
+            .get("content")
+            .and_then(|c| c.get("__target_segment_chips"))
+            .and_then(Value::as_array)
+            .map(|a| {
+                a.iter()
+                    .filter_map(Value::as_str)
+                    .map(str::to_string)
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        evaluate_segment_eligibility(
+            &SegmentEligibilityRule {
+                target_segment_chips: chips,
+            },
+            &SegmentEligibilityContext {
+                segment_ids: Self::segment_handles(providers),
+            },
+        )
+        .eligible
     }
 
     fn is_eligible_for_plan(
@@ -710,6 +767,7 @@ impl StaticPlacementResolver {
                 }
             }
 
+            let mut saw_segment_mismatch = false;
             for i in idxs {
                 let c = &self.candidates[i];
                 if self.is_eligible_for_plan(
@@ -718,6 +776,12 @@ impl StaticPlacementResolver {
                     plan_handle,
                     billing_period,
                 ) {
+                    // Plan 233 TASK-7: segment targeting is ANDed with plan
+                    // targeting, matching the TS resolver.
+                    if !self.is_eligible_for_segments(&c.output, providers) {
+                        saw_segment_mismatch = true;
+                        continue;
+                    }
                     let mut out = c.output.clone();
                     // Attach the supersession diagnostic only when the winner
                     // is the one actually selected.
@@ -733,7 +797,14 @@ impl StaticPlacementResolver {
                 }
             }
             if selected.is_none() {
-                reason_codes.push("no_eligible_candidate".into());
+                // Keep the specific reason when there is one: "no eligible
+                // candidate" and "every candidate was chipped to a segment you
+                // are not in" are the same outcome with very different fixes.
+                reason_codes.push(if saw_segment_mismatch {
+                    "segment_target_mismatch".into()
+                } else {
+                    "no_eligible_candidate".into()
+                });
             }
         } else {
             // Direct lookup: the registered slot name first, then the raw
@@ -778,7 +849,13 @@ impl StaticPlacementResolver {
                         plan_handle,
                         billing_period,
                     ) {
-                        selected = Some(c.output.clone());
+                        // Gating only the slot path would leave direct lookup an
+                        // unguarded back door, as plan 138 found for gates.
+                        if self.is_eligible_for_segments(&c.output, providers) {
+                            selected = Some(c.output.clone());
+                        } else {
+                            reason_codes.push("segment_target_mismatch".into());
+                        }
                     } else {
                         reason_codes.push("plan_target_mismatch".into());
                     }

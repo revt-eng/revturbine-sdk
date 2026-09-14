@@ -144,6 +144,10 @@ export const MessageSurfaceSlot = React.forwardRef<
     ...options,
     autoLoad: shouldAutoLoad,
     surfaceSlot,
+    // Plan 233 TASK-9: this used to be built into a local handler that was
+    // immediately discarded (`void handleDismissWrap`), so the prop was
+    // advertised and never fired. The hook owns it now.
+    onDismissed,
   });
 
   // Expose imperative API.
@@ -176,16 +180,6 @@ export const MessageSurfaceSlot = React.forwardRef<
       presentedRef.current = false;
     }
   }, [visible, decision]);
-
-  // Fire onDismissed when the placement is dismissed.
-  const onDismissedRef = useRef(onDismissed);
-  onDismissedRef.current = onDismissed;
-  const handleDismissWrap = useCallback(() => {
-    void dismiss();
-    onDismissedRef.current?.();
-  }, [dismiss]);
-  // Attach dismiss override by wrapping the element if needed.
-  void handleDismissWrap;
 
   if (!visible || !element) return null;
   return <>{element}</>;

@@ -32,11 +32,22 @@ export type FixedSurfaceSlotProps = {
   personalization?: PersonalizationContext;
   registry?: PlacementTypeRegistry;
   onCtaClick?: (uiPath: PlacementUiPath) => void;
+  /**
+   * Called after the user dismisses the placement (plan 233 TASK-9).
+   *
+   * `MessageSurfaceSlot` advertised this prop but never fired it — the handler
+   * was built and then discarded. It is wired for both slots now.
+   */
+  onDismissed?: () => void;
   className?: string;
   style?: React.CSSProperties;
   /**
-   * Content to display when no placement decision matches.
-   * Fixed slots always render something — either a placement or the fallback.
+   * Content to display when **no placement matches**.
+   *
+   * NOT shown after the user dismisses. Rendering the fallback on dismissal
+   * puts something back in the space the user just closed — the escalated
+   * integration called it a ghost popup and needed a MutationObserver to
+   * suppress it (plan 233 TASK-9).
    */
   fallback?: React.ReactNode;
 };
@@ -80,14 +91,19 @@ export function FixedSurfaceSlot({
     [id, name, surfaceTemplateIds, metadata],
   );
 
-  const { element, visible } = useSurfaceSlot({
+  const { element, visible, hiddenReason } = useSurfaceSlot({
     ...options,
     autoLoad: true,
     surfaceSlot,
   });
 
-  // Fixed slots always render: the placement when available, fallback otherwise.
   if (visible && element) return <>{element}</>;
+
+  // A dismissal and a no-match are the same `visible: false` with opposite
+  // intent: one means "the user closed this", the other "there was nothing to
+  // show". Only the second wants the fallback.
+  if (hiddenReason === 'dismissed') return null;
+
   return <>{fallback}</>;
 }
 

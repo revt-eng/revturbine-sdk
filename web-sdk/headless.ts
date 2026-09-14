@@ -39,6 +39,7 @@ export {
 } from './config-artifact';
 export type {
   ConfigArtifact,
+  ConfigTargetDefaults,
   LegacyConfigTargetDefaults,
   UnvalidatedConfigArtifact,
 } from './config-artifact';

@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.302/rust/revturbine_types.rs
+//   published/v0.1.306/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -100919,6 +100919,11 @@ impl ::std::convert::From<::std::vec::Vec<TreatmentInteractionInput>>
 #[doc = "    \"user_id\""]
 #[doc = "  ],"]
 #[doc = "  \"properties\": {"]
+#[doc = "    \"account_id\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"pii\""]
+#[doc = "    },"]
 #[doc = "    \"experiment_id\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"minLength\": 1,"]
@@ -101002,6 +101007,8 @@ impl ::std::convert::From<::std::vec::Vec<TreatmentInteractionInput>>
 #[serde(deny_unknown_fields)]
 pub struct TreatmentInteractionInput {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub account_id: ::std::option::Option<TreatmentInteractionInputAccountId>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub experiment_id: ::std::option::Option<TreatmentInteractionInputExperimentId>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub interaction_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
@@ -101026,6 +101033,75 @@ pub struct TreatmentInteractionInput {
     pub user_id: TreatmentInteractionInputUserId,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub variant_key: ::std::option::Option<TreatmentInteractionInputVariantKey>,
+}
+#[doc = "`TreatmentInteractionInputAccountId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"pii\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct TreatmentInteractionInputAccountId(::std::string::String);
+impl ::std::ops::Deref for TreatmentInteractionInputAccountId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<TreatmentInteractionInputAccountId> for ::std::string::String {
+    fn from(value: TreatmentInteractionInputAccountId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for TreatmentInteractionInputAccountId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for TreatmentInteractionInputAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for TreatmentInteractionInputAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for TreatmentInteractionInputAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for TreatmentInteractionInputAccountId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
 }
 #[doc = "`TreatmentInteractionInputExperimentId`"]
 #[doc = r""]

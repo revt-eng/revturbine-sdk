@@ -9,22 +9,41 @@ import {
   type RevTurbinePlacementDecisionInput,
   type RevTurbineUserContext,
   type Exact,
+  type ExactInitOptions,
   type UserContextInput,
-  resolveLocalPlaybook,
 } from '../customer-side';
 import type { RevTurbineTheme, RevTurbineThemeInput } from '../theme/types';
-import { DEFAULT_THEME, mergeTheme } from '../theme/defaults';
+import {
+  DEFAULT_THEME,
+  baseThemeForScheme,
+  mergeTheme,
+  type RevTurbineColorScheme,
+} from '../theme/defaults';
+import { useResolvedColorScheme } from '../theme/useColorScheme';
 import { loadTheme } from '../theme/theme-loader';
-import { RevTurbineThemeProvider } from '../theme/ThemeContext';
+import {
+  RevTurbineThemeProvider,
+  useRevTurbineThemeProviderPresent,
+} from '../theme/ThemeContext';
 import { installAnnotatedCapture, type AnnotatedCaptureOptions } from '../telemetry';
 import { RevTurbineContext } from './useRevTurbine';
+import {
+  INIT_STATUS_OK,
+  initStatusForError,
+  type RevTurbineInitPhase,
+  type RevTurbineInitStatus,
+} from './init-status';
+import { InitFailureDiagnostic } from './InitFailureDiagnostic';
 import { isProductionBuild } from '../build-mode';
 
 type BootstrapPlacementInput = Omit<RevTurbinePlacementDecisionInput, 'placementId'> & {
   placement: RevTurbinePlacementConfig;
 };
 
-export type RevTurbineProviderProps<TUser extends RevTurbineUserContext = RevTurbineUserContext> = {
+export type RevTurbineProviderProps<
+  TUser extends RevTurbineUserContext = RevTurbineUserContext,
+  TOptions extends RevTurbineInitInputOptions = RevTurbineInitInputOptions,
+> = {
   /**
    * SDK initialization options. Accepts optional provider or factory.
    *
@@ -34,7 +53,7 @@ export type RevTurbineProviderProps<TUser extends RevTurbineUserContext = RevTur
    * in an un-annotated `useMemo`, which is precisely where TypeScript's own
    * excess-property check stops applying.
    */
-  options: RevTurbineInitInputOptions & { user?: Exact<RevTurbineUserContext, TUser> };
+  options: TOptions & ExactInitOptions<TOptions> & { user?: Exact<RevTurbineUserContext, TUser> };
   /** Placements to bootstrap (preload decisions) on mount. */
   bootstrapPlacements?: BootstrapPlacementInput[];
   /**
@@ -47,6 +66,19 @@ export type RevTurbineProviderProps<TUser extends RevTurbineUserContext = RevTur
    * Omit to disable. Memoize an object value to avoid re-installing.
    */
   domCapture?: boolean | AnnotatedCaptureOptions;
+  /**
+   * Light/dark palette for rendered placements (plan 233 TASK-6).
+   *
+   * Deliberately a provider prop rather than an SDK init option: `options`
+   * identity drives re-initialization, so a scheme toggle placed there would
+   * rebuild the SDK on every switch. That was the customer workaround this
+   * replaces. Defaults to `'system'`, which follows `prefers-color-scheme` and
+   * keeps following it.
+   *
+   * A branding theme still applies on top — the scheme only selects which base
+   * palette its tokens merge over.
+   */
+  colorScheme?: RevTurbineColorScheme;
   /** React children. */
   children: React.ReactNode;
 };
@@ -73,20 +105,37 @@ const EMPTY_BOOTSTRAP: BootstrapPlacementInput[] = [];
  * </RevTurbineProvider>
  * ```
  */
-export function RevTurbineProvider<TUser extends RevTurbineUserContext = RevTurbineUserContext>({
+export function RevTurbineProvider<
+  TUser extends RevTurbineUserContext = RevTurbineUserContext,
+  TOptions extends RevTurbineInitInputOptions = RevTurbineInitInputOptions,
+>({
   options,
   bootstrapPlacements,
   domCapture,
+  colorScheme = 'system',
   children,
-}: RevTurbineProviderProps<TUser>) {
+}: RevTurbineProviderProps<TUser, TOptions>) {
   const stableBootstrap = bootstrapPlacements ?? EMPTY_BOOTSTRAP;
   const [sdk, setSdk] = useState<RevTurbineCustomerSdk | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState('');
+  const [initStatus, setInitStatus] = useState<RevTurbineInitStatus>(INIT_STATUS_OK);
   const [theme, setTheme] = useState<RevTurbineTheme>(DEFAULT_THEME);
+  // The branding tokens as resolved at init, kept so a scheme change can
+  // re-merge them over the other palette WITHOUT re-running initialization.
+  // `null` means "init finished and resolved no branding tokens"; `undefined`
+  // means "init has not reported yet". The distinction keeps the scheme effect
+  // from painting a default theme over a not-yet-initialized provider.
+  const [brandingInput, setBrandingInput] = useState<RevTurbineThemeInput | null | undefined>(undefined);
+  const resolvedScheme = useResolvedColorScheme(colorScheme);
   const [contextVersion, setContextVersion] = useState(0);
   const previousOptionsRef = useRef<RevTurbineInitInputOptions | null>(null);
   const previousBootstrapRef = useRef<BootstrapPlacementInput[] | null>(null);
+  // An app-mounted RevTurbineThemeProvider above us owns the theme (plan 233
+  // TASK-5, Kent ruling Q-2: explicit local intent always beats a resolved
+  // default). Read here, at our own level, so it reflects ancestors only.
+  const appOwnsTheme = useRevTurbineThemeProviderPresent();
+  const warnedThemeOverrideRef = useRef(false);
 
   useEffect(() => {
     if (isProductionBuild()) {
@@ -106,6 +155,29 @@ export function RevTurbineProvider<TUser extends RevTurbineUserContext = RevTurb
     previousOptionsRef.current = options;
     previousBootstrapRef.current = stableBootstrap;
   }, [options, stableBootstrap]);
+
+  // The override is silent otherwise: the app's theme simply wins and the SDK's
+  // resolved branding never paints, which looks identical to branding being
+  // misconfigured. Say so once, in development.
+  useEffect(() => {
+    if (!appOwnsTheme || warnedThemeOverrideRef.current || isProductionBuild()) return;
+    warnedThemeOverrideRef.current = true;
+    console.warn(
+      '[RevTurbine] A RevTurbineThemeProvider is mounted above RevTurbineProvider, so it owns the '
+        + 'theme, and the SDK-resolved branding (the `branding` option / Branding API / Playbook '
+        + '`theme`) is NOT applied to placements. That is the supported way to take over theming — '
+        + 'remove the outer provider if you meant the SDK to resolve it.',
+    );
+  }, [appOwnsTheme]);
+
+  // Re-resolve the rendered theme whenever the branding tokens or the scheme
+  // change. This is what makes a scheme toggle a re-render rather than a
+  // rebuild: it never touches `options`, so the init effect does not re-run and
+  // the SDK instance identity is preserved (plan 233 AC-7).
+  useEffect(() => {
+    if (brandingInput === undefined) return;
+    setTheme(mergeTheme(brandingInput, baseThemeForScheme(resolvedScheme)));
+  }, [brandingInput, resolvedScheme]);
 
   // Annotated DOM capture (plan 144 TASK-15). One delegated listener per event
   // at the document root; emits only allowlisted `data-rt-*` values, redacted by
@@ -129,8 +201,17 @@ export function RevTurbineProvider<TUser extends RevTurbineUserContext = RevTurb
       // realistic init failure happens — identify, theme load, placement
       // registration, bootstrap — the instance exists.
       let nextSdk: ReturnType<typeof initRevTurbine> | undefined;
+      // Which phase is running, so a failure can say where it happened rather
+      // than only what threw (plan 233 TASK-2).
+      let phase: RevTurbineInitPhase = 'construct';
       try {
-        nextSdk = initRevTurbine(options);
+        // Widened deliberately, not cast. Exactness is enforced at the PROP
+        // boundary by `ExactInitOptions<TOptions>`; re-entering
+        // `initRevTurbine`'s own generic would ask TypeScript to prove a
+        // composition of two independent exactness mappings, which it cannot.
+        // The assignment still type-checks, so nothing is being suppressed.
+        const initOptions: RevTurbineInitInputOptions = options;
+        nextSdk = initRevTurbine(initOptions);
 
         // The SDK constructor already merges options.user into userContext.
         // If options.user has structured fields, call identify() to ensure
@@ -144,15 +225,15 @@ export function RevTurbineProvider<TUser extends RevTurbineUserContext = RevTurb
         // code. Strip it here rather than teaching the guardrail to ignore
         // `id`, which would also hide it from direct identify() callers who
         // really did put the id in the wrong place.
+        phase = 'identify';
         const user = options.user;
         if (user && typeof user === 'object' && (user as { id?: string }).id) {
           const { id, ...context } = user as { id: string } & UserContextInput;
           nextSdk.identify(id, context as UserContextInput);
         }
 
-        // Theme — the Playbook is the BASE, always resolved without a network
-        // call. Must read via resolveLocalPlaybook so a caller using the
-        // canonical `playbook` key still gets the no-network shortcut.
+        // Theme — the branding ladder is the BASE, always resolved without a
+        // network call.
         //
         // Plan 184: this previously fell back to an unconditional
         // `GET /api/sdk/theme` whenever the Playbook carried no theme — which
@@ -161,11 +242,30 @@ export function RevTurbineProvider<TUser extends RevTurbineUserContext = RevTurb
         // guaranteed 404 on init. The fetch is now opt-in via
         // `fetchThemeOverride`, and when enabled it layers OVER this base
         // rather than replacing it.
-        const playbook = resolveLocalPlaybook(options.localRuntime);
-        const configTheme = playbook?.theme;
+        phase = 'theme';
+        // Plan 233 TASK-3: resolve through the SDK's branding ladder rather than
+        // reading `localRuntime.playbook.theme` directly.
+        //
+        // The ladder (explicit `branding` → branding API → legacy config `theme`
+        // → defaults) already existed and `getBranding()` already used it — but
+        // the renderer did not, so the two disagreed. Reading the Playbook here
+        // meant rung 1 never reached `useRevTurbineTheme()`: a customer who
+        // followed our own `VAL-DEP-01` warning (move `theme` out of the config,
+        // pass the SDK `branding` argument) lost all theming and got white
+        // modals in a dark app, because in local mode the Playbook's `theme` was
+        // the only source the renderer read — and the CLI *strips* that field on
+        // ingestion. Following our advice broke the product.
+        //
+        // `getBranding()` also reads the RESOLVED config rather than the raw
+        // option, so a Playbook normalized at init (plan 233 TASK-1) is what
+        // gets consulted.
+        const brandingTheme = nextSdk.getBranding().branding.theme;
+        // `BrandingConfig.theme` is a deliberate passthrough record — scaffold
+        // does not replicate the SDK's ~40 rendering tokens, so `RevTurbineTheme`
+        // is the authoritative shape and this is the sanctioned boundary cast.
         const baseTheme =
-          configTheme && typeof configTheme === 'object'
-            ? (configTheme as RevTurbineThemeInput)
+          brandingTheme && Object.keys(brandingTheme).length > 0
+            ? (brandingTheme as RevTurbineThemeInput)
             : undefined;
 
         if (options.fetchThemeOverride) {
@@ -195,9 +295,13 @@ export function RevTurbineProvider<TUser extends RevTurbineUserContext = RevTurb
           );
           if (mounted) setTheme(initialTheme);
         } else if (mounted) {
-          setTheme(mergeTheme(baseTheme));
+          // Only record the branding tokens here. The scheme effect below owns
+          // setTheme, so flipping light/dark re-merges these over the other
+          // palette without re-entering initialization (plan 233 AC-7).
+          setBrandingInput(baseTheme ?? null);
         }
 
+        phase = 'placements';
         // Bootstrap preloads — derive userId from the SDK's own user context.
         const sdkUserId = nextSdk.getUserContext().user_id;
         const preloads: RevTurbinePlacementDecisionInput[] = [];
@@ -216,11 +320,13 @@ export function RevTurbineProvider<TUser extends RevTurbineUserContext = RevTurb
         }
 
         if (preloads.length > 0) {
+          phase = 'bootstrap';
           await nextSdk.bootstrapPlacementDecisions(preloads);
         }
 
         if (!mounted) return;
         setSdk(nextSdk);
+        setInitStatus(INIT_STATUS_OK);
         setIsReady(true);
       } catch (error) {
         if (!mounted) return;
@@ -232,6 +338,12 @@ export function RevTurbineProvider<TUser extends RevTurbineUserContext = RevTurb
         // only when the synchronous constructor threw — a malformed-options
         // develop-time error that already fails loudly.
         nextSdk?.reportSdkError('provider_init_failed', cause);
+        // Reachable with no instance — `sdk` is null from here, so every probe
+        // the SDK exposes is gone and this is the only thing left to ask
+        // (plan 233 TASK-2).
+        const status = initStatusForError(phase, error);
+        console.error(`[RevTurbine] ${status.remediation}`);
+        setInitStatus(status);
         setError(`Failed to initialize RevTurbine SDK provider: ${cause}`);
         setIsReady(false);
       }
@@ -254,15 +366,26 @@ export function RevTurbineProvider<TUser extends RevTurbineUserContext = RevTurb
     sdk,
     isReady,
     error,
+    initStatus,
+    colorScheme: resolvedScheme,
     setContext,
   // Deps intentionally limited — contextVersion change triggers re-render
-  }), [sdk, isReady, error, setContext, contextVersion]);
+  }), [sdk, isReady, error, initStatus, resolvedScheme, setContext, contextVersion]);
+
+  const body = (
+    <>
+      {children}
+      {!initStatus.ok && !isProductionBuild() ? (
+        <InitFailureDiagnostic status={initStatus} />
+      ) : null}
+    </>
+  );
 
   return (
     <RevTurbineContext.Provider value={value}>
-      <RevTurbineThemeProvider theme={theme}>
-        {children}
-      </RevTurbineThemeProvider>
+      {appOwnsTheme ? body : (
+        <RevTurbineThemeProvider theme={theme}>{body}</RevTurbineThemeProvider>
+      )}
     </RevTurbineContext.Provider>
   );
 }
