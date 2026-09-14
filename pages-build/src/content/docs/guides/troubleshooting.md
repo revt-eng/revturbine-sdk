@@ -10,6 +10,8 @@ sidebar:
 | Symptom | Likely Cause | Fix |
 |---|---|---|
 | `getPlacement` returns `null` unexpectedly | Slot/component mismatch or no eligible payload | Verify `slotId`, `componentType`, and payload targeting. Start with `createSlotPlacementRequest(...)`. |
+| A slot renders nothing, with no error and no reason code | The placement targets a slot your code never mounts — it can **never** show | Run [`sdk.diagnoseSlotInventory()`](#nothing-renders-and-nothing-explains-why). Comparing slot ids by eye is what this replaces. |
+| A slot renders its fallback forever | Your code mounts a slot no placement targets | Same probe — it reports this direction too. |
 | Entitlement check denies with `config_unavailable` or `sdk_disabled_provider_failure` | Playbook fetch or configured provider failed | Verify endpoint availability, auth headers, and provider health. See [Client vs Server Enforcement](/concepts/enforcement/) for the authoritative fallback contract. |
 | CTA path not firing expected action | Payload action field mismatch (`cta_path` vs legacy shape) | Use canonical `cta_path` in payloads and parse via `PlacementRenderer`. |
 | Decisions feel stale | Cache TTL too long | Lower `ttlMs` in decision requests or call refresh flows explicitly. |
@@ -18,6 +20,45 @@ sidebar:
 | Console warns primary provider failed | Provider chain is failing and SDK entered fail-closed mode | Configure `providerFallbacks`, verify provider health, and choose `providerFailureSlotBehavior` intentionally. |
 | Type is `unknown` from SDK route | Contract/schema title mismatch | Ensure the SDK version matches the schema version and reinstall. |
 | Build fails after SDK API changes | Missing migration updates in caller code | Migrate to object-style request helpers and rerun typecheck. |
+
+## Nothing renders, and nothing explains why
+
+This is the hardest symptom to debug, because **there is no error**. Almost
+nothing in the SDK throws — a mismatch degrades instead of erroring — so a
+placement that can never show looks exactly like a user who is not eligible.
+
+The usual cause is that a placement targets a slot id your code does not mount,
+or your code mounts a slot id no placement targets. Neither is visible from the
+Playbook alone: **a config-side audit cannot see your call sites.** Only the
+running app knows what it mounted, so ask it:
+
+```ts
+const diagnosis = sdk.diagnoseSlotInventory();
+
+if (!diagnosis.configAvailable) {
+  // No Playbook reached the SDK. `authored` is empty for a completely
+  // different reason than "nothing is authored" — check this FIRST, because
+  // the two look identical in the lists below.
+  console.warn('No Playbook available; fix initialization before reading the rest.');
+}
+
+// Placements that can never show: they target a slot nothing renders.
+console.log(diagnosis.authoredButUnmounted);
+
+// Slots that render their fallback forever: nothing targets them.
+console.log(diagnosis.mountedButUnauthored);
+```
+
+Each finding names the placement id and category, so it points at the thing to
+fix rather than telling you something is wrong somewhere.
+
+If both lists are empty, `configAvailable` is `true`, targeting matches the
+user, and the placement still does not render — stop. That is a correct
+configuration producing silence, which is not a configuration problem. See
+[the escalation conditions](https://revturbine.com/docs/) in
+`revturbine-verify-integration`, and report it rather than working around it.
+
+Requires `@revturbine/sdk` 0.8.0 or newer.
 
 ## Provider Failure Behavior
 
