@@ -352,3 +352,47 @@ class TestSegmentDimensionLookup:
             "status": "allowed",
             "allowed": True,
         }
+
+
+class TestSeatAndTierVocabulary:
+    """Plan 234 TASK-3 - focused seat-kind rule tests (coverage-map gap A.6:
+    no engine ever constructed one) and the two tier vocabularies. Mirrors
+    the scaffold TS tests case for case; byte parity additionally locked by
+    entitlement_rule_seat_included_count / entitlement_rule_tiered_vocabulary.
+    """
+
+    def _pair(self, included_count: int) -> dict[str, Any]:
+        seat = _rule("f", {"kind": "seat", "included_count": included_count})
+        limit = _rule("f", {"kind": "usage_limit", "limit_value": 2})
+        limit["id"] = "r_f_limit"
+        return _cfg([seat, limit])
+
+    def test_seat_rule_alone_shapes_through_unknown_kind_default(self) -> None:
+        cfg = _cfg([_rule("f", {"kind": "seat", "included_count": 5})])
+        assert _derive(cfg, "f", context={"used": 3}) == {
+            "status": "allowed",
+            "allowed": True,
+        }
+
+    def test_included_count_scores_most_permissive_selection(self) -> None:
+        # included_count 5 outscores limit_value 2 -> seat rule shapes -> allowed.
+        assert _derive(self._pair(5), "f", context={"used": 3}) == {
+            "status": "allowed",
+            "allowed": True,
+        }
+        # included_count 1 is outscored -> usage_limit shapes -> limited.
+        assert _derive(self._pair(1), "f", context={"used": 3}) == {
+            "status": "limited",
+            "allowed": False,
+            "reason": "usage_limit_reached",
+            "limit": 2,
+            "used": 3,
+            "remaining": 0,
+        }
+
+    def test_tiered_lowering_vocabulary_is_not_evaluated(self) -> None:
+        # The bundle lowering emits {kind:'tiered', tier_value}; the evaluator
+        # reads {kind:'capability_tier', tier_name}. Tiered-vocabulary rules
+        # fall to the unknown-kind default: allowed, NO current_tier.
+        cfg = _cfg([_rule("f", {"kind": "tiered", "tier_value": "gold"})])
+        assert _derive(cfg, "f") == {"status": "allowed", "allowed": True}

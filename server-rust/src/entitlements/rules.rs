@@ -242,7 +242,16 @@ where
 pub fn select_most_permissive<'a>(matched: &[EntitlementRuleEvaluation<'a>]) -> Option<&'a Value> {
     pick_most_permissive(matched, |e| {
         let kind = str_field(e.rule, "kind").unwrap_or("");
-        rule_permissiveness(kind, e.rule)
+        // Plan 234 TASK-3: score the snapshot's `fields` sub-object, not the
+        // snapshot root. TS `rulePermissiveness(e.rule)` reads `rule.fields`
+        // internally (rules.ts) and Python does the same; passing the root
+        // here made every score key miss, so every rule scored 0 and the
+        // source-order tie-break silently replaced the 2.6.5 most-permissive
+        // rule on the provider path — a seat rule listed first shadowed a
+        // usage_limit rule that should have limited.
+        let null = Value::Null;
+        let fields = e.rule.get("fields").unwrap_or(&null);
+        rule_permissiveness(kind, fields)
     })
     .map(|e| e.rule)
 }
@@ -277,6 +286,29 @@ mod tests {
             current_plan_id: Some(plan.to_string()),
             ..Default::default()
         }
+    }
+
+    #[test]
+    fn most_permissive_scores_the_fields_sub_object_not_the_snapshot_root() {
+        // Plan 234 TASK-3 regression: provider-path snapshots nest the score
+        // keys under `fields`. Scoring the root made every rule score 0, so
+        // the source-order tie-break silently replaced most-permissive: the
+        // seat rule listed FIRST here won over the higher-scoring usage_limit
+        // rule. Byte parity locked by entitlement_rule_seat_included_count.
+        let rules = vec![
+            json!({ "kind": "seat", "plan_ids": ["pro"],
+                    "fields": { "included_count": 1 } }),
+            json!({ "kind": "usage_limit", "plan_ids": ["pro"],
+                    "fields": { "limit_value": 2 } }),
+        ];
+        let by_ent = HashMap::from([("e".to_string(), rules)]);
+        let found = find_matching_entitlement_rule(&by_ent, "e", &ctx_with_plan("pro", &[]))
+            .expect("a rule matches");
+        assert_eq!(
+            found.get("kind").and_then(Value::as_str),
+            Some("usage_limit"),
+            "limit_value 2 must outscore included_count 1"
+        );
     }
 
     #[test]
@@ -417,12 +449,19 @@ mod tests {
         map.insert(
             "feat_x".to_string(),
             vec![
-                json!({ "plan_ids": ["pro"], "kind": "usage_limit", "limit_value": 5 }),
-                json!({ "plan_ids": ["pro"], "kind": "usage_limit", "limit_value": 50 }),
+                // Production snapshots nest the score keys under `fields`
+                // (adapters.rs); this test used to author `limit_value` at the
+                // root — a shape the adapter never emits — and thereby passed
+                // against the pre-plan-234 bug that scored the root (plan 234
+                // TASK-3; see most_permissive_scores_the_fields_sub_object_...).
+                json!({ "plan_ids": ["pro"], "kind": "usage_limit",
+                        "fields": { "limit_value": 5 } }),
+                json!({ "plan_ids": ["pro"], "kind": "usage_limit",
+                        "fields": { "limit_value": 50 } }),
             ],
         );
         let found = find_matching_entitlement_rule(&map, "feat_x", &ctx_with_plan("pro", &[]));
-        assert_eq!(found.unwrap()["limit_value"], 50);
+        assert_eq!(found.unwrap()["fields"]["limit_value"], 50);
     }
 
     #[test]

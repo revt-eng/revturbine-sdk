@@ -616,3 +616,67 @@ fn cross_dimension_and_grants_when_both_dimensions_held() {
     assert_eq!(r.status, "allowed");
     assert!(r.allowed);
 }
+
+// ── seat rules + tier vocabularies (plan 234 TASK-3) ────────────────────────
+//
+// Focused seat-kind rule tests (coverage-map gap A.6: no engine ever
+// constructed one) and the two tier vocabularies (the lowering speaks
+// tiered/tier_value, the evaluator capability_tier/tier_name). Mirrors the
+// scaffold TS and server-python tests case for case; byte parity locked by
+// entitlement_rule_seat_included_count / entitlement_rule_tiered_vocabulary.
+
+fn seat_pair_config(included_count: u64) -> Value {
+    json!({
+        "entitlements": [{ "unique_handle": "feat_x", "type": "seat" }],
+        "plans": [{ "id": "plan_pro", "unique_handle": "pro" }],
+        "entitlement_rules": [
+            { "entitlement_id": "feat_x", "plan_ids": ["pro"],
+              "type_fields": { "kind": "seat", "included_count": included_count } },
+            { "entitlement_id": "feat_x", "plan_ids": ["pro"],
+              "type_fields": { "kind": "usage_limit", "limit_value": 2 } }
+        ],
+    })
+}
+
+#[test]
+fn seat_rule_alone_shapes_through_unknown_kind_default() {
+    let cfg = config(
+        "seat",
+        json!([{ "entitlement_id": "feat_x", "plan_ids": ["pro"],
+                 "type_fields": { "kind": "seat", "included_count": 5 } }]),
+    );
+    let mut inp = input("feat_x", "pro");
+    inp.context_used = Some(3.0);
+    let r = derive(&cfg, &inp);
+    assert_eq!(r.status, "allowed");
+    assert!(r.allowed);
+    assert_eq!(r.limit, None);
+}
+
+#[test]
+fn included_count_scores_most_permissive_selection() {
+    let mut inp = input("feat_x", "pro");
+    inp.context_used = Some(3.0);
+
+    let r = derive(&seat_pair_config(5), &inp);
+    assert_eq!(r.status, "allowed");
+    assert!(r.allowed);
+
+    let r = derive(&seat_pair_config(1), &inp);
+    assert_eq!(r.status, "limited");
+    assert!(!r.allowed);
+    assert_eq!(r.reason.as_deref(), Some("usage_limit_reached"));
+}
+
+#[test]
+fn tiered_lowering_vocabulary_is_not_evaluated() {
+    let cfg = config(
+        "capability_tier",
+        json!([{ "entitlement_id": "feat_x", "plan_ids": ["pro"],
+                 "type_fields": { "kind": "tiered", "tier_value": "gold" } }]),
+    );
+    let r = derive(&cfg, &input("feat_x", "pro"));
+    assert_eq!(r.status, "allowed");
+    assert!(r.allowed);
+    assert_eq!(r.current_tier, None);
+}
