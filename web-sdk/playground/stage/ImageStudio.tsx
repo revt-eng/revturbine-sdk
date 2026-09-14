@@ -72,19 +72,13 @@ export function ImageStudio({ onStatus, onGate }: ImageStudioProps) {
     if (!sdk) return onGate?.('soft', 'style_packs');
     const gated = await sdk.gate('style_packs', () => studio.generate({ premium: true }));
     if (gated.ran) {
+      // Entitled (Pro/Enterprise) — generated (report handles out-of-credits).
       report(gated.result);
       void sdk.track('image_generated', { premium: true });
-      return;
-    }
-    // style_packs isn't entitled on this plan (Free), but the plan grants a
-    // starter pool of style credits to *try* premium styles. Let them spend a
-    // credit until the pool runs dry — then the credit-out gate upsells.
-    if (studio.creditBalance > 0) {
-      const outcome = studio.generate({ premium: true });
-      report(outcome);
-      if (outcome.ok) void sdk.track('image_generated', { premium: true });
     } else {
-      onGate?.('hard', 'credits');
+      // Not entitled (Free) — premium styles are Pro-only, so open the upgrade
+      // gate rather than spending Free's credits on them.
+      onGate?.('soft', 'style_packs');
     }
   };
 
@@ -115,19 +109,18 @@ export function ImageStudio({ onStatus, onGate }: ImageStudioProps) {
           </button>
         </Track>
         {/* A badge means "there's a barrier" — shown only when the feature is
-            actually gated, so Premium style and Batch export read the same way.
-            While Premium style is usable (credits remain) it carries no badge;
-            the per-use cost is shown by the live credit counter that ticks down.
-            At zero credits it gates: a Free user needs to upgrade ("Pro"), a
-            paid user just needs more credits ("Top up"). Enterprise is unlimited
-            so it never gates. */}
+            gated, so Premium style and Batch export read the same way. Premium
+            styles are Pro-only: a Free user always sees "Pro" (upgrade). Once
+            entitled they're usable with no badge (the credit counter conveys the
+            per-use cost); a paid user who's out of credits sees "Top up".
+            Enterprise is unlimited so it never gates. */}
         <button className="prism-btn" onClick={() => void attemptPremium()}>
           Premium style
-          {studio.creditBalance <= 0 && (
-            <span className="prism-btn__badge prism-btn__badge--plan">
-              {stylePacks.denied ? 'Pro' : 'Top up'}
-            </span>
-          )}
+          {stylePacks.denied ? (
+            <span className="prism-btn__badge prism-btn__badge--plan">Pro</span>
+          ) : studio.creditBalance <= 0 ? (
+            <span className="prism-btn__badge prism-btn__badge--plan">Top up</span>
+          ) : null}
         </button>
         <button className="prism-btn" onClick={() => void attemptBatchExport()}>
           Batch export
