@@ -186,11 +186,16 @@ def derive_local_entitlement_from_configured_rules(
     # call so the dimensional matcher can group rule segments. Segments
     # missing a dimension fall into `__no_dim__` inside the helper,
     # preserving flat-OR back-compat for pre-PR-B exports.
+    # Plan 234 TASK-2: keyed by HANDLE, matching the TS canonical. Rule
+    # `segment_ids` are handle-valued (plan 120 TASK-4); keying this map by
+    # `id` made every lookup miss on any export whose ids differ from its
+    # handles, collapsing all rule segments into `__no_dim__` and degrading
+    # cross-dimension AND to flat OR (a grant where TS denies).
     segment_dimensions: dict[str, str] = {}
     for seg in exported_config.get("segments") or []:
         if not isinstance(seg, dict):
             continue
-        sid = seg.get("id")
+        sid = seg.get("handle")
         dim = seg.get("dimension_id")
         if isinstance(sid, str) and isinstance(dim, str):
             segment_dimensions[sid] = dim

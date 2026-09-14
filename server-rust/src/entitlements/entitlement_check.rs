@@ -317,8 +317,14 @@ pub fn derive_local_entitlement_from_configured_rules(
     let mut segment_dimensions: HashMap<String, String> = HashMap::new();
     if let Some(segments) = exported_config.get("segments").and_then(Value::as_array) {
         for seg in segments {
+            // Plan 234 TASK-2: keyed by HANDLE, matching the TS canonical.
+            // Rule `segment_ids` are handle-valued (plan 120 TASK-4); keying
+            // this map by `id` made every lookup miss on any export whose ids
+            // differ from its handles, collapsing all rule segments into
+            // `__no_dim__` and degrading cross-dimension AND to flat OR (a
+            // grant where TS denies).
             if let (Some(sid), Some(dim)) = (
-                seg.get("id").and_then(Value::as_str),
+                seg.get("handle").and_then(Value::as_str),
                 seg.get("dimension_id").and_then(Value::as_str),
             ) {
                 segment_dimensions.insert(sid.to_string(), dim.to_string());

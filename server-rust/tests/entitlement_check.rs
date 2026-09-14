@@ -568,3 +568,51 @@ fn results_serialize_with_absent_optional_fields() {
     let v = serde_json::to_value(&r).unwrap();
     assert_eq!(v, json!({ "status": "allowed", "allowed": true }));
 }
+
+// ── segment dimension lookup (plan 234 TASK-2) ──────────────────────────────
+//
+// The segment->dimension lookup is keyed by HANDLE: rule `segment_ids` are
+// handle-valued (plan 120 TASK-4), and keying the map by `id` made every
+// lookup miss whenever ids differ from handles (i.e. every real export),
+// collapsing all rule segments into `__no_dim__` and degrading
+// cross-dimension AND to flat OR - a grant where TS denies. Byte parity
+// additionally locked by the `entitlement_segment_dimensions` /
+// `entitlement_segment_no_dim_bucket` parity fixtures.
+
+fn segment_dimension_config() -> Value {
+    json!({
+        "entitlements": [{ "unique_handle": "feat_x", "type": "feature" }],
+        "plans": [{ "id": "plan_pro", "unique_handle": "pro" }],
+        "segments": [
+            { "id": "seg_01", "handle": "emea", "dimension_id": "region" },
+            { "id": "seg_03", "handle": "admins", "dimension_id": "role" }
+        ],
+        "entitlement_rules": [{
+            "entitlement_id": "feat_x",
+            "targets": [{ "kind": "plan", "id": "pro" }],
+            "segment_ids": ["emea", "admins"],
+            "type_fields": { "kind": "feature", "enabled": true }
+        }],
+    })
+}
+
+#[test]
+fn cross_dimension_and_denies_when_one_dimension_unheld() {
+    let cfg = segment_dimension_config();
+    let mut inp = input("feat_x", "pro");
+    inp.segment_ids = HashSet::from(["emea".to_string()]);
+    let r = derive(&cfg, &inp);
+    assert_eq!(r.status, "denied");
+    assert!(!r.allowed);
+    assert_eq!(r.reason.as_deref(), Some("no_matching_entitlement_rule"));
+}
+
+#[test]
+fn cross_dimension_and_grants_when_both_dimensions_held() {
+    let cfg = segment_dimension_config();
+    let mut inp = input("feat_x", "pro");
+    inp.segment_ids = HashSet::from(["emea".to_string(), "admins".to_string()]);
+    let r = derive(&cfg, &inp);
+    assert_eq!(r.status, "allowed");
+    assert!(r.allowed);
+}

@@ -314,3 +314,41 @@ class TestNoPlanIdentityFailsClosed:
         assert no_identity["allowed"] is False
         assert untargeted["allowed"] is False
         assert no_identity["reason"] != untargeted["reason"]
+
+
+class TestSegmentDimensionLookup:
+    """Plan 234 TASK-2: the segment->dimension lookup is keyed by HANDLE.
+
+    Rule ``segment_ids`` are handle-valued (plan 120 TASK-4). Keying the
+    lookup by ``id`` made every lookup miss whenever ids differ from handles
+    (i.e. every real export), collapsing all rule segments into ``__no_dim__``
+    and degrading cross-dimension AND to flat OR - a grant where TS denies.
+    Cross-language byte parity additionally locked by the
+    ``entitlement_segment_dimensions`` / ``entitlement_segment_no_dim_bucket``
+    parity fixtures.
+    """
+
+    def _cfg_with_segments(self) -> dict[str, Any]:
+        rule = _rule("f", {"kind": "feature", "enabled": True})
+        rule["segment_ids"] = ["emea", "admins"]
+        cfg = _cfg([rule])
+        cfg["segments"] = [
+            {"id": "seg_01", "handle": "emea", "dimension_id": "region"},
+            {"id": "seg_03", "handle": "admins", "dimension_id": "role"},
+        ]
+        return cfg
+
+    def test_cross_dimension_and_denies_when_one_dimension_unheld(self) -> None:
+        cfg = self._cfg_with_segments()
+        assert _derive(cfg, "f", segment_ids={"emea"}) == {
+            "status": "denied",
+            "allowed": False,
+            "reason": "no_matching_entitlement_rule",
+        }
+
+    def test_cross_dimension_and_grants_when_both_dimensions_held(self) -> None:
+        cfg = self._cfg_with_segments()
+        assert _derive(cfg, "f", segment_ids={"emea", "admins"}) == {
+            "status": "allowed",
+            "allowed": True,
+        }
