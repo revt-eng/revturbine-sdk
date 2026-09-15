@@ -42,6 +42,7 @@ __all__ = [
     "parse_exported_config_or_throw",
     "category_bucket",
     "placement_score",
+    "tier3_class",
     "placement_priority",
     "proximity_score",
     "is_modal_safe_surface_type",
@@ -668,7 +669,7 @@ def category_bucket(category: str) -> int:
     Lower bucket = higher priority. ``0`` = gated/entitlement (always
     first per spec); ``99`` = unknown.
 
-    Source: helpers.ts:310-321
+    Source: helpers.ts (categoryBucket; the canonical map, plan 53)
     """
     normalized = str(category or "").strip().lower()
     if not normalized:
@@ -680,12 +681,18 @@ def category_bucket(category: str) -> int:
         return 1
     if any(token in normalized for token in ("usage", "credit", "seat", "quota")):
         return 2
+    # Plan 53 folded trials into priority tier 3 (bucket 2) alongside
+    # usage/credit/seat, and retention into the single discretionary bucket 4.
+    # This port kept the pre-plan-53 map (trial=3, retention=5) for months -
+    # the docstring's source line had MOVED and CHANGED upstream - which made
+    # trial-vs-usage competitions order strictly here while the canonical
+    # ties them into the two-stage urgency model (plan 234 TASK-15).
     if "trial" in normalized:
-        return 3
+        return 2
     if any(token in normalized for token in ("conversion", "expansion", "upsell")):
         return 4
     if any(token in normalized for token in ("retention", "winback", "churn")):
-        return 5
+        return 4
     return 99
 
 
@@ -728,6 +735,47 @@ def placement_priority(output: PlacementOutput) -> float:
         if value is not None:
             return value
     return 0
+
+
+_TIER3_CLASS_1_TRIGGER_KINDS = frozenset({"trial_started", "trial_ended", "trial_converted"})
+_TIER3_CLASS_3_TRIGGER_KINDS = frozenset({"trial_progress", "trial_ending"})
+
+
+def tier3_class(output: PlacementOutput) -> int:
+    """Within-tier urgency class for tier-3 (usage/credit/seat + trials)
+    candidates. Stage 1 of the two-stage model (plan 53, spec
+    placement-prioritization.md 3.2); lower = more urgent. Stage 2 is the
+    comparator's proximity_score step.
+
+    Source: helpers.ts (tier3Class)
+    """
+    content = output.get("content") if isinstance(output.get("content"), dict) else {}
+    trigger_kind = content.get("__trigger_kind") if isinstance(content, dict) else None
+
+    if isinstance(trigger_kind, str) and trigger_kind in _TIER3_CLASS_1_TRIGGER_KINDS:
+        return 1
+    if isinstance(trigger_kind, str) and trigger_kind in _TIER3_CLASS_3_TRIGGER_KINDS:
+        return 3
+
+    basis = next(
+        (
+            v
+            for v in (
+                parse_numberish(
+                    content.get("usage_percent") if isinstance(content, dict) else None
+                ),
+                parse_numberish(
+                    content.get("threshold_percent") if isinstance(content, dict) else None
+                ),
+            )
+            if v is not None
+        ),
+        None,
+    )
+    if basis is not None and basis >= 100:
+        return 2
+
+    return 3
 
 
 def proximity_score(output: PlacementOutput) -> float:

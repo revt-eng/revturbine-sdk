@@ -389,13 +389,15 @@ class TestCategoryBucket:
             ("credit", 2),
             ("seat", 2),
             ("quota", 2),
-            ("trial", 3),
+            # Plan 53 map (plan 234 TASK-15): trials fold into priority
+            # tier 3 (bucket 2); retention folds into discretionary 4.
+            ("trial", 2),
             ("upsell", 4),
             ("conversion", 4),
             ("expansion", 4),
-            ("retention", 5),
-            ("winback", 5),
-            ("churn", 5),
+            ("retention", 4),
+            ("winback", 4),
+            ("churn", 4),
             ("mystery", 99),
             ("", 99),
         ],
@@ -404,10 +406,15 @@ class TestCategoryBucket:
         assert category_bucket(category) == expected
 
     def test_gated_lt_fixed_ordering_invariant(self) -> None:
-        # Spec: Access Gates always sort first.
+        # Spec: Access Gates always sort first. Plan 53: trials TIE with
+        # usage/credit/seat in priority tier 3 (the two-stage urgency model
+        # breaks the tie, not the bucket) - the old strict `usage < trial`
+        # assertion was pinning the pre-plan-53 drift this port carried.
         assert category_bucket("gated") < category_bucket("fixed")
         assert category_bucket("fixed") < category_bucket("usage")
-        assert category_bucket("usage") < category_bucket("trial")
+        assert category_bucket("usage") == category_bucket("trial")
+        assert category_bucket("trial") < category_bucket("conversion")
+        assert category_bucket("retention") == category_bucket("conversion")
 
 
 # ── is_modal_safe_surface_type ───────────────────────────────────────────────

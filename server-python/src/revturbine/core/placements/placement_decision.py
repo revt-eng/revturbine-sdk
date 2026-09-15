@@ -30,6 +30,7 @@ from revturbine.core.helpers import (
     proximity_score,
     server_order,
     superseded_versions,
+    tier3_class,
 )
 from revturbine.core.normalization import normalize_placement_output
 from revturbine.core.placements.cap_rules import evaluate_caps
@@ -357,7 +358,15 @@ def resolve_local_placement_from_candidates(
         if left_bucket != right_bucket:
             return left_bucket - right_bucket
 
-        if 2 <= left_bucket <= 3:
+        # Within priority tier 3 (usage/credit/seat + trials, combined into
+        # bucket 2): two-stage urgency per plan 53 / spec 3.2. Stage 1:
+        # tier3_class ascending (transition beats at-limit beats approaching);
+        # stage 2: proximity_score descending. The old window `2 <= b <= 3`
+        # assumed the pre-plan-53 map this port carried (plan 234 TASK-15).
+        if left_bucket == 2:
+            cls = tier3_class(left) - tier3_class(right)
+            if cls != 0:
+                return -1 if cls < 0 else 1
             prox = proximity_score(right) - proximity_score(left)
             if prox != 0:
                 return -1 if prox < 0 else 1
@@ -591,12 +600,11 @@ def check_system_presentation_caps(
     the rule-level cooldown, unlike the primitive's own per-payload order),
     and the reason vocabulary.
 
-    The exemption boundary stays ``<= 3``: this port's ``category_bucket``
-    still maps trial to 3 where the TS canonical folded trial into 2, so
-    ``<= 3`` here exempts exactly the categories TS's ``<= 2`` exempts. The
-    bucket-map drift itself (trial 3 vs 2, retention 5 vs 4, and the missing
-    tier-3 urgency staging) is filed as its own plan-234 task — changing the
-    map moves placement ORDERING, which is not this refactor's business.
+    The exemption boundary is ``<= 2``, byte-matching the canonical: plan
+    234 TASK-15 aligned this port's ``category_bucket`` to the plan-53 map
+    (trial folded into 2, retention into 4), so the boundary moved from the
+    compensating ``<= 3`` in the same change — the exempted category SET is
+    unchanged.
 
     Source: placement-decision.ts (checkSystemPresentationCaps, post #351)
     """
@@ -608,7 +616,7 @@ def check_system_presentation_caps(
     if not surface_cap_rules:
         return CapCheckResult(allowed=True)
 
-    if category_bucket(output["category"]) <= 3:
+    if category_bucket(output["category"]) <= 2:
         return CapCheckResult(allowed=True)
 
     rule = next(
