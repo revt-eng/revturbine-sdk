@@ -66,7 +66,7 @@ pub struct UserTrialStatus {
 /// Entitlement-grant inputs for an active reverse trial.
 ///
 /// Source: trial-status.ts deriveReverseTrialGrants
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReverseTrialGrants {
     /// Entitlement handles granted for the duration of the trial.
     pub trial_granted_entitlement_handles: Vec<String>,
@@ -407,7 +407,7 @@ pub fn derive_reverse_trial_grants(instance: &Value, rule: &Value) -> Option<Rev
 }
 
 /// The outcome of [`evaluate_trial_status`].
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
 pub struct TrialEvaluation {
     /// The derived runtime status, when a trial applies.
     pub trial: Option<UserTrialStatus>,
