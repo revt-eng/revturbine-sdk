@@ -25,7 +25,6 @@ from revturbine.core.helpers import (
     normalized_route,
     parse_cap_rule,
     parse_numberish,
-    period_window_start,
     placement_priority,
     placement_score,
     proximity_score,
@@ -33,6 +32,7 @@ from revturbine.core.helpers import (
     superseded_versions,
 )
 from revturbine.core.normalization import normalize_placement_output
+from revturbine.core.placements.cap_rules import evaluate_caps
 from revturbine.core.state.types import (
     PlacementCapPolicy,
     PlacementCapRule,
@@ -509,8 +509,20 @@ def check_placement_caps(
     persist. Cooldown is applied only on ``interaction_type='dismiss'``
     (spec: cooldown is "after dismiss").
 
-    Source: placement-decision.ts:323-371
+    Plan 234 TASK-14: the allow/deny arithmetic delegates to
+    ``evaluate_caps`` — the single primitive TS consolidated onto in plan
+    233 TASK-15 — and the body now mirrors placement-decision.ts line for
+    line. Two behaviours ALIGNED to the canonical in that move (both were
+    silent divergences): Fixed / Access-Gate categories (bucket <= 1) are
+    exempt from per-payload caps, and a cap deny persists the UNFILTERED
+    state rather than trimming ``seen_at`` to the tripping window (the trim
+    silently shrank future week/month windows).
+
+    Source: placement-decision.ts (checkPlacementCaps, post scaffold #351)
     """
+    if category_bucket(output["category"]) <= 1:
+        return CapCheckResult(allowed=True)
+
     policies = extract_placement_cap_policies(output)
     if not policies:
         return CapCheckResult(allowed=True)
@@ -528,27 +540,20 @@ def check_placement_caps(
     if "cooldown_until" in prev:
         state["cooldown_until"] = prev["cooldown_until"]
 
-    cooldown_until = state.get("cooldown_until")
-    if cooldown_until is not None and math.isfinite(cooldown_until) and cooldown_until > now_ms:
+    decision = evaluate_caps(
+        now=now_ms,
+        per_payload={
+            "policies": policies,
+            "seen_at": state["seen_at"],
+            "cooldown_until": state.get("cooldown_until"),
+        },
+    )
+    if not decision["allowed"]:
         return CapCheckResult(
             allowed=False,
-            reason="suppressed_by_payload_cooldown",
+            reason=decision.get("reason", ""),
             updated_state=state,
         )
-
-    for policy in policies:
-        for rule in policy["rules"]:
-            window_start = period_window_start(rule["period"], now_ms)
-            within = [ts for ts in state["seen_at"] if window_start <= ts <= now_ms]
-            if len(within) >= rule["count"]:
-                trimmed: PresentationCapState = PresentationCapState(seen_at=within)
-                if "cooldown_until" in state:
-                    trimmed["cooldown_until"] = state["cooldown_until"]
-                return CapCheckResult(
-                    allowed=False,
-                    reason=f"suppressed_by_payload_cap_{rule['period']}",
-                    updated_state=trimmed,
-                )
 
     updated_seen_at = [*state["seen_at"], now_ms]
     cooldowns: list[float] = []
@@ -577,10 +582,23 @@ def check_system_presentation_caps(
     now_ms: int | None = None,
 ) -> CapCheckResult:
     """System-level (per-surface-type) caps. Deterministic/priority
-    categories (bucket ≤ 3) are exempt; only discretionary categories
-    (bucket ≥ 4) are capped.
+    categories are exempt; only discretionary categories are capped.
 
-    Source: placement-decision.ts:382-442
+    Plan 234 TASK-14 (mirrors plan 233 TASK-15's TS consolidation): every
+    layer below delegates its arithmetic to ``evaluate_caps``; this function
+    keeps only what is genuinely system-level policy — the category
+    exemption, the surface-type lookup, the layer ORDER (period caps before
+    the rule-level cooldown, unlike the primitive's own per-payload order),
+    and the reason vocabulary.
+
+    The exemption boundary stays ``<= 3``: this port's ``category_bucket``
+    still maps trial to 3 where the TS canonical folded trial into 2, so
+    ``<= 3`` here exempts exactly the categories TS's ``<= 2`` exempts. The
+    bucket-map drift itself (trial 3 vs 2, retention 5 vs 4, and the missing
+    tier-3 urgency staging) is filed as its own plan-234 task — changing the
+    map moves placement ORDERING, which is not this refactor's business.
+
+    Source: placement-decision.ts (checkSystemPresentationCaps, post #351)
     """
     import time
 
@@ -605,26 +623,33 @@ def check_system_presentation_caps(
         if presentation_history is not None
         else PresentationCapState(seen_at=[])
     )
+    last_seen = max(state["seen_at"]) if state["seen_at"] else None
 
-    if session_cooldown_ms and session_cooldown_ms > 0 and state["seen_at"]:
-        last_seen = max(state["seen_at"])
-        if now_ms - last_seen < session_cooldown_ms:
-            return CapCheckResult(allowed=False, reason="suppressed_by_system_cooldown")
+    def cooldown_denied(cooldown_ms: float | None) -> bool:
+        if not cooldown_ms or cooldown_ms <= 0 or last_seen is None:
+            return False
+        return not evaluate_caps(
+            now=now_ms,
+            per_payload={
+                "policies": [],
+                "seen_at": [],
+                "cooldown_until": last_seen + cooldown_ms,
+            },
+        )["allowed"]
 
-    for cap_rule in rule["rules"]:
-        window_start = period_window_start(cap_rule["period"], now_ms)
-        within = [ts for ts in state["seen_at"] if window_start <= ts <= now_ms]
-        if len(within) >= cap_rule["count"]:
-            return CapCheckResult(
-                allowed=False,
-                reason=f"suppressed_by_system_cap_{cap_rule['period']}",
-            )
+    if cooldown_denied(session_cooldown_ms):
+        return CapCheckResult(allowed=False, reason="suppressed_by_system_cooldown")
 
-    rule_cooldown = rule.get("cooldown_ms")
-    if rule_cooldown and rule_cooldown > 0 and state["seen_at"]:
-        last_seen = max(state["seen_at"])
-        if now_ms - last_seen < rule_cooldown:
-            return CapCheckResult(allowed=False, reason="suppressed_by_system_cooldown")
+    cap_decision = evaluate_caps(
+        now=now_ms,
+        per_payload={"policies": [{"rules": rule["rules"]}], "seen_at": state["seen_at"]},
+    )
+    if not cap_decision["allowed"]:
+        period = str(cap_decision.get("reason") or "").replace("suppressed_by_payload_cap_", "")
+        return CapCheckResult(allowed=False, reason=f"suppressed_by_system_cap_{period}")
+
+    if cooldown_denied(rule.get("cooldown_ms")):
+        return CapCheckResult(allowed=False, reason="suppressed_by_system_cooldown")
 
     return CapCheckResult(allowed=True)
 

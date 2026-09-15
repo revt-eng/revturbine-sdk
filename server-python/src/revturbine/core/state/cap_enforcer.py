@@ -21,8 +21,8 @@ from revturbine.core.helpers import (
     PlacementOutput,
     is_record,
     parse_cap_rule,
-    period_window_start,
 )
+from revturbine.core.placements.cap_rules import evaluate_caps
 from revturbine.core.state.storage import RevTurbineStorage
 from revturbine.core.state.types import (
     CapEnforcementResult,
@@ -90,31 +90,26 @@ class CapEnforcer:
         if "cooldown_until" in existing:
             state["cooldown_until"] = existing["cooldown_until"]
 
-        # Active cooldown takes precedence over per-period caps.
-        cooldown_until = state.get("cooldown_until")
-        if cooldown_until is not None and cooldown_until > now:
+        # Delegate the per-payload allow/deny decision to the single core
+        # primitive (plan 234 TASK-14, mirroring TS cap-enforcer.ts post
+        # plan 167 TASK-2). This class still owns state persistence below.
+        # The old body ALSO trimmed seen_at to the tripping window on a cap
+        # deny — its comment said "Mirrors TS", and TS does no such trim; the
+        # untrimmed state is what keeps week/month windows honest.
+        decision = evaluate_caps(
+            now=now,
+            per_payload={
+                "policies": policies,
+                "seen_at": state["seen_at"],
+                "cooldown_until": state.get("cooldown_until"),
+            },
+        )
+        if not decision["allowed"]:
             self._caps_by_key[key] = state
             return CapEnforcementResult(
                 allowed=False,
-                reason="suppressed_by_payload_cooldown",
+                reason=decision.get("reason", ""),
             )
-
-        # Check cap rules. The first rule that's been hit causes denial.
-        for policy in policies:
-            for rule in policy["rules"]:
-                window_start = period_window_start(rule["period"], now)
-                within_window = [ts for ts in state["seen_at"] if window_start <= ts <= now]
-                if len(within_window) >= rule["count"]:
-                    # Trim the in-memory state to the active window so the
-                    # next call doesn't re-scan stale timestamps. Mirrors TS.
-                    new_state: PresentationCapState = PresentationCapState(seen_at=within_window)
-                    if "cooldown_until" in state:
-                        new_state["cooldown_until"] = state["cooldown_until"]
-                    self._caps_by_key[key] = new_state
-                    return CapEnforcementResult(
-                        allowed=False,
-                        reason=f"suppressed_by_payload_cap_{rule['period']}",
-                    )
 
         # Allowed — record this presentation.
         state["seen_at"].append(now)
