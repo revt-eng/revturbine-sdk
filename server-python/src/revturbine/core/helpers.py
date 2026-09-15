@@ -22,6 +22,7 @@ __all__ = [
     "is_record",
     "ensure_array",
     "first_string_value",
+    "js_number",
     "parse_numberish",
     "normalized_route",
     "sanitize_slug",
@@ -166,12 +167,45 @@ def parse_numberish(value: Any) -> float | None:
     if isinstance(value, (int, float)):
         return float(value) if math.isfinite(float(value)) else None
     if isinstance(value, str):
-        try:
-            parsed = float(value)
-        except (ValueError, TypeError):
-            return None
+        # Plan 234 TASK-8c: the string branch used Python float(), which
+        # accepts forms JS Number() rejects (underscore separators) and
+        # rejects forms JS accepts (0x/0o/0b literals). parse_numberish
+        # feeds every selection scorer (placement_score/priority/proximity/
+        # server_order/tier3_class), so "1_000" scored 1000 here and NaN->0
+        # in TS - a candidate-flipping divergence. Now the one JS-semantics
+        # parser (promoted from the plan-233 segments port) decides.
+        parsed = js_number(value)
         return parsed if math.isfinite(parsed) else None
     return None
+
+
+def js_number(text: str) -> float:
+    """JavaScript ``Number(text)`` semantics (plan 233, promoted from the
+    segments port in plan 234 TASK-8c so every coercion site shares ONE
+    parser). Whitespace trims, empty string is 0, hex/octal/binary literals
+    parse per JS, and anything unparseable is NaN.
+    """
+    s = text.strip()
+    if s == "":
+        return 0.0
+    try:
+        lowered = s.lower()
+        if lowered.startswith(("0x", "-0x", "+0x")):
+            return float(int(s, 16))
+        if lowered.startswith(("0o", "-0o", "+0o")):
+            return float(int(s, 8))
+        if lowered.startswith(("0b", "-0b", "+0b")):
+            return float(int(s, 2))
+        if lowered in ("infinity", "+infinity"):
+            return math.inf
+        if lowered == "-infinity":
+            return -math.inf
+        # Python accepts "nan"/"inf" and underscore separators; JS does not.
+        if "_" in s or lowered in ("nan", "inf", "-inf", "+inf"):
+            return math.nan
+        return float(s)
+    except ValueError:
+        return math.nan
 
 
 # ── Route / slug normalization ──────────────────────────────────────────────
@@ -893,8 +927,15 @@ def superseded_versions(output: PlacementOutput) -> list[str]:
     if isinstance(raw, list):
         results: list[str] = []
         for item in raw:
-            if isinstance(item, str) and item.strip():
-                results.append(item.strip())
+            if isinstance(item, str):
+                # Mirror TS exactly: a string maps to its trim and an empty
+                # trim is FILTERED - it must never fall into the numeric
+                # branch (Number('') is 0, which would fabricate a '0'
+                # version; plan 234 TASK-8c caught this the moment
+                # parse_numberish adopted JS semantics).
+                trimmed = item.strip()
+                if trimmed:
+                    results.append(trimmed)
                 continue
             num = parse_numberish(item)
             if num is not None:

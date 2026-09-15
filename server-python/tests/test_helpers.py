@@ -134,8 +134,18 @@ class TestParseNumberish:
 
     def test_non_numeric_string_returns_none(self) -> None:
         assert parse_numberish("abc") is None
-        assert parse_numberish("") is None
         assert parse_numberish("1.2.3") is None
+
+    def test_js_number_semantics(self) -> None:
+        # Plan 234 TASK-8c: the string branch is JS Number(), not python
+        # float(). The old `parse_numberish("") is None` assertion was
+        # pinning the float() behaviour - Number("") is 0 in JS.
+        assert parse_numberish("") == 0.0
+        assert parse_numberish("   ") == 0.0
+        assert parse_numberish("1_000") is None
+        assert parse_numberish("0x10") == 16.0
+        assert parse_numberish("0b101") == 5.0
+        assert parse_numberish("Infinity") is None  # inf is non-finite
 
     def test_bool_returns_none(self) -> None:
         # bool is int in Python; the TS guard rejects booleans, so we do too.
@@ -954,8 +964,11 @@ class TestMilestoneVersion:
         output = {"content": {"template_version": "tv", "milestone_version": "mv"}}
         assert milestone_version(output) == "tv"
 
-    def test_whitespace_only_string_falls_through(self) -> None:
-        assert milestone_version({"content": {"template_version": "   "}}) is None
+    def test_whitespace_only_string_is_version_zero_like_ts(self) -> None:
+        # TS: the trim-check fails, then parseNumberish("   ") is
+        # Number("   ") = 0 -> "0". The old is-None assertion pinned the
+        # python float() divergence (plan 234 TASK-8c).
+        assert milestone_version({"content": {"template_version": "   "}}) == "0"
 
     def test_no_version_returns_none(self) -> None:
         assert milestone_version({}) is None

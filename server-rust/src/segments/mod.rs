@@ -59,7 +59,7 @@ fn js_string(value: &Value) -> String {
 /// Reproduces the coercions that change an outcome: whitespace is trimmed, an
 /// empty string is `0`, hex/octal/binary literals parse per JS, and anything
 /// unparseable is `NaN` — which makes every comparison false, exactly as in JS.
-fn js_number(text: &str) -> f64 {
+pub(crate) fn js_number(text: &str) -> f64 {
     let s = text.trim();
     if s.is_empty() {
         return 0.0;

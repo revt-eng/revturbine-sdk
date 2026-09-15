@@ -21,6 +21,8 @@ from __future__ import annotations
 import math
 from typing import Any
 
+from revturbine.core.helpers import js_number
+
 __all__ = [
     "ACTIVE_ACTIVITY_LEVELS",
     "ACTIVITY_LEVEL_TRAIT",
@@ -70,35 +72,11 @@ def _js_string(value: Any) -> str:
 
 
 def _js_number(text: str) -> float:
-    """JavaScript ``Number(text)`` for the numeric comparison operators.
-
-    Reproduces the coercions that change an outcome: whitespace is trimmed,
-    an empty string is ``0``, hex/octal/binary literals parse per JS, and
-    anything unparseable is ``NaN`` — which makes every comparison false,
-    exactly as it does in JS.
+    """JavaScript ``Number(text)`` - delegates to the ONE promoted parser
+    (helpers.js_number, plan 234 TASK-8c); this alias keeps the segments
+    module's call sites and tests stable.
     """
-    s = text.strip()
-    if s == "":
-        return 0.0
-    try:
-        lowered = s.lower()
-        # JS Number() accepts these literal forms; float() does not.
-        if lowered.startswith(("0x", "-0x", "+0x")):
-            return float(int(s, 16))
-        if lowered.startswith(("0o", "-0o", "+0o")):
-            return float(int(s, 8))
-        if lowered.startswith(("0b", "-0b", "+0b")):
-            return float(int(s, 2))
-        if lowered in ("infinity", "+infinity"):
-            return math.inf
-        if lowered == "-infinity":
-            return -math.inf
-        # Python accepts "nan"/"inf" and underscore separators; JS does not.
-        if "_" in s or lowered in ("nan", "inf", "-inf", "+inf"):
-            return math.nan
-        return float(s)
-    except ValueError:
-        return math.nan
+    return js_number(text)
 
 
 def evaluate_predicate(predicate: dict[str, Any], traits: dict[str, Any]) -> bool:
