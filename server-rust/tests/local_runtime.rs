@@ -71,6 +71,37 @@ fn dismissal() -> TreatmentInteractionInput<'static> {
 
 // ── Placement pipeline ──────────────────────────────────────────────────────
 
+// ── Retirement gate (plan 234 TASK-13) ─────────────────────────────────────
+//
+// Rust carried the ImpressionHistory machinery since the port landed but
+// never consulted it in the resolver, so a converted placement stayed
+// visible in this port alone while TS core (local-resolver.ts:610-612, 726)
+// and Python both hid it. The parity fixture `placement_conversion_retires`
+// locks the cross-language property; this test locks the port-local wiring
+// so a refactor cannot silently drop the gate between parity runs.
+
+#[test]
+fn a_confirmed_conversion_permanently_retires_the_placement() {
+    let mut rt = runtime(plan_opts());
+    assert_eq!(rt.get_placement_decision(&input())["visible"], json!(true));
+
+    rt.impression_history_mut()
+        .record_conversion("pl_banner", None);
+
+    let d = rt.get_placement_decision(&input());
+    assert_eq!(d["visible"], json!(false));
+    assert_eq!(d["reason_codes"], json!(["placement_retired"]));
+}
+
+#[test]
+fn retirement_is_per_placement_not_per_user() {
+    let mut rt = runtime(plan_opts());
+    rt.impression_history_mut()
+        .record_conversion("some_other_placement", None);
+
+    assert_eq!(rt.get_placement_decision(&input())["visible"], json!(true));
+}
+
 #[test]
 fn resolves_a_placement_through_the_full_pipeline() {
     let mut rt = runtime(plan_opts());

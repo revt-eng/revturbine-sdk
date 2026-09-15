@@ -52,7 +52,7 @@ fn ctx(plan: Value) -> Value {
 #[test]
 fn resolves_directly_by_placement_id() {
     let r = StaticPlacementResolver::new(&[entry("pl_banner", "fixed", 0, "Hello")], &config());
-    let d = r.resolve("pl_banner", None, None);
+    let d = r.resolve("pl_banner", None, None, None);
 
     assert_eq!(d["visible"], json!(true));
     assert_eq!(d["content"]["header"], json!("Hello"));
@@ -63,14 +63,20 @@ fn resolves_directly_by_placement_id() {
 #[test]
 fn a_placement_is_registered_under_both_the_bare_and_prefixed_id() {
     let r = StaticPlacementResolver::new(&[entry("pl_banner", "fixed", 0, "Hello")], &config());
-    assert_eq!(r.resolve("banner", None, None)["visible"], json!(true));
-    assert_eq!(r.resolve("pl_banner", None, None)["visible"], json!(true));
+    assert_eq!(
+        r.resolve("banner", None, None, None)["visible"],
+        json!(true)
+    );
+    assert_eq!(
+        r.resolve("pl_banner", None, None, None)["visible"],
+        json!(true)
+    );
 }
 
 #[test]
 fn an_unknown_placement_reports_not_found() {
     let r = StaticPlacementResolver::new(&[], &config());
-    let d = r.resolve("nope", None, None);
+    let d = r.resolve("nope", None, None, None);
     assert_eq!(d["visible"], json!(false));
     assert_eq!(d["reason_codes"], json!(["placement_not_found"]));
 }
@@ -84,7 +90,7 @@ fn a_non_seed_modal_template_resolves_to_the_modal_component_type() {
 
     let r = StaticPlacementResolver::new(&[e], &c);
     assert_eq!(
-        r.resolve("pl_modal", None, None)["output"]["surface"]["type"],
+        r.resolve("pl_modal", None, None, None)["output"]["surface"]["type"],
         json!("modal"),
     );
 }
@@ -103,7 +109,7 @@ fn a_payload_that_is_not_active_is_never_indexed() {
     e["payloads"][0]["status"] = json!("draft");
     let r = StaticPlacementResolver::new(&[e], &config());
     assert_eq!(
-        r.resolve("pl_banner", None, None)["reason_codes"],
+        r.resolve("pl_banner", None, None, None)["reason_codes"],
         json!(["placement_not_found"])
     );
 }
@@ -113,7 +119,7 @@ fn a_payload_that_is_not_active_is_never_indexed() {
 #[test]
 fn resolves_through_a_slots_surface_template() {
     let r = StaticPlacementResolver::new(&[entry("pl_a", "fixed", 0, "A")], &config());
-    let d = r.resolve("slot_1", Some(&slot(&["banner_placement"])), None);
+    let d = r.resolve("slot_1", Some(&slot(&["banner_placement"])), None, None);
     assert_eq!(d["visible"], json!(true));
     assert_eq!(d["content"]["header"], json!("A"));
 }
@@ -121,7 +127,7 @@ fn resolves_through_a_slots_surface_template() {
 #[test]
 fn a_slot_with_no_candidates_says_so_specifically() {
     let r = StaticPlacementResolver::new(&[entry("pl_a", "fixed", 0, "A")], &config());
-    let d = r.resolve("slot_1", Some(&slot(&["modal_overlay"])), None);
+    let d = r.resolve("slot_1", Some(&slot(&["modal_overlay"])), None, None);
     assert_eq!(d["visible"], json!(false));
     assert_eq!(d["reason_codes"], json!(["no_candidates_for_template"]));
 }
@@ -133,7 +139,7 @@ fn authored_order_decides_among_candidates() {
         entry("pl_first", "fixed", 1, "First"),
     ];
     let r = StaticPlacementResolver::new(&placements, &config());
-    let d = r.resolve("slot_1", Some(&slot(&["banner_placement"])), None);
+    let d = r.resolve("slot_1", Some(&slot(&["banner_placement"])), None, None);
     assert_eq!(d["content"]["header"], json!("First"), "lower order wins");
 }
 
@@ -146,7 +152,7 @@ fn fixed_only_is_a_hard_filter_that_may_leave_nothing() {
 
     let mut s = slot(&["banner_placement"]);
     s["fixed_only"] = json!(true);
-    let d = r.resolve("slot_1", Some(&s), None);
+    let d = r.resolve("slot_1", Some(&s), None, None);
     assert_eq!(d["visible"], json!(false));
     assert_eq!(
         d["reason_codes"],
@@ -155,7 +161,7 @@ fn fixed_only_is_a_hard_filter_that_may_leave_nothing() {
     );
 
     // Without the flag the same candidate resolves.
-    let open = r.resolve("slot_1", Some(&slot(&["banner_placement"])), None);
+    let open = r.resolve("slot_1", Some(&slot(&["banner_placement"])), None, None);
     assert_eq!(open["visible"], json!(true));
 }
 
@@ -166,7 +172,7 @@ fn a_slot_hint_that_matches_nothing_does_not_empty_the_set() {
     let r = StaticPlacementResolver::new(&[entry("pl_a", "fixed", 0, "A")], &config());
     let mut s = slot(&["banner_placement"]);
     s["entitlement_handle"] = json!("nothing_matches_this");
-    let d = r.resolve("slot_1", Some(&s), None);
+    let d = r.resolve("slot_1", Some(&s), None, None);
     assert_eq!(d["visible"], json!(true), "hint ignored rather than fatal");
     assert_eq!(d["content"]["header"], json!("A"));
 }
@@ -184,7 +190,7 @@ fn direct_lookup_reports_which_gate_rejected_it() {
     let r = StaticPlacementResolver::new(&[e], &config());
 
     // No usage state → threshold gate fails closed.
-    let d = r.resolve("pl_x", None, None);
+    let d = r.resolve("pl_x", None, None, None);
     assert_eq!(d["visible"], json!(false));
     assert_eq!(d["reason_codes"], json!(["threshold_trigger_unmet"]));
 
@@ -192,7 +198,10 @@ fn direct_lookup_reports_which_gate_rejected_it() {
     let c = json!({ "__providers": {
         "entitlements": { "usage": { "exports": { "used": 90, "limit": 100 } } }
     }});
-    assert_eq!(r.resolve("pl_x", None, Some(&c))["visible"], json!(true));
+    assert_eq!(
+        r.resolve("pl_x", None, Some(&c), None)["visible"],
+        json!(true)
+    );
 }
 
 #[test]
@@ -203,13 +212,13 @@ fn a_trial_trigger_gates_the_direct_path_too() {
 
     let no_trial = ctx(json!({ "trial_state": "active" }));
     assert_eq!(
-        r.resolve("pl_t", None, Some(&no_trial))["reason_codes"],
+        r.resolve("pl_t", None, Some(&no_trial), None)["reason_codes"],
         json!(["trial_trigger_unmet"])
     );
 
     let ended = ctx(json!({ "trial_state": "expired" }));
     assert_eq!(
-        r.resolve("pl_t", None, Some(&ended))["visible"],
+        r.resolve("pl_t", None, Some(&ended), None)["visible"],
         json!(true)
     );
 }
@@ -230,7 +239,7 @@ fn usage_tokens_are_injected_and_percent_uses_js_rounding() {
     let c = json!({ "__providers": {
         "entitlements": { "usage": { "exports": { "used": 7, "limit": 8 } } }
     }});
-    let d = r.resolve("pl_u", None, Some(&c));
+    let d = r.resolve("pl_u", None, Some(&c), None);
 
     let content = &d["output"]["content"];
     assert_eq!(content["usage_current"], json!(7));
@@ -258,7 +267,7 @@ fn usage_percent_is_zero_when_the_limit_is_not_positive() {
     // The threshold gate fails closed on a non-positive limit, so this asserts
     // via the direct-path reason rather than the content.
     assert_eq!(
-        r.resolve("pl_u", None, Some(&c))["reason_codes"],
+        r.resolve("pl_u", None, Some(&c), None)["reason_codes"],
         json!(["threshold_trigger_unmet"])
     );
 }
@@ -281,12 +290,12 @@ fn upsell_surfaces_are_suppressed_for_enterprise() {
 
     let starter = ctx(json!({ "current_plan_handle": "starter" }));
     assert_eq!(
-        r.resolve("pl_up", None, Some(&starter))["visible"],
+        r.resolve("pl_up", None, Some(&starter), None)["visible"],
         json!(true)
     );
 
     let ent = ctx(json!({ "current_plan_handle": "enterprise" }));
-    let d = r.resolve("pl_up", None, Some(&ent));
+    let d = r.resolve("pl_up", None, Some(&ent), None);
     assert_eq!(d["visible"], json!(false));
     assert_eq!(
         d["reason_codes"],
@@ -299,7 +308,10 @@ fn upsell_surfaces_are_suppressed_for_enterprise() {
 fn a_non_upsell_category_is_visible_to_enterprise() {
     let r = StaticPlacementResolver::new(&[entry("pl_f", "fixed", 0, "Notice")], &config());
     let ent = ctx(json!({ "current_plan_handle": "enterprise" }));
-    assert_eq!(r.resolve("pl_f", None, Some(&ent))["visible"], json!(true));
+    assert_eq!(
+        r.resolve("pl_f", None, Some(&ent), None)["visible"],
+        json!(true)
+    );
 }
 
 // ── Plan targeting ──────────────────────────────────────────────────────────
@@ -312,12 +324,15 @@ fn a_plan_targeted_payload_is_skipped_for_other_plans() {
 
     let starter = ctx(json!({ "current_plan_handle": "starter" }));
     assert_eq!(
-        r.resolve("pl_t", None, Some(&starter))["reason_codes"],
+        r.resolve("pl_t", None, Some(&starter), None)["reason_codes"],
         json!(["plan_target_mismatch"])
     );
 
     let ent = ctx(json!({ "current_plan_handle": "enterprise" }));
-    assert_eq!(r.resolve("pl_t", None, Some(&ent))["visible"], json!(true));
+    assert_eq!(
+        r.resolve("pl_t", None, Some(&ent), None)["visible"],
+        json!(true)
+    );
 }
 
 // ── Token interpolation ─────────────────────────────────────────────────────
@@ -358,7 +373,7 @@ fn an_unresolved_token_collapses_its_whitespace() {
 #[test]
 fn the_decision_carries_both_content_namings_and_provenance() {
     let r = StaticPlacementResolver::new(&[entry("pl_a", "fixed", 0, "Head")], &config());
-    let d = r.resolve("pl_a", None, None);
+    let d = r.resolve("pl_a", None, None, None);
 
     assert_eq!(d["content"]["header"], json!("Head"));
     assert_eq!(d["content"]["title"], json!("Head"), "legacy mirror");
@@ -400,7 +415,7 @@ fn content_linked_copy_overlays_the_inline_content() {
         &[entry("pl_a", "fixed", 0, "Inline header")],
         &config_with_content_link(),
     );
-    let d = r.resolve("pl_a", None, Some(&ctx_with_segments(&[])));
+    let d = r.resolve("pl_a", None, Some(&ctx_with_segments(&[])), None);
     assert_eq!(
         d["content"]["header"],
         json!("Linked default"),
@@ -419,13 +434,14 @@ fn the_overlay_resolves_against_segment_handles_not_ids() {
         &config_with_content_link(),
     );
 
-    let by_slug = r.resolve("pl_a", None, Some(&ctx_with_segments(&["s_paid"])));
+    let by_slug = r.resolve("pl_a", None, Some(&ctx_with_segments(&["s_paid"])), None);
     assert_eq!(by_slug["content"]["header"], json!("Linked paid"));
 
     let by_id = r.resolve(
         "pl_a",
         None,
         Some(&json!({ "__providers": { "segments": { "segment_ids": ["s_paid"] } } })),
+        None,
     );
     assert_eq!(
         by_id["content"]["header"],
@@ -448,7 +464,7 @@ fn the_overlay_preserves_the_meta_keys_usage_enrichment_reads() {
         "segments": { "segment_slugs": [] },
         "entitlements": { "usage": { "exports": { "used": 5, "limit": 10 } } },
     }});
-    let d = r.resolve("pl_a", None, Some(&c));
+    let d = r.resolve("pl_a", None, Some(&c), None);
 
     assert_eq!(
         d["content"]["header"],
@@ -465,7 +481,7 @@ fn the_overlay_preserves_the_meta_keys_usage_enrichment_reads() {
 #[test]
 fn a_playbook_without_content_links_keeps_the_inline_copy() {
     let r = StaticPlacementResolver::new(&[entry("pl_a", "fixed", 0, "Inline header")], &config());
-    let d = r.resolve("pl_a", None, Some(&ctx_with_segments(&["s_paid"])));
+    let d = r.resolve("pl_a", None, Some(&ctx_with_segments(&["s_paid"])), None);
     assert_eq!(d["content"]["header"], json!("Inline header"));
 }
 
@@ -480,7 +496,7 @@ fn an_inline_studio_payload_is_not_treated_as_content_linked() {
 
     let r = StaticPlacementResolver::new(&[entry("pl_a", "fixed", 0, "Inline header")], &c);
     assert_eq!(
-        r.resolve("pl_a", None, None)["content"]["header"],
+        r.resolve("pl_a", None, None, None)["content"]["header"],
         json!("Inline header")
     );
 }
@@ -491,7 +507,7 @@ fn a_non_active_content_linked_payload_is_not_overlaid() {
     c["placement_payloads"][0]["status"] = json!("draft");
     let r = StaticPlacementResolver::new(&[entry("pl_a", "fixed", 0, "Inline header")], &c);
     assert_eq!(
-        r.resolve("pl_a", None, None)["content"]["header"],
+        r.resolve("pl_a", None, None, None)["content"]["header"],
         json!("Inline header"),
     );
 }
@@ -502,7 +518,7 @@ fn an_unrecognized_status_is_treated_as_inactive_not_publishable() {
     c["placement_payloads"][0]["status"] = json!("something_new");
     let r = StaticPlacementResolver::new(&[entry("pl_a", "fixed", 0, "Inline header")], &c);
     assert_eq!(
-        r.resolve("pl_a", None, None)["content"]["header"],
+        r.resolve("pl_a", None, None, None)["content"]["header"],
         json!("Inline header"),
         "an unknown status must not read as publishable",
     );

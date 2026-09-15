@@ -30,7 +30,10 @@ use crate::entitlements::{
     RuleEvaluationContext,
 };
 use crate::placements::{decision_content, StaticPlacementResolver};
-use crate::state::{CapEnforcer, InMemoryStorage, InteractionTracker, TreatmentInteractionInput};
+use crate::state::{
+    CapEnforcer, ImpressionHistory, InMemoryImpressionStore, InMemoryStorage, InteractionTracker,
+    TreatmentInteractionInput,
+};
 
 /// What an entitlement resolves to when nothing more specific applies.
 pub use crate::adapters::EntitlementPolicy;
@@ -51,6 +54,7 @@ pub struct LocalRuntime {
     resolver: StaticPlacementResolver,
     registered: HashMap<String, Value>,
     interaction_tracker: InteractionTracker<InMemoryStorage>,
+    impression_history: ImpressionHistory<InMemoryImpressionStore>,
     cap_enforcer: CapEnforcer<InMemoryStorage>,
     default_entitlement_policy: EntitlementPolicy,
     enable_caps_enforcement: bool,
@@ -90,6 +94,7 @@ impl LocalRuntime {
                 tenant_id,
                 user_id,
             ),
+            impression_history: ImpressionHistory::new(InMemoryImpressionStore::new(), user_id),
             cap_enforcer: CapEnforcer::new(InMemoryStorage::new(), tenant_id, user_id),
             default_entitlement_policy: EntitlementPolicy::default(),
             enable_caps_enforcement: true,
@@ -168,9 +173,12 @@ impl LocalRuntime {
         // 2-4. Providers → resolver.
         let context = json!({ "__providers": self.providers });
         let placement = self.registered.get(&input.placement_id).cloned();
-        let mut decision =
-            self.resolver
-                .resolve(&input.placement_id, placement.as_ref(), Some(&context));
+        let mut decision = self.resolver.resolve(
+            &input.placement_id,
+            placement.as_ref(),
+            Some(&context),
+            Some(&mut self.impression_history),
+        );
 
         // 5. Caps apply only to a VISIBLE decision that produced an output —
         //    an invisible one was never presented, so it must not consume the
@@ -299,6 +307,14 @@ impl LocalRuntime {
     }
 
     /// Record a treatment interaction.
+    /// The per-user impression history — the retirement/suppression state
+    /// the resolver consults. Public like TS core's `impressionHistory` so a
+    /// caller (and the parity harness) can record a confirmed conversion.
+    pub fn impression_history_mut(&mut self) -> &mut ImpressionHistory<InMemoryImpressionStore> {
+        &mut self.impression_history
+    }
+
+    /// Track a treatment interaction (dismiss / remind-later / convert).
     pub fn track_interaction(&mut self, input: &TreatmentInteractionInput) {
         self.interaction_tracker.track(input);
     }

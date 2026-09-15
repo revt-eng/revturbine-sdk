@@ -46,6 +46,7 @@ use crate::rules::plan_eligibility::{
 use crate::rules::segment_eligibility::{
     evaluate_segment_eligibility, SegmentEligibilityContext, SegmentEligibilityRule,
 };
+use crate::state::{ImpressionHistory, InMemoryImpressionStore};
 
 /// Vendored from @revt-eng/schema 0.1.260 DEFAULT_TEMPLATE_COMPONENT_TYPES.
 const DEFAULT_TEMPLATE_COMPONENT_TYPES: &[(&str, &str)] = &[
@@ -601,6 +602,7 @@ impl StaticPlacementResolver {
         placement_id: &str,
         placement: Option<&Value>,
         context: Option<&Value>,
+        mut impression_history: Option<&mut ImpressionHistory<InMemoryImpressionStore>>,
     ) -> Value {
         let providers = context.and_then(|c| c.get("__providers"));
         let plan = providers.and_then(|p| p.get("plan"));
@@ -712,6 +714,19 @@ impl StaticPlacementResolver {
                 }
             }
 
+            // Retirement gate (plan 234 TASK-13): a converted placement is
+            // permanently hidden. Mirrors local-resolver.ts:610-612 — keyed by
+            // the output's rule_id, applied after the category preference and
+            // before the trigger gates. Rust carried the ImpressionHistory
+            // machinery since the port landed but never consulted it here, so
+            // a converted placement stayed visible in this port alone.
+            if let Some(history) = impression_history.as_deref_mut() {
+                idxs.retain(|i| {
+                    let rid = s(&self.candidates[*i].output, "rule_id").unwrap_or_default();
+                    !history.is_hidden_sync(&rid)
+                });
+            }
+
             // The four gates.
             idxs.retain(|i| {
                 matches_trial_trigger(self.candidates[*i].trial_trigger.as_ref(), plan)
@@ -821,7 +836,11 @@ impl StaticPlacementResolver {
                 None => reason_codes.push("placement_not_found".into()),
                 Some(i) => {
                     let c = &self.candidates[i];
-                    if !matches_trial_trigger(c.trial_trigger.as_ref(), plan) {
+                    let rid = s(&c.output, "rule_id").unwrap_or_default();
+                    if impression_history.is_some_and(|h| h.is_hidden_sync(&rid)) {
+                        // Plan 234 TASK-13 — mirrors local-resolver.ts:726.
+                        reason_codes.push("placement_retired".into());
+                    } else if !matches_trial_trigger(c.trial_trigger.as_ref(), plan) {
                         reason_codes.push("trial_trigger_unmet".into());
                     } else if !matches_threshold_trigger(
                         c.threshold_trigger.as_ref(),
