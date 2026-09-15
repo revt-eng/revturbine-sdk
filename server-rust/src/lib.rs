@@ -62,6 +62,7 @@ pub mod sdk;
 pub mod segments;
 pub mod state;
 pub mod trials;
+pub mod user_context;
 
 #[allow(missing_docs, dead_code, clippy::all)]
 pub mod types;

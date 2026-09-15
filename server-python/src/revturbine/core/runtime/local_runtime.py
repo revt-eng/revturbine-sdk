@@ -84,6 +84,9 @@ from revturbine.core.state import (
     RevTurbineStorage,
     RevTurbineTreatmentInteractionInput,
 )
+from revturbine.core.user_context import (
+    build_targeting_state as _build_targeting_state,
+)
 
 __all__ = ["LocalRuntime", "LocalRuntimeInteractionOptions"]
 
@@ -332,26 +335,18 @@ class LocalRuntime:
     def build_targeting_state(
         self,
         context: dict[str, Any],
-        usage_overrides: dict[str, int] | None = None,
+        usage_overrides: dict[str, float] | None = None,
     ) -> dict[str, Any]:
         """Build the full targeting state from a user context snapshot.
 
-        Deferred: ``buildTargetingState``
-        (user/controllers/user-context.ts) is not ported — out of the
-        plan-33 headless server SDK scope (REQ-14 non-goal; a precise
-        ``TargetingState`` type would land with it, hence the
-        placeholder return annotation).
+        Delegates to the pure ``core.user_context.build_targeting_state``
+        (plan 234 TASK-8b - the REQ-14 deferral is closed; segment parity
+        upgrades from "agrees given the same traits" to "agrees given the
+        same user context").
 
-        Source: local-runtime.ts:263-271
+        Source: local-runtime.ts (buildTargetingState)
         """
-        raise NotImplementedError(
-            "LocalRuntime.build_targeting_state requires the "
-            "user-context port (buildTargetingState / "
-            "user/controllers/user-context.ts) — not part of the "
-            "plan-33 headless server SDK scope (REQ-14 non-goal; the "
-            "narrowed TASK-7 ships only check_entitlement + placement "
-            "decisions)."
-        )
+        return _build_targeting_state(context, self.get_exported_config(), usage_overrides)
 
     # ── Personalization tokens (deferred — REQ-14 non-goal) ───────────────
 

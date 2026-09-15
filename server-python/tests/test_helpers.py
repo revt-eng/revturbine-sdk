@@ -683,8 +683,12 @@ class TestConfiguredPlanNameFromExportedConfig:
             ],
         }
 
-    def test_match_by_id(self, config: dict[str, Any]) -> None:
-        assert configured_plan_name_from_exported_config(config, "plan_pro") == "Pro"
+    def test_id_never_matches(self, config: dict[str, Any]) -> None:
+        # Plan 120 TASK-4: plans resolve by unique_handle ALONE; the DB id is
+        # never a matching identity. The old test asserted the opposite - it
+        # was pinning the pre-plan-120 body this port carried while the
+        # function had no callers (plan 234 TASK-8b).
+        assert configured_plan_name_from_exported_config(config, "plan_pro") is None
 
     def test_match_by_handle(self, config: dict[str, Any]) -> None:
         assert configured_plan_name_from_exported_config(config, "pro") == "Pro"
@@ -692,12 +696,18 @@ class TestConfiguredPlanNameFromExportedConfig:
     def test_match_by_handle_case_insensitive(self, config: dict[str, Any]) -> None:
         assert configured_plan_name_from_exported_config(config, "PRO") == "Pro"
 
-    def test_match_by_id_suffix(self, config: dict[str, Any]) -> None:
-        # plan_id "plan_team" ends with "_team"
+    def test_id_suffix_never_matches(self, config: dict[str, Any]) -> None:
+        # The `_handle` suffix fallback was pre-plan-120 tolerance; the
+        # canonical matches the handle exactly. ("team" DOES match here -
+        # via unique_handle, not via the "plan_team" suffix.)
         assert configured_plan_name_from_exported_config(config, "team") == "Team"
+        assert configured_plan_name_from_exported_config(config, "plan_team") is None
 
-    def test_user_plan_context_dict(self, config: dict[str, Any]) -> None:
-        assert configured_plan_name_from_exported_config(config, {"id": "plan_pro"}) == "Pro"
+    def test_plan_object_resolves_nothing(self, config: dict[str, Any]) -> None:
+        # The plan OBJECT is display metadata; callers pass the identity via
+        # plan_identity_from_context. An object here resolves nothing.
+        assert configured_plan_name_from_exported_config(config, {"id": "plan_pro"}) is None
+        assert configured_plan_name_from_exported_config(config, {"handle": "pro"}) is None
 
     def test_no_match_returns_none(self, config: dict[str, Any]) -> None:
         assert configured_plan_name_from_exported_config(config, "missing") is None
@@ -718,8 +728,8 @@ class TestConfiguredPlanNameFromExportedConfig:
         # the loop rather than returning early.
         config: dict[str, Any] = {
             "plans": [
-                {"id": "pro", "name": ""},
-                {"id": "plan_pro", "name": "Real Pro"},
+                {"unique_handle": "pro", "name": ""},
+                {"unique_handle": "pro", "name": "Real Pro"},
             ],
         }
         assert configured_plan_name_from_exported_config(config, "pro") == "Real Pro"
@@ -728,7 +738,7 @@ class TestConfiguredPlanNameFromExportedConfig:
         config: dict[str, Any] = {
             "plans": [
                 "not-a-dict",
-                {"id": "plan_pro", "name": "Pro"},
+                {"unique_handle": "pro", "name": "Pro"},
             ],
         }
         assert configured_plan_name_from_exported_config(config, "pro") == "Pro"

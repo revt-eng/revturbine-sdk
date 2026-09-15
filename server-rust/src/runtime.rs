@@ -314,6 +314,17 @@ impl LocalRuntime {
         &mut self.impression_history
     }
 
+    /// Build the full targeting state from a user context snapshot
+    /// (plan 234 TASK-8b — closes the REQ-14 deferral in this port too).
+    #[must_use]
+    pub fn build_targeting_state(
+        &self,
+        context: &Value,
+        usage_overrides: Option<&serde_json::Map<String, Value>>,
+    ) -> Value {
+        crate::user_context::build_targeting_state(context, Some(&self.config), usage_overrides)
+    }
+
     /// Track a treatment interaction (dismiss / remind-later / convert).
     pub fn track_interaction(&mut self, input: &TreatmentInteractionInput) {
         self.interaction_tracker.track(input);

@@ -42,6 +42,7 @@ __all__ = [
     "parse_exported_config_or_throw",
     "category_bucket",
     "placement_score",
+    "plan_identity_from_context",
     "tier3_class",
     "placement_priority",
     "proximity_score",
@@ -600,6 +601,26 @@ def usage_amounts_from_entries(
     return amounts
 
 
+def plan_identity_from_context(context: JsonObject) -> str | None:
+    """THE plan matching identity (plan 191 Q-1, amended): the flat
+    ``plan_handle`` when present, else a string-form ``plan``, else the plan
+    object's ``handle``. ``custom`` never drives plan identity (REQ-2).
+
+    Source: helpers.ts (planIdentityFromContext)
+    """
+    plan_handle = context.get("plan_handle")
+    if isinstance(plan_handle, str) and plan_handle.strip():
+        return plan_handle.strip()
+    plan = context.get("plan")
+    if isinstance(plan, str) and plan.strip():
+        return plan.strip()
+    if is_record(plan):
+        handle = plan.get("handle")
+        if isinstance(handle, str) and handle.strip():
+            return handle.strip()
+    return None
+
+
 # ── Config plan name lookup ─────────────────────────────────────────────────
 
 
@@ -607,13 +628,17 @@ def configured_plan_name_from_exported_config(
     exported_config: JsonObject | None,
     plan_value: str | JsonObject | None,
 ) -> str | None:
-    """Look up a plan's display name from an ``ExportedConfig`` plans list.
+    """Look up a plan's display name from a Playbook's plans list.
 
-    Accepts either a raw plan id/handle string or a ``UserPlanContext``
-    dict (in which case ``plan_value["id"]`` is used). Matches by id,
-    unique_handle, or the ``_handle`` suffix fallback the TS implements.
+    Plan 120 TASK-4: plans resolve by ``unique_handle`` ALONE, and the plan
+    OBJECT is display metadata whose ``id`` never participates in matching -
+    an object value here resolves nothing (callers pass the identity via
+    ``plan_identity_from_context``). This port carried the pre-plan-120
+    body (object ``id`` resolution + id-or-handle matching + a ``_handle``
+    suffix fallback) while it had no callers; aligned by plan 234 TASK-8b
+    before ``build_targeting_state`` became its first caller.
 
-    Source: helpers.ts:244-276
+    Source: helpers.ts (configuredPlanNameFromExportedConfig)
     """
     if not exported_config:
         return None
@@ -624,10 +649,6 @@ def configured_plan_name_from_exported_config(
     plan_id: str | None = None
     if isinstance(plan_value, str) and plan_value.strip():
         plan_id = plan_value.strip()
-    elif is_record(plan_value):
-        candidate = plan_value.get("id")
-        if isinstance(candidate, str) and candidate.strip():
-            plan_id = candidate.strip()
     if not plan_id:
         return None
 
@@ -636,23 +657,15 @@ def configured_plan_name_from_exported_config(
     for raw_plan in plans:
         if not is_record(raw_plan):
             continue
-        plan_id_field = raw_plan.get("id")
-        id_str = plan_id_field.lower() if isinstance(plan_id_field, str) else ""
         handle_field = raw_plan.get("unique_handle")
-        handle_str = handle_field.lower() if isinstance(handle_field, str) else ""
+        handle = handle_field.lower() if isinstance(handle_field, str) else ""
+        if handle == normalized_plan:
+            name_field = raw_plan.get("name")
+            name = name_field.strip() if isinstance(name_field, str) else ""
+            if name:
+                return name
 
-        if (
-            id_str == normalized_plan
-            or handle_str == normalized_plan
-            or id_str.endswith(f"_{normalized_plan}")
-        ):
-            name = raw_plan.get("name")
-            if isinstance(name, str) and name.strip():
-                return name.strip()
     return None
-
-
-# ── Config validation ───────────────────────────────────────────────────────
 
 
 def parse_exported_config_or_throw(raw: Any, source: str) -> JsonObject | None:

@@ -315,10 +315,18 @@ class TestDeferredLeafContract:
             "reason": "no_plan_identity",
         }
 
+    def test_build_targeting_state_is_ported(self) -> None:
+        # Plan 234 TASK-8b closed the REQ-14 deferral: the runtime now
+        # delegates to core.user_context.build_targeting_state instead of
+        # raising. The remaining deferred leaf is personalization tokens.
+        runtime = _make_runtime()
+        state = runtime.build_targeting_state({"plan_handle": "pro"})
+        assert state["effective_plan"] == "pro"
+        assert state["traits"]["plan_handle"] == "pro"
+
     @pytest.mark.parametrize(
         "call",
         [
-            lambda r: r.build_targeting_state({}),
             lambda r: r.derive_personalization_tokens(),
         ],
     )
