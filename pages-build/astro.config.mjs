@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import react from '@astrojs/react';
-import starlightTypeDoc from 'starlight-typedoc';
+import starlightTypeDoc, { typeDocSidebarGroup } from 'starlight-typedoc';
 import starlightLlmsTxt from 'starlight-llms-txt';
 import { mdxToMarkdown } from './src/lib/mdx-to-md';
 import remarkGfm from 'remark-gfm';
@@ -209,25 +209,24 @@ export default defineConfig({
             { label: 'Core Concepts', slug: 'concepts/core-concepts' },
             { label: 'Client vs Server Enforcement', slug: 'concepts/enforcement' },
             { label: 'What Owns What', slug: 'concepts/source-of-truth' },
-            { label: 'Provider Architecture', slug: 'concepts/providers' },
           ],
         },
         {
           label: 'Guides',
           items: [
             { label: 'Replace Plan Checks', slug: 'guides/migrate-plan-checks' },
+            { label: 'Billing & Stripe', slug: 'guides/billing' },
             { label: 'Runtime Modes', slug: 'guides/runtime-modes' },
             { label: 'Entitlements', slug: 'guides/entitlements' },
             { label: 'Placements', slug: 'guides/placements' },
-            { label: 'Custom Slot Types', slug: 'guides/custom-slots' },
-            { label: 'Theming', slug: 'guides/theming' },
+            { label: 'Placement Cookbook', slug: 'guides/placement-cookbook' },
+            { label: 'Interactive Playground', slug: 'playground' },
             { label: 'Events & Analytics', slug: 'guides/events' },
             { label: 'Run an Experiment', slug: 'guides/experiments' },
             { label: 'Beyond Gating', slug: 'guides/beyond-gating' },
             { label: 'Add RevTurbine with a Coding Agent', slug: 'guides/coding-agent' },
             { label: 'Error Handling', slug: 'guides/error-handling' },
             { label: 'Headless API', slug: 'guides/headless-api' },
-            { label: 'Paywall Host Pattern', slug: 'guides/paywall-host' },
             // Tutorials (step-by-step) folded in from the former standalone Tutorials section.
             { label: 'Tutorial: Add an Upgrade Button', slug: 'tutorials/upgrade-button' },
             { label: 'Tutorial: Show a Banner Placement', slug: 'tutorials/banner-placement' },
@@ -243,12 +242,24 @@ export default defineConfig({
           items: [
             { label: 'Production Readiness', slug: 'operate/production-readiness' },
             { label: 'Debugging Decisions', slug: 'operate/debugging' },
+            { label: 'Troubleshooting', slug: 'guides/troubleshooting' },
+          ],
+        },
+        {
+          label: 'Advanced',
+          collapsed: true,
+          items: [
+            { label: 'Provider Architecture', slug: 'concepts/providers' },
+            { label: 'Custom Slot Types', slug: 'guides/custom-slots' },
+            { label: 'Theming', slug: 'guides/theming' },
+            { label: 'Paywall Host Pattern', slug: 'guides/paywall-host' },
           ],
         },
         {
           label: 'Reference',
           items: [
             { label: 'Configuration', slug: 'reference/configuration' },
+            { label: 'CLI', slug: 'reference/cli' },
             { label: 'Error Codes', slug: 'reference/errors' },
             { label: 'Compatibility Matrix', slug: 'reference/compatibility' },
             // Changelog is intentionally unpublished for now — we don't want to
@@ -259,6 +270,7 @@ export default defineConfig({
             // this entry as { label: 'Changelog', slug: 'reference/changelog' }.
           ],
         },
+        typeDocSidebarGroup,
       ],
     }),
     react(),

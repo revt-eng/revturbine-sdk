@@ -15,7 +15,7 @@ RevTurbine sits between your app and Stripe, and the single biggest question a t
 |---|---|---|---|
 | **Plan catalog** — which plans/tiers exist | ✅ **Authoritative** (the Playbook) | — | mirrors as products |
 | **Prices** | mirror (UI helper) | — | ✅ **Authoritative** |
-| **Subscription status** — active / plan / canceled | reads it from user context | relays Stripe → RevTurbine | ✅ **Authoritative** |
+| **Subscription status** — active / plan / canceled | holds the server-derived plan and payment state (from Stripe webhooks) and delivers it to the SDK through the client session | may pass `plan_handle` as an optimistic override at the upgrade moment; supplies it always in local mode | ✅ **Authoritative** |
 | **Feature-access policy** — what each plan entitles | ✅ **Authoritative** (entitlement rules) | — | — |
 | **Usage counts** | evaluates them against limits | ✅ **reports** usage (`rt.update`) | — |
 | **Checkout & payment** | starts it (a CTA opens checkout) | hosts the flow | ✅ **Processes** payment |
@@ -24,8 +24,8 @@ RevTurbine sits between your app and Stripe, and the single biggest question a t
 
 ## Reading the map
 
-- **RevTurbine owns *policy*, not money.** The plan catalog, what each plan entitles, and when a placement shows are all RevTurbine's — a PM edits them in the dashboard and republishes, with no code deploy. RevTurbine never charges anyone.
-- **Stripe owns *money and subscription state*.** Prices, who is subscribed, and payment processing are Stripe's. RevTurbine mirrors prices into the Playbook as a **UI helper** for rendering — but Stripe is the price authority. Your app tells RevTurbine the user's current plan (from Stripe) via `rt.identify(userId, { plan })`.
+- **RevTurbine owns *policy*, not money.** The plan catalog, what each plan entitles, and when a placement shows are all RevTurbine's — a PM edits them in the dashboard and releases, with no code deploy. RevTurbine never charges anyone.
+- **Stripe owns *money and subscription state*.** Prices, who is subscribed, and payment processing are Stripe's. RevTurbine mirrors prices into the Playbook as a **UI helper** for rendering — but Stripe is the price authority. With Stripe connected, subscription webhooks update the customer's plan and payment health on RevTurbine's side and the SDK receives them through the client session — see [Billing & Stripe](/guides/billing/). Your app can pass `plan_handle` in user context as an optimistic override (at the upgrade moment, before the webhook lands); in local mode it supplies the plan always.
 - **Your app owns *enforcement and usage*.** You report usage, you host checkout, and — critically — **you enforce billing-critical actions on your server.** See [Client vs Server Enforcement](/concepts/enforcement/).
 
 <Aside type="note" title="Why prices live in Stripe, not the Playbook">
