@@ -74,7 +74,7 @@ registry.register({
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `id` | `string` | ✅ | Unique identifier (prefix with `custom:`) |
-| `label` | `string` | ✅ | Human-readable label (shown in Studio) |
+| `label` | `string` | ✅ | Human-readable label (shown in the dashboard) |
 | `description` | `string` | ✅ | What this slot type does |
 | `componentType` | `RevTurbineComponentType` | ✅ | Canonical component type |
 | `component` | `ComponentType<PlacementSlotProps>` | ✅ | React component to render |

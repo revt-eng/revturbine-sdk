@@ -163,7 +163,7 @@ payloads keep deciding exactly as before. The reason code it produces is now
 
 | Reason | Meaning |
 |---|---|
-| `config_unavailable` | The launched Playbook could not be fetched (Server mode). Not a rule decision — an infrastructure failure. |
+| `config_unavailable` | The launched Playbook could not be fetched (hosted mode). Not a rule decision — an infrastructure failure. |
 | `entitlement_not_in_playbook` | Local mode with no Playbook and no cached result: nothing describes this entitlement, so there is no basis to grant it. |
 | `sdk_disabled_provider_failure` | The SDK disabled itself after a provider failure. |
 

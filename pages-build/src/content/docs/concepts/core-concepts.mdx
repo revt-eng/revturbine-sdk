@@ -21,7 +21,7 @@ That's the whole loop: an **entitlement** defines the policy, a **gate** asks th
 
 ## What configures them: the Playbook
 
-All three primitives are driven by your **Playbook** — the portable config RevTurbine evaluates. It holds the plans, entitlement rules (feature / usage-limit / credits / seats), trials, segments (targeting), and placements. A PM edits the Playbook in the studio and republishes; your app code doesn't change.
+All three primitives are driven by your **Playbook** — the portable config RevTurbine evaluates. It holds the plans, entitlement rules (feature / usage-limit / credits / seats), trials, segments (targeting), and placements. A PM edits the Playbook in the RevTurbine dashboard and republishes; your app code doesn't change.
 
 ## User context
 
@@ -35,7 +35,7 @@ semantics, and server-derived context.
 
 ## Runtime modes
 
-The same primitives work whether RevTurbine runs entirely in the browser from a bundled Playbook (`local_only`), calls the control plane (`revturbine_server`), or uses your own endpoints (`custom_endpoints`). See [Runtime Modes](/guides/runtime-modes/).
+The same primitives work whether the SDK reads a Playbook bundled with your app (local mode, `local_only`), syncs it from RevTurbine (hosted mode, `revturbine_server`), or syncs it through your own endpoints (`custom_endpoints`). See [Runtime Modes](/guides/runtime-modes/).
 
 ## Where decisions run
 

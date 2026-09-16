@@ -15,7 +15,7 @@ Returned in `decision.reasonCodes[]` to explain why a placement was or wasn't sh
 | `suppressed` | User recently dismissed, snoozed, or completed CTA | Wait for cooldown to expire |
 | `plan_mismatch` | User's plan doesn't match placement targeting | Verify targeting rules or user context |
 | `segment_mismatch` | User doesn't match the required segment | Check segment definitions |
-| `config_unavailable` | Playbook not available | Ensure the Playbook is bundled or the Server-mode config endpoint is reachable |
+| `config_unavailable` | Playbook not available | Ensure the Playbook is bundled or the hosted-mode config endpoint is reachable |
 | `api_error` | API returned non-200 response | Check endpoint URL, API key, and network connectivity |
 | `network_error` | Network timeout or unreachable endpoint | Verify endpoint is accessible from client |
 | `fallback_content` | Using fallback placeholder content | Provider failure — check API connectivity |

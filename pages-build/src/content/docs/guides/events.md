@@ -233,5 +233,5 @@ Events that carry the `area` / `action` / `purpose` taxonomy (from `TelemetrySco
 ## Next steps
 
 - [Placements Guide](/guides/placements/) — placement lifecycle and interactions
-- [Runtime Modes](/guides/runtime-modes/) — `local_only` vs server modes
+- [Runtime Modes](/guides/runtime-modes/) — local vs hosted mode
 - [Error Handling](/guides/error-handling/) — graceful event-delivery failures

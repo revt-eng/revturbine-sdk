@@ -119,7 +119,7 @@ export default defineConfig({
   integrations: [
     baseAbsoluteInternalLinks(base),
     starlight({
-      title: 'RevTurbine SDK',
+      title: 'RevTurbine Docs',
       description: 'Placement decisioning, entitlement checks, and usage tracking for web applications.',
       logo: {
         src: './public/logo.webp',
@@ -137,7 +137,7 @@ export default defineConfig({
       head: [
         // OpenGraph defaults
         { tag: 'meta', attrs: { property: 'og:type', content: 'website' } },
-        { tag: 'meta', attrs: { property: 'og:site_name', content: 'RevTurbine SDK Docs' } },
+        { tag: 'meta', attrs: { property: 'og:site_name', content: 'RevTurbine Docs' } },
         { tag: 'meta', attrs: { property: 'og:image', content: '/logo.webp' } },
         { tag: 'meta', attrs: { name: 'twitter:card', content: 'summary' } },
         { tag: 'meta', attrs: { name: 'twitter:site', content: '@revturbine' } },

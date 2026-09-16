@@ -1,30 +1,48 @@
 ---
 title: Runtime Modes
-description: Choose between local_only, revturbine_server, and custom_endpoints runtime modes.
+description: Local mode and hosted mode, what each gives you, and where decisions run in both.
 sidebar:
   order: 1
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
-The SDK supports three runtime modes. **Start with `local_only`** to get up and running without any backend. It evaluates the full Playbook client-side and is production-capable on its own — a server mode is not a prerequisite for "real" decisions, it adds live config updates, server-authoritative usage, experiments, and centralized analytics.
+Two modes matter for most apps: **local** and **hosted**. A third, `custom_endpoints`, routes hosted mode's calls through your own proxy.
 
-## Decision Tree
+## Hosted mode
 
-1. Are you getting started, building a demo, or need offline-first behavior?
-   - **Yes →** `local_only` *(recommended starting point)*
-   - **No →** continue
-2. Do you need to route SDK calls through customer-owned endpoints?
-   - **Yes →** `custom_endpoints`
-   - **No →** `revturbine_server`
+**Hosted mode is how you change monetization without a deploy.** RevTurbine stores and versions your Playbook; the SDK in your app keeps a fresh local copy and decides from it.
 
-## Mode Comparison
+What it gives you:
 
-| Mode | Best for | Network dependency | Required config |
+- **Change without deploying.** Edit plans, entitlements, targeting and prompts in the RevTurbine dashboard, with your coding agent, or through the CLI. Draft, review, launch. The SDK picks up the new release on its next refresh.
+- **Versioned Playbooks.** Every launch is an immutable Release with history. Roll back by restoring any earlier one.
+- **Analytics.** Conversion and usage analytics, so you can see what's working. Growth adds deeper analytics and self-driving growth recommendations.
+- **Signals your app doesn't hold.** Billing status from Stripe, trial state, per-customer exceptions and end-user behavior follow the user. Caps and cooldowns hold across devices, and an exception applies wherever that user shows up.
+
+What doesn't change: the RevTurbine SDK runs inside your app, and on your backend where you verify. It evaluates entitlements and placements locally, as a pure function of your Playbook and the current user context. Hosted mode changes where the Playbook and user state come from, not where decisions run. We add no latency, and our availability never affects your product.
+
+In code: `runtimeMode: RuntimeMode.Server` (`revturbine_server`).
+
+## Local mode
+
+**Local mode ships the Playbook with your app.** You version it in your own repo, and changing it is a deploy. No account, always free, and production-capable on its own. Every decision is made the same way as in hosted mode.
+
+In code: `runtimeMode: RuntimeMode.LocalOnly` (`local_only`) with `localRuntime: { playbook }`.
+
+## Which one
+
+1. Getting started, building a demo, or shipping a Playbook that rarely changes? **Local.**
+2. Want to change monetization without deploying, see analytics, or set per-customer exceptions? **Hosted.**
+3. Need RevTurbine's calls to go through your own proxy? **Hosted, with `custom_endpoints`.**
+
+## Mode comparison
+
+| Mode | Where the Playbook comes from | What RevTurbine provides | Required config |
 |---|---|---|---|
-| **`local_only`** | Getting started, offline, **and production** when a bundled Playbook is enough | No decisioning network; optional anonymous adoption beacon | `localRuntime: { playbook }` |
-| `revturbine_server` | Production with live A/B testing | RevTurbine edge endpoints | `tenantId`, `apiKey`, `endpoint` |
-| `custom_endpoints` | Customer proxy/service boundaries | Customer endpoints | Base config + `endpointOverrides` |
+| **Local** (`local_only`) | Bundled with your app | Nothing at runtime; optional anonymous adoption beacon | `localRuntime: { playbook }` |
+| **Hosted** (`revturbine_server`) | RevTurbine, cached locally and refreshed in the background | Playbook delivery and versioning; user state (billing, trials, exceptions, behavior); analytics | `tenantId`, `apiKey`, `endpoint` |
+| **Hosted via your proxy** (`custom_endpoints`) | RevTurbine, through endpoints you own | Same as hosted | Base config + `endpointOverrides` |
 
 Set the mode with the typed **`RuntimeMode`** constant rather than a raw string:
 
@@ -67,7 +85,7 @@ In `local_only` mode the SDK evaluates all targeting rules, entitlements, and pl
 </Aside>
 
 </TabItem>
-<TabItem label="Server runtime">
+<TabItem label="Hosted mode">
 
 ```ts
 import { initRevTurbine, createServerRuntimeConfig } from '@revturbine/sdk';
@@ -108,7 +126,7 @@ const sdk = initRevTurbine(
 </TabItem>
 </Tabs>
 
-## Migrating from Local to Server Mode
+## Migrating from local to hosted mode
 
 When you're ready for production, the change is a single config swap. Your component code stays the same:
 
@@ -152,7 +170,7 @@ Provider fallbacks are orthogonal to runtime mode. You can configure them in any
 2. **`custom_endpoints`:** strongly recommend fallbacks because proxy integrations can be brittle during deploys.
 3. **`local_only`:** provider fallbacks are optional; local runtime resolvers are often sufficient.
 
-### Server Runtime with Fallback
+### Hosted mode with fallback
 
 ```ts
 import { initRevTurbine, createServerRuntimeConfig } from '@revturbine/sdk';

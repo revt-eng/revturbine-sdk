@@ -77,7 +77,7 @@ A trial countdown that:
 
 2. **Provide trial status to the SDK**
 
-   The SDK reads trial state from a resolver in local mode (or from the user context in server mode). Supply the trial so the trigger and `{{days_remaining}}` token can compute the window.
+   The SDK reads trial state from a resolver in local mode (or from the user context in hosted mode). Supply the trial so the trigger and `{{days_remaining}}` token can compute the window.
 
    ```tsx title="src/App.tsx"
    <RevTurbineProvider

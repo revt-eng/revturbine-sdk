@@ -45,11 +45,11 @@ Add the SDK to your React app:
 
 ## 2. Register a RevTurbine account
 
-Create an account in the studio, then connect the CLI to it.
+Create an account in the RevTurbine dashboard, then connect the CLI to it.
 
 <Steps>
 
-1. **Create your account.** Sign up at the studio — [**revturbine.com/app**](https://revturbine.com/app) — or headlessly from the terminal:
+1. **Create your account.** Sign up in the dashboard — [**revturbine.com/app**](https://revturbine.com/app) — or headlessly from the terminal:
 
     ```bash
     revturbine signup
@@ -72,7 +72,7 @@ Create an account in the studio, then connect the CLI to it.
 </Steps>
 
 <Aside type="tip">
-You don't need an account to try the SDK locally — `local_only` runtime mode (used in the next step) runs entirely client-side from a bundled config. The account is for managing your live config and connecting the SDK in server mode.
+You don't need an account to try the SDK locally — `local_only` runtime mode (used in the next step) runs entirely client-side from a bundled config. The account is for managing your live config and connecting the SDK in hosted mode.
 </Aside>
 
 ## 3. Instrument your app
@@ -127,7 +127,7 @@ Python and Rust SDKs evaluate the same Playbook with byte-identical results.
     ```
 
     <Aside type="note">
-    To run against your live RevTurbine account instead, swap `localRuntime` for server options (`tenantId` + `endpoint`). See [Runtime modes](/guides/runtime-modes/).
+    To run against your live RevTurbine account instead, swap `localRuntime` for the hosted-mode options (`tenantId` + `endpoint`). See [Runtime modes](/guides/runtime-modes/).
     </Aside>
 
 2. **Add a slot.** Drop a surface slot where you want a placement to appear. It renders the matching placement for the current user — or nothing.
@@ -183,12 +183,12 @@ Python and Rust SDKs evaluate the same Playbook with byte-identical results.
 Your monetization model — **plans, entitlements, entitlement rules, segments, surface templates, and placements** — is a single portable snapshot called a **Playbook**. It's what the SDK reads (bundled in local mode, or served live), and you can author it two ways.
 
 <CardGrid>
-  <Card title="RevTurbine UI (studio)" icon="laptop">
+  <Card title="RevTurbine dashboard" icon="laptop">
     Edit visually at [**revturbine.com/app**](https://revturbine.com/app) — define plans, entitlements, targeting rules, and placements, preview their impact, and launch. Download a `revturbine.playbook.json` snapshot anytime for local mode.
   </Card>
 
   <Card title="RevTurbine CLI + Agent" icon="setting">
-    Treat config as code. Author or edit it by hand — or with the RevTurbine **AI agent** (in the studio, or via an MCP-connected coding agent) — then validate and ship it from the terminal.
+    Treat config as code. Author or edit it by hand — or with the RevTurbine **AI agent** (in the dashboard, or via an MCP-connected coding agent) — then validate and ship it from the terminal.
   </Card>
 </CardGrid>
 
@@ -220,7 +220,7 @@ For a separately reviewable draft, run `revturbine upload ./revturbine.playbook.
   </Card>
 
   <Card title="PM- and marketer-controlled, dev-decoupled">
-    Drop a slot once. Your PM, growth, marketing, or CRO team changes content, targeting, and CTAs in the studio — no engineering tickets, no deploys. UI path resolvers keep the navigation contract in your code; everything else iterates without you.
+    Drop a slot once. Your PM, growth, marketing, or CRO team changes content, targeting, and CTAs in the dashboard — no engineering tickets, no deploys. UI path resolvers keep the navigation contract in your code; everything else iterates without you.
   </Card>
 
   <Card title="Framework-agnostic, and the same answer everywhere">
@@ -243,7 +243,7 @@ For a separately reviewable draft, run `revturbine upload ./revturbine.playbook.
 
 - [Quickstart](/getting-started/quickstart/) — the detailed local-mode walkthrough, including every UI path action type
 - [Entitlement gates](/guides/entitlements/) — gate features and enforce usage limits
-- [Runtime modes](/guides/runtime-modes/) — local-only, server, and custom endpoints
+- [Runtime modes](/guides/runtime-modes/) — local mode, hosted mode, and custom endpoints
 - [Interactive playground](/playground/) — live, editable SDK scenarios in your browser
 - [Component gallery](/components/) — interactive demos of every built-in slot component
 - [API reference](/api/) — full TypeDoc reference for all exports

@@ -24,7 +24,7 @@ RevTurbine sits between your app and Stripe, and the single biggest question a t
 
 ## Reading the map
 
-- **RevTurbine owns *policy*, not money.** The plan catalog, what each plan entitles, and when a placement shows are all RevTurbine's — a PM edits them in the studio and republishes, with no code deploy. RevTurbine never charges anyone.
+- **RevTurbine owns *policy*, not money.** The plan catalog, what each plan entitles, and when a placement shows are all RevTurbine's — a PM edits them in the dashboard and republishes, with no code deploy. RevTurbine never charges anyone.
 - **Stripe owns *money and subscription state*.** Prices, who is subscribed, and payment processing are Stripe's. RevTurbine mirrors prices into the Playbook as a **UI helper** for rendering — but Stripe is the price authority. Your app tells RevTurbine the user's current plan (from Stripe) via `rt.identify(userId, { plan })`.
 - **Your app owns *enforcement and usage*.** You report usage, you host checkout, and — critically — **you enforce billing-critical actions on your server.** See [Client vs Server Enforcement](/concepts/enforcement/).
 

@@ -251,9 +251,9 @@ The SDK follows [Semantic Versioning](https://semver.org/):
 
 ## Migration Notes
 
-### Migrating from Local to Server Mode
+### Migrating from local to hosted mode
 
-See [Runtime Modes → Migrating from Local to Server Mode](/guides/runtime-modes/) for step-by-step instructions.
+See [Runtime Modes → Migrating from local to hosted mode](/guides/runtime-modes/) for step-by-step instructions.
 
 ### Schema Version Compatibility
 
