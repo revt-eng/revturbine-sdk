@@ -128,6 +128,9 @@ export default defineConfig({
       },
       favicon: '/favicon.png',
       customCss: ['./src/styles/custom.css'],
+      components: {
+        SiteTitle: './src/components/SiteTitle.astro',
+      },
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/revt-eng/revturbine-sdk' },
       ],

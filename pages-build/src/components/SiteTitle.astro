@@ -1,0 +1,71 @@
+---
+// Override of Starlight's SiteTitle (docs: Component overrides → SiteTitle).
+// Logo and title both link to revturbine.com, the way a docs header on a product
+// site normally works: the wordmark is the way back out to the marketing site.
+// The docs root stays reachable from the sidebar and the "Start" nav entry.
+import { logos } from 'virtual:starlight/user-images';
+import config from 'virtual:starlight/user-config';
+const { siteTitle } = Astro.locals.starlightRoute;
+const homeHref = 'https://revturbine.com';
+---
+
+<div class="site-title sl-flex">
+	{
+		config.logo && logos.dark && (
+			<a href={homeHref} class="site-logo sl-flex">
+				<img
+					class:list={{ 'light:sl-hidden print:hidden': !('src' in config.logo) }}
+					alt={config.logo.alt}
+					src={logos.dark.src}
+					width={logos.dark.width}
+					height={logos.dark.height}
+				/>
+				{!('src' in config.logo) && (
+					<img
+						class="dark:sl-hidden print:block"
+						alt={config.logo.alt}
+						src={logos.light?.src}
+						width={logos.light?.width}
+						height={logos.light?.height}
+					/>
+				)}
+			</a>
+		)
+	}
+	<a href={homeHref} class="site-title-text">
+		<span class:list={{ 'sr-only': config.logo?.replacesTitle }} translate="no">
+			{siteTitle}
+		</span>
+	</a>
+</div>
+
+<style>
+	@layer starlight.core {
+		.site-title {
+			align-items: center;
+			gap: var(--sl-nav-gap);
+			font-size: var(--sl-text-h4);
+			font-weight: 600;
+			color: var(--sl-color-text-accent);
+			white-space: nowrap;
+			min-width: 0;
+		}
+		.site-logo,
+		.site-title-text {
+			color: inherit;
+			text-decoration: none;
+			min-width: 0;
+		}
+		span {
+			overflow: hidden;
+		}
+		img {
+			height: calc(var(--sl-nav-height) - 2 * var(--sl-nav-pad-y));
+			width: auto;
+			max-width: 100%;
+			object-fit: contain;
+			object-position: 0 50%;
+			border-radius: 6px;
+		}
+	}
+</style>
