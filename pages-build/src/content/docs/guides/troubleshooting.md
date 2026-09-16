@@ -68,7 +68,7 @@ In this state:
 
 1. The SDK logs warning messages to the console.
 2. Placements render as hidden (`invisible`) or safe placeholders (`placeholder`) depending on `providerFailureSlotBehavior`.
-3. Entitlement checks return a denied result with `sdk_disabled_provider_failure`; see [Client vs Server Enforcement](/concepts/enforcement/) for why checks and additive placements have different fallback behavior.
+3. Entitlement checks return a denied result with `sdk_disabled_provider_failure`; see [Client vs Server Enforcement](/concepts/enforcement/) for why checks and placements have different fallback behavior.
 
 ## Quick Checks
 

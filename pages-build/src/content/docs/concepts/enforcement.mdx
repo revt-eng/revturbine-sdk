@@ -1,24 +1,24 @@
 ---
 title: Client vs Server Enforcement
-description: How RevTurbine splits responsibility — RevTurbine owns monetization policy, your app owns enforcement, placements are additive while entitlement checks fail closed, and billing-critical actions are re-checked on your server. Plus the difference between <Gate>, gate(), and can().
+description: How RevTurbine splits responsibility — RevTurbine owns monetization policy, your app owns enforcement, entitlement checks fail closed, and billing-critical actions are re-checked on your server. Plus the difference between <Gate>, gate(), and can().
 sidebar:
   order: 2
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-Every team evaluating RevTurbine asks the same question: *"If entitlements are checked in the browser, what stops a user from bypassing them?"* This page is the one answer — the division of responsibility, and which tool to use where.
+Every team evaluating RevTurbine asks the same question: *"If entitlements are checked in the browser, what stops a user from bypassing them?"*
+
+The browser can be tampered with, so a client check is a UX hint, not the authority. Your backend re-runs the check at the moment it matters, immediately before a billable action. The re-check is the same SDK evaluating the same Playbook, on your server. It calls our servers only for additive data. Verify wherever being wrong costs you money; pure display gating doesn't need it.
+
+The rest of this page is the division of responsibility, and which tool to use where.
 
 ## The model, stated once
 
 - **RevTurbine is authoritative for monetization *policy*.** Which plans exist, what each plan entitles, when a placement shows — that lives in your [Playbook](/getting-started/api-overview/#the-vocabulary-slot--gate--playbook) and the control plane, and a PM changes it with no code deploy.
 - **Your app owns *enforcement*.** RevTurbine tells you the policy answer; your app is what actually allows or blocks the action.
-- **Placements are additive; checks are fail-closed.** If RevTurbine is paused, misconfigured, or unreachable, slots render nothing — so our downtime can't break your product. Entitlement checks, by contrast, deny when they can't produce an affirmative grant, so an outage never *leaks* a paid feature.
+- **Checks fail closed.** An entitlement check that can't produce an affirmative grant denies, so a misconfiguration never *leaks* a paid feature.
 - **Money-safe decisions belong on your server.** A browser check can be tampered with. For anything that costs money or invites abuse, re-run the check server-side before you grant access.
-
-<Aside type="tip" title="Additive by design — it can't break your app">
-RevTurbine is an *additive* layer: your product must look and work correctly with every placement paused and the SDK offline. A monetization layer should never be able to take your product *down* — placements render nothing. It should also never let downtime *leak* paid access — so entitlement checks deny when they can't affirm a grant.
-</Aside>
 
 ## Three tools, and where each runs
 
@@ -73,11 +73,11 @@ async function handleExport(req, res) {
 }
 ```
 
-The client `<Gate>` keeps the UI honest and fast; the server check keeps the revenue safe. If RevTurbine is down, the client denies (the gated UI stays gated rather than leaking), and your server check is still the backstop for the billing-critical step.
+The client `<Gate>` keeps the UI honest and fast; the server check keeps the revenue safe. Both evaluate the same Playbook locally, so neither depends on our servers at decision time.
 
 ## Related
 
 - [Recommended API Path](/getting-started/api-overview/) — when to reach for `can()` vs `gate()` vs `<Gate>`
 - [Server-Side Integration](/getting-started/server-side/) — running entitlement checks on your backend
 - [Entitlements](/guides/entitlements/) — the entitlement model behind every check
-- [Error Handling](/guides/error-handling/) — additive placements and fail-closed checks in detail
+- [Error Handling](/guides/error-handling/) — placement degradation and fail-closed checks in detail

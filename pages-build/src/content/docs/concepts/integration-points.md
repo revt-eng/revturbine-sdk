@@ -5,9 +5,9 @@ sidebar:
   order: 2
 ---
 
-## Design Principle: Additive Only
+## Design Principle: Design for the Empty State
 
-RevTurbine is **additive** — it enhances the customer's app but is never required for baseline UX. The customer's app must look and function correctly without a placement payload. Surface slots return "nothing to show" by default; the app renders its standard UI. Placements layer conversion, expansion, and retention experiences on top.
+Design layouts that hold up when a slot is empty, and don't reserve space that only looks right when it's filled. Where this is not possible, give the slot a `fallback` so the page has a placeholder UX if no placement renders. A slot renders nothing whenever no placement matches the current user; targeting, frequency caps and cooldowns can produce that outcome. Placements layer conversion, expansion, and retention experiences on top of your standard UI.
 
 RevTurbine is the **authoritative source for monetization policy** — which plans exist, what each entitles, and when a placement shows. The customer's app **owns enforcement**: it reads the entitlement result and acts on it, with no hard-coded plan logic. Plan changes, entitlement updates, and placement configurations take effect immediately without code deploys. For billing-critical or abuse-sensitive actions, re-check entitlement on your server — the client check is a UX convenience. See [Client vs Server Enforcement](/concepts/enforcement/).
 
@@ -36,7 +36,7 @@ const p = await rt.getPlacement({
   componentType: "button"
 });
 if (p) renderUpgradeButton(p.content.label, p.cta_path);
-else renderDefaultButton(); // additive only
+else renderDefaultButton(); // baseline UI when no placement matches
 ```
 
 ### 2. Entitlement-Based (Gated, Usage/Credit/Seat)

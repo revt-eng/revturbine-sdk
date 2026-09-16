@@ -128,8 +128,8 @@ export async function apiFetch(input: RequestInfo, init?: RequestInit) {
       paywall.open(handle);
     }
     // Fall through: the caller still sees a failed response and can render its
-    // own inline state. The paywall is additive, not a replacement for handling
-    // the error.
+    // own inline state. The paywall opens in addition to, not instead of, the
+    // caller's own error handling.
   }
 
   return response;

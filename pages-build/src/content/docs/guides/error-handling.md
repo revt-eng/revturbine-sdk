@@ -1,6 +1,6 @@
 ---
 title: Error Handling
-description: SDK error model, additive placements, fail-closed entitlement checks, provider failure cascade, and graceful degradation patterns.
+description: SDK error model, placement and entitlement degradation, fail-closed entitlement checks, provider failure cascade, and graceful degradation patterns.
 sidebar:
   order: 11
 ---
@@ -11,9 +11,9 @@ The SDK never throws into your app and never blocks your render. But *placements
 
 ## Two degradation modes
 
-**Placements are additive.** If RevTurbine is paused, misconfigured, or unreachable, a slot renders nothing (or your configured fallback) — it can never take your product down.
+**A placement that can't resolve renders nothing** (or your configured fallback), so it can never take your product down.
 
-**Entitlement checks are fail-closed.** If a check can't produce an affirmative grant, it returns `{ status: 'denied', allowed: false }` rather than granting access. The Playbook is cached and persisted locally, so a configured runtime evaluates real allow/deny answers with no network round-trip; the failure fallback only fires when the SDK has *no basis to answer at all* — no config, no cache, nothing reachable — which is exactly where denying is the safe, non-leaking default. The `reason` code is preserved so you can still tell an outage apart from a real denial.
+**Entitlement checks are fail-closed.** If a check can't produce an affirmative grant, it returns `{ status: 'denied', allowed: false }` rather than granting access. The Playbook is cached and persisted locally, so a configured runtime evaluates real allow/deny answers with no network round-trip; the failure fallback only fires when the SDK has *no basis to answer at all* — no config, no cache, nothing reachable — which is exactly where denying is the safe, non-leaking default. The `reason` code is preserved so you can still tell an infrastructure failure apart from a real denial.
 
 | API failure scenario | SDK behavior |
 |---|---|
@@ -88,9 +88,9 @@ When the provider chain is exhausted (all providers failed), slots behave accord
 
 ### Recommendation
 
-Use `'invisible'` (default) for production. Placements are additive — your app should work fine without them.
+Use `'invisible'` (default) for production. Your app should work fine without any placement rendering.
 
-Use `'placeholder'` during development to visually verify that slots are wired correctly even when the provider is down.
+Use `'placeholder'` during development to visually verify that slots are wired correctly even when a provider fails.
 
 ## Reason Codes
 
@@ -210,9 +210,9 @@ if (error) await refresh();
 if (entError) await recheck();
 ```
 
-## Graceful Degradation Pattern
+## Design for the empty state
 
-Structure your components so the SDK enhancement is purely additive:
+Structure your components so the baseline UI never depends on a placement being present:
 
 ```tsx
 function Dashboard() {
@@ -221,14 +221,14 @@ function Dashboard() {
       {/* Baseline UX — always works */}
       <DashboardContent />
 
-      {/* SDK enhancement — fails gracefully to nothing */}
+      {/* Placement — renders nothing when no placement matches */}
       <Slot id="dashboard_banner" />
     </div>
   );
 }
 ```
 
-If the SDK is down, `<Slot>` renders nothing and the baseline dashboard continues working.
+When no placement matches the current user, `<Slot>` renders nothing and the baseline dashboard is unchanged. Targeting, frequency caps and cooldowns can all produce that outcome, so the layout must hold up without it.
 
 ## Debugging Errors
 

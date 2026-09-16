@@ -1,13 +1,13 @@
 ---
 title: Production Readiness
-description: The pre-launch checklist for a billing-adjacent SDK — keys, failure behavior, local-only limits, caching, config versioning, and testing plan changes before you deploy.
+description: The pre-launch checklist for a billing-adjacent SDK — keys, fail-closed checks, local-only limits, caching, config versioning, and testing plan changes before you deploy.
 sidebar:
   order: 1
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+RevTurbine is safe to run in production from day one: we add no latency and our availability never affects your product. Decisions never have critical dependence on our servers. The RevTurbine SDK runs inside your app, and on your backend where you verify. It evaluates entitlements and placements locally, as a pure function of your Playbook and the current user context.
 
-RevTurbine is designed to be safe to run in production from day one — it's additive (placements can't break your app) and entitlement checks fail closed (an outage can't leak paid access). This page is the checklist for the rest.
+We push additional inputs to your local engine: aggregated frequency caps, prioritization scores as available. These are additive; nothing breaks or blocks if not present. This page is the checklist for the rest.
 
 ## Client vs server
 
@@ -23,13 +23,9 @@ The one decision that matters most: **the client check drives the UI; your serve
 
 Stamp `environmentId` (`'production'` / `'staging'`) so analytics stays separated by deployment.
 
-## Failure behavior
+## Fail-closed checks
 
-RevTurbine is **additive**: if it's paused, misconfigured, or unreachable, slots render nothing — your product keeps working. Entitlement checks are **fail-closed**, so an outage denies rather than leaking a paid feature. Tune what a slot renders on provider failure with `providerFailureSlotBehavior` (default: render nothing). See [Error Handling](/guides/error-handling/).
-
-<Aside type="tip" title="Fail-closed, with a server backstop">
-An entitlement check that can't reach a decision denies, so an outage never leaks a paid feature. This is safe because the Playbook is cached locally — real answers need no round-trip — and billing-critical actions are still re-checked on your server before value is granted.
-</Aside>
+Entitlement checks fail closed: a check that can't produce an affirmative grant denies rather than leaking a paid feature. The Playbook is cached locally, so real answers need no round trip, and billing-critical actions are re-checked on your server before value is granted. Tune what a slot renders on provider failure with `providerFailureSlotBehavior` (default: render nothing). See [Error Handling](/guides/error-handling/).
 
 ## Local-only limits
 

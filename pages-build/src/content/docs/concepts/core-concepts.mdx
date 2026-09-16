@@ -1,6 +1,6 @@
 ---
 title: Core Concepts
-description: The smallest mental model for RevTurbine — three primitives (entitlements, gates, placements), the Playbook that configures them, user context, and the additive principle.
+description: The smallest mental model for RevTurbine — three primitives (entitlements, gates, placements), the Playbook that configures them, user context, and where decisions run.
 sidebar:
   order: 1
 ---
@@ -37,10 +37,14 @@ semantics, and server-derived context.
 
 The same primitives work whether RevTurbine runs entirely in the browser from a bundled Playbook (`local_only`), calls the control plane (`revturbine_server`), or uses your own endpoints (`custom_endpoints`). See [Runtime Modes](/guides/runtime-modes/).
 
-## The additive principle
+## Where decisions run
 
-<Aside type="tip" title="Additive — it can't break your app">
-RevTurbine is an *additive* layer. Your product must look and work correctly with every placement paused and the SDK offline — slots simply render nothing. A monetization layer should never be able to take your product down. Entitlement *checks*, though, fail **closed** — a check that can't produce an affirmative grant denies rather than leaking access. (For the money-safe exception, see [Client vs Server Enforcement](/concepts/enforcement/).)
+<Aside type="tip" title="No latency, no dependence on our availability">
+We add no latency and our availability never affects your product. Decisions never have critical dependence on our servers. The RevTurbine SDK runs inside your app, and on your backend where you verify. It evaluates entitlements and placements locally, as a pure function of your Playbook and the current user context.
+
+We push additional inputs to your local engine: aggregated frequency caps, prioritization scores as available. These are additive; nothing breaks or blocks if not present.
+
+Entitlement checks fail closed: a check that can't produce an affirmative grant denies rather than leaking access. For the money-safe re-check, see [Client vs Server Enforcement](/concepts/enforcement/).
 </Aside>
 
 ## Glossary

@@ -286,7 +286,7 @@ if (denied) {
 
 ## Fail-Closed Semantics
 
-Entitlement checks are **fail-closed** — if a check can't produce an affirmative grant, `can` returns `allowed: false` rather than granting access. The `reason` names the cause, so you can still tell an outage apart from a real denial:
+Entitlement checks are **fail-closed** — if a check can't produce an affirmative grant, `can` returns `allowed: false` rather than granting access. The `reason` names the cause, so you can still tell an infrastructure failure apart from a real denial:
 
 ```ts
 // Server mode, the launched Playbook could not be fetched:
