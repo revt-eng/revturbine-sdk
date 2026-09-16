@@ -1,50 +1,92 @@
 ---
 title: Interactive Playground
-description: An index of every live, editable SDK example — each runs in local_only mode with a demo revturbine.playbook.json. Follow a link to open the scenario and edit its code.
+description: Every live, editable SDK example in one place — each runs in local_only mode with a demo revturbine.playbook.json. The code is on the page; open any scenario in Sandpack to edit it.
 ---
 
-Every scenario below is a live, editable SDK demo running entirely in `local_only` mode — a bundled `revturbine.playbook.json` with plans, entitlements, placements, and targeting, no decision-time network calls. This page is the index; follow a link to open a scenario and edit its code alongside a live preview.
+import LivePlayground from '../../../components/LivePlayground.astro';
+
+Every scenario below is a live SDK demo running entirely in `local_only` mode — a bundled `revturbine.playbook.json` with plans, entitlements, placements, and targeting, and no decision-time network calls. The code is on the page; press **Open in Sandpack** on any scenario to edit it alongside a live preview, and switch demo users to see the engine respond.
 
 ## Fixed Slots
 
 Always-visible inline placements.
 
-| Scenario | Slot | What it shows |
-|---|---|---|
-| [F-1: Upgrade Button](/guides/placements/#fixed-button) | `button` | An always-visible upgrade CTA in a nav slot |
-| [F-2: Plans & Pricing Card](/guides/placements/#fixed-in-page) | `in_page` | An inline pricing/plans card |
-| [F-3: Quota Meter](/guides/placements/#fixed-usage-counter) | `in_page` | A usage meter with progress bar and counter |
-| [F-4: Annual Nudge Banner](/guides/placements/#fixed-banner) | `banner` | An annual-plan nudge banner |
+<a id="fixed-button"></a>
+### F-1: Upgrade Button
+An always-visible upgrade CTA in a nav slot (`button`).
+<LivePlayground scenarioId="fixed-button" />
+
+<a id="fixed-in-page"></a>
+### F-2: Plans & Pricing Card
+An inline pricing/plans card (`in_page`).
+<LivePlayground scenarioId="fixed-in-page" />
+
+<a id="fixed-usage-counter"></a>
+### F-3: Quota Meter
+A usage meter with progress bar and counter (`in_page`).
+<LivePlayground scenarioId="fixed-usage-counter" />
+
+<a id="fixed-banner"></a>
+### F-4: Annual Nudge Banner
+An annual-plan nudge banner (`banner`).
+<LivePlayground scenarioId="fixed-banner" />
 
 ## Access Gates
 
 Entitlement gates that render an upsell when access is denied.
 
-| Scenario | Slot | What it shows |
-|---|---|---|
-| [G-1: Data Export Gate](/guides/entitlements/#gate-modal) | `modal` | A blocking modal gate on a paid feature |
-| [G-2: Branding Gate](/guides/entitlements/#gate-inline) | `in_page` | An inline gate on a branding feature |
-| [G-3: Brand Kit Gate](/guides/entitlements/#gate-card) | `in_page` | A card gate on a brand-kit feature |
+<a id="gate-modal"></a>
+### G-1: Data Export Gate
+A blocking modal gate on a paid feature (`modal`).
+<LivePlayground scenarioId="gate-modal" />
+
+<a id="gate-inline"></a>
+### G-2: Branding Gate
+An inline gate on a branding feature (`in_page`).
+<LivePlayground scenarioId="gate-inline" />
+
+<a id="gate-card"></a>
+### G-3: Brand Kit Gate
+A card gate on a brand-kit feature (`in_page`).
+<LivePlayground scenarioId="gate-card" />
 
 ## Global Slots
 
 Ephemeral, moment-driven messages.
 
-| Scenario | Slot | What it shows |
-|---|---|---|
-| [M-1: Usage Warning Banner](/guides/placements/#msg-banner) | `banner` | A "running low" usage banner |
-| [M-2: Usage Exhausted Modal](/guides/placements/#msg-modal) | `modal` | A limit-reached modal |
-| [M-3: Trial Welcome Toast](/guides/placements/#msg-toast) | `toast` | A trial-welcome toast |
+<a id="msg-banner"></a>
+### M-1: Usage Warning Banner
+A "running low" usage banner (`banner`).
+<LivePlayground scenarioId="msg-banner" />
+
+<a id="msg-modal"></a>
+### M-2: Usage Exhausted Modal
+A limit-reached modal (`modal`).
+<LivePlayground scenarioId="msg-modal" />
+
+<a id="msg-toast"></a>
+### M-3: Trial Welcome Toast
+A trial-welcome toast (`toast`).
+<LivePlayground scenarioId="msg-toast" />
 
 ## Headless API
 
 The imperative SDK, no slot components.
 
-| Scenario | What it shows |
-|---|---|
-| [H-1: PlacementController](/guides/headless-api/#headless-placement) | Driving a placement imperatively |
-| [H-2: EntitlementGate](/guides/headless-api/#headless-gate) | An entitlement check without React |
-| [H-3: SdkSession One-Shot](/guides/headless-api/#headless-session) | A one-shot session evaluation |
+<a id="headless-placement"></a>
+### H-1: PlacementController
+Driving a placement imperatively.
+<LivePlayground scenarioId="headless-placement" />
+
+<a id="headless-gate"></a>
+### H-2: EntitlementGate
+An entitlement check without React.
+<LivePlayground scenarioId="headless-gate" />
+
+<a id="headless-session"></a>
+### H-3: SdkSession One-Shot
+A one-shot session evaluation.
+<LivePlayground scenarioId="headless-session" />
 
 ## How it works
 

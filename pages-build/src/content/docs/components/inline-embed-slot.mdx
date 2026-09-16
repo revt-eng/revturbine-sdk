@@ -7,7 +7,7 @@ sidebar:
 ---
 
 import InlineEmbedSlotGallery from '../../../components/galleries/InlineEmbedSlotGallery';
-import CodeExample from '../../../components/CodeExample';
+import LiveExample from '../../../components/LiveExample.astro';
 
 export const code = `import { Gate } from "@revturbine/sdk";
 import { DemoApp } from "./DemoApp";
@@ -41,7 +41,7 @@ An inline card for feature gates and contextual upgrade prompts. Embeds naturall
 
 A live, editable example. The user below is **not** entitled, so the gate renders the configured inline upgrade card in place of the children — edit the code (or switch to an entitled demo user) and the preview re-runs:
 
-<CodeExample client:only="react" code={code} />
+<LiveExample code={code} />
 
 The `InlineEmbedSlot` renders automatically when the decision engine selects an `inline_gate_message` template. Inline embeds render in-flow where you place them. When the entitlement is denied, the gate content replaces the protected component.
 

@@ -3,6 +3,7 @@ import starlight from '@astrojs/starlight';
 import react from '@astrojs/react';
 import starlightTypeDoc from 'starlight-typedoc';
 import starlightLlmsTxt from 'starlight-llms-txt';
+import { mdxToMarkdown } from './src/lib/mdx-to-md';
 import remarkGfm from 'remark-gfm';
 import { join, resolve } from 'node:path';
 import { readFile, writeFile, readdir } from 'node:fs/promises';
@@ -69,9 +70,11 @@ function baseAbsoluteInternalLinks(base) {
         // written — 187 root-absolute `](/guides/…)` links that 404 under any
         // subpath mount. These are the files written FOR agents, which makes a
         // dead link in them worse than one on a page a human can navigate
-        // around.
+        // around. The same pass strips the MDX-isms rawContent leaves behind
+        // (imports, `export const code = …`, <Aside>/<Tabs>/<LiveExample>) —
+        // see src/lib/mdx-to-md.ts.
         const rewriteMarkdown = (text) =>
-          text.replace(/\]\((\/(?!\/)[^)\s]*)\)/g, (m, p) => {
+          mdxToMarkdown(text).replace(/\]\((\/(?!\/)[^)\s]*)\)/g, (m, p) => {
             const np = prefix(p);
             return np ? `](${np})` : m;
           });

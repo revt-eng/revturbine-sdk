@@ -6,8 +6,8 @@ sidebar:
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
-import CodeExample from '../../../components/CodeExample';
-import SandpackPlayground from '../../../components/SandpackPlayground';
+import LiveExample from '../../../components/LiveExample.astro';
+import LivePlayground from '../../../components/LivePlayground.astro';
 
 export const fixedCode = `import { Slot } from "@revturbine/sdk";
 import { DemoApp } from "./DemoApp";
@@ -94,7 +94,7 @@ Every slot needs an `id` and optionally a list of accepted `surfaceTemplateIds`:
 
 Always-visible inline placements — buttons, cards, meters:
 
-<CodeExample client:only="react" code={fixedCode} />
+<LiveExample code={fixedCode} />
 
 Fixed slots render nothing if no placement matches — your layout stays intact.
 
@@ -104,7 +104,7 @@ Fixed slots render nothing if no placement matches — your layout stays intact.
 
 Wrap premium content and show an upgrade prompt when access is denied:
 
-<CodeExample client:only="react" code={gateCode} height={420} />
+<LiveExample code={gateCode} height={420} />
 
 If the entitlement is granted, children render normally. If denied, the gate renders an **upgrade placement** in their place.
 
@@ -116,11 +116,11 @@ That denial UI is itself a placement, not hardcoded markup: the decision engine 
 
 Page-level overlays triggered by targeting rules — toasts, modals, banners:
 
-<CodeExample client:only="react" code={messageCode} />
+<LiveExample code={messageCode} />
 
 Message slots render nothing until a targeting rule triggers. Place them at the top level of your layout.
 
-> [Try it live → Usage Warning Banner](/guides/placements/#msg-banner)
+> [Try it live → Usage Warning Banner](/playground/#msg-banner)
 
 ## Placement Output
 
@@ -270,53 +270,15 @@ const {
 
 ## Live examples
 
-Every built-in slot type, running live in `local_only` mode — edit the code and switch demo users to see the engine respond.
-
-### Fixed slots
+One scenario runs here; the full gallery — every built-in slot type, editable, switching demo users — lives on the [Interactive Playground](/playground/).
 
 <a id="fixed-button"></a>
 
 **Upgrade Button** — an always-visible CTA in a nav slot.
 
-<SandpackPlayground scenarioId="fixed-button" client:only="react" />
+<LivePlayground scenarioId="fixed-button" />
 
-<a id="fixed-in-page"></a>
-
-**Plans & Pricing Card** — an inline pricing/plans card.
-
-<SandpackPlayground scenarioId="fixed-in-page" client:only="react" />
-
-<a id="fixed-usage-counter"></a>
-
-**Quota Meter** — a usage meter with progress bar and counter.
-
-<SandpackPlayground scenarioId="fixed-usage-counter" client:only="react" />
-
-<a id="fixed-banner"></a>
-
-**Annual Nudge Banner** — an annual-plan nudge banner.
-
-<SandpackPlayground scenarioId="fixed-banner" client:only="react" />
-
-### Global slots
-
-<a id="msg-banner"></a>
-
-**Usage Warning Banner** — a "running low" usage banner.
-
-<SandpackPlayground scenarioId="msg-banner" client:only="react" />
-
-<a id="msg-modal"></a>
-
-**Usage Exhausted Modal** — a limit-reached modal.
-
-<SandpackPlayground scenarioId="msg-modal" client:only="react" />
-
-<a id="msg-toast"></a>
-
-**Trial Welcome Toast** — a trial-welcome toast.
-
-<SandpackPlayground scenarioId="msg-toast" client:only="react" />
+More on the Playground: [Plans & Pricing Card](/playground/#fixed-in-page) · [Quota Meter](/playground/#fixed-usage-counter) · [Annual Nudge Banner](/playground/#fixed-banner) · [Usage Warning Banner](/playground/#msg-banner) · [Usage Exhausted Modal](/playground/#msg-modal) · [Trial Welcome Toast](/playground/#msg-toast).
 
 ## Next Steps
 

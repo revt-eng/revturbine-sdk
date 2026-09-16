@@ -7,7 +7,7 @@ sidebar:
 ---
 
 import ButtonSlotGallery from '../../../components/galleries/ButtonSlotGallery';
-import CodeExample from '../../../components/CodeExample';
+import LiveExample from '../../../components/LiveExample.astro';
 
 export const code = `import { Slot } from "@revturbine/sdk";
 import { DemoApp } from "./DemoApp";
@@ -34,7 +34,7 @@ A standalone CTA button suitable for persistent nav CTAs or inline upgrade promp
 
 A live, editable example. The `<Slot>` renders whatever `button` placement the decision engine picks for the current user — or nothing. Edit the code (or switch the demo user) and the preview re-runs:
 
-<CodeExample client:only="react" code={code} />
+<LiveExample code={code} />
 
 The `ButtonSlot` renders automatically when the decision engine selects a `button` template for the slot. Style variants are controlled via the `style` content field in your placement configuration.
 

@@ -1,0 +1,29 @@
+---
+/**
+ * A docs example that is readable before JavaScript arrives.
+ *
+ * The code is rendered at build time by Expressive Code (syntax-highlighted,
+ * copyable, with a filename frame); the live Sandpack editor mounts only when
+ * the reader presses "Run this example". Replaces `<CodeExample
+ * client:only="react" />`, which showed nothing until ~2 MB of JavaScript had
+ * loaded and then booted a remote bundler per example.
+ */
+import { Code } from '@astrojs/starlight/components';
+import RunExample from './RunExample';
+
+interface Props {
+  code: string;
+  title?: string;
+  lang?: string;
+  dependencies?: Record<string, string>;
+  files?: Record<string, string>;
+  height?: number;
+  showPreview?: boolean;
+  showEditor?: boolean;
+}
+
+const { code, title = 'App.tsx', lang = 'tsx', ...runProps } = Astro.props;
+---
+
+<Code code={code} lang={lang} title={title} />
+<RunExample client:visible code={code} {...runProps} />

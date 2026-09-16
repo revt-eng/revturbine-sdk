@@ -1,0 +1,21 @@
+---
+/**
+ * A playground scenario with its code rendered at build time, so the example is
+ * readable (and copyable) before the interactive widget's JavaScript loads.
+ */
+import { Code } from '@astrojs/starlight/components';
+import { sandpackScenarios } from '../sandpack/scenarios';
+import { scenarioExampleCode } from '../sandpack/scenario-code';
+import SandpackPlayground from './SandpackPlayground';
+
+interface Props {
+  scenarioId: string;
+}
+
+const { scenarioId } = Astro.props;
+const scenario = sandpackScenarios.find((s) => s.id === scenarioId);
+const code = scenario ? scenarioExampleCode(scenario) : `// Unknown scenario: ${scenarioId}`;
+---
+
+<Code code={code} lang="tsx" title="Example.tsx" />
+<SandpackPlayground client:only="react" scenarioId={scenarioId} />

@@ -7,7 +7,7 @@ sidebar:
 ---
 
 import ModalSlotGallery from '../../../components/galleries/ModalSlotGallery';
-import CodeExample from '../../../components/CodeExample';
+import LiveExample from '../../../components/LiveExample.astro';
 
 export const code = `import { Gate } from "@revturbine/sdk";
 import { DemoApp } from "./DemoApp";
@@ -41,7 +41,7 @@ An overlay modal for feature gates, trial expirations, and high-impact upgrade p
 
 A live, editable example. The user below is **not** entitled, so the gate renders the configured upgrade modal in place of the children — edit the code (or switch to an entitled demo user) and the preview re-runs:
 
-<CodeExample client:only="react" code={code} height={420} />
+<LiveExample code={code} height={420} />
 
 The `ModalSlot` renders automatically when the decision engine selects a `modal_overlay` template. Blocking modals have no dismiss option — the user must take action. Optional modals include a secondary CTA or close button.
 

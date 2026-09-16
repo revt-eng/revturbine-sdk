@@ -7,7 +7,7 @@ sidebar:
 ---
 
 import ToastSlotGallery from '../../../components/galleries/ToastSlotGallery';
-import CodeExample from '../../../components/CodeExample';
+import LiveExample from '../../../components/LiveExample.astro';
 
 export const code = `import { Slot } from "@revturbine/sdk";
 import { DemoApp } from "./DemoApp";
@@ -32,7 +32,7 @@ A non-blocking toast notification for usage alerts, feature announcements, and s
 
 A live, editable example — edit the code (or switch the demo user) and the preview re-runs:
 
-<CodeExample client:only="react" code={code} />
+<LiveExample code={code} />
 
 The `ToastSlot` renders automatically when the decision engine selects a `toast_message` template. Toasts auto-dismiss after `duration` milliseconds (set to `0` to disable auto-dismiss). Position is controlled by the `position` content field.
 

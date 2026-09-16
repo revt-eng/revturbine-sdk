@@ -6,8 +6,8 @@ sidebar:
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
-import CodeExample from '../../../components/CodeExample';
-import SandpackPlayground from '../../../components/SandpackPlayground';
+import LiveExample from '../../../components/LiveExample.astro';
+import LivePlayground from '../../../components/LivePlayground.astro';
 
 export const canCode = `import { useCan } from "@revturbine/sdk";
 import { DemoApp } from "./DemoApp";
@@ -67,7 +67,7 @@ Entitlements define what users can do based on their plan. The SDK evaluates ent
 
 The simplest reactive check. `useCan(handle)` returns `{ can, limited, result }`. **`can` is the verdict**: `resolved && !denied`, where denied means `status === 'denied' || allowed === false`. A `limited` result that still grants (`allowed: true`) keeps `can` true; a `limited` result that denies is a deny. Gate on `!can`, never `!allowed`:
 
-<CodeExample client:only="react" code={canCode} />
+<LiveExample code={canCode} />
 
 ### Full surface — `useEntitlement`
 
@@ -92,7 +92,7 @@ function ExportButton() {
 
 `<Gate>` gates its children declaratively. `can="handle"` checks an entitlement (shorthand for `check={{ entitlement: 'handle' }}`); children render while entitled, and a configured upgrade placement — or `deniedFallback` — shows on denial. `limitedFallback` renders a soft "running low" state while access is still granted:
 
-<CodeExample client:only="react" code={gateCode} height={420} />
+<LiveExample code={gateCode} height={420} />
 
 :::caution[`<Gate>` must render inside a client boundary]
 In App-Router apps, `<Gate>` (and every SDK component/hook) must be used **inside a `'use client'` component**. The SDK creates its React context at module scope, so importing it from a Server Component fails the build with `createContext is not a function`. Keep the page shell a Server Component if you like — but the subtree that renders `<Gate>` needs the `'use client'` directive at its top. Server-side enforcement belongs to `checkEntitlement` on your API routes (see the client-vs-server section below), not to rendering `<Gate>` on the server.
@@ -100,27 +100,15 @@ In App-Router apps, `<Gate>` (and every SDK component/hook) must be used **insid
 
 **A `<Gate>` is also a placement.** On denial the gate doesn't render hardcoded UI — it resolves a **placement** from your monetization config and renders it in place of the children. So *what a denied user sees* — the upgrade modal or banner, its headline, offer, and CTA — is authored in the dashboard (or the CLI config), not baked into your app. Your PM, growth, or marketing team can rewrite the denial copy, swap the offer, or A/B-test it with no code deploy. `surfaceTemplateIds` scopes which surface templates can fill the gate; `deniedFallback` is the static backstop shown only when no placement is configured for it.
 
-#### Live gate examples
+#### Live gate example
 
-Edit the code in any of these to see the gate respond to different demo users — all run in `local_only` mode with no backend.
+Switch demo users to see the gate respond — it runs in `local_only` mode with no backend. Two more gate scenarios are on the [Interactive Playground](/playground/#access-gates): [Branding gate](/playground/#gate-inline) and [Brand Kit gate](/playground/#gate-card).
 
 <a id="gate-modal"></a>
 
 **Data Export gate** — a blocking modal gate on a paid feature.
 
-<SandpackPlayground scenarioId="gate-modal" client:only="react" />
-
-<a id="gate-inline"></a>
-
-**Branding gate** — an inline gate on a branding feature.
-
-<SandpackPlayground scenarioId="gate-inline" client:only="react" />
-
-<a id="gate-card"></a>
-
-**Brand Kit gate** — a card gate on a brand-kit feature.
-
-<SandpackPlayground scenarioId="gate-card" client:only="react" />
+<LivePlayground scenarioId="gate-modal" />
 
 ### With Auto-Gate
 

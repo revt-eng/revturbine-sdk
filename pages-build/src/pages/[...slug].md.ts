@@ -1,10 +1,13 @@
 import type { APIRoute, GetStaticPaths } from 'astro';
 import { getCollection } from 'astro:content';
+import { mdxToMarkdown } from '../lib/mdx-to-md';
 
-// Serves the raw markdown source of every docs page at `<page-path>.md`
-// (e.g. /guides/entitlements.md). Agents get clean, low-token markdown instead
-// of having to strip nav chrome out of the rendered HTML. Base-aware: under the
-// /docs mount these resolve to /docs/guides/entitlements.md automatically.
+// Serves the markdown source of every docs page at `<page-path>.md`
+// (e.g. /guides/entitlements.md), with MDX imports, exports and doc components
+// stripped and live examples turned back into fenced code. Agents get clean,
+// low-token markdown instead of having to strip nav chrome out of the rendered
+// HTML. Base-aware: under the /docs mount these resolve to
+// /docs/guides/entitlements.md automatically.
 export const getStaticPaths: GetStaticPaths = async () => {
   const docs = await getCollection('docs');
   return docs
@@ -17,7 +20,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
 export const GET: APIRoute = ({ props }) => {
   const { entry } = props as { entry: { data: { title?: string }; body?: string } };
   const heading = entry.data.title ? `# ${entry.data.title}\n\n` : '';
-  return new Response(heading + (entry.body ?? ''), {
+  return new Response(heading + mdxToMarkdown(entry.body ?? ''), {
     headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
   });
 };

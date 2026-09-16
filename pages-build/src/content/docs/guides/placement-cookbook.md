@@ -29,7 +29,7 @@ This guide provides ready-to-use patterns for each surface type supported by the
 />
 ```
 
-> [Try it live → Usage Warning Banner](/guides/placements/#msg-banner)
+> [Try it live → Usage Warning Banner](/playground/#msg-banner)
 
 ## Modal
 
@@ -95,7 +95,7 @@ Only request a modal at **safe moments**: after a user action (clicked a button,
 />
 ```
 
-> [Try it live → Quota Meter](/guides/placements/#fixed-usage-counter)
+> [Try it live → Quota Meter](/playground/#fixed-usage-counter)
 
 ## Credit Balance (In-Page)
 
