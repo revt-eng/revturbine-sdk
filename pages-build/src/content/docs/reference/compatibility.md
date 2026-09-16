@@ -7,7 +7,7 @@ description: SDK version compatibility, supported browsers, runtimes, and featur
 
 | SDK Version | Schema Version | API Version | Status |
 |---|---|---|---|
-| `0.7.x` | `0.1.x` | `v1` | Current |
+| `0.8.x` | `0.1.x` | `v1` | Current |
 
 ## Browser Support
 
@@ -26,7 +26,7 @@ The SDK requires these browser APIs:
 
 | API | Used For | Fallback |
 |---|---|---|
-| `fetch` | API calls | Required — no fallback |
+| `fetch` | Playbook sync, server-derived context, event delivery (not used in `local_only`) | Required — no fallback |
 | `localStorage` | Decision cache, interaction state | In-memory fallback |
 | `sessionStorage` | Session state | In-memory fallback |
 | `JSON.parse/stringify` | Data serialization | Required — no fallback |
@@ -73,14 +73,15 @@ The SDK uses React hooks (`useState`, `useEffect`, `useContext`, `useRef`). Reac
 
 ## Feature Support by Runtime Mode
 
-| Feature | `revturbine_server` | `local_only` | `custom_endpoints` |
+Decisions are evaluated inside your app in every mode. The modes differ in where the Playbook comes from and where telemetry goes.
+
+| | `revturbine_server` | `local_only` | `custom_endpoints` |
 |---|---|---|---|
-| Placement resolution | ✅ Server | ✅ Client | ✅ Custom server |
-| Entitlement checks | ✅ Server | ✅ Client | ✅ Custom server |
-| Usage tracking | ✅ Server | ✅ Client-only | ✅ Custom server |
-| Event delivery | ✅ Server | ❌ Local storage only | ✅ Custom server |
-| Config updates | ✅ Real-time | ❌ Snapshot only | ✅ Custom schedule |
-| Decision caching | ✅ | ✅ | ✅ |
+| Decision evaluation (entitlements, placements, caps) | In your app | In your app | In your app |
+| Playbook source | RevTurbine control plane, cached in the SDK, re-checked about once a minute | Bundled with your app | Your endpoints |
+| Server-derived context (plan, trial, payment state) | ✅ via client session | Supplied by your app | Your endpoints |
+| Usage and events | Sent to RevTurbine ingest | Kept locally | Your endpoints |
+| Playbook changes | Live, without a deploy | Redeploy | Your endpoints |
 | Cap enforcement | ✅ Client | ✅ Client | ✅ Client |
 
 ## TypeScript

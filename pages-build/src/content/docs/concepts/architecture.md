@@ -35,17 +35,19 @@ sdk/
 │       └── CreditBalanceSlot # Depleting credit balance display
 ```
 
-## Runtime Modes
+## Where decisions run
 
-The SDK supports three runtime modes:
+In every runtime mode a decision — which plan a user is on, whether they can use a feature, which placement a slot shows — is a pure function of the user context and the Playbook, evaluated inside your app by the SDK. Nothing in your request path calls RevTurbine to decide.
 
-1. **`revturbine_server`** (default) — Standard RevTurbine-hosted integration. SDK calls RevTurbine-managed decisioning, entitlement, and ingestion paths.
+The modes differ only in where the Playbook comes from and where telemetry goes:
 
-2. **`custom_endpoints`** — Customer provides endpoint overrides for SDK API calls. Useful when the customer proxies or replaces RevTurbine service surfaces.
+1. **`revturbine_server`** (default) — the SDK fetches the launched Playbook from the RevTurbine control plane, keeps it cached, and re-checks for a new release about once a minute. Server-derived context (plan, trial, payment state) arrives through a client session; events go to RevTurbine ingest.
 
-3. **`local_only`** — No server dependency. Required context/content/config are provided at initialization. Runtime state is persisted in localStorage.
+2. **`local_only`** — you bundle the Playbook with your app. No account, and no network on the decision path. Runtime state is persisted in `localStorage`.
 
-See [Runtime Modes](/guides/runtime-modes/) for setup details and decision tree.
+3. **`custom_endpoints`** — the same traffic as `revturbine_server`, routed through endpoints you host.
+
+See [Runtime Modes](/guides/runtime-modes/) for setup and cache lifetimes.
 
 ## Placement Type Registry
 
@@ -83,7 +85,7 @@ The SDK supports an optional provider strategy for `getPlacement`, `checkEntitle
 - **`providerFallbacks`**: ordered list of fallback providers.
 - **`providerFailureSlotBehavior`**: slot behavior after provider-chain failure — `'invisible'` (default) or `'placeholder'`.
 
-When the primary provider fails, the SDK logs a warning and tries each configured fallback in order. If every configured provider for that method fails, the SDK disables itself in fail-closed mode. This protects customer experiences from partially initialized or unstable provider chains.
+Providers are an escape hatch for teams that supply their own facts (entitlement grants, user context) from more than one source; the default path needs none. When the primary provider fails, the SDK logs a warning and tries each configured fallback in order. If every configured provider for that method fails, slots render according to `providerFailureSlotBehavior` rather than guessing.
 
 See [Runtime Modes → Provider Fallback Strategy](/guides/runtime-modes/#provider-fallback-strategy) for configuration details.
 

@@ -3,7 +3,7 @@ title: Provider Architecture
 description: How the SDK's provider pattern lets you supply custom placement, entitlement, and identity logic.
 ---
 
-The SDK uses a **provider pattern** to decouple business logic from data sources. A provider is a plain object that implements one or more domain methods — placement resolution, entitlement checks, placement type persistence, and user identification.
+By default the SDK evaluates placements and entitlements inside your app, from the Playbook — no provider is involved, and most apps never configure one. A **provider** is an escape hatch for teams that already have a placement or entitlement source of their own and want the SDK's rendering, tracking, caps, and cooldowns on top of it. A provider is a plain object that implements one or more domain methods — placement resolution, entitlement checks, placement type persistence, and user identification.
 
 ## The Provider Interface
 
@@ -31,7 +31,8 @@ const analyticsProvider: RevTurbineSdkProvider = {
     // config.componentType — the component type (button, modal, banner, etc.)
     // config.entitlementHandle — for access gate slots
 
-    // Example: fetch from your own decisioning API
+    // Example: a placement source you already run (escape hatch — the
+    // default path evaluates the Playbook locally and needs no provider)
     const res = await fetch(`/api/placements/${config.slotId}`);
     if (!res.ok) return null;
     return res.json();

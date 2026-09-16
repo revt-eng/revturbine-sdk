@@ -44,6 +44,12 @@ In code: `runtimeMode: RuntimeMode.LocalOnly` (`local_only`) with `localRuntime:
 | **Hosted** (`revturbine_server`) | RevTurbine, cached locally and refreshed in the background | Playbook delivery and versioning; user state (billing, trials, exceptions, behavior); analytics | `tenantId`, `apiKey`, `endpoint` |
 | **Hosted via your proxy** (`custom_endpoints`) | RevTurbine, through endpoints you own | Same as hosted | Base config + `endpointOverrides` |
 
+## Where decisions run, and what is cached
+
+In every mode the SDK evaluates entitlements and placements inside your app, from the Playbook it holds. No check and no placement decision makes a network call.
+
+In `revturbine_server` mode the SDK fetches the launched Playbook at init, keeps it in memory, and re-checks for a new release at most once a minute — a launched Playbook is immutable per version, so polling more often would only waste requests. If a refresh fails, the SDK keeps the last-known-good Playbook and never throws. Before the first Playbook has arrived, an entitlement check denies with an infrastructure reason (`config_unavailable`) rather than guessing.
+
 Set the mode with the typed **`RuntimeMode`** constant rather than a raw string:
 
 ```ts
@@ -145,7 +151,7 @@ When you're ready for production, the change is a single config swap. Your compo
 
 ## Provider Fallback Strategy
 
-Provider fallbacks are orthogonal to runtime mode. You can configure them in any mode when you want explicit provider-chain control.
+Providers are for teams that supply their own facts — entitlement grants, user context — from more than one source. They are not a resilience mechanism for `revturbine_server` mode: decisions are evaluated locally from the cached Playbook, so RevTurbine's availability never affects them. Most apps configure no provider.
 
 **Available options:**
 
@@ -188,9 +194,5 @@ const sdk = initRevTurbine({
 
 1. Start with `local_only` to validate your integration and placement slots.
 2. When ready, switch to `RuntimeMode.Server` and provide real credentials.
-3. Configure a primary RT provider first in the chain.
-4. Add at least one fallback provider in `providerFallbacks`.
-5. Keep fallback providers ordered by trust and operational readiness.
-6. Choose `providerFailureSlotBehavior` intentionally per surface criticality.
-7. Monitor console warnings for provider-chain failures.
-8. Assume fail-closed behavior: if all providers fail, SDK disables itself and slots render placeholder or invisible output.
+3. Re-check billing-critical actions on your server with the same Playbook — see [Server-Side Integration](/getting-started/server-side/).
+4. If you supply your own facts through providers, choose `providerFailureSlotBehavior` per surface.

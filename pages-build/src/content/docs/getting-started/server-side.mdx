@@ -76,8 +76,25 @@ async function handleExport(req) {
 }
 ```
 
-`Server` mode refreshes the launched Playbook from the control plane, then
-evaluates locally. A fetch failure denies access rather than granting it.
+`Server` mode fetches the launched Playbook from the control plane, then
+evaluates locally. Before the first Playbook has arrived, a check denies rather
+than grants; once it has, a failed refresh keeps the last-known-good Playbook.
+
+### Instance lifecycle
+
+Each `initRevTurbine` call in `Server` mode fetches the launched Playbook and
+then caches it for that instance, re-checking for a new release at most once a
+minute. A request-scoped instance therefore pays that fetch on every request.
+Two patterns avoid it:
+
+- **One long-lived instance per process** where a single user context per
+  instance fits — workers, cron jobs, a per-tenant service.
+- **A shared Playbook snapshot with a request-scoped `LocalOnly` instance** —
+  the model the Python and Rust SDKs use. Load the Playbook once per process
+  (`revturbine download --live` on deploy, or a timer), then construct
+  `initRevTurbine({ runtimeMode: RuntimeMode.LocalOnly, localRuntime: { playbook }, user })`
+  per request, as in [Bundled Local Runtime](#bundled-local-runtime) below.
+  Note that a `LocalOnly` instance does not send events to RevTurbine ingest.
 
 Initial `user.usage` entries use the rich `UserUsageEntry` shape shown above.
 After initialization, call `rt.update({ usage: { api_calls: total } })` with
