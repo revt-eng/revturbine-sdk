@@ -9,10 +9,12 @@ Complete reference for `RevTurbineInitOptions` and related configuration types.
 
 ### Required Fields
 
+Required in `revturbine_server` and `custom_endpoints` modes. In `local_only` mode all four are optional — `initRevTurbine({ runtimeMode: 'local_only', localRuntime: { playbook } })` is a complete configuration.
+
 | Field | Type | Description |
 |---|---|---|
 | `tenantId` | `string` | Your RevTurbine tenant identifier |
-| `apiKey` | `string` | API key (`rt_live_*`, `rt_test_*`, or `'local'` for local mode) |
+| `apiKey` | `string` | API key (`rt_live_*` or `rt_test_*`) |
 | `endpoint` | `string` | RevTurbine API endpoint URL |
 | `mode` | `'react' \| 'snippet' \| 'iframe'` | SDK integration mode |
 
@@ -65,7 +67,9 @@ code.**
 
 ```ts
 initRevTurbine({
-  publishableKey: 'rt_pub_…',
+  tenantId: 'tenant_abc',
+  apiKey: 'rt_live_…',
+  endpoint: 'https://revturbine.com/app',
   user: { id: 'user_123', plan_handle: 'free' },
   clientSession: () =>
     fetch('/api/revturbine-session', { method: 'POST' })
@@ -90,7 +94,7 @@ client-context call is made. Server-derived context is opt-in.
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `placementBehavior` | `Partial<RevTurbinePlacementBehaviorFlags>` | — | Opt-in pipeline flags |
+| `placementBehavior` | `Partial<RevTurbinePlacementBehaviorFlags>` | derived from the Playbook | Overrides for flags the SDK derives from what the Playbook authors (see below) |
 
 ### Storage
 
@@ -150,11 +154,13 @@ grants through `initialData`.
 
 ## RevTurbinePlacementBehaviorFlags
 
-| Flag | Type | Default | Description |
+Each flag is derived from the loaded Playbook; an explicit value in `placementBehavior` overrides the derivation. You rarely need to set them.
+
+| Flag | Type | Derived default | Description |
 |---|---|---|---|
-| `enableClientCapsEnforcement` | `boolean` | `false` | Client-side cap enforcement |
-| `enableAutoGatedPlacement` | `boolean` | `false` | Auto-render gated placements |
-| `enableTrialAutoTriggers` | `boolean` | `false` | Auto-derive trial lifecycle triggers |
+| `enableClientCapsEnforcement` | `boolean` | `true` when any placement payload authors a cap, cooldown, or remind-later | Client-side cap enforcement |
+| `enableAutoGatedPlacement` | `boolean` | `true` when the Playbook has a `gated` placement | Auto-render gated placements |
+| `enableTrialAutoTriggers` | `boolean` | `true` when the Playbook has a `trials` placement | Auto-derive trial lifecycle triggers |
 
 ---
 
@@ -209,14 +215,11 @@ interface RevTurbineStorage {
 
 ```ts docs-check=false reason="required-field shape sketch, not a value"
 {
-  tenantId: string;                   // ✅ Required (can be 'demo')
-  apiKey: string;                     // ✅ Required (can be 'local')
-  endpoint: string;                   // ✅ Required (can be 'http://localhost')
-  mode: string;                       // ✅ Required
   runtimeMode: 'local_only';         // ✅ Required
   localRuntime: {
     playbook: Playbook;   // ✅ Required
   };
+  // tenantId, apiKey, endpoint, mode — optional; no account or key is needed
 }
 ```
 

@@ -185,11 +185,17 @@ Pin the crate to a version whose schema matches the `Playbook` you deploy; a
 snapshot newer than the crate's schema can decide differently than your
 TypeScript frontend.
 
+## What is ported
+
+Segment evaluation and targeting-state derivation from a raw user context are
+ported and parity-locked, so a Rust gate and a TypeScript render agree given
+the same user context — not only the same pre-resolved traits.
+
 ## Non-goals
 
 The Rust SDK is the headless server decision core only. The following are
-**intentionally not ported** (plan 33 REQ-14, inherited by plan 185 REQ-2) —
-they are browser/full-SDK concerns with no server equivalent:
+**intentionally not ported** — they are browser/full-SDK concerns with no
+server equivalent:
 
 - UI components, hooks, and theming (no Rust equivalent).
 - Browser storage, `localStorage` theme persistence, `window.RevTurbine`.
@@ -197,9 +203,6 @@ they are browser/full-SDK concerns with no server equivalent:
 - `identify`, `dismiss` / `snooze` / `convert`, treatment-interaction
   tracking, `capture`, `bootstrap_placement_decisions`, decision-cache and
   interaction-state hydration.
-- Segment / targeting / personalization-token derivation from raw traits (the
-  evaluator matches pre-resolved data; deriving segments is browser/segments
-  machinery).
 
 ## Parity guarantee
 

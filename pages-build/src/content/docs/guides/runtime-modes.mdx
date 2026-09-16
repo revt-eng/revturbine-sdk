@@ -63,21 +63,17 @@ RevTurbine requests.
 <TabItem label="Local-only (start here)">
 
 ```ts
-import { initRevTurbine, createLocalRuntimeConfig } from '@revturbine/sdk';
+import { initRevTurbine, RuntimeMode } from '@revturbine/sdk';
 import playbook from './revturbine.playbook.json';
 
-const sdk = initRevTurbine(
-  createLocalRuntimeConfig({
-    tenantId: 'my-app',
-    apiKey: 'local',
-    endpoint: 'http://localhost',
-    mode: 'react',
-    localRuntime: {
-      playbook,
-      storageKey: 'my-app:revturbine-local-runtime',
-    },
-  }),
-);
+// No account, key, tenant or endpoint: the Playbook is the whole configuration.
+const sdk = initRevTurbine({
+  runtimeMode: RuntimeMode.LocalOnly,
+  localRuntime: {
+    playbook,
+    storageKey: 'my-app:revturbine-local-runtime',
+  },
+});
 ```
 
 <Aside type="tip">

@@ -168,11 +168,18 @@ Pin the installed SDK tag to a version whose schema matches the
 `Playbook` you deploy; a snapshot newer than the SDK's schema can decide
 differently than your TypeScript frontend.
 
+## What is ported
+
+Segment evaluation and targeting-state derivation from a raw user context are
+ported and parity-locked, so a Python gate and a TypeScript render agree given
+the same user context — not only the same pre-resolved traits. `segment_ids`
+remains available as an explicit override.
+
 ## Non-goals
 
 The Python SDK is the headless server decision core only. The following are
-**intentionally not ported** (plan 33 REQ-14) — they are browser/full-SDK
-concerns with no server equivalent:
+**intentionally not ported** — they are browser/full-SDK concerns with no
+server equivalent:
 
 - React / JSX components and hooks (no Python equivalent).
 - Browser storage, `localStorage` theme persistence, `window.RevTurbine`.
@@ -182,9 +189,6 @@ concerns with no server equivalent:
   `track_treatment_interaction`, `get_trial_status`, `capture`,
   `bootstrap_placement_decisions`, `get_user_context`, decision-cache /
   interaction-state hydration.
-- Segment / targeting / personalization-token derivation from raw traits
-  (the evaluator matches pre-resolved data; deriving segments is
-  browser/segments machinery).
 
 <Aside type="caution">
 A legacy thin-RPC client (`revturbine_server`) also exists in the package for

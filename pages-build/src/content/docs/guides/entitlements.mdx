@@ -65,7 +65,7 @@ Entitlements define what users can do based on their plan. The SDK evaluates ent
 
 ### React Hook — `useCan`
 
-The simplest reactive check. `useCan(handle)` returns `{ can, limited, result }`. `can` is `true` while the user is entitled — **including** the `limited` (running-low) state — so gate on `!can`, never `!allowed`:
+The simplest reactive check. `useCan(handle)` returns `{ can, limited, result }`. **`can` is the verdict**: `resolved && !denied`, where denied means `status === 'denied' || allowed === false`. A `limited` result that still grants (`allowed: true`) keeps `can` true; a `limited` result that denies is a deny. Gate on `!can`, never `!allowed`:
 
 <CodeExample client:only="react" code={canCode} />
 
@@ -150,7 +150,7 @@ const result = await sdk.can('data_export');
 // result.allowed: boolean
 // result.reason: string (optional)
 // result.current_tier: string (optional, for tier-based)
-// Usage numbers (used/limit/remaining) come from useUsageSnapshot — see "Reading Usage".
+// result.limit / used / remaining: present when a usage_limit or credits rule matched
 ```
 
 ## Entitlement Result
@@ -163,9 +163,14 @@ interface EntitlementResult {
   allowed: boolean;
   reason?: string;
   current_tier?: string;
+  limit?: number;      // effective limit from the matched rule
+  used?: number;       // amount the evaluation applied against limit
+  remaining?: number;  // max(0, limit - used)
 }
-// Usage numbers (used / limit / remaining) are NOT on the result —
-// read them from useUsageSnapshot() (see "Reading Usage" below).
+// limit / used / remaining appear only on limit-bearing outcomes — a matched
+// usage_limit or credits rule. Their absence means the check was
+// limit-agnostic (a feature or tier rule), not unlimited. For balances across
+// handles, use useUsageSnapshot() (see "Reading Usage" below).
 ```
 
 | Status | Meaning |
@@ -251,9 +256,9 @@ const { allowed } = useEntitlement({ handle: 'brand_kit' });
 ### Usage Limit
 
 ```tsx
-const { allowed, limited } = useEntitlement({ handle: 'api_calls' });
-// limited: true when usage > 80%
-// used / limit: read from useUsageSnapshot() (see "Reading Usage")
+const { allowed, limited, result } = useEntitlement({ handle: 'api_calls' });
+// limited: at or past the limit — read `allowed` for the verdict
+// result.used / result.limit / result.remaining: on the result for this check
 ```
 
 ### Credits
@@ -261,7 +266,7 @@ const { allowed, limited } = useEntitlement({ handle: 'api_calls' });
 ```tsx
 const { limited, result } = useEntitlement({ handle: 'render_credits' });
 // result.status / result.allowed reflect access as credits run low
-// remaining balance: read from useUsageSnapshot() (see "Reading Usage")
+// result.remaining: the balance the evaluation used
 ```
 
 ### Seats
