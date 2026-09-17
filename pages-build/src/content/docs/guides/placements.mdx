@@ -88,6 +88,10 @@ Every slot needs an `id` and optionally a list of accepted `surfaceTemplateIds`:
 | `id` | `string` | Unique slot identifier (matches server-side placement rules) |
 | `surfaceTemplateIds` | `string[]` | Templates this slot accepts (filters available placements) |
 
+:::tip[Design for the empty state]
+A slot renders nothing whenever no placement matches the current user — targeting, frequency caps and cooldowns all produce that outcome. Lay the page out so it holds up with the slot empty, and don't reserve space that only looks right when it's filled. Where that isn't possible, give the slot a `fallback` so there is baseline UI when nothing renders.
+:::
+
 ## Slot Types
 
 ### Fixed Slots
@@ -120,6 +124,10 @@ Page-level overlays triggered by targeting rules — toasts, modals, banners:
 
 Message slots render nothing until a targeting rule triggers. Place them at the top level of your layout.
 
+:::caution[Modals only at safe moments]
+A modal takes over the screen. Request one only when the user has just performed an action, completed a task, or reached a natural transition — never on passive page render. Banners, inline cards, buttons and toasts are safe on render.
+:::
+
 > [Try it live → Usage Warning Banner](/playground/#msg-banner)
 
 ## Placement Output
@@ -144,6 +152,8 @@ interface PlacementOutput {
   present_upsell: boolean;
 }
 ```
+
+`config_version` lets you detect a stale Playbook; `decision_id` is the ID to quote in debugging and analytics; `present_upsell` tells you whether the placement carries an upgrade or expansion offer.
 
 ## Placement Lifecycle
 

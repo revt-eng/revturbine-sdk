@@ -105,6 +105,7 @@ export default defineConfig({
     remarkPlugins: [remarkGfm],
   },
   redirects: {
+    '/concepts/integration-points/': '/guides/placements/',
     '/api/': '/api/readme/',
   },
   vite: {

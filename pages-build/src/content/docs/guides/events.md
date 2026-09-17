@@ -19,7 +19,7 @@ Placement components and headless controllers instrument the placement lifecycle
 | `placement_interaction` | The canonical interaction event, discriminated by `interaction_type`: `dismiss` · `remind_me_later` · `cta_clicked` · `cta_completed` · `suppress` |
 | `placement_rendered` / `placement_exposed` | The visual root rendered / entered the viewport (when you attach `exposureRef`) |
 
-`placement_interaction` is the one canonical placement event — earlier standalone `placement_dismissed` / `_snoozed` / `_converted` events are retired.
+`placement_interaction` is the one placement interaction event; there are no separate dismiss/snooze/convert events.
 
 ## Custom events
 

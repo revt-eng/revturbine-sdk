@@ -11,7 +11,7 @@ sidebar:
 sdk/
 ├── index.ts                  # Barrel export (entry point for @revturbine/sdk)
 ├── customer-side.ts          # Core SDK class — identity, placements, entitlements, events
-├── generated.ts              # Re-exports the bundled schema types (DO NOT EDIT)
+├── generated.ts              # Re-exports the bundled schema types (generated)
 ├── react/                    # React integration layer
 │   ├── RevTurbineProvider    # Context provider — wraps app for SDK access
 │   ├── usePlacement          # Hook — load decision + manage interactions

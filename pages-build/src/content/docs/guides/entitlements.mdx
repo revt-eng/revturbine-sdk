@@ -131,6 +131,16 @@ if (denied && gatedPlacement) {
 
 ### Imperative API
 
+Pass only what your app knows better than the Playbook — current consumption, or the tier a feature needs. Everything else comes from plan configuration.
+
+| Entitlement type | Second argument | Result includes |
+|---|---|---|
+| Feature | — | `status`, `allowed` |
+| Capability tier | `{ requiredTier }` | `status`, `allowed`, `current_tier` |
+| Usage limit | `{ used }` | `status`, `allowed`, `limit`, `used`, `remaining` |
+| Credits | `{ balance }` | `status`, `allowed`, `remaining` |
+| Seats | — (counts come from the usage snapshot) | `status`, `allowed` |
+
 ```ts
 const result = await sdk.can('data_export');
 

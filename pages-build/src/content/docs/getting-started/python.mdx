@@ -183,19 +183,17 @@ server equivalent:
 
 - React / JSX components and hooks (no Python equivalent).
 - Browser storage, `localStorage` theme persistence, `window.RevTurbine`.
-- The HTTP-backed / dual-mode dispatch (`runtime_mode`) of the original plan
-  — superseded; the Python library is local-only.
+- HTTP-backed / dual-mode dispatch (`runtime_mode`) — the Python library is
+  local-only.
 - `identify`, `dismiss` / `snooze` / `convert`,
   `track_treatment_interaction`, `get_trial_status`, `capture`,
   `bootstrap_placement_decisions`, `get_user_context`, decision-cache /
   interaction-state hydration.
 
 <Aside type="caution">
-A legacy thin-RPC client (`revturbine_server`) also exists in the package for
-historical reasons. It is **independent of and unrelated to**
-`RevTurbineCustomerSdk` (not folded in) and currently depends on an
-unmaintained generated types module — prefer `RevTurbineCustomerSdk` for all
-new server integrations.
+The package also contains an older thin-RPC client (`revturbine_server`). It is
+unrelated to `RevTurbineCustomerSdk`; use `RevTurbineCustomerSdk` for all new
+server integrations.
 </Aside>
 
 ## Parity guarantee
