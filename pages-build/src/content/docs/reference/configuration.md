@@ -23,7 +23,7 @@ Required in `revturbine_server` and `custom_endpoints` modes. In `local_only` mo
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `runtimeMode` | `'revturbine_server' \| 'custom_endpoints' \| 'local_only'` | `'revturbine_server'` | How the SDK resolves decisions |
-| `endpointOverrides` | `Partial<RevTurbineEndpointOverrides>` | — | Custom endpoint URLs (for `custom_endpoints` mode) |
+| `endpointOverrides` | `Partial<RevTurbineEndpointOverrides>` | — | Route the SDK's non-decision calls through your own endpoints (`custom_endpoints` mode) |
 | `configProvider` | `RevTurbineConfigProvider` | — | Custom provider for Playbook |
 | `localRuntime` | `RevTurbineLocalRuntimeOptions` | — | Local-only mode configuration |
 
@@ -166,21 +166,22 @@ Each flag is derived from the loaded Playbook; an explicit value in `placementBe
 
 ## RevTurbineEndpointOverrides
 
-Override individual API endpoints for `custom_endpoints` mode:
+The calls the SDK makes over the network, and the key that reroutes each one in `custom_endpoints` mode. None of them is a decision — entitlements and placements are evaluated inside your app in every mode. A relative value is appended to `endpoint`; an absolute URL replaces it.
 
-| Field | Default Path |
-|---|---|
-| `decideContext` | `/api/decide-context` |
-| `bootstrapContext` | `/api/bootstrap-context` |
-| `decide` | `/api/decide` |
-| `getPlacement` | `/api/placement` |
-| `checkEntitlement` | `/api/entitlement` |
-| `userContext` | `/api/user-context` |
-| `trialStatus` | `/api/trial-status` |
-| `ingestEvents` | `/api/events` |
-| `touchpointTransition` | `/api/touchpoint-transition` |
-| `placementTypes` | `/api/placement-types` |
-| `surfaceSlots` | `/api/surface-slots` |
+| Key | What it carries | Default path |
+|---|---|---|
+| `clientContext` | Server-derived user context, read with an `rt_client_` session token | `/api/sdk/client-context` |
+| `userContext` | User context read | `/api/sdk/user-context` |
+| `trialStatus` | Trial status read | `/api/sdk/trial-status` |
+| `ingestEvents` | Clickstream events (`track` / `capture`) | `/api/track` |
+| `touchpointTransition` | Placement interactions — impression, dismiss, CTA | `/api/events/interactions` |
+| `ingestSdkMeta` | The anonymous `sdk_init` beacon | `/api/sdk/meta` |
+| `surfaceSlots` | Surface-slot inventory registration | `/api/placements` |
+| `placementTypes` | Custom placement-type persistence — meaningful only when overridden | `/api/sdk/placement-types` |
+
+Not overridable: **Playbook delivery**. The SDK fetches the launched Playbook from `endpoint` directly (`/api/sdk/bootstrap`, then the signed manifest and bundle), so `custom_endpoints` routes context and telemetry through your proxy but not the Playbook itself.
+
+The type also declares `decide`, `decideContext`, `bootstrapContext`, `getPlacement` and `checkEntitlement`. They are retired: the SDK never reads them, because there is no decision endpoint. They remain on the type so existing configurations still compile.
 
 ---
 
@@ -233,9 +234,9 @@ interface RevTurbineStorage {
   mode: string;                       // ✅ Required
   runtimeMode: 'custom_endpoints';   // ✅ Required
   endpointOverrides: {               // ✅ At least one override required
-    decide?: string;
-    getPlacement?: string;
-    checkEntitlement?: string;
+    clientContext?: string;
+    ingestEvents?: string;
+    touchpointTransition?: string;
   };
 }
 ```
