@@ -99,11 +99,21 @@ The beta list, the comp window, the segmented copy, the usage limit, and the gra
 The `after` is not a magic one-liner — your app still owns two things:
 
 ```ts
-// 1. The money-safe decision, on your server, before the paid work runs.
+// 1. The money-safe decision, on your server, before the paid work runs —
+//    the same SDK, evaluating the same Playbook in-process.
+import { initRevTurbine, RuntimeMode } from '@revturbine/sdk/headless';
+
 async function handleExport(req, res) {
-  if (!(await userIsEntitled(req.userId, 'data_export'))) {
-    return res.status(402).json({ error: 'upgrade_required' });
-  }
+  const rt = await initRevTurbine({
+    tenantId: process.env.REVTURBINE_TENANT_ID!,
+    apiKey: process.env.REVTURBINE_API_KEY!,
+    endpoint: process.env.REVTURBINE_ENDPOINT!,
+    mode: 'snippet',
+    runtimeMode: RuntimeMode.Server,
+    user: { id: req.userId, plan_handle: req.user.planHandle },
+  });
+  const result = await rt.can('data_export');
+  if (!result.allowed) return res.status(402).json({ error: 'upgrade_required' });
   await runExport(req);
 }
 ```

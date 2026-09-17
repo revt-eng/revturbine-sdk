@@ -61,17 +61,30 @@ import { Gate } from '@revturbine/sdk';
 </Gate>
 ```
 
-Then verify again on your server before doing the paid work:
+Then verify again on your server before doing the paid work — with the same SDK, evaluating the same Playbook in-process:
 
 ```ts
-// Server: the trusted decision. Re-run the same entitlement check
-// (via the RevTurbine server SDK, or your own logic) before granting.
+import { initRevTurbine, RuntimeMode } from '@revturbine/sdk/headless';
+
+// Server: the trusted decision. Nothing on this path calls RevTurbine —
+// the headless SDK evaluates the Playbook it holds.
 async function handleExport(req, res) {
-  const entitled = await userIsEntitled(req.userId, 'data_export'); // your server check
-  if (!entitled) return res.status(402).json({ error: 'upgrade_required' });
+  const rt = await initRevTurbine({
+    tenantId: process.env.REVTURBINE_TENANT_ID!,
+    apiKey: process.env.REVTURBINE_API_KEY!,
+    endpoint: process.env.REVTURBINE_ENDPOINT!,
+    mode: 'snippet',
+    runtimeMode: RuntimeMode.Server,
+    user: { id: req.userId, plan_handle: req.user.planHandle },
+  });
+
+  const result = await rt.can('data_export');
+  if (!result.allowed) return res.status(402).json({ error: 'upgrade_required' });
   await runExport(req);
 }
 ```
+
+Two conventions worth keeping: answer a denied entitlement with **402** (upgrade to proceed) and reserve 403 for permission denials, so clients can tell the two apart; and on a request hot path, don't pay the Playbook fetch per request — see [Instance lifecycle](/getting-started/server-side/#instance-lifecycle).
 
 The client `<Gate>` keeps the UI honest and fast; the server check keeps the revenue safe. Both evaluate the same Playbook locally, so neither depends on our servers at decision time.
 

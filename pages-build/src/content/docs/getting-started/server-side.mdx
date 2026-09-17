@@ -67,7 +67,7 @@ async function handleExport(req) {
 
   const result = await rt.can('data_export');
   if (!result.allowed) {
-    return new Response('Upgrade required', { status: 403 });
+    return new Response('Upgrade required', { status: 402 });
   }
 
   await rt.track('data_export_started');
@@ -144,7 +144,7 @@ export async function POST(request: Request) {
   });
 
   const access = await rt.can('trial_extension');
-  if (!access.allowed) return new Response('Not allowed', { status: 403 });
+  if (!access.allowed) return new Response('Upgrade required', { status: 402 });
 
   const trial = await extendTrial(user.id);
   return Response.json({
