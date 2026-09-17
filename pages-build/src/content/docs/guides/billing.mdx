@@ -36,34 +36,39 @@ Once connected, plan variations link to Stripe prices (`stripe_price_id`), the
 billing page gains a **Sync** action that compares RevTurbine's plans against
 your Stripe catalog, and webhook events begin updating customer records.
 
-## Webhook destinations
+## Webhooks: nothing to register
 
-All events arrive at **one URL**:
+RevTurbine is a Stripe Connect platform. When you connect, Stripe starts
+delivering your account's events to RevTurbine's platform-level webhook
+endpoints — subscription and invoice events, payment-method and person/account
+events — and RevTurbine verifies each one and resolves it to your tenant from
+the connected account it came from. There are no destinations to create in
+your Stripe Dashboard, no signing secrets to copy, and no URL to configure.
 
-```text
-https://revturbine.com/app/api/webhooks/stripe
+If billing state stops updating, the first place to look is **Settings →
+Stripe** in the RevTurbine dashboard: the connection status and the
+events-received summary show whether events are arriving.
+
+### Linking a Stripe customer to a RevTurbine user
+
+RevTurbine identifies a user by the `user.id` your app passes to the SDK. To
+tie that user to their Stripe customer, put the same id on the Stripe
+Customer object as `metadata.revturbine_user_id` when you create it (for
+example, when your checkout creates the customer). RevTurbine links the two
+on `customer.created`, and uses the same key to attribute conversions to the
+prompts that drove them.
+
+```ts
+// Your checkout, when it creates the Stripe customer
+const customer = await stripe.customers.create({
+  email: user.email,
+  metadata: { revturbine_user_id: user.id }, // the id you pass to the SDK
+});
 ```
 
-Stripe ships two event styles, and each style requires its **own destination** in
-the Stripe Dashboard — so a complete setup registers **two destinations pointing
-at the same URL**, each with its own signing secret:
-
-| Destination | Event style |
-|---|---|
-| Snapshot (v1) | `customer.subscription.*`, `invoice.*`, `payment_intent.*`, … |
-| Thin (v2) | `v2.*` account/person lifecycle events |
-
-The receiver verifies both styles with the same HMAC mechanism and detects the
-payload style from its shape — you never route by secret.
-
-<Aside type="caution" title="A wrong secret fails silently">
-If a destination's signing secret is missing or wrong, that destination's
-events **fail signature verification and are dropped** — nothing errors in
-RevTurbine, and billing state quietly stops updating. If subscriptions or
-payment-health changes stop landing, check both destinations' delivery logs in
-the Stripe Dashboard first: a wall of `400`s on one destination means its secret
-is wrong; deliveries that never appear mean the destination isn't registered.
-</Aside>
+If a Stripe customer was created without the metadata, RevTurbine can still
+match it once it has seen the customer's Stripe id — but the metadata is the
+explicit, authoritative join, and the one to rely on.
 
 ### What the events drive
 
@@ -82,27 +87,24 @@ Walk this once after connecting, before anything real depends on the pipeline:
 
 <Steps>
 
-1. **Register a test-mode destination.** In the Stripe Dashboard (test mode), add
-   a destination for the same URL and set its secret as the test-mode signing
-   secret. Test events verify against it without touching live secrets.
-
-2. **Fire synthetic events.** With the Stripe CLI:
+1. **Fire synthetic events on your connected account.** With the Stripe CLI,
+   in test mode:
 
    ```bash
-   stripe trigger customer.subscription.created
-   stripe trigger invoice.payment_failed
+   stripe trigger customer.subscription.created --stripe-account acct_…
+   stripe trigger invoice.payment_failed --stripe-account acct_…
    ```
 
-3. **Watch them land.** Settings → Stripe shows an events-received summary; a
+2. **Watch them land.** Settings → Stripe shows an events-received summary; a
    triggered subscription event should move a test customer's plan, and the
    payment-failure event should flip that customer's billing health to
    `attention_required` (visible on the customer record).
 
-4. **Run the catalog comparison.** The billing page's **Sync** action compares
+3. **Run the catalog comparison.** The billing page's **Sync** action compares
    RevTurbine plans against the Stripe catalog and reports mismatched, missing,
    and orphaned prices — a clean report means plan↔price linkage is coherent.
 
-5. **Confirm recovery.** `stripe trigger invoice.payment_succeeded` should clear
+4. **Confirm recovery.** `stripe trigger invoice.payment_succeeded` should clear
    the billing-health issue again.
 
 </Steps>
