@@ -57,7 +57,7 @@ const session = await initRevTurbine({
 // Hosted mode — swap the local runtime for your tenant credentials:
 // const session = await initRevTurbine({
 //   tenantId: 'tenant_abc',
-//   apiKey: 'rt_live_xxx',
+//   apiKey: 'rtk_…', // publishable ingest key
 //   endpoint: 'https://revturbine.com/app',
 //   user: { id: 'user_123', plan_handle: 'pro' },
 // });
@@ -93,7 +93,7 @@ Creates a fully-initialized session. Handles SDK initialization, user identifica
 ```ts
 const session = await initRevTurbine({
   tenantId: 'tenant_abc',
-  apiKey: 'rt_live_xxx',
+  apiKey: 'rtk_…', // publishable ingest key
   endpoint: 'https://revturbine.com/app',
   user: { id: 'user_123', plan_handle: 'pro' },
   runtimeMode: RuntimeMode.Server,

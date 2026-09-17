@@ -95,7 +95,7 @@ import { initRevTurbine, createServerRuntimeConfig } from '@revturbine/sdk';
 const sdk = initRevTurbine(
   createServerRuntimeConfig({
     tenantId: 'tenant_abc',
-    apiKey: 'rt_live_xxx',
+    apiKey: 'rtk_…', // publishable ingest key
     endpoint: 'https://revturbine.com/app',
     mode: 'react',
   }),
@@ -111,7 +111,7 @@ import { initRevTurbine, createCustomEndpointRuntimeConfig } from '@revturbine/s
 const sdk = initRevTurbine(
   createCustomEndpointRuntimeConfig({
     tenantId: 'tenant_abc',
-    apiKey: 'rt_live_xxx',
+    apiKey: 'rtk_…', // publishable ingest key
     endpoint: 'https://proxy.example.com',
     mode: 'react',
     endpointOverrides: {

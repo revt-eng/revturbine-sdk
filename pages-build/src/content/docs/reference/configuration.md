@@ -14,7 +14,7 @@ Required in `revturbine_server` and `custom_endpoints` modes. In `local_only` mo
 | Field | Type | Description |
 |---|---|---|
 | `tenantId` | `string` | Your RevTurbine tenant identifier |
-| `apiKey` | `string` | API key (`rt_live_*` or `rt_test_*`) |
+| `apiKey` | `string` | In the browser, your publishable ingest key; on a server, your server token (both `rtk_…`, minted under **Settings → API tokens**). See [Production Readiness → Keys](/operate/production-readiness/#keys). |
 | `endpoint` | `string` | RevTurbine API endpoint URL |
 | `mode` | `'react' \| 'snippet' \| 'iframe'` | SDK integration mode |
 
@@ -68,7 +68,7 @@ code.**
 ```ts
 initRevTurbine({
   tenantId: 'tenant_abc',
-  apiKey: 'rt_live_…',
+  apiKey: 'rtk_…', // publishable ingest key
   endpoint: 'https://revturbine.com/app',
   user: { id: 'user_123', plan_handle: 'free' },
   clientSession: () =>
@@ -206,7 +206,7 @@ interface RevTurbineStorage {
 ```ts docs-check=false reason="required-field shape sketch, not a value"
 {
   tenantId: string;   // ✅ Required
-  apiKey: string;     // ✅ Required (rt_live_* or rt_test_*)
+  apiKey: string;     // ✅ Required (publishable key in the browser, server token on a server)
   endpoint: string;   // ✅ Required
   mode: string;       // ✅ Required
 }

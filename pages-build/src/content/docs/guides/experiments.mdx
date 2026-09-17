@@ -69,7 +69,7 @@ const experimentProvider = createGrowthBookExperimentAssignmentProvider({
 
 const rt = initRevTurbine({
   tenantId: 'tenant_abc',
-  apiKey: 'rt_live_xxx',
+  apiKey: 'rtk_…', // publishable ingest key
   endpoint: 'https://revturbine.com/app',
   mode: 'snippet',
   user: { id: userId, plan_handle: 'free' },
@@ -108,7 +108,7 @@ const experimentProvider = createOptimizelyExperimentAssignmentProvider({
 
 const rt = initRevTurbine({
   tenantId: 'tenant_abc',
-  apiKey: 'rt_live_xxx',
+  apiKey: 'rtk_…', // publishable ingest key
   endpoint: 'https://revturbine.com/app',
   mode: 'snippet',
   user: { id: 'user_123', plan_handle: 'free' },
@@ -157,7 +157,7 @@ Use the canonical `experiments` map, not an arbitrary custom trait:
 ```ts
 const rt = initRevTurbine({
   tenantId: 'tenant_abc',
-  apiKey: 'rt_live_xxx',
+  apiKey: 'rtk_…', // publishable ingest key
   endpoint: 'https://revturbine.com/app',
   mode: 'snippet',
   user: {
