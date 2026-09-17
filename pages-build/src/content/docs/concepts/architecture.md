@@ -21,8 +21,8 @@ sdk/
 │   ├── registry.ts           # PlacementTypeRegistry — resolves outputs → slot components
 │   ├── builtin.ts            # Registers all 9 built-in slot types
 │   ├── PlacementRenderer     # Core renderer — resolves slot type, expands tokens, renders
-│   ├── SurfaceSlotComponent  # Drop-in component (decision + render in one step)
-│   ├── useSurfaceSlot        # Hook variant of SurfaceSlotComponent
+│   ├── Slot                  # Drop-in component (decision + render in one step); exported as SurfaceSlotComponent too
+│   ├── useSurfaceSlot        # Hook variant of <Slot>
 │   └── slots/                # Built-in slot components
 │       ├── BannerSlot        # Full-width sticky banner (top/bottom)
 │       ├── ModalSlot         # Centered overlay dialog

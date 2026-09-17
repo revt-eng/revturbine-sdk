@@ -22,7 +22,7 @@ Every method is optional. Implement only the domains you need to customize — t
 
 ### `getPlacement`
 
-Resolves a placement for a given slot and surface type. Called by `FixedSurfaceSlot`, `AccessGateSurfaceSlot`, `MessageSurfaceSlot`, and the headless API.
+Resolves a placement for a given slot and surface type. Called by `<Slot>` (and its `FixedSurfaceSlot` / `MessageSurfaceSlot` variants), `<Gate>`, and the headless API.
 
 ```ts
 const analyticsProvider: RevTurbineSdkProvider = {
@@ -54,7 +54,7 @@ const analyticsProvider: RevTurbineSdkProvider = {
 
 ### `checkEntitlement`
 
-Checks whether the current user has access to a feature. Called by `AccessGateSurfaceSlot` and `sdk.checkEntitlement()`.
+Checks whether the current user has access to a feature. Called by `<Gate>` and `sdk.checkEntitlement()`.
 
 ```ts
 const entitlementProvider: RevTurbineSdkProvider = {

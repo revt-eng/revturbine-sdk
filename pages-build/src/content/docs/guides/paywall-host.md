@@ -18,7 +18,8 @@ other part of the app asks a store to open it.
 
 ### 1. One always-mounted slot
 
-Mount a single `FixedSurfaceSlot` high in the tree — in your root layout, above
+Mount a single `FixedSurfaceSlot` — the fixed-category variant of [`<Slot>`](/guides/placements/#slot-types),
+with an `onDismissed` callback — high in the tree: in your root layout, above
 the router, so it is mounted on every route.
 
 ```tsx

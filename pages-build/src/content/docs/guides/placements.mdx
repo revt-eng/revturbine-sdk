@@ -221,20 +221,25 @@ const followUp = path?.placement_handle
   : null;
 ```
 
-## UI Path Resolvers
+## CTA actions
 
-Map CTA actions to application navigation:
+Every placement carries a `cta_path` — the action its button triggers. Its `type` is the `action_type` of a `content_ui_paths` entry in your Playbook: one of the built-in types (`open_checkout`, `view_plans`, `book_demo`, `contact_sales`, `complete_onboarding`, `invite_teammate`, `refer_friend`, `verify_work_email`, `update_payment_method`, `enable_auto_renewal`, `manage_subscription`, `switch_billing_period`, `extend_trial`, `open_rt_placement`, `dismiss`, `snooze`) or a name you define — a `custom` action flows through under its own name. The starter Playbook uses `navigate_to_plans` and `open_checkout_modal`.
+
+The SDK never navigates, opens checkout, or calls your backend on its own. On click it looks up a resolver for `cta_path.type` and calls it with the authored `cta_path` record (`plan_handle`, `promotion_id`, `placement_handle`, `url`, plus any custom params). If no resolver is registered, it tracks the click and calls the slot's `onCtaClick` fallback — nothing else happens. `snooze` has a built-in resolver; everything else needs one from you.
+
+Register resolvers once, at init, keyed by action type:
 
 ```tsx
 <RevTurbineProvider
   options={{
     // ...
     uiPathResolvers: {
-      open_pricing: () => router.push('/pricing'),
-      upgrade: (uiPath) => {
-        stripe.redirectToCheckout({ priceId: uiPath.plan_handle });
+      navigate_to_plans: () => router.push('/pricing'),
+      open_checkout_modal: (path) => openCheckout(path.plan_handle, path.promotion_id),
+      open_rt_placement: async (path) => {
+        const next = await rt.getPlacement({ placementHandle: path.placement_handle });
+        if (next) showPlacement(next);
       },
-      start_trial: () => router.push('/trial/start'),
     },
   }}
 >
@@ -242,7 +247,7 @@ Map CTA actions to application navigation:
 </RevTurbineProvider>
 ```
 
-When a user clicks a CTA, the SDK calls the matching resolver.
+At init the SDK checks that every `action_type` in `content_ui_paths` has a resolver and warns about gaps; `rt.validateUiPathResolvers({ throwOnMissing: true })` turns the warning into an error, which is useful in tests. Actions that must run on your server — `extend_trial`, for example — go in `serverActions` instead: see [Server-owned CTA actions](/getting-started/server-side/#server-owned-cta-actions).
 
 ## Using the Hook
 
