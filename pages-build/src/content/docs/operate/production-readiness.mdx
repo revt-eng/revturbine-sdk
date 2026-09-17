@@ -15,23 +15,22 @@ The one decision that matters most: **the client check drives the UI; your serve
 
 ## Keys
 
-Every credential RevTurbine issues, where it is minted, and where it may live. There is no live/test split on keys; use `environmentId` (below) and `test: true` to separate traffic.
+RevTurbine issues three kinds of key. Two you create in the dashboard; the third your backend mints at runtime. There is no live/test split on keys; use `environmentId` (below) and `test: true` to separate traffic.
 
-| Credential | Looks like | Minted | Lives in | Authorizes |
-|---|---|---|---|---|
-| **Publishable ingest key** | `rtk_…` (type `public`) | RevTurbine dashboard → **Settings → API tokens → Ingest keys**. An origin allowlist is required. | Your browser bundle — safe to ship | Playbook delivery, event ingest, client-safe theme reads. Tenant-bound; cannot call management APIs. |
-| **Server token** | `rtk_…` (type `server`) | **Settings → API tokens → Server token** (one per user; rotate from the same place) | Your backend only | Playbook delivery from a server, management APIs. Rejected on a browser-like request. |
-| **Client-session mint secret** | `rt_secret_…` | Issued per tenant, application and environment | Your backend only | `POST /api/sdk/client-sessions` — mints the client-session tokens below. Bound to an origin allowlist. |
-| **Client-session token** | `rt_client_…` | Your backend, via the mint secret; short-lived (~10 minutes) | The browser, in memory only — the SDK requests it through your `clientSession` callback | `GET /api/sdk/client-context`: the server-derived plan, trial and payment state for one user. |
-| **CLI credential** | `rtk_…` (type `client`) | `revturbine login` (browser device flow), one per machine | The developer's machine | The CLI. |
-| **MCP token** | `rtk_…` (type `mcp`) | **Settings → API tokens → MCP** | Your agent tooling | The RevTurbine MCP server. |
+| Key | Looks like | Lives in | What it does |
+|---|---|---|---|
+| **Ingest key** | `rtk_…` (type `public`) | Your browser bundle — safe to ship | The browser's key: Playbook delivery, event ingest, client-safe reads. Bound to an origin allowlist; cannot call management APIs. Create it at **Settings → API tokens → Ingest keys**. |
+| **Server key** | `rtk_…` (type `server`) | Your backend only | Programmatic calls to the RevTurbine API from your server — Playbook delivery, management APIs — and minting the session keys below. Refused on a browser-like request. Create it at **Settings → API tokens → Server token**. |
+| **Session key** | `rt_client_…` | The browser, in memory, short-lived (~10 minutes) | Lets the browser poll one user's server-derived context — plan, trial, payment state — straight from RevTurbine (`GET /api/sdk/client-context`). Your backend mints it per user with the server key (`POST /api/sdk/client-sessions`); the SDK asks for it through your `clientSession` callback and re-mints on expiry. |
 
 Which one goes where:
 
-- **In the browser**, pass the publishable ingest key as `apiKey`. (`ingestPublicKey` is accepted as well; when both are set it takes precedence for delivery and ingest.) Never a server token: RevTurbine refuses a server token presented from a browser.
-- **On your backend**, pass the server token as `apiKey` — the sample on [Server-Side Integration](/getting-started/server-side/) reads it from `REVTURBINE_API_KEY`.
-- **For server-derived context**, keep the mint secret on your backend and hand the SDK a `clientSession` callback; the SDK re-mints on expiry. See [Configuration → Server-derived context](/reference/configuration/#server-derived-context-clientsession).
+- **In the browser**, pass the ingest key as `apiKey`. (`ingestPublicKey` is accepted as well; when both are set it takes precedence.) Never a server key: RevTurbine refuses one presented from a browser.
+- **On your backend**, pass the server key as `apiKey` — the sample on [Server-Side Integration](/getting-started/server-side/) reads it from `REVTURBINE_API_KEY` — and use it to mint session keys.
+- **For server-derived context in the browser**, hand the SDK a `clientSession` callback that returns a session key from your backend. See [Configuration → Server-derived context](/reference/configuration/#server-derived-context-clientsession).
 - **Local mode needs no key at all.**
+
+Two further credentials exist for tooling, not for SDK wiring: the CLI's own `rtk_…` (type `client`) from `revturbine login`, one per machine; and an `rtk_…` (type `mcp`) for agent tooling, from **Settings → API tokens → MCP**.
 
 Stamp `environmentId` (`'production'` / `'staging'`) so analytics stays separated by deployment, and `test: true` on instances that generate test traffic.
 
