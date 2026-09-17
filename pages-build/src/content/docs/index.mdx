@@ -1,249 +1,224 @@
 ---
 title: Start
-description: Install the CLI and SDK, register an account, instrument a React app with slots and gates, and manage your monetization config — from zero to live.
+description: One command, one <Gate>, a working feature gate in about ten minutes with no account — then connect Stripe and change monetization without a deploy.
 ---
 
 import { Steps, Tabs, TabItem, Card, CardGrid, Aside } from '@astrojs/starlight/components';
 
-RevTurbine is web SaaS monetization in a single SDK: placement decisioning, entitlements, and conversion experiments — without a code deploy for every change. This guide takes you from install to a live placement and entitlement gate, then shows how to manage your monetization config.
+RevTurbine is monetization for product-led SaaS in one SDK: plans, entitlements, usage limits, trials, and the upgrade prompts that convert — decided per user, inside your app, from a Playbook you keep. We add no latency and our availability never affects your product: the SDK evaluates your Playbook locally, so decisions never depend on our servers.
 
-We add no latency and our availability never affects your product: the SDK evaluates your Playbook locally, inside your app, so decisions never have critical dependence on our servers.
+This page is the whole happy path. It runs in local mode first — no account, no key — and ends with hosted mode, where the same Playbook changes without a deploy.
 
-## 1. Install the CLI and SDK
+<Aside type="note" title="Not using React?">
+The walkthrough is React because that is the shortest path to something on screen. The engine is framework-agnostic: `import { initRevTurbine } from '@revturbine/sdk/headless'` pulls in no React and runs on Svelte, Vue, plain TypeScript, and Node. Same checks, same decisions; you render the resolved content yourself. See [Headless API](/guides/headless-api/) and [Server-Side Integration](/getting-started/server-side/). Python and Rust SDKs evaluate the same Playbook with byte-identical results.
+</Aside>
 
-Two packages, both on the public npm registry — no auth token or registry config.
-
-- **`@revturbine/cli`** — manage your Playbook (plans, entitlements, placements) and Releases from the terminal.
-- **`@revturbine/sdk`** — render placements and check entitlements in your app.
-
-Pin the CLI in your project so local development, CI, and coding agents use the same schema snapshot:
-
-```bash
-npm install -D --save-exact @revturbine/cli
-npx revturbine --help
-```
-
-Add the SDK to your React app:
+## 1. Bootstrap
 
 <Tabs>
-  <TabItem label="npm">
-  ```bash
-  npm install @revturbine/sdk
-  ```
+  <TabItem label="With your coding agent">
+    Paste this into Claude Code, Cursor, or whichever agent you use. The scaffold installs the RevTurbine agent skills, so the agent knows the rest.
+
+    ```text
+    Run `npm create revturbine@latest` in this project. Then follow the
+    revturbine-start-here skill: wrap the app in <RevTurbineProvider> in local
+    mode with the generated revturbine.playbook.json, and replace ONE
+    non-critical hard-coded plan check with <Gate>. Do not touch server-side
+    enforcement. Show me the diff before you finish.
+    ```
+
+    The fuller, tested prompt — and the CLI loop an agent uses to keep changing monetization afterwards — is on [Add RevTurbine with a Coding Agent](/guides/coding-agent/).
   </TabItem>
-  <TabItem label="pnpm">
-  ```bash
-  pnpm add @revturbine/sdk
-  ```
-  </TabItem>
-  <TabItem label="yarn">
-  ```bash
-  yarn add @revturbine/sdk
-  ```
+  <TabItem label="By hand">
+    ```bash
+    npm create revturbine@latest
+    ```
+
+    That installs `@revturbine/sdk`, pins `@revturbine/cli` to the project, drops a local-mode `revturbine.playbook.json` with a free and a pro plan, one gated feature and one upgrade prompt, and installs the agent skills. `npx revturbine create` and `npx @revturbine/cli init` run the same command. Already have an account? `revturbine download --live --save ./revturbine.playbook.json` pulls your real Playbook instead.
   </TabItem>
 </Tabs>
 
-## 2. Register a RevTurbine account
+## 2. Wrap your app
 
-Create an account in the RevTurbine dashboard, then connect the CLI to it.
+Local mode, no account: the Playbook you just generated is the whole configuration.
 
-<Steps>
+```tsx title="src/App.tsx"
+import { RevTurbineProvider } from '@revturbine/sdk';
+import playbook from './revturbine.playbook.json';
+import { useMemo } from 'react';
 
-1. **Create your account.** Sign up in the dashboard — [**revturbine.com/app**](https://revturbine.com/app) — or headlessly from the terminal:
+export default function App() {
+  const options = useMemo(() => ({
+    localRuntime: { playbook },
+    user: { id: 'user_123', plan_handle: 'starter' },
+  }), []);
 
-    ```bash
-    revturbine signup
-    ```
+  return (
+    <RevTurbineProvider options={options}>
+      <YourApp />
+    </RevTurbineProvider>
+  );
+}
+```
 
-2. **Authorize the CLI on this machine.** This opens a browser device-flow login against your account:
+`plan_handle` is the plan's handle from your Playbook — the value plan-scoped rules match on. In hosted mode it arrives from Stripe on its own (step 7); here you supply it.
 
-    ```bash
-    revturbine login
-    ```
+## 3. Gate a feature
 
-    Your token is stored at `~/.revturbine/credentials.json` (mode `0600`) and scoped to your tenant.
+`<Gate>` renders its children when the user is entitled. When they aren't, it renders the upgrade prompt your Playbook configures for that gate — copy, offer and CTA authored in config, not in your app.
 
-3. **Confirm you're connected.** `status` shows your active config and recent releases:
+```tsx title="src/components/BatchExport.tsx"
+import { Gate } from '@revturbine/sdk';
 
-    ```bash
-    revturbine status
-    ```
+export function BatchExport() {
+  return (
+    <Gate id="batch_export_gate" can="batch_export">
+      <BatchExportButton />
+    </Gate>
+  );
+}
+```
 
-</Steps>
+Start the dev server. With the starter Playbook's free plan, the gate shows the upgrade prompt; change `plan_handle` to `'pro'` and the button appears.
 
-<Aside type="tip">
-You don't need an account to try the SDK locally — `local_only` runtime mode (used in the next step) runs entirely client-side from a bundled config. The account is for managing your live config and connecting the SDK in hosted mode.
-</Aside>
+## 4. Check and protect in code
 
-## 3. Instrument your app
+For anything that isn't a React subtree — an event handler, a keyboard shortcut, a server route — ask the SDK directly.
 
-Wrap your app once, then add **slots** (where placements render) and **gates** (entitlement checks).
+```tsx
+import { useRevTurbine } from '@revturbine/sdk';
 
-:::note[Not using React?]
-The walkthrough below is React because that is the shortest path to something on
-screen. **RevTurbine does not require React.** The decision engine is
-framework-agnostic and ships as its own entry point:
+function ExportMenu() {
+  const { sdk: rt } = useRevTurbine();
+
+  async function onExport() {
+    // Ask: the answer, and nothing else.
+    const access = await rt.can('batch_export');
+
+    // Ask and act: runs exportPdf only when entitled; hands back the
+    // entitlement so you can open the upgrade prompt otherwise.
+    const gated = await rt.gate('export_pdf', () => exportPdf());
+    if (!gated.ran) openUpgrade(gated.entitlement);
+  }
+
+  return <button onClick={onExport}>Export</button>;
+}
+```
+
+`can()` returns `{ status, allowed, reason }` — plus `limit` / `used` / `remaining` when a usage or credit rule matched. See [Entitlements](/guides/entitlements/).
+
+## 5. Add a slot
+
+A `<Slot>` is a spot where RevTurbine may show something — a banner, a modal, a toast, a button. Which placement fills it, for which user, with what copy and how often, is decided from the Playbook: targeting, caps, cooldowns and priority between competing prompts are the engine's job, not yours.
+
+```tsx title="src/components/Dashboard.tsx"
+import { Slot } from '@revturbine/sdk';
+
+export function Dashboard() {
+  return (
+    <div>
+      <h1>Dashboard</h1>
+      {/* An upgrade banner for the users the Playbook targets — or nothing */}
+      <Slot id="dashboard_top_banner" surfaceTemplateIds={["banner_placement"]} />
+    </div>
+  );
+}
+```
+
+When a user clicks a CTA inside a placement, the SDK calls a resolver you provide — `navigate_to_plans`, `open_checkout_modal`, and so on — so navigation and checkout stay in your code. The starter Playbook uses `navigate_to_plans`; add one line to `options`:
+
+```tsx docs-check=false reason="one option line; the full initRevTurbine options object is shown above"
+uiPathResolvers: { navigate_to_plans: () => { window.location.href = '/pricing'; } },
+```
+
+Every action type and what it carries: [Placements → UI paths](/guides/placements/).
+
+## 6. Report usage and track events
+
+Usage limits and credits need to know the balance; the Playbook decides what to do about it.
 
 ```ts
-import { initRevTurbine } from '@revturbine/sdk/headless';
+await rt.update({ usage: { ai_credits_used: 42 } });   // absolute balance, not a delta
+await rt.track('ai_generation_completed', { credits: 3 });
 ```
 
-That entry pulls in no React at all, so it runs on Svelte, Vue, plain
-TypeScript, and Node servers. You get the same entitlement checks and placement
-decisions; what you give up is the prebuilt `<Slot>` / `<Gate>` components, and
-you render the resolved content yourself.
+Balances drive quota meters, low-credit warnings and limit prompts. Events feed targeting and analytics.
 
-See the [Headless API guide](/guides/headless-api/) for the session, controller
-and gate surface, and [Server-side](/getting-started/server-side/) for Node. The
-Python and Rust SDKs evaluate the same Playbook with byte-identical results.
-:::
+## 7. Verify on your server
+
+The browser check drives the UI; your server makes the money-safe decision before paid work runs — with the same SDK, evaluating the same Playbook in-process.
+
+```ts
+import { initRevTurbine, RuntimeMode } from '@revturbine/sdk/headless';
+
+async function handleExport(req, res) {
+  const rt = await initRevTurbine({
+    tenantId: process.env.REVTURBINE_TENANT_ID!,
+    apiKey: process.env.REVTURBINE_API_KEY!,
+    endpoint: process.env.REVTURBINE_ENDPOINT!,
+    mode: 'snippet',
+    runtimeMode: RuntimeMode.Server,
+    user: { id: req.userId, plan_handle: req.user.planHandle },
+  });
+  const result = await rt.can('batch_export');
+  if (!result.allowed) return res.status(402).json({ error: 'upgrade_required' });
+  await runExport(req);
+}
+```
+
+Why the re-check, and which actions need it: [Client vs Server Enforcement](/concepts/enforcement/).
+
+## 8. Go hosted: connect Stripe, change it without a deploy
+
+Everything above works forever in local mode, free. Hosted mode is where you stop deploying to change monetization.
 
 <Steps>
 
-1. **Wrap your app in `RevTurbineProvider`.** This example runs in `local_only` mode — no backend, no network calls — from a `revturbine.playbook.json` you ship with your app (see step 4 for where it comes from).
+1. **Create an account and connect the CLI.** [revturbine.com/app](https://revturbine.com/app), then `revturbine login` (a browser device flow — no keys to paste).
 
-    ```tsx title="src/App.tsx"
-    import { RevTurbineProvider } from '@revturbine/sdk';
-    import playbook from './revturbine.playbook.json';
-    import { useMemo } from 'react';
+2. **Connect Stripe** in **Settings → Stripe**. From then on a purchase updates what the user can do with no app code: plan and payment state arrive through a client session. See [Billing & Stripe](/guides/billing/).
 
-    function App() {
-      const options = useMemo(() => ({
-        localRuntime: { playbook },
-        user: { id: 'user_123', plan_handle: 'starter' },
-        // UI path resolvers connect placement CTAs to your app's navigation.
-        uiPathResolvers: {
-          navigate_to_plans: () => { window.location.href = '/pricing'; },
-          open_checkout_modal: (ctx) => { console.log('Checkout:', ctx.plan_handle); },
-        },
-      }), []);
-
-      return (
-        <RevTurbineProvider options={options}>
-          <YourApp />
-        </RevTurbineProvider>
-      );
-    }
-    ```
-
-    <Aside type="note">
-    To run against your live RevTurbine account instead, swap `localRuntime` for the hosted-mode options (`tenantId` + `endpoint`). See [Runtime modes](/guides/runtime-modes/).
-    </Aside>
-
-2. **Add a slot.** Drop a surface slot where you want a placement to appear. It renders the matching placement for the current user — or nothing.
-
-    ```tsx title="src/components/Dashboard.tsx"
-    import { Slot } from '@revturbine/sdk';
-
-    function Dashboard() {
-      return (
-        <div>
-          <h1>Dashboard</h1>
-          {/* RevTurbine renders an upgrade banner here — or nothing */}
-          <Slot id="dashboard_top_banner" surfaceTemplateIds={["banner_placement"]} />
-        </div>
-      );
-    }
-    ```
-
-    `<Slot>` is the one surface-slot component — it covers banners, modals, in-page content, buttons, and event-triggered messages alike. To drive rendering yourself instead, use the [`usePlacement`](/guides/headless-api/) hook.
-
-3. **Gate a feature.** Wrap gated UI in `<Gate>`. It renders its children when the user is entitled, and automatically shows the configured upgrade placement on denial — no manual check.
-
-    ```tsx title="src/components/BatchExport.tsx"
-    import { Gate } from '@revturbine/sdk';
-
-    function BatchExport() {
-      return (
-        <Gate id="batch_export_gate" can="batch_export">
-          <BatchExportButton />
-        </Gate>
-      );
-    }
-    ```
-
-    `can="batch_export"` is shorthand for `check={{ entitlement: 'batch_export' }}`. For custom deny UI, use the `useCan` hook — it returns `{ can, limited, result }`:
+3. **Switch the provider to hosted mode.** Mint a publishable ingest key under **Settings → API tokens**, then:
 
     ```tsx
-    import { useCan } from '@revturbine/sdk';
-
-    function BatchExport() {
-      const { can, limited, result } = useCan('batch_export');
-      if (!can) return <UpgradePrompt reason={result?.reason} />;
-      return <BatchExportButton warnLowBalance={limited} />;
-    }
+    const options = useMemo(() => ({
+      tenantId: 'tenant_abc',
+      apiKey: 'rtk_…',                // publishable ingest key — safe in the browser
+      endpoint: 'https://revturbine.com/app',
+      mode: 'react',
+      user: { id: currentUser.id },   // plan_handle now comes from Stripe
+      clientSession: () => fetch('/api/revturbine-session', { method: 'POST' }).then((r) => r.json()).then((j) => j.client_token),
+    }), [currentUser.id]);
     ```
 
-    `can` is `true` while the user is entitled — including the `limited` (running-low) state, so gate on `!can`, not `!allowed`. For an imperative check (server-side or in an event handler), call `await rt.can('batch_export')`. See the [Entitlements guide](/guides/entitlements/).
+4. **Change something and reload.** Open the dashboard, edit the banner's copy or the free plan's export limit, launch the release. The SDK picks it up on its next refresh — no deploy. Or do it from the terminal: `revturbine download --live`, edit, `revturbine validate`, `revturbine diff --live`, `revturbine launch`.
 
 </Steps>
 
-## 4. Manage your Playbook
-
-Your monetization model — **plans, entitlements, entitlement rules, segments, surface templates, and placements** — is a single portable snapshot called a **Playbook**. It's what the SDK reads (bundled in local mode, or served live), and you can author it two ways.
-
-<CardGrid>
-  <Card title="RevTurbine dashboard" icon="laptop">
-    Edit visually at [**revturbine.com/app**](https://revturbine.com/app) — define plans, entitlements, targeting rules, and placements, preview their impact, and launch. Download a `revturbine.playbook.json` snapshot anytime for local mode.
-  </Card>
-
-  <Card title="RevTurbine CLI + Agent" icon="setting">
-    Treat config as code. Author or edit it by hand — or with the RevTurbine **AI agent** (in the dashboard, or via an MCP-connected coding agent) — then validate and ship it from the terminal.
-  </Card>
-</CardGrid>
-
-The default CLI loop takes a Playbook from file to a live **Release**. `launch <file>` validates, stages, and releases it as one guarded operation:
-
-```bash
-revturbine download --live --save ./revturbine.playbook.json
-# edit ./revturbine.playbook.json
-revturbine validate ./revturbine.playbook.json
-revturbine diff ./revturbine.playbook.json --live
-revturbine launch ./revturbine.playbook.json
-```
-
-<Aside type="tip">
-For a separately reviewable draft, run `revturbine upload ./revturbine.playbook.json`, inspect it with `revturbine preview`, then run `revturbine launch --draft`. See the [CLI reference](/reference/cli/) for every command and selector.
-</Aside>
-
----
+That loop — see what converted, change the Playbook, launch — is the product. Your agent can drive it too: [Add RevTurbine with a Coding Agent](/guides/coding-agent/).
 
 ## Why RevTurbine
 
 <CardGrid>
-  <Card title="Decisioning, not just rendering">
-    RevTurbine decides — caps, cooldowns, eligibility, and priority across competing placements. One `<Slot>` (or `usePlacement()`) returns the winner. No client-side orchestration, no homegrown segment logic. ML-scored propensity is on the roadmap, not shipped — see [Beyond gating](/guides/beyond-gating/).
+  <Card title="Decisions, not just rendering">
+    Caps, cooldowns, eligibility, and priority across competing placements are decided for you. One `<Slot>` returns the winner. No client-side orchestration, no homegrown segment logic.
   </Card>
-
-  <Card title="Entitlements and placements in one engine, linked to billing">
-    A `<Slot>` surfaces usage warnings, trial nudges, and lifecycle prompts tied to billing state; `rt.can()` confirms or denies feature access. Pair them to gate a feature *and* surface the customer-specific upgrade prompt that converts it. Like RevenueCat for SaaS.
+  <Card title="Entitlements and prompts in one engine, tied to billing">
+    A `<Slot>` surfaces usage warnings, trial nudges and lifecycle prompts tied to billing state; `rt.can()` confirms or denies access. Gate a feature and show the upgrade prompt that converts it, from one Playbook.
   </Card>
-
-  <Card title="PM- and marketer-controlled, dev-decoupled">
-    Drop a slot once. Your PM, growth, marketing, or CRO team changes content, targeting, and CTAs in the dashboard — no engineering tickets, no deploys. UI path resolvers keep the navigation contract in your code; everything else iterates without you.
+  <Card title="Changed by product, not by a deploy">
+    Drop a slot once. Copy, targeting, limits, offers and prices change in the dashboard or through the CLI; resolvers keep navigation in your code. Every launch is a versioned release you can roll back.
   </Card>
-
-  <Card title="Framework-agnostic, and the same answer everywhere">
-    The React components are a convenience, not the product. `@revturbine/sdk/headless` imports no React and runs on Svelte, Vue, plain TypeScript, or a Node server; Python and Rust SDKs evaluate the same Playbook. Every one of them runs the same engine over the same inputs, and a cross-language gate diffs their decisions byte-for-byte — so a check answers identically wherever you make it. See [Headless API](/guides/headless-api/).
+  <Card title="The same answer everywhere">
+    `@revturbine/sdk/headless` imports no React; Python and Rust evaluate the same Playbook. A cross-language gate diffs their decisions byte-for-byte, so a check answers identically wherever you make it.
   </Card>
 </CardGrid>
 
-## What the SDK can do
-
-| Capability | API | Description |
-|---|---|---|
-| **Placements** | `Slot` / `usePlacement()` | Render upgrade banners, modals, toasts, and buttons based on targeting rules |
-| **Entitlements** | `Gate` / `rt.can()` | Gate features, enforce usage limits, check credits and seats |
-| **Usage tracking** | `rt.update()` | Track consumption for quota meters and passive placement triggers |
-| **Events** | `rt.track()` | Behavioral signals for targeting and analytics |
-| **Interactions** | `dismiss()` / `snooze()` / `convert()` | CTA lifecycle tracking |
-| **Trial status** | `rt.getTrialStatus()` | Current trial state and countdown |
-
 ## Next steps
 
-- [Quickstart](/getting-started/quickstart/) — the detailed local-mode walkthrough, including every UI path action type
-- [Entitlement gates](/guides/entitlements/) — gate features and enforce usage limits
-- [Runtime modes](/guides/runtime-modes/) — local mode, hosted mode, and custom endpoints
-- [Interactive playground](/playground/) — live, editable SDK scenarios in your browser
-- [Component gallery](/components/) — interactive demos of every built-in slot component
+- [Recommended API Path](/getting-started/api-overview/) — `can()` vs `gate()` vs `<Gate>`, and the vocabulary
+- [Entitlements](/guides/entitlements/) — feature gates, usage limits, credits, seats, tiers
+- [Placements](/guides/placements/) — targeting, caps, cooldowns, priority, and UI paths
+- [Runtime Modes](/guides/runtime-modes/) — local mode, hosted mode, and what is cached
+- [Interactive Playground](/playground/) — every scenario, live and editable
 - [API reference](/api/) — full TypeDoc reference for all exports

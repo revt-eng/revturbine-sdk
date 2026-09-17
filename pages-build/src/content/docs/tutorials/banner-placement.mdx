@@ -18,7 +18,7 @@ A header banner that:
 ## Prerequisites
 
 - A React 18+ application with `@revturbine/sdk` installed
-- A `RevTurbineProvider` set up (see [Quickstart](/getting-started/quickstart/))
+- A `RevTurbineProvider` set up (see [Quickstart](/))
 
 ## Steps
 
@@ -115,7 +115,7 @@ A header banner that:
 
 1. `<Slot>` asks the decision engine which placement wins for `app_header_banner`.
 2. The engine evaluates the payload's `target` against the current user (plan, segments). If nothing matches, the slot renders nothing — your header is unchanged.
-3. The slot renders the surface's `fields` (header, body) and CTA; clicking the CTA dispatches through your resolvers (see [Quickstart](/getting-started/quickstart/)).
+3. The slot renders the surface's `fields` (header, body) and CTA; clicking the CTA dispatches through your resolvers (see [Quickstart](/)).
 4. Dismissing the banner records the interaction, so any `caps` (cooldowns, max-per-period) apply on the next render.
 
 <Aside type="tip">

@@ -18,7 +18,7 @@ A credits flow that:
 ## Prerequisites
 
 - A React 18+ application with `@revturbine/sdk` installed
-- A `RevTurbineProvider` set up (see [Quickstart](/getting-started/quickstart/))
+- A `RevTurbineProvider` set up (see [Quickstart](/))
 
 ## Steps
 
@@ -155,7 +155,7 @@ A credits flow that:
 1. `update()` updates the SDK's credit balance and re-evaluates placements.
 2. The `credit_threshold` trigger keeps the placement hidden until 80% of the allowance is consumed.
 3. Token expansion fills `{{usage_remaining}}` from the live balance.
-4. The CTA opens your top-up flow through the resolvers from [Quickstart](/getting-started/quickstart/).
+4. The CTA opens your top-up flow through the resolvers from [Quickstart](/).
 
 <Aside type="caution">
 Credits are revenue-critical. In `local_only` mode the balance is client-side and advisory. Before charging for a top-up or letting a user spend credits they may not have, confirm the balance server-side with `can` — see the [Entitlements guide](/guides/entitlements/).

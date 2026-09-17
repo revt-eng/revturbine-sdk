@@ -107,6 +107,8 @@ export default defineConfig({
   redirects: {
     '/concepts/integration-points/': '/guides/placements/',
     '/api/': '/api/readme/',
+    // The Quickstart merged into Start (one happy path); keep old links working.
+    '/getting-started/quickstart/': '/',
   },
   vite: {
     define: {
@@ -194,7 +196,7 @@ export default defineConfig({
         {
           label: 'Start',
           items: [
-            { label: 'Quickstart', slug: 'getting-started/quickstart' },
+            { label: 'Start here', link: '/' },
             { label: 'Recommended API Path', slug: 'getting-started/api-overview' },
             { label: 'Installation', slug: 'getting-started/installation' },
             { label: 'React Integration', slug: 'getting-started/react' },
