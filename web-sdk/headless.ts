@@ -18,15 +18,16 @@
  * ```ts
  * import { initRevTurbine } from '@revturbine/sdk/headless';
  *
- * const sdk = initRevTurbine({
+ * const session = await initRevTurbine({
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
  *   endpoint: 'https://edge.example.com',
+ *   mode: 'snippet',
+ *   user: { id: 'user_123', plan_handle: 'pro' },
  * });
  *
- * sdk.identify('user_123', { plan: 'pro' });
- * const decision = sdk.getPlacementDecision({ placementId: 'upsell_banner' });
- * const entitled = sdk.checkEntitlement('feature_x');
+ * const branding = session.sdk.getBranding();
+ * const entitlement = await session.sdk.checkEntitlement('feature_x');
  * ```
  */
 

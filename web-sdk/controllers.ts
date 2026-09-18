@@ -14,6 +14,7 @@
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
  *   endpoint: 'https://edge.example.com',
+ *   mode: 'snippet',
  *   user: { id: 'user_123', plan_handle: 'pro' },
  * });
  *
@@ -923,6 +924,7 @@ export type SdkSessionOptions = RevTurbineInitInputOptions & {
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
  *   endpoint: 'https://edge.example.com',
+ *   mode: 'snippet',
  *   user: { id: 'user_123', plan_handle: 'pro' },
  * });
  *
@@ -1152,6 +1154,7 @@ export class SdkSession {
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
  *   endpoint: 'https://edge.example.com',
+ *   mode: 'snippet',
  *   user: { id: 'user_123', plan_handle: 'pro' },
  *   bootstrapPlacements: [
  *     { placement: { name: 'pricing_banner' } },
@@ -1169,8 +1172,9 @@ export async function initRevTurbine<TUser extends RevTurbineUserContext = RevTu
 
   // Identify user if provided
   const user = initOptions.user;
-  if (user && typeof user === 'object' && (user as { id?: string }).id) {
-    sdk.identify((user as { id: string }).id, user as UserContextInput);
+  if (user && typeof user === 'object' && user.id) {
+    const { id, ...context } = user;
+    sdk.identify(id, context as UserContextInput);
   }
 
   // Resolve theme

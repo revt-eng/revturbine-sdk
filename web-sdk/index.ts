@@ -11,14 +11,15 @@
  * ```ts
  * import { initRevTurbine } from '@revturbine/sdk';
  *
- * const sdk = initRevTurbine({
+ * const session = await initRevTurbine({
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
  *   endpoint: 'https://edge.example.com',
  *   mode: 'react',
+ *   user: { id: 'user_123', plan_handle: 'pro' },
  * });
  *
- * sdk.identify('user_123', { plan: 'pro' });
+ * const branding = session.sdk.getBranding();
  * ```
  *
  * ## React Integration

@@ -891,7 +891,7 @@ export type ExportedConfigProvider = RevTurbineConfigProvider;
  * ```ts
  * import { initRevTurbine } from '@revturbine/sdk';
  *
- * const sdk = initRevTurbine({
+ * const session = await initRevTurbine({
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
  *   endpoint: 'https://edge.example.com',
@@ -2533,15 +2533,17 @@ class ExternalRuntimeConfigProvider implements RuntimeConfigProvider {
  *
  * @example
  * ```ts
- * const sdk = initRevTurbine({
+ * import { initRevTurbine } from '@revturbine/sdk';
+ *
+ * const session = await initRevTurbine({
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
  *   endpoint: 'https://edge.example.com',
  *   mode: 'react',
  * });
  *
- * sdk.identify('user_123', { plan: 'pro' });
- * const decision = await sdk.getPlacementDecision({ placementId, userId: 'user_123' });
+ * session.identify('user_123', { plan_handle: 'pro' });
+ * const branding = session.sdk.getBranding();
  * ```
  */
 export class RevTurbineCustomerSdk {
@@ -5994,8 +5996,8 @@ export class RevTurbineCustomerSdk {
    * @example
    * ```ts
    * // In your React component / page hydration:
-   * const sdk = initRevTurbine({ tenantId, apiKey, endpoint, mode: 'react' });
-   * sdk.hydrate(serverPayload);
+   * const session = await initRevTurbine({ tenantId, apiKey, endpoint, mode: 'react' });
+   * session.sdk.hydrate(serverPayload);
    * ```
    */
   hydrate(payload: ServerEvaluationHydrationPayload): void {
@@ -8465,19 +8467,18 @@ export class RevTurbineCustomerSdk {
 }
 
 /**
- * Initialize the RevTurbine SDK.
+ * Initialize the synchronous RevTurbine core SDK.
  *
- * This is the primary entry point for browser integration.
- * Also available as `window.RevTurbine.init()` for non-module environments.
+ * Available as `window.RevTurbine.init()` for non-module environments.
+ * The package entrypoints expose the asynchronous session initializer instead:
+ * `const session = await initRevTurbine(options); const sdk = session.sdk;`.
  *
  * @param options - SDK initialization options
  * @returns A configured SDK instance
  *
  * @example
  * ```ts
- * import { initRevTurbine } from '@revturbine/sdk';
- *
- * const sdk = initRevTurbine({
+ * const sdk = window.RevTurbine?.init({
  *   tenantId: 'tenant_abc',
  *   apiKey: 'rt_live_xxx',
  *   endpoint: 'https://edge.example.com',

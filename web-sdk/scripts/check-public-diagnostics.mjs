@@ -1,4 +1,4 @@
-// Plan 254 AC-2: exercise installed release bytes, after a consumer build.
+// Plan 254 AC-2/AC-5: exercise installed release bytes and public examples.
 // Run after build:sdk. Evidence (including the tarball) stays in test-results.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -55,12 +55,36 @@ try {
   writeFileSync(join(consumer, 'package.json'), JSON.stringify({ name: 'diagnostics-consumer', private: true, type: 'module' }));
   writeFileSync(join(consumer, '.npmrc'), 'registry=https://registry.npmjs.org\n');
   const reactVersion = require('react/package.json').version;
-  npm(['install', '--ignore-scripts', '--no-audit', '--no-fund', '--registry=https://registry.npmjs.org', tarball, `react@${reactVersion}`, `react-dom@${reactVersion}`], consumer);
+  const typescriptVersion = require('typescript/package.json').version;
+  const reactTypesVersion = require('@types/react/package.json').version;
+  npm(['install', '--ignore-scripts', '--no-audit', '--no-fund', '--registry=https://registry.npmjs.org', tarball, `react@${reactVersion}`, `react-dom@${reactVersion}`, `typescript@${typescriptVersion}`, `@types/react@${reactTypesVersion}`], consumer);
   cpSync(join(webSdk, 'scripts/fixtures/public-diagnostics.jsx'), join(consumer, 'entry.jsx'));
   const installed = join(consumer, 'node_modules/@revturbine/sdk');
   assert.equal(readFileSync(join(installed, 'dist/index.js'), 'utf8'), readFileSync(join(webSdk, 'dist/index.js'), 'utf8'));
   assert.equal(readFileSync(join(installed, 'CHANGELOG.md'), 'utf8'), readFileSync(join(webSdk, '../CHANGELOG.md'), 'utf8'), 'installed changelog matches the authoritative source');
   assert.ok(!existsSync(join(consumer, 'node_modules/@revt-eng')), 'consumer must not resolve private packages');
+
+  // Compile the actual public-import TSDoc blocks so the IDE quick starts
+  // cannot drift from the installed declarations. No source path aliases.
+  const examples = [];
+  for (const source of ['index.ts', 'headless.ts', 'customer-side.ts']) {
+    const contents = readFileSync(join(webSdk, source), 'utf8');
+    for (const match of contents.matchAll(/```ts\r?\n([\s\S]*?)\r?\n\s*\*\s*```/g)) {
+      const example = match[1].replace(/^\s*\* ?/gm, '');
+      if (!/from ['"]@revturbine\/sdk(?:\/headless)?['"]/.test(example)) continue;
+      const filename = `example-${examples.length}.ts`;
+      writeFileSync(join(consumer, filename), example);
+      examples.push({ source, filename });
+    }
+  }
+  assert.equal(examples.length, 5, 'root, headless and SDK public-import examples are compiled');
+  writeFileSync(join(consumer, 'tsconfig.json'), JSON.stringify({
+    compilerOptions: { strict: true, skipLibCheck: true, moduleResolution: 'bundler', module: 'esnext', target: 'es2022', noEmit: true },
+    include: ['example-*.ts'],
+  }));
+  const typecheck = execFileSync(process.execPath, [join(consumer, 'node_modules/typescript/bin/tsc'), '-p', consumer], { encoding: 'utf8' });
+  writeFileSync(join(evidence, 'public-examples.json'), JSON.stringify({ examples, typecheck, passed: true }, null, 2));
+  console.log(`PASS ${examples.length} public TSDoc examples against installed package types`);
 
   const results = [];
   const browser = await chromium.launch();
@@ -94,10 +118,12 @@ try {
         page.on('pageerror', (error) => pageErrors.push(error.message));
         await page.route('**/*', (route) => route.fulfill(route.request().url().endsWith('/consumer.js')
           ? { contentType: 'application/javascript', body: js }
-          : { contentType: 'text/html', body: '<div id="failed"></div><div id="healthy"></div><script src="/consumer.js"></script>' }));
+          : route.request().resourceType() === 'document'
+            ? { contentType: 'text/html', body: '<div id="failed"></div><div id="healthy"></div><script src="/consumer.js"></script>' }
+            : { contentType: 'application/json', body: '{}' }));
         await page.goto(`https://${host}/`);
         try {
-          await page.waitForFunction(() => globalThis.diagnostics?.failed?.initStatus.ok === false && globalThis.diagnostics?.healthy?.isReady === true, null, { timeout: 15_000 });
+          await page.waitForFunction(() => globalThis.diagnostics?.failed?.initStatus.ok === false && globalThis.diagnostics?.healthy?.isReady === true && globalThis.diagnostics?.initializers?.length === 2, null, { timeout: 15_000 });
         } catch (cause) {
           throw new Error(`${mode}/${host}: consumer did not initialize; page errors: ${pageErrors.join('; ')}`, { cause });
         }
@@ -121,7 +147,20 @@ try {
         assert.equal(banner, mode === 'production' ? 0 : 1, `${mode}/${host}: init banner`);
         assert.equal(warnings.filter((m) => m.includes('RevTurbineThemeProvider is mounted above')).length, mode === 'production' ? 0 : 1, `${mode}/${host}: theme override`);
         assert.equal(warnings.filter((m) => m.includes('config `theme` field is deprecated')).length, mode === 'production' || (mode === 'raw' && host === 'app.example.test') ? 0 : 1, `${mode}/${host}: legacy theme`);
-        console.log(`PASS ${mode}/${host}: init status, banner, theme override, legacy theme`);
+        for (const initializer of state.initializers) {
+          assert.equal(initializer.isPromise, true, `${initializer.entry}: async init`);
+          assert.equal(initializer.isSession, true, `${initializer.entry}: awaited session`);
+          assert.equal(initializer.context.id, 'user_123');
+          assert.equal(initializer.context.user_id, 'user_123');
+          assert.deepEqual(initializer.context.custom, { region: 'eu' });
+          assert.equal(initializer.plan, 'pro');
+          assert.ok(initializer.branding.branding.theme, `${initializer.entry}: session.sdk.getBranding()`);
+        }
+        const contextWarnings = warnings.filter((m) => m.includes('unrecognized user-context key'));
+        assert.equal(contextWarnings.length, 2, `${mode}/${host}: only genuine misuse warns`);
+        assert.ok(contextWarnings.every((m) => m.includes('key(s): unknownContextKey.')), 'id is never forwarded as context');
+        assert.ok(contextWarnings.every((m) => !m.includes('fixture-value')), 'warnings do not expose context values');
+        console.log(`PASS ${mode}/${host}: init status, banner, themes, root/headless sessions, context guardrails`);
         await page.close();
       }
     }

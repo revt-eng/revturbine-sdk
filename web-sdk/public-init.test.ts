@@ -1,0 +1,53 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { initRevTurbine as initRoot, SdkSession } from './index';
+import { initRevTurbine as initHeadless } from './headless';
+import { initRevTurbine as initCore, RevTurbineCustomerSdk } from './customer-side';
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+describe('public initializer user context (plan 254 AC-5)', () => {
+  it.each([
+    ['root', initRoot],
+    ['headless', initHeadless],
+  ])('%s returns an awaited session and identifies without forwarding the id twice', async (_entry, init) => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}')));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const session = await init({
+      tenantId: 'public_init',
+      apiKey: 'local-only',
+      endpoint: 'https://sdk.example.test',
+      mode: 'snippet',
+      runtimeMode: 'local_only',
+      previewMode: true,
+      contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
+      user: { id: 'user_123', plan_handle: 'pro', custom: { region: 'eu' } },
+    });
+    try {
+      expect(session).toBeInstanceOf(SdkSession);
+      expect(session.sdk.getUserContext()).toMatchObject({
+        id: 'user_123', custom: { region: 'eu' },
+      });
+      expect(session.sdk.getTargeting().plan).toBe('pro');
+      expect(session.sdk.getBranding().branding.theme).toBeDefined();
+      expect(warn.mock.calls.filter(([message]) => String(message).includes('unrecognized user-context key'))).toEqual([]);
+    } finally {
+      session.sdk.dispose();
+    }
+  });
+
+  it('preserves the separate synchronous core initializer', () => {
+    const sdk = initCore({
+      tenantId: 'core_init', apiKey: 'local-only', endpoint: 'https://sdk.example.test',
+      mode: 'snippet', runtimeMode: 'local_only', previewMode: true,
+    });
+    try {
+      expect(sdk).toBeInstanceOf(RevTurbineCustomerSdk);
+      expect(sdk).not.toBeInstanceOf(Promise);
+    } finally {
+      sdk.dispose();
+    }
+  });
+});

@@ -8,7 +8,7 @@
  *
  * @example
  * ```ts
- * import { createAnalyticsProvider } from '@revturbine/sdk';
+ * import { createAnalyticsProvider, initRevTurbine } from '@revturbine/sdk';
  *
  * const analytics = createAnalyticsProvider({
  *   handler: (eventName, properties) => {
@@ -16,7 +16,13 @@
  *   },
  * });
  *
- * initRevTurbine({ domainProviders: [analytics], ... });
+ * const session = await initRevTurbine({
+ *   tenantId: 'tenant_abc',
+ *   apiKey: 'rt_live_xxx',
+ *   endpoint: 'https://edge.example.com',
+ *   mode: 'snippet',
+ *   domainProviders: [analytics],
+ * });
  * ```
  *
  * @module
@@ -310,7 +316,13 @@ export interface PostHogAnalyticsProviderOptions {
  * import { createPostHogAnalyticsProvider, initRevTurbine } from '@revturbine/sdk';
  *
  * const analytics = createPostHogAnalyticsProvider({ posthog });
- * initRevTurbine({ domainProviders: [analytics], ... });
+ * const session = await initRevTurbine({
+ *   tenantId: 'tenant_abc',
+ *   apiKey: 'rt_live_xxx',
+ *   endpoint: 'https://edge.example.com',
+ *   mode: 'snippet',
+ *   domainProviders: [analytics],
+ * });
  * ```
  */
 export function createPostHogAnalyticsProvider(
