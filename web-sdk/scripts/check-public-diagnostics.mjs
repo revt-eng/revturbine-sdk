@@ -44,10 +44,11 @@ try {
   delete manifest.scripts;
   writeFileSync(join(stage, 'package.json'), JSON.stringify(manifest, null, 2));
   cpSync(join(webSdk, 'dist'), join(stage, 'dist'), { recursive: true });
-  for (const file of ['README.md', 'LICENSE']) {
+  for (const file of ['README.md', 'LICENSE', 'CHANGELOG.md']) {
     if (existsSync(join(webSdk, file))) cpSync(join(webSdk, file), join(stage, file));
   }
   const [packed] = JSON.parse(npm(['pack', '--json', '--ignore-scripts', '--pack-destination', evidence], stage));
+  assert.ok(packed.files.some(file => file.path === 'CHANGELOG.md'), 'package includes the changelog');
   const tarball = join(evidence, packed.filename);
   const digest = createHash('sha256').update(readFileSync(tarball)).digest('hex');
   writeFileSync(join(evidence, 'package-inventory.json'), JSON.stringify(packed, null, 2));
@@ -58,6 +59,7 @@ try {
   cpSync(join(webSdk, 'scripts/fixtures/public-diagnostics.jsx'), join(consumer, 'entry.jsx'));
   const installed = join(consumer, 'node_modules/@revturbine/sdk');
   assert.equal(readFileSync(join(installed, 'dist/index.js'), 'utf8'), readFileSync(join(webSdk, 'dist/index.js'), 'utf8'));
+  assert.equal(readFileSync(join(installed, 'CHANGELOG.md'), 'utf8'), readFileSync(join(webSdk, '../CHANGELOG.md'), 'utf8'), 'installed changelog matches the authoritative source');
   assert.ok(!existsSync(join(consumer, 'node_modules/@revt-eng')), 'consumer must not resolve private packages');
 
   const results = [];

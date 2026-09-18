@@ -1,6 +1,6 @@
 {
   "name": "@revt-eng/sdk",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "RevTurbine customer-facing SDK — placement decisioning, entitlement checks, and usage tracking.",
   "type": "module",
   "packageManager": "pnpm@11.12.0",
@@ -30,7 +30,8 @@
     "./source/optimizely": "./optimizely.ts"
   },
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsup && tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir dist/types && rollup -c rollup.dts.config.mjs && node scripts/strip-internal-refs.mjs dist",

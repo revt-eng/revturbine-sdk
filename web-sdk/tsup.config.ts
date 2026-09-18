@@ -1,5 +1,5 @@
 import { defineConfig } from 'tsup';
-import { readFile } from 'node:fs/promises';
+import { copyFile, readFile } from 'node:fs/promises';
 import type { Plugin } from 'esbuild';
 
 // `@revt-eng/core`, `@revt-eng/schema`, and `@revt-eng/schema-external` are all
@@ -51,6 +51,10 @@ export default defineConfig({
   minify: true,
   clean: true,
   splitting: false,
+  // Both publishing paths invoke tsup; the public path removes lifecycle scripts.
+  async onSuccess() {
+    await copyFile('../CHANGELOG.md', 'CHANGELOG.md');
+  },
   // `no-external`: externals (react, crypto) are treated as side-effect-free,
   // so a leftover bare `import 'crypto'` side-effect import is dropped instead
   // of shipping in the browser bundle. Named imports that are actually used

@@ -145,6 +145,7 @@ describe('AC-11 — dismissal renders neither the placement nor the fallback', (
     // Assert the control EXISTS before clicking it. A `if (button) { … }` here
     // would pass vacuously the day the affordance moves, which is the failure
     // shape this whole plan is about.
+    await waitForDom(() => expect(container?.textContent).toContain('More features'));
     const dismissButton = container?.querySelector('[aria-label="Dismiss"]');
     expect(dismissButton).not.toBeNull();
     expect(container?.textContent).toContain('Upgrade');
