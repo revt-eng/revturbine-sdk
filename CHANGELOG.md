@@ -33,7 +33,27 @@ the old shape was accepted and did nothing. Those windows are the expensive ones
 > **minor** position (`0.6.0` → `0.7.0`), not the major. `npm`'s caret on a `0.x`
 > range does **not** span minors, so `^0.7.0` will not silently pull `0.8.0`.
 
+Built-in decision reason values have a separate reviewed
+[compatibility baseline](docs/reason-code-contract.md). Live fixture checks
+protect those values independently of `@public` method tags; baseline changes
+also require a changelog entry.
+
 ---
+
+## Unreleased
+
+### Reason-code compatibility verification
+
+Added a reviewed baseline for 27 entitlement and 21 placement reason values,
+checked against live SDK/core fixtures. Removal/rename controls exercise every
+protected value, and baseline changes require this changelog to change through
+the existing public-API gate. Custom provider reasons remain extensible and
+free-form diagnostics are excluded. This adds verification only; no runtime
+reason values or package versions change.
+
+Proving tests: `web-sdk/reason-contract.test.ts` and
+`web-sdk/reason-contract-policy.test.ts`. The intentional-change procedure is
+in `docs/reason-code-contract.md`.
 
 ## 0.9.3
 
