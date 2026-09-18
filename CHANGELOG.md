@@ -35,6 +35,15 @@ the old shape was accepted and did nothing. Those windows are the expensive ones
 
 ---
 
+## 0.9.3
+
+### Fixed
+
+- Placement explanations use the same published segment-eligibility helper as
+  decisions, keeping OR-within-segments and AND-with-plan behavior aligned.
+  The explanation/decision matrix covers local and provider-backed Playbooks,
+  unknown or missing segments, exact handle matching and plan-filter combinations.
+
 ## 0.9.2
 
 ### Public initializer user context
