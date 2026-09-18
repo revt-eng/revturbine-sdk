@@ -81,5 +81,9 @@ export default defineConfig({
   esbuildPlugins: [stripBundledDepSourceMaps],
   esbuildOptions(options) {
     options.jsx = 'automatic';
+    // This is a library build: the consumer chooses development/production.
+    // An identity define prevents browser minification from baking in production
+    // while retaining the token consumer bundlers replace (and raw ESM reads).
+    options.define = { ...options.define, 'process.env.NODE_ENV': 'process.env.NODE_ENV' };
   },
 });

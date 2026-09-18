@@ -1,3 +1,4 @@
+// @revturbine-graph gref:b24044a46306423d94ba
 /**
  * Analytics adapter — bridges RevTurbine SDK events to third-party analytics
  * platforms (Heap, Segment, Amplitude, Mixpanel, PostHog, custom, etc.).
@@ -170,8 +171,10 @@ class AnalyticsConsumer implements EventConsumer {
     this.filterSet = options.filter ? new Set(options.filter) : undefined;
   }
 
+  // @revturbine-graph gref:0e3fd659f06959f694ac
   consume(events: EventEnvelopeLike[]): void {
     for (const event of events) {
+      // @revturbine-graph gref:a049ba30296a009521c8
       if (this.filterSet && !this.filterSet.has(event.type)) continue;
 
       let eventName = event.type;
@@ -182,6 +185,7 @@ class AnalyticsConsumer implements EventConsumer {
         if (result === null) continue;
         eventName = result.eventName;
         props = result.properties;
+      // @revturbine-graph gref:ba32fda2dbef866eb979
       }
 
       try {
@@ -318,6 +322,7 @@ export function createPostHogAnalyticsProvider(
     filter,
     transform,
     handler: (eventName, properties) => {
+      // @revturbine-graph gref:00328372207efb018461
       posthog.capture(eventName, properties);
     },
   });

@@ -1,3 +1,4 @@
+// @revturbine-graph gref:f7bafdfaf1890382ac6a
 'use client';
 
 import React, { useCallback, useEffect, useRef } from 'react';
@@ -38,6 +39,7 @@ export interface EngagementAreaProps {
  */
 export function EngagementArea({
   area,
+  // @revturbine-graph gref:19b654bbc4c9731a67b9
   viewEvent = 'engagement_view',
   dwellEvent = 'engagement_dwell',
   interactionEvent = 'engagement_interaction',
@@ -48,6 +50,7 @@ export function EngagementArea({
   style,
   children,
 }: EngagementAreaProps): React.ReactElement {
+  // @revturbine-graph gref:15cd90e72cd43fdbf245
   const track = useTrack();
   const trackRef = useRef(track);
   trackRef.current = track;

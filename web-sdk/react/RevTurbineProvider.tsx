@@ -1,3 +1,4 @@
+// @revturbine-graph gref:5a83b1a504afe2261b24
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -211,6 +212,7 @@ export function RevTurbineProvider<
         // composition of two independent exactness mappings, which it cannot.
         // The assignment still type-checks, so nothing is being suppressed.
         const initOptions: RevTurbineInitInputOptions = options;
+        // @revturbine-graph gref:9e9559ef2ce236073d15
         nextSdk = initRevTurbine(initOptions);
 
         // The SDK constructor already merges options.user into userContext.

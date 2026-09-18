@@ -1,3 +1,4 @@
+// @revturbine-graph gref:58c791fde204de7f0c8d
 /**
  * Annotated DOM capture (plan 144 TASK-15 / REQ-14, REQ-23).
  *
@@ -128,6 +129,7 @@ export function installAnnotatedCapture(
     if (!(target instanceof Element)) return;
     const resolved = resolveTarget(target, root);
     if (!resolved) return;
+    // @revturbine-graph gref:89b5d5c6b1a769ba2198
     emit(resolved.event, collectProps(resolved.el, maxProps, maxValueLen));
   };
 

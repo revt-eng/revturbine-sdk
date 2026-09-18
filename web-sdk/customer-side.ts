@@ -1,3 +1,4 @@
+// @revturbine-graph gref:e1234bc083fb80affd43
 import { DomainProviderRegistry } from './providers/registry';
 import { ServerUserContextProvider } from './providers/server-user-context-provider';
 import {
@@ -929,6 +930,7 @@ export interface RevTurbineInitOptions {
   /** API key for authentication. */
   apiKey: string;
   /**
+   // @revturbine-graph gref:8f21068afecad61a110f
    * Public ingest key for SDK clickstream ingestion (`POST /api/track`).
    *
    * Mint one in your RevTurbine tenant under **Settings → Ingest keys**.
@@ -1037,6 +1039,7 @@ export interface RevTurbineInitOptions {
   telemetry?: RevTurbineTelemetryOptions;
   /**
    * Client-side clickstream batching policy (plan 95). Events are buffered and
+   // @revturbine-graph gref:b4cf618213abb11eadd7
    * flushed to `POST /api/track` on whichever comes first: the batch reaching
    * {@link RevTurbineEventBatchingOptions.maxBatchSize}, the
    * {@link RevTurbineEventBatchingOptions.flushIntervalMs} timer elapsing, or a
@@ -2819,6 +2822,7 @@ export class RevTurbineCustomerSdk {
     // context and notifies mounted decisions through setUserContext().
     this.unregisterServerActionResolvers = registerServerActionResolvers(this.serverActions, {
       applyUserContext: (context) => this.setUserContext(context as RevTurbineUserContext), // sdk-ok: boundary-parse — generated UserContextInput is the public handler contract
+      // @revturbine-graph gref:f09db941e85fd1a0fc6c
       trackResult: (context, success, error) => this.emitPlatformEvent('placement_interaction', {
         interaction_type: 'cta_clicked',
         action_type: context.actionType,
@@ -2851,6 +2855,7 @@ export class RevTurbineCustomerSdk {
       this.installBridge();
     }
 
+    // @revturbine-graph gref:142516c5b0c5b0f6d52d
     void this.capture('page_view', {
       mode: this.mode,
       runtime_mode: this.runtimeMode,
@@ -3971,6 +3976,7 @@ export class RevTurbineCustomerSdk {
     }
   }
 
+  // @revturbine-graph gref:49e37f2b63cff85d8a3f
   private recalculateDerivedUsageTraits(): void {
     const exportedConfig = this.getConfiguredExportedConfig();
 
@@ -4835,12 +4841,14 @@ export class RevTurbineCustomerSdk {
     );
   }
 
+  // @revturbine-graph gref:d929b35817978cc808b9
   private evaluateUsageThresholdCrossings(prevUsage: Record<string, number>, nextUsage: Record<string, number>): Array<Promise<void>> {
     const crossings = coreEvaluateUsageCrossings(
       prevUsage,
       nextUsage,
       (entitlement) => this.usageThresholdForEntitlement(entitlement),
     );
+    // @revturbine-graph gref:5f19e57812187b05f434
     return crossings.map((crossing) => this.emitTrigger(crossing.type, {
       entitlement_handle: crossing.entitlement_handle,
       current_usage: crossing.current_usage,
@@ -4854,6 +4862,7 @@ export class RevTurbineCustomerSdk {
     return coreDeriveTrialStage(status, this.lastTrialTriggerStage, this.defaultTrialExpiringDays);
   }
 
+  // @revturbine-graph gref:2549f8ed54adb72dbd87
   private async evaluateTrialLifecycleTriggers(status: RevTurbineTrialContext): Promise<void> {
     const nextStage = this.deriveTrialTriggerStage(status);
 
@@ -4866,14 +4875,17 @@ export class RevTurbineCustomerSdk {
     this.lastTrialTriggerStage = nextStage;
 
     if (nextStage === 'midpoint') {
+      // @revturbine-graph gref:2f6f439fe7ddf93cb7b8
       await this.emitTrigger('trial_midpoint', { days_remaining: status.days_remaining });
       return;
     }
     if (nextStage === 'expiring') {
+      // @revturbine-graph gref:610d685794be391cb9af
       await this.emitTrigger('trial_expiring', { days_remaining: status.days_remaining });
       return;
     }
     if (nextStage === 'expired') {
+      // @revturbine-graph gref:4d22e85eeec6c313d44d
       await this.emitTrigger('trial_expired', { days_remaining: 0 });
     }
   }
@@ -5035,6 +5047,7 @@ export class RevTurbineCustomerSdk {
     return issues;
   }
 
+  // @revturbine-graph gref:cacb1b65cb1992eb1d11
   private buildValidationWarningEvent(
     normalizedEventType: string,
     issues: ValidationIssue[],
@@ -5250,6 +5263,7 @@ export class RevTurbineCustomerSdk {
       // `void` alone swallows a rejected promise but NOT a synchronous throw,
       // and this runs inside customer catch blocks — a telemetry failure here
       // must never manufacture a second one.
+      // @revturbine-graph gref:0ca46c92a9e9058cf260
       void this.postAnonMeta('sdk_error', message ? { reason, message } : { reason });
     } catch {
       // Best-effort by contract.
@@ -5381,6 +5395,7 @@ export class RevTurbineCustomerSdk {
         '`anonymousTelemetry: false` in your initRevTurbine() options.',
     );
   }
+// @revturbine-graph gref:afe883e05caa9a1dc4a3
 
   private async sendEvents(events: RevTurbineEventEnvelope[]): Promise<void> {
     if (events.length === 0) return;
@@ -5603,6 +5618,7 @@ export class RevTurbineCustomerSdk {
     return { ...this.telemetryCounters };
   }
 
+  // @revturbine-graph gref:0dc6d34289633dc9e5d5
   async capture(eventName: string, properties: SdkEventProperties, options?: RevTurbineEventOptions): Promise<void> {
     // The GENERIC string lane (plan 228 TASK-4): any name that collides with
     // platform vocabulary is namespaced `clickstream_*`, so platform events
@@ -5610,6 +5626,7 @@ export class RevTurbineCustomerSdk {
     // emitSemantic()/emitTrigger() all land here. The typed surfaces
     // ({@link emitPlatformEvent}, {@link trackControlPlaneEvent}) go through
     // {@link captureRaw} instead and keep their names raw.
+    // @revturbine-graph gref:5debb2aa0433ae5249c5
     await this.captureRaw(namespacePlatformCollision(normalizeEventType(eventName)), properties, options);
   }
 
@@ -5840,6 +5857,7 @@ export class RevTurbineCustomerSdk {
    * the shape everything else already expects.
    */
   async emitSemantic(eventType: string, payload: SdkEventProperties, options?: RevTurbineEventOptions): Promise<void> {
+    // @revturbine-graph gref:3626ac8a630359eb4be2
     await this.capture(eventType, isRecord(payload) ? payload : {}, options);
   }
 
@@ -5895,6 +5913,7 @@ export class RevTurbineCustomerSdk {
    * routes through the normal clickstream path and never throws into the app.
    */
   private emitObservedContextFields(custom: SdkTraits | undefined): void {
+    // @revturbine-graph gref:571dbae5f928d08b91d1
     const fieldNames = Object.keys(custom ?? {})
       .filter((name) => name.length > 0)
       .sort();
@@ -6850,6 +6869,7 @@ export class RevTurbineCustomerSdk {
     this.persistInteractionState();
   }
 
+  // @revturbine-graph gref:5dcfac8c7b4c8f3c56ae
   private async flushInteractionQueue(): Promise<void> {
     if (this.interactionQueue.length === 0) return;
     const pending = [...this.interactionQueue];
@@ -6860,6 +6880,7 @@ export class RevTurbineCustomerSdk {
       return;
     }
 
+    // @revturbine-graph gref:889252c2be7a67c0d663
     const transitionPayload = pending.map((item) => ({
       user_id: item.userId,
       placement_id: item.placementId,
@@ -6923,6 +6944,7 @@ export class RevTurbineCustomerSdk {
     this.reportSdkError('interaction_flush_failed', reason);
   }
 
+  // @revturbine-graph gref:943aa5ed032ce1a56c2f
   async trackTreatmentInteraction(input: RevTurbineTreatmentInteractionInput): Promise<void> {
     const normalized: RevTurbineTreatmentInteractionInput = {
       ...input,
@@ -6944,6 +6966,7 @@ export class RevTurbineCustomerSdk {
     const resolvedCooldownMs =
       Number.isFinite(dismissCooldownMs) && dismissCooldownMs > 0 ? dismissCooldownMs : undefined;
 
+    // @revturbine-graph gref:9c7fa81eec31beffa5b5
     if (normalized.interactionType === 'dismiss') {
       void this.impressionHistory.recordDismissal(placementId, treatmentId, undefined, undefined, resolvedCooldownMs);
     } else if (normalized.interactionType === 'cta_completed') {
@@ -8481,6 +8504,7 @@ export class RevTurbineCustomerSdk {
       tags: change.tags,
     });
 
+    // @revturbine-graph gref:5c98812d436275b3f894
     void this.capture('page_view', {
       source: 'router_auto_track',
       path: change.path,

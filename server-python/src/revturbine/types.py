@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.308/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.313/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -3740,6 +3740,27 @@ class ExperimentHandle(RootModel[constr(min_length=1, max_length=100)]):
     root: constr(min_length=1, max_length=100)
 
 
+class EnvelopeStatus(Enum):
+    legacy_incomplete = "legacy_incomplete"
+    complete = "complete"
+
+
+class LeaseStage(Enum):
+    processing = "processing"
+    dispatch = "dispatch"
+    downstream = "downstream"
+
+
+class WebhookDispatchStatus(Enum):
+    unknown = "unknown"
+    pending = "pending"
+    dispatching = "dispatching"
+    accepted = "accepted"
+    failed = "failed"
+    terminal = "terminal"
+    not_required = "not_required"
+
+
 class WebhookEventSource(Enum):
     stripe = "stripe"
     apple = "apple"
@@ -3750,6 +3771,54 @@ class WebhookEventStatus(Enum):
     processed = "processed"
     failed = "failed"
     skipped = "skipped"
+    pending = "pending"
+    error = "error"
+
+
+class WebhookProcessingStatus(Enum):
+    unknown = "unknown"
+    pending = "pending"
+    processing = "processing"
+    completed = "completed"
+    failed = "failed"
+    terminal = "terminal"
+    not_required = "not_required"
+
+
+class PayloadStyle(Enum):
+    snapshot = "snapshot"
+    thin_normalized = "thin_normalized"
+
+
+class Data(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    object: dict[str, Any]
+    previous_attributes: dict[str, Any] | None = None
+
+
+class Event(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    type: constr(min_length=1)
+    created: conint(ge=0, le=9007199254740991)
+    account: constr(min_length=1) | None = None
+    context: constr(min_length=1) | None = None
+    api_version: constr(min_length=1) | None = None
+    livemode: bool | None = None
+    data: Data
+
+
+class WebhookReplayEnvelope(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    version: Literal[1]
+    payload_style: PayloadStyle
+    event: Event
 
 
 class AnalyticsDimensionGrounding(RootModel[Any]):
@@ -5522,6 +5591,48 @@ class WarGameScenario(BaseModel):
     requires: WarGameCapabilityRequirements
     seed: constr(min_length=1)
     simulation_id: constr(min_length=1)
+
+
+class WebhookDelivery(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    receipt_version: Literal[1]
+    event_id: constr(min_length=1)
+    event_type: constr(min_length=1)
+    source: WebhookEventSource
+    received_at: AwareDatetime
+    envelope_status: EnvelopeStatus | None = "legacy_incomplete"
+    envelope: WebhookReplayEnvelope | None = None
+    processing_status: WebhookProcessingStatus | None = "unknown"
+    dispatch_status: WebhookDispatchStatus | None = "unknown"
+    downstream_status: WebhookProcessingStatus | None = "unknown"
+    processing_attempts: conint(ge=0, le=9007199254740991) | None = 0
+    dispatch_attempts: conint(ge=0, le=9007199254740991) | None = 0
+    downstream_attempts: conint(ge=0, le=9007199254740991) | None = 0
+    next_attempt_at: AwareDatetime | None = None
+    lease_stage: LeaseStage | None = None
+    lease_token: constr(min_length=1, max_length=200) | None = None
+    lease_generation: conint(ge=0, le=9007199254740991) | None = 0
+    lease_expires_at: AwareDatetime | None = None
+    processing_completed_at: AwareDatetime | None = None
+    dispatch_accepted_at: AwareDatetime | None = None
+    downstream_completed_at: AwareDatetime | None = None
+    terminal_at: AwareDatetime | None = None
+    last_error_code: constr(min_length=1, max_length=128) | None = None
+    last_error_message: constr(max_length=1000) | None = Field(
+        None,
+        description="Sanitized diagnostic only; exclude credentials, headers and provider payloads.",
+    )
+    effect_checkpoints: (
+        dict[constr(min_length=1, max_length=100), AwareDatetime] | None
+    ) = {}
+    replay_count: conint(ge=0, le=9007199254740991) | None = 0
+    last_replayed_at: AwareDatetime | None = None
 
 
 class WebhookEventLog(BaseModel):

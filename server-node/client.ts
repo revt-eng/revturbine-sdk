@@ -1,3 +1,4 @@
+// @revturbine-graph gref:643ca894820798c10e14
 /**
  * RevTurbine Server-Side SDK Client.
  *
@@ -123,6 +124,7 @@ export class RevTurbineServer {
    */
   async createClientSession(input: CreateClientSessionInput): Promise<ClientSessionResult> {
     const requestId = generateRequestId();
+    // @revturbine-graph gref:fbecd4111dfeb0278a9e
     const response = await this.apiCall(requestId, '/api/sdk/client-sessions', {
       subject: input.subject,
       surface: input.surface,

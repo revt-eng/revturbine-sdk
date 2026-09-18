@@ -1,3 +1,4 @@
+// @revturbine-graph gref:4fa6eb3326e9833946e9
 /**
  * Headless SDK controllers — framework-agnostic orchestration.
  *
@@ -1163,6 +1164,7 @@ export async function initRevTurbine<TUser extends RevTurbineUserContext = RevTu
 ): Promise<SdkSession> {
   const { bootstrapPlacements, ...rest } = options;
   const initOptions = rest as RevTurbineInitInputOptions;
+  // @revturbine-graph gref:95de6eeb0152a1a66d79
   const sdk = initRevTurbineCore(initOptions);
 
   // Identify user if provided
@@ -1173,6 +1175,7 @@ export async function initRevTurbine<TUser extends RevTurbineUserContext = RevTu
 
   // Resolve theme
   let theme: RevTurbineTheme = DEFAULT_THEME;
+  // @revturbine-graph gref:5fc6878eeb45d0863387
   const playbook = resolveLocalPlaybook(initOptions.localRuntime);
   const configTheme = playbook?.theme;
 

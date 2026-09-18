@@ -9,12 +9,12 @@
  *
  * Vitest runs under Node, so `process` is a real global here and the token is
  * not substituted — these tests exercise the runtime ladder. The *inlining*
- * half is guarded by the emitted-source assertion at the bottom, which is the
- * only thing that can catch a regression back to the `globalThis` form.
+ * half is guarded below and across the actual package boundary by
+ * scripts/check-public-diagnostics.mjs in the PR release-build gate.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { isDevelopmentBuild, isProductionBuild, devWarn } from './build-mode';
 
 const ORIGINAL = process.env.NODE_ENV;
@@ -85,6 +85,26 @@ describe('devWarn', () => {
   });
 });
 
+describe('raw browser fallback without process', () => {
+  it.each([
+    ['localhost', true], ['127.0.0.1', true], ['[::1]', true],
+    ['app.example.test', false], [undefined, false],
+  ])('preserves the fallback for hostname %s', (hostname, development) => {
+    let actualDevelopment;
+    let actualProduction;
+    try {
+      vi.stubGlobal('process', undefined);
+      vi.stubGlobal('location', hostname === undefined ? undefined : { hostname });
+      actualDevelopment = isDevelopmentBuild();
+      actualProduction = isProductionBuild();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(actualDevelopment).toBe(development);
+    expect(actualProduction).toBe(false);
+  });
+});
+
 describe('bundler inlining contract', () => {
   /**
    * The whole point of the fix. A bundler replaces the literal source token
@@ -122,7 +142,7 @@ function codeOnly(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
 }
 
-/** Non-test web-sdk files (other than build-mode.ts) whose CODE reads NODE_ENV. */
+/** Runtime sources (not the package build config) whose CODE reads NODE_ENV. */
 function collectNodeEnvReaders(root: string): string[] {
   const found: string[] = [];
   const walk = (dir: string): void => {
@@ -136,6 +156,7 @@ function collectNodeEnvReaders(root: string): string[] {
       if (!/\.tsx?$/.test(entry)) continue;
       if (/\.(test|stories)\.tsx?$/.test(entry)) continue;
       if (entry === 'build-mode.ts') continue;
+      if (full === join(root, 'tsup.config.ts')) continue;
       if (codeOnly(readFileSync(full, 'utf-8')).includes('NODE_ENV')) {
         found.push(full.slice(root.length + 1).replace(/\\/g, '/'));
       }

@@ -47,6 +47,7 @@ void fromJsonModule;
 
 // The boundary itself, which is what actually matters — the type is only
 // interesting because `initRevTurbine` accepts it.
+// @revturbine-graph gref:083fc9eb254914aec9c7
 initRevTurbine({ tenantId: 't_1', localRuntime: { playbook: fixture.exportedConfig } });
 
 /* ── Accepted: the SERVED path is not made harder ─────────────────────────── */
@@ -55,6 +56,7 @@ initRevTurbine({ tenantId: 't_1', localRuntime: { playbook: fixture.exportedConf
 // cast and no ceremony. Tightening this type did NOT push cost onto the served
 // path — the case that motivated the original (wrong) claim.
 declare const servedArtifact: any; // sdk-ok: boundary-parse
+// @revturbine-graph gref:dc8c527b08c4157f26dd
 initRevTurbine({ tenantId: 't_1', localRuntime: { playbook: servedArtifact } });
 
 // Unknown extra keys are fine: a Playbook carries many optional header fields,
@@ -63,6 +65,7 @@ const withExtraHeaderFields = {
   ...fixture.exportedConfig,
   some_future_header_field: 'added by a newer control plane',
 };
+// @revturbine-graph gref:cda4c68a80f09c55e3b3
 initRevTurbine({ tenantId: 't_1', localRuntime: { playbook: withExtraHeaderFields } });
 
 /* ── Rejected: a truncated artifact — the escalated shape ─────────────────── */
@@ -79,6 +82,7 @@ const truncated = {
 
 // @ts-expect-error - a truncated Playbook is now a COMPILE error at the
 // boundary. Before this change it type-checked here and threw at init.
+// @revturbine-graph gref:21be5eff391e5cc1e0fe
 initRevTurbine({ tenantId: 't_1', localRuntime: { playbook: truncated } });
 
 /* ── Rejected: each required array, one at a time ─────────────────────────── */
