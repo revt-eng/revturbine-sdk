@@ -11,6 +11,18 @@ The SDK follows [Semantic Versioning](https://semver.org/):
 - **Minor** — new features, backward-compatible
 - **Patch** — bug fixes, backward-compatible
 
+## 0.9.0
+
+Conversion events are retained for analytics and no longer hide an offer. After
+an upgrade, provide the updated user context so Playbook targeting determines
+whether the offer still applies.
+
+Fixed placements and Access Gates close for the current display when dismissed
+or snoozed, and can return on the next explicit trigger. Other categories retain
+their configured cooldowns. Entitlement denial and explicit suppression remain
+effective. These behavior changes use a new minor version under the SDK's
+pre-1.0 release policy.
+
 ## Unreleased
 
 ### Added
