@@ -74,7 +74,7 @@ import type {
   JsonObject,
   PredicateEvaluationResult,
 } from '@revt-eng/core';
-import { resolvePlacementComponentType } from '@revt-eng/core';
+import { evaluateSegmentEligibility, resolvePlacementComponentType } from '@revt-eng/core';
 import {
   getEligibleAddons as coreGetEligibleAddons,
   getEligiblePlans as coreGetEligiblePlans,
@@ -4771,8 +4771,10 @@ export class RevTurbineCustomerSdk {
         const matchesPlan = payloadPlanIds.length === 0
           || !normalizedCurrentPlan
           || payloadPlanIds.some((planId: string) => planId.toLowerCase() === normalizedCurrentPlan);
-        const matchesSegment = segmentChips.length === 0
-          || segmentChips.some((segmentId: string) => segmentSet.has(segmentId));
+        const matchesSegment = evaluateSegmentEligibility(
+          { target_segment_chips: segmentChips },
+          { segmentIds: targeting.segmentIds },
+        ).eligible;
         // Plan 76: the stored payload status was removed — presence in a live
         // config means released, so a payload's status is always 'active'
         // (runtime status is derived control-plane side).
