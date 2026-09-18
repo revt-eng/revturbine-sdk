@@ -20,7 +20,7 @@ import { useMemo } from 'react';
 
 export default function App() {
   const options = useMemo(() => ({
-    runtimeMode: RuntimeMode.LocalOnly, // evaluate the bundled playbook client-side; no network, no telemetry
+    runtimeMode: RuntimeMode.LocalOnly, // evaluate the bundled Playbook locally
     localRuntime: { playbook },
     user: {
       id: 'user_123',
@@ -42,7 +42,10 @@ export default function App() {
 |---|---|---|
 | `options` | `RevTurbineInitOptions` | SDK initialization options (see [Configuration Reference](/reference/configuration/)) |
 | `bootstrapPlacements` | `BootstrapPlacementInput[]` | Placements to preload on mount |
+| `colorScheme` | `'light' \| 'dark' \| 'system'` | Placement palette; defaults to `'system'` and follows the device preference. Changing this prop does not reinitialize the SDK. |
 | `children` | `ReactNode` | Your app |
+
+Pass `colorScheme` directly to the provider, outside `options`. See [Theming](/guides/theming/) for branding overrides and palette selection.
 
 ### Bootstrap Placements
 
@@ -70,12 +73,19 @@ Access the SDK instance and provider state:
 import { useRevTurbine } from '@revturbine/sdk';
 
 function StatusBar() {
-  const { sdk, isReady, error, setContext } = useRevTurbine();
+  const { sdk, isReady, initStatus, colorScheme } = useRevTurbine();
 
-  if (!isReady) return <span>Loading SDK…</span>;
-  if (error) return <span>SDK error: {error}</span>;
+  if (!initStatus.ok) {
+    return (
+      <div role="alert">
+        <p>SDK initialization failed during {initStatus.phase}: {initStatus.message}</p>
+        <p>{initStatus.remediation}</p>
+      </div>
+    );
+  }
+  if (!isReady || !sdk) return <span>Loading SDK…</span>;
 
-  return <span>SDK ready</span>;
+  return <span>SDK ready · {colorScheme} theme</span>;
 }
 ```
 
@@ -86,7 +96,13 @@ function StatusBar() {
 | `sdk` | `RevTurbineCustomerSdk \| null` | SDK instance (null until ready) |
 | `isReady` | `boolean` | Whether the SDK has initialized |
 | `error` | `string` | Error message if initialization failed |
+| `initStatus` | `RevTurbineInitStatus` | Initialization outcome, available even when `sdk` is `null`: `{ ok, phase?, message?, remediation? }` |
+| `colorScheme` | `'light' \| 'dark'` | Resolved placement palette; `'system'` has already been resolved. Set the provider prop to change it. |
 | `setContext` | `(ctx: RevTurbineUserContext) => void` | Update user context dynamically |
+
+Read `initStatus` before treating a missing SDK as loading. On failure, `ok` is `false` and the phase, message and remediation describe what to fix. During initialization, `ok` is still `true`; wait for `isReady` and a non-null `sdk` before making checks. Mount this diagnostic inside your app's actual provider so it tests the options and Playbook your app uses.
+
+These fields are available from SDK 0.8.0. Development failure banners and theme warnings work in published packages from 0.8.9; `initStatus` remains available in production and in the earlier 0.8.x packages. See [Troubleshooting](/guides/troubleshooting/) when initialization succeeds but a placement does not render.
 
 ### usePlacement
 

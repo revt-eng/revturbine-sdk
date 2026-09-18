@@ -42,6 +42,14 @@ Required in `revturbine_server` and `custom_endpoints` modes. In `local_only` mo
 |---|---|---|---|
 | `uiPathResolvers` | `RevTurbineUiPathResolverMap` | — | Map of CTA action types to resolver functions |
 
+### Branding
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `branding` | `BrandingConfig` | Built-in defaults | Optional workspace name, logo and partial theme. An explicit value takes priority over API branding and legacy config themes. |
+
+See [Theming](/guides/theming/) for an example. Light/dark selection is the React provider's `colorScheme` prop, not an initialization option.
+
 ### User & Page Context
 
 | Field | Type | Default | Description |
@@ -180,6 +188,8 @@ The calls the SDK makes over the network, and the key that reroutes each one in 
 | `placementTypes` | Custom placement-type persistence — meaningful only when overridden | `/api/sdk/placement-types` |
 
 Not overridable: **Playbook delivery**. The SDK fetches the launched Playbook from `endpoint` directly (`/api/sdk/bootstrap`, then the signed manifest and bundle), so `custom_endpoints` routes context and telemetry through your proxy but not the Playbook itself.
+
+Keep `endpoint` pointing at RevTurbine and use absolute override URLs for a proxy on another origin. In local mode, import the Playbook checked into your app. In either mode, preserve the validated artifact: do not insert an app endpoint that reshapes or strips Playbook fields before the SDK reads them. See [Runtime Modes](/guides/runtime-modes/#keep-the-playbook-intact).
 
 The type also declares `decide`, `decideContext`, `bootstrapContext`, `getPlacement` and `checkEntitlement`. They are retired: the SDK never reads them, because there is no decision endpoint. They remain on the type so existing configurations still compile.
 

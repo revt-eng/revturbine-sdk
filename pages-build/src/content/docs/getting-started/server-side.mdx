@@ -263,14 +263,17 @@ export default function Dashboard({ user }) {
 browser-safe client sessions from a secret server key. It is available today,
 but it is not the decision evaluator; use the headless session above for checks.
 
-## Python server SDK
+## Server SDK languages
 
-A Python server SDK is also available, with byte-identical decisioning parity to the Node SDK:
+TypeScript has both browser/React and headless entry points. Python and Rust are headless libraries for your backend; all three evaluate the same Playbook with parity-checked decisions.
 
-| Language | Package | Status |
+| Language | Package | Guide |
 |---|---|---|
-| Node.js / edge | `@revturbine/sdk/headless` | ✅ Available |
-| Python | `revturbine` (PyPI) | ✅ Available |
+| Node.js / edge | `@revturbine/sdk/headless` | This page; [Headless API](/guides/headless-api/) |
+| Python | `revturbine` (PyPI) | [Python SDK](/getting-started/python/) |
+| Rust | `revturbine` (crates.io) | [Rust SDK](/getting-started/rust/) |
+
+TypeScript supports local and hosted modes. Python and Rust evaluate a supplied Playbook locally; the application owns refreshing that snapshot. Their guides describe installation, input shapes and the supported surfaces.
 
 Python exposes the same re-check question as `can()`:
 
@@ -280,7 +283,7 @@ if not result["allowed"]:
     raise PermissionError(result["reason"])
 ```
 
-See the [Python SDK guide](/getting-started/python/) for setup and usage.
+See the [Python SDK guide](/getting-started/python/) and [Rust SDK guide](/getting-started/rust/) for setup and usage.
 
 ## Next Steps
 

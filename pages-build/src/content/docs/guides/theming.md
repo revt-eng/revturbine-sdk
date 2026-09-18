@@ -73,9 +73,13 @@ interface RevTurbineTheme {
 
 ## Applying a Custom Theme
 
-Pass your theme through the Playbook or provider:
+Pass an optional `branding` value in your SDK options. This local React example changes a few tokens and lets the rest use defaults:
 
 ```tsx
+import { RevTurbineProvider } from '@revturbine/sdk';
+import { useMemo, type ReactNode } from 'react';
+import playbook from './revturbine.playbook.json';
+
 const customTheme = {
   colors: {
     primary: '#6366f1',      // Indigo
@@ -100,9 +104,28 @@ const customTheme = {
     large: '0 25px 50px rgba(0,0,0,0.15)',
   },
 };
+
+export function App({ children }: { children: ReactNode }) {
+  const options = useMemo(() => ({
+    localRuntime: { playbook },
+    branding: { theme: customTheme },
+  }), []);
+
+  return (
+    <RevTurbineProvider options={options} colorScheme="system">
+      {children}
+    </RevTurbineProvider>
+  );
+}
 ```
 
 Partial themes are merged with defaults — you only need to specify the tokens you want to change.
+
+### Light and dark palettes
+
+Set the provider's `colorScheme` prop to `'light'`, `'dark'` or `'system'` (the default). System follows the device's preference. Pass your app's current preference to that prop when the user changes it; placements repaint without reinitializing the SDK. Keep it outside `options`.
+
+`useRevTurbine().colorScheme` reports the resolved `'light'` or `'dark'` value. The selected palette supplies the defaults; explicit branding tokens still override those defaults.
 
 ## Accessing the Theme
 
@@ -151,11 +174,14 @@ function MySlot({ content, theme }: PlacementSlotProps) {
 
 The theme is resolved from multiple sources, in priority order:
 
-1. **Playbook snapshot** — theme bundled in the config (no network call)
-2. **API / localStorage** — fetched from the RevTurbine API or cached
-3. **Default theme** — built-in defaults
+1. **Explicit `branding` option** — supplied by your app at initialization
+2. **Branding API** — supplied or fetched workspace branding
+3. **Legacy config `theme`** — accepted for older artifacts, deprecated for new integrations
+4. **Defaults** — the selected light or dark palette
 
-In `local_only` mode, the theme always comes from the Playbook.
+The selected source's partial theme merges over defaults. For local mode, pass branding explicitly or use defaults. A legacy config theme still resolves for older artifacts; new Playbooks do not need one.
+
+An app-mounted `RevTurbineThemeProvider` above `RevTurbineProvider` owns the rendered theme and takes precedence over this automatic resolution. Development builds warn about that override. Use this wrapper when your app deliberately manages the rendered theme; otherwise let `RevTurbineProvider` resolve it.
 
 ## Next Steps
 

@@ -5,7 +5,7 @@ sidebar:
   order: 6
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
 The Python SDK is a **headless *server* library**: it decides entitlements and
 placements **in-process**, with no network call and no persistence beyond
@@ -27,18 +27,37 @@ to drift.
 
 ## Install
 
-The `revturbine` package (requires Python ≥ 3.10) is published to **PyPI**:
+The `revturbine` package (requires Python ≥ 3.10) is published to **PyPI**. Install it in a virtual environment:
+
+<Tabs>
+<TabItem label="macOS / Linux">
 
 ```bash
-pip install revturbine
+python3 -m venv .venv
+.venv/bin/python -m pip install revturbine
 ```
+
+</TabItem>
+<TabItem label="Windows PowerShell">
+
+```powershell
+py -m venv .venv
+.venv\Scripts\python.exe -m pip install revturbine
+```
+
+</TabItem>
+</Tabs>
+
+Use that environment's Python to run your app too. A virtual environment also handles PEP 668's “externally managed environment” restriction without modifying system Python.
 
 Pin to a version whose schema matches the `Playbook` you deploy — see
 [Refreshing the Playbook](#refreshing-the-playbook):
 
 ```bash
-pip install "revturbine==<version>"
+python -m pip install "revturbine==<version>"
 ```
+
+Here `python` means your virtual environment's interpreter, as in the commands above.
 
 ## Quick start
 

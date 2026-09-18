@@ -96,7 +96,7 @@ async function main() {
     if (!/^(import|export|const|let|var|function|class|type|interface|async|\/\/)/.test(code)) {
       code = `// @ts-nocheck\n${code}`;
     }
-    const filename = `snippet_${block.file.replace(/\//g, '_').replace(/\.(md|mdx)$/, '')}_${block.index}.tsx`;
+    const filename = `snippet_${block.file.replace(/[\\/]/g, '_').replace(/\.(md|mdx)$/, '')}_${block.index}.tsx`;
     await writeFile(join(TMP, filename), code);
     written++;
   }

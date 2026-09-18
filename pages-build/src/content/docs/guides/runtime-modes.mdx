@@ -7,7 +7,7 @@ sidebar:
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
-Two modes matter for most apps: **local** and **hosted**. A third, `custom_endpoints`, routes hosted mode's calls through your own proxy.
+Two modes matter for most apps: **local** and **hosted**. A third, `custom_endpoints`, routes selected context and telemetry calls through your own proxy while Playbook delivery stays with RevTurbine.
 
 ## Hosted mode
 
@@ -34,7 +34,7 @@ In code: `runtimeMode: RuntimeMode.LocalOnly` (`local_only`) with `localRuntime:
 
 1. Getting started, building a demo, or shipping a Playbook that rarely changes? **Local.**
 2. Want to change monetization without deploying, see analytics, or set per-customer exceptions? **Hosted.**
-3. Need RevTurbine's calls to go through your own proxy? **Hosted, with `custom_endpoints`.**
+3. Need context or telemetry calls to go through your own proxy? **Hosted, with `custom_endpoints`.**
 
 ## Mode comparison
 
@@ -42,7 +42,13 @@ In code: `runtimeMode: RuntimeMode.LocalOnly` (`local_only`) with `localRuntime:
 |---|---|---|---|
 | **Local** (`local_only`) | Bundled with your app | Nothing at runtime; optional anonymous adoption beacon | `localRuntime: { playbook }` |
 | **Hosted** (`revturbine_server`) | RevTurbine, cached locally and refreshed in the background | Playbook delivery and versioning; user state (billing, trials, exceptions, behavior); analytics | `tenantId`, `apiKey`, `endpoint` |
-| **Hosted via your proxy** (`custom_endpoints`) | RevTurbine, through endpoints you own | Same as hosted | Base config + `endpointOverrides` |
+| **Hosted with custom endpoints** (`custom_endpoints`) | RevTurbine, cached locally as in hosted mode | Same as hosted; selected context and telemetry calls use your endpoints | Hosted config + `endpointOverrides` |
+
+### Keep the Playbook intact
+
+Use a Playbook checked into your app for local mode, or let the SDK retrieve the launched Playbook from RevTurbine in hosted mode. Pass the validated artifact intact. An app endpoint that reshapes, filters or strips fields creates a different artifact from the one you validated.
+
+`endpointOverrides` does not reroute Playbook delivery. Keep `endpoint` set to RevTurbine and override only the supported context and telemetry calls. See the [endpoint reference](/reference/configuration/#revturbineendpointoverrides) for the complete list.
 
 ## Where decisions run, and what is cached
 
@@ -73,7 +79,7 @@ import { initRevTurbine, RuntimeMode } from '@revturbine/sdk';
 import playbook from './revturbine.playbook.json';
 
 // No account, key, tenant or endpoint: the Playbook is the whole configuration.
-const sdk = initRevTurbine({
+const session = await initRevTurbine({
   runtimeMode: RuntimeMode.LocalOnly,
   localRuntime: {
     playbook,
@@ -92,7 +98,7 @@ In `local_only` mode the SDK evaluates all targeting rules, entitlements, and pl
 ```ts
 import { initRevTurbine, createServerRuntimeConfig } from '@revturbine/sdk';
 
-const sdk = initRevTurbine(
+const session = await initRevTurbine(
   createServerRuntimeConfig({
     tenantId: 'tenant_abc',
     apiKey: 'rtk_…', // publishable ingest key
@@ -108,18 +114,18 @@ const sdk = initRevTurbine(
 ```ts
 import { initRevTurbine, createCustomEndpointRuntimeConfig } from '@revturbine/sdk';
 
-const sdk = initRevTurbine(
+const session = await initRevTurbine(
   createCustomEndpointRuntimeConfig({
     tenantId: 'tenant_abc',
     apiKey: 'rtk_…', // publishable ingest key
-    endpoint: 'https://proxy.example.com',
+    endpoint: 'https://revturbine.com/app',
     mode: 'react',
     endpointOverrides: {
-      clientContext: '/revturbine/client-context',
-      userContext: '/revturbine/user-context',
-      trialStatus: '/revturbine/trial-status',
-      ingestEvents: '/revturbine/track',
-      touchpointTransition: '/revturbine/interactions',
+      clientContext: 'https://proxy.example.com/revturbine/client-context',
+      userContext: 'https://proxy.example.com/revturbine/user-context',
+      trialStatus: 'https://proxy.example.com/revturbine/trial-status',
+      ingestEvents: 'https://proxy.example.com/revturbine/track',
+      touchpointTransition: 'https://proxy.example.com/revturbine/interactions',
     },
   }),
 );
@@ -128,24 +134,48 @@ const sdk = initRevTurbine(
 </TabItem>
 </Tabs>
 
+### Add the context and UI your Playbook uses
+
+Local mode needs no placeholder tenant, API key or endpoint. Add a user when your rules depend on identity or plan, resolve the CTA action types your Playbook authors, and optionally supply branding:
+
+```ts
+import { initRevTurbine, RuntimeMode } from '@revturbine/sdk';
+import playbook from './revturbine.playbook.json';
+
+const session = await initRevTurbine({
+  runtimeMode: RuntimeMode.LocalOnly,
+  localRuntime: { playbook },
+  user: { id: 'user_123', plan_handle: 'starter' },
+  uiPathResolvers: {
+    navigate_to_plans: () => { window.location.assign('/pricing'); },
+  },
+  branding: {
+    workspace_name: 'My app',
+    theme: { colors: { primary: '#6366f1' } },
+  },
+});
+
+// The async initializer returns a session; instance-only methods live on .sdk.
+const branding = session.sdk.getBranding();
+```
+
+Use your actual plan handle and CTA action types. Branding is optional and merges over defaults. With React, pass the same options to [RevTurbineProvider](/getting-started/react/) and let it initialize the SDK. See [User Context](/user-context/), [CTA actions](/guides/placements/#cta-actions) and [Theming](/guides/theming/) for the individual options.
+
 ## Migrating from local to hosted mode
 
-When you're ready for production, the change is a single config swap. Your component code stays the same:
+When you want dashboard-managed changes without deploying your app, switch the connection options. Local mode is also production-capable; your component code stays the same:
 
 ```diff
   <RevTurbineProvider
     options={{
--     tenantId: 'my-app',
--     apiKey: 'local',
--     endpoint: 'http://localhost',
 -     runtimeMode: RuntimeMode.LocalOnly,
 -     localRuntime: { playbook },
 +     tenantId: process.env.REVTURBINE_TENANT_ID!,
 +     apiKey: process.env.REVTURBINE_API_KEY!,
 +     endpoint: 'https://revturbine.com/app',
 +     runtimeMode: RuntimeMode.Server,
+      user: { id: 'user_123', plan_handle: 'starter' },
     }}
-    defaultUserId="user_123"
   >
 ```
 
@@ -165,9 +195,9 @@ Providers are for teams that supply their own facts — entitlement grants, user
 2. If primary fails, SDK logs a warning and executes fallbacks in order.
 3. If all configured providers fail for a method, slots render hidden or placeholder output based on `providerFailureSlotBehavior`.
 
-## Production Checklist
+## Integration Checklist
 
 1. Start with `local_only` to validate your integration and placement slots.
-2. When ready, switch to `RuntimeMode.Server` and provide real credentials.
+2. For dashboard-managed changes and analytics, switch to `RuntimeMode.Server` and provide real credentials.
 3. Re-check billing-critical actions on your server with the same Playbook — see [Server-Side Integration](/getting-started/server-side/).
 4. If you supply your own facts through providers, choose `providerFailureSlotBehavior` per surface.
