@@ -35,6 +35,20 @@ the old shape was accepted and did nothing. Those windows are the expensive ones
 
 ---
 
+## 0.9.2
+
+### Public initializer user context
+
+`await initRevTurbine({ user: { id, ...context }, ...options })` from
+`@revturbine/sdk` or `@revturbine/sdk/headless` now passes `id` only as the
+identity argument. Supported user context retains its existing behavior without
+the spurious unrecognized-context-key warning for `id`; genuinely unknown keys
+still warn. Public quick starts now show the awaited `SdkSession` and
+`session.sdk.getBranding()`. The separate synchronous core initializer is unchanged.
+
+Proving tests: `web-sdk/public-init.test.ts` and the installed public-package
+runtime/type examples in `web-sdk/scripts/check-public-diagnostics.mjs`.
+
 ## 0.9.1
 
 ### Public changelog distribution
