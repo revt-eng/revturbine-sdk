@@ -13,7 +13,8 @@ use std::collections::HashMap;
 use serde_json::Value;
 
 use crate::state::interaction::{
-    interaction_state_key, suppression_for_state, InteractionState, SuppressionResult,
+    interaction_state_key, suppression_for_state, suppression_for_state_for_category,
+    InteractionState, SuppressionResult,
 };
 use crate::state::storage::RevTurbineStorage;
 
@@ -23,11 +24,8 @@ const STORAGE_PREFIX: &str = "revturbine:interaction-state";
 pub const DEFAULT_DISMISS_COOLDOWN_MS: i64 = 7 * 24 * 60 * 60 * 1000;
 /// Default suppression after "remind me later": 1 hour.
 pub const DEFAULT_REMIND_LATER_MS: i64 = 60 * 60 * 1000;
-/// Transient window after a confirmed conversion: 5 minutes.
-///
-/// Deliberately short — permanence for a completed CTA is owned by impression
-/// history, and this only covers the in-flight action.
-pub const CTA_SUPPRESSION_MS: i64 = 5 * 60 * 1000;
+/// Deprecated compatibility constant: conversion adds no suppression window.
+pub const CTA_SUPPRESSION_MS: i64 = 0;
 
 /// One recorded interaction.
 ///
@@ -152,13 +150,28 @@ impl<S: RevTurbineStorage> InteractionTracker<S> {
         let now = (self.now_fn)();
         let metadata = input.metadata;
 
-        let existing = self.state.get(&key).cloned().unwrap_or_default();
+        let mut existing = self.state.get(&key).cloned().unwrap_or_default();
+        if existing.last_interaction_type.as_deref() == Some("cta_completed") {
+            existing.suppressed_until = None;
+        }
+        if existing.last_interaction_type.as_deref() == Some("suppress") {
+            existing.explicit_suppressed_until = existing
+                .explicit_suppressed_until
+                .or(existing.suppressed_until);
+        }
         let mut next = InteractionState {
             updated_at: input
                 .interaction_at
                 .map_or_else(|| iso_from_ms(now), str::to_string),
             suppressed_until: existing.suppressed_until,
-            last_interaction_type: Some(input.interaction_type.to_string()),
+            explicit_suppressed_until: existing.explicit_suppressed_until,
+            last_interaction_type: if input.interaction_type == "cta_completed"
+                && existing.suppressed_until.is_some()
+            {
+                existing.last_interaction_type.clone()
+            } else {
+                Some(input.interaction_type.to_string())
+            },
         };
 
         match input.interaction_type {
@@ -174,9 +187,6 @@ impl<S: RevTurbineStorage> InteractionTracker<S> {
                     coerce_positive_finite(metadata.and_then(|m| m.get("remind_after_seconds")))
                         .map_or(self.default_remind_later_ms, |secs| (secs * 1000.0) as i64);
                 next.suppressed_until = Some(now + ms);
-            }
-            "cta_completed" => {
-                next.suppressed_until = Some(now + CTA_SUPPRESSION_MS);
             }
             _ => {}
         }
@@ -196,6 +206,18 @@ impl<S: RevTurbineStorage> InteractionTracker<S> {
     ) -> SuppressionResult {
         let key = interaction_state_key(&self.tenant_id, user_id, placement_id, treatment_id);
         suppression_for_state(self.state.get(&key), (self.now_fn)())
+    }
+
+    /// Check interaction suppression for the actual resolved placement category.
+    pub fn check_suppression_for_category(
+        &self,
+        placement_id: &str,
+        user_id: &str,
+        treatment_id: Option<&str>,
+        category: &str,
+    ) -> SuppressionResult {
+        let key = interaction_state_key(&self.tenant_id, user_id, placement_id, treatment_id);
+        suppression_for_state_for_category(self.state.get(&key), (self.now_fn)(), category)
     }
 
     /// Drop the per-key suppression state.
@@ -232,7 +254,10 @@ impl<S: RevTurbineStorage> InteractionTracker<S> {
             return;
         };
         for (key, value) in obj {
-            if let Ok(entry) = serde_json::from_value::<InteractionState>(value.clone()) {
+            if let Ok(mut entry) = serde_json::from_value::<InteractionState>(value.clone()) {
+                if entry.last_interaction_type.as_deref() == Some("cta_completed") {
+                    entry.suppressed_until = None;
+                }
                 self.state.insert(key.clone(), entry);
             }
         }

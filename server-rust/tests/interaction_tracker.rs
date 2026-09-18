@@ -11,7 +11,7 @@ use serde_json::json;
 
 use revturbine::state::{
     InMemoryStorage, InteractionTracker, RevTurbineStorage, TreatmentInteractionInput,
-    CTA_SUPPRESSION_MS, DEFAULT_DISMISS_COOLDOWN_MS, DEFAULT_REMIND_LATER_MS,
+    DEFAULT_DISMISS_COOLDOWN_MS, DEFAULT_REMIND_LATER_MS,
 };
 
 const T0: i64 = 1_700_000_000_000;
@@ -101,7 +101,7 @@ fn a_bare_cta_click_takes_the_dismiss_cooldown_not_the_short_window() {
     let mut t = tracker(&clock);
     t.track(&interaction("cta_clicked"));
 
-    clock.advance(CTA_SUPPRESSION_MS + 1);
+    clock.advance(5 * 60 * 1000 + 1);
     assert!(
         t.check_suppression("pl_1", "user_1", None).suppressed,
         "a click must outlast the completed-CTA window",
@@ -112,15 +112,13 @@ fn a_bare_cta_click_takes_the_dismiss_cooldown_not_the_short_window() {
 }
 
 #[test]
-fn a_completed_cta_only_gets_the_short_transient_window() {
-    // Permanence for a conversion is owned by impression history; this window
-    // only covers the in-flight action.
+fn a_completed_cta_does_not_suppress() {
     let clock = TestClock::new(T0);
     let mut t = tracker(&clock);
     t.track(&interaction("cta_completed"));
 
-    assert!(t.check_suppression("pl_1", "user_1", None).suppressed);
-    clock.advance(CTA_SUPPRESSION_MS);
+    assert!(!t.check_suppression("pl_1", "user_1", None).suppressed);
+    clock.advance(5 * 60 * 1000);
     assert!(!t.check_suppression("pl_1", "user_1", None).suppressed);
 }
 
@@ -259,6 +257,82 @@ fn malformed_stored_json_is_discarded_not_fatal() {
     let c = clock.0.clone();
     let t = InteractionTracker::with_options(
         &mut storage as &mut dyn RevTurbineStorage,
+        "tenant_1",
+        "user_1",
+        DEFAULT_DISMISS_COOLDOWN_MS,
+        DEFAULT_REMIND_LATER_MS,
+        Box::new(move || c.load(Ordering::SeqCst)),
+    );
+    assert!(!t.check_suppression("pl_1", "user_1", None).suppressed);
+}
+
+#[test]
+fn independent_explicit_and_reminder_windows_survive_reload() {
+    for category in ["fixed", "gated", "upsell", "usage", "trials", "retention"] {
+        for (explicit_ms, remind_seconds) in [(1_000, 60), (60_000, 1)] {
+            let clock = TestClock::new(T0);
+            let mut storage = InMemoryStorage::new();
+            storage.set_item("revturbine:interaction-state:tenant_1:user_1", &json!({
+                "tenant_1:user_1:pl_1:default": { "updated_at": "2026-01-01T00:00:00Z", "last_interaction_type": "suppress", "suppressed_until": T0 + explicit_ms }
+            }).to_string());
+            {
+                let c = clock.0.clone();
+                let mut t = InteractionTracker::with_options(
+                    &mut storage as &mut dyn RevTurbineStorage,
+                    "tenant_1",
+                    "user_1",
+                    DEFAULT_DISMISS_COOLDOWN_MS,
+                    DEFAULT_REMIND_LATER_MS,
+                    Box::new(move || c.load(Ordering::SeqCst)),
+                );
+                let meta = json!({ "remind_after_seconds": remind_seconds });
+                t.track(&TreatmentInteractionInput {
+                    metadata: Some(&meta),
+                    ..interaction("remind_me_later")
+                });
+            }
+            clock.advance(2_000);
+            let c = clock.0.clone();
+            let t = InteractionTracker::with_options(
+                storage,
+                "tenant_1",
+                "user_1",
+                DEFAULT_DISMISS_COOLDOWN_MS,
+                DEFAULT_REMIND_LATER_MS,
+                Box::new(move || c.load(Ordering::SeqCst)),
+            );
+            assert_eq!(
+                t.check_suppression_for_category("pl_1", "user_1", None, category)
+                    .suppressed,
+                explicit_ms > 2_000 || !matches!(category, "fixed" | "gated")
+            );
+        }
+    }
+}
+
+#[test]
+fn legacy_conversion_window_cannot_return_after_impression() {
+    let clock = TestClock::new(T0);
+    let mut storage = InMemoryStorage::new();
+    storage.set_item("revturbine:interaction-state:tenant_1:user_1", &json!({
+        "tenant_1:user_1:pl_1:default": { "updated_at": "2026-01-01T00:00:00Z", "last_interaction_type": "cta_completed", "suppressed_until": T0 + 60_000 }
+    }).to_string());
+    {
+        let c = clock.0.clone();
+        let mut t = InteractionTracker::with_options(
+            &mut storage as &mut dyn RevTurbineStorage,
+            "tenant_1",
+            "user_1",
+            DEFAULT_DISMISS_COOLDOWN_MS,
+            DEFAULT_REMIND_LATER_MS,
+            Box::new(move || c.load(Ordering::SeqCst)),
+        );
+        t.track(&interaction("impression"));
+        assert!(!t.check_suppression("pl_1", "user_1", None).suppressed);
+    }
+    let c = clock.0.clone();
+    let t = InteractionTracker::with_options(
+        storage,
         "tenant_1",
         "user_1",
         DEFAULT_DISMISS_COOLDOWN_MS,

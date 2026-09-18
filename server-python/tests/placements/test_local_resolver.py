@@ -575,7 +575,7 @@ class TestResolverCandidatePath:
 
     def test_impression_history_filters_hidden(self) -> None:
         history = _impression_history()
-        history.record_dismissal("pl_hidden")
+        history.record_suppression("pl_hidden")
         resolver = create_static_placement_resolver(
             {
                 "placements": [
@@ -619,14 +619,15 @@ class TestResolverCandidatePath:
 
 
 class TestResolverDirectLookup:
-    def test_placement_retired(self) -> None:
+    def test_conversion_does_not_change_current_eligibility(self) -> None:
         history = _impression_history()
         history.record_conversion("pl_foo")
         resolver = create_static_placement_resolver(
             {"placements": [_entry()]}, _config(), impression_history=history
         )
         decision = resolver({"placement_id": "p1", "user_id": "u"}, _rec(name="pl_foo"), _ctx())
-        assert decision["reason_codes"] == ["placement_retired"]
+        assert decision["visible"] is True
+        assert history.query_history()[0]["outcome"] == "cta_completed"
 
     def test_plan_target_mismatch(self) -> None:
         resolver = create_static_placement_resolver(

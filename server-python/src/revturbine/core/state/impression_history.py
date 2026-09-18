@@ -1,7 +1,7 @@
 """ImpressionHistory — Python port of @revt-eng/core/state/impression-history.ts.
 
 Records and queries placement impression / interaction history; wraps any
-``ImpressionHistoryStore``. Provides hot-path retired and time-based
+``ImpressionHistoryStore``. Provides hot-path time-based
 suppression caches for synchronous resolver checks.
 
 Source: revturbine-scaffold/src/core/state/impression-history.ts
@@ -13,6 +13,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
+from revturbine.core.helpers import category_bucket
 from revturbine.core.state.impression_history_types import (
     DEFAULT_DISMISS_COOLDOWN_MS,
     DEFAULT_SUPPRESSION_MS,
@@ -64,7 +65,7 @@ class ImpressionHistory:
         self._user_id = user_id
         self._default_suppression_ms = default_suppression_ms
         self._default_dismiss_cooldown_ms = default_dismiss_cooldown_ms
-        self._retired_cache: set[str] | None = None
+        self._explicit_suppressed_cache: dict[str, str] = {}
         self._suppressed_cache: dict[str, str] | None = None
 
     # ── Recording ──────────────────────────────────────────────────────────
@@ -131,15 +132,13 @@ class ImpressionHistory:
         surface_template_id: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
-        """Records a confirmed conversion — the placement is **permanently**
-        retired for this user (plan 167, Q-1).
+        """Records conversion analytics without changing eligibility (plan 254).
 
         Source: impression-history.ts:record_conversion
         """
         self._append_record(
             placement_id, "cta_completed", payload_id, surface_template_id, metadata
         )
-        self._retire_in_cache(placement_id)
 
     def record_suppression(
         self,
@@ -162,31 +161,21 @@ class ImpressionHistory:
             placement_id, "suppressed", payload_id, surface_template_id, merged_metadata
         )
         self._suppress_in_cache(placement_id, suppress_until)
+        self._explicit_suppressed_cache[placement_id] = suppress_until
 
     # ── Querying ───────────────────────────────────────────────────────────
 
     def is_retired(self, placement_id: str) -> bool:
-        """Source: impression-history.ts:121-124"""
-        return placement_id in self.get_retired_ids()
+        """Compatibility method: conversion no longer retires placements."""
+        return False
 
     def get_retired_ids(self) -> set[str]:
-        """Returns the set of retired placement IDs and warms the cache.
-
-        Source: impression-history.ts:130-135
-        """
-        if self._retired_cache is not None:
-            return self._retired_cache
-        retired = self._store.get_retired_placement_ids(self._user_id)
-        self._retired_cache = retired
-        return retired
+        """Compatibility method: no interaction permanently retires a placement."""
+        return set()
 
     def is_retired_sync(self, placement_id: str) -> bool:
-        """Synchronous check — only valid after the cache is warm. Cold cache
-        returns False.
-
-        Source: impression-history.ts:141-143
-        """
-        return self._retired_cache is not None and placement_id in self._retired_cache
+        """Compatibility method: conversion no longer retires placements."""
+        return False
 
     def is_suppressed_sync(self, placement_id: str) -> bool:
         """Synchronous check for time-based suppression. Expired entries are
@@ -204,12 +193,15 @@ class ImpressionHistory:
         del self._suppressed_cache[placement_id]
         return False
 
-    def is_hidden_sync(self, placement_id: str) -> bool:
-        """Whether the placement should not be shown (retired OR suppressed).
-
-        Source: impression-history.ts:162-164
-        """
-        return self.is_retired_sync(placement_id) or self.is_suppressed_sync(placement_id)
+    def is_hidden_sync(self, placement_id: str, category: str | None = None) -> bool:
+        """Fixed/Gated bypass user cooldowns, retaining explicit suppression."""
+        until = self._explicit_suppressed_cache.get(placement_id)
+        if until and _parse_iso_to_ms(until) > int(time.time() * 1000):
+            return True
+        self._explicit_suppressed_cache.pop(placement_id, None)
+        if category_bucket(category or "") <= 1:
+            return False
+        return self.is_suppressed_sync(placement_id)
 
     def query_history(self, query: ImpressionQuery | None = None) -> list[ImpressionRecord]:
         """Source: impression-history.ts:169-171"""
@@ -218,13 +210,21 @@ class ImpressionHistory:
     # ── Lifecycle ──────────────────────────────────────────────────────────
 
     def hydrate(self) -> None:
-        """Pre-warm the retired and suppressed caches from the store. Call
+        """Pre-warm the timed suppression caches from the store. Call
         during SDK initialization for synchronous access.
 
         Source: impression-history.ts:181-184
         """
-        self._retired_cache = self._store.get_retired_placement_ids(self._user_id)
         self._suppressed_cache = self._store.get_suppressed_placements(self._user_id)
+        self._explicit_suppressed_cache = {}
+        for record in self._store.query(self._user_id, ImpressionQuery(outcomes=["suppressed"])):
+            until = (record.get("metadata") or {}).get("suppressUntil")
+            if (
+                record["outcome"] == "suppressed"
+                and isinstance(until, str)
+                and _parse_iso_to_ms(until) > int(time.time() * 1000)
+            ):
+                self._explicit_suppressed_cache.setdefault(record["placement_id"], until)
 
     def reset(self) -> None:
         """Clear all impression history for this user.
@@ -232,7 +232,7 @@ class ImpressionHistory:
         Source: impression-history.ts:189-193
         """
         self._store.clear(self._user_id)
-        self._retired_cache = set()
+        self._explicit_suppressed_cache.clear()
         self._suppressed_cache = {}
 
     def set_user_id(self, user_id: str) -> None:
@@ -241,7 +241,7 @@ class ImpressionHistory:
         Source: impression-history.ts:198-202
         """
         self._user_id = user_id
-        self._retired_cache = None
+        self._explicit_suppressed_cache.clear()
         self._suppressed_cache = None
 
     # ── Internal ───────────────────────────────────────────────────────────
@@ -266,11 +266,6 @@ class ImpressionHistory:
         if metadata:
             record["metadata"] = metadata
         self._store.append(self._user_id, record)
-
-    def _retire_in_cache(self, placement_id: str) -> None:
-        if self._retired_cache is None:
-            self._retired_cache = set()
-        self._retired_cache.add(placement_id)
 
     def _suppress_in_cache(self, placement_id: str, suppress_until: str) -> None:
         if self._suppressed_cache is None:

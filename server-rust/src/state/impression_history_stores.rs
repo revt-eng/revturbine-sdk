@@ -61,6 +61,9 @@ pub fn extract_suppressed_placements(
 ) -> HashMap<String, String> {
     let mut suppressed: HashMap<String, String> = HashMap::new();
     for record in records.iter().rev() {
+        if record.outcome == "cta_completed" {
+            continue;
+        }
         if suppressed.contains_key(&record.placement_id) {
             continue;
         }

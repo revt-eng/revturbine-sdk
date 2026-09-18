@@ -46,15 +46,16 @@ fn history(clock: &TestClock) -> ImpressionHistory<InMemoryImpressionStore> {
 // ── Terminal vs time-boxed ──────────────────────────────────────────────────
 
 #[test]
-fn a_conversion_retires_the_placement_permanently() {
+fn a_conversion_is_analytics_without_retirement() {
     let clock = TestClock::new(T0);
     let mut h = history(&clock);
     h.record_conversion("pl_1", None);
 
-    assert!(h.is_retired("pl_1"));
+    assert!(!h.is_retired("pl_1"));
     clock.advance(MS_PER_DAY * 3650); // ten years
-    assert!(h.is_retired_sync("pl_1"), "a conversion must never lapse");
-    assert!(h.is_hidden_sync("pl_1"));
+    assert!(!h.is_retired_sync("pl_1"));
+    assert_eq!(h.query_history(None)[0].outcome, "cta_completed");
+    assert!(!h.is_hidden_sync("pl_1"));
 }
 
 #[test]
@@ -136,7 +137,8 @@ fn sync_checks_return_false_on_a_cold_cache() {
         "cold cache must not claim knowledge it does not have"
     );
     h.hydrate();
-    assert!(h.is_retired_sync("pl_1"), "warm cache sees the conversion");
+    assert!(!h.is_retired_sync("pl_1"));
+    assert_eq!(h.query_history(None)[0].outcome, "cta_completed");
 }
 
 #[test]
@@ -160,7 +162,7 @@ fn switching_user_makes_the_caches_cold_not_empty() {
     let clock = TestClock::new(T0);
     let mut h = history(&clock);
     h.record_conversion("pl_1", None);
-    assert!(h.is_retired_sync("pl_1"));
+    assert!(!h.is_retired_sync("pl_1"));
 
     h.set_user_id("user_2");
     assert!(!h.is_retired_sync("pl_1"));
@@ -169,8 +171,8 @@ fn switching_user_makes_the_caches_cold_not_empty() {
     assert!(!h.is_retired_sync("pl_1"), "still cold until hydrated");
     h.hydrate();
     assert!(
-        h.is_retired_sync("pl_1"),
-        "user_1's conversion is still there"
+        !h.is_retired_sync("pl_1"),
+        "conversion remains analytics after hydration"
     );
 }
 

@@ -1,8 +1,8 @@
 //! `LocalRuntime` — the composition layer.
 //!
 //! Mirrors `server-python/tests/runtime/test_local_runtime.py` and
-//! `tests/decisions/test_engine.py`. The pipeline is **suppression →
-//! providers → resolver → caps**, and most of what matters here is *which*
+//! `tests/decisions/test_engine.py`. The pipeline is **providers →
+//! resolver → category-aware suppression → caps**, and most of what matters here is *which*
 //! stage answers first.
 
 use serde_json::{json, Value};
@@ -23,7 +23,7 @@ fn config() -> Value {
         }],
         "placements": [{
             "id": "pl_banner",
-            "category": "fixed",
+            "category": "upsell",
             "order": 0,
             "payloads": [{
                 "id": "pay_1",
@@ -71,17 +71,10 @@ fn dismissal() -> TreatmentInteractionInput<'static> {
 
 // ── Placement pipeline ──────────────────────────────────────────────────────
 
-// ── Retirement gate (plan 234 TASK-13) ─────────────────────────────────────
-//
-// Rust carried the ImpressionHistory machinery since the port landed but
-// never consulted it in the resolver, so a converted placement stayed
-// visible in this port alone while TS core (local-resolver.ts:610-612, 726)
-// and Python both hid it. The parity fixture `placement_conversion_retires`
-// locks the cross-language property; this test locks the port-local wiring
-// so a refactor cannot silently drop the gate between parity runs.
+// Plan 254: conversion is analytics; current targeting determines eligibility.
 
 #[test]
-fn a_confirmed_conversion_permanently_retires_the_placement() {
+fn a_confirmed_conversion_keeps_current_inputs_eligible() {
     let mut rt = runtime(plan_opts());
     assert_eq!(rt.get_placement_decision(&input())["visible"], json!(true));
 
@@ -89,12 +82,15 @@ fn a_confirmed_conversion_permanently_retires_the_placement() {
         .record_conversion("pl_banner", None);
 
     let d = rt.get_placement_decision(&input());
-    assert_eq!(d["visible"], json!(false));
-    assert_eq!(d["reason_codes"], json!(["placement_retired"]));
+    assert_eq!(d["visible"], json!(true));
+    assert_eq!(
+        rt.impression_history_mut().query_history(None)[0].outcome,
+        "cta_completed"
+    );
 }
 
 #[test]
-fn retirement_is_per_placement_not_per_user() {
+fn conversion_of_another_placement_does_not_change_eligibility() {
     let mut rt = runtime(plan_opts());
     rt.impression_history_mut()
         .record_conversion("some_other_placement", None);
@@ -134,9 +130,8 @@ fn component_type_is_canonical_and_surface_type_remains_an_alias() {
 }
 
 #[test]
-fn interaction_suppression_answers_before_the_resolver_runs() {
-    // A dismissed placement must not even be resolved — the suppression is
-    // the earlier and more specific answer.
+fn interaction_suppression_applies_after_category_resolution() {
+    // Resolve the actual category before applying the interaction window.
     let mut rt = runtime(plan_opts());
     assert_eq!(rt.get_placement_decision(&input())["visible"], json!(true));
 
@@ -146,8 +141,8 @@ fn interaction_suppression_answers_before_the_resolver_runs() {
     assert_eq!(d["visible"], json!(false));
     assert_eq!(
         d["decision_source"],
-        json!("cache"),
-        "not the resolver's 'fallback'"
+        json!("fallback"),
+        "retain the resolved decision source"
     );
     assert_eq!(d["reason_codes"], json!(["suppressed_by_dismiss_cooldown"]));
     assert_eq!(
@@ -155,8 +150,8 @@ fn interaction_suppression_answers_before_the_resolver_runs() {
         json!("suppressed_by_dismiss_cooldown")
     );
     assert!(
-        d.get("output").is_none(),
-        "no output — nothing was resolved"
+        d.get("output").is_some(),
+        "the actual placement was resolved before suppression"
     );
 }
 

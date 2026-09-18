@@ -87,10 +87,11 @@ class TestSuppressionIntegration:
         engine = DecisionEngine(
             registry=DomainProviderRegistry(),
             interaction_tracker=tracker,
+            placement_resolver=_stub_resolver_visible,
         )
         result = engine.evaluate({"placement_id": "p1", "user_id": "u1"})
         assert result["visible"] is False
-        assert result["decision_source"] == "cache"
+        assert result["decision_source"] == "computed"
         assert "suppressed_by_dismiss_cooldown" in result["reason_codes"]
         assert result.get("suppression_reason") == "suppressed_by_dismiss_cooldown"
 
@@ -107,11 +108,12 @@ class TestSuppressionIntegration:
         engine = DecisionEngine(
             registry=DomainProviderRegistry(),
             interaction_tracker=tracker,
+            placement_resolver=_stub_resolver_visible,
         )
         result = engine.evaluate({"placement_id": "p1", "user_id": "u1"})
         assert "suppressed_until_remind_window" in result["reason_codes"]
 
-    def test_suppression_uses_placement_record_name_when_known(self) -> None:
+    def test_no_resolver_reason_survives_prior_dismissal_with_placement(self) -> None:
         storage = InMemoryStorage()
         tracker = InteractionTracker(storage=storage, tenant_id="t1", user_id="u1")
         tracker.track(
@@ -124,9 +126,9 @@ class TestSuppressionIntegration:
             placements={"p1": record},
         )
         result = engine.evaluate({"placement_id": "p1", "user_id": "u1"})
-        assert result["content"]["header"] == "Upgrade Banner suppressed"
+        assert result["reason_codes"] == ["no_resolver_configured"]
 
-    def test_suppression_falls_back_to_placement_id_when_unknown(self) -> None:
+    def test_no_resolver_reason_survives_prior_dismissal_without_placement(self) -> None:
         storage = InMemoryStorage()
         tracker = InteractionTracker(storage=storage, tenant_id="t1", user_id="u1")
         tracker.track(
@@ -137,7 +139,7 @@ class TestSuppressionIntegration:
             interaction_tracker=tracker,
         )
         result = engine.evaluate({"placement_id": "p1", "user_id": "u1"})
-        assert result["content"]["header"] == "p1 suppressed"
+        assert result["reason_codes"] == ["no_resolver_configured"]
 
     def test_no_tracker_no_suppression_check(self) -> None:
         engine = DecisionEngine(registry=DomainProviderRegistry())
@@ -621,7 +623,7 @@ class TestEdgeCases:
         "interaction",
         ["dismiss", "remind_me_later", "cta_clicked", "cta_completed"],
     )
-    def test_each_suppressing_interaction_blocks_evaluate(self, interaction: str) -> None:
+    def test_interactions_preserve_conversion_eligibility(self, interaction: str) -> None:
         storage = InMemoryStorage()
         tracker = InteractionTracker(storage=storage, tenant_id="t1", user_id="u1")
         tracker.track(
@@ -633,5 +635,4 @@ class TestEdgeCases:
             placement_resolver=_stub_resolver_visible,
         )
         result = engine.evaluate({"placement_id": "p1", "user_id": "u1"})
-        # Visible resolver but suppressed by tracker.
-        assert result["visible"] is False
+        assert result["visible"] is (interaction == "cta_completed")

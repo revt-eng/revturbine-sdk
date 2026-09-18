@@ -10,15 +10,10 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-/// Outcomes that **permanently** prevent re-presentation.
-///
-/// Only a confirmed conversion is terminal. `dismissed`, `clicked_thru` and
-/// `suppressed` are all **time-boxed** — they carry a `suppressUntil` window
-/// and the placement returns when it elapses (plan 167 Q-1). Treating a
-/// dismissal as permanent is the classic way to make this wrong.
+/// Deprecated empty compatibility set. Conversion remains analytics-only.
 ///
 /// Source: impression-history-types.ts:31-34
-pub const TERMINAL_OUTCOMES: &[&str] = &["cta_completed"];
+pub const TERMINAL_OUTCOMES: &[&str] = &[];
 
 /// Default time-based suppression: 24 hours.
 ///
@@ -131,10 +126,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn only_a_confirmed_conversion_is_terminal() {
-        // The load-bearing distinction (plan 167 Q-1): everything else is a
-        // time-boxed cooldown and the placement must return.
-        assert!(ImpressionRecord::new("p", "cta_completed", "t").is_terminal());
+    fn no_interaction_permanently_retires_a_placement() {
+        assert!(!ImpressionRecord::new("p", "cta_completed", "t").is_terminal());
         for non_terminal in ["impressed", "dismissed", "clicked_thru", "suppressed"] {
             assert!(
                 !ImpressionRecord::new("p", non_terminal, "t").is_terminal(),

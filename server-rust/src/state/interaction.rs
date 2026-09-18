@@ -6,6 +6,7 @@
 //!
 //! Source: revturbine-scaffold/src/core/state/interaction.ts
 
+use crate::placements::selection::category_bucket;
 use serde::{Deserialize, Serialize};
 
 /// Persisted per-(tenant, user, placement, treatment) interaction state.
@@ -18,6 +19,9 @@ pub struct InteractionState {
     /// Epoch-ms instant before which this placement is suppressed.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub suppressed_until: Option<i64>,
+    /// Independent system suppression expiry, regardless of category.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub explicit_suppressed_until: Option<i64>,
     /// The interaction that produced the current suppression window.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_interaction_type: Option<String>,
@@ -73,12 +77,37 @@ pub fn interaction_state_key(
 /// Source: interaction.ts:29-41 (suppressionForState)
 #[must_use]
 pub fn suppression_for_state(state: Option<&InteractionState>, now_ms: i64) -> SuppressionResult {
+    suppression_for_state_for_category(state, now_ms, "")
+}
+
+/// Apply interaction cooldown exemptions to the resolved output category.
+#[must_use]
+pub fn suppression_for_state_for_category(
+    state: Option<&InteractionState>,
+    now_ms: i64,
+    category: &str,
+) -> SuppressionResult {
     let Some(state) = state else {
         return SuppressionResult::allowed();
     };
+    if state
+        .explicit_suppressed_until
+        .is_some_and(|until| until > now_ms)
+    {
+        return SuppressionResult {
+            suppressed: true,
+            reason: Some("suppressed_by_dismiss_cooldown".into()),
+        };
+    }
     let Some(until) = state.suppressed_until else {
         return SuppressionResult::allowed();
     };
+    if state.last_interaction_type.as_deref() == Some("cta_completed")
+        || (category_bucket(category) <= 1
+            && state.last_interaction_type.as_deref() != Some("suppress"))
+    {
+        return SuppressionResult::allowed();
+    }
     if until <= now_ms {
         return SuppressionResult::allowed();
     }
@@ -101,6 +130,7 @@ mod tests {
         InteractionState {
             updated_at: "2026-08-17T00:00:00.000Z".into(),
             suppressed_until: until,
+            explicit_suppressed_until: None,
             last_interaction_type: kind.map(str::to_string),
         }
     }

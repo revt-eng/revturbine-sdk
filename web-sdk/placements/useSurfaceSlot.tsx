@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   RevTurbineContextMode,
   RevTurbinePlacementDecisionOverrides,
@@ -130,6 +130,9 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
   // arrives a beat later or after a reload. Track it here so the slot can react
   // immediately.
   const [dismissedHere, setDismissedHere] = useState(false);
+  useEffect(() => {
+    setDismissedHere(false);
+  }, [result.decision?.requestId]);
   const onDismissedRef = useRef(onDismissed);
   onDismissedRef.current = onDismissed;
 
@@ -143,6 +146,14 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
       onDismissedRef.current?.();
     },
     [result.dismiss],
+  );
+
+  const handleSnooze = useCallback(
+    (_outputId: string, seconds?: number) => {
+      setDismissedHere(true);
+      void result.snooze(seconds);
+    },
+    [result.snooze],
   );
 
   // Build a PlacementOutput from the decision for the renderer.
@@ -189,6 +200,7 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
         acceptedComponentTypes={acceptedComponentTypes}
         onCtaClick={handleCtaClick}
         onDismiss={handleDismiss}
+        onSnooze={handleSnooze}
         exposureRef={result.exposureRef}
         visible={result.visible}
         className={className}
@@ -203,6 +215,7 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
     acceptedComponentTypes,
     handleCtaClick,
     handleDismiss,
+    handleSnooze,
     result.exposureRef,
     className,
     inlineStyle,

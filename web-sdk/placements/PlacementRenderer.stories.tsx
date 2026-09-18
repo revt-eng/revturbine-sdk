@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useMemo, useState } from 'react';
 import { PlacementRenderer } from './PlacementRenderer';
-import { CtaResolverRegistry } from './cta-resolvers';
+import { CtaResolverRegistry, registerBuiltinSnoozeResolver } from './cta-resolvers';
 import type { PlacementOutput } from '../customer-side';
 
 /**
@@ -69,3 +69,25 @@ type Story = StoryObj<typeof meta>;
 
 /** Registered resolver handles the custom `connect_crm` CTA. */
 export const ResolvedCustomCta: Story = {};
+
+
+function SnoozeOccurrenceDemo() {
+  const [visible, setVisible] = useState(true);
+  const registry = useMemo(() => {
+    const next = new CtaResolverRegistry();
+    registerBuiltinSnoozeResolver(() => setVisible(false), next);
+    return next;
+  }, []);
+  return <div style={{ maxWidth: 480 }}>
+    <PlacementRenderer
+      placement={{ ...customCtaPlacement, content: { header: 'Explore more features', cta_label: 'Remind me later' }, cta_path: { type: 'snooze' } }}
+      ctaResolvers={registry}
+      visible={visible}
+      onSnooze={() => setVisible(false)}
+    />
+    <button onClick={() => setVisible(true)}>Show again</button>
+  </div>;
+}
+
+/** An authored snooze closes this occurrence; the next explicit trigger can show it again. */
+export const SnoozeCurrentDisplay: Story = { render: () => <SnoozeOccurrenceDemo /> };

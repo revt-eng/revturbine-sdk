@@ -29,7 +29,7 @@ use crate::entitlements::{
     find_matching_entitlement_rule, is_rule_shaped_kind, LocalEntitlementInput,
     RuleEvaluationContext,
 };
-use crate::placements::{decision_content, StaticPlacementResolver};
+use crate::placements::StaticPlacementResolver;
 use crate::state::{
     CapEnforcer, ImpressionHistory, InMemoryImpressionStore, InMemoryStorage, InteractionTracker,
     TreatmentInteractionInput,
@@ -133,43 +133,13 @@ impl LocalRuntime {
 
     /// Evaluate one placement decision.
     ///
-    /// Pipeline: **suppression → providers → resolver → caps**. Each stage can
+    /// Pipeline: **providers → resolver → category-aware suppression → caps**. Each stage can
     /// veto, and the order decides which reason the caller sees — a placement
     /// that is both interaction-suppressed and cap-exceeded reports the
     /// suppression, because that is the earlier and more specific answer.
     ///
     /// Source: engine.ts:79-147
     pub fn get_placement_decision(&mut self, input: &PlacementDecisionInput) -> Value {
-        // 1. Interaction suppression short-circuits everything downstream: a
-        //    dismissed placement must not even be resolved.
-        let suppression =
-            self.interaction_tracker
-                .check_suppression(&input.placement_id, &input.user_id, None);
-        if suppression.suppressed {
-            let name = self
-                .registered
-                .get(&input.placement_id)
-                .and_then(|r| str_at(r, &["name"]))
-                .unwrap_or(&input.placement_id)
-                .to_string();
-
-            let mut decision = json!({
-                "placement_id": input.placement_id,
-                "visible": false,
-                "decision_source": "cache",
-                "reason_codes": suppression.reason.clone().map_or_else(|| json!([]), |r| json!([r])),
-                "content": Value::Object(decision_content(
-                    &format!("{name} suppressed"),
-                    "Suppressed due to recent interaction state.",
-                    "Continue",
-                )),
-            });
-            if let Some(reason) = suppression.reason {
-                decision["suppression_reason"] = json!(reason);
-            }
-            return decision;
-        }
-
         // 2-4. Providers → resolver.
         let context = json!({ "__providers": self.providers });
         let placement = self.registered.get(&input.placement_id).cloned();
@@ -179,6 +149,27 @@ impl LocalRuntime {
             Some(&context),
             Some(&mut self.impression_history),
         );
+
+        if decision.get("visible").and_then(Value::as_bool) == Some(true) {
+            let category = str_at(&decision, &["output", "category"]).unwrap_or("");
+            let suppression = self.interaction_tracker.check_suppression_for_category(
+                &input.placement_id,
+                &input.user_id,
+                None,
+                category,
+            );
+            if suppression.suppressed {
+                decision["visible"] = json!(false);
+                decision["reason_codes"] = suppression
+                    .reason
+                    .clone()
+                    .map_or_else(|| json!([]), |r| json!([r]));
+                if let Some(reason) = suppression.reason {
+                    decision["suppression_reason"] = json!(reason);
+                }
+                return decision;
+            }
+        }
 
         // 5. Caps apply only to a VISIBLE decision that produced an output —
         //    an invisible one was never presented, so it must not consume the

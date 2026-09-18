@@ -62,6 +62,8 @@ export interface CtaResolverContext {
   placement: PlacementOutput;
   /** Which CTA fired — the primary button or a secondary action. */
   kind: 'primary' | 'secondary';
+  /** Report snooze through the mounted controller and close this occurrence. */
+  remindLater?: (seconds?: number) => void;
 }
 
 /**

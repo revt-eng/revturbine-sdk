@@ -63,14 +63,14 @@ describe('SDK impression-record public API (TASK-9 minimum-viable)', () => {
     expect(history[0]?.payloadId).toBe('pay_trial_70');
   });
 
-  it('recordDismissal permanently retires the placement', async () => {
+  it('recordDismissal records a cooldown', async () => {
     const sdk = makeSdk();
     await sdk.recordDismissal('pl_upgrade_modal');
     await sdk.impressionHistory.hydrate();
     expect(sdk.impressionHistory.isHiddenSync('pl_upgrade_modal')).toBe(true);
   });
 
-  it('recordClickThru permanently retires the placement', async () => {
+  it('recordClickThru records a cooldown', async () => {
     const sdk = makeSdk();
     await sdk.recordClickThru('pl_pro_upsell', 'pay_pro_a');
     await sdk.impressionHistory.hydrate();

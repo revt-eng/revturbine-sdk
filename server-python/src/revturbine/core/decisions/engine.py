@@ -2,10 +2,10 @@
 
 Runs the full decision pipeline:
 
-1. Check dismissal suppression (InteractionTracker)
-2. Resolve domain providers (DomainProviderRegistry)
-3. Build evaluation context
-4. Run the placement resolver (when configured)
+1. Resolve domain providers (DomainProviderRegistry)
+2. Build evaluation context
+3. Run the placement resolver (when configured)
+4. Apply interaction windows for the resolved category
 5. Enforce presentation caps on visible decisions (CapEnforcer)
 
 Sync per Q-5 of plan 33; async-aware variants are a TASK-7 concern.
@@ -105,31 +105,6 @@ class DecisionEngine:
         rid = _request_id()
         placement = self._placements.get(input_data["placement_id"])
 
-        # 1. Dismissal / interaction suppression
-        if self._interaction_tracker is not None:
-            suppression = self._interaction_tracker.check_suppression(
-                input_data["placement_id"],
-                input_data["user_id"],
-            )
-            if suppression["suppressed"]:
-                reason = suppression.get("reason")
-                fallback_name = placement["name"] if placement else input_data["placement_id"]
-                decision: PlacementDecision = PlacementDecision(
-                    placement_id=input_data["placement_id"],
-                    request_id=rid,
-                    visible=False,
-                    decision_source="cache",
-                    reason_codes=[reason] if reason else [],
-                    content=_decision_content(
-                        f"{fallback_name} suppressed",
-                        "Suppressed due to recent interaction state.",
-                        "Continue",
-                    ),
-                )
-                if reason:
-                    decision["suppression_reason"] = reason
-                return decision
-
         # 2. Resolve providers
         providers = self._registry.resolve_all()
 
@@ -141,6 +116,22 @@ class DecisionEngine:
         # 4. Run resolver if available
         if self._placement_resolver is not None:
             decision = self._placement_resolver(input_data, placement, context)
+            if decision["visible"] and self._interaction_tracker is not None:
+                suppression = self._interaction_tracker.check_suppression(
+                    input_data["placement_id"],
+                    input_data["user_id"],
+                    category=decision.get("output", {}).get("category"),
+                )
+                if suppression["suppressed"]:
+                    reason = suppression.get("reason")
+                    decision = {
+                        **decision,
+                        "visible": False,
+                        "reason_codes": [reason] if reason else [],
+                    }
+                    if reason:
+                        decision["suppression_reason"] = reason
+                    return decision
             # 5. Cap enforcement on visible decisions (default-on; opt-out via
             #    options.enable_caps_enforcement = False).
             enable_caps = self._options.get("enable_caps_enforcement", True)

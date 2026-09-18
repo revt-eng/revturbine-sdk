@@ -17,6 +17,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
+from revturbine.core.state.interaction import suppression_for_state
 from revturbine.core.state.storage import RevTurbineStorage
 from revturbine.core.state.types import (
     InteractionState,
@@ -29,7 +30,6 @@ __all__ = ["InteractionTracker", "InteractionTrackerOptions"]
 _STORAGE_PREFIX = "revturbine:interaction-state"
 _DEFAULT_DISMISS_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000
 _DEFAULT_REMIND_LATER_MS = 60 * 60 * 1000
-_CTA_SUPPRESSION_MS = 5 * 60 * 1000
 
 
 def _now_ms() -> int:
@@ -83,20 +83,31 @@ class InteractionTracker:
         key = self._state_key(input_data["placement_id"], input_data["user_id"], treatment_id)
         now = _now_ms()
         metadata = input_data.get("metadata") or {}
-        existing: InteractionState = self._state.get(key, InteractionState(updated_at=_now_iso()))
+        existing: InteractionState = self._state.get(
+            key, InteractionState(updated_at=_now_iso())
+        ).copy()
+        if existing.get("last_interaction_type") == "cta_completed":
+            existing.pop("suppressed_until", None)
 
+        if existing.get("last_interaction_type") == "suppress" and "suppressed_until" in existing:
+            existing.setdefault("explicit_suppressed_until", existing["suppressed_until"])
         next_state: InteractionState = InteractionState(
             updated_at=input_data.get("interaction_at") or _now_iso(),
         )
         # Preserve previous suppressed_until / last_interaction_type unless
         # the branches below overwrite them. Mirrors the TS spread-then-set
         # pattern.
+        if "explicit_suppressed_until" in existing:
+            next_state["explicit_suppressed_until"] = existing["explicit_suppressed_until"]
         if "suppressed_until" in existing:
             next_state["suppressed_until"] = existing["suppressed_until"]
         if "last_interaction_type" in existing:
             next_state["last_interaction_type"] = existing["last_interaction_type"]
 
-        next_state["last_interaction_type"] = input_data["interaction_type"]
+        if not (
+            input_data["interaction_type"] == "cta_completed" and existing.get("suppressed_until")
+        ):
+            next_state["last_interaction_type"] = input_data["interaction_type"]
 
         if input_data["interaction_type"] == "dismiss":
             cooldown_ms = self._coerce_positive_finite(metadata.get("cooldown_ms"))
@@ -115,11 +126,6 @@ class InteractionTracker:
             next_state["suppressed_until"] = now + int(
                 cooldown_ms if cooldown_ms is not None else self._default_dismiss_cooldown_ms,
             )
-        elif input_data["interaction_type"] == "cta_completed":
-            # Confirmed conversion — permanence is owned by ImpressionHistory;
-            # short transient window here covers the in-flight action.
-            next_state["suppressed_until"] = now + _CTA_SUPPRESSION_MS
-
         self._state[key] = next_state
         self.persist()
 
@@ -128,25 +134,10 @@ class InteractionTracker:
         placement_id: str,
         user_id: str,
         treatment_id: str | None = None,
+        category: str | None = None,
     ) -> SuppressionResult:
-        """Return whether the placement is currently suppressed by a recent
-        interaction. Mirrors TS's `now > suppressedUntil` boundary semantics
-        (boundary timestamps are *not* suppressed).
-
-        Source: interaction-tracker.ts:88-104
-        """
         key = self._state_key(placement_id, user_id, treatment_id)
-        entry = self._state.get(key)
-        if entry is None or "suppressed_until" not in entry:
-            return SuppressionResult(suppressed=False)
-        if entry["suppressed_until"] <= _now_ms():
-            return SuppressionResult(suppressed=False)
-        reason = (
-            "suppressed_until_remind_window"
-            if entry.get("last_interaction_type") == "remind_me_later"
-            else "suppressed_by_dismiss_cooldown"
-        )
-        return SuppressionResult(suppressed=True, reason=reason)
+        return suppression_for_state(self._state.get(key), _now_ms(), category)
 
     def clear_suppression(
         self,
@@ -184,6 +175,9 @@ class InteractionTracker:
             return
         for key, value in parsed.items():
             if isinstance(value, dict):
+                value = value.copy()
+                if value.get("last_interaction_type") == "cta_completed":
+                    value.pop("suppressed_until", None)
                 self._state[key] = value  # type: ignore[assignment]
 
     def persist(self) -> None:

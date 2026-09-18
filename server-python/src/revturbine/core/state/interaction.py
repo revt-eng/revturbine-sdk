@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import time
 
+from revturbine.core.helpers import category_bucket
 from revturbine.core.state.types import InteractionState, SuppressionResult
 
 __all__ = ["interaction_state_key", "suppression_for_state"]
@@ -34,6 +35,7 @@ def interaction_state_key(
 def suppression_for_state(
     state: InteractionState | None,
     now_ms: int | None = None,
+    category: str | None = None,
 ) -> SuppressionResult:
     """Evaluate whether ``state`` indicates the user should be suppressed
     right now.
@@ -44,7 +46,13 @@ def suppression_for_state(
     Source: interaction.ts:29-41
     """
     now = now_ms if now_ms is not None else int(time.time() * 1000)
+    if state and state.get("explicit_suppressed_until", 0) > now:
+        return SuppressionResult(suppressed=True, reason="suppressed_by_dismiss_cooldown")
     if state is None or "suppressed_until" not in state:
+        return SuppressionResult(suppressed=False)
+    if state.get("last_interaction_type") == "cta_completed" or (
+        category_bucket(category or "") <= 1 and state.get("last_interaction_type") != "suppress"
+    ):
         return SuppressionResult(suppressed=False)
     if state["suppressed_until"] <= now:
         return SuppressionResult(suppressed=False)

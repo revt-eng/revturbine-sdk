@@ -66,10 +66,11 @@ class TestRecording:
         assert history.is_retired_sync("p1") is False
         assert history.is_suppressed_sync("p1") is True
 
-    def test_record_conversion_retires_permanently(self) -> None:
+    def test_record_conversion_preserves_analytics_without_retirement(self) -> None:
         _, history = _make()
         history.record_conversion("p1")
-        assert history.is_retired_sync("p1") is True
+        assert history.query_history()[0]["outcome"] == "cta_completed"
+        assert history.is_retired_sync("p1") is False
 
     def test_record_suppression_warms_suppressed_cache(
         self,
@@ -109,7 +110,7 @@ class TestRecording:
 
 
 class TestQueries:
-    def test_is_retired_async_warms_cache(self) -> None:
+    def test_legacy_conversion_does_not_retire(self) -> None:
         store, history = _make()
         store.append(
             "u1",
@@ -119,10 +120,8 @@ class TestQueries:
                 "occurred_at": "2026-05-14T00:00:00.000Z",
             },
         )
-        # is_retired hits the store and caches.
-        assert history.is_retired("p1") is True
-        # Subsequent calls hit the warm cache.
-        assert history.is_retired_sync("p1") is True
+        assert history.is_retired("p1") is False
+        assert history.is_retired_sync("p1") is False
 
     def test_is_retired_sync_cold_cache_returns_false(self) -> None:
         store, history = _make()
@@ -137,7 +136,7 @@ class TestQueries:
         # Cold cache (never hydrated, never recorded) → False.
         assert history.is_retired_sync("p1") is False
 
-    def test_is_hidden_sync_combines_retired_and_suppressed(
+    def test_conversion_does_not_hide_but_explicit_suppression_does(
         self,
         freeze_time: Callable[[float], None],
     ) -> None:
@@ -146,7 +145,7 @@ class TestQueries:
         history.record_conversion("retired_p")
         history.record_suppression("suppressed_p", duration_ms=60_000)
         history.record_impression("visible_p")
-        assert history.is_hidden_sync("retired_p") is True
+        assert history.is_hidden_sync("retired_p") is False
         assert history.is_hidden_sync("suppressed_p") is True
         assert history.is_hidden_sync("visible_p") is False
 
@@ -203,13 +202,14 @@ class TestLifecycle:
         )
         history = ImpressionHistory(store=store, user_id="u1")
         history.hydrate()
-        assert history.is_retired_sync("retired_p") is True
+        assert history.is_retired_sync("retired_p") is False
         assert history.is_suppressed_sync("suppressed_p") is True
 
     def test_reset_clears_history(self) -> None:
         store, history = _make()
         history.record_conversion("p1")
-        assert history.is_retired_sync("p1") is True
+        assert history.query_history()[0]["outcome"] == "cta_completed"
+        assert history.is_retired_sync("p1") is False
         history.reset()
         # Store is empty, cache is empty.
         assert store.query("u1") == []
@@ -218,7 +218,8 @@ class TestLifecycle:
     def test_set_user_id_clears_caches(self) -> None:
         store, history = _make()
         history.record_conversion("p1")
-        assert history.is_retired_sync("p1") is True
+        assert history.query_history()[0]["outcome"] == "cta_completed"
+        assert history.is_retired_sync("p1") is False
         # Switch user — caches go cold; sync check returns False (cache cold).
         history.set_user_id("u2")
         assert history.is_retired_sync("p1") is False
@@ -244,17 +245,17 @@ class TestLifecycle:
         history = ImpressionHistory(store=store, user_id="u1")
         first = history.get_retired_ids()
         second = history.get_retired_ids()
-        # Same set returned (cached).
-        assert first is second
+        assert first == second == set()
+        assert len(history.query_history()) == 1
 
 
-class TestRetireInCacheBranches:
-    def test_retire_in_cold_cache_initializes(self) -> None:
-        # Branch coverage: _retire_in_cache initializes when cache is None.
+class TestRecordingAfterColdStart:
+    def test_conversion_is_recorded_without_hiding(self) -> None:
         _, history = _make()
         assert history.is_retired_sync("p1") is False  # cold
         history.record_conversion("p1")
-        assert history.is_retired_sync("p1") is True
+        assert history.query_history()[0]["outcome"] == "cta_completed"
+        assert history.is_retired_sync("p1") is False
 
     def test_suppress_in_cold_cache_initializes(
         self,

@@ -759,7 +759,9 @@ def create_static_placement_resolver(
                 filtered = [
                     c
                     for c in filtered
-                    if not impression_history.is_hidden_sync(c["output"].get("rule_id") or "")
+                    if not impression_history.is_hidden_sync(
+                        c["output"].get("rule_id") or "", c["output"].get("category")
+                    )
                 ]
 
             # Trial-trigger gating + milestone supersession (plan 43
@@ -890,7 +892,9 @@ def create_static_placement_resolver(
 
             if direct_output and (
                 impression_history is not None
-                and impression_history.is_hidden_sync(direct_output.get("rule_id") or "")
+                and impression_history.is_hidden_sync(
+                    direct_output.get("rule_id") or "", direct_output.get("category")
+                )
             ):
                 reason_codes = ["placement_retired"]
             elif direct_output and not matches_trial_trigger(

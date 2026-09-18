@@ -90,9 +90,8 @@ class TestInMemoryImpressionStore:
         store.append("u1", _record(placement_id="p3", outcome="clicked_thru"))
         store.append("u1", _record(placement_id="p4", outcome="suppressed"))
         retired = store.get_retired_placement_ids("u1")
-        # Only a confirmed conversion is terminal (plan 167); dismiss / bare click /
-        # suppress are all time-boxed cooldowns.
-        assert retired == {"p2"}
+        # Conversion records are analytics, not retirement state.
+        assert retired == set()
 
     def test_get_suppressed_placements_only_active(
         self,
@@ -277,7 +276,7 @@ class TestStorageImpressionStore:
                 metadata={"suppressUntil": "2030-01-01T00:00:00.000Z"},
             ),
         )
-        assert store.get_retired_placement_ids("u1") == {"converted_p"}
+        assert store.get_retired_placement_ids("u1") == set()
         assert "suppressed_p" in store.get_suppressed_placements("u1")
 
     def test_malformed_json_treated_as_empty(self) -> None:

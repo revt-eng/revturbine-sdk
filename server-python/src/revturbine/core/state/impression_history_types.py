@@ -1,8 +1,6 @@
 """Impression history types — Python port of @revt-eng/core/state/impression-history-types.ts.
 
-Tracks placement impressions and terminal interactions (dismiss, click-through,
-suppress) so the decision engine can permanently exclude placements the user
-has already acted on.
+Tracks interaction analytics and timed suppression. Conversion does not retire.
 
 Source: revturbine-scaffold/src/core/state/impression-history-types.ts
 """
@@ -26,17 +24,14 @@ __all__ = [
 
 
 ImpressionOutcome = Literal["impressed", "dismissed", "clicked_thru", "cta_completed", "suppressed"]
-"""Only a confirmed conversion (``cta_completed``) is terminal; ``dismissed`` and
-a bare ``clicked_thru`` are time-boxed cooldowns (plan 167, Q-1).
+"""Conversion is analytics-only; dismiss and bare click remain cooldowns.
 
 Source: impression-history-types.ts:21-25
 """
 
 
-TERMINAL_OUTCOMES: frozenset[ImpressionOutcome] = frozenset({"cta_completed"})
-"""Outcomes that **permanently** prevent re-presentation. Only a confirmed
-conversion is terminal; ``dismissed`` / ``clicked_thru`` / ``suppressed`` are all
-time-boxed (they carry a ``suppressUntil`` window).
+TERMINAL_OUTCOMES: frozenset[ImpressionOutcome] = frozenset()
+"""Deprecated empty compatibility set. No interaction permanently retires.
 
 Source: impression-history-types.ts:31-34
 """

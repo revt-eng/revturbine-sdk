@@ -55,7 +55,9 @@ export interface PlacementRendererProps {
    * dismissible slots render a defer control; omit it and no defer control
    * appears (plan 167 REQ-7). Additive/opt-in.
    */
-  onRemindLater?: (outputId: string) => void;
+  onRemindLater?: (outputId: string, seconds?: number) => void;
+  /** Handle an authored snooze CTA without enabling an extra defer control. */
+  onSnooze?: (outputId: string, seconds?: number) => void;
   /** Callback fired once when the placement is first rendered visible. */
   onImpression?: (outputId: string) => void;
   /**
@@ -98,6 +100,7 @@ export function PlacementRenderer({
   onSecondaryCtaClick,
   onDismiss,
   onRemindLater,
+  onSnooze,
   onImpression,
   exposureRef,
   visible = true,
@@ -129,21 +132,28 @@ export function PlacementRenderer({
     [placement.promotion],
   );
 
+  const handleRemindLater = useCallback((seconds?: number) => {
+    onRemindLater?.(placement.output_id, seconds);
+  }, [onRemindLater, placement.output_id]);
+  const handleSnooze = useCallback((seconds?: number) => {
+    (onSnooze ?? onRemindLater)?.(placement.output_id, seconds);
+  }, [onSnooze, onRemindLater, placement.output_id]);
+
   const handleCtaClick = useCallback(() => {
-    dispatchCtaClick(uiPath, { placement, kind: 'primary' }, effectiveCtaResolvers, onCtaClick);
-  }, [uiPath, placement, effectiveCtaResolvers, onCtaClick]);
+    dispatchCtaClick(uiPath, { placement, kind: 'primary',
+      ...(onSnooze || onRemindLater ? { remindLater: handleSnooze } : {}),
+    }, effectiveCtaResolvers, onCtaClick);
+  }, [uiPath, placement, effectiveCtaResolvers, onCtaClick, onSnooze, onRemindLater, handleSnooze]);
 
   const handleSecondaryCtaClick = useCallback(() => {
-    dispatchCtaClick(uiPath, { placement, kind: 'secondary' }, effectiveCtaResolvers, onSecondaryCtaClick);
-  }, [uiPath, placement, effectiveCtaResolvers, onSecondaryCtaClick]);
+    dispatchCtaClick(uiPath, { placement, kind: 'secondary',
+      ...(onSnooze || onRemindLater ? { remindLater: handleSnooze } : {}),
+    }, effectiveCtaResolvers, onSecondaryCtaClick);
+  }, [uiPath, placement, effectiveCtaResolvers, onSecondaryCtaClick, onSnooze, onRemindLater, handleSnooze]);
 
   const handleDismiss = useCallback(() => {
     onDismiss?.(placement.output_id);
   }, [onDismiss, placement.output_id]);
-
-  const handleRemindLater = useCallback(() => {
-    onRemindLater?.(placement.output_id);
-  }, [onRemindLater, placement.output_id]);
 
   // Fire impression event once when the placement is first rendered visible
   useEffect(() => {

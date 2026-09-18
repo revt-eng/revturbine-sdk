@@ -137,7 +137,7 @@ class TestTrackCta:
         assert result["suppressed"] is True
         assert result["reason"] == "suppressed_by_dismiss_cooldown"
 
-    def test_cta_completed_same_5_minute_window(
+    def test_cta_completed_does_not_suppress(
         self,
         freeze_time: Callable[[float], None],
     ) -> None:
@@ -145,8 +145,9 @@ class TestTrackCta:
         storage = InMemoryStorage()
         tracker = InteractionTracker(storage=storage, tenant_id="t1", user_id="u1")
         tracker.track(_input(interaction_type="cta_completed"))
+        assert tracker.check_suppression("p1", "u1") == {"suppressed": False}
+        tracker = InteractionTracker(storage=storage, tenant_id="t1", user_id="u1")
         freeze_time(1.0 + 6 * 60)
-        # Past 5-minute window.
         assert tracker.check_suppression("p1", "u1") == {"suppressed": False}
 
 
@@ -274,3 +275,60 @@ class TestPreservesPriorState:
         tracker.track(_input(interaction_type="impression"))
         # Impression-only — no suppression should be set.
         assert tracker.check_suppression("p1", "u1") == {"suppressed": False}
+
+
+@pytest.mark.parametrize("category", ["fixed", "gated", "upsell", "usage", "trials", "retention"])
+@pytest.mark.parametrize("explicit_ms,remind_seconds", [(1000, 60), (60000, 1)])
+def test_independent_windows_after_reload(
+    category: str, explicit_ms: int, remind_seconds: int, freeze_time: Callable[[float], None]
+) -> None:
+    freeze_time(1.0)
+    storage = InMemoryStorage()
+    storage.set_item(
+        "revturbine:interaction-state:t1:u1",
+        json.dumps(
+            {
+                "t1:u1:p1:default": {
+                    "last_interaction_type": "suppress",
+                    "suppressed_until": 1000 + explicit_ms,
+                    "updated_at": "2026-01-01T00:00:00Z",
+                },
+            }
+        ),
+    )
+    tracker = InteractionTracker(storage=storage, tenant_id="t1", user_id="u1")
+    tracker.track(
+        _input(
+            interaction_type="remind_me_later", metadata={"remind_after_seconds": remind_seconds}
+        )
+    )
+    freeze_time(3.0)
+    restored = InteractionTracker(storage=storage, tenant_id="t1", user_id="u1")
+    assert restored.check_suppression("p1", "u1", category=category)["suppressed"] is (
+        explicit_ms > 2000 or category not in {"fixed", "gated"}
+    )
+
+
+@pytest.mark.parametrize("category", ["fixed", "gated", "upsell", "usage", "trials", "retention"])
+def test_legacy_conversion_window_cannot_return_after_impression(
+    category: str, freeze_time: Callable[[float], None]
+) -> None:
+    freeze_time(1.0)
+    storage = InMemoryStorage()
+    storage.set_item(
+        "revturbine:interaction-state:t1:u1",
+        json.dumps(
+            {
+                "t1:u1:p1:default": {
+                    "last_interaction_type": "cta_completed",
+                    "suppressed_until": 999999,
+                    "updated_at": "2026-01-01T00:00:00Z",
+                },
+            }
+        ),
+    )
+    tracker = InteractionTracker(storage=storage, tenant_id="t1", user_id="u1")
+    tracker.track(_input(interaction_type="impression"))
+    assert tracker.check_suppression("p1", "u1", category=category) == {"suppressed": False}
+    restored = InteractionTracker(storage=storage, tenant_id="t1", user_id="u1")
+    assert restored.check_suppression("p1", "u1", category=category) == {"suppressed": False}

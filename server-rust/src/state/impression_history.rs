@@ -7,6 +7,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+use crate::placements::selection::category_bucket;
 use serde_json::{json, Value};
 
 use crate::state::impression_history_types::{
@@ -40,6 +41,7 @@ pub struct ImpressionHistory<S: ImpressionHistoryStore> {
     default_dismiss_cooldown_ms: i64,
     retired_cache: Option<HashSet<String>>,
     suppressed_cache: Option<HashMap<String, String>>,
+    explicit_suppressed_cache: HashMap<String, String>,
     now_fn: Box<dyn Fn() -> i64 + Send + Sync>,
 }
 
@@ -70,6 +72,7 @@ impl<S: ImpressionHistoryStore> ImpressionHistory<S> {
             default_dismiss_cooldown_ms,
             retired_cache: None,
             suppressed_cache: None,
+            explicit_suppressed_cache: HashMap::new(),
             now_fn,
         }
     }
@@ -112,15 +115,11 @@ impl<S: ImpressionHistoryStore> ImpressionHistory<S> {
         self.append_suppressing_record(placement_id, "clicked_thru", metadata, ms);
     }
 
-    /// Record a confirmed conversion — the placement is **permanently**
-    /// retired for this user. The only terminal outcome.
+    /// Record conversion analytics without changing placement eligibility.
     ///
     /// Source: impression-history.ts (recordConversion)
     pub fn record_conversion(&mut self, placement_id: &str, metadata: Option<Value>) {
         self.append_record(placement_id, "cta_completed", metadata);
-        self.retired_cache
-            .get_or_insert_with(HashSet::new)
-            .insert(placement_id.to_string());
     }
 
     /// Record a time-based suppression.
@@ -138,32 +137,22 @@ impl<S: ImpressionHistoryStore> ImpressionHistory<S> {
 
     // ── Querying ────────────────────────────────────────────────────────────
 
-    /// Whether the placement is permanently retired, warming the cache.
+    /// Compatibility method: conversion no longer retires placements.
     ///
     /// Source: impression-history.ts:121-124
-    pub fn is_retired(&mut self, placement_id: &str) -> bool {
-        self.get_retired_ids().contains(placement_id)
+    pub fn is_retired(&mut self, _placement_id: &str) -> bool {
+        false
     }
 
-    /// The retired set, warming the cache.
-    ///
-    /// Source: impression-history.ts:130-135
+    /// Compatibility query: conversions no longer retire placements.
     pub fn get_retired_ids(&mut self) -> &HashSet<String> {
-        if self.retired_cache.is_none() {
-            self.retired_cache = Some(self.store.get_retired_placement_ids(&self.user_id));
-        }
-        self.retired_cache.as_ref().expect("just populated")
+        self.retired_cache.get_or_insert_with(HashSet::new)
     }
 
-    /// Synchronous retired check. **Returns `false` on a cold cache** — valid
-    /// only after [`Self::hydrate`].
-    ///
-    /// Source: impression-history.ts:141-143
+    /// Compatibility query: conversions no longer retire placements.
     #[must_use]
-    pub fn is_retired_sync(&self, placement_id: &str) -> bool {
-        self.retired_cache
-            .as_ref()
-            .is_some_and(|c| c.contains(placement_id))
+    pub fn is_retired_sync(&self, _placement_id: &str) -> bool {
+        false
     }
 
     /// Synchronous suppression check. Expired entries are **evicted** as a
@@ -185,11 +174,27 @@ impl<S: ImpressionHistoryStore> ImpressionHistory<S> {
         false
     }
 
-    /// Whether the placement must not be shown — retired **or** suppressed.
+    /// Whether the placement has an active timed suppression.
     ///
     /// Source: impression-history.ts:162-164
     pub fn is_hidden_sync(&mut self, placement_id: &str) -> bool {
-        self.is_retired_sync(placement_id) || self.is_suppressed_sync(placement_id)
+        self.is_hidden_for_category_sync(placement_id, "")
+    }
+
+    /// Category-aware visibility: explicit suppression applies to every category.
+    pub fn is_hidden_for_category_sync(&mut self, placement_id: &str, category: &str) -> bool {
+        let explicit = self
+            .explicit_suppressed_cache
+            .get(placement_id)
+            .is_some_and(|until| parse_iso_to_ms(until) > (self.now_fn)());
+        if explicit {
+            return true;
+        }
+        self.explicit_suppressed_cache.remove(placement_id);
+        if category_bucket(category) <= 1 {
+            return false;
+        }
+        self.is_suppressed_sync(placement_id)
     }
 
     /// Query the underlying store.
@@ -206,8 +211,30 @@ impl<S: ImpressionHistoryStore> ImpressionHistory<S> {
     ///
     /// Source: impression-history.ts:181-184
     pub fn hydrate(&mut self) {
-        self.retired_cache = Some(self.store.get_retired_placement_ids(&self.user_id));
+        self.retired_cache = Some(HashSet::new());
         self.suppressed_cache = Some(self.store.get_suppressed_placements(&self.user_id));
+        self.explicit_suppressed_cache.clear();
+        let query = ImpressionQuery {
+            outcomes: Some(vec!["suppressed".into()]),
+            ..Default::default()
+        };
+        for record in self.store.query(&self.user_id, Some(&query)) {
+            if record.outcome != "suppressed" {
+                continue;
+            }
+            if let Some(until) = record
+                .metadata
+                .as_ref()
+                .and_then(|m| m.get("suppressUntil"))
+                .and_then(Value::as_str)
+            {
+                if parse_iso_to_ms(until) > (self.now_fn)() {
+                    self.explicit_suppressed_cache
+                        .entry(record.placement_id)
+                        .or_insert_with(|| until.to_string());
+                }
+            }
+        }
     }
 
     /// Clear all history for this user. Caches become empty (warm), not cold.
@@ -217,6 +244,7 @@ impl<S: ImpressionHistoryStore> ImpressionHistory<S> {
         self.store.clear(&self.user_id);
         self.retired_cache = Some(HashSet::new());
         self.suppressed_cache = Some(HashMap::new());
+        self.explicit_suppressed_cache.clear();
     }
 
     /// Switch user identity. Caches go **cold**, not empty — the new user's
@@ -228,6 +256,7 @@ impl<S: ImpressionHistoryStore> ImpressionHistory<S> {
         self.user_id = user_id.to_string();
         self.retired_cache = None;
         self.suppressed_cache = None;
+        self.explicit_suppressed_cache.clear();
     }
 
     // ── Internal ────────────────────────────────────────────────────────────
@@ -257,6 +286,10 @@ impl<S: ImpressionHistoryStore> ImpressionHistory<S> {
         merged["suppressUntil"] = Value::String(suppress_until.clone());
 
         self.append_record(placement_id, outcome, Some(merged));
+        if outcome == "suppressed" {
+            self.explicit_suppressed_cache
+                .insert(placement_id.to_string(), suppress_until.clone());
+        }
         self.suppressed_cache
             .get_or_insert_with(HashMap::new)
             .insert(placement_id.to_string(), suppress_until);

@@ -185,7 +185,9 @@ export function registerBuiltinSnoozeResolver(
   const resolver: CtaResolver = (_uiPath, context) => {
     const raw = context.placement as Record<string, unknown>; // sdk-ok: boundary-parse — decision output extra field
     const minutes = typeof raw.remind_later_minutes === 'number' ? raw.remind_later_minutes : undefined;
-    snooze(context.placement.output_id, minutes !== undefined ? minutes * 60 : undefined);
+    const seconds = minutes !== undefined ? minutes * 60 : undefined;
+    if (context.remindLater) context.remindLater(seconds);
+    else snooze(context.placement.output_id, seconds);
   };
   registry.register('snooze', resolver);
   return () => {

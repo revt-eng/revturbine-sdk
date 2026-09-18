@@ -723,7 +723,12 @@ impl StaticPlacementResolver {
             if let Some(history) = impression_history.as_deref_mut() {
                 idxs.retain(|i| {
                     let rid = s(&self.candidates[*i].output, "rule_id").unwrap_or_default();
-                    !history.is_hidden_sync(&rid)
+                    !history.is_hidden_for_category_sync(
+                        &rid,
+                        s(&self.candidates[*i].output, "category")
+                            .as_deref()
+                            .unwrap_or(""),
+                    )
                 });
             }
 
@@ -837,7 +842,12 @@ impl StaticPlacementResolver {
                 Some(i) => {
                     let c = &self.candidates[i];
                     let rid = s(&c.output, "rule_id").unwrap_or_default();
-                    if impression_history.is_some_and(|h| h.is_hidden_sync(&rid)) {
+                    if impression_history.is_some_and(|h| {
+                        h.is_hidden_for_category_sync(
+                            &rid,
+                            s(&c.output, "category").as_deref().unwrap_or(""),
+                        )
+                    }) {
                         // Plan 234 TASK-13 — mirrors local-resolver.ts:726.
                         reason_codes.push("placement_retired".into());
                     } else if !matches_trial_trigger(c.trial_trigger.as_ref(), plan) {

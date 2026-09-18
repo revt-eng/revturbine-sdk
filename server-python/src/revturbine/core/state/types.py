@@ -75,6 +75,7 @@ class InteractionState(_InteractionStateRequired, total=False):
     """
 
     suppressed_until: int
+    explicit_suppressed_until: int
     last_interaction_type: RevTurbineTreatmentInteractionType
 
 

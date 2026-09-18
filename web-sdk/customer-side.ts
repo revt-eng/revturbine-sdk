@@ -1980,6 +1980,7 @@ interface ValidationIssue {
  */
 interface OutputPlacementRef {
   placementId: string;
+  category?: string;
   treatmentId?: string;
   surfaceSlotId?: string;
   surfaceTemplateId?: string;
@@ -3739,6 +3740,7 @@ export class RevTurbineCustomerSdk {
     this.outputPlacementIndex.delete(outputId);
     this.outputPlacementIndex.set(outputId, {
       placementId: decision.placementId,
+      category: decision.output?.category,
       treatmentId: decision.output?.rule_id,
       surfaceSlotId: decision.output?.surface?.slot_id,
       surfaceTemplateId: decision.output?.surface?.template,
@@ -3819,7 +3821,9 @@ export class RevTurbineCustomerSdk {
       const parsed = JSON.parse(raw) as Record<string, InteractionState>;
       Object.entries(parsed).forEach(([key, state]) => {
         if (!state || typeof state !== 'object') return;
-        this.interactionState.set(key, state);
+        const entry = { ...state };
+        if (entry.lastInteractionType === 'cta_completed') delete entry.suppressedUntil;
+        this.interactionState.set(key, entry);
       });
     } catch {
       this.persistentStore.removeItem(this.interactionStateStorageKey());
@@ -6444,8 +6448,20 @@ export class RevTurbineCustomerSdk {
     this.persistDecisionCache();
   }
 
-  private suppressionForState(state?: InteractionState): { suppressed: boolean; reason?: string } {
-    return coreSuppression(state);
+  private gateDecisionByInteraction(
+    decision: RevTurbinePlacementDecision,
+    input: RevTurbinePlacementDecisionInput,
+  ): RevTurbinePlacementDecision {
+    if (!decision.visible) return decision;
+    const key = this.interactionStateKey({ placementId: input.placementId, userId: input.userId });
+    const suppression = coreSuppression(this.interactionState.get(key), Date.now(), decision.output?.category);
+    if (!suppression.suppressed) return decision;
+    return {
+      ...decision,
+      visible: false,
+      reasonCodes: suppression.reason ? [suppression.reason] : [],
+      suppressionReason: suppression.reason,
+    };
   }
 
   private placementCapKey(output: PlacementOutput): string {
@@ -6556,57 +6572,6 @@ export class RevTurbineCustomerSdk {
       };
     }
 
-    // Permanent retirement, checked BEFORE the time-window suppression below.
-    //
-    // Plan 233 TASK-14. `recordConversion` has written a retired-placement set
-    // since plan 167, and nothing in web-sdk ever read it — `isRetired` /
-    // `isRetiredSync` / `shouldNotShow` had no caller here. The only thing
-    // hiding a converted placement was the 5-minute `suppressedUntil` that
-    // `updateInteractionState` writes for `cta_completed` to cover the in-flight
-    // action, whose own comment says permanent retirement is "owned by the
-    // impression history". It was owned there and never consulted, so the upsell
-    // came back five minutes after checkout.
-    //
-    // `isRetiredSync` reads the hot cache warmed by `impressionHistory.hydrate()`
-    // at construction, so this stays synchronous on the decision path.
-    if (this.impressionHistory.isRetiredSync(input.placementId)) {
-      return {
-        placementId: input.placementId,
-        requestId: rid,
-        visible: false,
-        decisionSource: 'cache',
-        reasonCodes: ['retired_by_conversion'],
-        suppressionReason: 'retired_by_conversion',
-        content: decisionContent(
-          `${placement.name} retired`,
-          'The user already converted on this placement.',
-          'Continue',
-        ),
-      };
-    }
-
-    const interactionKey = this.interactionStateKey({
-      placementId: input.placementId,
-      userId: input.userId,
-    });
-    const suppression = this.suppressionForState(this.interactionState.get(interactionKey));
-
-    if (suppression.suppressed) {
-      return {
-        placementId: input.placementId,
-        requestId: rid,
-        visible: false,
-        decisionSource: 'cache',
-        reasonCodes: suppression.reason ? [suppression.reason] : [],
-        suppressionReason: suppression.reason,
-        content: decisionContent(
-          `${placement.name} suppressed`,
-          'Suppressed due to recent interaction state.',
-          'Continue',
-        ),
-      };
-    }
-
     let runtimeContextFingerprint: string | undefined;
 
     // Context synthesis runs in EVERY mode now (plan 159 TASK-4): the static
@@ -6624,12 +6589,13 @@ export class RevTurbineCustomerSdk {
 
     const key = this.decisionCacheKey(input, runtimeContextFingerprint);
     const cached = this.readDecisionCache(key);
-    if (cached) {
+    if (cached && !cached.reasonCodes.includes('placement_retired')
+      && !cached.reasonCodes.includes('retired_by_conversion')) {
       // Plan 43 TASK-14: re-evaluate caps on cache hits with `tick: false`
       // (the resolver pass already ticked). Without this, a placement with
       // `max_per_period: 1 lifetime` would stay visible on every subsequent
       // call because the cache short-circuits the resolver path.
-      return this.gateDecisionByCaps(cached, { tick: false });
+      return this.gateDecisionByCaps(this.gateDecisionByInteraction(cached, input), { tick: false });
     }
 
     {
@@ -6639,10 +6605,12 @@ export class RevTurbineCustomerSdk {
           ...legacyCtx,
           ...(providerCtx ? { __providers: providerCtx } : {}),
         } as JsonObject;
-        const decision = this.applyPriceTokens(
-          this.gateDecisionByCaps(await resolver(input, placement, ctx)),
-          providerCtx,
-        );
+        const resolved = this.applyPriceTokens(await resolver(input, placement, ctx), providerCtx);
+        const interacting = this.gateDecisionByInteraction(resolved, input);
+        // Interaction suppression is temporary; do not cache it as a resolver
+        // result or consume presentation budget for a hidden decision.
+        if (resolved.visible && !interacting.visible) return interacting;
+        const decision = this.gateDecisionByCaps(interacting);
         this.localDecisionsByPlacementId.set(input.placementId, decision);
         this.writeDecisionCache(key, decision, input.ttlMs);
         this.persistLocalRuntimeState();
@@ -6651,7 +6619,10 @@ export class RevTurbineCustomerSdk {
 
       const localDecision = this.localDecisionsByPlacementId.get(input.placementId);
       if (localDecision) {
-        const decision = this.gateDecisionByCaps({ ...localDecision, decisionSource: 'fallback' as const });
+        const resolved = { ...localDecision, decisionSource: 'fallback' as const };
+        const interacting = this.gateDecisionByInteraction(resolved, input);
+        if (resolved.visible && !interacting.visible) return interacting;
+        const decision = this.gateDecisionByCaps(interacting);
         this.writeDecisionCache(key, decision, input.ttlMs);
         this.persistLocalRuntimeState();
         return decision;
@@ -6811,10 +6782,15 @@ export class RevTurbineCustomerSdk {
     });
     const now = Date.now();
     const metadata = input.metadata ?? {};
-    const existing = this.interactionState.get(key) ?? { updatedAt: new Date(now).toISOString() };
+    const existing = { ...(this.interactionState.get(key) ?? { updatedAt: new Date(now).toISOString() }) };
+    if (existing.lastInteractionType === 'cta_completed') delete existing.suppressedUntil;
+    if (existing.lastInteractionType === 'suppress') {
+      existing.explicitSuppressedUntil ??= existing.suppressedUntil;
+    }
     const next: InteractionState = {
       ...existing,
-      lastInteractionType: input.interactionType,
+      lastInteractionType: input.interactionType === 'cta_completed' && existing.suppressedUntil
+        ? existing.lastInteractionType : input.interactionType,
       updatedAt: input.interactionAt ?? new Date(now).toISOString(),
     };
 
@@ -6850,21 +6826,20 @@ export class RevTurbineCustomerSdk {
         : authored.cooldownMs ?? this.dismissCooldownDefaultMs);
     }
 
-    if (input.interactionType === 'cta_completed') {
-      // Confirmed conversion — permanent retirement is owned by the impression
-      // history (recordConversion). Keep a short transient window here to cover
-      // the in-flight action so it doesn't flicker back mid-conversion.
-      next.suppressedUntil = now + 5 * 60 * 1000;
-    }
-
     if (input.interactionType === 'suppress') {
       // Time-based suppression — honour metadata.suppress_duration_ms or default to dismiss cooldown.
       const suppressMs = Number(metadata.suppress_duration_ms);
-      next.suppressedUntil = now + (Number.isFinite(suppressMs) && suppressMs > 0
+      next.explicitSuppressedUntil = now + (Number.isFinite(suppressMs) && suppressMs > 0
         ? suppressMs
         : this.defaultDismissCooldownMs);
+      next.lastInteractionType = existing.lastInteractionType;
+      if (existing.lastInteractionType === 'suppress') delete next.suppressedUntil;
     }
 
+    const category = input.payloadId ? this.outputPlacementIndex.get(input.payloadId)?.category : undefined;
+    if (categoryBucket(category ?? '') <= 1 && input.interactionType !== 'suppress') {
+      delete next.suppressedUntil;
+    }
     this.interactionState.set(key, next);
     this.persistInteractionState();
   }
@@ -6957,7 +6932,7 @@ export class RevTurbineCustomerSdk {
 
     // Record interactions into the impression history (plan 167 Q-1):
     // - dismiss / bare cta_clicked → time-boxed cooldown (re-shows after it).
-    // - cta_completed (confirmed conversion) → permanent retirement.
+    // - cta_completed (confirmed conversion) → analytics only.
     // - suppress → hidden for a configurable duration.
     const placementId = normalized.placementId;
     const treatmentId = normalized.treatmentId;
@@ -6970,7 +6945,7 @@ export class RevTurbineCustomerSdk {
     if (normalized.interactionType === 'dismiss') {
       void this.impressionHistory.recordDismissal(placementId, treatmentId, undefined, undefined, resolvedCooldownMs);
     } else if (normalized.interactionType === 'cta_completed') {
-      // Confirmed conversion → permanent retirement.
+      // Conversion analytics do not change future eligibility.
       void this.impressionHistory.recordConversion(placementId, treatmentId);
     } else if (normalized.interactionType === 'cta_clicked') {
       // Bare click → dismiss-style cooldown, not permanent.
@@ -7829,8 +7804,8 @@ export class RevTurbineCustomerSdk {
 
   /**
    * Record a confirmed conversion — the user completed the CTA action. The
-   * placement is **permanently** retired for this user; subsequent
-   * `getPlacementDecision` calls return `visible: false` for good (plan 167).
+   * record is retained for analytics. Future eligibility is evaluated from
+   * the current UserContext and Playbook.
    *
    * @param placementId - The placement's stable rule_id.
    * @param payloadId - Optional payload variant id.
@@ -8108,29 +8083,7 @@ export class RevTurbineCustomerSdk {
   // events, which had no consumer anywhere (plan 144 Q-3); the standalone names
   // are retired.
   //
-  // Plan 233 TASK-14 — emitting was ALL they did. Reporting an interaction and
-  // acting on it are different things, and these three only ever reported, so
-  // `sdk.dismiss()` never suppressed and `sdk.convert()` never retired. They now
-  // route through `trackTreatmentInteraction`, which owns both, so the terminal
-  // state is written in exactly one place regardless of which entry point the
-  // host calls.
-
-  /**
-   * Route an output-addressed interaction through the one interaction path.
-   *
-   * Plan 233 TASK-14. These three methods each emitted a `placement_interaction`
-   * event and stopped, so none of them wrote any terminal state:
-   * `sdk.dismiss()` did not suppress, and `sdk.convert()` did not retire. Only
-   * the controller path (`trackTreatmentInteraction`) ever did, which is why the
-   * defect was invisible to every React integration test.
-   *
-   * The public API takes an **output** id while every terminal-state write is
-   * keyed by the **placement** id, so the output is resolved through
-   * `outputPlacementIndex`. When it cannot be resolved — an output this SDK
-   * instance never decided, or one evicted from a very long session — we emit
-   * the bare event as before and say so. Silently doing nothing is what shipped;
-   * being loud about the one case we cannot serve is the point.
-   */
+  /** Route output-addressed callbacks through the canonical interaction/analytics path. */
   private async trackOutputInteraction(
     outputId: string,
     interactionType: 'dismiss' | 'remind_me_later' | 'cta_completed',
@@ -8141,7 +8094,7 @@ export class RevTurbineCustomerSdk {
     if (!ref) {
       console.warn(
         `[RevTurbine] ${interactionType} for unknown output "${outputId}": no decision from this SDK `
-          + 'produced it, so the interaction was reported but no suppression or retirement was written. '
+          + 'produced it, so the interaction was reported but no suppression state was written. '
           + 'Pass the `output_id` from a `getPlacementDecision` result on this instance, or call '
           + '`trackTreatmentInteraction` with the placement id directly.',
       );
@@ -8175,10 +8128,9 @@ export class RevTurbineCustomerSdk {
     await this.trackOutputInteraction(outputId, 'dismiss');
   }
 
-  async snooze(outputId: string, seconds = 3600): Promise<void> {
-    await this.trackOutputInteraction(outputId, 'remind_me_later', {
-      remind_after_seconds: seconds,
-    });
+  async snooze(outputId: string, seconds?: number): Promise<void> {
+    await this.trackOutputInteraction(outputId, 'remind_me_later',
+      seconds === undefined ? {} : { remind_after_seconds: seconds });
   }
 
   async convert(outputId: string): Promise<void> {

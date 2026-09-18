@@ -38,7 +38,7 @@ function createTestConfig(overrides: Partial<RevTurbineConfig> = {}): RevTurbine
     placements: [
       {
         id: 'pl_upgrade_banner',
-        category: 'gated',
+        category: 'upsell',
         order: 1,
         trigger: { entitlement_handle: 'feature_dashboard' },
         payloads: [

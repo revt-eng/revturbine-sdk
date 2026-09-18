@@ -73,6 +73,8 @@ def _extract_suppressed_placements(records: list[ImpressionRecord]) -> dict[str,
     suppressed: dict[str, str] = {}
     now = int(time.time() * 1000)
     for record in reversed(records):
+        if record["outcome"] == "cta_completed":
+            continue
         if record["placement_id"] in suppressed:
             continue
         metadata = record.get("metadata") or {}
