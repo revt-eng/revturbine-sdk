@@ -91,7 +91,7 @@ An upgrade button in your navigation bar that:
        <RevTurbineProvider
          options={{
            tenantId: 'demo',
-           apiKey: 'local',
+           publicKey: 'local',
            endpoint: 'http://localhost',
            runtimeMode: RuntimeMode.LocalOnly,
            localRuntime: { playbook },
@@ -171,10 +171,10 @@ To switch, point the provider at your tenant and drop the local runtime:
   <RevTurbineProvider
     options={{
 -     tenantId: 'demo',
--     apiKey: 'local',
+-     publicKey: 'local',
 -     endpoint: 'http://localhost',
 +     tenantId: process.env.NEXT_PUBLIC_RT_TENANT_ID!,
-+     apiKey: process.env.NEXT_PUBLIC_RT_API_KEY!,
++     publicKey: process.env.NEXT_PUBLIC_REVTURBINE_PUBLIC_KEY!,
 +     endpoint: process.env.NEXT_PUBLIC_RT_ENDPOINT!,
 -     runtimeMode: RuntimeMode.LocalOnly,
 -     localRuntime: { playbook },

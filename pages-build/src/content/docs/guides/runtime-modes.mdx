@@ -41,7 +41,7 @@ In code: `runtimeMode: RuntimeMode.LocalOnly` (`local_only`) with `localRuntime:
 | Mode | Where the Playbook comes from | What RevTurbine provides | Required config |
 |---|---|---|---|
 | **Local** (`local_only`) | Bundled with your app | Nothing at runtime; optional anonymous adoption beacon | `localRuntime: { playbook }` |
-| **Hosted** (`revturbine_server`) | RevTurbine, cached locally and refreshed in the background | Playbook delivery and versioning; user state (billing, trials, exceptions, behavior); analytics | `tenantId`, `apiKey`, `endpoint` |
+| **Hosted** (`revturbine_server`) | RevTurbine, cached locally and refreshed in the background | Playbook delivery and versioning; user state (billing, trials, exceptions, behavior); analytics | `tenantId`, `publicKey`, `endpoint` |
 | **Hosted with custom endpoints** (`custom_endpoints`) | RevTurbine, cached locally as in hosted mode | Same as hosted; selected context and telemetry calls use your endpoints | Hosted config + `endpointOverrides` |
 
 ### Keep the Playbook intact
@@ -101,7 +101,7 @@ import { initRevTurbine, createServerRuntimeConfig } from '@revturbine/sdk';
 const session = await initRevTurbine(
   createServerRuntimeConfig({
     tenantId: 'tenant_abc',
-    apiKey: 'rtk_…', // publishable ingest key
+    publicKey: 'rtk_…', // public key — safe in the browser
   }),
 );
 ```
@@ -115,7 +115,7 @@ import { initRevTurbine, createCustomEndpointRuntimeConfig } from '@revturbine/s
 const session = await initRevTurbine(
   createCustomEndpointRuntimeConfig({
     tenantId: 'tenant_abc',
-    apiKey: 'rtk_…', // publishable ingest key
+    publicKey: 'rtk_…', // public key — safe in the browser
     endpointOverrides: {
       clientContext: 'https://proxy.example.com/revturbine/client-context',
       userContext: 'https://proxy.example.com/revturbine/user-context',
@@ -167,7 +167,7 @@ When you want dashboard-managed changes without deploying your app, switch the c
 -     runtimeMode: RuntimeMode.LocalOnly,
 -     localRuntime: { playbook },
 +     tenantId: process.env.REVTURBINE_TENANT_ID!,
-+     apiKey: process.env.REVTURBINE_API_KEY!,
++     publicKey: process.env.REVTURBINE_PUBLIC_KEY!,
 +     runtimeMode: RuntimeMode.Server,
       user: { id: 'user_123', plan_handle: 'starter' },
     }}

@@ -182,7 +182,7 @@ Everything above works forever in local mode, free. Hosted mode is where you sto
     ```tsx
     const options = useMemo(() => ({
       tenantId: 'tenant_abc',
-      apiKey: 'rtk_…',                // publishable ingest key — safe in the browser
+      publicKey: 'rtk_…',             // public key — safe in the browser
       user: { id: currentUser.id },   // plan_handle now comes from Stripe
       clientSession: () => fetch('/api/revturbine-session', { method: 'POST' }).then((r) => r.json()).then((j) => j.client_token),
     }), [currentUser.id]);

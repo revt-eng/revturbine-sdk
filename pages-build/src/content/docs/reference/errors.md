@@ -53,7 +53,7 @@ alias. The old name stated a verdict the result does not have (it denies).
 |---|---|---|
 | `provider_chain_exhausted` | All providers failed | Check API keys, endpoints, and network |
 | `config_fetch_failed` | Playbook could not be loaded | Verify `configProvider` or API endpoint |
-| `invalid_api_key` | API returned 401 | Check `apiKey` value and key status |
+| `invalid_api_key` | API returned 401 | Check the `publicKey` (browser) or `apiKey` (server) value and key status |
 | `tenant_not_found` | API returned 404 | Verify `tenantId` value |
 
 ## Interaction Errors

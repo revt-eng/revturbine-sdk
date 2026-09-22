@@ -40,7 +40,38 @@ also require a changelog entry.
 
 ---
 
-## Unreleased
+## 0.10.0
+
+### `publicKey` is the browser credential; `apiKey` is the server key
+
+**What changed.** The browser init option for the ingest (public) key is
+`publicKey` — on `initRevTurbine`, `<RevTurbineProvider options>`, and the
+headless init alike. Every browser bearer (ingest, launched-Playbook delivery,
+user context, branding, trial status) uses that one key. `apiKey` now means
+one thing everywhere: the secret **server key**, as it always did on
+`@revturbine/sdk/server` — pass it from backend code only (a route handler
+using `@revturbine/sdk/headless` keeps using `apiKey`). The name states what the
+credential is at the call site: a security scanner or an agent that meets
+`publicKey` in a bundle knows it belongs there, where `apiKey` reads as a leak.
+
+`apiKey` and `ingestPublicKey` are still accepted on a browser init as aliases
+of `publicKey` for one minor (precedence: `publicKey`, then `ingestPublicKey`,
+then `apiKey`). Using an alias without `publicKey` in a browser logs a one-time
+development warning naming `publicKey`; production builds are silent. On the
+browser `RevTurbineInitOptions` type, `apiKey` is now optional (it was required)
+and `ingestPublicKey` is `@deprecated`. Keyless local-only init is unchanged,
+and the plan 95 anonymous `sdk_init` beacon still fires only when no public key
+(`publicKey` or `ingestPublicKey`) was supplied.
+
+Ruling: Kent, 2026-09-21, devkit PR #808 (closed).
+
+**Landed in** `0.10.0`. **Fail-closed in** not yet — the aliases are removed one
+minor later; until then the old shape works and warns.
+
+**Proving test:** `web-sdk/public-key-option.test.ts` — precedence, the single
+bearer across ingest and control-plane fetches, the browser-only warning, and
+the keyless local-only init. Type-level: `web-sdk/init-options-exactness.test-d.ts`
+accepts `publicKey` and rejects the `publickey` casing typo.
 
 ### `endpoint` and `mode` are optional on `initRevTurbine` and `<RevTurbineProvider>`
 
@@ -53,7 +84,7 @@ diagnostics message), and every hosted integration used the same endpoint.
 Existing calls that pass them are unchanged. Local mode is unchanged (its
 placeholder defaults already applied). Additive, no version bump required.
 
-**Landed in** unreleased. **Fail-closed in** n/a — nothing old is rejected.
+**Landed in** `0.10.0`. **Fail-closed in** n/a — nothing old is rejected.
 
 **Proving test:** `web-sdk/public-init.test.ts` — "defaults endpoint and mode
 for a hosted init that omits them".

@@ -188,7 +188,7 @@ Set `test: true` at init when an SDK instance generates **test traffic** — a s
 ```ts
 const rt = initRevTurbine({
   tenantId: 'your-tenant',
-  ingestPublicKey: 'rtk_…', // publishable ingest key
+  publicKey: 'rtk_…', // public key — safe in the browser
   test: true, // this instance's events are test traffic
 });
 ```

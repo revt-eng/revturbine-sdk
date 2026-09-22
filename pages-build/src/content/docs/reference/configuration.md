@@ -14,7 +14,8 @@ Required in `revturbine_server` and `custom_endpoints` modes. In `local_only` mo
 | Field | Type | Description |
 |---|---|---|
 | `tenantId` | `string` | Your RevTurbine tenant identifier |
-| `apiKey` | `string` | In the browser, your publishable ingest key; on a server, your server token (both `rtk_…`, minted under **Settings → API tokens**). See [Production Readiness → Keys](/operate/production-readiness/#keys). |
+| `publicKey` | `string` | In the browser: your public key (`rtk_…`, type `public`, minted under **Settings → API tokens → Ingest keys**). Safe to ship in a bundle. See [Production Readiness → Keys](/operate/production-readiness/#keys). |
+| `apiKey` | `string` | On a server only: your server key (`rtk_…`, type `server`), the same option the server SDK takes. Never ship it to a browser. In the browser it is a deprecated alias of `publicKey` for one minor (`ingestPublicKey` likewise). |
 
 ### Runtime Configuration
 
@@ -76,7 +77,7 @@ code.**
 ```ts
 initRevTurbine({
   tenantId: 'tenant_abc',
-  apiKey: 'rtk_…', // publishable ingest key
+  publicKey: 'rtk_…', // public key — safe in the browser
   user: { id: 'user_123', plan_handle: 'free' },
   clientSession: () =>
     fetch('/api/revturbine-session', { method: 'POST' })
@@ -215,7 +216,7 @@ interface RevTurbineStorage {
 ```ts docs-check=false reason="required-field shape sketch, not a value"
 {
   tenantId: string;   // ✅ Required
-  apiKey: string;     // ✅ Required (publishable key in the browser, server token on a server)
+  publicKey: string;  // ✅ Required in the browser (public key); on a server pass the server key as `apiKey` instead
   endpoint?: string;  // defaults to 'https://revturbine.com/app'
   mode?: string;      // defaults to 'snippet' ('react' via the provider)
 }
@@ -229,7 +230,7 @@ interface RevTurbineStorage {
   localRuntime: {
     playbook: Playbook;   // ✅ Required
   };
-  // tenantId, apiKey, endpoint, mode — optional; no account or key is needed
+  // tenantId, publicKey, endpoint, mode — optional; no account or key is needed
 }
 ```
 
@@ -238,7 +239,7 @@ interface RevTurbineStorage {
 ```ts docs-check=false reason="required-field shape sketch, not a value"
 {
   tenantId: string;                   // ✅ Required
-  apiKey: string;                     // ✅ Required
+  publicKey: string;                  // ✅ Required (public key in the browser; `apiKey` = server key on a server)
   endpoint?: string;                  // defaults to 'https://revturbine.com/app'
   mode?: string;                      // defaults to 'snippet' ('react' via the provider)
   runtimeMode: 'custom_endpoints';   // ✅ Required

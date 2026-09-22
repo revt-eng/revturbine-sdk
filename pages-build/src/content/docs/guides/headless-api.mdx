@@ -57,7 +57,7 @@ const session = await initRevTurbine({
 // Hosted mode — swap the local runtime for your tenant credentials:
 // const session = await initRevTurbine({
 //   tenantId: 'tenant_abc',
-//   apiKey: 'rtk_…', // publishable ingest key
+//   publicKey: 'rtk_…', // public key — safe in the browser
 //   user: { id: 'user_123', plan_handle: 'pro' },
 // });
 
@@ -92,7 +92,7 @@ Creates a fully-initialized session. Handles SDK initialization, user identifica
 ```ts
 const session = await initRevTurbine({
   tenantId: 'tenant_abc',
-  apiKey: 'rtk_…', // publishable ingest key
+  publicKey: 'rtk_…', // public key — safe in the browser
   user: { id: 'user_123', plan_handle: 'pro' },
   runtimeMode: RuntimeMode.Server,
   bootstrapPlacements: [
@@ -109,7 +109,7 @@ Extends `RevTurbineInitInputOptions` with:
 |---|---|---|
 | `bootstrapPlacements` | `Array<{placement, userId?, contextMode?, overrides?, traits?, ttlMs?}>` | Placements to preload on creation |
 
-All standard init options apply: `tenantId`, `apiKey`, `endpoint`, `runtimeMode`, `user`, `localRuntime`, `provider`, `providerFallbacks`, etc.
+All standard init options apply: `tenantId`, `publicKey`, `endpoint`, `runtimeMode`, `user`, `localRuntime`, `provider`, `providerFallbacks`, etc.
 
 ## `SdkSession`
 
