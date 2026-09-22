@@ -42,6 +42,22 @@ also require a changelog entry.
 
 ## Unreleased
 
+### `endpoint` and `mode` are optional on `initRevTurbine` and `<RevTurbineProvider>`
+
+**What changed.** `RevTurbineInitOptions.endpoint` defaults to
+`https://revturbine.com/app` (`DEFAULT_HOSTED_ENDPOINT`, exported) and
+`RevTurbineInitOptions.mode` defaults to `'snippet'` (`DEFAULT_SDK_MODE`,
+exported); `<RevTurbineProvider>` passes `'react'` when the app does not set it.
+Both were required; `mode` only ever labelled telemetry (`page_view.mode` and a
+diagnostics message), and every hosted integration used the same endpoint.
+Existing calls that pass them are unchanged. Local mode is unchanged (its
+placeholder defaults already applied). Additive, no version bump required.
+
+**Landed in** unreleased. **Fail-closed in** n/a — nothing old is rejected.
+
+**Proving test:** `web-sdk/public-init.test.ts` — "defaults endpoint and mode
+for a hosted init that omits them".
+
 ### Reason-code compatibility verification
 
 Added a reviewed baseline for 27 entitlement and 21 placement reason values,
