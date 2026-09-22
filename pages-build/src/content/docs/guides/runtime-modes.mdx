@@ -102,8 +102,6 @@ const session = await initRevTurbine(
   createServerRuntimeConfig({
     tenantId: 'tenant_abc',
     apiKey: 'rtk_…', // publishable ingest key
-    endpoint: 'https://revturbine.com/app',
-    mode: 'react',
   }),
 );
 ```
@@ -118,8 +116,6 @@ const session = await initRevTurbine(
   createCustomEndpointRuntimeConfig({
     tenantId: 'tenant_abc',
     apiKey: 'rtk_…', // publishable ingest key
-    endpoint: 'https://revturbine.com/app',
-    mode: 'react',
     endpointOverrides: {
       clientContext: 'https://proxy.example.com/revturbine/client-context',
       userContext: 'https://proxy.example.com/revturbine/user-context',
@@ -172,7 +168,6 @@ When you want dashboard-managed changes without deploying your app, switch the c
 -     localRuntime: { playbook },
 +     tenantId: process.env.REVTURBINE_TENANT_ID!,
 +     apiKey: process.env.REVTURBINE_API_KEY!,
-+     endpoint: 'https://revturbine.com/app',
 +     runtimeMode: RuntimeMode.Server,
       user: { id: 'user_123', plan_handle: 'starter' },
     }}

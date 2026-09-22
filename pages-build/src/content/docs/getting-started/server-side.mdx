@@ -60,7 +60,6 @@ async function handleExport(req) {
     tenantId: process.env.REVTURBINE_TENANT_ID!,
     apiKey: process.env.REVTURBINE_API_KEY!,
     endpoint: process.env.REVTURBINE_ENDPOINT!,
-    mode: 'snippet',
     runtimeMode: RuntimeMode.Server,
     user,
   });
@@ -138,7 +137,6 @@ export async function POST(request: Request) {
     tenantId: process.env.REVTURBINE_TENANT_ID!,
     apiKey: process.env.REVTURBINE_API_KEY!,
     endpoint: process.env.REVTURBINE_ENDPOINT!,
-    mode: 'snippet',
     runtimeMode: RuntimeMode.Server,
     user: { id: user.id, plan_handle: user.planHandle },
   });

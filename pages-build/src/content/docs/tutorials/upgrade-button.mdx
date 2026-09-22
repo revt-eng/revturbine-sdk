@@ -93,7 +93,6 @@ An upgrade button in your navigation bar that:
            tenantId: 'demo',
            apiKey: 'local',
            endpoint: 'http://localhost',
-           mode: 'react',
            runtimeMode: RuntimeMode.LocalOnly,
            localRuntime: { playbook },
            // The button's CTA fires the action you configured; wire CTA
@@ -177,7 +176,6 @@ To switch, point the provider at your tenant and drop the local runtime:
 +     tenantId: process.env.NEXT_PUBLIC_RT_TENANT_ID!,
 +     apiKey: process.env.NEXT_PUBLIC_RT_API_KEY!,
 +     endpoint: process.env.NEXT_PUBLIC_RT_ENDPOINT!,
-      mode: 'react',
 -     runtimeMode: RuntimeMode.LocalOnly,
 -     localRuntime: { playbook },
 +     runtimeMode: RuntimeMode.Server,

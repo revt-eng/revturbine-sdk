@@ -156,7 +156,6 @@ async function handleExport(req, res) {
     tenantId: process.env.REVTURBINE_TENANT_ID!,
     apiKey: process.env.REVTURBINE_API_KEY!,
     endpoint: process.env.REVTURBINE_ENDPOINT!,
-    mode: 'snippet',
     runtimeMode: RuntimeMode.Server,
     user: { id: req.userId, plan_handle: req.user.planHandle },
   });
@@ -184,8 +183,6 @@ Everything above works forever in local mode, free. Hosted mode is where you sto
     const options = useMemo(() => ({
       tenantId: 'tenant_abc',
       apiKey: 'rtk_…',                // publishable ingest key — safe in the browser
-      endpoint: 'https://revturbine.com/app',
-      mode: 'react',
       user: { id: currentUser.id },   // plan_handle now comes from Stripe
       clientSession: () => fetch('/api/revturbine-session', { method: 'POST' }).then((r) => r.json()).then((j) => j.client_token),
     }), [currentUser.id]);

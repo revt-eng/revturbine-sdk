@@ -247,8 +247,6 @@ import { initRevTurbine } from '@revturbine/sdk';
 export const rt = initRevTurbine({
   tenantId: 'tenant_abc',
   apiKey: 'rtk_…', // publishable ingest key
-  endpoint: 'https://revturbine.com/app',
-  mode: 'snippet',
   user: { id: 'user_123', plan_handle: 'free' },
   clientSession: () =>
     fetch('/api/revturbine/client-session', { method: 'POST' })

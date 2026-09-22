@@ -73,7 +73,6 @@ async function handleExport(req, res) {
     tenantId: process.env.REVTURBINE_TENANT_ID!,
     apiKey: process.env.REVTURBINE_API_KEY!,
     endpoint: process.env.REVTURBINE_ENDPOINT!,
-    mode: 'snippet',
     runtimeMode: RuntimeMode.Server,
     user: { id: req.userId, plan_handle: req.user.planHandle },
   });

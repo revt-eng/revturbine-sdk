@@ -9,20 +9,20 @@ Complete reference for `RevTurbineInitOptions` and related configuration types.
 
 ### Required Fields
 
-Required in `revturbine_server` and `custom_endpoints` modes. In `local_only` mode all four are optional — `initRevTurbine({ runtimeMode: 'local_only', localRuntime: { playbook } })` is a complete configuration.
+Required in `revturbine_server` and `custom_endpoints` modes. In `local_only` mode both are optional — `initRevTurbine({ runtimeMode: 'local_only', localRuntime: { playbook } })` is a complete configuration.
 
 | Field | Type | Description |
 |---|---|---|
 | `tenantId` | `string` | Your RevTurbine tenant identifier |
 | `apiKey` | `string` | In the browser, your publishable ingest key; on a server, your server token (both `rtk_…`, minted under **Settings → API tokens**). See [Production Readiness → Keys](/operate/production-readiness/#keys). |
-| `endpoint` | `string` | RevTurbine API endpoint URL |
-| `mode` | `'react' \| 'snippet' \| 'iframe'` | SDK integration mode |
 
 ### Runtime Configuration
 
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `runtimeMode` | `'revturbine_server' \| 'custom_endpoints' \| 'local_only'` | `'revturbine_server'` | How the SDK resolves decisions |
+| `endpoint` | `string` | `'https://revturbine.com/app'` | RevTurbine control-plane URL; omit it for the hosted service |
+| `mode` | `'react' \| 'snippet' \| 'iframe'` | `'snippet'` (`'react'` when `<RevTurbineProvider>` initializes the SDK) | Integration label carried in telemetry; no decision depends on it |
 | `endpointOverrides` | `Partial<RevTurbineEndpointOverrides>` | — | Route the SDK's non-decision calls through your own endpoints (`custom_endpoints` mode) |
 | `configProvider` | `RevTurbineConfigProvider` | — | Custom provider for Playbook |
 | `localRuntime` | `RevTurbineLocalRuntimeOptions` | — | Local-only mode configuration |
@@ -77,7 +77,6 @@ code.**
 initRevTurbine({
   tenantId: 'tenant_abc',
   apiKey: 'rtk_…', // publishable ingest key
-  endpoint: 'https://revturbine.com/app',
   user: { id: 'user_123', plan_handle: 'free' },
   clientSession: () =>
     fetch('/api/revturbine-session', { method: 'POST' })
@@ -217,8 +216,8 @@ interface RevTurbineStorage {
 {
   tenantId: string;   // ✅ Required
   apiKey: string;     // ✅ Required (publishable key in the browser, server token on a server)
-  endpoint: string;   // ✅ Required
-  mode: string;       // ✅ Required
+  endpoint?: string;  // defaults to 'https://revturbine.com/app'
+  mode?: string;      // defaults to 'snippet' ('react' via the provider)
 }
 ```
 
@@ -240,8 +239,8 @@ interface RevTurbineStorage {
 {
   tenantId: string;                   // ✅ Required
   apiKey: string;                     // ✅ Required
-  endpoint: string;                   // ✅ Required
-  mode: string;                       // ✅ Required
+  endpoint?: string;                  // defaults to 'https://revturbine.com/app'
+  mode?: string;                      // defaults to 'snippet' ('react' via the provider)
   runtimeMode: 'custom_endpoints';   // ✅ Required
   endpointOverrides: {               // ✅ At least one override required
     clientContext?: string;
