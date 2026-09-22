@@ -37,17 +37,22 @@ const playbook = {} as ConfigArtifact;
 /* ── Accepted shapes ──────────────────────────────────────────────────── */
 
 // Local-only minimal: `localRuntime.playbook` present, transport omitted.
-// @revturbine-graph gref:cd6cca9faa8cfe6e5362
 initRevTurbine({ localRuntime: { playbook } });
 
 // The same options built in a VARIABLE rather than inline. This is the shape
 // excess-property checking never saw, and the reason `ExactInitOptions` exists.
 const localOptions = { tenantId: 't_1', localRuntime: { playbook } };
-// @revturbine-graph gref:16e7b2d343c17d5fcf38
 initRevTurbine(localOptions);
 
-// Full transport options.
-// @revturbine-graph gref:abe1b91c618f3d7361f3
+// Full transport options — `publicKey` is the browser credential (plan 257).
+initRevTurbine({
+  tenantId: 't_1',
+  publicKey: 'rtk_test',
+  endpoint: 'https://edge.example.com',
+  mode: 'react',
+});
+
+// The deprecated aliases still type-check for one minor.
 initRevTurbine({
   tenantId: 't_1',
   apiKey: 'sk_test',
@@ -55,17 +60,18 @@ initRevTurbine({
   mode: 'react',
 });
 
+const withPublicKeyTypo = { tenantId: 't_1', localRuntime: { playbook }, publickey: 'rtk_test' };
+// @ts-expect-error - `publickey` is a casing typo for `publicKey`.
+initRevTurbine(withPublicKeyTypo);
+
 // Keys that live on only ONE union branch must still be accepted — `keyof` over
 // a union yields the INTERSECTION of its members' keys, so a naive
 // `Exact<RevTurbineInitInputOptions, T>` would have rejected both of these.
-// @revturbine-graph gref:bda2c6b46728bf0e6cd7
 initRevTurbine({ localRuntime: { playbook } });
-// @revturbine-graph gref:57ce51a6854365d688ae
 initRevTurbine({ tenantId: 't_1', localRuntime: { playbook }, provider: undefined });
 
 /* ── Rejected: an unrecognized key ────────────────────────────────────── */
 
-// @revturbine-graph gref:42f726b11999558f43ed
 initRevTurbine({
   tenantId: 't_1',
   localRuntime: { playbook },
@@ -81,25 +87,21 @@ initRevTurbine({
 const withTypo = { tenantId: 't_1', localRuntime: { playbook }, apikey: 'sk_test' };
 // @ts-expect-error - `apikey` is a casing typo for `apiKey`. Built in a
 // variable, so excess-property checking never fired on it.
-// @revturbine-graph gref:64874c2a3544b946cd60
 initRevTurbine(withTypo);
 
 const withStaleOption = { tenantId: 't_1', localRuntime: { playbook }, exportedConfig: playbook };
 // @ts-expect-error - `exportedConfig` belongs inside `localRuntime`, not at the
 // top level. A plausible mistake, and previously a silent one.
-// @revturbine-graph gref:a700fc2c9ada5295c6e6
 initRevTurbine(withStaleOption);
 
 /* ── Rejected: a missing required key ─────────────────────────────────── */
 
 // @ts-expect-error - neither branch is satisfiable: no `localRuntime`, so the
 // local-only branch does not apply, and the transport branch needs `tenantId`.
-// @revturbine-graph gref:5244c8a2b4cb00e919b4
 initRevTurbine({});
 
 // @ts-expect-error - `localRuntime` without a playbook (or the deprecated
 // `exportedConfig` alias) satisfies neither arm of its inner union.
-// @revturbine-graph gref:0f52168f2d357b3e2ec9
 initRevTurbine({ localRuntime: {} });
 
 /* ── The React provider enforces the same contract ────────────────────── */

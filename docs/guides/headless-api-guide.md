@@ -28,9 +28,7 @@ import { initRevTurbine } from '@revt-eng/sdk/headless';
 
 const session = await initRevTurbine({
   tenantId: 'tenant_abc',
-  apiKey: 'rt_live_xxx',
-  endpoint: 'https://api.revturbine.io',
-  mode: 'snippet',
+  publicKey: 'rtk_…',
   user: { id: 'user_123', plan_handle: 'pro' },
 });
 
@@ -61,8 +59,7 @@ Creates a fully-initialized session. Handles:
 ```ts
 const session = await initRevTurbine({
   tenantId: 'tenant_abc',
-  apiKey: 'rt_live_xxx',
-  endpoint: 'https://api.revturbine.io',
+  publicKey: 'rtk_…',
   user: { id: 'user_123', plan_handle: 'pro' },
   runtimeMode: 'revturbine_server',
   bootstrapPlacements: [
@@ -79,7 +76,7 @@ Extends `RevTurbineInitInputOptions` with:
 |---|---|---|
 | `bootstrapPlacements` | `Array<{placement, userId?, contextMode?, overrides?, traits?, ttlMs?}>` | Placements to preload on creation |
 
-All standard init options apply: `tenantId`, `apiKey`, `endpoint`, `runtimeMode`, `user`, `localRuntime`, `provider`, `providerFallbacks`, etc.
+All standard init options apply: `tenantId`, `publicKey`, `endpoint`, `runtimeMode`, `user`, `localRuntime`, `provider`, `providerFallbacks`, etc.
 
 ## `SdkSession`
 

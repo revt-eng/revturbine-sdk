@@ -28,12 +28,10 @@ function localSdk(state: DemoState, store: StoreOpts = {}): RevTurbineCustomerSd
   const options = createLocalRuntimeConfig({
     tenantId: 'prism',
     apiKey: 'local',
-    endpoint: 'http://localhost',
-    mode: 'snippet',
     ...(store.persistentStorage ? { persistentStorage: store.persistentStorage } : {}),
     user: toUserContext(PRISM_CONFIG, state),
     localRuntime: {
-      exportedConfig: PRISM_CONFIG,
+      playbook: PRISM_CONFIG,
       // Hydrate trial status synchronously at construction.
       initialData: { trialStatus: toTrialStatus(state) },
       resolvers: { getTrialStatus: () => toTrialStatus(state) },

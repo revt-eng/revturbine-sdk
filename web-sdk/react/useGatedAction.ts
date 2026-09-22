@@ -1,4 +1,3 @@
-// @revturbine-graph gref:9f1b61f37b7e79c8d48e
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
@@ -37,7 +36,6 @@ export function useGatedAction<A extends unknown[], R>(
   options?: TrackOptions,
 ): GatedAction<A, R> {
   const { sdk } = useRevTurbine();
-  // @revturbine-graph gref:d88c0c36d310248a8c9a
   const track = useTrack();
   const [isRunning, setIsRunning] = useState(false);
   const [denied, setDenied] = useState(false);
@@ -66,14 +64,13 @@ export function useGatedAction<A extends unknown[], R>(
       const result = await sdk.gate(
         action,
         async (): Promise<R> => {
-          // @revturbine-graph gref:16bc10ae1f90d2642dc9
+          // @revturbine-graph source:revturbine-sdk-internal:web-sdk/react/useGatedAction.ts#useGatedAction
           track(`${action}_started`, {}, options);
           try {
             const value = await fn(...args);
             track(`${action}_completed`, {}, options);
             return value;
           } catch (err) {
-            // @revturbine-graph gref:edf6a5b38dc6a2cfd521
             const category = categorizeActionError(err);
             setError(category);
             track(`${action}_failed`, { error_category: category }, options);

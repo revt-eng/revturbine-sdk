@@ -22,7 +22,7 @@ Do you want RevTurbine-hosted APIs as your runtime source of truth?
 
 | Mode | Best for | Network dependency | Storage behavior | Required config |
 |---|---|---|---|---|
-| `revturbine_server` | Standard production integration | RevTurbine edge endpoints | SDK cache and interaction state | `tenantId`, `apiKey`, `endpoint`, `mode` |
+| `revturbine_server` | Standard production integration | RevTurbine edge endpoints | SDK cache and interaction state | `tenantId`, `publicKey`, `endpoint`, `mode` |
 | `custom_endpoints` | Customer proxy/service boundaries | Customer endpoints | SDK cache and interaction state | Base config + `endpointOverrides` |
 | `local_only` | Demo/offline/local simulation | None | SDK local runtime state in localStorage | Base config + `localRuntime` |
 
@@ -59,9 +59,7 @@ import { initRevTurbine, createServerRuntimeConfig } from '@revt-eng/sdk';
 const sdk = initRevTurbine(
   createServerRuntimeConfig({
     tenantId: 'tenant_abc',
-    apiKey: 'rt_live_xxx',
-    endpoint: 'https://api.revturbine.io',
-    mode: 'react',
+    publicKey: 'rtk_…',
   }),
 );
 ```
@@ -74,9 +72,7 @@ import { initRevTurbine, createServerRuntimeConfig } from '@revt-eng/sdk';
 const sdk = initRevTurbine({
   ...createServerRuntimeConfig({
     tenantId: 'tenant_abc',
-    apiKey: 'rt_live_xxx',
-    endpoint: 'https://api.revturbine.io',
-    mode: 'react',
+    publicKey: 'rtk_…',
   }),
   provider: primaryProvider,
   providerFallbacks: [fallbackProviderA, fallbackProviderB],
@@ -92,9 +88,8 @@ import { initRevTurbine, createCustomEndpointRuntimeConfig } from '@revt-eng/sdk
 const sdk = initRevTurbine(
   createCustomEndpointRuntimeConfig({
     tenantId: 'tenant_abc',
-    apiKey: 'rt_live_xxx',
+    publicKey: 'rtk_…',
     endpoint: 'https://proxy.example.com',
-    mode: 'react',
     endpointOverrides: {
       decideContext: '/decisioning/decide-context',
       bootstrapContext: '/decisioning/bootstrap',
@@ -114,9 +109,8 @@ import { initRevTurbine, createLocalRuntimeConfig } from '@revt-eng/sdk';
 const sdk = initRevTurbine(
   createLocalRuntimeConfig({
     tenantId: 'tenant_local',
-    apiKey: 'local',
+    publicKey: 'local',
     endpoint: 'http://localhost',
-    mode: 'react',
     localRuntime: {
       storageKey: 'my-app:revturbine-local-runtime',
       initialData: {

@@ -1,4 +1,3 @@
-// @revturbine-graph gref:4fa6eb3326e9833946e9
 /**
  * Headless SDK controllers — framework-agnostic orchestration.
  *
@@ -12,7 +11,7 @@
  *
  * const session = await initRevTurbine({
  *   tenantId: 'tenant_abc',
- *   apiKey: 'rt_live_xxx',
+ *   publicKey: 'rtk_…',
  *   endpoint: 'https://edge.example.com',
  *   mode: 'snippet',
  *   user: { id: 'user_123', plan_handle: 'pro' },
@@ -55,7 +54,12 @@ import type {
   JsonObject,
   SdkEventProperties,
 } from './customer-side';
-import { initRevTurbine as initRevTurbineCore, resolveLocalPlaybook } from './customer-side';
+import {
+  DEFAULT_HOSTED_ENDPOINT,
+  initRevTurbine as initRevTurbineCore,
+  resolveBrowserPublicKey,
+  resolveLocalPlaybook,
+} from './customer-side';
 import { exposureManager } from './telemetry';
 import type { ExposureBasis } from './telemetry';
 import type { RevTurbineTheme, RevTurbineThemeInput } from './theme/types';
@@ -922,7 +926,7 @@ export type SdkSessionOptions = RevTurbineInitInputOptions & {
  * ```ts
  * const session = await initRevTurbine({
  *   tenantId: 'tenant_abc',
- *   apiKey: 'rt_live_xxx',
+ *   publicKey: 'rtk_…',
  *   endpoint: 'https://edge.example.com',
  *   mode: 'snippet',
  *   user: { id: 'user_123', plan_handle: 'pro' },
@@ -1152,7 +1156,7 @@ export class SdkSession {
  * ```ts
  * const session = await initRevTurbine({
  *   tenantId: 'tenant_abc',
- *   apiKey: 'rt_live_xxx',
+ *   publicKey: 'rtk_…',
  *   endpoint: 'https://edge.example.com',
  *   mode: 'snippet',
  *   user: { id: 'user_123', plan_handle: 'pro' },
@@ -1167,7 +1171,6 @@ export async function initRevTurbine<TUser extends RevTurbineUserContext = RevTu
 ): Promise<SdkSession> {
   const { bootstrapPlacements, ...rest } = options;
   const initOptions = rest as RevTurbineInitInputOptions;
-  // @revturbine-graph gref:95de6eeb0152a1a66d79
   const sdk = initRevTurbineCore(initOptions);
 
   // Identify user if provided
@@ -1179,7 +1182,6 @@ export async function initRevTurbine<TUser extends RevTurbineUserContext = RevTu
 
   // Resolve theme
   let theme: RevTurbineTheme = DEFAULT_THEME;
-  // @revturbine-graph gref:5fc6878eeb45d0863387
   const playbook = resolveLocalPlaybook(initOptions.localRuntime);
   const configTheme = playbook?.theme;
 
@@ -1189,8 +1191,8 @@ export async function initRevTurbine<TUser extends RevTurbineUserContext = RevTu
     theme = await loadTheme(
       {
         tenantId: initOptions.tenantId ?? 'local',
-        endpoint: initOptions.endpoint ?? 'https://api.revturbine.local',
-        apiKey: initOptions.apiKey ?? 'local-only',
+        endpoint: initOptions.endpoint ?? (playbook ? 'https://api.revturbine.local' : DEFAULT_HOSTED_ENDPOINT),
+        apiKey: resolveBrowserPublicKey(initOptions) ?? 'local-only',
       },
     );
   }

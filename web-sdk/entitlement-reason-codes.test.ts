@@ -10,52 +10,24 @@
  * that table wrote dead branches — and, worse, believed a failed check would
  * grant.
  *
- * Two directions are asserted, and both matter:
+ * Documentation is checked against the reviewed behavioral reason inventory.
  *
  *  1. **Docs ⊆ emitted.** Every backticked `snake_case` code in an
  *     entitlement reason table resolves to a code the SDK can produce.
- *  2. **Emitted ⊆ real.** Every member of the canonical set appears literally
- *     in the shipping sources (`customer-side.ts` or the `@revt-eng/core`
- *     evaluator). Without this half the canonical list is just a second
- *     fiction that happens to agree with the first — a rename in the SDK
- *     would leave both wrong and both green.
+ *  2. `reason-contract.test.ts` requires each inventory member to be emitted by
+ *     live SDK/core fixtures. Literal presence in comments or dead code no
+ *     longer counts as proof that a protected reason survives.
  */
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import reasonContract from '../tests/reason-contract.json';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
 
-/**
- * Every entitlement `reason` the SDK can return.
- *
- * Rule outcomes come from the `@revt-eng/core` evaluator; infrastructure
- * denials from `customer-side.ts`. The two limit codes additionally carry an
- * enforcement suffix (`_block_with_upsell` / `_degraded` / `_overage`), generated
- * rather than written out, so the suffixes are listed separately.
- */
-const EMITTED_BASE = [
-  // Rule outcomes (core evaluator).
-  'no_matching_entitlement_rule',
-  'feature_not_enabled_for_plan',
-  'usage_limit_reached',
-  'credit_balance_exhausted',
-  'granted_by_reverse_trial',
-  // Infrastructure denials (web-sdk).
-  'config_unavailable',
-  'entitlement_not_in_playbook',
-  'sdk_disabled_provider_failure',
-] as const;
-
-const ENFORCEMENT_SUFFIXES = ['_block_with_upsell', '_degraded', '_overage'] as const;
-const SUFFIXABLE = ['usage_limit_reached', 'credit_balance_exhausted'] as const;
-
-const EMITTED = new Set<string>([
-  ...EMITTED_BASE,
-  ...SUFFIXABLE.flatMap((base) => ENFORCEMENT_SUFFIXES.map((s) => `${base}${s}`)),
-]);
+const EMITTED = new Set<string>(reasonContract.entitlement);
 
 /** Codes that were documented but never existed. Named so they stay dead. */
 const RETIRED_OR_FICTIONAL = [
@@ -137,23 +109,6 @@ describe('entitlement reason codes (plan 191 AC-6)', () => {
       .filter((c) => !(c === 'local_runtime_default_allow' && /entitlement_not_in_playbook/.test(md)));
 
     expect(unknown, `${page} documents reason code(s) the SDK never emits`).toEqual([]);
-  });
-
-  it('every canonical code appears in the shipping sources', () => {
-    // The core evaluator is code-split across dist chunks, so scan the whole
-    // build rather than guessing an entry point — a wrong path here would
-    // make this half pass by reading nothing.
-    const coreDist = resolve(REPO, 'node_modules/@revt-eng/core/dist');
-    const coreFiles = readdirSync(coreDist).filter((f) => f.endsWith('.js'));
-    expect(coreFiles.length, 'no @revt-eng/core dist files found to scan').toBeGreaterThan(0);
-
-    const sources = [
-      readFileSync(join(REPO, 'web-sdk/customer-side.ts'), 'utf8'),
-      ...coreFiles.map((f) => readFileSync(join(coreDist, f), 'utf8')),
-    ].join('\n');
-
-    const missing = EMITTED_BASE.filter((code) => !sources.includes(code));
-    expect(missing, 'canonical reason code(s) not found in any shipping source').toEqual([]);
   });
 
   it('the fictional and renamed codes are gone from the docs', () => {

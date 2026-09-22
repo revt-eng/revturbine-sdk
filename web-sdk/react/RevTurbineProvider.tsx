@@ -1,9 +1,9 @@
-// @revturbine-graph gref:5a83b1a504afe2261b24
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   initRevTurbine,
+  resolveBrowserPublicKey,
   type RevTurbineCustomerSdk,
   type RevTurbineInitInputOptions,
   type RevTurbinePlacementConfig,
@@ -100,7 +100,7 @@ const EMPTY_BOOTSTRAP: BootstrapPlacementInput[] = [];
  * @example
  * ```tsx
  * <RevTurbineProvider
- *   options={{ tenantId: 'abc', apiKey: 'key', endpoint: '/api', mode: 'react', user: { id: 'user_123' } }}
+ *   options={{ tenantId: 'abc', publicKey: 'rtk_…', endpoint: '/api', mode: 'react', user: { id: 'user_123' } }}
  * >
  *   <App />
  * </RevTurbineProvider>
@@ -211,8 +211,9 @@ export function RevTurbineProvider<
         // `initRevTurbine`'s own generic would ask TypeScript to prove a
         // composition of two independent exactness mappings, which it cannot.
         // The assignment still type-checks, so nothing is being suppressed.
-        const initOptions: RevTurbineInitInputOptions = options;
-        // @revturbine-graph gref:9e9559ef2ce236073d15
+        // The provider is the React integration, so it labels telemetry as
+        // such unless the app says otherwise. `mode` changes no behavior.
+        const initOptions: RevTurbineInitInputOptions = { ...options, mode: options.mode ?? 'react' };
         nextSdk = initRevTurbine(initOptions);
 
         // The SDK constructor already merges options.user into userContext.
@@ -279,7 +280,7 @@ export function RevTurbineProvider<
             {
               tenantId: options.tenantId ?? 'local',
               endpoint: options.endpoint ?? 'https://api.revturbine.local',
-              apiKey: options.apiKey ?? 'local-only',
+              apiKey: resolveBrowserPublicKey(options) ?? 'local-only',
               base: baseTheme,
               // Feed the raw override into the SDK's branding-API rung so
               // `getBranding()` and `useRevTurbineTheme()` resolve from the

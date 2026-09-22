@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.315/rust/revturbine_types.rs
+//   published/v0.1.322/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -4234,6 +4234,18 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogCatalogVersion {
 #[doc = "      \"maxLength\": 500,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"fact_kind\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsFactKind\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"family\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"billing\","]
+#[doc = "        \"behavioral\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"grain\": {"]
 #[doc = "      \"type\": \"array\","]
 #[doc = "      \"items\": {"]
@@ -4259,6 +4271,33 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogCatalogVersion {
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"livemode_qualified\": {"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"materialization\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"mode\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"mode\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"raw\","]
+#[doc = "            \"rollup\","]
+#[doc = "            \"logical\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"rollup_grain\": {"]
+#[doc = "          \"$ref\": \"#/$defs/AnalyticsTimeGrain\","]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"metrics\": {"]
 #[doc = "      \"type\": \"array\","]
 #[doc = "      \"items\": {"]
@@ -4269,10 +4308,24 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogCatalogVersion {
 #[doc = "      \"minItems\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"primary_key\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"string\","]
+#[doc = "        \"maxLength\": 120,"]
+#[doc = "        \"minLength\": 1"]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 12,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"primary_time_dimension\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 120,"]
 #[doc = "      \"pattern\": \"^[a-z][a-z0-9_]*(\\\\.[a-z][a-z0-9_]*)+$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"producer\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsConceptProducer\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"query_families\": {"]
@@ -4326,12 +4379,24 @@ pub struct AnalyticsCatalogConcept {
     pub dimensions: ::std::vec::Vec<AnalyticsCatalogConceptDimensionsItem>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub do_not_use_for: ::std::option::Option<AnalyticsCatalogConceptDoNotUseFor>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub fact_kind: ::std::option::Option<AnalyticsFactKind>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub family: ::std::option::Option<AnalyticsCatalogConceptFamily>,
     pub grain: ::std::vec::Vec<AnalyticsCatalogConceptGrainItem>,
     pub historical_mode: AnalyticsHistoricalMode,
     pub id: AnalyticsCatalogConceptId,
     pub label: AnalyticsCatalogConceptLabel,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub livemode_qualified: ::std::option::Option<bool>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub materialization: ::std::option::Option<AnalyticsCatalogConceptMaterialization>,
     pub metrics: ::std::vec::Vec<AnalyticsCatalogConceptMetricsItem>,
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub primary_key: ::std::vec::Vec<AnalyticsCatalogConceptPrimaryKeyItem>,
     pub primary_time_dimension: AnalyticsCatalogConceptPrimaryTimeDimension,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub producer: ::std::option::Option<AnalyticsConceptProducer>,
     pub query_families: ::std::vec::Vec<AnalyticsQueryFamily>,
     pub source_scope: AnalyticsSourceScope,
     pub version: ::std::num::NonZeroU64,
@@ -4709,6 +4774,79 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogConceptDoNotUseFor {
             })
     }
 }
+#[doc = "`AnalyticsCatalogConceptFamily`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"billing\","]
+#[doc = "    \"behavioral\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AnalyticsCatalogConceptFamily {
+    #[serde(rename = "billing")]
+    Billing,
+    #[serde(rename = "behavioral")]
+    Behavioral,
+}
+impl ::std::fmt::Display for AnalyticsCatalogConceptFamily {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Billing => f.write_str("billing"),
+            Self::Behavioral => f.write_str("behavioral"),
+        }
+    }
+}
+impl ::std::str::FromStr for AnalyticsCatalogConceptFamily {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "billing" => Ok(Self::Billing),
+            "behavioral" => Ok(Self::Behavioral),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCatalogConceptFamily {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCatalogConceptFamily {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogConceptFamily {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 #[doc = "`AnalyticsCatalogConceptGrainItem`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -4929,6 +5067,123 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogConceptLabel {
             })
     }
 }
+#[doc = "`AnalyticsCatalogConceptMaterialization`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"mode\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"mode\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"raw\","]
+#[doc = "        \"rollup\","]
+#[doc = "        \"logical\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"rollup_grain\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsTimeGrain\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticsCatalogConceptMaterialization {
+    pub mode: AnalyticsCatalogConceptMaterializationMode,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub rollup_grain: ::std::option::Option<AnalyticsTimeGrain>,
+}
+#[doc = "`AnalyticsCatalogConceptMaterializationMode`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"raw\","]
+#[doc = "    \"rollup\","]
+#[doc = "    \"logical\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AnalyticsCatalogConceptMaterializationMode {
+    #[serde(rename = "raw")]
+    Raw,
+    #[serde(rename = "rollup")]
+    Rollup,
+    #[serde(rename = "logical")]
+    Logical,
+}
+impl ::std::fmt::Display for AnalyticsCatalogConceptMaterializationMode {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Raw => f.write_str("raw"),
+            Self::Rollup => f.write_str("rollup"),
+            Self::Logical => f.write_str("logical"),
+        }
+    }
+}
+impl ::std::str::FromStr for AnalyticsCatalogConceptMaterializationMode {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "raw" => Ok(Self::Raw),
+            "rollup" => Ok(Self::Rollup),
+            "logical" => Ok(Self::Logical),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCatalogConceptMaterializationMode {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for AnalyticsCatalogConceptMaterializationMode
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogConceptMaterializationMode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 #[doc = "`AnalyticsCatalogConceptMetricsItem`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -4994,6 +5249,78 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogConceptM
     }
 }
 impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogConceptMetricsItem {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsCatalogConceptPrimaryKeyItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsCatalogConceptPrimaryKeyItem(::std::string::String);
+impl ::std::ops::Deref for AnalyticsCatalogConceptPrimaryKeyItem {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsCatalogConceptPrimaryKeyItem> for ::std::string::String {
+    fn from(value: AnalyticsCatalogConceptPrimaryKeyItem) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsCatalogConceptPrimaryKeyItem {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCatalogConceptPrimaryKeyItem {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCatalogConceptPrimaryKeyItem {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogConceptPrimaryKeyItem {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogConceptPrimaryKeyItem {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -5855,6 +6182,10 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogDimensionWhenToUse {
 #[doc = "      \"$ref\": \"#/$defs/AnalyticsMetricAggregationSemantics\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"catalog_status\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsCatalogStatus\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"denominator_metric\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 120,"]
@@ -5899,6 +6230,10 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogDimensionWhenToUse {
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"layer\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsMetricLayer\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"numerator_metric\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 120,"]
@@ -5939,6 +6274,8 @@ pub struct AnalyticsCatalogMetric {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub aggregation_semantics: ::std::option::Option<AnalyticsMetricAggregationSemantics>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub catalog_status: ::std::option::Option<AnalyticsCatalogStatus>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub denominator_metric: ::std::option::Option<AnalyticsCatalogMetricDenominatorMetric>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub deprecation: ::std::option::Option<AnalyticsCatalogDeprecation>,
@@ -5954,6 +6291,8 @@ pub struct AnalyticsCatalogMetric {
     pub format: ::std::option::Option<AnalyticsFormatSpec>,
     pub id: AnalyticsCatalogMetricId,
     pub label: AnalyticsCatalogMetricLabel,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub layer: ::std::option::Option<AnalyticsMetricLayer>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub numerator_metric: ::std::option::Option<AnalyticsCatalogMetricNumeratorMetric>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -6424,6 +6763,9 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogMetricNumeratorMetric {
 #[doc = "    \"aggregation_semantics\": {"]
 #[doc = "      \"$ref\": \"#/$defs/AnalyticsMetricAggregationSemantics\""]
 #[doc = "    },"]
+#[doc = "    \"catalog_status\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsCatalogStatus\""]
+#[doc = "    },"]
 #[doc = "    \"denominator_metric\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 120,"]
@@ -6459,6 +6801,9 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsCatalogMetricNumeratorMetric {
 #[doc = "      \"maxLength\": 120,"]
 #[doc = "      \"minLength\": 1"]
 #[doc = "    },"]
+#[doc = "    \"layer\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsMetricLayer\""]
+#[doc = "    },"]
 #[doc = "    \"numerator_metric\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 120,"]
@@ -6491,6 +6836,8 @@ pub struct AnalyticsCatalogMetricValidated {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub aggregation_semantics: ::std::option::Option<AnalyticsMetricAggregationSemantics>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub catalog_status: ::std::option::Option<AnalyticsCatalogStatus>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub denominator_metric: ::std::option::Option<AnalyticsCatalogMetricValidatedDenominatorMetric>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub deprecation: ::std::option::Option<AnalyticsCatalogDeprecation>,
@@ -6506,6 +6853,8 @@ pub struct AnalyticsCatalogMetricValidated {
     pub format: ::std::option::Option<AnalyticsFormatSpec>,
     pub id: AnalyticsCatalogMetricValidatedId,
     pub label: AnalyticsCatalogMetricValidatedLabel,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub layer: ::std::option::Option<AnalyticsMetricLayer>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub numerator_metric: ::std::option::Option<AnalyticsCatalogMetricValidatedNumeratorMetric>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -7657,6 +8006,95 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogSource {
         value.parse()
     }
 }
+#[doc = "`AnalyticsCatalogStatus`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"declared\","]
+#[doc = "    \"bound\","]
+#[doc = "    \"validated\","]
+#[doc = "    \"tested\","]
+#[doc = "    \"unavailable\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AnalyticsCatalogStatus {
+    #[serde(rename = "declared")]
+    Declared,
+    #[serde(rename = "bound")]
+    Bound,
+    #[serde(rename = "validated")]
+    Validated,
+    #[serde(rename = "tested")]
+    Tested,
+    #[serde(rename = "unavailable")]
+    Unavailable,
+}
+impl ::std::fmt::Display for AnalyticsCatalogStatus {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Declared => f.write_str("declared"),
+            Self::Bound => f.write_str("bound"),
+            Self::Validated => f.write_str("validated"),
+            Self::Tested => f.write_str("tested"),
+            Self::Unavailable => f.write_str("unavailable"),
+        }
+    }
+}
+impl ::std::str::FromStr for AnalyticsCatalogStatus {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "declared" => Ok(Self::Declared),
+            "bound" => Ok(Self::Bound),
+            "validated" => Ok(Self::Validated),
+            "tested" => Ok(Self::Tested),
+            "unavailable" => Ok(Self::Unavailable),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsCatalogStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsCatalogStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsCatalogStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 #[doc = "`AnalyticsClassification`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -8753,6 +9191,85 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsCompileResolutionRule {
             })
     }
 }
+#[doc = "`AnalyticsConceptProducer`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"platform\","]
+#[doc = "    \"customer_authored\","]
+#[doc = "    \"simulation\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AnalyticsConceptProducer {
+    #[serde(rename = "platform")]
+    Platform,
+    #[serde(rename = "customer_authored")]
+    CustomerAuthored,
+    #[serde(rename = "simulation")]
+    Simulation,
+}
+impl ::std::fmt::Display for AnalyticsConceptProducer {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Platform => f.write_str("platform"),
+            Self::CustomerAuthored => f.write_str("customer_authored"),
+            Self::Simulation => f.write_str("simulation"),
+        }
+    }
+}
+impl ::std::str::FromStr for AnalyticsConceptProducer {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "platform" => Ok(Self::Platform),
+            "customer_authored" => Ok(Self::CustomerAuthored),
+            "simulation" => Ok(Self::Simulation),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsConceptProducer {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsConceptProducer {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsConceptProducer {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 #[doc = "`AnalyticsCoverage`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -9075,6 +9592,19 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsDimensionCapabi
 #[doc = "    \"source\""]
 #[doc = "  ],"]
 #[doc = "  \"properties\": {"]
+#[doc = "    \"anchor\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsGroundingAnchor\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"blocker\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 400,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"catalog_status\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsCatalogStatus\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"kind\": {"]
 #[doc = "      \"$ref\": \"#/$defs/AnalyticsDimensionGroundingKind\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
@@ -9084,10 +9614,35 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsDimensionCapabi
 #[doc = "      \"maxLength\": 400,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"partitions\": {"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"selection\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"environment\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 120,"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"product\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 120,"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"source\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 200,"]
 #[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"v1\": {"]
+#[doc = "      \"type\": \"boolean\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    }"]
 #[doc = "  },"]
@@ -9100,10 +9655,91 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsDimensionCapabi
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct AnalyticsDimensionGrounding {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub anchor: ::std::option::Option<AnalyticsGroundingAnchor>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub blocker: ::std::option::Option<AnalyticsDimensionGroundingBlocker>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub catalog_status: ::std::option::Option<AnalyticsCatalogStatus>,
     pub kind: AnalyticsDimensionGroundingKind,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub note: ::std::option::Option<AnalyticsDimensionGroundingNote>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub partitions: ::std::option::Option<bool>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub selection: ::std::option::Option<AnalyticsDimensionGroundingSelection>,
     pub source: AnalyticsDimensionGroundingSource,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub v1: ::std::option::Option<bool>,
+}
+#[doc = "`AnalyticsDimensionGroundingBlocker`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 400,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsDimensionGroundingBlocker(::std::string::String);
+impl ::std::ops::Deref for AnalyticsDimensionGroundingBlocker {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsDimensionGroundingBlocker> for ::std::string::String {
+    fn from(value: AnalyticsDimensionGroundingBlocker) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsDimensionGroundingBlocker {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 400usize {
+            return Err("longer than 400 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsDimensionGroundingBlocker {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsDimensionGroundingBlocker {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsDimensionGroundingBlocker {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsDimensionGroundingBlocker {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
 }
 #[doc = "`AnalyticsDimensionGroundingKind`"]
 #[doc = r""]
@@ -9247,6 +9883,194 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsDimensionGround
     }
 }
 impl<'de> ::serde::Deserialize<'de> for AnalyticsDimensionGroundingNote {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsDimensionGroundingSelection`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"environment\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 120,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"product\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 120,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticsDimensionGroundingSelection {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub environment: ::std::option::Option<AnalyticsDimensionGroundingSelectionEnvironment>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub product: ::std::option::Option<AnalyticsDimensionGroundingSelectionProduct>,
+}
+impl ::std::default::Default for AnalyticsDimensionGroundingSelection {
+    fn default() -> Self {
+        Self {
+            environment: Default::default(),
+            product: Default::default(),
+        }
+    }
+}
+#[doc = "`AnalyticsDimensionGroundingSelectionEnvironment`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsDimensionGroundingSelectionEnvironment(::std::string::String);
+impl ::std::ops::Deref for AnalyticsDimensionGroundingSelectionEnvironment {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsDimensionGroundingSelectionEnvironment>
+    for ::std::string::String
+{
+    fn from(value: AnalyticsDimensionGroundingSelectionEnvironment) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsDimensionGroundingSelectionEnvironment {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsDimensionGroundingSelectionEnvironment {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for AnalyticsDimensionGroundingSelectionEnvironment
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for AnalyticsDimensionGroundingSelectionEnvironment
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsDimensionGroundingSelectionEnvironment {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsDimensionGroundingSelectionProduct`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsDimensionGroundingSelectionProduct(::std::string::String);
+impl ::std::ops::Deref for AnalyticsDimensionGroundingSelectionProduct {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsDimensionGroundingSelectionProduct> for ::std::string::String {
+    fn from(value: AnalyticsDimensionGroundingSelectionProduct) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsDimensionGroundingSelectionProduct {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsDimensionGroundingSelectionProduct {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for AnalyticsDimensionGroundingSelectionProduct
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for AnalyticsDimensionGroundingSelectionProduct
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsDimensionGroundingSelectionProduct {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -9423,6 +10247,85 @@ impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsDimensionType 
     }
 }
 impl ::std::convert::TryFrom<::std::string::String> for AnalyticsDimensionType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AnalyticsFactKind`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"transaction\","]
+#[doc = "    \"periodic_snapshot\","]
+#[doc = "    \"accumulating_snapshot\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AnalyticsFactKind {
+    #[serde(rename = "transaction")]
+    Transaction,
+    #[serde(rename = "periodic_snapshot")]
+    PeriodicSnapshot,
+    #[serde(rename = "accumulating_snapshot")]
+    AccumulatingSnapshot,
+}
+impl ::std::fmt::Display for AnalyticsFactKind {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Transaction => f.write_str("transaction"),
+            Self::PeriodicSnapshot => f.write_str("periodic_snapshot"),
+            Self::AccumulatingSnapshot => f.write_str("accumulating_snapshot"),
+        }
+    }
+}
+impl ::std::str::FromStr for AnalyticsFactKind {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "transaction" => Ok(Self::Transaction),
+            "periodic_snapshot" => Ok(Self::PeriodicSnapshot),
+            "accumulating_snapshot" => Ok(Self::AccumulatingSnapshot),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsFactKind {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsFactKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsFactKind {
     type Error = self::error::ConversionError;
     fn try_from(
         value: ::std::string::String,
@@ -10452,6 +11355,115 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsFormatSpecType 
         value.parse()
     }
 }
+#[doc = "`AnalyticsGroundingAnchor`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"fact_time\","]
+#[doc = "    \"period_opening\","]
+#[doc = "    \"touch_time\","]
+#[doc = "    \"cohort_entry\","]
+#[doc = "    \"exposure_time\","]
+#[doc = "    \"assignment_time\","]
+#[doc = "    \"carried_version\","]
+#[doc = "    \"fixed\","]
+#[doc = "    \"current\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AnalyticsGroundingAnchor {
+    #[serde(rename = "fact_time")]
+    FactTime,
+    #[serde(rename = "period_opening")]
+    PeriodOpening,
+    #[serde(rename = "touch_time")]
+    TouchTime,
+    #[serde(rename = "cohort_entry")]
+    CohortEntry,
+    #[serde(rename = "exposure_time")]
+    ExposureTime,
+    #[serde(rename = "assignment_time")]
+    AssignmentTime,
+    #[serde(rename = "carried_version")]
+    CarriedVersion,
+    #[serde(rename = "fixed")]
+    Fixed,
+    #[serde(rename = "current")]
+    Current,
+}
+impl ::std::fmt::Display for AnalyticsGroundingAnchor {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::FactTime => f.write_str("fact_time"),
+            Self::PeriodOpening => f.write_str("period_opening"),
+            Self::TouchTime => f.write_str("touch_time"),
+            Self::CohortEntry => f.write_str("cohort_entry"),
+            Self::ExposureTime => f.write_str("exposure_time"),
+            Self::AssignmentTime => f.write_str("assignment_time"),
+            Self::CarriedVersion => f.write_str("carried_version"),
+            Self::Fixed => f.write_str("fixed"),
+            Self::Current => f.write_str("current"),
+        }
+    }
+}
+impl ::std::str::FromStr for AnalyticsGroundingAnchor {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "fact_time" => Ok(Self::FactTime),
+            "period_opening" => Ok(Self::PeriodOpening),
+            "touch_time" => Ok(Self::TouchTime),
+            "cohort_entry" => Ok(Self::CohortEntry),
+            "exposure_time" => Ok(Self::ExposureTime),
+            "assignment_time" => Ok(Self::AssignmentTime),
+            "carried_version" => Ok(Self::CarriedVersion),
+            "fixed" => Ok(Self::Fixed),
+            "current" => Ok(Self::Current),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsGroundingAnchor {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsGroundingAnchor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsGroundingAnchor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 #[doc = "`AnalyticsHistoricalMode`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -10698,8 +11710,7 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsMetricAggregati
 #[doc = "  \"type\": \"object\","]
 #[doc = "  \"required\": ["]
 #[doc = "    \"ingested_events\","]
-#[doc = "    \"input_origin\","]
-#[doc = "    \"kind\""]
+#[doc = "    \"input_origin\""]
 #[doc = "  ],"]
 #[doc = "  \"properties\": {"]
 #[doc = "    \"carried_by\": {"]
@@ -10736,10 +11747,6 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsMetricAggregati
 #[doc = "      \"$ref\": \"#/$defs/AnalyticsIngestedInputOrigin\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
-#[doc = "    \"kind\": {"]
-#[doc = "      \"$ref\": \"#/$defs/AnalyticsMetricDerivationKind\","]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    },"]
 #[doc = "    \"note\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 600,"]
@@ -10761,7 +11768,6 @@ pub struct AnalyticsMetricDerivation {
     pub ingested_datasources: ::std::vec::Vec<AnalyticsMetricDerivationIngestedDatasourcesItem>,
     pub ingested_events: ::std::vec::Vec<AnalyticsMetricDerivationIngestedEventsItem>,
     pub input_origin: AnalyticsIngestedInputOrigin,
-    pub kind: AnalyticsMetricDerivationKind,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub note: ::std::option::Option<AnalyticsMetricDerivationNote>,
 }
@@ -10997,85 +12003,6 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsMetricDerivationIngestedEventsI
             })
     }
 }
-#[doc = "`AnalyticsMetricDerivationKind`"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"type\": \"string\","]
-#[doc = "  \"enum\": ["]
-#[doc = "    \"derived\","]
-#[doc = "    \"observed\","]
-#[doc = "    \"unavailable\""]
-#[doc = "  ],"]
-#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
-#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(
-    :: serde :: Deserialize,
-    :: serde :: Serialize,
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    Hash,
-    Ord,
-    PartialEq,
-    PartialOrd,
-)]
-pub enum AnalyticsMetricDerivationKind {
-    #[serde(rename = "derived")]
-    Derived,
-    #[serde(rename = "observed")]
-    Observed,
-    #[serde(rename = "unavailable")]
-    Unavailable,
-}
-impl ::std::fmt::Display for AnalyticsMetricDerivationKind {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        match *self {
-            Self::Derived => f.write_str("derived"),
-            Self::Observed => f.write_str("observed"),
-            Self::Unavailable => f.write_str("unavailable"),
-        }
-    }
-}
-impl ::std::str::FromStr for AnalyticsMetricDerivationKind {
-    type Err = self::error::ConversionError;
-    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        match value {
-            "derived" => Ok(Self::Derived),
-            "observed" => Ok(Self::Observed),
-            "unavailable" => Ok(Self::Unavailable),
-            _ => Err("invalid value".into()),
-        }
-    }
-}
-impl ::std::convert::TryFrom<&str> for AnalyticsMetricDerivationKind {
-    type Error = self::error::ConversionError;
-    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsMetricDerivationKind {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: &::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
-impl ::std::convert::TryFrom<::std::string::String> for AnalyticsMetricDerivationKind {
-    type Error = self::error::ConversionError;
-    fn try_from(
-        value: ::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
-        value.parse()
-    }
-}
 #[doc = "`AnalyticsMetricDerivationNote`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -11217,6 +12144,80 @@ impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsMetricDirectio
     }
 }
 impl ::std::convert::TryFrom<::std::string::String> for AnalyticsMetricDirection {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AnalyticsMetricLayer`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"primitive\","]
+#[doc = "    \"derived\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AnalyticsMetricLayer {
+    #[serde(rename = "primitive")]
+    Primitive,
+    #[serde(rename = "derived")]
+    Derived,
+}
+impl ::std::fmt::Display for AnalyticsMetricLayer {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Primitive => f.write_str("primitive"),
+            Self::Derived => f.write_str("derived"),
+        }
+    }
+}
+impl ::std::str::FromStr for AnalyticsMetricLayer {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "primitive" => Ok(Self::Primitive),
+            "derived" => Ok(Self::Derived),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsMetricLayer {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsMetricLayer {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsMetricLayer {
     type Error = self::error::ConversionError;
     fn try_from(
         value: ::std::string::String,
@@ -33587,6 +34588,452 @@ impl ::std::convert::TryFrom<::std::string::String> for DefaultTemplateIds {
         value.parse()
     }
 }
+#[doc = "`DeleteProtectionDecision`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"code\","]
+#[doc = "    \"http_status\","]
+#[doc = "    \"outcome\","]
+#[doc = "    \"protected_subscription_count\","]
+#[doc = "    \"reason\","]
+#[doc = "    \"retryable\","]
+#[doc = "    \"scope\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"code\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"subscription_reference_exists\","]
+#[doc = "            \"subscription_evidence_unavailable\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"http_status\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"const\": 200"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"const\": 409"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"const\": 503"]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"outcome\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"permitted\","]
+#[doc = "        \"blocked\","]
+#[doc = "        \"unverified\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"protected_subscription_count\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 9007199254740991.0,"]
+#[doc = "          \"minimum\": 1.0"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"protected_subscription_ids\": {"]
+#[doc = "      \"default\": [],"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"string\","]
+#[doc = "        \"maxLength\": 255,"]
+#[doc = "        \"minLength\": 1"]
+#[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"reason\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/$defs/SubscriptionEvidenceUnavailableReason\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"retryable\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"scope\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/StripePriceScope\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct DeleteProtectionDecision {
+    pub code: ::std::option::Option<DeleteProtectionDecisionCode>,
+    pub http_status: DeleteProtectionDecisionHttpStatus,
+    pub outcome: DeleteProtectionDecisionOutcome,
+    pub protected_subscription_count: ::std::option::Option<::std::num::NonZeroU64>,
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub protected_subscription_ids:
+        ::std::vec::Vec<DeleteProtectionDecisionProtectedSubscriptionIdsItem>,
+    pub reason: ::std::option::Option<SubscriptionEvidenceUnavailableReason>,
+    pub retryable: bool,
+    pub scope: StripePriceScope,
+}
+#[doc = "`DeleteProtectionDecisionCode`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"subscription_reference_exists\","]
+#[doc = "    \"subscription_evidence_unavailable\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum DeleteProtectionDecisionCode {
+    #[serde(rename = "subscription_reference_exists")]
+    SubscriptionReferenceExists,
+    #[serde(rename = "subscription_evidence_unavailable")]
+    SubscriptionEvidenceUnavailable,
+}
+impl ::std::fmt::Display for DeleteProtectionDecisionCode {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::SubscriptionReferenceExists => f.write_str("subscription_reference_exists"),
+            Self::SubscriptionEvidenceUnavailable => {
+                f.write_str("subscription_evidence_unavailable")
+            }
+        }
+    }
+}
+impl ::std::str::FromStr for DeleteProtectionDecisionCode {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "subscription_reference_exists" => Ok(Self::SubscriptionReferenceExists),
+            "subscription_evidence_unavailable" => Ok(Self::SubscriptionEvidenceUnavailable),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for DeleteProtectionDecisionCode {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for DeleteProtectionDecisionCode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for DeleteProtectionDecisionCode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`DeleteProtectionDecisionHttpStatus`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"anyOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"type\": \"number\","]
+#[doc = "      \"const\": 200"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"number\","]
+#[doc = "      \"const\": 409"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"number\","]
+#[doc = "      \"const\": 503"]
+#[doc = "    }"]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(untagged)]
+pub enum DeleteProtectionDecisionHttpStatus {
+    Variant0(f64),
+    Variant1(f64),
+    Variant2(f64),
+}
+impl ::std::str::FromStr for DeleteProtectionDecisionHttpStatus {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if let Ok(v) = value.parse() {
+            Ok(Self::Variant0(v))
+        } else if let Ok(v) = value.parse() {
+            Ok(Self::Variant1(v))
+        } else if let Ok(v) = value.parse() {
+            Ok(Self::Variant2(v))
+        } else {
+            Err("string conversion failed for all variants".into())
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for DeleteProtectionDecisionHttpStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for DeleteProtectionDecisionHttpStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for DeleteProtectionDecisionHttpStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::fmt::Display for DeleteProtectionDecisionHttpStatus {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match self {
+            Self::Variant0(x) => x.fmt(f),
+            Self::Variant1(x) => x.fmt(f),
+            Self::Variant2(x) => x.fmt(f),
+        }
+    }
+}
+#[doc = "`DeleteProtectionDecisionOutcome`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"permitted\","]
+#[doc = "    \"blocked\","]
+#[doc = "    \"unverified\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum DeleteProtectionDecisionOutcome {
+    #[serde(rename = "permitted")]
+    Permitted,
+    #[serde(rename = "blocked")]
+    Blocked,
+    #[serde(rename = "unverified")]
+    Unverified,
+}
+impl ::std::fmt::Display for DeleteProtectionDecisionOutcome {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Permitted => f.write_str("permitted"),
+            Self::Blocked => f.write_str("blocked"),
+            Self::Unverified => f.write_str("unverified"),
+        }
+    }
+}
+impl ::std::str::FromStr for DeleteProtectionDecisionOutcome {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "permitted" => Ok(Self::Permitted),
+            "blocked" => Ok(Self::Blocked),
+            "unverified" => Ok(Self::Unverified),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for DeleteProtectionDecisionOutcome {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for DeleteProtectionDecisionOutcome {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for DeleteProtectionDecisionOutcome {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`DeleteProtectionDecisionProtectedSubscriptionIdsItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct DeleteProtectionDecisionProtectedSubscriptionIdsItem(::std::string::String);
+impl ::std::ops::Deref for DeleteProtectionDecisionProtectedSubscriptionIdsItem {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<DeleteProtectionDecisionProtectedSubscriptionIdsItem>
+    for ::std::string::String
+{
+    fn from(value: DeleteProtectionDecisionProtectedSubscriptionIdsItem) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for DeleteProtectionDecisionProtectedSubscriptionIdsItem {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for DeleteProtectionDecisionProtectedSubscriptionIdsItem {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for DeleteProtectionDecisionProtectedSubscriptionIdsItem
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for DeleteProtectionDecisionProtectedSubscriptionIdsItem
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for DeleteProtectionDecisionProtectedSubscriptionIdsItem {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`DetectorRequirements`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -41155,6 +42602,229 @@ impl<'de> ::serde::Deserialize<'de> for EventTaxonomyEntryPurpose {
             .map_err(|e: self::error::ConversionError| {
                 <D::Error as ::serde::de::Error>::custom(e.to_string())
             })
+    }
+}
+#[doc = "`EvidenceCoverageState`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"uninitialized\","]
+#[doc = "    \"scanning\","]
+#[doc = "    \"complete\","]
+#[doc = "    \"invalidated\","]
+#[doc = "    \"failed\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum EvidenceCoverageState {
+    #[serde(rename = "uninitialized")]
+    Uninitialized,
+    #[serde(rename = "scanning")]
+    Scanning,
+    #[serde(rename = "complete")]
+    Complete,
+    #[serde(rename = "invalidated")]
+    Invalidated,
+    #[serde(rename = "failed")]
+    Failed,
+}
+impl ::std::fmt::Display for EvidenceCoverageState {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Uninitialized => f.write_str("uninitialized"),
+            Self::Scanning => f.write_str("scanning"),
+            Self::Complete => f.write_str("complete"),
+            Self::Invalidated => f.write_str("invalidated"),
+            Self::Failed => f.write_str("failed"),
+        }
+    }
+}
+impl ::std::str::FromStr for EvidenceCoverageState {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "uninitialized" => Ok(Self::Uninitialized),
+            "scanning" => Ok(Self::Scanning),
+            "complete" => Ok(Self::Complete),
+            "invalidated" => Ok(Self::Invalidated),
+            "failed" => Ok(Self::Failed),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for EvidenceCoverageState {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for EvidenceCoverageState {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for EvidenceCoverageState {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`EvidenceReasonColumn`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"uninitialized\","]
+#[doc = "    \"scan_in_progress\","]
+#[doc = "    \"partial_scan\","]
+#[doc = "    \"stale\","]
+#[doc = "    \"invalidated\","]
+#[doc = "    \"conflicting_webhook\","]
+#[doc = "    \"provider_error\","]
+#[doc = "    \"provider_timeout\","]
+#[doc = "    \"verification_deadline_exceeded\","]
+#[doc = "    \"not_connected\","]
+#[doc = "    \"account_rebound\","]
+#[doc = "    \"mode_mismatch\","]
+#[doc = "    \"unknown_subscription_status\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum EvidenceReasonColumn {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "uninitialized")]
+    Uninitialized,
+    #[serde(rename = "scan_in_progress")]
+    ScanInProgress,
+    #[serde(rename = "partial_scan")]
+    PartialScan,
+    #[serde(rename = "stale")]
+    Stale,
+    #[serde(rename = "invalidated")]
+    Invalidated,
+    #[serde(rename = "conflicting_webhook")]
+    ConflictingWebhook,
+    #[serde(rename = "provider_error")]
+    ProviderError,
+    #[serde(rename = "provider_timeout")]
+    ProviderTimeout,
+    #[serde(rename = "verification_deadline_exceeded")]
+    VerificationDeadlineExceeded,
+    #[serde(rename = "not_connected")]
+    NotConnected,
+    #[serde(rename = "account_rebound")]
+    AccountRebound,
+    #[serde(rename = "mode_mismatch")]
+    ModeMismatch,
+    #[serde(rename = "unknown_subscription_status")]
+    UnknownSubscriptionStatus,
+}
+impl ::std::fmt::Display for EvidenceReasonColumn {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::Uninitialized => f.write_str("uninitialized"),
+            Self::ScanInProgress => f.write_str("scan_in_progress"),
+            Self::PartialScan => f.write_str("partial_scan"),
+            Self::Stale => f.write_str("stale"),
+            Self::Invalidated => f.write_str("invalidated"),
+            Self::ConflictingWebhook => f.write_str("conflicting_webhook"),
+            Self::ProviderError => f.write_str("provider_error"),
+            Self::ProviderTimeout => f.write_str("provider_timeout"),
+            Self::VerificationDeadlineExceeded => f.write_str("verification_deadline_exceeded"),
+            Self::NotConnected => f.write_str("not_connected"),
+            Self::AccountRebound => f.write_str("account_rebound"),
+            Self::ModeMismatch => f.write_str("mode_mismatch"),
+            Self::UnknownSubscriptionStatus => f.write_str("unknown_subscription_status"),
+        }
+    }
+}
+impl ::std::str::FromStr for EvidenceReasonColumn {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "uninitialized" => Ok(Self::Uninitialized),
+            "scan_in_progress" => Ok(Self::ScanInProgress),
+            "partial_scan" => Ok(Self::PartialScan),
+            "stale" => Ok(Self::Stale),
+            "invalidated" => Ok(Self::Invalidated),
+            "conflicting_webhook" => Ok(Self::ConflictingWebhook),
+            "provider_error" => Ok(Self::ProviderError),
+            "provider_timeout" => Ok(Self::ProviderTimeout),
+            "verification_deadline_exceeded" => Ok(Self::VerificationDeadlineExceeded),
+            "not_connected" => Ok(Self::NotConnected),
+            "account_rebound" => Ok(Self::AccountRebound),
+            "mode_mismatch" => Ok(Self::ModeMismatch),
+            "unknown_subscription_status" => Ok(Self::UnknownSubscriptionStatus),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for EvidenceReasonColumn {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for EvidenceReasonColumn {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for EvidenceReasonColumn {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
     }
 }
 #[doc = "`EvidenceRequirement`"]
@@ -94954,6 +96624,205 @@ impl ::std::convert::TryFrom<::std::string::String> for Severity {
         value.parse()
     }
 }
+#[doc = "`StripeBillingScope`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"account_id\","]
+#[doc = "    \"livemode\","]
+#[doc = "    \"tenant_id\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"account_id\": {"]
+#[doc = "      \"description\": \"Connected Stripe account the observation was made against.\","]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"livemode\": {"]
+#[doc = "      \"description\": \"Stripe live (true) or test (false) mode.\","]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"tenant_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct StripeBillingScope {
+    #[doc = "Connected Stripe account the observation was made against."]
+    pub account_id: StripeBillingScopeAccountId,
+    #[doc = "Stripe live (true) or test (false) mode."]
+    pub livemode: bool,
+    pub tenant_id: StripeBillingScopeTenantId,
+}
+#[doc = "Connected Stripe account the observation was made against."]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"description\": \"Connected Stripe account the observation was made against.\","]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeBillingScopeAccountId(::std::string::String);
+impl ::std::ops::Deref for StripeBillingScopeAccountId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeBillingScopeAccountId> for ::std::string::String {
+    fn from(value: StripeBillingScopeAccountId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeBillingScopeAccountId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeBillingScopeAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeBillingScopeAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeBillingScopeAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeBillingScopeAccountId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripeBillingScopeTenantId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeBillingScopeTenantId(::std::string::String);
+impl ::std::ops::Deref for StripeBillingScopeTenantId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeBillingScopeTenantId> for ::std::string::String {
+    fn from(value: StripeBillingScopeTenantId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeBillingScopeTenantId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeBillingScopeTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeBillingScopeTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeBillingScopeTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeBillingScopeTenantId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`StripeIntegrationConfig`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -96564,6 +98433,290 @@ impl<'de> ::serde::Deserialize<'de> for StripePriceMockTenantId {
             })
     }
 }
+#[doc = "`StripePriceScope`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"account_id\","]
+#[doc = "    \"livemode\","]
+#[doc = "    \"price_id\","]
+#[doc = "    \"tenant_id\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"account_id\": {"]
+#[doc = "      \"description\": \"Connected Stripe account the observation was made against.\","]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"livemode\": {"]
+#[doc = "      \"description\": \"Stripe live (true) or test (false) mode.\","]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"price_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"tenant_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct StripePriceScope {
+    #[doc = "Connected Stripe account the observation was made against."]
+    pub account_id: StripePriceScopeAccountId,
+    #[doc = "Stripe live (true) or test (false) mode."]
+    pub livemode: bool,
+    pub price_id: StripePriceScopePriceId,
+    pub tenant_id: StripePriceScopeTenantId,
+}
+#[doc = "Connected Stripe account the observation was made against."]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"description\": \"Connected Stripe account the observation was made against.\","]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripePriceScopeAccountId(::std::string::String);
+impl ::std::ops::Deref for StripePriceScopeAccountId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripePriceScopeAccountId> for ::std::string::String {
+    fn from(value: StripePriceScopeAccountId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripePriceScopeAccountId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripePriceScopeAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripePriceScopeAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripePriceScopeAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripePriceScopeAccountId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripePriceScopePriceId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripePriceScopePriceId(::std::string::String);
+impl ::std::ops::Deref for StripePriceScopePriceId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripePriceScopePriceId> for ::std::string::String {
+    fn from(value: StripePriceScopePriceId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripePriceScopePriceId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripePriceScopePriceId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripePriceScopePriceId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripePriceScopePriceId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripePriceScopePriceId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripePriceScopeTenantId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripePriceScopeTenantId(::std::string::String);
+impl ::std::ops::Deref for StripePriceScopeTenantId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripePriceScopeTenantId> for ::std::string::String {
+    fn from(value: StripePriceScopeTenantId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripePriceScopeTenantId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripePriceScopeTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripePriceScopeTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripePriceScopeTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripePriceScopeTenantId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`StripePriceStripePriceId`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -96772,6 +98925,1846 @@ impl<'de> ::serde::Deserialize<'de> for StripePriceTenantId {
             })
     }
 }
+#[doc = "`StripeSubscriptionEvidence`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"account_id\","]
+#[doc = "    \"created_at\","]
+#[doc = "    \"evidence_version\","]
+#[doc = "    \"id\","]
+#[doc = "    \"livemode\","]
+#[doc = "    \"price_id\","]
+#[doc = "    \"tenant_id\","]
+#[doc = "    \"updated_at\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"account_binding_id\": {"]
+#[doc = "      \"description\": \"Tenant/account binding in force at scan time; a change invalidates the proof.\","]
+#[doc = "      \"default\": null,"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"account_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"coverage_state\": {"]
+#[doc = "      \"default\": \"uninitialized\","]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/EvidenceCoverageState\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"created_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"evidence_version\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"number\","]
+#[doc = "      \"const\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"invalidated_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"last_error_code\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"last_error_message\": {"]
+#[doc = "      \"description\": \"Sanitized diagnostic only; exclude credentials, headers and provider payloads.\","]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 1000"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"livemode\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"price_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"protected_subscription_count\": {"]
+#[doc = "      \"description\": \"Distinct protected subscriptions; null unless coverage is complete.\","]
+#[doc = "      \"default\": null,"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 9007199254740991.0,"]
+#[doc = "          \"minimum\": 0.0"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"scan_generation\": {"]
+#[doc = "      \"default\": 0,"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"scan_started_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"tenant_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"unavailable_reason\": {"]
+#[doc = "      \"default\": \"uninitialized\","]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/EvidenceReasonColumn\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"updated_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"verified_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-context\": \"billing\","]
+#[doc = "  \"x-revturbine-in-config\": false,"]
+#[doc = "  \"x-revturbine-persistence\": {"]
+#[doc = "    \"indexes\": ["]
+#[doc = "      ["]
+#[doc = "        \"coverage_state\","]
+#[doc = "        \"verified_at\""]
+#[doc = "      ],"]
+#[doc = "      ["]
+#[doc = "        \"account_id\","]
+#[doc = "        \"livemode\","]
+#[doc = "        \"price_id\""]
+#[doc = "      ],"]
+#[doc = "      ["]
+#[doc = "        \"scan_generation\""]
+#[doc = "      ]"]
+#[doc = "    ],"]
+#[doc = "    \"table\": \"stripeSubEvidence\","]
+#[doc = "    \"uniqueBy\": ["]
+#[doc = "      \"tenant_id\","]
+#[doc = "      \"account_id\","]
+#[doc = "      \"livemode\","]
+#[doc = "      \"price_id\""]
+#[doc = "    ]"]
+#[doc = "  },"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"persisted\","]
+#[doc = "  \"x-revturbine-sdk-input\": false,"]
+#[doc = "  \"x-revturbine-source\": \"stripe\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct StripeSubscriptionEvidence {
+    #[doc = "Tenant/account binding in force at scan time; a change invalidates the proof."]
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub account_binding_id: ::std::option::Option<StripeSubscriptionEvidenceAccountBindingId>,
+    pub account_id: StripeSubscriptionEvidenceAccountId,
+    #[serde(default = "defaults::stripe_subscription_evidence_coverage_state")]
+    pub coverage_state: EvidenceCoverageState,
+    pub created_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub evidence_version: f64,
+    pub id: StripeSubscriptionEvidenceId,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub invalidated_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub last_error_code: ::std::option::Option<StripeSubscriptionEvidenceLastErrorCode>,
+    #[doc = "Sanitized diagnostic only; exclude credentials, headers and provider payloads."]
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub last_error_message: ::std::option::Option<StripeSubscriptionEvidenceLastErrorMessage>,
+    pub livemode: bool,
+    pub price_id: StripeSubscriptionEvidencePriceId,
+    #[doc = "Distinct protected subscriptions; null unless coverage is complete."]
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub protected_subscription_count: ::std::option::Option<i64>,
+    #[serde(default)]
+    pub scan_generation: i64,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub scan_started_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    pub tenant_id: StripeSubscriptionEvidenceTenantId,
+    #[serde(default = "defaults::stripe_subscription_evidence_unavailable_reason")]
+    pub unavailable_reason: EvidenceReasonColumn,
+    pub updated_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub verified_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+}
+#[doc = "`StripeSubscriptionEvidenceAccountBindingId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeSubscriptionEvidenceAccountBindingId(::std::string::String);
+impl ::std::ops::Deref for StripeSubscriptionEvidenceAccountBindingId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeSubscriptionEvidenceAccountBindingId> for ::std::string::String {
+    fn from(value: StripeSubscriptionEvidenceAccountBindingId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionEvidenceAccountBindingId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionEvidenceAccountBindingId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for StripeSubscriptionEvidenceAccountBindingId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionEvidenceAccountBindingId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeSubscriptionEvidenceAccountBindingId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripeSubscriptionEvidenceAccountId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeSubscriptionEvidenceAccountId(::std::string::String);
+impl ::std::ops::Deref for StripeSubscriptionEvidenceAccountId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeSubscriptionEvidenceAccountId> for ::std::string::String {
+    fn from(value: StripeSubscriptionEvidenceAccountId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionEvidenceAccountId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionEvidenceAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeSubscriptionEvidenceAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionEvidenceAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeSubscriptionEvidenceAccountId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripeSubscriptionEvidenceId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeSubscriptionEvidenceId(::std::string::String);
+impl ::std::ops::Deref for StripeSubscriptionEvidenceId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeSubscriptionEvidenceId> for ::std::string::String {
+    fn from(value: StripeSubscriptionEvidenceId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionEvidenceId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionEvidenceId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeSubscriptionEvidenceId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionEvidenceId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeSubscriptionEvidenceId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripeSubscriptionEvidenceLastErrorCode`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 128,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeSubscriptionEvidenceLastErrorCode(::std::string::String);
+impl ::std::ops::Deref for StripeSubscriptionEvidenceLastErrorCode {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeSubscriptionEvidenceLastErrorCode> for ::std::string::String {
+    fn from(value: StripeSubscriptionEvidenceLastErrorCode) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionEvidenceLastErrorCode {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionEvidenceLastErrorCode {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeSubscriptionEvidenceLastErrorCode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionEvidenceLastErrorCode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeSubscriptionEvidenceLastErrorCode {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripeSubscriptionEvidenceLastErrorMessage`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 1000"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeSubscriptionEvidenceLastErrorMessage(::std::string::String);
+impl ::std::ops::Deref for StripeSubscriptionEvidenceLastErrorMessage {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeSubscriptionEvidenceLastErrorMessage> for ::std::string::String {
+    fn from(value: StripeSubscriptionEvidenceLastErrorMessage) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionEvidenceLastErrorMessage {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 1000usize {
+            return Err("longer than 1000 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionEvidenceLastErrorMessage {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for StripeSubscriptionEvidenceLastErrorMessage
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionEvidenceLastErrorMessage {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeSubscriptionEvidenceLastErrorMessage {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripeSubscriptionEvidencePriceId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeSubscriptionEvidencePriceId(::std::string::String);
+impl ::std::ops::Deref for StripeSubscriptionEvidencePriceId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeSubscriptionEvidencePriceId> for ::std::string::String {
+    fn from(value: StripeSubscriptionEvidencePriceId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionEvidencePriceId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionEvidencePriceId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeSubscriptionEvidencePriceId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionEvidencePriceId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeSubscriptionEvidencePriceId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripeSubscriptionEvidenceTenantId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeSubscriptionEvidenceTenantId(::std::string::String);
+impl ::std::ops::Deref for StripeSubscriptionEvidenceTenantId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeSubscriptionEvidenceTenantId> for ::std::string::String {
+    fn from(value: StripeSubscriptionEvidenceTenantId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionEvidenceTenantId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionEvidenceTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeSubscriptionEvidenceTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionEvidenceTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeSubscriptionEvidenceTenantId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripeSubscriptionItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"account_id\","]
+#[doc = "    \"created_at\","]
+#[doc = "    \"customer_id\","]
+#[doc = "    \"id\","]
+#[doc = "    \"item_id\","]
+#[doc = "    \"item_version\","]
+#[doc = "    \"livemode\","]
+#[doc = "    \"observed_at\","]
+#[doc = "    \"price_id\","]
+#[doc = "    \"protection\","]
+#[doc = "    \"provider_updated_at\","]
+#[doc = "    \"source_version\","]
+#[doc = "    \"subscription_id\","]
+#[doc = "    \"subscription_status\","]
+#[doc = "    \"tenant_id\","]
+#[doc = "    \"updated_at\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"account_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"cancel_at_period_end\": {"]
+#[doc = "      \"description\": \"Scheduled cancellation does not release the mapping.\","]
+#[doc = "      \"default\": false,"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"created_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"customer_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"item_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"item_state\": {"]
+#[doc = "      \"default\": \"present\","]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"present\","]
+#[doc = "        \"removed\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"item_version\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"number\","]
+#[doc = "      \"const\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"livemode\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"observed_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"price_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"protection\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/SubscriptionProtection\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"provider_updated_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"quantity\": {"]
+#[doc = "      \"description\": \"Diagnostics only — protection counts distinct subscriptions, never quantity.\","]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 9007199254740991.0,"]
+#[doc = "          \"minimum\": 0.0"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"removed_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"scan_generation\": {"]
+#[doc = "      \"default\": 0,"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"source_event_id\": {"]
+#[doc = "      \"description\": \"Sub-second tiebreak for a source_version TIE (plan 248 follow-up, BL-0090): the Stripe event id that produced this observation. Two webhook deliveries for the same item can carry the same source_version (Stripe event `created` has one-second resolution), and arrival order at the server is not the same thing as the order the events actually happened in. Comparing event ids is not a claim that Stripe's ids are chronological — they are not guaranteed to be — only that they are unique and stable, so a lexical comparison is a deterministic total order: whichever of two same-second events is applied first, the tiebreak resolves identically, so the row converges to the same final id regardless of delivery order. A scan observation (no event) always leaves this null and a null never outranks a webhook-authored id, so a scan can never silently re-win a tie a webhook already settled.\","]
+#[doc = "      \"default\": null,"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"source_version\": {"]
+#[doc = "      \"description\": \"Provider ordering fence; a lower value never overwrites a higher one.\","]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_status\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/StripeSubscriptionStatus\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"tenant_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"updated_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-context\": \"billing\","]
+#[doc = "  \"x-revturbine-in-config\": false,"]
+#[doc = "  \"x-revturbine-persistence\": {"]
+#[doc = "    \"indexes\": ["]
+#[doc = "      ["]
+#[doc = "        \"account_id\","]
+#[doc = "        \"livemode\","]
+#[doc = "        \"price_id\","]
+#[doc = "        \"protection\""]
+#[doc = "      ],"]
+#[doc = "      ["]
+#[doc = "        \"tenant_id\","]
+#[doc = "        \"price_id\""]
+#[doc = "      ],"]
+#[doc = "      ["]
+#[doc = "        \"subscription_id\""]
+#[doc = "      ],"]
+#[doc = "      ["]
+#[doc = "        \"scan_generation\""]
+#[doc = "      ]"]
+#[doc = "    ],"]
+#[doc = "    \"table\": \"stripeSubItem\","]
+#[doc = "    \"uniqueBy\": ["]
+#[doc = "      \"tenant_id\","]
+#[doc = "      \"account_id\","]
+#[doc = "      \"livemode\","]
+#[doc = "      \"item_id\""]
+#[doc = "    ]"]
+#[doc = "  },"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"persisted\","]
+#[doc = "  \"x-revturbine-sdk-input\": false,"]
+#[doc = "  \"x-revturbine-source\": \"stripe\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct StripeSubscriptionItem {
+    pub account_id: StripeSubscriptionItemAccountId,
+    #[doc = "Scheduled cancellation does not release the mapping."]
+    #[serde(default)]
+    pub cancel_at_period_end: bool,
+    pub created_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub customer_id: StripeSubscriptionItemCustomerId,
+    pub id: StripeSubscriptionItemId,
+    pub item_id: StripeSubscriptionItemItemId,
+    #[serde(default = "defaults::stripe_subscription_item_item_state")]
+    pub item_state: StripeSubscriptionItemItemState,
+    pub item_version: f64,
+    pub livemode: bool,
+    pub observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub price_id: StripeSubscriptionItemPriceId,
+    pub protection: SubscriptionProtection,
+    pub provider_updated_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    #[doc = "Diagnostics only — protection counts distinct subscriptions, never quantity."]
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub quantity: ::std::option::Option<i64>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub removed_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    #[serde(default)]
+    pub scan_generation: i64,
+    #[doc = "Sub-second tiebreak for a source_version TIE (plan 248 follow-up, BL-0090): the Stripe event id that produced this observation. Two webhook deliveries for the same item can carry the same source_version (Stripe event `created` has one-second resolution), and arrival order at the server is not the same thing as the order the events actually happened in. Comparing event ids is not a claim that Stripe's ids are chronological — they are not guaranteed to be — only that they are unique and stable, so a lexical comparison is a deterministic total order: whichever of two same-second events is applied first, the tiebreak resolves identically, so the row converges to the same final id regardless of delivery order. A scan observation (no event) always leaves this null and a null never outranks a webhook-authored id, so a scan can never silently re-win a tie a webhook already settled."]
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub source_event_id: ::std::option::Option<StripeSubscriptionItemSourceEventId>,
+    #[doc = "Provider ordering fence; a lower value never overwrites a higher one."]
+    pub source_version: i64,
+    pub subscription_id: StripeSubscriptionItemSubscriptionId,
+    pub subscription_status: StripeSubscriptionStatus,
+    pub tenant_id: StripeSubscriptionItemTenantId,
+    pub updated_at: ::chrono::DateTime<::chrono::offset::Utc>,
+}
+#[doc = "`StripeSubscriptionItemAccountId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeSubscriptionItemAccountId(::std::string::String);
+impl ::std::ops::Deref for StripeSubscriptionItemAccountId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeSubscriptionItemAccountId> for ::std::string::String {
+    fn from(value: StripeSubscriptionItemAccountId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionItemAccountId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionItemAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeSubscriptionItemAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionItemAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeSubscriptionItemAccountId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripeSubscriptionItemCustomerId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeSubscriptionItemCustomerId(::std::string::String);
+impl ::std::ops::Deref for StripeSubscriptionItemCustomerId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeSubscriptionItemCustomerId> for ::std::string::String {
+    fn from(value: StripeSubscriptionItemCustomerId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionItemCustomerId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionItemCustomerId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeSubscriptionItemCustomerId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionItemCustomerId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeSubscriptionItemCustomerId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripeSubscriptionItemId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeSubscriptionItemId(::std::string::String);
+impl ::std::ops::Deref for StripeSubscriptionItemId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeSubscriptionItemId> for ::std::string::String {
+    fn from(value: StripeSubscriptionItemId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionItemId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionItemId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeSubscriptionItemId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionItemId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeSubscriptionItemId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripeSubscriptionItemItemId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeSubscriptionItemItemId(::std::string::String);
+impl ::std::ops::Deref for StripeSubscriptionItemItemId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeSubscriptionItemItemId> for ::std::string::String {
+    fn from(value: StripeSubscriptionItemItemId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionItemItemId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionItemItemId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeSubscriptionItemItemId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionItemItemId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeSubscriptionItemItemId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripeSubscriptionItemItemState`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"default\": \"present\","]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"present\","]
+#[doc = "    \"removed\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum StripeSubscriptionItemItemState {
+    #[serde(rename = "present")]
+    Present,
+    #[serde(rename = "removed")]
+    Removed,
+}
+impl ::std::fmt::Display for StripeSubscriptionItemItemState {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Present => f.write_str("present"),
+            Self::Removed => f.write_str("removed"),
+        }
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionItemItemState {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "present" => Ok(Self::Present),
+            "removed" => Ok(Self::Removed),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionItemItemState {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeSubscriptionItemItemState {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionItemItemState {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::default::Default for StripeSubscriptionItemItemState {
+    fn default() -> Self {
+        StripeSubscriptionItemItemState::Present
+    }
+}
+#[doc = "`StripeSubscriptionItemPriceId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeSubscriptionItemPriceId(::std::string::String);
+impl ::std::ops::Deref for StripeSubscriptionItemPriceId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeSubscriptionItemPriceId> for ::std::string::String {
+    fn from(value: StripeSubscriptionItemPriceId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionItemPriceId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionItemPriceId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeSubscriptionItemPriceId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionItemPriceId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeSubscriptionItemPriceId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripeSubscriptionItemSourceEventId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeSubscriptionItemSourceEventId(::std::string::String);
+impl ::std::ops::Deref for StripeSubscriptionItemSourceEventId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeSubscriptionItemSourceEventId> for ::std::string::String {
+    fn from(value: StripeSubscriptionItemSourceEventId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionItemSourceEventId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionItemSourceEventId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeSubscriptionItemSourceEventId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionItemSourceEventId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeSubscriptionItemSourceEventId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripeSubscriptionItemSubscriptionId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeSubscriptionItemSubscriptionId(::std::string::String);
+impl ::std::ops::Deref for StripeSubscriptionItemSubscriptionId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeSubscriptionItemSubscriptionId> for ::std::string::String {
+    fn from(value: StripeSubscriptionItemSubscriptionId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionItemSubscriptionId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionItemSubscriptionId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeSubscriptionItemSubscriptionId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionItemSubscriptionId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeSubscriptionItemSubscriptionId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripeSubscriptionItemTenantId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StripeSubscriptionItemTenantId(::std::string::String);
+impl ::std::ops::Deref for StripeSubscriptionItemTenantId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StripeSubscriptionItemTenantId> for ::std::string::String {
+    fn from(value: StripeSubscriptionItemTenantId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionItemTenantId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionItemTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeSubscriptionItemTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionItemTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StripeSubscriptionItemTenantId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`StripeSubscriptionStatus`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"incomplete\","]
+#[doc = "    \"incomplete_expired\","]
+#[doc = "    \"trialing\","]
+#[doc = "    \"active\","]
+#[doc = "    \"past_due\","]
+#[doc = "    \"canceled\","]
+#[doc = "    \"unpaid\","]
+#[doc = "    \"paused\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum StripeSubscriptionStatus {
+    #[serde(rename = "incomplete")]
+    Incomplete,
+    #[serde(rename = "incomplete_expired")]
+    IncompleteExpired,
+    #[serde(rename = "trialing")]
+    Trialing,
+    #[serde(rename = "active")]
+    Active,
+    #[serde(rename = "past_due")]
+    PastDue,
+    #[serde(rename = "canceled")]
+    Canceled,
+    #[serde(rename = "unpaid")]
+    Unpaid,
+    #[serde(rename = "paused")]
+    Paused,
+}
+impl ::std::fmt::Display for StripeSubscriptionStatus {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Incomplete => f.write_str("incomplete"),
+            Self::IncompleteExpired => f.write_str("incomplete_expired"),
+            Self::Trialing => f.write_str("trialing"),
+            Self::Active => f.write_str("active"),
+            Self::PastDue => f.write_str("past_due"),
+            Self::Canceled => f.write_str("canceled"),
+            Self::Unpaid => f.write_str("unpaid"),
+            Self::Paused => f.write_str("paused"),
+        }
+    }
+}
+impl ::std::str::FromStr for StripeSubscriptionStatus {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "incomplete" => Ok(Self::Incomplete),
+            "incomplete_expired" => Ok(Self::IncompleteExpired),
+            "trialing" => Ok(Self::Trialing),
+            "active" => Ok(Self::Active),
+            "past_due" => Ok(Self::PastDue),
+            "canceled" => Ok(Self::Canceled),
+            "unpaid" => Ok(Self::Unpaid),
+            "paused" => Ok(Self::Paused),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for StripeSubscriptionStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for StripeSubscriptionStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StripeSubscriptionStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 #[doc = "`StudioSurfaceType`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -96924,6 +100917,670 @@ impl ::std::convert::TryFrom<&::std::string::String> for StudioSurfaceType {
     }
 }
 impl ::std::convert::TryFrom<::std::string::String> for StudioSurfaceType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`SubscriptionEvidenceKnown`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"account_binding_id\","]
+#[doc = "    \"protected_subscription_count\","]
+#[doc = "    \"result_version\","]
+#[doc = "    \"scan_generation\","]
+#[doc = "    \"scope\","]
+#[doc = "    \"state\","]
+#[doc = "    \"verified_at\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"account_binding_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"protected_subscription_count\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"protected_subscription_ids\": {"]
+#[doc = "      \"description\": \"Bounded distinct sample for operator messaging, never the count itself.\","]
+#[doc = "      \"default\": [],"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"string\","]
+#[doc = "        \"maxLength\": 255,"]
+#[doc = "        \"minLength\": 1"]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 50,"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"result_version\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"number\","]
+#[doc = "      \"const\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"scan_generation\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"scope\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/StripePriceScope\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"state\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"known\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"verified_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct SubscriptionEvidenceKnown {
+    pub account_binding_id: SubscriptionEvidenceKnownAccountBindingId,
+    pub protected_subscription_count: i64,
+    #[doc = "Bounded distinct sample for operator messaging, never the count itself."]
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub protected_subscription_ids:
+        ::std::vec::Vec<SubscriptionEvidenceKnownProtectedSubscriptionIdsItem>,
+    pub result_version: f64,
+    pub scan_generation: i64,
+    pub scope: StripePriceScope,
+    pub state: ::std::string::String,
+    pub verified_at: ::chrono::DateTime<::chrono::offset::Utc>,
+}
+#[doc = "`SubscriptionEvidenceKnownAccountBindingId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct SubscriptionEvidenceKnownAccountBindingId(::std::string::String);
+impl ::std::ops::Deref for SubscriptionEvidenceKnownAccountBindingId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<SubscriptionEvidenceKnownAccountBindingId> for ::std::string::String {
+    fn from(value: SubscriptionEvidenceKnownAccountBindingId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for SubscriptionEvidenceKnownAccountBindingId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for SubscriptionEvidenceKnownAccountBindingId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for SubscriptionEvidenceKnownAccountBindingId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for SubscriptionEvidenceKnownAccountBindingId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for SubscriptionEvidenceKnownAccountBindingId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`SubscriptionEvidenceKnownProtectedSubscriptionIdsItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct SubscriptionEvidenceKnownProtectedSubscriptionIdsItem(::std::string::String);
+impl ::std::ops::Deref for SubscriptionEvidenceKnownProtectedSubscriptionIdsItem {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<SubscriptionEvidenceKnownProtectedSubscriptionIdsItem>
+    for ::std::string::String
+{
+    fn from(value: SubscriptionEvidenceKnownProtectedSubscriptionIdsItem) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for SubscriptionEvidenceKnownProtectedSubscriptionIdsItem {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for SubscriptionEvidenceKnownProtectedSubscriptionIdsItem {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for SubscriptionEvidenceKnownProtectedSubscriptionIdsItem
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for SubscriptionEvidenceKnownProtectedSubscriptionIdsItem
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for SubscriptionEvidenceKnownProtectedSubscriptionIdsItem {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`SubscriptionEvidenceResult`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"$ref\": \"#/$defs/SubscriptionEvidenceKnown\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"$ref\": \"#/$defs/SubscriptionEvidenceUnavailable\""]
+#[doc = "    }"]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(untagged)]
+pub enum SubscriptionEvidenceResult {
+    Known(SubscriptionEvidenceKnown),
+    Unavailable(SubscriptionEvidenceUnavailable),
+}
+impl ::std::convert::From<SubscriptionEvidenceKnown> for SubscriptionEvidenceResult {
+    fn from(value: SubscriptionEvidenceKnown) -> Self {
+        Self::Known(value)
+    }
+}
+impl ::std::convert::From<SubscriptionEvidenceUnavailable> for SubscriptionEvidenceResult {
+    fn from(value: SubscriptionEvidenceUnavailable) -> Self {
+        Self::Unavailable(value)
+    }
+}
+#[doc = "`SubscriptionEvidenceUnavailable`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"reason\","]
+#[doc = "    \"result_version\","]
+#[doc = "    \"retryable\","]
+#[doc = "    \"scope\","]
+#[doc = "    \"state\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"detail\": {"]
+#[doc = "      \"description\": \"Sanitized operator hint; never provider payloads or credentials.\","]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 500"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"last_observed_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"reason\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/SubscriptionEvidenceUnavailableReason\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"result_version\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"number\","]
+#[doc = "      \"const\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"retryable\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"scope\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/StripePriceScope\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"state\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"unavailable\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct SubscriptionEvidenceUnavailable {
+    #[doc = "Sanitized operator hint; never provider payloads or credentials."]
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub detail: ::std::option::Option<SubscriptionEvidenceUnavailableDetail>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub last_observed_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    pub reason: SubscriptionEvidenceUnavailableReason,
+    pub result_version: f64,
+    pub retryable: bool,
+    pub scope: StripePriceScope,
+    pub state: ::std::string::String,
+}
+#[doc = "`SubscriptionEvidenceUnavailableDetail`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 500"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct SubscriptionEvidenceUnavailableDetail(::std::string::String);
+impl ::std::ops::Deref for SubscriptionEvidenceUnavailableDetail {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<SubscriptionEvidenceUnavailableDetail> for ::std::string::String {
+    fn from(value: SubscriptionEvidenceUnavailableDetail) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for SubscriptionEvidenceUnavailableDetail {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 500usize {
+            return Err("longer than 500 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for SubscriptionEvidenceUnavailableDetail {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for SubscriptionEvidenceUnavailableDetail {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for SubscriptionEvidenceUnavailableDetail {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for SubscriptionEvidenceUnavailableDetail {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`SubscriptionEvidenceUnavailableReason`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"uninitialized\","]
+#[doc = "    \"scan_in_progress\","]
+#[doc = "    \"partial_scan\","]
+#[doc = "    \"stale\","]
+#[doc = "    \"invalidated\","]
+#[doc = "    \"conflicting_webhook\","]
+#[doc = "    \"provider_error\","]
+#[doc = "    \"provider_timeout\","]
+#[doc = "    \"verification_deadline_exceeded\","]
+#[doc = "    \"not_connected\","]
+#[doc = "    \"account_rebound\","]
+#[doc = "    \"mode_mismatch\","]
+#[doc = "    \"unknown_subscription_status\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum SubscriptionEvidenceUnavailableReason {
+    #[serde(rename = "uninitialized")]
+    Uninitialized,
+    #[serde(rename = "scan_in_progress")]
+    ScanInProgress,
+    #[serde(rename = "partial_scan")]
+    PartialScan,
+    #[serde(rename = "stale")]
+    Stale,
+    #[serde(rename = "invalidated")]
+    Invalidated,
+    #[serde(rename = "conflicting_webhook")]
+    ConflictingWebhook,
+    #[serde(rename = "provider_error")]
+    ProviderError,
+    #[serde(rename = "provider_timeout")]
+    ProviderTimeout,
+    #[serde(rename = "verification_deadline_exceeded")]
+    VerificationDeadlineExceeded,
+    #[serde(rename = "not_connected")]
+    NotConnected,
+    #[serde(rename = "account_rebound")]
+    AccountRebound,
+    #[serde(rename = "mode_mismatch")]
+    ModeMismatch,
+    #[serde(rename = "unknown_subscription_status")]
+    UnknownSubscriptionStatus,
+}
+impl ::std::fmt::Display for SubscriptionEvidenceUnavailableReason {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Uninitialized => f.write_str("uninitialized"),
+            Self::ScanInProgress => f.write_str("scan_in_progress"),
+            Self::PartialScan => f.write_str("partial_scan"),
+            Self::Stale => f.write_str("stale"),
+            Self::Invalidated => f.write_str("invalidated"),
+            Self::ConflictingWebhook => f.write_str("conflicting_webhook"),
+            Self::ProviderError => f.write_str("provider_error"),
+            Self::ProviderTimeout => f.write_str("provider_timeout"),
+            Self::VerificationDeadlineExceeded => f.write_str("verification_deadline_exceeded"),
+            Self::NotConnected => f.write_str("not_connected"),
+            Self::AccountRebound => f.write_str("account_rebound"),
+            Self::ModeMismatch => f.write_str("mode_mismatch"),
+            Self::UnknownSubscriptionStatus => f.write_str("unknown_subscription_status"),
+        }
+    }
+}
+impl ::std::str::FromStr for SubscriptionEvidenceUnavailableReason {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "uninitialized" => Ok(Self::Uninitialized),
+            "scan_in_progress" => Ok(Self::ScanInProgress),
+            "partial_scan" => Ok(Self::PartialScan),
+            "stale" => Ok(Self::Stale),
+            "invalidated" => Ok(Self::Invalidated),
+            "conflicting_webhook" => Ok(Self::ConflictingWebhook),
+            "provider_error" => Ok(Self::ProviderError),
+            "provider_timeout" => Ok(Self::ProviderTimeout),
+            "verification_deadline_exceeded" => Ok(Self::VerificationDeadlineExceeded),
+            "not_connected" => Ok(Self::NotConnected),
+            "account_rebound" => Ok(Self::AccountRebound),
+            "mode_mismatch" => Ok(Self::ModeMismatch),
+            "unknown_subscription_status" => Ok(Self::UnknownSubscriptionStatus),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for SubscriptionEvidenceUnavailableReason {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for SubscriptionEvidenceUnavailableReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for SubscriptionEvidenceUnavailableReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`SubscriptionProtection`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"protected\","]
+#[doc = "    \"released\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum SubscriptionProtection {
+    #[serde(rename = "protected")]
+    Protected,
+    #[serde(rename = "released")]
+    Released,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for SubscriptionProtection {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Protected => f.write_str("protected"),
+            Self::Released => f.write_str("released"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for SubscriptionProtection {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "protected" => Ok(Self::Protected),
+            "released" => Ok(Self::Released),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for SubscriptionProtection {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for SubscriptionProtection {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for SubscriptionProtection {
     type Error = self::error::ConversionError;
     fn try_from(
         value: ::std::string::String,
@@ -110053,6 +114710,7 @@ impl<'de> ::serde::Deserialize<'de> for WebhookDeliveryTenantId {
 #[doc = "    \"unknown\","]
 #[doc = "    \"pending\","]
 #[doc = "    \"dispatching\","]
+#[doc = "    \"ambiguous\","]
 #[doc = "    \"accepted\","]
 #[doc = "    \"failed\","]
 #[doc = "    \"terminal\","]
@@ -110082,6 +114740,8 @@ pub enum WebhookDispatchStatus {
     Pending,
     #[serde(rename = "dispatching")]
     Dispatching,
+    #[serde(rename = "ambiguous")]
+    Ambiguous,
     #[serde(rename = "accepted")]
     Accepted,
     #[serde(rename = "failed")]
@@ -110097,6 +114757,7 @@ impl ::std::fmt::Display for WebhookDispatchStatus {
             Self::Unknown => f.write_str("unknown"),
             Self::Pending => f.write_str("pending"),
             Self::Dispatching => f.write_str("dispatching"),
+            Self::Ambiguous => f.write_str("ambiguous"),
             Self::Accepted => f.write_str("accepted"),
             Self::Failed => f.write_str("failed"),
             Self::Terminal => f.write_str("terminal"),
@@ -110111,6 +114772,7 @@ impl ::std::str::FromStr for WebhookDispatchStatus {
             "unknown" => Ok(Self::Unknown),
             "pending" => Ok(Self::Pending),
             "dispatching" => Ok(Self::Dispatching),
+            "ambiguous" => Ok(Self::Ambiguous),
             "accepted" => Ok(Self::Accepted),
             "failed" => Ok(Self::Failed),
             "terminal" => Ok(Self::Terminal),
@@ -111887,6 +116549,15 @@ pub mod defaults {
     pub(super) fn stripe_integration_config_tax_behavior(
     ) -> super::StripeIntegrationConfigTaxBehavior {
         super::StripeIntegrationConfigTaxBehavior::Unspecified
+    }
+    pub(super) fn stripe_subscription_evidence_coverage_state() -> super::EvidenceCoverageState {
+        super::EvidenceCoverageState::Uninitialized
+    }
+    pub(super) fn stripe_subscription_evidence_unavailable_reason() -> super::EvidenceReasonColumn {
+        super::EvidenceReasonColumn::Uninitialized
+    }
+    pub(super) fn stripe_subscription_item_item_state() -> super::StripeSubscriptionItemItemState {
+        super::StripeSubscriptionItemItemState::Present
     }
     pub(super) fn surface_slot_environment_id() -> super::SurfaceSlotEnvironmentId {
         super::SurfaceSlotEnvironmentId("production".to_string())

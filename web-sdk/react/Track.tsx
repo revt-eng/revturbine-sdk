@@ -1,4 +1,3 @@
-// @revturbine-graph gref:0aa10284e5c21ef61f16
 'use client';
 
 import React, { useCallback } from 'react';
@@ -49,11 +48,10 @@ export function Track({
   style,
   children,
 }: TrackProps): React.ReactElement {
-  // @revturbine-graph gref:bce33c8874d6db8a9ca4
   const track = useTrack();
   const fire = useCallback(
     (e: React.SyntheticEvent) => {
-      // @revturbine-graph gref:30cab9c35e514a53d9b7
+      // @revturbine-graph source:revturbine-sdk-internal:web-sdk/react/Track.tsx#Track
       if (!e.defaultPrevented) track(event, data, options);
     },
     [track, event, data, options],
@@ -98,7 +96,6 @@ export function useTelemetryProps(
   data?: SdkEventProperties,
   options?: TrackOptions,
 ): { onClick: React.MouseEventHandler } {
-  // @revturbine-graph gref:64a16705493de6908b04
   const track = useTrack();
   const onClick = useCallback<React.MouseEventHandler>(
     (e) => {

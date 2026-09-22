@@ -133,7 +133,14 @@ export interface ClientSessionResult {
 export interface RevTurbineServerOptions {
   /** Your RevTurbine tenant identifier. */
   tenantId: string;
-  /** Server-side API key (should be a secret key, not a publishable key). */
+  /**
+   * Your **server key** — the secret backend credential (`rtk_…`, type
+   * `server`, minted under **Settings → API tokens → Server token**).
+   *
+   * Keep it in server-side configuration only. It is never the browser
+   * SDK's `publicKey`, and the control plane refuses it on browser-like
+   * requests.
+   */
   apiKey: string;
   /** Base URL of the RevTurbine API Edge. */
   endpoint: string;

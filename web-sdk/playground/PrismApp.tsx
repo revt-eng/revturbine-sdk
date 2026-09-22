@@ -108,8 +108,9 @@ function PrismStage() {
       createLocalRuntimeConfig({
         tenantId: 'prism',
         apiKey: 'local',
-        endpoint: 'http://localhost',
-        mode: 'react',
+        // No `endpoint` (local mode ignores it — there is no server to call) and
+        // no `mode` (RevTurbineProvider labels itself 'react'). Leaving them out
+        // keeps the demo on the init surface the docs actually advertise.
         // A fresh in-memory store per mount. The provider remounts on every
         // Director change (see remountKey), so each state re-resolves from
         // scratch — and the SDK's default localStorage store can't persist a
@@ -118,7 +119,8 @@ function PrismStage() {
         persistentStorage: new InMemoryStorage(),
         user: toUserContext(PRISM_CONFIG, state),
         localRuntime: {
-          exportedConfig: PRISM_CONFIG,
+          // `playbook` is the canonical key; `exportedConfig` is the deprecated alias.
+          playbook: PRISM_CONFIG,
           initialData: { trialStatus: toTrialStatus(state) },
           resolvers: { getTrialStatus: () => toTrialStatus(state) },
         },

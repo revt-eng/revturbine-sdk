@@ -20,7 +20,7 @@
  *
  * const session = await initRevTurbine({
  *   tenantId: 'tenant_abc',
- *   apiKey: 'rt_live_xxx',
+ *   publicKey: 'rtk_…',
  *   endpoint: 'https://edge.example.com',
  *   mode: 'snippet',
  *   user: { id: 'user_123', plan_handle: 'pro' },

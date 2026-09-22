@@ -1,4 +1,3 @@
-// @revturbine-graph gref:643ca894820798c10e14
 /**
  * RevTurbine Server-Side SDK Client.
  *
@@ -109,7 +108,7 @@ export class RevTurbineServer {
   /**
    * Mint a short-lived, opaque per-user client-session token (plan 157).
    *
-   * The customer backend — which holds the `rt_secret_` mint secret (passed as
+   * The customer backend — which holds the server key (passed as
    * {@link RevTurbineServerOptions.apiKey}) — calls this to obtain a browser-safe
    * `rt_client_` token scoped to one end-user subject, then returns the token to
    * its frontend. The frontend authenticates `GET /api/sdk/client-context` with
@@ -124,7 +123,7 @@ export class RevTurbineServer {
    */
   async createClientSession(input: CreateClientSessionInput): Promise<ClientSessionResult> {
     const requestId = generateRequestId();
-    // @revturbine-graph gref:fbecd4111dfeb0278a9e
+    // @revturbine-graph source:revturbine-sdk-internal:server-node/client.ts#createClientSession
     const response = await this.apiCall(requestId, '/api/sdk/client-sessions', {
       subject: input.subject,
       surface: input.surface,

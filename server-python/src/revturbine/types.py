@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.315/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.322/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -21,7 +21,7 @@ from pydantic import (
     conint,
     constr,
 )
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import Any, Literal
 from datetime import date as date_aliased
 
@@ -142,6 +142,21 @@ class Metric(
     RootModel[constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)]
 ):
     root: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+
+
+class Family(Enum):
+    billing = "billing"
+    behavioral = "behavioral"
+
+
+class PrimaryKeyItem(RootModel[constr(min_length=1, max_length=120)]):
+    root: constr(min_length=1, max_length=120)
+
+
+class Mode(Enum):
+    raw = "raw"
+    rollup = "rollup"
+    logical = "logical"
 
 
 class AnalyticsCatalogDeprecation(BaseModel):
@@ -1127,6 +1142,23 @@ class DefaultTemplateIds(Enum):
     custom_in_app = "custom_in_app"
 
 
+class Outcome(Enum):
+    permitted = "permitted"
+    blocked = "blocked"
+    unverified = "unverified"
+
+
+class HttpStatus(IntEnum):
+    integer_200 = 200
+    integer_409 = 409
+    integer_503 = 503
+
+
+class Code(Enum):
+    subscription_reference_exists = "subscription_reference_exists"
+    subscription_evidence_unavailable = "subscription_evidence_unavailable"
+
+
 class DimensionCategory(Enum):
     default = "default"
     custom = "custom"
@@ -1331,6 +1363,31 @@ class EventTaxonomyEntry(BaseModel):
     surface: EventSurface
     purpose: constr(min_length=1, max_length=300)
     stability: EventStability
+
+
+class EvidenceCoverageState(Enum):
+    uninitialized = "uninitialized"
+    scanning = "scanning"
+    complete = "complete"
+    invalidated = "invalidated"
+    failed = "failed"
+
+
+class EvidenceReasonColumn(Enum):
+    none = "none"
+    uninitialized = "uninitialized"
+    scan_in_progress = "scan_in_progress"
+    partial_scan = "partial_scan"
+    stale = "stale"
+    invalidated = "invalidated"
+    conflicting_webhook = "conflicting_webhook"
+    provider_error = "provider_error"
+    provider_timeout = "provider_timeout"
+    verification_deadline_exceeded = "verification_deadline_exceeded"
+    not_connected = "not_connected"
+    account_rebound = "account_rebound"
+    mode_mismatch = "mode_mismatch"
+    unknown_subscription_status = "unknown_subscription_status"
 
 
 class EvidenceRequirement(BaseModel):
@@ -3178,6 +3235,17 @@ class Severity(Enum):
     critical = "critical"
 
 
+class StripeBillingScope(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1)
+    account_id: constr(min_length=1, max_length=255) = Field(
+        ..., description="Connected Stripe account the observation was made against."
+    )
+    livemode: bool = Field(..., description="Stripe live (true) or test (false) mode.")
+
+
 class TaxBehavior(Enum):
     inclusive = "inclusive"
     exclusive = "exclusive"
@@ -3270,6 +3338,67 @@ class StripePrice(BaseModel):
     last_updated_from_stripe: AwareDatetime | None = None
 
 
+class StripePriceScope(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1)
+    account_id: constr(min_length=1, max_length=255) = Field(
+        ..., description="Connected Stripe account the observation was made against."
+    )
+    livemode: bool = Field(..., description="Stripe live (true) or test (false) mode.")
+    price_id: constr(min_length=1, max_length=255)
+
+
+class StripeSubscriptionEvidence(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    evidence_version: Literal[1]
+    account_id: constr(min_length=1, max_length=255)
+    livemode: bool
+    price_id: constr(min_length=1, max_length=255)
+    coverage_state: EvidenceCoverageState | None = "uninitialized"
+    unavailable_reason: EvidenceReasonColumn | None = "uninitialized"
+    protected_subscription_count: conint(ge=0, le=9007199254740991) | None = Field(
+        None,
+        description="Distinct protected subscriptions; null unless coverage is complete.",
+    )
+    scan_generation: conint(ge=0, le=9007199254740991) | None = 0
+    account_binding_id: constr(min_length=1, max_length=255) | None = Field(
+        None,
+        description="Tenant/account binding in force at scan time; a change invalidates the proof.",
+    )
+    scan_started_at: AwareDatetime | None = None
+    verified_at: AwareDatetime | None = None
+    invalidated_at: AwareDatetime | None = None
+    last_error_code: constr(min_length=1, max_length=128) | None = None
+    last_error_message: constr(max_length=1000) | None = Field(
+        None,
+        description="Sanitized diagnostic only; exclude credentials, headers and provider payloads.",
+    )
+
+
+class ItemState(Enum):
+    present = "present"
+    removed = "removed"
+
+
+class StripeSubscriptionStatus(Enum):
+    incomplete = "incomplete"
+    incomplete_expired = "incomplete_expired"
+    trialing = "trialing"
+    active = "active"
+    past_due = "past_due"
+    canceled = "canceled"
+    unpaid = "unpaid"
+    paused = "paused"
+
+
 class StudioSurfaceType(Enum):
     button = "button"
     plans_page_ctas = "plans_page_ctas"
@@ -3290,6 +3419,67 @@ class StudioSurfaceType(Enum):
     cli = "cli"
     agent_connector = "agent_connector"
     custom_in_app = "custom_in_app"
+
+
+class ProtectedSubscriptionId(RootModel[constr(min_length=1, max_length=255)]):
+    root: constr(min_length=1, max_length=255)
+
+
+class SubscriptionEvidenceKnown(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    state: Literal["known"]
+    result_version: Literal[1]
+    scope: StripePriceScope
+    protected_subscription_count: conint(ge=0, le=9007199254740991)
+    protected_subscription_ids: list[ProtectedSubscriptionId] | None = Field(
+        [],
+        description="Bounded distinct sample for operator messaging, never the count itself.",
+        max_length=50,
+        validate_default=True,
+    )
+    verified_at: AwareDatetime
+    scan_generation: conint(ge=0, le=9007199254740991)
+    account_binding_id: constr(min_length=1, max_length=255)
+
+
+class SubscriptionEvidenceUnavailableReason(Enum):
+    uninitialized = "uninitialized"
+    scan_in_progress = "scan_in_progress"
+    partial_scan = "partial_scan"
+    stale = "stale"
+    invalidated = "invalidated"
+    conflicting_webhook = "conflicting_webhook"
+    provider_error = "provider_error"
+    provider_timeout = "provider_timeout"
+    verification_deadline_exceeded = "verification_deadline_exceeded"
+    not_connected = "not_connected"
+    account_rebound = "account_rebound"
+    mode_mismatch = "mode_mismatch"
+    unknown_subscription_status = "unknown_subscription_status"
+
+
+class SubscriptionEvidenceUnavailable(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    state: Literal["unavailable"]
+    result_version: Literal[1]
+    scope: StripePriceScope
+    reason: SubscriptionEvidenceUnavailableReason
+    retryable: bool
+    last_observed_at: AwareDatetime | None = None
+    detail: constr(max_length=500) | None = Field(
+        None,
+        description="Sanitized operator hint; never provider payloads or credentials.",
+    )
+
+
+class SubscriptionProtection(Enum):
+    protected = "protected"
+    released = "released"
+    unknown = "unknown"
 
 
 class SuggestionSeverity(Enum):
@@ -3420,7 +3610,7 @@ class TenantStatus(Enum):
     archived = "archived"
 
 
-class Mode(Enum):
+class Mode1(Enum):
     light = "light"
     dark = "dark"
     system = "system"
@@ -3432,7 +3622,7 @@ class Theme(BaseModel):
     )
     id: constr(min_length=1)
     name: constr(min_length=1, max_length=120)
-    mode: Mode | None = "system"
+    mode: Mode1 | None = "system"
     tokens: dict[str, str] | None = {}
 
 
@@ -3755,6 +3945,7 @@ class WebhookDispatchStatus(Enum):
     unknown = "unknown"
     pending = "pending"
     dispatching = "dispatching"
+    ambiguous = "ambiguous"
     accepted = "accepted"
     failed = "failed"
     terminal = "terminal"
@@ -3821,11 +4012,27 @@ class WebhookReplayEnvelope(BaseModel):
     event: Event
 
 
+class AnalyticsCatalogStatus(RootModel[Any]):
+    root: Any
+
+
+class AnalyticsConceptProducer(RootModel[Any]):
+    root: Any
+
+
 class AnalyticsDimensionGrounding(RootModel[Any]):
     root: Any
 
 
+class AnalyticsFactKind(RootModel[Any]):
+    root: Any
+
+
 class AnalyticsMetricDerivation(RootModel[Any]):
+    root: Any
+
+
+class AnalyticsMetricLayer(RootModel[Any]):
     root: Any
 
 
@@ -4062,6 +4269,14 @@ class AnalyticsAnnotation(BaseModel):
     subject: constr(min_length=1, max_length=100) | None = None
 
 
+class Materialization(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    mode: Mode
+    rollup_grain: AnalyticsTimeGrain | None = None
+
+
 class AnalyticsCatalogConcept(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -4092,6 +4307,12 @@ class AnalyticsCatalogConcept(BaseModel):
         ]
         | None
     ) = None
+    fact_kind: AnalyticsFactKind | None = None
+    family: Family | None = None
+    primary_key: list[PrimaryKeyItem] | None = Field(None, max_length=12)
+    producer: AnalyticsConceptProducer | None = None
+    materialization: Materialization | None = None
+    livemode_qualified: bool | None = None
     deprecation: AnalyticsCatalogDeprecation | None = None
 
 
@@ -4142,6 +4363,8 @@ class AnalyticsCatalogMetric(BaseModel):
         constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
     ) = None
     derivation: AnalyticsMetricDerivation | None = None
+    layer: AnalyticsMetricLayer | None = None
+    catalog_status: AnalyticsCatalogStatus | None = None
     deprecation: AnalyticsCatalogDeprecation | None = None
 
 
@@ -4168,6 +4391,8 @@ class AnalyticsCatalogMetricValidated(BaseModel):
         constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
     ) = None
     derivation: AnalyticsMetricDerivation | None = None
+    layer: AnalyticsMetricLayer | None = None
+    catalog_status: AnalyticsCatalogStatus | None = None
     deprecation: AnalyticsCatalogDeprecation | None = None
 
 
@@ -4523,6 +4748,20 @@ class Customer(BaseModel):
     status: Status1 | None = "active"
     billing_health_issues: list[BillingHealthIssue] | None = []
     metadata: dict[str, Any] | None = {}
+
+
+class DeleteProtectionDecision(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    outcome: Outcome
+    http_status: HttpStatus
+    code: Code | None
+    scope: StripePriceScope
+    protected_subscription_count: conint(ge=1, le=9007199254740991) | None
+    protected_subscription_ids: list[constr(min_length=1, max_length=255)] | None = []
+    reason: SubscriptionEvidenceUnavailableReason | None
+    retryable: bool
 
 
 class DetectorRequirements(BaseModel):
@@ -5395,6 +5634,51 @@ class SdkMetaIngestBatch(BaseModel):
 
 class ServerEvaluationPayloadTrialStatus(RootModel[UserTrialStatus]):
     root: UserTrialStatus
+
+
+class StripeSubscriptionItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    item_version: Literal[1]
+    account_id: constr(min_length=1, max_length=255)
+    livemode: bool
+    subscription_id: constr(min_length=1, max_length=255)
+    item_id: constr(min_length=1, max_length=255)
+    customer_id: constr(min_length=1, max_length=255)
+    price_id: constr(min_length=1, max_length=255)
+    subscription_status: StripeSubscriptionStatus
+    protection: SubscriptionProtection
+    cancel_at_period_end: bool | None = Field(
+        False, description="Scheduled cancellation does not release the mapping."
+    )
+    quantity: conint(ge=0, le=9007199254740991) | None = Field(
+        None,
+        description="Diagnostics only — protection counts distinct subscriptions, never quantity.",
+    )
+    item_state: ItemState | None = "present"
+    removed_at: AwareDatetime | None = None
+    source_version: conint(ge=0, le=9007199254740991) = Field(
+        ...,
+        description="Provider ordering fence; a lower value never overwrites a higher one.",
+    )
+    source_event_id: constr(min_length=1, max_length=255) | None = Field(
+        None,
+        description="Sub-second tiebreak for a source_version TIE (plan 248 follow-up, BL-0090): the Stripe event id that produced this observation. Two webhook deliveries for the same item can carry the same source_version (Stripe event `created` has one-second resolution), and arrival order at the server is not the same thing as the order the events actually happened in. Comparing event ids is not a claim that Stripe's ids are chronological — they are not guaranteed to be — only that they are unique and stable, so a lexical comparison is a deterministic total order: whichever of two same-second events is applied first, the tiebreak resolves identically, so the row converges to the same final id regardless of delivery order. A scan observation (no event) always leaves this null and a null never outranks a webhook-authored id, so a scan can never silently re-win a tie a webhook already settled.",
+    )
+    provider_updated_at: AwareDatetime
+    observed_at: AwareDatetime
+    scan_generation: conint(ge=0, le=9007199254740991) | None = 0
+
+
+class SubscriptionEvidenceResult(
+    RootModel[SubscriptionEvidenceKnown | SubscriptionEvidenceUnavailable]
+):
+    root: SubscriptionEvidenceKnown | SubscriptionEvidenceUnavailable
 
 
 class SurfaceTemplate(BaseModel):

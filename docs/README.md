@@ -152,9 +152,7 @@ const fallbackProvider = {
 
 const sdk = initRevTurbine({
   tenantId: 'tenant_abc',
-  apiKey: 'rt_live_xxx',
-  endpoint: 'https://api.revturbine.io',
-  mode: 'react',
+  publicKey: 'rtk_…',
   runtimeMode: 'revturbine_server',
   provider: primaryProvider,
   providerFallbacks: [fallbackProvider],
@@ -169,9 +167,8 @@ If you do not supply a provider, the SDK uses its built-in runtime mode behavior
 ```ts
 const sdk = initRevTurbine({
   tenantId: 'tenant_abc',
-  apiKey: 'unused_or_customer_key',
+  publicKey: 'unused_or_customer_key',
   endpoint: 'https://customer-proxy.example.com',
-  mode: 'react',
   runtimeMode: 'custom_endpoints',
   endpointOverrides: {
     decideContext: '/decisioning/decide-context',
@@ -188,9 +185,8 @@ const sdk = initRevTurbine({
 ```ts
 const sdk = initRevTurbine({
   tenantId: 'tenant_local',
-  apiKey: 'local',
+  publicKey: 'local',
   endpoint: 'http://localhost',
-  mode: 'react',
   runtimeMode: 'local_only',
   localRuntime: {
     storageKey: 'my-app:revturbine-local-runtime',
@@ -219,18 +215,15 @@ import {
 const serverSdk = initRevTurbine(
   createServerRuntimeConfig({
     tenantId: 'tenant_abc',
-    apiKey: 'rt_live_xxx',
-    endpoint: 'https://api.revturbine.io',
-    mode: 'react',
+    publicKey: 'rtk_…',
   }),
 );
 
 const customSdk = initRevTurbine(
   createCustomEndpointRuntimeConfig({
     tenantId: 'tenant_abc',
-    apiKey: 'rt_live_xxx',
+    publicKey: 'rtk_…',
     endpoint: 'https://proxy.example.com',
-    mode: 'react',
     endpointOverrides: {
       decideContext: '/decisioning/decide-context',
       ingestEvents: '/events/ingest',
@@ -241,9 +234,8 @@ const customSdk = initRevTurbine(
 const localSdk = initRevTurbine(
   createLocalRuntimeConfig({
     tenantId: 'tenant_local',
-    apiKey: 'local',
+    publicKey: 'local',
     endpoint: 'http://localhost',
-    mode: 'react',
     localRuntime: {
       initialData: {
         trialStatus: { in_trial: true, day_number: 2 },
@@ -353,9 +345,7 @@ Configurable environment variables:
 <script>
   RevTurbine.init({
     tenantId: 'your_tenant_id',
-    apiKey: 'rt_live_xxx',
-    endpoint: 'https://api.revturbine.io',
-    mode: 'snippet',
+    publicKey: 'rtk_…',
   });
 </script>
 ```
@@ -370,9 +360,7 @@ function App() {
     <RevTurbineProvider
       options={{
         tenantId: 'your_tenant_id',
-        apiKey: 'rt_live_xxx',
-        endpoint: 'https://api.revturbine.io',
-        mode: 'react',
+        publicKey: 'rtk_…',
         user: { id: 'user_123' },
       }}
     >

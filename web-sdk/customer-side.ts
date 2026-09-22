@@ -1,4 +1,3 @@
-// @revturbine-graph gref:e1234bc083fb80affd43
 import { DomainProviderRegistry } from './providers/registry';
 import { ServerUserContextProvider } from './providers/server-user-context-provider';
 import {
@@ -19,7 +18,7 @@ import { resolveBranding, type ResolvedBranding } from './branding';
 import type { BrandingConfig } from './generated';
 import { isServer, isBrowser } from './env';
 import { normalizeEnvironmentId } from './environment';
-import { isDevelopmentBuild } from './build-mode';
+import { devWarn as warnInDevelopmentBuild, isDevelopmentBuild } from './build-mode';
 import { redactPii, redactIdentityField, redactEnvelope } from './pii-redact';
 import { evaluateSegments } from './segments';
 import { buildControlPlaneEvent } from './control-plane-events';
@@ -383,6 +382,20 @@ export type ExactInitOptions<T> = {
  * - `iframe` — sandboxed iframe embed
  */
 export type RevTurbineSdkMode = 'snippet' | 'react' | 'iframe';
+
+/**
+ * Hosted-mode endpoint used when `endpoint` is omitted. Every hosted
+ * integration talks to the same control plane, so the option is a knob for
+ * proxies and self-hosted edges, not a requirement.
+ */
+export const DEFAULT_HOSTED_ENDPOINT = 'https://revturbine.com/app';
+
+/**
+ * Integration mode used when `mode` is omitted. `mode` labels telemetry
+ * (`page_view.mode`, diagnostics) and changes no behavior; `<RevTurbineProvider>`
+ * passes `'react'`, everything else is a snippet.
+ */
+export const DEFAULT_SDK_MODE: RevTurbineSdkMode = 'snippet';
 
 /**
  * Canonical component type for placement rendering.
@@ -927,20 +940,46 @@ export interface RevTurbineTelemetryOptions {
 export interface RevTurbineInitOptions {
   /** Your RevTurbine tenant identifier. */
   tenantId: string;
-  /** API key for authentication. */
-  apiKey: string;
   /**
-   // @revturbine-graph gref:8f21068afecad61a110f
-   * Public ingest key for SDK clickstream ingestion (`POST /api/track`).
+   // @revturbine-graph configuration:revturbine-sdk-internal:web-sdk/customer-side.ts#RevTurbineInitOptions
+   * Your **public key** — the browser credential.
    *
-   * Mint one in your RevTurbine tenant under **Settings → Ingest keys**.
-   * This is a tenant-scoped, embeddable `public` token distinct from
-   * {@link apiKey}: it authorizes *only* event ingestion (the
-   * `ingest:write` scope) and carries no role authority, so it is safe
-   * to ship in client bundles. When omitted, the SDK falls back to
-   * {@link apiKey} for the ingest request — but `/api/track` accepts
-   * **only** a `public` token, so a non-public `apiKey` fallback will be
-   * rejected. Set this for any integration that emits events.
+   * Mint one in your RevTurbine tenant under **Settings → API tokens →
+   * Ingest keys**. It is a tenant-scoped `rtk_…` token of type `public`:
+   * it authorizes event ingestion (`POST /api/track`) and the read-only
+   * SDK fetches (launched Playbook, user context, branding) and carries
+   * no role authority, so it is safe to ship in client bundles. The
+   * name says what it is — a scanner or an agent that meets `publicKey`
+   * in a bundle knows it is meant to be there.
+   *
+   * Never pass a **server key** here. The server key (type `server`) is
+   * the backend credential for `@revturbine/sdk/server`, where it is the
+   * `apiKey` option; the control plane refuses it on browser-like
+   * requests.
+   *
+   * Required for hosted runtime modes. Optional for `local_only`, where
+   * the SDK fills a placeholder.
+   */
+  publicKey?: string;
+  /**
+   * Your **server key** — for the headless SDK running on your backend.
+   *
+   * `apiKey` always means the secret server key (`rtk_…`, type `server`),
+   * exactly as it does on `@revturbine/sdk/server`. Pass it here only from
+   * server-side code such as a route handler using `@revturbine/sdk/headless`.
+   *
+   * In the browser, pass {@link publicKey} instead. A browser init that
+   * supplies `apiKey` without `publicKey` is treated as the legacy alias of
+   * the public key (precedence: `publicKey`, then `ingestPublicKey`, then
+   * `apiKey`) and logs a one-time development warning; that alias is kept
+   * for one minor.
+   */
+  apiKey?: string;
+  /**
+   * @deprecated Use {@link publicKey} — the same key under its one name.
+   * Still accepted for one minor as an alias (precedence: `publicKey`,
+   * then `ingestPublicKey`, then `apiKey`) and logs a one-time development
+   * warning when used without `publicKey`.
    */
   ingestPublicKey?: string;
   /**
@@ -998,7 +1037,7 @@ export interface RevTurbineInitOptions {
   /**
    * Keyless anonymous SDK-init telemetry opt-out (plan 95).
    *
-   * When **no** {@link ingestPublicKey} is configured, the SDK sends a single
+   * When **no** {@link publicKey} is configured, the SDK sends a single
    * anonymous `sdk_init` beacon to `POST /api/sdk/meta` carrying config-shape
    * **counts only** (number of plans, entitlements, placements, etc.), the SDK
    * version, runtime/schema/bundle versions, and a one-way hashed config id —
@@ -1007,7 +1046,7 @@ export interface RevTurbineInitOptions {
    *
    * On by default (`true`). Set to `false` to opt out entirely; the SDK then
    * sends no keyless telemetry. When active, the SDK logs a one-time info
-   * console notice naming this flag. Has no effect once an `ingestPublicKey`
+   * console notice naming this flag. Has no effect once a `publicKey`
    * is present (that path uses the authed clickstream instead). This beacon
    * fires in every runtime mode, `local_only` included — a bundled-Playbook
    * install is still a real install worth counting. To silence it for a
@@ -1039,7 +1078,7 @@ export interface RevTurbineInitOptions {
   telemetry?: RevTurbineTelemetryOptions;
   /**
    * Client-side clickstream batching policy (plan 95). Events are buffered and
-   // @revturbine-graph gref:b4cf618213abb11eadd7
+   // @revturbine-graph configuration:revturbine-sdk-internal:web-sdk/customer-side.ts#RevTurbineInitOptions
    * flushed to `POST /api/track` on whichever comes first: the batch reaching
    * {@link RevTurbineEventBatchingOptions.maxBatchSize}, the
    * {@link RevTurbineEventBatchingOptions.flushIntervalMs} timer elapsing, or a
@@ -1047,10 +1086,17 @@ export interface RevTurbineInitOptions {
    * low-volume sessions that would otherwise strand events.
    */
   eventBatching?: RevTurbineEventBatchingOptions;
-  /** Base URL of the RevTurbine API Edge. */
-  endpoint: string;
-  /** SDK integration mode. */
-  mode: RevTurbineSdkMode;
+  /**
+   * Base URL of the RevTurbine control plane. Defaults to
+   * {@link DEFAULT_HOSTED_ENDPOINT}; set it only for a proxy or a self-hosted
+   * edge. Local mode ignores it.
+   */
+  endpoint?: string;
+  /**
+   * SDK integration mode. Labels telemetry only. Defaults to
+   * {@link DEFAULT_SDK_MODE} (`'snippet'`); `<RevTurbineProvider>` passes `'react'`.
+   */
+  mode?: RevTurbineSdkMode;
   /**
    * SDK deployment/runtime mode:
    * - `revturbine_server` (default): standard RevTurbine-hosted endpoints.
@@ -1128,7 +1174,7 @@ export interface RevTurbineInitOptions {
    * @example
    * ```ts
    * initRevTurbine({
-   *   publishableKey: 'rt_pub_…',
+   *   publicKey: 'rtk_…',
    *   user: { id: 'user_123', plan_handle: 'free' },
    *   clientSession: () =>
    *     fetch('/api/revturbine-session', { method: 'POST' })
@@ -2548,8 +2594,14 @@ class ExternalRuntimeConfigProvider implements RuntimeConfigProvider {
  */
 export class RevTurbineCustomerSdk {
   private readonly tenantId: string;
-  private readonly apiKey: string;
-  private readonly ingestPublicKey?: string;
+  /** The browser credential, resolved from `publicKey` and its deprecated aliases. */
+  private readonly publicKey: string;
+  /**
+   * True when the integration supplied a real public key (`publicKey` or
+   * `ingestPublicKey`), as opposed to a legacy `apiKey`-only init or the
+   * local-only placeholder. Gates the keyless anonymous beacon (plan 95).
+   */
+  private readonly ingestKeyConfigured: boolean;
   private readonly environmentId: string;
   private readonly locale?: string;
   // Caller-declared test traffic (plan 164) — stamps `test: true` on every
@@ -2709,8 +2761,8 @@ export class RevTurbineCustomerSdk {
 
   constructor(options: RevTurbineInitOptions) {
     this.tenantId = options.tenantId;
-    this.apiKey = options.apiKey;
-    this.ingestPublicKey = options.ingestPublicKey;
+    this.publicKey = resolveBrowserPublicKey(options) ?? '';
+    this.ingestKeyConfigured = hasValue(options.publicKey) || hasValue(options.ingestPublicKey);
     this.environmentId = normalizeEnvironmentId(options.environmentId);
     this.locale = options.locale?.trim() || undefined;
     this.testTraffic = options.test === true;
@@ -2722,7 +2774,7 @@ export class RevTurbineCustomerSdk {
     this.telemetryConsent = options.telemetry?.consent ?? 'granted';
     this.maxBatchSize = Math.max(1, options.eventBatching?.maxBatchSize ?? DEFAULT_EVENT_BATCH_SIZE);
     this.flushIntervalMs = Math.max(0, options.eventBatching?.flushIntervalMs ?? DEFAULT_EVENT_FLUSH_INTERVAL_MS);
-    this.endpoint = options.endpoint.replace(/\/$/, '');
+    this.endpoint = (options.endpoint ?? DEFAULT_HOSTED_ENDPOINT).replace(/\/$/, '');
     this.runtimeMode = options.runtimeMode ?? RuntimeMode.Server;
     this.endpointOverrides = options.endpointOverrides ?? {};
     this.localRuntime = options.localRuntime;
@@ -2732,7 +2784,7 @@ export class RevTurbineCustomerSdk {
     this.configProvider = this.resolveConfigProvider(options);
     this.localStorageKey =
       options.localRuntime?.storageKey ?? `revturbine:${this.tenantId}:local-runtime`;
-    this.mode = options.mode;
+    this.mode = options.mode ?? DEFAULT_SDK_MODE;
     this.policy = {
       inferUser: options.contextPolicy?.inferUser ?? true,
       inferPage: options.contextPolicy?.inferPage ?? true,
@@ -2825,7 +2877,7 @@ export class RevTurbineCustomerSdk {
     // context and notifies mounted decisions through setUserContext().
     this.unregisterServerActionResolvers = registerServerActionResolvers(this.serverActions, {
       applyUserContext: (context) => this.setUserContext(context as RevTurbineUserContext), // sdk-ok: boundary-parse — generated UserContextInput is the public handler contract
-      // @revturbine-graph gref:f09db941e85fd1a0fc6c
+      // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#uiPathResolver.trackResult
       trackResult: (context, success, error) => this.emitPlatformEvent('placement_interaction', {
         interaction_type: 'cta_clicked',
         action_type: context.actionType,
@@ -2858,7 +2910,7 @@ export class RevTurbineCustomerSdk {
       this.installBridge();
     }
 
-    // @revturbine-graph gref:142516c5b0c5b0f6d52d
+    // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#initialPageView
     void this.capture('page_view', {
       mode: this.mode,
       runtime_mode: this.runtimeMode,
@@ -2914,10 +2966,10 @@ export class RevTurbineCustomerSdk {
     // Server mode with no customer-supplied config: fetch the launched Playbook
     // from the control-plane cache (plan 159) so entitlements evaluate locally.
     const runtimeMode = options.runtimeMode ?? RuntimeMode.Server;
-    const configToken = options.ingestPublicKey ?? options.apiKey;
-    if (runtimeMode !== RuntimeMode.LocalOnly && options.endpoint && configToken) {
+    const configToken = resolveBrowserPublicKey(options);
+    if (runtimeMode !== RuntimeMode.LocalOnly && configToken) {
       return new ServerLaunchedConfigProvider(
-        options.endpoint,
+        this.endpoint,
         options.tenantId,
         configToken,
         targetDefaults,
@@ -3982,7 +4034,7 @@ export class RevTurbineCustomerSdk {
     }
   }
 
-  // @revturbine-graph gref:49e37f2b63cff85d8a3f
+  // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#recalculateDerivedUsageTraits
   private recalculateDerivedUsageTraits(): void {
     const exportedConfig = this.getConfiguredExportedConfig();
 
@@ -4849,14 +4901,14 @@ export class RevTurbineCustomerSdk {
     );
   }
 
-  // @revturbine-graph gref:d929b35817978cc808b9
+  // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#evaluateUsageThresholdCrossings
   private evaluateUsageThresholdCrossings(prevUsage: Record<string, number>, nextUsage: Record<string, number>): Array<Promise<void>> {
     const crossings = coreEvaluateUsageCrossings(
       prevUsage,
       nextUsage,
       (entitlement) => this.usageThresholdForEntitlement(entitlement),
     );
-    // @revturbine-graph gref:5f19e57812187b05f434
+    // @revturbine-graph event:customer:usage_limit_approaching
     return crossings.map((crossing) => this.emitTrigger(crossing.type, {
       entitlement_handle: crossing.entitlement_handle,
       current_usage: crossing.current_usage,
@@ -4870,7 +4922,7 @@ export class RevTurbineCustomerSdk {
     return coreDeriveTrialStage(status, this.lastTrialTriggerStage, this.defaultTrialExpiringDays);
   }
 
-  // @revturbine-graph gref:2549f8ed54adb72dbd87
+  // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#evaluateTrialLifecycleTriggers
   private async evaluateTrialLifecycleTriggers(status: RevTurbineTrialContext): Promise<void> {
     const nextStage = this.deriveTrialTriggerStage(status);
 
@@ -4883,17 +4935,17 @@ export class RevTurbineCustomerSdk {
     this.lastTrialTriggerStage = nextStage;
 
     if (nextStage === 'midpoint') {
-      // @revturbine-graph gref:2f6f439fe7ddf93cb7b8
+      // @revturbine-graph event:customer:trial_midpoint
       await this.emitTrigger('trial_midpoint', { days_remaining: status.days_remaining });
       return;
     }
     if (nextStage === 'expiring') {
-      // @revturbine-graph gref:610d685794be391cb9af
+      // @revturbine-graph event:customer:trial_expiring
       await this.emitTrigger('trial_expiring', { days_remaining: status.days_remaining });
       return;
     }
     if (nextStage === 'expired') {
-      // @revturbine-graph gref:4d22e85eeec6c313d44d
+      // @revturbine-graph event:customer:clickstream_trial_expired
       await this.emitTrigger('trial_expired', { days_remaining: 0 });
     }
   }
@@ -5055,7 +5107,7 @@ export class RevTurbineCustomerSdk {
     return issues;
   }
 
-  // @revturbine-graph gref:cacb1b65cb1992eb1d11
+  // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#buildValidationWarningEvent
   private buildValidationWarningEvent(
     normalizedEventType: string,
     issues: ValidationIssue[],
@@ -5156,7 +5208,7 @@ export class RevTurbineCustomerSdk {
   /** True when keyless anonymous telemetry should fire (REQ-4 conditions). */
   private anonymousTelemetryActive(): boolean {
     return (
-      !this.ingestPublicKey && // keyless only — a keyed install uses /api/track
+      !this.ingestKeyConfigured && // keyless only — a keyed install uses /api/track
       this.anonymousTelemetryEnabled &&
       !this.previewMode && // docs/playground renders are not installs
       isBrowser()
@@ -5271,7 +5323,7 @@ export class RevTurbineCustomerSdk {
       // `void` alone swallows a rejected promise but NOT a synchronous throw,
       // and this runs inside customer catch blocks — a telemetry failure here
       // must never manufacture a second one.
-      // @revturbine-graph gref:0ca46c92a9e9058cf260
+      // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#reportSdkError
       void this.postAnonMeta('sdk_error', message ? { reason, message } : { reason });
     } catch {
       // Best-effort by contract.
@@ -5403,7 +5455,7 @@ export class RevTurbineCustomerSdk {
         '`anonymousTelemetry: false` in your initRevTurbine() options.',
     );
   }
-// @revturbine-graph gref:afe883e05caa9a1dc4a3
+// @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#sendEvents
 
   private async sendEvents(events: RevTurbineEventEnvelope[]): Promise<void> {
     if (events.length === 0) return;
@@ -5551,7 +5603,7 @@ export class RevTurbineCustomerSdk {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        authorization: `Bearer ${this.ingestPublicKey ?? this.apiKey}`,
+        authorization: `Bearer ${this.publicKey}`,
         'x-request-id': rid,
       },
       body: JSON.stringify({ events: trackEvents }),
@@ -5626,7 +5678,7 @@ export class RevTurbineCustomerSdk {
     return { ...this.telemetryCounters };
   }
 
-  // @revturbine-graph gref:0dc6d34289633dc9e5d5
+  // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#capture
   async capture(eventName: string, properties: SdkEventProperties, options?: RevTurbineEventOptions): Promise<void> {
     // The GENERIC string lane (plan 228 TASK-4): any name that collides with
     // platform vocabulary is namespaced `clickstream_*`, so platform events
@@ -5634,7 +5686,7 @@ export class RevTurbineCustomerSdk {
     // emitSemantic()/emitTrigger() all land here. The typed surfaces
     // ({@link emitPlatformEvent}, {@link trackControlPlaneEvent}) go through
     // {@link captureRaw} instead and keep their names raw.
-    // @revturbine-graph gref:5debb2aa0433ae5249c5
+    // @revturbine-graph event:customer:*
     await this.captureRaw(namespacePlatformCollision(normalizeEventType(eventName)), properties, options);
   }
 
@@ -5865,7 +5917,6 @@ export class RevTurbineCustomerSdk {
    * the shape everything else already expects.
    */
   async emitSemantic(eventType: string, payload: SdkEventProperties, options?: RevTurbineEventOptions): Promise<void> {
-    // @revturbine-graph gref:3626ac8a630359eb4be2
     await this.capture(eventType, isRecord(payload) ? payload : {}, options);
   }
 
@@ -5921,7 +5972,7 @@ export class RevTurbineCustomerSdk {
    * routes through the normal clickstream path and never throws into the app.
    */
   private emitObservedContextFields(custom: SdkTraits | undefined): void {
-    // @revturbine-graph gref:571dbae5f928d08b91d1
+    // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#emitObservedContextFields
     const fieldNames = Object.keys(custom ?? {})
       .filter((name) => name.length > 0)
       .sort();
@@ -6243,7 +6294,7 @@ export class RevTurbineCustomerSdk {
 
     const headers = {
       'content-type': 'application/json',
-      authorization: `Bearer ${this.apiKey}`,
+      authorization: `Bearer ${this.publicKey}`,
       'x-tenant-id': this.tenantId,
       'x-request-id': requestIdValue,
     };
@@ -6391,7 +6442,7 @@ export class RevTurbineCustomerSdk {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        authorization: `Bearer ${this.apiKey}`,
+        authorization: `Bearer ${this.publicKey}`,
         'x-tenant-id': this.tenantId,
         'x-request-id': rid,
       },
@@ -6848,7 +6899,7 @@ export class RevTurbineCustomerSdk {
     this.persistInteractionState();
   }
 
-  // @revturbine-graph gref:5dcfac8c7b4c8f3c56ae
+  // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#flushInteractionQueue
   private async flushInteractionQueue(): Promise<void> {
     if (this.interactionQueue.length === 0) return;
     const pending = [...this.interactionQueue];
@@ -6859,7 +6910,7 @@ export class RevTurbineCustomerSdk {
       return;
     }
 
-    // @revturbine-graph gref:889252c2be7a67c0d663
+    // @revturbine-graph event:sdk:treatment_interaction
     const transitionPayload = pending.map((item) => ({
       user_id: item.userId,
       placement_id: item.placementId,
@@ -6887,7 +6938,7 @@ export class RevTurbineCustomerSdk {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          authorization: `Bearer ${this.apiKey}`,
+          authorization: `Bearer ${this.publicKey}`,
           'x-tenant-id': this.tenantId,
           'x-request-id': requestId(),
         },
@@ -6923,7 +6974,7 @@ export class RevTurbineCustomerSdk {
     this.reportSdkError('interaction_flush_failed', reason);
   }
 
-  // @revturbine-graph gref:943aa5ed032ce1a56c2f
+  // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#trackTreatmentInteraction
   async trackTreatmentInteraction(input: RevTurbineTreatmentInteractionInput): Promise<void> {
     const normalized: RevTurbineTreatmentInteractionInput = {
       ...input,
@@ -6945,7 +6996,7 @@ export class RevTurbineCustomerSdk {
     const resolvedCooldownMs =
       Number.isFinite(dismissCooldownMs) && dismissCooldownMs > 0 ? dismissCooldownMs : undefined;
 
-    // @revturbine-graph gref:9c7fa81eec31beffa5b5
+    // @revturbine-graph derived_item:revturbine-sdk-internal:impression_history
     if (normalized.interactionType === 'dismiss') {
       void this.impressionHistory.recordDismissal(placementId, treatmentId, undefined, undefined, resolvedCooldownMs);
     } else if (normalized.interactionType === 'cta_completed') {
@@ -7446,7 +7497,7 @@ export class RevTurbineCustomerSdk {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          authorization: `Bearer ${this.apiKey}`,
+          authorization: `Bearer ${this.publicKey}`,
           'x-tenant-id': this.tenantId,
           'x-request-id': rid,
         },
@@ -7851,7 +7902,7 @@ export class RevTurbineCustomerSdk {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          authorization: `Bearer ${this.apiKey}`,
+          authorization: `Bearer ${this.publicKey}`,
           'x-tenant-id': this.tenantId,
           'x-request-id': rid,
         },
@@ -8460,7 +8511,7 @@ export class RevTurbineCustomerSdk {
       tags: change.tags,
     });
 
-    // @revturbine-graph gref:5c98812d436275b3f894
+    // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#routerPageView
     void this.capture('page_view', {
       source: 'router_auto_track',
       path: change.path,
@@ -8607,15 +8658,60 @@ export function initRevTurbine<T extends RevTurbineInitInputOptions>(
   return sdk;
 }
 
-const LOCAL_ONLY_INIT_DEFAULTS: Pick<RevTurbineInitOptions, 'tenantId' | 'apiKey' | 'endpoint' | 'mode'> = {
+const LOCAL_ONLY_INIT_DEFAULTS: Pick<RevTurbineInitOptions, 'tenantId' | 'publicKey' | 'endpoint' | 'mode'> = {
   tenantId: 'local',
-  apiKey: 'local-only',
+  publicKey: 'local-only',
   endpoint: 'https://api.revturbine.local',
   mode: 'react',
 };
 
 function hasValue(input: unknown): input is string { // sdk-ok: boundary-parse
   return typeof input === 'string' && input.trim().length > 0;
+}
+
+/** The three names the browser credential may arrive under. */
+type BrowserKeyOptions = Pick<RevTurbineInitOptions, 'publicKey' | 'ingestPublicKey' | 'apiKey'>;
+
+let warnedDeprecatedBrowserKeyAlias = false;
+
+/**
+ * Resolve the browser credential from `publicKey` and its deprecated aliases.
+ *
+ * Precedence is `publicKey`, then `ingestPublicKey`, then `apiKey`. Returns
+ * `undefined` when no key was supplied so callers can apply their own default.
+ *
+ * A one-time development warning names `publicKey` when a deprecated alias is
+ * used: always for `ingestPublicKey`, and for `apiKey` only in a browser —
+ * on a backend running the headless SDK, `apiKey` is the server key and is
+ * the right option. Production builds stay silent.
+ *
+ * Every read site (the SDK class, the React provider, the controllers)
+ * resolves through this one function so the precedence cannot drift.
+ *
+ * @internal
+ */
+export function resolveBrowserPublicKey(options: BrowserKeyOptions): string | undefined {
+  if (hasValue(options.publicKey)) return options.publicKey;
+  const alias = hasValue(options.ingestPublicKey)
+    ? 'ingestPublicKey'
+    : hasValue(options.apiKey)
+      ? 'apiKey'
+      : undefined;
+  if (alias === undefined) return undefined;
+  const legacyBrowserUse = alias === 'ingestPublicKey' || isBrowser();
+  if (legacyBrowserUse && !warnedDeprecatedBrowserKeyAlias) {
+    warnedDeprecatedBrowserKeyAlias = true;
+    warnInDevelopmentBuild(
+      `\`${alias}\` is deprecated on the browser init; pass the same key as \`publicKey\`. `
+      + '`apiKey` means the secret server key, which must never reach a browser.',
+    );
+  }
+  return alias === 'ingestPublicKey' ? options.ingestPublicKey : options.apiKey;
+}
+
+/** Test-only: forget that the alias warning fired so the next resolve warns again. @internal */
+export function resetBrowserKeyAliasWarning(): void {
+  warnedDeprecatedBrowserKeyAlias = false;
 }
 
 /**
@@ -8635,7 +8731,7 @@ function normalizeInitOptions(options: RevTurbineInitInputOptions): RevTurbineIn
   return {
     ...options,
     tenantId: hasValue(options.tenantId) ? options.tenantId : LOCAL_ONLY_INIT_DEFAULTS.tenantId,
-    apiKey: hasValue(options.apiKey) ? options.apiKey : LOCAL_ONLY_INIT_DEFAULTS.apiKey,
+    publicKey: resolveBrowserPublicKey(options) ?? LOCAL_ONLY_INIT_DEFAULTS.publicKey,
     endpoint: hasValue(options.endpoint) ? options.endpoint : LOCAL_ONLY_INIT_DEFAULTS.endpoint,
     mode: options.mode ?? LOCAL_ONLY_INIT_DEFAULTS.mode,
     runtimeMode: options.runtimeMode ?? 'local_only',

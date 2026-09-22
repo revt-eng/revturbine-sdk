@@ -38,6 +38,28 @@ describe('public initializer user context (plan 254 AC-5)', () => {
     }
   });
 
+  it('defaults endpoint and mode for a hosted init that omits them', async () => {
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 404 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const session = await initHeadless({
+      tenantId: 'public_init',
+      apiKey: 'rtk_test',
+      previewMode: true,
+      contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
+      user: { id: 'user_123' },
+    });
+    try {
+      // `mode` labels telemetry only; the core default is `'snippet'`.
+      expect((session.sdk as unknown as { mode: string }).mode).toBe('snippet');
+      // Hosted mode with no `endpoint` talks to the control plane at the default.
+      const urls = fetchMock.mock.calls.map(([input]) => String(input));
+      expect(urls.length).toBeGreaterThan(0);
+      expect(urls.every((url) => url.startsWith('https://revturbine.com/app'))).toBe(true);
+    } finally {
+      session.sdk.dispose();
+    }
+  });
+
   it('preserves the separate synchronous core initializer', () => {
     const sdk = initCore({
       tenantId: 'core_init', apiKey: 'local-only', endpoint: 'https://sdk.example.test',

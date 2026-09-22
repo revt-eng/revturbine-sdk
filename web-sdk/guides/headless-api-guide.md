@@ -9,9 +9,7 @@ import { initRevTurbine } from '@revturbine/sdk/headless';
 
 const session = await initRevTurbine({
   tenantId: 'tenant_abc',
-  apiKey: 'rt_live_xxx',
-  endpoint: 'https://api.revturbine.io',
-  mode: 'snippet',
+  publicKey: 'rtk_…',
   user: { id: 'user_123', plan_handle: 'pro' },
 });
 ```
@@ -204,8 +202,7 @@ import { initRevTurbine } from '@revturbine/sdk/headless';
 const session = await initRevTurbine({
   // Required
   tenantId: 'tenant_abc',
-  apiKey: 'rt_live_xxx',
-  endpoint: 'https://api.revturbine.io',
+  publicKey: 'rtk_…',
   user: { id: 'user_123', plan_handle: 'pro' },
 
   // Optional: preload placement decisions
