@@ -105,6 +105,8 @@ const EMPTY_BOOTSTRAP: BootstrapPlacementInput[] = [];
  *   <App />
  * </RevTurbineProvider>
  * ```
+ *
+ * @public
  */
 export function RevTurbineProvider<
   TUser extends RevTurbineUserContext = RevTurbineUserContext,

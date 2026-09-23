@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.322/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.325/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -5723,7 +5723,7 @@ class TrackEvent(BaseModel):
     )
     environment_id: constr(min_length=1)
     user_id: constr(min_length=1)
-    account_id: constr(min_length=1)
+    account_id: constr(min_length=1) | None = None
     event_name: constr(min_length=1, max_length=120)
     event_ts: AwareDatetime
     properties: str | None = None

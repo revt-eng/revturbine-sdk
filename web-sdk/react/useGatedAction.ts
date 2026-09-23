@@ -28,6 +28,8 @@ export interface GatedAction<A extends unknown[], R> {
  * telemetry (`${action}_started` → `_completed` / `_failed`) and its return value
  * is preserved. Without a provider, `run` is a safe no-op that reports denied
  * (AC-13).
+ *
+ * @public
  */
 export function useGatedAction<A extends unknown[], R>(
   action: string,

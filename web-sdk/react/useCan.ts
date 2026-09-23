@@ -65,6 +65,8 @@ export interface UseCanResult {
  *   return <BatchExportButton warnLowBalance={limited} />;
  * }
  * ```
+ *
+ * @public
  */
 export function useCan(
   handle: string,

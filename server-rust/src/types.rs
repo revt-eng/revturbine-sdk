@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.322/rust/revturbine_types.rs
+//   published/v0.1.325/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -105020,7 +105020,6 @@ impl<'de> ::serde::Deserialize<'de> for ThemeName {
 #[doc = "{"]
 #[doc = "  \"type\": \"object\","]
 #[doc = "  \"required\": ["]
-#[doc = "    \"account_id\","]
 #[doc = "    \"environment_id\","]
 #[doc = "    \"event_name\","]
 #[doc = "    \"event_ts\","]
@@ -105179,7 +105178,8 @@ impl<'de> ::serde::Deserialize<'de> for ThemeName {
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct TrackEvent {
-    pub account_id: TrackEventAccountId,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub account_id: ::std::option::Option<TrackEventAccountId>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub decision_id: ::std::option::Option<::std::string::String>,
     pub environment_id: TrackEventEnvironmentId,

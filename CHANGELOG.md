@@ -47,6 +47,51 @@ also require a changelog entry.
 
 ---
 
+## 0.10.2
+
+### Local mode resolves placements by slot id (BL-0119)
+
+**What changed.** In `local_only` mode the browser SDK now resolves a placement
+request against the Playbook's authored `placement_slots[]` registry.
+`getPlacement({ slotId })` — with or without a `componentType` — previously
+returned `null` for a slot the Playbook declared, and a controller/`usePlacement`
+mount of that slot resolved to `placement_not_found`. Looking the same placement
+up by **name** worked, which is what made this look like a config problem rather
+than an SDK one.
+
+Two things were missing, and both are now in place:
+
+- **`registerSurfaceSlot()` adopts the declared template.** `surface_template_ids`
+  on the registered record is what puts the shared resolver on its slot branch,
+  where `trigger.slot_id` is matched. Without it the resolver fell back to direct
+  lookup, which is keyed by placement **name**/id and therefore can never match a
+  slot id — hence `placement_not_found`. An id passed explicitly at the call site
+  still wins; the mounting code knows what it renders.
+- **`getPlacement()` falls through to the slot registry.** The local placement
+  cache only holds slots a decision has already run through, so a cold lookup
+  found nothing and stopped. It now derives the record from `placement_slots`,
+  matching on `id` and falling back to `surface_type` when only a component type
+  is given — the same derivation scaffold's headless
+  `LocalRuntime.slotRecordForConfig` has always performed. Registration on this
+  path is local only: reading a placement never writes a surface slot back to the
+  control plane.
+
+This closes a browser-versus-headless divergence: the same Playbook decided
+differently depending on which runtime read it. No public API change — no
+signature moved, and nothing new is asked of the caller. A slot id that no
+`placement_slots` entry declares still resolves to `null`, unchanged.
+
+**Landed in** `0.10.2`. **Fail-closed in** n/a — a previously-`null` lookup now
+returns the placement the Playbook authored.
+
+**Proving test:** `web-sdk/local-slot-id-lookup.test.ts` — by-slot-id and
+by-slot-id-plus-component-type both resolve, the controller path no longer
+reports `placement_not_found`, an undeclared slot id still returns `null` and
+gains no invented template, an explicit `surfaceTemplateIds` still wins, and the
+by-name lookup that always worked keeps working (the positive control).
+
+---
+
 ## 0.10.1
 
 ### Treatment interactions carry the identified `account_id`

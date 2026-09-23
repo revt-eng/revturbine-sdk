@@ -259,6 +259,12 @@ const RECOGNIZED_IDENTIFY_KEY_SET: ReadonlySet<string> = new Set(RECOGNIZED_IDEN
  */
 type PlanContextWithLegacyId = NonNullable<RevTurbineUserContext['plan']> & { id?: string };
 
+/**
+ * One entry of the Playbook's authored surface registry (`placement_slots[]`) —
+ * the declaration a slot-id lookup resolves against (BL-0119).
+ */
+type AuthoredSurfaceSlot = NonNullable<RevTurbineConfig['placement_slots']>[number];
+
 /** Heuristic for an email-shaped `identify()` id — ids should be opaque; emails belong in `{ email }`. */
 const EMAIL_SHAPED_ID = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -3331,6 +3337,8 @@ export class RevTurbineCustomerSdk {
    * Resolve the normalized variant used by RevTurbine decisions and telemetry.
    * Missing, conflicting, and unavailable assignments remain explicit and are
    * never converted to a control variant.
+   *
+   * @public
    */
   async getExperimentVariant(experimentHandle: string): Promise<ExperimentVariantSelection> {
     const handle = experimentHandle.trim();
@@ -3349,7 +3357,11 @@ export class RevTurbineCustomerSdk {
     };
   }
 
-  /** Return the immutable ephemeral context currently entering local evaluation. */
+  /**
+   * Return the immutable ephemeral context currently entering local evaluation.
+   *
+   * @public
+   */
   async getEffectiveUserContext(): Promise<Readonly<RevTurbineUserContext>> {
     return (await this.resolveEffectiveProviderContext()).effective.userContext;
   }
@@ -3684,6 +3696,93 @@ export class RevTurbineCustomerSdk {
     }
 
     return this.resolveLocalPlacementFromCandidates(candidates, config);
+  }
+
+  /**
+   * The `placement_slots[]` entry the loaded Playbook authors for a request.
+   *
+   * BL-0119. `placement_slots` is the authored registry of surfaces: an entry
+   * declares a slot's `id`, `surface_type` and `template`, and a placement
+   * targets it through `trigger.slot_id`. Scaffold's headless `LocalRuntime`
+   * has always resolved it (`slotRecordForConfig`); the browser SDK never did,
+   * so a slot-id lookup had nothing to match against and every caller who had
+   * not already driven a decision through that slot got `null` /
+   * `placement_not_found` while a by-name lookup worked.
+   *
+   * The matching rules are kept identical to `LocalRuntime.slotRecordForConfig`
+   * on purpose — a slot id wins outright; otherwise the component type matches
+   * the slot's `surface_type`. Divergence here is divergence in what the same
+   * Playbook decides in the browser versus headless.
+   *
+   * @internal
+   */
+  private authoredSurfaceSlotFor(
+    config: RevTurbinePlacementRequestConfig,
+  ): AuthoredSurfaceSlot | undefined {
+    const slots = this.getConfiguredExportedConfig()?.placement_slots;
+    if (!Array.isArray(slots) || slots.length === 0) return undefined;
+
+    if (config.slotId) {
+      return slots.find((slot) => slot?.id === config.slotId);
+    }
+
+    const componentType = resolvePlacementComponentType(config);
+    if (!componentType) return undefined;
+    return slots.find((slot) => slot?.surface_type === componentType);
+  }
+
+  /**
+   * The surface template ids the Playbook declares for an authored slot id.
+   *
+   * BL-0119. `surface_template_ids` on the registered record is what drops the
+   * shared resolver into its slot branch; without it the resolver falls back to
+   * direct lookup, which is keyed by placement name/id and can never match a
+   * slot id. An integrator who declared the slot in config should not also have
+   * to repeat its template at the `registerSurfaceSlot()` call site.
+   *
+   * @internal
+   */
+  private authoredSlotTemplateIds(slotId: string): string[] {
+    if (!slotId) return [];
+    const slot = this.authoredSurfaceSlotFor({ slotId });
+    return slot?.template ? [slot.template] : [];
+  }
+
+  /**
+   * Resolve a placement request through the Playbook's authored slot registry.
+   *
+   * BL-0119. Runs only after the local placement cache misses, so an already
+   * decided slot keeps its cached output and this path adds no behavior for
+   * requests the SDK could already answer. Registration is deliberately local:
+   * reading a placement must never write a surface slot back to the control
+   * plane.
+   *
+   * @internal
+   */
+  private async placementFromAuthoredSlot(
+    config: RevTurbinePlacementRequestConfig,
+  ): Promise<PlacementOutput | null> {
+    const slot = this.authoredSurfaceSlotFor(config);
+    if (!slot?.id) return null;
+
+    const record = await this.buildSurfaceSlotRecord({
+      id: slot.id,
+      name: config.placementHandle ?? slot.placement_handle ?? slot.id,
+      ...(slot.template ? { surfaceTemplateIds: [slot.template] } : {}),
+      metadata: {
+        surface_type: slot.surface_type,
+        ...(config.entitlementHandle ? { entitlement_handle: config.entitlementHandle } : {}),
+        ...(config.fixedOnly ? { fixedOnly: true } : {}),
+      },
+    });
+    this.commitSurfaceSlotRecord(record);
+
+    const decision = await this.getPlacementDecision({
+      placementId: record.id,
+      userId: this.getUserContext().user_id,
+    });
+    if (!decision.visible) return null;
+    return decision.output ?? null;
   }
 
   private hydrateLocalRuntimeState(): void {
@@ -4199,6 +4298,8 @@ export class RevTurbineCustomerSdk {
    *
    * Keys are usage units (derived from configured usage token prefixes when available),
    * and values include current usage plus optional limit when known.
+   *
+   * @public
    */
   getUsage(): RevTurbineUsageSnapshot {
     const mergedUsage: Record<string, number> = {
@@ -4567,6 +4668,8 @@ export class RevTurbineCustomerSdk {
    * - Placement decision metadata (`rule_id`, reason codes, suppression)
    *
    * Useful for debuggers, QA tooling, and customer-facing explainability UIs.
+   *
+   * @public
    */
   async explainPlacementDecision(
     input: RevTurbinePlacementDecisionInput,
@@ -5677,6 +5780,8 @@ export class RevTurbineCustomerSdk {
    * {@link RevTurbineInitOptions.anonymousTelemetry} switch (REQ-13).
    *
    * @param consent - the new consent state
+   *
+   * @public
    */
   setTelemetryConsent(consent: TelemetryConsent): void {
     this.telemetryConsent = consent;
@@ -5728,6 +5833,8 @@ export class RevTurbineCustomerSdk {
    * at emit time; a violation emits an `sdk_validation_warning` alongside
    * (never a throw — telemetry must not break the host app). Production
    * builds skip validation; the ingest boundary re-validates authoritatively.
+   *
+   * @public
    */
   async emitPlatformEvent<K extends EmittablePlatformEventName>(
     eventName: K,
@@ -5843,6 +5950,8 @@ export class RevTurbineCustomerSdk {
    * interval timer, and page-unload. Best-effort and non-throwing — delivery
    * failures are swallowed (plan 95 REQ-3). Safe to call when the buffer is
    * empty (no-op).
+   *
+   * @public
    */
   async flushEvents(): Promise<void> {
     if (this.events.length === 0) return;
@@ -6000,6 +6109,13 @@ export class RevTurbineCustomerSdk {
     void this.emitPlatformEvent(USER_CONTEXT_FIELDS_EVENT, { context_fields: fieldNames });
   }
 
+  /**
+   * Merge fields into the session-bound user context. Recognized fields
+   * upsert; an omitted field never clobbers a previously-set value. See the
+   * advertised {@link update} alias for the full recognized-field contract.
+   *
+   * @public
+   */
   setUserContext(userContext: RevTurbineUserContext): void {
     const previousContext = this.userContext;
     this.userContext = this.mergeUserContext(userContext);
@@ -6273,6 +6389,8 @@ export class RevTurbineCustomerSdk {
 
   /**
    * @deprecated Use `registerSurfaceSlot`.
+   *
+   * @public
    */
   async registerPlacement(config: RevTurbinePlacementConfig): Promise<string> {
     const fallbackId = String(config.placementScopeKey || config.name || '').trim();
@@ -6346,6 +6464,65 @@ export class RevTurbineCustomerSdk {
     this.syncedSurfaceSlotIds.add(record.id);
   }
 
+  /**
+   * Build the internal placement record for a surface-slot config.
+   *
+   * Shared by `registerSurfaceSlot` and the BL-0119 authored-slot resolution
+   * path so both produce byte-identical records — a second hand-rolled record
+   * shape is how the two would drift into deciding differently.
+   *
+   * When the caller passes no `surfaceTemplateIds`, the ids the Playbook
+   * declares for this slot are adopted (BL-0119). An explicit list from the
+   * call site always wins: the mounting code knows what it actually renders.
+   *
+   * @internal
+   */
+  private async buildSurfaceSlotRecord(
+    config: RevTurbineSurfaceSlotConfig,
+  ): Promise<RevTurbinePlacementRecord> {
+    const route = normalizedRoute(this.currentPathname());
+    const slotId = String(config?.id || '').trim();
+    const slotName = String(config?.name || slotId).trim();
+
+    const templateIds = Array.isArray(config.surfaceTemplateIds) && config.surfaceTemplateIds.length > 0
+      ? config.surfaceTemplateIds
+      : this.authoredSlotTemplateIds(slotId);
+
+    const id = await this.generatePlacementId({
+      placementName: slotName || slotId || 'invalid_surface_slot',
+      placementScopeKey: slotId || undefined,
+      normalizedPageRoute: route,
+    });
+
+    return {
+      id,
+      route,
+      name: slotName || 'invalid_surface_slot',
+      placementScopeKey: slotId || undefined,
+      metadata: {
+        ...(isRecord(config.metadata) ? config.metadata : {}),
+        surface_slot_id: slotId || null,
+        ...(templateIds.length > 0 ? { surface_template_ids: templateIds } : {}),
+      },
+    };
+  }
+
+  /**
+   * Store a surface-slot record in the local registry, marking it unsynced when
+   * it is new or has changed. Local only — never writes to the control plane.
+   *
+   * @internal
+   */
+  private commitSurfaceSlotRecord(record: RevTurbinePlacementRecord): void {
+    const existing = this.placements.get(record.id);
+    const existingFingerprint = existing ? this.stableStringify(existing) : null;
+    if (existingFingerprint === this.stableStringify(record)) return;
+
+    this.placements.set(record.id, record);
+    this.persistLocalRuntimeState();
+    this.syncedSurfaceSlotIds.delete(record.id);
+  }
+
   async registerSurfaceSlot(config: RevTurbineSurfaceSlotConfig): Promise<string> {
     const route = normalizedRoute(this.currentPathname());
     const slotId = String(config?.id || '').trim();
@@ -6373,35 +6550,10 @@ export class RevTurbineCustomerSdk {
       });
     }
 
-    const id = await this.generatePlacementId({
-      placementName: slotName || slotId || 'invalid_surface_slot',
-      placementScopeKey: slotId || undefined,
-      normalizedPageRoute: route,
-    });
+    const record = await this.buildSurfaceSlotRecord(config);
+    const id = record.id;
 
-    const record: RevTurbinePlacementRecord = {
-      id,
-      route,
-      name: slotName || 'invalid_surface_slot',
-      placementScopeKey: slotId || undefined,
-      metadata: {
-        ...(isRecord(config.metadata) ? config.metadata : {}),
-        surface_slot_id: slotId || null,
-        ...(Array.isArray(config.surfaceTemplateIds) && config.surfaceTemplateIds.length > 0
-          ? { surface_template_ids: config.surfaceTemplateIds }
-          : {}),
-      },
-    };
-
-    const existing = this.placements.get(id);
-    const existingFingerprint = existing ? this.stableStringify(existing) : null;
-    const nextFingerprint = this.stableStringify(record);
-
-    if (!existing || existingFingerprint !== nextFingerprint) {
-      this.placements.set(id, record);
-      this.persistLocalRuntimeState();
-      this.syncedSurfaceSlotIds.delete(id);
-    }
+    this.commitSurfaceSlotRecord(record);
 
     if (!this.isLocalOnlyMode() && !this.syncedSurfaceSlotIds.has(id)) {
       await this.upsertSurfaceSlot(record);
@@ -6616,6 +6768,14 @@ export class RevTurbineCustomerSdk {
     return coreNormalizeDecisionFromResponse(placementId, rid, placementName, payload);
   }
 
+  /**
+   * Resolve the placement decision for a registered surface slot — the
+   * evaluated payload (or lack of one), its reason, and the metadata needed
+   * to report the interaction lifecycle ({@link trackTreatmentInteraction},
+   * {@link dismiss}, {@link snooze}, {@link convert}).
+   *
+   * @public
+   */
   async getPlacementDecision(input: RevTurbinePlacementDecisionInput): Promise<RevTurbinePlacementDecision> {
     const placement = this.placements.get(input.placementId);
     const rid = requestId();
@@ -7031,6 +7191,13 @@ export class RevTurbineCustomerSdk {
   }
 
   // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#trackTreatmentInteraction
+  /**
+   * Report a treatment interaction directly by placement/treatment id — the
+   * lower-level counterpart to {@link dismiss}/{@link snooze}/{@link convert},
+   * which key off a decision's `output_id` instead.
+   *
+   * @public
+   */
   async trackTreatmentInteraction(input: RevTurbineTreatmentInteractionInput): Promise<void> {
     // Resolved HERE, not at flush: a queued batch can outlive an `identify()`
     // that switched the acting account. Undefined when the integration
@@ -7279,6 +7446,13 @@ export class RevTurbineCustomerSdk {
     return validateTrialStatusShape(data) as RevTurbineTrialContext;
   }
 
+  /**
+   * Resolve the legacy placement payload for a request config. Prefer
+   * {@link getPlacementDecision} for new integrations; kept for the
+   * documented legacy request-config path.
+   *
+   * @public
+   */
   async getPlacement(config: RevTurbinePlacementRequestConfig): Promise<PlacementOutput | null>;
   async getPlacement(
     config: RevTurbinePlacementRequestConfig,
@@ -7321,11 +7495,26 @@ export class RevTurbineCustomerSdk {
       return null;
     }
     const local = this.localPlacementForConfig(config);
-    if (!local) return null;
-    const capDecision = this.applyPlacementCapsIfNeeded(local);
-    return capDecision.allowed ? local : null;
+    if (local) {
+      const capDecision = this.applyPlacementCapsIfNeeded(local);
+      return capDecision.allowed ? local : null;
+    }
+
+    // BL-0119: the local placement cache only holds slots a decision has
+    // already run through, so a cold lookup by slot id found nothing and
+    // returned null even when the Playbook authored that exact slot. Fall
+    // through to the authored `placement_slots` registry — the same derivation
+    // scaffold's headless `LocalRuntime.getPlacement` performs.
+    return this.placementFromAuthoredSlot(config);
   }
 
+  /**
+   * Evaluate a single entitlement handle for the active user, purely from the
+   * loaded UserContext and Playbook. The advertised {@link can} alias wraps
+   * this with the friendly verb name.
+   *
+   * @public
+   */
   async checkEntitlement(handle: string, context?: RevTurbineEntitlementContext): Promise<EntitlementResult> {
     if (this.isDisabledByProviderFailure()) {
       // Fail-closed: a disabled SDK cannot affirm the grant, so it must not
@@ -7390,6 +7579,13 @@ export class RevTurbineCustomerSdk {
     };
   }
 
+  /**
+   * Set absolute usage balances for the active user and emit any
+   * threshold-crossing triggers. See the advertised {@link update} alias's
+   * `usage` key for the same contract via the general patch verb.
+   *
+   * @public
+   */
   updateUsage(balances: UsageBalances): void {
     const previousContext = this.userContext;
     // Plan 194 REQ-5. `init` takes usage as ENTRY objects
@@ -7497,6 +7693,8 @@ export class RevTurbineCustomerSdk {
   /**
    * Build the full persistence-ready {@link UserContext} from the current
    * SDK state. Includes `tenant_id` and `user_id` required for API storage.
+   *
+   * @public
    */
   getUserContext(): UserContext {
     const userId = this.userContext.id || this.anonymousId;
@@ -7536,6 +7734,8 @@ export class RevTurbineCustomerSdk {
    * Fetch the resolved user context from the decision API.
    * Returns the user's matched segments, traits, plan, and usage — used
    * to determine which placement payloads are eligible for display.
+   *
+   * @public
    */
   async fetchUserContext(userId: string): Promise<UserTargetingContext> {
     const rid = requestId();
@@ -7942,6 +8142,12 @@ export class RevTurbineCustomerSdk {
     );
   }
 
+  /**
+   * Return the active user's trial status, derived from their trial
+   * instances and the configured reverse-trial rules.
+   *
+   * @public
+   */
   async getTrialStatus(): Promise<RevTurbineTrialContext> {
     const rid = requestId();
 
@@ -8006,6 +8212,8 @@ export class RevTurbineCustomerSdk {
    * @param options - Optional `nowIso` clock pin (defaults to the current
    *   time) and `basePlanHandle` (the base plan a reverse-trial user reverts
    *   to, surfaced as `plan_handle`).
+   *
+   * @public
    */
   async setTrialInstances(
     instances: readonly TrialInstance[],
@@ -8049,6 +8257,8 @@ export class RevTurbineCustomerSdk {
    * - `uiPathResolvers` passed at SDK init
    * - optional `resolvers` passed to this method
    * - CTA handlers from domain providers (`domain: 'cta'`), unless disabled
+   *
+   * @public
    */
   async validateUiPathResolvers(
     options: RevTurbineUiPathResolverValidationOptions = {},
@@ -8240,15 +8450,35 @@ export class RevTurbineCustomerSdk {
     });
   }
 
+  /**
+   * Suppress a decision's placement for its authored dismiss cooldown.
+   * Terminal for the window: `getPlacementDecision` will not return it again
+   * until the cooldown lapses.
+   *
+   * @public
+   */
   async dismiss(outputId: string): Promise<void> {
     await this.trackOutputInteraction(outputId, 'dismiss');
   }
 
+  /**
+   * Suppress a decision's placement for a "remind me later" window —
+   * `seconds` overrides the authored default.
+   *
+   * @public
+   */
   async snooze(outputId: string, seconds?: number): Promise<void> {
     await this.trackOutputInteraction(outputId, 'remind_me_later',
       seconds === undefined ? {} : { remind_after_seconds: seconds });
   }
 
+  /**
+   * Record a confirmed CTA completion and retire the decision's placement
+   * permanently — future calls to `getPlacementDecision` for it will not
+   * return it again.
+   *
+   * @public
+   */
   async convert(outputId: string): Promise<void> {
     await this.trackOutputInteraction(outputId, 'cta_completed');
   }
@@ -8282,6 +8512,8 @@ export class RevTurbineCustomerSdk {
    * // stored as `clickstream_feature_gated` — see the collision note above
    * await sdk.emitTrigger('feature_gated', { feature: 'advanced_automation' });
    * ```
+   *
+   * @public
    */
   async emitTrigger(
     trigger: RevTurbineTriggerEvent,
@@ -8322,6 +8554,8 @@ export class RevTurbineCustomerSdk {
    * rt.identify('user_123', { plan_handle: 'pro' }); // THE matching identity
    * rt.identify('user_123', { plan_handle: 'pro', plan: { handle: 'pro', name: 'Professional' } });
    * ```
+   *
+   * @public
    */
   identify<T extends IdentifyContextInput>(userId: string, context?: Exact<IdentifyContextInput, T>): void {
     if (typeof userId !== 'string' || userId.trim() === '') {
@@ -8392,6 +8626,12 @@ export class RevTurbineCustomerSdk {
     this.notifyUserContextChanged();
   }
 
+  /**
+   * Reset to anonymous user state, re-inferring a fresh anonymous id. Also
+   * available as the advertised {@link reset} alias.
+   *
+   * @public
+   */
   resetIdentity(): void {
     this.clearAllUserState({ reinfer: true });
   }
@@ -8465,6 +8705,8 @@ export class RevTurbineCustomerSdk {
    * @example
    * const access = await rt.can('generate_image');
    * if (!access.allowed) showUpgrade();
+   *
+   * @public
    */
   can(handle: string, context?: RevTurbineEntitlementContext): Promise<EntitlementResult> {
     return this.checkEntitlement(handle, context);
@@ -8479,6 +8721,8 @@ export class RevTurbineCustomerSdk {
    * @example
    * const gated = await rt.gate('export_pdf', () => exportPdf());
    * if (!gated.ran) openPaywall(gated.entitlement);
+   *
+   * @public
    */
   async gate<T>(
     action: string,
@@ -8510,6 +8754,8 @@ export class RevTurbineCustomerSdk {
    *
    * @example
    * rt.track('ai_generation_completed', { credits: 3 });
+   *
+   * @public
    */
   track(name: string, data?: SdkEventProperties): Promise<void> {
     return this.trackEvent(name, data);
@@ -8536,6 +8782,8 @@ export class RevTurbineCustomerSdk {
    * @example
    * // Reflect a plan change and new traits in one call (identity unchanged):
    * rt.update({ plan_handle: 'pro', custom: { role: 'admin' } });
+   *
+   * @public
    */
   update<T extends RevTurbineUpdateInput>(patch: Exact<RevTurbineUpdateInput, T>): void {
     const { usage, ...context } = (patch ?? {}) as RevTurbineUpdateInput;
@@ -8564,6 +8812,8 @@ export class RevTurbineCustomerSdk {
   /**
    * Clear the current user — the advertised alias of {@link resetIdentity}
    * (e.g. on sign-out).
+   *
+   * @public
    */
   reset(): void {
     this.resetIdentity();

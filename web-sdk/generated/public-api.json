@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "count": 27,
+  "count": 62,
   "exports": [
     {
       "name": "baseThemeForScheme",
@@ -57,6 +57,12 @@
       "signature": "export interface InitFailureDiagnosticProps { status: RevTurbineInitStatus; }"
     },
     {
+      "name": "initRevTurbine",
+      "kind": "function",
+      "file": "web-sdk/controllers.ts",
+      "signature": "export async function initRevTurbine<TUser extends RevTurbineUserContext = RevTurbineUserContext>( options: SdkSessionOptions &"
+    },
+    {
       "name": "initStatusForError",
       "kind": "function",
       "file": "web-sdk/react/init-status.ts",
@@ -99,10 +105,70 @@
       "signature": "export type RevTurbineColorScheme = 'light' | 'dark' | 'system'"
     },
     {
+      "name": "RevTurbineCustomerSdk.can",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "can(handle: string, context?: RevTurbineEntitlementContext): Promise<EntitlementResult>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.checkEntitlement",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async checkEntitlement(handle: string, context?: RevTurbineEntitlementContext): Promise<EntitlementResult>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.convert",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async convert(outputId: string): Promise<void>"
+    },
+    {
       "name": "RevTurbineCustomerSdk.diagnoseSlotInventory",
       "kind": "method",
       "file": "web-sdk/customer-side.ts",
       "signature": "diagnoseSlotInventory(): RevTurbineSlotInventoryDiagnosis"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.dismiss",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async dismiss(outputId: string): Promise<void>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.emitPlatformEvent",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async emitPlatformEvent<K extends EmittablePlatformEventName>( eventName: K, payload: EventPayloadInput<K>, options?: RevTurbineEventOptions, ): Promise<void>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.emitTrigger",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async emitTrigger( trigger: RevTurbineTriggerEvent, payload?: RevTurbineTriggerPayload, options?: RevTurbineEventOptions, ): Promise<void>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.explainPlacementDecision",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async explainPlacementDecision( input: RevTurbinePlacementDecisionInput, ): Promise<RevTurbinePlacementDecisionExplanation>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.fetchUserContext",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async fetchUserContext(userId: string): Promise<UserTargetingContext>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.flushEvents",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async flushEvents(): Promise<void>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.gate",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async gate<T>( action: string, fn: () => T | Promise<T>, context?: RevTurbineEntitlementContext, ): Promise<RevTurbineGateResult<T>>"
     },
     {
       "name": "RevTurbineCustomerSdk.getBranding",
@@ -111,16 +177,136 @@
       "signature": "getBranding(): ResolvedBranding"
     },
     {
+      "name": "RevTurbineCustomerSdk.getEffectiveUserContext",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async getEffectiveUserContext(): Promise<Readonly<RevTurbineUserContext>>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.getExperimentVariant",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async getExperimentVariant(experimentHandle: string): Promise<ExperimentVariantSelection>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.getPlacement",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async getPlacement(config: RevTurbinePlacementRequestConfig): Promise<PlacementOutput | null>; async getPlacement( config: RevTurbinePlacementRequestConfig, ): Promise<PlacementOutput | null>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.getPlacementDecision",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async getPlacementDecision(input: RevTurbinePlacementDecisionInput): Promise<RevTurbinePlacementDecision>"
+    },
+    {
       "name": "RevTurbineCustomerSdk.getRegisteredSlots",
       "kind": "method",
       "file": "web-sdk/customer-side.ts",
       "signature": "getRegisteredSlots(): RevTurbineRegisteredSlot[]"
     },
     {
+      "name": "RevTurbineCustomerSdk.getTrialStatus",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async getTrialStatus(): Promise<RevTurbineTrialContext>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.getUsage",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "getUsage(): RevTurbineUsageSnapshot"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.getUserContext",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "getUserContext(): UserContext"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.identify",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "identify<T extends IdentifyContextInput>(userId: string, context?: Exact<IdentifyContextInput, T>): void"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.registerPlacement",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async registerPlacement(config: RevTurbinePlacementConfig): Promise<string>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.reset",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "reset(): void"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.resetIdentity",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "resetIdentity(): void"
+    },
+    {
       "name": "RevTurbineCustomerSdk.setApiBranding",
       "kind": "method",
       "file": "web-sdk/customer-side.ts",
       "signature": "setApiBranding(branding: BrandingConfig | undefined): void"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.setTelemetryConsent",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "setTelemetryConsent(consent: TelemetryConsent): void"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.setTrialInstances",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async setTrialInstances( instances: readonly TrialInstance[], options?:"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.setUserContext",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "setUserContext(userContext: RevTurbineUserContext): void"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.snooze",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async snooze(outputId: string, seconds?: number): Promise<void>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.track",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "track(name: string, data?: SdkEventProperties): Promise<void>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.trackTreatmentInteraction",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async trackTreatmentInteraction(input: RevTurbineTreatmentInteractionInput): Promise<void>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.update",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "update<T extends RevTurbineUpdateInput>(patch: Exact<RevTurbineUpdateInput, T>): void"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.updateUsage",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "updateUsage(balances: UsageBalances): void"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.validateUiPathResolvers",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async validateUiPathResolvers( options: RevTurbineUiPathResolverValidationOptions ="
     },
     {
       "name": "RevTurbineInitPhase",
@@ -133,6 +319,12 @@
       "kind": "interface",
       "file": "web-sdk/react/init-status.ts",
       "signature": "export interface RevTurbineInitStatus { readonly ok: boolean; readonly phase?: RevTurbineInitPhase; readonly message?: string; readonly remediation?: string; }"
+    },
+    {
+      "name": "RevTurbineProvider",
+      "kind": "function",
+      "file": "web-sdk/react/RevTurbineProvider.tsx",
+      "signature": "export function RevTurbineProvider< TUser extends RevTurbineUserContext = RevTurbineUserContext, TOptions extends RevTurbineInitInputOptions = RevTurbineInitInputOptions, >("
     },
     {
       "name": "RevTurbineRegisteredSlot",
@@ -151,6 +343,24 @@
       "kind": "type",
       "file": "web-sdk/placements/useSurfaceSlot.tsx",
       "signature": "export type SurfaceSlotHiddenReason = 'dismissed' | 'no_match' | null"
+    },
+    {
+      "name": "useCan",
+      "kind": "function",
+      "file": "web-sdk/react/useCan.ts",
+      "signature": "export function useCan( handle: string, options?: Omit<UseEntitlementOptions, 'handle'>, ): UseCanResult"
+    },
+    {
+      "name": "useEntitlement",
+      "kind": "function",
+      "file": "web-sdk/react/useEntitlement.ts",
+      "signature": "export function useEntitlement("
+    },
+    {
+      "name": "useGatedAction",
+      "kind": "function",
+      "file": "web-sdk/react/useGatedAction.ts",
+      "signature": "export function useGatedAction<A extends unknown[], R>( action: string, fn: (...args: A) => Promise<R> | R, context?: RevTurbineEntitlementContext, options?: TrackOptions, ): GatedAction<A, R>"
     },
     {
       "name": "useResolvedColorScheme",

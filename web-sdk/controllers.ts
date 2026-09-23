@@ -1165,6 +1165,8 @@ export class SdkSession {
  *   ],
  * });
  * ```
+ *
+ * @public
  */
 export async function initRevTurbine<TUser extends RevTurbineUserContext = RevTurbineUserContext>(
   options: SdkSessionOptions & { user?: Exact<RevTurbineUserContext, TUser> },

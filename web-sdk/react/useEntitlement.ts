@@ -75,6 +75,8 @@ export interface UseEntitlementResult {
  *   return <BrandKitEditor />;
  * }
  * ```
+ *
+ * @public
  */
 export function useEntitlement({
   handle,
