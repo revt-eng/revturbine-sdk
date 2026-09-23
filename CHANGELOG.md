@@ -47,6 +47,53 @@ also require a changelog entry.
 
 ---
 
+## 0.10.9
+
+### The trial-status overlay no longer changes a number's type (BL-0155)
+
+**What changed.** The `UserTrialStatus` → `trial_*` PlanProviderState overlay now
+passes each numeric field through on every port, instead of two ports widening
+it to a float. The canonical behaviour is the TS SDK's
+`synthesizeProviderContext` (`web-sdk/customer-side.ts`, the `planTrialFields`
+block), which spreads every `UserTrialStatus` member verbatim: an integer
+`progress_percent` stays an integer on the provider state, and
+`trial_days_total` is `day_number + days_remaining` in the inputs' own kind, so
+`7 + 3` is `14`. The two server ports diverged from it:
+
+| field | Python before | Rust before | all three now |
+|---|---|---|---|
+| `progress_percent` → `trial_progress_percent` | `float(v)` | verbatim | verbatim |
+| `days_remaining` → `trial_days_remaining` | `float(v)` | verbatim | verbatim |
+| `usage_consumed` → `trial_usage_consumed` | `float(v)` | verbatim | verbatim |
+| `usage_limit` → `trial_usage_limit` | `float(v)` | verbatim | verbatim |
+| `in_trial` → `trial_active` | `bool(v)` | verbatim | verbatim |
+| derived `trial_days_total` | `float(a) + float(b)` | `f64` sum | `int + int` → `int`; any fractional half → float |
+
+**Who this reaches.** Only a host that reads the provider state it built —
+`revturbine::overlay_trial_status_on_plan_provider` on Rust, or the merged
+`PlanProviderState` on Python — and cares whether it holds `70` or `70.0`
+(serializing it, comparing it to an integer, or logging it). No decision
+changes: every reader in the trial-gating layer widens on read, which is exactly
+why the divergence survived. A non-numeric `day_number`/`days_remaining` half
+now derives no total on Python instead of raising, matching Rust's existing
+numeric guard.
+
+**Landed in.** `0.10.9`.
+
+**Fail-closed in.** `0.10.9` — there was no tolerated-old-shape window; the
+representation simply changes.
+
+**Proving test.**
+`server-python/tests/test_trial_overlay_upsert.py::test_overlay_preserves_integer_numeric_representation`
+and `server-rust/src/sdk.rs::overlay_preserves_integer_numeric_representation`
+— both assert the *type*, not just the value, because `100 == 100.0` in Python.
+The parity corpus cannot see this class of divergence (`tests/parity/normalize.*`
+rule 4 collapses integral floats by design); scenario
+`trial_overlay_integer_fields` locks that the three ports still decide
+identically from an all-integer trial status.
+
+---
+
 ## 0.10.8
 
 ### `{{recommended_plan_name}}` and `{{plan_name}}` no longer reach end users as raw tokens (BL-0121)
