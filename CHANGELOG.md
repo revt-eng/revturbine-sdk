@@ -47,6 +47,36 @@ also require a changelog entry.
 
 ---
 
+## 0.10.3
+
+### The Rust port gains the decision surfaces Python already shipped (BL-0145)
+
+**What changed.** `RevTurbineCustomerSdk` on the Rust port (`revturbine`,
+crates.io) now exposes the same decision surfaces the Python port exposes.
+Nothing on the TypeScript or Python side changes; this is a Rust-only,
+purely additive release.
+
+| Added | Shape |
+|---|---|
+| `RevTurbineCustomerSdk::can(handle, context)` | The advertised alias of `check_entitlement`, matching the scaffold SDK function surface (canonical `checkEntitlement`, alias `can`). |
+| `RevTurbineCustomerSdk::get_eligible_plans()` | `Vec<EligiblePlan>` — public, segment-eligible plan variations. |
+| `RevTurbineCustomerSdk::get_eligible_addons()` | `Vec<EligibleAddon>` — the add-on twin. |
+| `RevTurbineCustomerSdk::evaluate_trial_status(instances, now_iso, base_plan_handle, usage_balances)` | `TrialEvaluation`, reading `free_trial_rules` / `reverse_trial_rules` from the constructed Playbook. |
+| `revturbine::format_currency_minor_units(amount, currency, locale)` | Free function, because Python exposes it as a module function. |
+| `revturbine::plans` | New module carrying the catalog eligibility port and the formatter. |
+| `UserContext::segment_ids` | Pre-resolved segment ids the catalog methods match against. |
+
+`UserContext` gains a field but derives `Default`, so existing construction
+with `..Default::default()` keeps compiling.
+
+**Why it was invisible.** The cross-language parity gate was green on the
+catalog and currency scenarios only because the Rust parity runner
+*reimplemented* `eligible_catalog` and `format_currency_minor_units` inline
+rather than calling the crate — so the comparison never touched shipped code,
+and the crate could lack the capability entirely without a single fixture
+going red. The runner now calls `revturbine::plans`, and the inline copies are
+deleted; all 102 comparisons stay byte-identical.
+
 ## 0.10.2
 
 ### Local mode resolves placements by slot id (BL-0119)
