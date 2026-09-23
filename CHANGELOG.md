@@ -47,6 +47,61 @@ also require a changelog entry.
 
 ---
 
+## 0.10.7
+
+### The Python and Rust ports stop filtering payloads on `status` (BL-0151)
+
+**What changed.** Payload `status` is no longer a runtime predicate in any port.
+Python and Rust required `status == "active"` on a placement payload before it
+could become a candidate, and read a `status` off each content-linked studio
+payload before overlaying its copy. Both now ignore it, matching the TypeScript
+port, which never gated on it.
+
+| | Before | After |
+|---|---|---|
+| Placement payload candidacy (Python, Rust) | required `status == "active"` | every payload, status ignored |
+| Content-linked copy overlay (Python, Rust) | required the studio payload's `status` to read `active` | always overlaid |
+| TypeScript | already ignored `status` | unchanged |
+
+**Why it mattered.** `status` is not a field of the exported Playbook.
+`RevTurbineConfigStudioPayload` and `RevTurbineConfigPlacementPayloadItem` carry
+no `status` key, unknown keys are stripped on parse, and the published JSON
+Schema is `additionalProperties: false` — because runtime status is *derived*
+control-plane side and the stored column was dropped. So `status == "active"` was
+false for **every** payload of a real Playbook: the Python and Rust resolvers
+indexed no candidates at all and returned `placement_not_found`, and their
+content-lookup adapters dropped every content-linked payload, keeping the inline
+copy where TypeScript overlaid the linked block. A config whose first payload
+carried a stray authored `status` also decided differently across ports.
+
+The cross-language parity gate could not see any of this: the only fixtures
+reaching these paths hand-write `status` on each payload — a key the schema would
+strip — so the ports were compared on a shape no Playbook has.
+
+**Landed in.** 0.10.7 (`server-python`, `server-rust`). No `@revt-eng/core`
+change rides with it: TypeScript was already correct, so there is no scaffold
+release and no pin bump.
+
+**Fail-closed in.** n/a — this release removes a fail-*closed* filter. Python and
+Rust consumers on a real Playbook go from no decision to the decision
+TypeScript has always returned.
+
+**Proving test.** `tests/parity/fixtures/payload_status_filter.json` — two lanes:
+a stray authored `status` that disagrees with drag order (payload 1 `draft`,
+payload 2 `active`; payload 1 must still win), and the real wire shape with no
+`status` anywhere plus a content-linked overlay. Mutation-checked by reinstating
+the Python filter, which diverges on the first call. Plus
+`server-python/tests/placements/test_local_resolver.py`,
+`test_json_content_provider.py` and `server-rust/tests/static_resolver.rs`, each
+covering both the stray-value and the no-key case.
+
+**Who is affected.** Every `revturbine` (PyPI) and `revturbine` (crates.io)
+consumer resolving placements from a schema-valid exported Playbook — that is,
+one produced by the control plane rather than hand-written with a `status` field.
+Those integrations were receiving no placement decisions at all.
+
+---
+
 ## 0.10.6
 
 ### The trial-status PlanProvider overlay ships in the Rust crate (BL-0153)
