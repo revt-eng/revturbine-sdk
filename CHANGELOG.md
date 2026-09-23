@@ -47,6 +47,48 @@ also require a changelog entry.
 
 ---
 
+## 0.10.6
+
+### The trial-status PlanProvider overlay ships in the Rust crate (BL-0153)
+
+**What changed.** `revturbine::overlay_trial_status_on_plan_provider` is a new
+public function on the Rust crate: it maps a runtime `UserTrialStatus` onto the
+`trial_*` fields of a resolved PlanProviderState, the fields the placement
+resolver's `trial_progress` / `trial_ending` / `trial_ended` /
+`trial_converted` gates and milestone supersession read. Python has always done
+this inside its shipped package
+(`revturbine.sdk._overlay_trial_status_on_plan_provider`); on Rust the mapping
+existed only as a private helper the facade used, so a host that assembles its
+own provider context — including this repo's own parity runner — had to
+re-implement it. Additive: no existing signature changed.
+
+Porting Python's mapping faithfully corrected two Rust-only divergences in the
+overlay the facade applies:
+
+| `UserTrialStatus` field | Rust before | Rust now (= TS/Python) |
+|---|---|---|
+| `day_number` + `days_remaining` | not derived | `trial_days_total = day_number + days_remaining`, only when both are present |
+| `day_number` | written to `trial_day_number` | not written — no provider-state field reads it |
+| `usage_entitlement_handle` | dropped | `trial_usage_entitlement_handle` |
+
+`trial_days_total` is the input to the time-mode progress fallback in
+`placements::trial_gating`, so before this the fallback could never fire on the
+Rust port.
+
+**Landed in.** `0.10.6`.
+
+**Fail-closed in.** `0.10.6` — the parity facade-presence gate
+(`tests/parity/facade-surface.json`) no longer allow-lists a runner-local
+overlay, so a future re-implementation harness-side fails the gate.
+
+**Proving test.** `server-rust/src/sdk.rs` `overlay_maps_every_canonical_trial_field`,
+`trial_days_total_requires_both_halves`, `overlay_does_not_clobber_base_state_with_null`
+(mirroring `server-python/tests/test_trial_overlay_upsert.py`), plus the
+`trial_ending_days_before_end`, `trial_ended_post_expiry` and
+`trial_progress_milestone_supersession` parity fixtures.
+
+---
+
 ## 0.10.5
 
 ### Trial-only local integrations get provider context (BL-0120)
