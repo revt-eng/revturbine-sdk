@@ -3149,7 +3149,24 @@ export class RevTurbineCustomerSdk {
     // enrollment and decision attribution without registering a provider.
     const experiments = this.userContext.experiments;
     const hasExperiments = experiments !== undefined && Object.keys(experiments).length > 0;
-    if (!plan && !planHandle && !usage && !hasTiers && !hasExperiments) return undefined;
+    // BL-0120: an integration supplying ONLY `initialData.trialStatus` (no
+    // `plan` / `plan_handle`) must still get provider context — otherwise
+    // `trial_ending` / `trial_progress` gating and `{{trial_days_remaining}}`
+    // token derivation silently see no plan state at all. `localTrialStatus`
+    // defaults to `{ in_trial: false }`, so `trial.in_trial === true` is the
+    // signal an integration actually supplied trial data; the other fields
+    // are checked too so a non-time-mode or edge-state trial (e.g. only
+    // `state` or usage-mode fields set, `in_trial` omitted) still counts.
+    const hasTrial = trial.in_trial === true
+      || trial.trial_limit_type !== undefined
+      || trial.progress_percent !== undefined
+      || trial.days_remaining !== undefined
+      || trial.day_number !== undefined
+      || trial.state !== undefined
+      || trial.usage_entitlement_handle !== undefined
+      || trial.usage_consumed !== undefined
+      || trial.usage_limit !== undefined;
+    if (!plan && !planHandle && !usage && !hasTiers && !hasExperiments && !hasTrial) return undefined;
 
     const usageEntries: Record<string, { used: number; limit: number; remaining: number; unit?: string; reset_date?: string }> = {};
     if (usage && typeof usage === 'object') {
@@ -3196,7 +3213,7 @@ export class RevTurbineCustomerSdk {
     };
 
     return {
-      ...(plan || planHandle ? {
+      ...(plan || planHandle || hasTrial ? {
         plan: {
           // Identity from the first-class handle (plan 191 Q-1 amendment:
           // the object's symbol is `handle` — there is no plan id).
