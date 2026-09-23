@@ -172,6 +172,11 @@ pub fn interpolate_content_tokens(content: &Map<String, Value>) -> Map<String, V
 struct CandidateOutput {
     output: Value,
     entry_order: i64,
+    /// Authored position of this payload within its placement entry (BL-0122).
+    /// Every payload of an entry is a candidate in its own right, so ranking
+    /// needs a within-entry key: drag precedence is the authored array order,
+    /// not the lexicographic `output_id`. Mirrors the TS `payloadOrder`.
+    payload_order: usize,
     entry_category: Option<String>,
     trigger_entitlement_handle: Option<String>,
     trigger_slot_id: Option<String>,
@@ -185,7 +190,7 @@ struct CandidateOutput {
 pub struct StaticPlacementResolver {
     candidates: Vec<CandidateOutput>,
     by_template: HashMap<String, Vec<usize>>,
-    by_name: HashMap<String, usize>,
+    by_name: HashMap<String, Vec<usize>>,
     tier_ladders_by_handle: HashMap<String, Vec<String>>,
     plan_handle_to_id: HashMap<String, String>,
     /// Content-linked payloads + blocks + tokens, when the Playbook ships them.
@@ -360,144 +365,161 @@ impl StaticPlacementResolver {
 
         let mut candidates: Vec<CandidateOutput> = Vec::new();
         let mut by_template: HashMap<String, Vec<usize>> = HashMap::new();
-        let mut by_name: HashMap<String, usize> = HashMap::new();
+        let mut by_name: HashMap<String, Vec<usize>> = HashMap::new();
 
         for entry in placements {
-            // Only the first ACTIVE payload is considered.
-            let Some(payload) = entry
+            // BL-0122: EVERY active payload of an entry is a candidate, not
+            // just the first. Targeting is a per-payload property — "the
+            // user's plan and segment match a payload"
+            // (placement-prioritization.md §1 stage 3) — so a placement whose
+            // payloads are chipped to different segments must offer all of
+            // them to the eligibility filter. Indexing only the first made
+            // payloads 2+ unreachable and their `segment_chips`
+            // unevaluatable. Drag precedence still ranks among payloads the
+            // user DOES match; it is not a pre-filter. Mirrors the TS.
+            let entry_payloads: Vec<&Value> = entry
                 .get("payloads")
                 .and_then(Value::as_array)
-                .and_then(|ps| {
+                .map(|ps| {
                     ps.iter()
-                        .find(|p| p.get("status").and_then(Value::as_str) == Some("active"))
+                        .filter(|p| p.get("status").and_then(Value::as_str) == Some("active"))
+                        .collect()
                 })
-            else {
-                continue;
-            };
-
-            let Some(surface) = payload
-                .get("surfaces")
-                .and_then(Value::as_array)
-                .and_then(|v| v.first())
-                .filter(|s| s.is_object())
-            else {
-                continue;
-            };
-
-            let Some(template_id) = s(surface, "template_id") else {
-                continue;
-            };
-            let surface_type = template_to_surface
-                .get(&template_id)
-                .cloned()
-                .unwrap_or_else(|| {
-                    panic!("Surface template {template_id} has no canonical ComponentType")
-                });
-
-            let mut content = surface
-                .get("fields")
-                .and_then(Value::as_object)
-                .cloned()
                 .unwrap_or_default();
 
-            let ctas = surface.get("ctas").and_then(Value::as_array);
-            let cta0 = ctas.and_then(|c| c.first());
-            let cta1 = ctas.and_then(|c| c.get(1));
-            if let Some(c) = cta0 {
-                content.insert(
-                    "cta_label".into(),
-                    c.get("label").cloned().unwrap_or(Value::Null),
-                );
-            }
-            if let Some(c) = cta1 {
-                content.insert(
-                    "secondary_cta_label".into(),
-                    c.get("label").cloned().unwrap_or(Value::Null),
-                );
-            }
-
-            let entry_id = entry.get("id").cloned().unwrap_or(Value::Null);
-            let trigger = entry.get("trigger");
-            let trigger_entitlement_handle =
-                read_entitlement_handle_from_trigger(trigger).map(str::to_string);
-
-            // `__`-prefixed meta keys ride on content, matching the TS.
-            if let Some(target_plan_ids) = payload
-                .get("target")
-                .filter(|t| t.is_object())
-                .map(|t| t.get("plan_ids").cloned().unwrap_or(json!([])))
-            {
-                let ids = if target_plan_ids.is_array() {
-                    target_plan_ids
-                } else {
-                    json!([])
+            for (payload_order, payload) in entry_payloads.into_iter().enumerate() {
+                let Some(surface) = payload
+                    .get("surfaces")
+                    .and_then(Value::as_array)
+                    .and_then(|v| v.first())
+                    .filter(|s| s.is_object())
+                else {
+                    continue;
                 };
-                content.insert("__target_plan_ids".into(), ids);
-            }
-            // Plan 233 TASK-7: segment targeting rides on content the same way.
-            if let Some(chips) = payload
-                .get("target")
-                .filter(|t| t.is_object())
-                .map(|t| t.get("segment_chips").cloned().unwrap_or(json!([])))
-            {
-                let chips = if chips.is_array() { chips } else { json!([]) };
-                content.insert("__target_segment_chips".into(), chips);
-            }
-            if let Some(h) = trigger_entitlement_handle.as_ref() {
-                content.insert("__trigger_entitlement_handle".into(), json!(h));
-            }
 
-            let trial_trigger = normalize_json_trigger(trigger);
-            if let Some(kind) = trial_trigger.as_ref().map(trial_kind) {
-                content.insert("__trigger_kind".into(), json!(kind));
-            }
+                let Some(template_id) = s(surface, "template_id") else {
+                    continue;
+                };
+                let surface_type = template_to_surface
+                    .get(&template_id)
+                    .cloned()
+                    .unwrap_or_else(|| {
+                        panic!("Surface template {template_id} has no canonical ComponentType")
+                    });
 
-            let output = json!({
-                "output_id": payload.get("id").cloned().unwrap_or(Value::Null),
-                "category": entry.get("category").cloned().unwrap_or(Value::Null),
-                "surface": {
-                    "template": template_id,
-                    "type": surface_type,
-                    "slot_id": entry_id,
-                },
-                "content": Value::Object(content),
-                "cta_path": Value::Object(normalize_cta_path(cta0)),
-                "rule_id": entry_id,
-                "decision_id": payload.get("id").cloned().unwrap_or(Value::Null),
-                "config_version": config_version,
-                "present_upsell": true,
-            });
+                let mut content = surface
+                    .get("fields")
+                    .and_then(Value::as_object)
+                    .cloned()
+                    .unwrap_or_default();
 
-            let idx = candidates.len();
-            candidates.push(CandidateOutput {
-                output,
-                entry_order: entry.get("order").and_then(Value::as_i64).unwrap_or(0),
-                entry_category: s(entry, "category"),
-                trigger_entitlement_handle: trigger_entitlement_handle.clone(),
-                trigger_slot_id: read_slot_id_from_trigger(trigger).map(str::to_string),
-                trial_trigger,
-                threshold_trigger: read_json_threshold_trigger(
-                    trigger,
-                    trigger_entitlement_handle.as_deref(),
-                ),
-                qualifier_trigger: read_json_qualifier_trigger(trigger),
-                entitlement_gate_trigger: read_json_entitlement_gate_trigger(
-                    trigger,
-                    trigger_entitlement_handle.as_deref(),
-                ),
-            });
-            by_template.entry(template_id).or_default().push(idx);
+                let ctas = surface.get("ctas").and_then(Value::as_array);
+                let cta0 = ctas.and_then(|c| c.first());
+                let cta1 = ctas.and_then(|c| c.get(1));
+                if let Some(c) = cta0 {
+                    content.insert(
+                        "cta_label".into(),
+                        c.get("label").cloned().unwrap_or(Value::Null),
+                    );
+                }
+                if let Some(c) = cta1 {
+                    content.insert(
+                        "secondary_cta_label".into(),
+                        c.get("label").cloned().unwrap_or(Value::Null),
+                    );
+                }
 
-            if let Some(id) = entry_id.as_str() {
-                // Registered under both the bare and `pl_`-prefixed spellings.
-                by_name.insert(id.trim_start_matches("pl_").to_string(), idx);
-                by_name.insert(id.to_string(), idx);
+                let entry_id = entry.get("id").cloned().unwrap_or(Value::Null);
+                let trigger = entry.get("trigger");
+                let trigger_entitlement_handle =
+                    read_entitlement_handle_from_trigger(trigger).map(str::to_string);
+
+                // `__`-prefixed meta keys ride on content, matching the TS.
+                if let Some(target_plan_ids) = payload
+                    .get("target")
+                    .filter(|t| t.is_object())
+                    .map(|t| t.get("plan_ids").cloned().unwrap_or(json!([])))
+                {
+                    let ids = if target_plan_ids.is_array() {
+                        target_plan_ids
+                    } else {
+                        json!([])
+                    };
+                    content.insert("__target_plan_ids".into(), ids);
+                }
+                // Plan 233 TASK-7: segment targeting rides on content the same way.
+                if let Some(chips) = payload
+                    .get("target")
+                    .filter(|t| t.is_object())
+                    .map(|t| t.get("segment_chips").cloned().unwrap_or(json!([])))
+                {
+                    let chips = if chips.is_array() { chips } else { json!([]) };
+                    content.insert("__target_segment_chips".into(), chips);
+                }
+                if let Some(h) = trigger_entitlement_handle.as_ref() {
+                    content.insert("__trigger_entitlement_handle".into(), json!(h));
+                }
+
+                let trial_trigger = normalize_json_trigger(trigger);
+                if let Some(kind) = trial_trigger.as_ref().map(trial_kind) {
+                    content.insert("__trigger_kind".into(), json!(kind));
+                }
+
+                let output = json!({
+                    "output_id": payload.get("id").cloned().unwrap_or(Value::Null),
+                    "category": entry.get("category").cloned().unwrap_or(Value::Null),
+                    "surface": {
+                        "template": template_id,
+                        "type": surface_type,
+                        "slot_id": entry_id,
+                    },
+                    "content": Value::Object(content),
+                    "cta_path": Value::Object(normalize_cta_path(cta0)),
+                    "rule_id": entry_id,
+                    "decision_id": payload.get("id").cloned().unwrap_or(Value::Null),
+                    "config_version": config_version,
+                    "present_upsell": true,
+                });
+
+                let idx = candidates.len();
+                candidates.push(CandidateOutput {
+                    output,
+                    entry_order: entry.get("order").and_then(Value::as_i64).unwrap_or(0),
+                    payload_order,
+                    entry_category: s(entry, "category"),
+                    trigger_entitlement_handle: trigger_entitlement_handle.clone(),
+                    trigger_slot_id: read_slot_id_from_trigger(trigger).map(str::to_string),
+                    trial_trigger,
+                    threshold_trigger: read_json_threshold_trigger(
+                        trigger,
+                        trigger_entitlement_handle.as_deref(),
+                    ),
+                    qualifier_trigger: read_json_qualifier_trigger(trigger),
+                    entitlement_gate_trigger: read_json_entitlement_gate_trigger(
+                        trigger,
+                        trigger_entitlement_handle.as_deref(),
+                    ),
+                });
+                by_template.entry(template_id).or_default().push(idx);
+
+                // The direct-lookup path resolves by name too, so it needs the
+                // same full candidate list — one entry name now maps to every one
+                // of its payloads, in authored order, and the lookup picks the
+                // first ELIGIBLE one.
+                if let Some(id) = entry_id.as_str() {
+                    // Registered under both the bare and `pl_`-prefixed spellings.
+                    by_name
+                        .entry(id.trim_start_matches("pl_").to_string())
+                        .or_default()
+                        .push(idx);
+                    by_name.entry(id.to_string()).or_default().push(idx);
+                }
             }
         }
 
         // Authored order decides ties throughout.
         for bucket in by_template.values_mut() {
-            bucket.sort_by_key(|i| candidates[*i].entry_order);
+            bucket.sort_by_key(|i| (candidates[*i].entry_order, candidates[*i].payload_order));
         }
 
         Self {
@@ -648,7 +670,12 @@ impl StaticPlacementResolver {
                     "No placements configured for this surface template",
                 );
             }
-            idxs.sort_by_key(|i| self.candidates[*i].entry_order);
+            idxs.sort_by_key(|i| {
+                (
+                    self.candidates[*i].entry_order,
+                    self.candidates[*i].payload_order,
+                )
+            });
 
             let slot_entitlement_handle = meta
                 .and_then(|m| m.get("entitlement_handle"))
@@ -832,31 +859,39 @@ impl StaticPlacementResolver {
             let name = placement
                 .and_then(|p| p.get("name"))
                 .and_then(Value::as_str);
-            let idx = name
+            // BL-0122: a name maps to EVERY payload of the entry, in authored
+            // order. Each is gated independently and the first one this user
+            // is eligible for wins — the same per-payload targeting the slot
+            // path applies, so neither path is the unguarded back door the
+            // other closes. Mirrors the TS.
+            let direct: &[usize] = name
                 .and_then(|n| self.by_name.get(n))
                 .or_else(|| self.by_name.get(placement_id))
-                .copied();
+                .map_or(&[][..], Vec::as_slice);
 
-            match idx {
-                None => reason_codes.push("placement_not_found".into()),
-                Some(i) => {
-                    let c = &self.candidates[i];
+            if direct.is_empty() {
+                reason_codes.push("placement_not_found".into());
+            } else {
+                let mut first_refusal: Option<String> = None;
+                for i in direct {
+                    let c = &self.candidates[*i];
                     let rid = s(&c.output, "rule_id").unwrap_or_default();
-                    if impression_history.is_some_and(|h| {
+                    // `None` when this candidate may be served; else its reason.
+                    let refusal: Option<&str> = if impression_history.as_mut().is_some_and(|h| {
                         h.is_hidden_for_category_sync(
                             &rid,
                             s(&c.output, "category").as_deref().unwrap_or(""),
                         )
                     }) {
-                        // Plan 234 TASK-13 — mirrors local-resolver.ts:726.
-                        reason_codes.push("placement_retired".into());
+                        // Plan 234 TASK-13 — mirrors local-resolver.ts.
+                        Some("placement_retired")
                     } else if !matches_trial_trigger(c.trial_trigger.as_ref(), plan) {
-                        reason_codes.push("trial_trigger_unmet".into());
+                        Some("trial_trigger_unmet")
                     } else if !matches_threshold_trigger(
                         c.threshold_trigger.as_ref(),
                         entitlements_state,
                     ) {
-                        reason_codes.push("threshold_trigger_unmet".into());
+                        Some("threshold_trigger_unmet")
                     } else if !matches_qualifier_trigger(
                         c.qualifier_trigger.as_ref(),
                         c.entry_category
@@ -865,29 +900,45 @@ impl StaticPlacementResolver {
                             .unwrap_or(""),
                         plan,
                     ) {
-                        reason_codes.push("qualifier_trigger_unmet".into());
+                        Some("qualifier_trigger_unmet")
                     } else if !matches_entitlement_gate_trigger(
                         c.entitlement_gate_trigger.as_ref(),
                         &self.tier_ladders_by_handle,
                         entitlements_state,
                     ) {
-                        reason_codes.push("entitlement_gate_unmet".into());
-                    } else if self.is_eligible_for_plan(
+                        Some("entitlement_gate_unmet")
+                    } else if !self.is_eligible_for_plan(
                         &c.output,
                         current_plan_id,
                         plan_handle,
                         billing_period,
                     ) {
-                        // Gating only the slot path would leave direct lookup an
-                        // unguarded back door, as plan 138 found for gates.
-                        if self.is_eligible_for_segments(&c.output, providers) {
-                            selected = Some(c.output.clone());
-                        } else {
-                            reason_codes.push("segment_target_mismatch".into());
-                        }
+                        Some("plan_target_mismatch")
+                    } else if !self.is_eligible_for_segments(&c.output, providers) {
+                        // Gating only the slot path would leave direct lookup
+                        // an unguarded back door, as plan 138 found for gates.
+                        Some("segment_target_mismatch")
                     } else {
-                        reason_codes.push("plan_target_mismatch".into());
+                        None
+                    };
+
+                    match refusal {
+                        None => {
+                            selected = Some(c.output.clone());
+                            break;
+                        }
+                        Some(reason) => {
+                            if first_refusal.is_none() {
+                                first_refusal = Some(reason.to_string());
+                            }
+                        }
                     }
+                }
+                // No candidate served: report the FIRST payload's refusal, the
+                // reason the single-payload path has always reported.
+                if selected.is_none() {
+                    reason_codes
+                        .push(first_refusal.unwrap_or_else(|| "no_eligible_candidate".into()));
                 }
             }
         }

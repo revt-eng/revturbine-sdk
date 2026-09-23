@@ -96,6 +96,11 @@ class _CandidateOutput(TypedDict):
 
     output: PlacementOutput
     entry_order: Any
+    # Authored position of this payload within its placement entry (BL-0122).
+    # Every payload of an entry is a candidate in its own right, so ranking
+    # needs a within-entry key: drag precedence is the authored array order,
+    # not the lexicographic ``output_id``. Mirrors the TS ``payloadOrder``.
+    payload_order: int
     entry_category: Any
     trigger_entitlement_handle: str | None
     trigger_slot_id: str | None
@@ -347,7 +352,7 @@ def _is_finite_number(value: Any) -> bool:
 
 def _build_json_content_provider(
     exported_config: ExportedConfig,
-    placements: LocalPlacementDataset,
+    dataset: LocalPlacementDataset,
 ) -> PlacementContentLookupProvider | None:
     """Python port of local-resolver.ts ``buildJsonContentProvider`` (plan 77).
 
@@ -373,7 +378,7 @@ def _build_json_content_provider(
     # placement id → surface template id, from the placement's first active
     # payload surface (the same surface the inline candidate is built from).
     placement_template: dict[str, str] = {}
-    for entry in placements["placements"]:
+    for entry in dataset["placements"]:
         active_payload = next(
             (
                 p
@@ -484,6 +489,11 @@ def create_static_placement_resolver(
             if handles:
                 tier_ladders_by_handle[ent["unique_handle"]] = handles
 
+    # `placements` is the public keyword (callers pass `placements=`), but it
+    # reads badly indexed — `placements["placements"]`. Bind the dataset once
+    # (Kent 2026-09-23) so every use below reads `dataset["placements"]`.
+    dataset: LocalPlacementDataset = placements
+
     config_version = exported_config.get("format_version") or exported_config.get("version")
 
     # Content-linked content provider (plan 77). Built once per resolver from
@@ -491,120 +501,128 @@ def create_static_placement_resolver(
     # selected candidate's display copy is resolved against the user's segments
     # at decision time; when absent, candidates keep their inline surface
     # content.
-    content_provider = _build_json_content_provider(exported_config, placements)
+    content_provider = _build_json_content_provider(exported_config, dataset)
 
     # ── Index: template_id → candidate outputs (sorted by entry order) ──
     outputs_by_template: dict[str, list[_CandidateOutput]] = {}
-    outputs_by_name: dict[str, PlacementOutput] = {}
+    outputs_by_name: dict[str, list[_CandidateOutput]] = {}
 
-    for entry in placements["placements"]:
-        payload = next(
-            (
-                p
-                for p in (entry.get("payloads") or [])
-                if is_record(p) and p.get("status") == "active"
-            ),
-            None,
-        )
-        if payload is None:
-            continue
+    for entry in dataset["placements"]:
+        # BL-0122: EVERY active payload of an entry is a candidate, not just
+        # the first. Targeting is a per-payload property — "the user's plan and
+        # segment match a payload" (placement-prioritization.md §1 stage 3) —
+        # so a placement whose payloads are chipped to different segments must
+        # offer all of them to the eligibility filter. Indexing only the first
+        # made payloads 2+ unreachable and their ``segment_chips``
+        # unevaluatable. Drag precedence still ranks among payloads the user
+        # DOES match; it is not a pre-filter. Mirrors the TS resolver.
+        payload_order = -1
+        for payload in entry.get("payloads") or []:
+            if not is_record(payload) or payload.get("status") != "active":
+                continue
+            payload_order += 1
 
-        surfaces = payload.get("surfaces")
-        if not isinstance(surfaces, list) or not surfaces:
-            continue
-        surface = surfaces[0]
-        if not surface:
-            continue
+            surfaces = payload.get("surfaces")
+            if not isinstance(surfaces, list) or not surfaces:
+                continue
+            surface = surfaces[0]
+            if not surface:
+                continue
 
-        template_id = surface["template_id"]
-        surface_type = template_to_surface.get(template_id)
-        if surface_type is None:
-            raise ValueError(f"Surface template {template_id} has no canonical ComponentType")
+            template_id = surface["template_id"]
+            surface_type = template_to_surface.get(template_id)
+            if surface_type is None:
+                raise ValueError(f"Surface template {template_id} has no canonical ComponentType")
 
-        fields = surface.get("fields")
-        content: dict[str, Any] = {**fields} if is_record(fields) else {}
+            fields = surface.get("fields")
+            content: dict[str, Any] = {**fields} if is_record(fields) else {}
 
-        ctas = surface.get("ctas")
-        cta0 = ctas[0] if isinstance(ctas, list) and len(ctas) >= 1 else None
-        cta1 = ctas[1] if isinstance(ctas, list) and len(ctas) >= 2 else None
-        if cta0 is not None:
-            content["cta_label"] = cta0.get("label") if is_record(cta0) else None
-        if cta1 is not None:
-            content["secondary_cta_label"] = cta1.get("label") if is_record(cta1) else None
+            ctas = surface.get("ctas")
+            cta0 = ctas[0] if isinstance(ctas, list) and len(ctas) >= 1 else None
+            cta1 = ctas[1] if isinstance(ctas, list) and len(ctas) >= 2 else None
+            if cta0 is not None:
+                content["cta_label"] = cta0.get("label") if is_record(cta0) else None
+            if cta1 is not None:
+                content["secondary_cta_label"] = cta1.get("label") if is_record(cta1) else None
 
-        cta_path = _normalize_cta_path(cta0)
+            cta_path = _normalize_cta_path(cta0)
 
-        entry_id = entry.get("id")
-        output: PlacementOutput = {
-            "output_id": payload.get("id"),
-            "category": entry.get("category"),
-            "surface": {
-                "template": template_id,
-                "type": surface_type,
-                "slot_id": entry_id,
-            },
-            "content": content,
-            "cta_path": cta_path,
-            "rule_id": entry_id,
-            "decision_id": payload.get("id"),
-            "config_version": config_version,
-            "present_upsell": True,
-        }
-
-        target = payload.get("target")
-        if target is not None:
-            plan_ids = target.get("plan_ids") if is_record(target) else None
-            chips = target.get("segment_chips") if is_record(target) else None
-            output["content"] = {
-                **output["content"],
-                "__target_plan_ids": plan_ids if isinstance(plan_ids, list) else [],
-                "__target_segment_chips": chips if isinstance(chips, list) else [],
+            entry_id = entry.get("id")
+            output: PlacementOutput = {
+                "output_id": payload.get("id"),
+                "category": entry.get("category"),
+                "surface": {
+                    "template": template_id,
+                    "type": surface_type,
+                    "slot_id": entry_id,
+                },
+                "content": content,
+                "cta_path": cta_path,
+                "rule_id": entry_id,
+                "decision_id": payload.get("id"),
+                "config_version": config_version,
+                "present_upsell": True,
             }
 
-        trigger = entry.get("trigger")
-        trigger_entitlement_handle = _read_entitlement_handle_from_trigger(trigger)
-        if trigger_entitlement_handle:
-            output["content"] = {
-                **output["content"],
-                "__trigger_entitlement_handle": trigger_entitlement_handle,
-            }
-
-        trigger_slot_id = _read_slot_id_from_trigger(trigger)
-        trial_trigger = normalize_json_trigger(trigger)
-        threshold_trigger = _read_json_threshold_trigger(trigger, trigger_entitlement_handle)
-        qualifier_trigger = _read_json_qualifier_trigger(trigger)
-        entitlement_gate_trigger = _read_json_entitlement_gate_trigger(
-            trigger, trigger_entitlement_handle
-        )
-
-        if trial_trigger:
-            trigger_kind = trial_trigger.get("kind") if is_record(trial_trigger) else None
-            if trigger_kind:
+            target = payload.get("target")
+            if target is not None:
+                plan_ids = target.get("plan_ids") if is_record(target) else None
+                chips = target.get("segment_chips") if is_record(target) else None
                 output["content"] = {
                     **output["content"],
-                    "__trigger_kind": trigger_kind,
+                    "__target_plan_ids": plan_ids if isinstance(plan_ids, list) else [],
+                    "__target_segment_chips": chips if isinstance(chips, list) else [],
                 }
 
-        entry_order = entry.get("order")
-        candidate: _CandidateOutput = {
-            "output": output,
-            "entry_order": entry_order if entry_order is not None else 0,
-            "entry_category": entry.get("category"),
-            "trigger_entitlement_handle": trigger_entitlement_handle,
-            "trigger_slot_id": trigger_slot_id,
-            "trial_trigger": trial_trigger,
-            "threshold_trigger": threshold_trigger,
-            "qualifier_trigger": qualifier_trigger,
-            "entitlement_gate_trigger": entitlement_gate_trigger,
-        }
-        outputs_by_template.setdefault(template_id, []).append(candidate)
+            trigger = entry.get("trigger")
+            trigger_entitlement_handle = _read_entitlement_handle_from_trigger(trigger)
+            if trigger_entitlement_handle:
+                output["content"] = {
+                    **output["content"],
+                    "__trigger_entitlement_handle": trigger_entitlement_handle,
+                }
 
-        if isinstance(entry_id, str):
-            outputs_by_name[re.sub(r"^pl_", "", entry_id)] = output
-            outputs_by_name[entry_id] = output
+            trigger_slot_id = _read_slot_id_from_trigger(trigger)
+            trial_trigger = normalize_json_trigger(trigger)
+            threshold_trigger = _read_json_threshold_trigger(trigger, trigger_entitlement_handle)
+            qualifier_trigger = _read_json_qualifier_trigger(trigger)
+            entitlement_gate_trigger = _read_json_entitlement_gate_trigger(
+                trigger, trigger_entitlement_handle
+            )
+
+            if trial_trigger:
+                trigger_kind = trial_trigger.get("kind") if is_record(trial_trigger) else None
+                if trigger_kind:
+                    output["content"] = {
+                        **output["content"],
+                        "__trigger_kind": trigger_kind,
+                    }
+
+            entry_order = entry.get("order")
+            candidate: _CandidateOutput = {
+                "output": output,
+                "entry_order": entry_order if entry_order is not None else 0,
+                "payload_order": payload_order,
+                "entry_category": entry.get("category"),
+                "trigger_entitlement_handle": trigger_entitlement_handle,
+                "trigger_slot_id": trigger_slot_id,
+                "trial_trigger": trial_trigger,
+                "threshold_trigger": threshold_trigger,
+                "qualifier_trigger": qualifier_trigger,
+                "entitlement_gate_trigger": entitlement_gate_trigger,
+            }
+            outputs_by_template.setdefault(template_id, []).append(candidate)
+
+            # The direct-lookup path resolves by name too, so it needs the
+            # same full candidate list — one entry name now maps to every one
+            # of its payloads, in authored order, and the lookup picks the
+            # first ELIGIBLE one.
+            if isinstance(entry_id, str):
+                for key in (re.sub(r"^pl_", "", entry_id), entry_id):
+                    outputs_by_name.setdefault(key, []).append(candidate)
 
     for bucket in outputs_by_template.values():
-        bucket.sort(key=lambda c: c["entry_order"])
+        bucket.sort(key=lambda c: (c["entry_order"], c["payload_order"]))
 
     # ── Eligibility helpers ─────────────────────────────────────────────
     def _segment_handles(providers: Any) -> list[str]:
@@ -706,7 +724,7 @@ def create_static_placement_resolver(
                     ),
                 )
 
-            candidates.sort(key=lambda c: c["entry_order"])
+            candidates.sort(key=lambda c: (c["entry_order"], c["payload_order"]))
 
             slot_entitlement_handle = meta.get("entitlement_handle")
             slot_category = meta.get("surface_slot_category")
@@ -872,80 +890,70 @@ def create_static_placement_resolver(
             # `register_placement` — every placement comes from
             # `exported_config.placements`. Plan 43 TASK-12.
             name = placement.get("name") if is_record(placement) else None
-            direct_output = outputs_by_name.get(name) if name else None
-            if direct_output is None:
-                direct_output = outputs_by_name.get(input_data["placement_id"])
+            # BL-0122: a name maps to EVERY payload of the entry, in authored
+            # order. Each is gated independently and the first one this user is
+            # eligible for wins — the same per-payload targeting the slot path
+            # applies, so neither path is the unguarded back door the other
+            # closes. Mirrors the TS resolver.
+            direct_candidates: list[_CandidateOutput] | None = (
+                outputs_by_name.get(name) if name else None
+            )
+            if direct_candidates is None:
+                direct_candidates = outputs_by_name.get(input_data["placement_id"])
 
-            # Find the matching candidate so we can read its trial trigger
-            # (outputs_by_name stores only the output, not the normalized
-            # trigger — re-derive from the bucket index).
-            direct_candidate: _CandidateOutput | None = None
-            if direct_output is not None:
-                for bucket in outputs_by_template.values():
-                    found = next(
-                        (c for c in bucket if c["output"] is direct_output),
-                        None,
-                    )
-                    if found is not None:
-                        direct_candidate = found
-                        break
-
-            if direct_output and (
-                impression_history is not None
-                and impression_history.is_hidden_sync(
-                    direct_output.get("rule_id") or "", direct_output.get("category")
-                )
-            ):
-                reason_codes = ["placement_retired"]
-            elif direct_output and not matches_trial_trigger(
-                direct_candidate.get("trial_trigger") if direct_candidate else None,
-                plan,
-            ):
+            def _refusal_for(candidate: _CandidateOutput) -> str | None:
+                """``None`` when this candidate may be served; else its reason."""
+                output = candidate["output"]
+                if impression_history is not None and impression_history.is_hidden_sync(
+                    output.get("rule_id") or "", output.get("category")
+                ):
+                    return "placement_retired"
                 # Plan 43 TASK-12: symmetric with the slot-based path.
-                reason_codes = ["trial_trigger_unmet"]
-            elif direct_output and not matches_threshold_trigger(
-                direct_candidate.get("threshold_trigger") if direct_candidate else None,
-                entitlements_state,
-            ):
+                if not matches_trial_trigger(candidate.get("trial_trigger"), plan):
+                    return "trial_trigger_unmet"
                 # Plan 138: threshold gating on direct lookup too.
-                reason_codes = ["threshold_trigger_unmet"]
-            elif direct_output and not matches_qualifier_trigger(
-                direct_candidate.get("qualifier_trigger") if direct_candidate else None,
-                str(
-                    (direct_candidate.get("entry_category") if direct_candidate else None)
-                    or direct_output.get("category")
-                    or ""
-                ),
-                plan,
-            ):
+                if not matches_threshold_trigger(
+                    candidate.get("threshold_trigger"), entitlements_state
+                ):
+                    return "threshold_trigger_unmet"
                 # Plan 138: qualifier gating on direct lookup too.
-                reason_codes = ["qualifier_trigger_unmet"]
-            elif direct_output and not matches_entitlement_gate_trigger(
-                direct_candidate.get("entitlement_gate_trigger") if direct_candidate else None,
-                tier_ladders_by_handle,
-                entitlements_state,
-            ):
+                if not matches_qualifier_trigger(
+                    candidate.get("qualifier_trigger"),
+                    str(candidate.get("entry_category") or output.get("category") or ""),
+                    plan,
+                ):
+                    return "qualifier_trigger_unmet"
                 # Plan 138 TASK-4: entitlement-gate tier gating on direct lookup
                 # too — symmetric with the trial/threshold/qualifier gates.
-                reason_codes = ["entitlement_gate_unmet"]
-            elif (
-                direct_output
-                and _is_eligible_for_plan(
-                    direct_output, current_plan_id, plan_handle, billing_period
-                )
-                and _is_eligible_for_segments(direct_output, providers)
-            ):
-                selected_output = direct_output
-            elif direct_output and _is_eligible_for_plan(
-                direct_output, current_plan_id, plan_handle, billing_period
-            ):
+                if not matches_entitlement_gate_trigger(
+                    candidate.get("entitlement_gate_trigger"),
+                    tier_ladders_by_handle,
+                    entitlements_state,
+                ):
+                    return "entitlement_gate_unmet"
+                if not _is_eligible_for_plan(output, current_plan_id, plan_handle, billing_period):
+                    return "plan_target_mismatch"
                 # Gating only the slot path would leave direct lookup an
                 # unguarded back door, as plan 138 found for entitlement gates.
-                reason_codes = ["segment_target_mismatch"]
-            elif direct_output:
-                reason_codes = ["plan_target_mismatch"]
-            else:
+                if not _is_eligible_for_segments(output, providers):
+                    return "segment_target_mismatch"
+                return None
+
+            if not direct_candidates:
                 reason_codes = ["placement_not_found"]
+            else:
+                first_refusal: str | None = None
+                for candidate in direct_candidates:
+                    refusal = _refusal_for(candidate)
+                    if refusal is None:
+                        selected_output = candidate["output"]
+                        break
+                    if first_refusal is None:
+                        first_refusal = refusal
+                # No candidate served: report the FIRST payload's refusal, the
+                # reason the single-payload path has always reported.
+                if selected_output is None:
+                    reason_codes = [first_refusal or "no_eligible_candidate"]
 
         if selected_output is None:
             code = reason_codes[0] if reason_codes else "placement_not_found"
