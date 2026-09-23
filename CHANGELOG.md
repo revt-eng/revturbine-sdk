@@ -40,6 +40,48 @@ also require a changelog entry.
 
 ---
 
+## 0.10.1
+
+### Treatment interactions carry the identified `account_id`
+
+**What changed.** Every treatment interaction the SDK sends to
+`/api/events/interactions` — the impression that writes a
+`placement_presentations` row, plus dismiss / click / conversion — now carries
+`account_id`, taken from the account the integration identified
+(`identify(userId, { account_id })` / `setUserContext`). It was never sent at
+all, so the ingest route's `account_id ?? user_id` fallback stamped a **user**
+id into an **account** column. `placement_presentations.account_id` is a join
+key, not a label: `monetization_funnel` matches it against account ids from
+`events_clickstream` / `events_billing`, and every experiment summary pipe
+reads it when `analysis_unit='account'`. Those joins therefore matched only
+where a user id happened to equal an account id — and an account-grain
+experiment readout returned the user-grain n while looking perfectly valid.
+
+Two details make it a usable key. The value is PII-redacted **identically to
+`/api/track`**, so an email-shaped account id becomes the same hash in
+`placement_presentations` and in `events_clickstream` and the funnel actually
+joins. And when no account was identified the field is **omitted**, never set
+to the user id — the route keeps its own fallback for SDKs that have not
+upgraded, but a wrong join key is worse than a missing one.
+
+No public API change: nothing new is asked of the caller, and
+`RevTurbineTreatmentInteractionInput` is unchanged. Integrations that already
+pass `account_id` to `identify()` get correct account-grain analytics with no
+code change; integrations that never identify an account are unaffected on the
+wire and see the same route-side fallback as before.
+
+**Landed in** `0.10.1`. **Fail-closed in** n/a — additive; nothing old is
+rejected.
+
+**Proving test:** `web-sdk/interaction-wire-contract.test.ts` — "the account
+identity the analytics joins key on": the identified account reaches the wire
+distinct from `user_id`, an unidentified one is omitted rather than copied from
+`user_id`, an email-shaped account id matches the `/api/track` lane
+byte-for-byte, and a re-queued batch keeps the account that was acting when
+each interaction happened.
+
+---
+
 ## 0.10.0
 
 ### `publicKey` is the browser credential; `apiKey` is the server key
