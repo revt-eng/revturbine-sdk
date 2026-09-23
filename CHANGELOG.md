@@ -47,6 +47,53 @@ also require a changelog entry.
 
 ---
 
+## 0.10.4
+
+### Every payload is a selection candidate, not just the first (BL-0122)
+
+**What changed.** A placement's payloads are now *all* candidates on both
+selection paths, in all three ports. Previously each port considered exactly one
+payload per placement — TypeScript took `payloads[0]`, Python and Rust the first
+payload with `status == "active"` — so payloads 2+ were never candidates and
+their `target.segment_chips` could not be evaluated at all.
+
+| | Before | After |
+|---|---|---|
+| Candidacy | one payload per placement | every payload (Python/Rust: every `active` payload) |
+| `target.segment_chips` on payloads 2+ | never evaluated | evaluated per payload |
+| Drag precedence | a pre-filter — it chose the only candidate | a tiebreaker among the payloads the user **matches** |
+| Direct lookup by name/id | mapped a name to one payload | maps a name to every payload, gated individually, first eligible wins |
+
+The contract this restores is
+[`placement-prioritization.md`](https://github.com/revt-eng/revturbine-devkit/blob/main/docs/specs/scaffold/placement-prioritization.md)
+§1 stage 3 — "Targeting — the user's plan and segment match **a payload**" — with
+§4 and Appendix D scoping drag precedence to payloads that are equally eligible.
+
+**Why it mattered.** A placement holding an admin payload and a member payload
+gave every member either the admin copy (when payload 1 was unchipped) or
+nothing at all (when payload 1 was chipped to admins). An integration hit the
+second shape on 0.7.13 and concluded config-driven segmentation was inert. Plan
+233 TASK-7 had already made the chip predicate real — but the predicate was only
+ever asked about one payload.
+
+**Landed in.** 0.10.4 (all three ports, plus `@revt-eng/core` 0.1.326).
+
+**Fail-closed in.** 0.10.4 — the same release. There is no tolerance window:
+a user who matches no payload now receives `visible: false` with
+`segment_target_mismatch` rather than payload 1's content.
+
+**Proving test.** `tests/parity/fixtures/segment_chip_payload_selection.json`
+(cross-language), plus `local-resolver-payload-selection.test.ts`,
+`server-python/tests/placements/test_payload_selection.py` and
+`server-rust/tests/payload_selection.rs` — each exercising **both** the slot and
+the direct-lookup path, because gating one and not the other is exactly the back
+door plans 138 and 233 each had to close.
+
+**Who is affected.** Any Playbook authoring more than one payload on a
+placement where payload 1 is not the payload a given user matches. Those users
+now see the payload their chips select — which is the fix, and is a live
+behaviour change for such configs. Single-payload placements are unaffected.
+
 ## 0.10.3
 
 ### The Rust port gains the decision surfaces Python already shipped (BL-0145)

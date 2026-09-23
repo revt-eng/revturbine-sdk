@@ -18,14 +18,14 @@ importers:
         specifier: ^2.20.0
         version: 2.20.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@revt-eng/core':
-        specifier: 0.1.325
-        version: 0.1.325(drizzle-orm@0.45.2)(react@19.2.6)(tailwindcss@4.3.0)
+        specifier: 0.1.326
+        version: 0.1.326(drizzle-orm@0.45.2)(react@19.2.6)(tailwindcss@4.3.0)
       '@revt-eng/schema':
-        specifier: 0.1.325
-        version: 0.1.325(react@19.2.6)(tailwindcss@4.3.0)
+        specifier: 0.1.326
+        version: 0.1.326(react@19.2.6)(tailwindcss@4.3.0)
       '@revt-eng/schema-external':
-        specifier: 0.1.325
-        version: 0.1.325(zod@4.4.3)
+        specifier: 0.1.326
+        version: 0.1.326(zod@4.4.3)
       '@revturbine/sdk':
         specifier: 0.6.0
         version: 0.6.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -690,18 +690,18 @@ packages:
     peerDependencies:
       react: '>=16.8'
 
-  '@revt-eng/core@0.1.325':
-    resolution: {integrity: sha512-WLDn25rTzkXBs6Ijm0jFmGABPMIbLconquxMLTZOucrvg5qt8+7Ww0dTAHhHTh4sNSz8+KJ5uAv/xyW+GFA+bg==, tarball: https://npm.pkg.github.com/download/@revt-eng/core/0.1.325/6c7b39239b3ccd55c9095dfa93687d789f8118a3}
+  '@revt-eng/core@0.1.326':
+    resolution: {integrity: sha512-Z+g+QkrZNbN1FGbfrWzKV4xcOnpPN5D1jWPgEkrIPMwCD5uSOFU2E1TCScAGxLeJ6y5+x/2TeeisxB1bJYN0KQ==, tarball: https://npm.pkg.github.com/download/@revt-eng/core/0.1.326/62979628a1dda4b17b6e101e56be7d4cd67e30a9}
     peerDependencies:
       drizzle-orm: '>=0.30.0'
 
-  '@revt-eng/schema-external@0.1.325':
-    resolution: {integrity: sha512-MTG2XcYVEbSNkfO9F9goQb95Zw9IgqjtG0vtK9pRasKeT2KiPCzZU5W9/1975rdEbcCLFpfKdGiuk/v3uceL1g==, tarball: https://npm.pkg.github.com/download/@revt-eng/schema-external/0.1.325/f1b6f2e16bca975655e8cc3b36c8499066a7a5ff}
+  '@revt-eng/schema-external@0.1.326':
+    resolution: {integrity: sha512-Kx9/+kMLl9THYUFLtq9TGEdP3Pi2lB/6PNe+YyJM10fKPnyqv4IAma0JJT1+jM0z5suNHhd/ulo/aUhnThVVfQ==, tarball: https://npm.pkg.github.com/download/@revt-eng/schema-external/0.1.326/4d5092f7c0e7ad9a5bbd29589447d465fd51d16b}
     peerDependencies:
       zod: ^4.0.0
 
-  '@revt-eng/schema@0.1.325':
-    resolution: {integrity: sha512-B+L3+Tsexww4kvmbgf5JrlMG26ZhBDi61NneURALBZUe/4Q/nAkTlM36xlWwiSFmCeN/8LxhEy4HZ8myjKSdCw==, tarball: https://npm.pkg.github.com/download/@revt-eng/schema/0.1.325/3a428a9983109a43b9769b93d27f1e4c4cc33243}
+  '@revt-eng/schema@0.1.326':
+    resolution: {integrity: sha512-hZVPN33aqrOCNKG7s8NgzgazIJeoMupW9H+nAtWsbhGxt7vXqR/NxxcHOMaSBpJFqBaQ19J8xSV8DfmgBHrDBA==, tarball: https://npm.pkg.github.com/download/@revt-eng/schema/0.1.326/97a3fe4fee880be909db8ad3d308ab173bc3bf3c}
     peerDependencies:
       react: '>=19'
       tailwindcss: '>=4'
@@ -3308,20 +3308,20 @@ snapshots:
     dependencies:
       react: 19.2.6
 
-  '@revt-eng/core@0.1.325(drizzle-orm@0.45.2)(react@19.2.6)(tailwindcss@4.3.0)':
+  '@revt-eng/core@0.1.326(drizzle-orm@0.45.2)(react@19.2.6)(tailwindcss@4.3.0)':
     dependencies:
-      '@revt-eng/schema': 0.1.325(react@19.2.6)(tailwindcss@4.3.0)
+      '@revt-eng/schema': 0.1.326(react@19.2.6)(tailwindcss@4.3.0)
       drizzle-orm: 0.45.2
       zod: 4.4.3
     transitivePeerDependencies:
       - react
       - tailwindcss
 
-  '@revt-eng/schema-external@0.1.325(zod@4.4.3)':
+  '@revt-eng/schema-external@0.1.326(zod@4.4.3)':
     dependencies:
       zod: 4.4.3
 
-  '@revt-eng/schema@0.1.325(react@19.2.6)(tailwindcss@4.3.0)':
+  '@revt-eng/schema@0.1.326(react@19.2.6)(tailwindcss@4.3.0)':
     dependencies:
       pure-rand: 8.4.2
       react: 19.2.6
