@@ -47,6 +47,61 @@ also require a changelog entry.
 
 ---
 
+## 0.10.5
+
+### Trial-only local integrations get provider context (BL-0120)
+
+**What changed.** `synthesizeProviderContext()` — the fallback that builds
+`DomainProvider` state from `userContext` when no explicit domain provider is
+registered — dropped an integration's trial data whenever no commercial
+`plan` / `plan_handle` was also present. An app supplying **only**
+`initialData.trialStatus` (or `setTrialInstances()` / `setTrialStatus()` with
+no plan) got no provider context at all: `providers.plan` came back
+`undefined`, so `{{trial_days_remaining}}` (and every other `trial*` token
+`derivePlacementPersonalizationTokens` derives from `providers.plan`) stayed
+raw, unresolved, in placement copy. Reported against the CybeDefend demo
+(SDK 0.7.13): a `trial_ending` placement with `in_trial: true,
+days_remaining: 3` left `{{trial_days_remaining}}` literal in the rendered
+body.
+
+Two omissions, same root cause — trial was never checked alongside
+`plan` / `plan_handle` / `usage` / `tiers` / `experiments`:
+
+- the early-return guard (`if (!plan && !planHandle && !usage && !hasTiers
+  && !hasExperiments) return undefined;`) treated a trial-only integration as
+  having no signal whatsoever;
+- even past that guard, the returned `plan` key itself was gated on
+  `plan || planHandle` — so the trial fields (`trialActive`,
+  `trialDaysRemaining`, etc.) it computed were still discarded for a
+  plan-less trial.
+
+Both gates now also check `hasTrial` (an explicit trial signal — the default
+untouched `{ in_trial: false }` sentinel does not count, so the omitted-signal
+short-circuit is otherwise unchanged for integrations that supply nothing at
+all). `usage`-only, `tiers`-only, and `experiments`-only integrations already
+threaded through correctly before this change; trial was the only signal
+missing from both checks.
+
+No public API change — `synthesizeProviderContext` is private, and the fix is
+additive: a plan-less trial integration now gets a `providers.plan` it never
+got before, with an empty `currentPlanHandle: ''` (no plan name/handle was
+ever supplied to derive one from).
+
+**Landed in** `0.10.5`. **Fail-closed in** n/a — a previously-dropped signal
+is now included; nothing that resolved before stops resolving.
+
+**Proving test:** `web-sdk/customer-side-trial-token-signal.test.ts` — a
+trial-only local integration now gets a non-empty provider context with
+`trialActive`/`trialDaysRemaining` set, and feeding those through
+`derivePlacementPersonalizationTokens` + `resolveContent` renders
+`{{trial_days_remaining}}` as `"3"` instead of leaving it literal. Includes
+the positive control (trial + plan together — unchanged), the negative
+control (no trial data at all — the token stays absent, never coerced to
+`"0"`), and a sibling check confirming usage-only integrations were already
+unaffected by the guard.
+
+---
+
 ## 0.10.4
 
 ### Every payload is a selection candidate, not just the first (BL-0122)
@@ -94,6 +149,8 @@ placement where payload 1 is not the payload a given user matches. Those users
 now see the payload their chips select — which is the fix, and is a live
 behaviour change for such configs. Single-payload placements are unaffected.
 
+---
+
 ## 0.10.3
 
 ### The Rust port gains the decision surfaces Python already shipped (BL-0145)
@@ -123,6 +180,8 @@ rather than calling the crate — so the comparison never touched shipped code,
 and the crate could lack the capability entirely without a single fixture
 going red. The runner now calls `revturbine::plans`, and the inline copies are
 deleted; all 102 comparisons stay byte-identical.
+
+---
 
 ## 0.10.2
 
