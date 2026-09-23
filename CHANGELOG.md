@@ -47,6 +47,50 @@ also require a changelog entry.
 
 ---
 
+## 0.10.8
+
+### `{{recommended_plan_name}}` and `{{plan_name}}` no longer reach end users as raw tokens (BL-0121)
+
+**What changed.** The placement-decision lane now substitutes the five tokens
+the SDK resolves from the Playbook — `plan_name`, `plan_price`,
+`upgrade_plan_price`, `recommended_plan_handle`, `recommended_plan_name` —
+into `RevTurbinePlacementDecision.content` (and the mirrored
+`decision.output.content`). It previously substituted `plan_price` and
+`upgrade_plan_price` only.
+
+`recommended_plan_handle` / `recommended_plan_name` were already derived, by
+the parity-locked `resolveRecommendedPlanTokens` dispatch, and already readable
+via `getPersonalizationTokens()`. Nothing wrote them into rendered content, so
+a placement authored with `"Upgrade to {{recommended_plan_name}}"` shipped the
+literal braces to the end user. Observed on the CybeDefend demo, 2026-09-22.
+
+Two properties of the substitution are deliberate:
+
+| input | result |
+|---|---|
+| a token the SDK owns but cannot resolve (top-of-ladder user has no next plan) | empty string — the spec's documented empty-token convention |
+| a token the SDK does not own (`{{usage_percent}}`, an app-defined token) | left verbatim, so the React render lane still resolves it |
+
+`plan_name` resolves through the plan's `unique_handle`, the matching identity
+— the lookup used to be handed the plan *object*, which by design resolves
+nothing, so `{{plan_name}}` rendered raw for every user identified by
+`plan_handle`.
+
+**Landed in.** `0.10.8`.
+
+**Not fixed here.** `{{upgrade_plan_price}}` still renders the ANNUAL amount
+for a plan that has both an annual and a monthly variation. Variation
+preference keys off the user's billing cadence, but no supported input carries
+it (`billing_period` is absent from `UserContextSchema` and from the recognized
+`identify()` / `update()` keys), so selection falls through to the
+alphabetically-first variation and `<plan>_annual` always wins. Closing it
+needs a schema field for the cadence and a contract for which period the token
+reflects when the cadence is unknown; both are open on BL-0121.
+
+**Proving test.** `web-sdk/customer-side-upgrade-tokens.test.ts`.
+
+---
+
 ## 0.10.7
 
 ### The Python and Rust ports stop filtering payloads on `status` (BL-0151)
