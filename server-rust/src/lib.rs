@@ -73,6 +73,14 @@ pub mod types;
 /// the SDK type (`revturbine.core.plans.format_currency_minor_units`).
 pub use plans::format_currency_minor_units;
 
+/// The trial-status → PlanProvider overlay, re-exported at the crate root so a
+/// caller that assembles its own provider context (the parity runner, a host
+/// that drives `LocalRuntime` directly) reaches the SAME mapping the facade
+/// applies. Python performs it inside the shipped package; BL-0153 closed the
+/// gap by making the crate's copy public rather than leaving it re-implemented
+/// harness-side.
+pub use sdk::overlay_trial_status_on_plan_provider;
+
 /// The crate version, kept in lockstep with the TypeScript and Python SDKs.
 ///
 /// All three packages carry the same version number by release policy, so this

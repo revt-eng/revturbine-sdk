@@ -92,21 +92,69 @@ pub struct RevTurbineCustomerSdk {
     segment_ids: Vec<String>,
 }
 
-/// Map a `UserTrialStatus` onto the `trial_*` plan-provider fields the trial
-/// gates read. Without this every `trial_*` gate reads "no trial" and declines.
-fn overlay_trial(plan: &mut Map<String, Value>, trial: &Map<String, Value>) {
+/// Overlay a runtime `UserTrialStatus` onto the `trial_*` fields of a resolved
+/// PlanProviderState, in place.
+///
+/// This is the crate-side counterpart of Python's
+/// `revturbine.sdk._overlay_trial_status_on_plan_provider` /
+/// `_TrialOverlayPlanProvider.resolve`, itself a port of the TS canonical
+/// `synthesizeProviderContext`'s `planTrialFields`
+/// (`web-sdk/customer-side.ts`). The placement resolver's `trial_progress` /
+/// `trial_ending` / `trial_ended` / `trial_converted` gates and milestone
+/// supersession all read these fields (see
+/// [`crate::placements::trial_gating`]); without the overlay every `trial_*`
+/// gate reads "no trial" and silently declines.
+///
+/// **Upsert semantics.** Only fields the patch DEFINES are written: an absent
+/// or explicitly `null` member leaves whatever the base state already carried
+/// untouched, and is not materialized as a key. That is the same
+/// non-clobbering rule the TS `mergeUserContext` and Python's
+/// `_TrialOverlayPlanProvider` follow.
+///
+/// `trial_days_total` is DERIVED (`day_number + days_remaining`) and only when
+/// both are present — the time-mode progress fallback in
+/// [`crate::placements::trial_gating`] reads it, and there is no
+/// `trial_day_number` field on the provider state for `day_number` to land on.
+///
+/// The shape differs from Python's by language idiom only: Python wraps the
+/// plan `DomainProvider` and merges at `resolve()` time, while the Rust
+/// provider context is already a plain JSON map, so this mutates the `plan`
+/// entry directly. The field mapping is the parity-relevant part and is
+/// identical.
+///
+/// Parity fixtures locking this: `tests/parity/fixtures/trial_ending_days_before_end.json`,
+/// `trial_ended_post_expiry.json` and `trial_progress_milestone_supersession.json`.
+///
+/// Source: `server-python/src/revturbine/sdk.py` `_TrialOverlayPlanProvider`.
+pub fn overlay_trial_status_on_plan_provider(
+    plan: &mut Map<String, Value>,
+    trial_status: &Map<String, Value>,
+) {
+    let defined = |key: &str| trial_status.get(key).filter(|v| !v.is_null());
+
     for (from, to) in [
         ("in_trial", "trial_active"),
-        ("state", "trial_state"),
         ("trial_limit_type", "trial_limit_type"),
         ("progress_percent", "trial_progress_percent"),
         ("days_remaining", "trial_days_remaining"),
-        ("day_number", "trial_day_number"),
-        ("usage_limit", "trial_usage_limit"),
+        ("state", "trial_state"),
+        ("usage_entitlement_handle", "trial_usage_entitlement_handle"),
         ("usage_consumed", "trial_usage_consumed"),
+        ("usage_limit", "trial_usage_limit"),
     ] {
-        if let Some(v) = trial.get(from).filter(|v| !v.is_null()) {
+        if let Some(v) = defined(from) {
             plan.insert(to.to_string(), v.clone());
+        }
+    }
+
+    // Time-mode only, and only when BOTH halves are present — mirroring the TS
+    // `trial.day_number !== undefined && trial.days_remaining !== undefined`
+    // guard rather than defaulting a missing half to zero.
+    if let (Some(day_number), Some(days_remaining)) =
+        (defined("day_number"), defined("days_remaining"))
+    {
+        if let (Some(d), Some(r)) = (day_number.as_f64(), days_remaining.as_f64()) {
+            plan.insert("trial_days_total".to_string(), json!(d + r));
         }
     }
 }
@@ -162,7 +210,7 @@ impl RevTurbineCustomerSdk {
                 .entry("plan")
                 .or_insert_with(|| json!({}));
             if let Some(p) = plan.as_object_mut() {
-                overlay_trial(p, trial);
+                overlay_trial_status_on_plan_provider(p, trial);
             }
         }
 
@@ -316,6 +364,120 @@ impl RevTurbineCustomerSdk {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // ── Trial-status overlay (BL-0153) ───────────────────────────────────
+    //
+    // Mirrors `server-python/tests/test_trial_overlay_upsert.py`, the upsert
+    // contract the TS `mergeUserContext` / `synthesizeProviderContext` and
+    // Python's `_TrialOverlayPlanProvider` share: only DEFINED values write.
+
+    /// A `trial_status` carrying explicit `null`s (the partial-update shape)
+    /// leaves the base PlanProviderState untouched and materializes no keys.
+    #[test]
+    fn overlay_does_not_clobber_base_state_with_null() {
+        let mut plan = json!({ "plan_handle": "pro", "trial_active": false })
+            .as_object()
+            .cloned()
+            .expect("object");
+        let trial = json!({
+            "in_trial": null,
+            "state": null,
+            "progress_percent": null,
+            "days_remaining": null
+        })
+        .as_object()
+        .cloned()
+        .expect("object");
+
+        overlay_trial_status_on_plan_provider(&mut plan, &trial);
+
+        assert_eq!(plan.get("plan_handle"), Some(&json!("pro")));
+        assert_eq!(plan.get("trial_active"), Some(&json!(false)));
+        assert!(!plan.contains_key("trial_state"));
+        assert!(!plan.contains_key("trial_progress_percent"));
+    }
+
+    /// Defined values DO overwrite / add, and unrelated base fields survive.
+    #[test]
+    fn overlay_applies_defined_trial_fields() {
+        let mut plan = json!({ "plan_handle": "pro" })
+            .as_object()
+            .cloned()
+            .expect("object");
+        let trial = json!({ "in_trial": true, "state": "active", "progress_percent": 42 })
+            .as_object()
+            .cloned()
+            .expect("object");
+
+        overlay_trial_status_on_plan_provider(&mut plan, &trial);
+
+        assert_eq!(plan.get("trial_active"), Some(&json!(true)));
+        assert_eq!(plan.get("trial_state"), Some(&json!("active")));
+        assert_eq!(plan.get("trial_progress_percent"), Some(&json!(42)));
+        assert_eq!(plan.get("plan_handle"), Some(&json!("pro")));
+    }
+
+    /// Every field the TS canonical's `planTrialFields` emits, including the
+    /// usage-mode trio Rust previously dropped (`usage_entitlement_handle`).
+    #[test]
+    fn overlay_maps_every_canonical_trial_field() {
+        let mut plan = Map::new();
+        let trial = json!({
+            "in_trial": true,
+            "trial_limit_type": "usage",
+            "progress_percent": 60.0,
+            "days_remaining": 4,
+            "day_number": 10,
+            "state": "trial_ending",
+            "usage_entitlement_handle": "api_calls",
+            "usage_consumed": 600,
+            "usage_limit": 1000
+        })
+        .as_object()
+        .cloned()
+        .expect("object");
+
+        overlay_trial_status_on_plan_provider(&mut plan, &trial);
+
+        assert_eq!(plan.get("trial_active"), Some(&json!(true)));
+        assert_eq!(plan.get("trial_limit_type"), Some(&json!("usage")));
+        assert_eq!(plan.get("trial_progress_percent"), Some(&json!(60.0)));
+        assert_eq!(plan.get("trial_days_remaining"), Some(&json!(4)));
+        assert_eq!(plan.get("trial_state"), Some(&json!("trial_ending")));
+        assert_eq!(
+            plan.get("trial_usage_entitlement_handle"),
+            Some(&json!("api_calls"))
+        );
+        assert_eq!(plan.get("trial_usage_consumed"), Some(&json!(600)));
+        assert_eq!(plan.get("trial_usage_limit"), Some(&json!(1000)));
+        // Derived, not copied — and `day_number` itself lands nowhere, because
+        // the provider state has no `trial_day_number` field for it to reach.
+        assert_eq!(plan.get("trial_days_total"), Some(&json!(14.0)));
+        assert!(!plan.contains_key("trial_day_number"));
+    }
+
+    /// `trial_days_total` is time-mode only: one half missing means no total,
+    /// never a half defaulted to zero (a usage-mode trial would otherwise get a
+    /// bogus time-based progress fallback).
+    #[test]
+    fn trial_days_total_requires_both_halves() {
+        let mut plan = Map::new();
+        let trial = json!({ "day_number": 10 })
+            .as_object()
+            .cloned()
+            .expect("object");
+        overlay_trial_status_on_plan_provider(&mut plan, &trial);
+        assert!(!plan.contains_key("trial_days_total"));
+
+        let mut plan = Map::new();
+        let trial = json!({ "days_remaining": 4 })
+            .as_object()
+            .cloned()
+            .expect("object");
+        overlay_trial_status_on_plan_provider(&mut plan, &trial);
+        assert!(!plan.contains_key("trial_days_total"));
+        assert_eq!(plan.get("trial_days_remaining"), Some(&json!(4)));
+    }
 
     /// A legacy artifact: `version`, no `artifact_type`/`format_version`, and —
     /// like every artifact that predates target stamping — no `tenant_id`.
