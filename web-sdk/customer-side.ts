@@ -4421,15 +4421,73 @@ export class RevTurbineCustomerSdk {
     };
   }
 
+  /**
+   * The plan-and-recommendation token family the SDK resolves authoritatively
+   * from the Playbook, for substitution into decision content.
+   *
+   * These five are exactly the tokens whose values come from the Playbook's
+   * plan catalogue plus the recommendation strategy, so the SDK — not the
+   * host app — is the only thing that can fill them in. Every other token in
+   * the studio table (usage, trial, seats, credits) is resolved on the React
+   * render lane by `derivePlacementPersonalizationTokens`, which unknown
+   * tokens pass through untouched.
+   */
+  private derivedContentTokens(
+    providers?: Awaited<ReturnType<DomainProviderRegistry['resolveAll']>>,
+  ): Record<string, string> {
+    const prices = this.priceTokensForProviders(providers);
+    const exportedConfig = this.getConfiguredExportedConfig();
+    const recommendation = this.deriveRecommendedPlanTokens(exportedConfig);
+
+    // Plan 191 REQ-1: the plan's matching identity is its `unique_handle`, so
+    // the name lookup takes the resolved identity — passing the plan OBJECT
+    // (as the imperative token map does) resolves nothing by design.
+    const configuredPlanName = configuredPlanNameFromExportedConfig(
+      exportedConfig,
+      this.resolveContextPlanRaw(),
+    );
+    const contextPlanName = typeof this.userContext.plan === 'object'
+      ? this.userContext.plan?.name
+      : undefined;
+
+    return {
+      plan_name: configuredPlanName
+        ?? providers?.plan?.currentPlanName
+        ?? contextPlanName
+        ?? '',
+      plan_price: prices.plan_price,
+      upgrade_plan_price: prices.upgrade_plan_price,
+      recommended_plan_handle: recommendation.recommended_plan_handle,
+      recommended_plan_name: recommendation.recommended_plan_name,
+    };
+  }
+
+  /**
+   * Substitute the SDK-resolved plan/price/recommendation tokens into a
+   * decision's content.
+   *
+   * Only the tokens in {@link derivedContentTokens} are substituted; any
+   * other `{{token}}` is left verbatim so the render lane (or the host app)
+   * can still resolve it. A token the SDK owns but cannot resolve — a
+   * top-of-ladder user has no recommended plan — becomes an empty string,
+   * which is the spec's documented empty-token convention and is what keeps
+   * raw `{{...}}` braces off the end user's screen.
+   */
   private applyPriceTokens(
     decision: RevTurbinePlacementDecision,
     providers?: Awaited<ReturnType<DomainProviderRegistry['resolveAll']>>,
   ): RevTurbinePlacementDecision {
-    const tokens = this.priceTokensForProviders(providers);
+    const tokens = this.derivedContentTokens(providers);
     const replace = (value: string | undefined): string => typeof value === 'string'
       ? value.replace(
-        /\{\{\s*(plan_price|upgrade_plan_price)\s*\}\}/g,
-        (_match, key: 'plan_price' | 'upgrade_plan_price') => tokens[key],
+        /\{\{\s*(\w+)\s*\}\}/g,
+        // An own-property test, not `in`: `in` also matches Object.prototype
+        // keys, so an authored `{{constructor}}` would inject a stringified
+        // function. (`Object.hasOwn` would need a newer `lib` than this
+        // tsconfig targets.)
+        (match, key: string) => (
+          Object.prototype.hasOwnProperty.call(tokens, key) ? tokens[key]! : match
+        ),
       )
       : '';
     return {
