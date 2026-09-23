@@ -116,6 +116,14 @@ pub struct RevTurbineCustomerSdk {
 /// [`crate::placements::trial_gating`] reads it, and there is no
 /// `trial_day_number` field on the provider state for `day_number` to land on.
 ///
+/// **Numeric representation is preserved, never widened** (BL-0155). The TS
+/// canonical spreads every `UserTrialStatus` field verbatim, so an integer
+/// `progress_percent` stays an integer on the PlanProviderState; the direct
+/// field copies below clone the `Value` unchanged, and the derived sum adds as
+/// `i64` when both halves are JSON integers so `11 + 3` is `14`, not `14.0`.
+/// Only a fractional (or overflowing) half falls back to `f64`. Python's
+/// `_TrialOverlayPlanProvider` derives the same way with native `+`.
+///
 /// The shape differs from Python's by language idiom only: Python wraps the
 /// plan `DomainProvider` and merges at `resolve()` time, while the Rust
 /// provider context is already a plain JSON map, so this mutates the `plan`
@@ -153,7 +161,16 @@ pub fn overlay_trial_status_on_plan_provider(
     if let (Some(day_number), Some(days_remaining)) =
         (defined("day_number"), defined("days_remaining"))
     {
-        if let (Some(d), Some(r)) = (day_number.as_f64(), days_remaining.as_f64()) {
+        // Integer halves sum as integers so the derived field keeps the
+        // representation TS and Python produce; anything else (a fractional
+        // half, or a sum that would overflow `i64`) widens to `f64`.
+        let integer_sum = match (day_number.as_i64(), days_remaining.as_i64()) {
+            (Some(d), Some(r)) => d.checked_add(r),
+            _ => None,
+        };
+        if let Some(total) = integer_sum {
+            plan.insert("trial_days_total".to_string(), json!(total));
+        } else if let Some((d, r)) = day_number.as_f64().zip(days_remaining.as_f64()) {
             plan.insert("trial_days_total".to_string(), json!(d + r));
         }
     }
@@ -452,8 +469,65 @@ mod tests {
         assert_eq!(plan.get("trial_usage_limit"), Some(&json!(1000)));
         // Derived, not copied — and `day_number` itself lands nowhere, because
         // the provider state has no `trial_day_number` field for it to reach.
-        assert_eq!(plan.get("trial_days_total"), Some(&json!(14.0)));
+        // Both halves are integers here, so the sum is an integer (BL-0155).
+        assert_eq!(plan.get("trial_days_total"), Some(&json!(14)));
         assert!(!plan.contains_key("trial_day_number"));
+    }
+
+    /// BL-0155 — the overlay preserves each field's numeric representation
+    /// instead of widening to float, so the provider-state map is structurally
+    /// identical to the one TS's `planTrialFields` and Python's
+    /// `_TrialOverlayPlanProvider` build from the same input. `serde_json`
+    /// distinguishes `42` from `42.0`, so these assertions would fail against a
+    /// port that coerces.
+    #[test]
+    fn overlay_preserves_integer_numeric_representation() {
+        let mut plan = Map::new();
+        let trial = json!({
+            "in_trial": true,
+            "trial_limit_type": "time",
+            "progress_percent": 100,
+            "days_remaining": 0,
+            "day_number": 14,
+            "usage_consumed": 8,
+            "usage_limit": 10
+        })
+        .as_object()
+        .cloned()
+        .expect("object");
+
+        overlay_trial_status_on_plan_provider(&mut plan, &trial);
+
+        for (key, expected) in [
+            ("trial_progress_percent", json!(100)),
+            ("trial_days_remaining", json!(0)),
+            ("trial_usage_consumed", json!(8)),
+            ("trial_usage_limit", json!(10)),
+            ("trial_days_total", json!(14)),
+        ] {
+            let actual = plan.get(key).expect(key);
+            assert_eq!(actual, &expected, "{key} must stay an integer");
+            assert!(
+                actual.is_i64() || actual.is_u64(),
+                "{key} widened to a float: {actual}"
+            );
+        }
+    }
+
+    /// A fractional half still produces a float total — the representation
+    /// follows the INPUT, it is not forced either way.
+    #[test]
+    fn overlay_keeps_float_numeric_representation() {
+        let mut plan = Map::new();
+        let trial = json!({ "progress_percent": 62.5, "day_number": 10.5, "days_remaining": 4 })
+            .as_object()
+            .cloned()
+            .expect("object");
+
+        overlay_trial_status_on_plan_provider(&mut plan, &trial);
+
+        assert_eq!(plan.get("trial_progress_percent"), Some(&json!(62.5)));
+        assert_eq!(plan.get("trial_days_total"), Some(&json!(14.5)));
     }
 
     /// `trial_days_total` is time-mode only: one half missing means no total,

@@ -327,6 +327,35 @@ class RevTurbineCustomerSdk:
 
 # ── Trial-status PlanProvider overlay (plan 43 TASK-12) ────────────────────
 
+#: ``UserTrialStatus`` key → ``PlanProviderState`` key, in the same order and
+#: with the same membership as the TS canonical's ``planTrialFields`` block
+#: and Rust's ``overlay_trial_status_on_plan_provider``. Values are written
+#: verbatim — see :class:`_TrialOverlayPlanProvider` on why no port coerces.
+_TRIAL_OVERLAY_FIELD_MAP: tuple[tuple[str, str], ...] = (
+    ("in_trial", "trial_active"),
+    ("trial_limit_type", "trial_limit_type"),
+    ("progress_percent", "trial_progress_percent"),
+    ("days_remaining", "trial_days_remaining"),
+    ("state", "trial_state"),
+    ("usage_entitlement_handle", "trial_usage_entitlement_handle"),
+    ("usage_consumed", "trial_usage_consumed"),
+    ("usage_limit", "trial_usage_limit"),
+)
+
+
+def _numeric_or_none(value: Any) -> int | float | None:
+    """Return ``value`` when it is a real ``int``/``float``, else ``None``.
+
+    ``bool`` is excluded deliberately: it is an ``int`` subclass in Python but
+    not a number in JSON, so treating ``True`` as ``1`` would let this port
+    derive a ``trial_days_total`` neither TS nor Rust produces.
+    """
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return value
+    return None
+
 
 class _TrialOverlayPlanProvider:
     """Wraps the static PlanProvider, merging the customer-supplied
@@ -339,7 +368,19 @@ class _TrialOverlayPlanProvider:
     ``synthesizeProviderContext`` and the parity TS runner's overlay
     helper — keep these aligned when either side adds a field.
 
-    Source: web-sdk/customer-side.ts:1582 (TS reference).
+    **Numeric representation is passed through, not coerced** (BL-0155).
+    The TS canonical's ``planTrialFields`` block spreads every
+    ``UserTrialStatus`` field verbatim, so an integer ``progress_percent``
+    stays an integer on the PlanProviderState. This port used to widen the
+    four numeric fields through ``float()``, which made the provider-state
+    map structurally different from TS's and Rust's for the same input —
+    invisible to the parity gate only because its normalizer collapses
+    integral floats and every ``trial_gating`` reader widens on read.
+    ``trial_days_total`` is likewise derived with native ``+``, so
+    ``int + int`` stays an ``int`` exactly as JS integer addition does.
+
+    Source: web-sdk/customer-side.ts ``synthesizeProviderContext``
+    (TS reference).
     """
 
     def __init__(self, base: DomainProvider, trial_status: dict[str, Any]) -> None:
@@ -359,33 +400,22 @@ class _TrialOverlayPlanProvider:
         merged: dict[str, Any] = {**base_state} if isinstance(base_state, dict) else {}
         ts = self._trial_status
 
-        in_trial = ts.get("in_trial")
-        if in_trial is not None:
-            merged["trial_active"] = bool(in_trial)
-        limit_type = ts.get("trial_limit_type")
-        if limit_type is not None:
-            merged["trial_limit_type"] = limit_type
-        progress = ts.get("progress_percent")
-        if progress is not None:
-            merged["trial_progress_percent"] = float(progress)
-        days_remaining = ts.get("days_remaining")
-        if days_remaining is not None:
-            merged["trial_days_remaining"] = float(days_remaining)
-        day_number = ts.get("day_number")
+        for source_key, target_key in _TRIAL_OVERLAY_FIELD_MAP:
+            value = ts.get(source_key)
+            if value is not None:
+                merged[target_key] = value
+
+        # Time-mode only, and only when BOTH halves are present — mirroring
+        # the TS `trial.day_number !== undefined && trial.days_remaining
+        # !== undefined` guard rather than defaulting a missing half to zero.
+        # Native `+` preserves the input kind (int + int -> int), matching
+        # both JS arithmetic and Rust's integer-preserving sum; a
+        # non-numeric half is skipped rather than raised, which is what the
+        # Rust port's `as_f64()` guard does.
+        day_number = _numeric_or_none(ts.get("day_number"))
+        days_remaining = _numeric_or_none(ts.get("days_remaining"))
         if day_number is not None and days_remaining is not None:
-            merged["trial_days_total"] = float(day_number) + float(days_remaining)
-        state = ts.get("state")
-        if state is not None:
-            merged["trial_state"] = state
-        usage_entitlement = ts.get("usage_entitlement_handle")
-        if usage_entitlement is not None:
-            merged["trial_usage_entitlement_handle"] = usage_entitlement
-        usage_consumed = ts.get("usage_consumed")
-        if usage_consumed is not None:
-            merged["trial_usage_consumed"] = float(usage_consumed)
-        usage_limit = ts.get("usage_limit")
-        if usage_limit is not None:
-            merged["trial_usage_limit"] = float(usage_limit)
+            merged["trial_days_total"] = day_number + days_remaining
 
         return merged
 
