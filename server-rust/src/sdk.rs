@@ -3,12 +3,19 @@
 //! A stateless, in-memory wrapper over the parity-locked decision substrate.
 //! Constructed from exactly a **user context** plus a **Playbook** — both
 //! supplied by the caller, because the server holds them and this SDK fetches
-//! and persists nothing — it exposes the two server-side decision
-//! capabilities:
+//! and persists nothing — it exposes the server-side decision surfaces:
 //!
-//! - [`RevTurbineCustomerSdk::check_entitlement`]
+//! - [`RevTurbineCustomerSdk::check_entitlement`] (alias
+//!   [`can`](RevTurbineCustomerSdk::can))
 //! - [`RevTurbineCustomerSdk::get_placement_decision`] /
 //!   [`get_placement_decisions`](RevTurbineCustomerSdk::get_placement_decisions)
+//! - [`RevTurbineCustomerSdk::get_eligible_plans`] /
+//!   [`get_eligible_addons`](RevTurbineCustomerSdk::get_eligible_addons)
+//! - [`RevTurbineCustomerSdk::evaluate_trial_status`]
+//!
+//! The minor-unit display formatter that renders catalog prices is a free
+//! function, [`crate::format_currency_minor_units`], because the Python port
+//! exposes it as a module function rather than a method.
 //!
 //! It composes [`create_static_providers`] → [`LocalRuntime`] and adds **zero**
 //! decision logic of its own. Every method is a pure delegation, so its output
@@ -23,12 +30,16 @@
 //!
 //! Source: `server-python/src/revturbine/sdk.py`
 
+use std::collections::HashMap;
+
 use serde_json::{json, Map, Value};
 
 use crate::adapters::{create_static_providers, StaticProviderOptions};
 use crate::config::{parse_playbook_or_throw, LegacyConfigTargetDefaults};
 use crate::decisions::EntitlementCheckResult;
+use crate::plans::{get_eligible_addons, get_eligible_plans, EligibleAddon, EligiblePlan};
 use crate::runtime::{LocalRuntime, PlacementDecisionInput};
+use crate::trials::{evaluate_trial_status, TrialEvaluation};
 
 const PRODUCTION_ENVIRONMENT_ID: &str = "production";
 
@@ -59,6 +70,13 @@ pub struct UserContext {
     pub payment_at_risk: Option<bool>,
     /// Current tier per `capability_tier` entitlement, for the tier gate.
     pub tiers: Option<Value>,
+    /// Pre-resolved segment ids for catalog eligibility. Entitlement rules take
+    /// their segment ids from the provider context; the catalog surfaces
+    /// ([`RevTurbineCustomerSdk::get_eligible_plans`] /
+    /// [`get_eligible_addons`](RevTurbineCustomerSdk::get_eligible_addons))
+    /// read them from here, mirroring `UserContext["segment_ids"]` on the
+    /// Python port.
+    pub segment_ids: Option<Vec<String>>,
 }
 
 /// The public, stateless, in-memory headless server SDK.
@@ -67,6 +85,11 @@ pub struct UserContext {
 /// state, so a fresh instance per user context is the intended usage.
 pub struct RevTurbineCustomerSdk {
     runtime: LocalRuntime,
+    /// The normalized Playbook, retained for the config-reading surfaces
+    /// (catalog eligibility and trial-rule evaluation) that read arrays the
+    /// runtime does not re-expose.
+    playbook: Value,
+    segment_ids: Vec<String>,
 }
 
 /// Map a `UserTrialStatus` onto the `trial_*` plan-provider fields the trial
@@ -144,6 +167,8 @@ impl RevTurbineCustomerSdk {
         }
 
         Ok(Self {
+            playbook: config.clone(),
+            segment_ids: user_context.segment_ids.clone().unwrap_or_default(),
             runtime: LocalRuntime::new(
                 config,
                 providers,
@@ -151,6 +176,32 @@ impl RevTurbineCustomerSdk {
                 &user_context.user_id,
             ),
         })
+    }
+
+    /// `segment handle -> dimension id`, as the catalog matcher wants it.
+    ///
+    /// Source: `server-python/src/revturbine/sdk.py` `_segment_dimensions`.
+    fn segment_dimensions(&self) -> HashMap<String, String> {
+        self.playbook
+            .get("segments")
+            .and_then(Value::as_array)
+            .map(Vec::as_slice)
+            .unwrap_or(&[])
+            .iter()
+            .filter_map(|segment| {
+                let handle = segment.get("handle").and_then(Value::as_str)?;
+                let dimension = segment.get("dimension_id").and_then(Value::as_str)?;
+                Some((handle.to_string(), dimension.to_string()))
+            })
+            .collect()
+    }
+
+    fn playbook_array(&self, key: &str) -> Vec<Value> {
+        self.playbook
+            .get(key)
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default()
     }
 
     /// Is a feature or limit allowed for this user?
@@ -161,6 +212,82 @@ impl RevTurbineCustomerSdk {
         context: Option<&Value>,
     ) -> EntitlementCheckResult {
         self.runtime.check_entitlement(handle, context)
+    }
+
+    /// The advertised `can` alias of [`check_entitlement`](Self::check_entitlement).
+    ///
+    /// Mirrors the scaffold SDK function surface (canonical `checkEntitlement`,
+    /// alias `can`) and the Python / Node ports, so the documented server
+    /// re-check verb works verbatim on this port too. It forwards with no
+    /// logic of its own — the two are the same decision, always.
+    ///
+    /// Source: `server-python/src/revturbine/sdk.py` `can`.
+    /// Parity: every `checkEntitlement` fixture in `tests/parity/fixtures/`
+    /// locks the delegate this alias forwards to.
+    #[must_use]
+    pub fn can(&self, handle: &str, context: Option<&Value>) -> EntitlementCheckResult {
+        self.check_entitlement(handle, context)
+    }
+
+    /// The public plan variations this user is eligible for.
+    ///
+    /// Reads `plans` / `plan_variations` off the constructed Playbook and
+    /// matches them against the user context's pre-resolved `segment_ids`.
+    ///
+    /// Source: `server-python/src/revturbine/sdk.py` `get_eligible_plans`.
+    /// Parity: `tests/parity/fixtures/catalog_variation_eligibility.json`.
+    #[must_use]
+    pub fn get_eligible_plans(&self) -> Vec<EligiblePlan> {
+        get_eligible_plans(
+            &self.playbook_array("plans"),
+            &self.playbook_array("plan_variations"),
+            &self.segment_ids,
+            &self.segment_dimensions(),
+        )
+    }
+
+    /// The public add-on variations this user is eligible for.
+    ///
+    /// The add-on twin of [`get_eligible_plans`](Self::get_eligible_plans).
+    ///
+    /// Source: `server-python/src/revturbine/sdk.py` `get_eligible_addons`.
+    /// Parity: `tests/parity/fixtures/catalog_variation_eligibility.json`.
+    #[must_use]
+    pub fn get_eligible_addons(&self) -> Vec<EligibleAddon> {
+        get_eligible_addons(
+            &self.playbook_array("addons"),
+            &self.playbook_array("addon_variations"),
+            &self.segment_ids,
+            &self.segment_dimensions(),
+        )
+    }
+
+    /// Evaluate this Playbook's trial rules against a customer's trial
+    /// instances → the runtime `UserTrialStatus` (plus reverse-trial grants).
+    ///
+    /// The config-driven form: `free_trial_rules` / `reverse_trial_rules` come
+    /// from the Playbook this SDK was constructed with, so the caller supplies
+    /// only the instances and `now_iso`. Pure and deterministic — the clock is
+    /// an argument, never a read.
+    ///
+    /// Source: `server-python/src/revturbine/sdk.py` `evaluate_trial_status`.
+    /// Parity: `tests/parity/fixtures/trial_status_evaluation.json`.
+    #[must_use]
+    pub fn evaluate_trial_status(
+        &self,
+        instances: &[Value],
+        now_iso: &str,
+        base_plan_handle: Option<&str>,
+        usage_balances: Option<&Value>,
+    ) -> TrialEvaluation {
+        evaluate_trial_status(
+            instances,
+            now_iso,
+            Some(&self.playbook_array("free_trial_rules")),
+            Some(&self.playbook_array("reverse_trial_rules")),
+            usage_balances,
+            base_plan_handle,
+        )
     }
 
     /// Which placement payload, if any, should this user see?
@@ -210,6 +337,162 @@ mod tests {
             user_id: user.to_string(),
             ..Default::default()
         }
+    }
+
+    /// The catalog fixture from `server-python/tests/test_catalog_eligibility.py`,
+    /// so both ports' facade tests assert the same Playbook.
+    fn catalog_playbook() -> Value {
+        json!({
+            "version": "1.0.0",
+            "plans": [
+                { "unique_handle": "free", "name": "Free", "tier_position": 0, "sort_order": 0, "visibility": "public" },
+                { "unique_handle": "pro", "name": "Pro", "tier_position": 1, "sort_order": 0, "visibility": "public" }
+            ],
+            "addons": [
+                { "unique_handle": "support", "name": "Support", "sort_order": 0, "visibility": "public" }
+            ],
+            "plan_variations": [
+                { "handle": "free_default", "plan_handle": "free", "billing_period": "monthly", "segment_handle": null, "price_amount": 0, "currency": "usd", "pricing_model": "flat", "visibility": "public" },
+                { "handle": "pro_default", "plan_handle": "pro", "billing_period": "monthly", "segment_handle": null, "price_amount": 4900, "currency": "usd", "pricing_model": "flat", "visibility": "public" },
+                { "handle": "pro_startup", "plan_handle": "pro", "billing_period": "monthly", "segment_handle": "startup", "price_amount": 2900, "currency": "usd", "pricing_model": "flat", "visibility": "public" }
+            ],
+            "addon_variations": [
+                { "handle": "support_default", "addon_handle": "support", "billing_period": "monthly", "segment_handle": null, "price_amount": 1000, "currency": "usd", "pricing_model": "flat", "visibility": "public" }
+            ],
+            "entitlements": [],
+            "entitlement_rules": [],
+            "segments": [
+                { "handle": "startup", "name": "Startup", "dimension_id": "stage", "predicates": [] }
+            ],
+            "content_ui_paths": [],
+            "placements": []
+        })
+    }
+
+    /// Mirrors `server-python/tests/trials/test_trial_status.py::_instance`.
+    fn trial_instance() -> Value {
+        json!({
+            "id": "ti_test",
+            "tenant_id": "t_test",
+            "created_at": "2026-05-01T00:00:00Z",
+            "updated_at": "2026-05-01T00:00:00Z",
+            "customer_id": "cust_test",
+            "rule_id": "ftr_pro_14d",
+            "rule_type": "free_trial",
+            "plan_id": "slack_pro",
+            "status": "active",
+            "started_at": "2026-05-01T00:00:00Z",
+            "expires_at": "2026-05-15T00:00:00Z",
+            "converted_at": null,
+            "cancelled_at": null,
+            "metadata": {}
+        })
+    }
+
+    /// Mirrors `server-python/tests/trials/test_trial_status.py::_free_rule`.
+    fn free_trial_rule() -> Value {
+        json!({
+            "id": "ftr_pro_14d",
+            "name": "Pro 14d",
+            "handle": "pro_14d",
+            "plan_id": "slack_pro",
+            "duration_days": 14,
+            "grace_period_days": 0,
+            "require_payment_method": false,
+            "auto_convert": true,
+            "limit_per_customer": 1,
+            "is_active": true,
+            "metadata": {}
+        })
+    }
+
+    /// Mirrors `server-python/tests/test_catalog_eligibility.py`'s
+    /// `test_public_catalog_methods_apply_specificity`: the facade reads the
+    /// catalog off the constructed Playbook and the segment ids off the user
+    /// context, and the segment-scoped variation SUPPRESSES the default.
+    #[test]
+    fn catalog_methods_apply_segment_specificity() {
+        let user_context = UserContext {
+            segment_ids: Some(vec!["startup".to_string()]),
+            ..ctx("tenant", "user")
+        };
+        let sdk = RevTurbineCustomerSdk::new(&user_context, &catalog_playbook())
+            .expect("catalog playbook parses");
+
+        let plans = sdk.get_eligible_plans();
+        let handles: Vec<&str> = plans
+            .iter()
+            .map(|item| item.variation_handle.as_str())
+            .collect();
+        assert_eq!(handles, vec!["free_default", "pro_startup"]);
+        assert_eq!(plans[1].price.price, json!(2900));
+        assert_eq!(plans[1].price.currency, json!("usd"));
+        assert_eq!(plans[1].price.pricing_model, json!("flat"));
+        assert_eq!(plans[1].price.billing_period, json!("monthly"));
+
+        let addons = sdk.get_eligible_addons();
+        assert_eq!(addons[0].variation_handle, "support_default");
+    }
+
+    /// Without segment ids the default variation is the eligible one — the
+    /// segment dimensions still come from the Playbook's `segments` array.
+    #[test]
+    fn catalog_methods_fall_back_to_default_variations() {
+        let sdk = RevTurbineCustomerSdk::new(&ctx("tenant", "user"), &catalog_playbook())
+            .expect("catalog playbook parses");
+        let handles: Vec<String> = sdk
+            .get_eligible_plans()
+            .into_iter()
+            .map(|item| item.variation_handle)
+            .collect();
+        assert_eq!(handles, vec!["free_default", "pro_default"]);
+    }
+
+    /// Mirrors `server-python`'s `TestSdkEvaluateTrialStatus`: the method reads
+    /// `free_trial_rules` from the Playbook the SDK was constructed with, so
+    /// the caller supplies only instances and the clock.
+    #[test]
+    fn evaluate_trial_status_reads_rules_from_the_playbook() {
+        let mut playbook = legacy_playbook();
+        playbook["plans"] =
+            json!([{ "id": "slack_pro", "unique_handle": "slack_pro", "name": "Pro" }]);
+        playbook["free_trial_rules"] = json!([free_trial_rule()]);
+
+        let sdk =
+            RevTurbineCustomerSdk::new(&ctx("t", "u"), &playbook).expect("trial playbook parses");
+        let evaluation =
+            sdk.evaluate_trial_status(&[trial_instance()], "2026-05-08T00:00:00Z", None, None);
+        let trial = evaluation.trial.expect("an active trial resolves");
+        let serialized = serde_json::to_value(&trial).expect("trial serializes");
+        assert_eq!(serialized["progress_percent"], json!(50.0));
+        assert_eq!(serialized["plan_handle"], json!("slack_pro"));
+        assert!(evaluation.reverse_grants.is_none());
+    }
+
+    /// No rules in the Playbook means no rule resolves — the method must not
+    /// invent one from the instance alone.
+    #[test]
+    fn evaluate_trial_status_without_configured_rules_derives_no_rule_fields() {
+        let sdk = RevTurbineCustomerSdk::new(&ctx("t", "u"), &legacy_playbook())
+            .expect("legacy playbook parses");
+        let evaluation = sdk.evaluate_trial_status(&[], "2026-05-08T00:00:00Z", None, None);
+        assert!(evaluation.trial.is_none());
+        assert!(evaluation.reverse_grants.is_none());
+    }
+
+    /// Mirrors `server-python/tests/test_sdk_can_alias.py`: `can` is the
+    /// advertised alias, so it must return exactly what `check_entitlement`
+    /// returns for the same arguments.
+    #[test]
+    fn can_is_an_exact_alias_of_check_entitlement() {
+        let sdk = RevTurbineCustomerSdk::new(&ctx("t", "u"), &legacy_playbook())
+            .expect("legacy playbook parses");
+        let via_alias = sdk.can("feat_x", None);
+        let via_canonical = sdk.check_entitlement("feat_x", None);
+        assert_eq!(
+            serde_json::to_value(&via_alias).expect("alias result serializes"),
+            serde_json::to_value(&via_canonical).expect("canonical result serializes"),
+        );
     }
 
     /// Regression: the constructor used to pass `None` for the legacy target

@@ -144,6 +144,59 @@ fn authored_order_decides_among_candidates() {
 }
 
 #[test]
+fn entry_order_beats_the_category_bucket_and_the_selection_layer_disagrees() {
+    // BL-0001 / plan 234 TASK-8c's close-out hold. The hold reads as though
+    // entry-order selection were a Rust-only gap. It is not: the TS canonical
+    // (`local-resolver.ts` `createLocalPlacementResolver`) and
+    // `local_resolver.py` take the first eligible candidate in `entry_order`
+    // exactly as this resolver does, and NO port's resolver consults
+    // `resolve_local_placement_from_candidates`. This test pins both halves in
+    // one language so the difference cannot be mistaken for a port bug: the
+    // decision path answers by entry order, the selection layer answers by
+    // category bucket, and they disagree on the same two candidates. Routing
+    // this resolver through the selection layer is therefore a cross-port
+    // behaviour change that starts at the TS canonical — not a parity fix — and
+    // doing it here alone would byte-diff `placement_slot_selection_is_entry_order`.
+    let placements = vec![
+        entry("pl_conversion", "other_conversion", 0, "Conversion"),
+        entry("pl_gated", "gated", 1, "Gated"),
+    ];
+    let r = StaticPlacementResolver::new(&placements, &config());
+    let d = r.resolve("slot_1", Some(&slot(&["banner_placement"])), None, None);
+    assert_eq!(
+        d["output"]["rule_id"],
+        json!("pl_conversion"),
+        "the decision path selects by entry order, not by category bucket",
+    );
+
+    let candidates = vec![
+        selection_candidate("pl_conversion", "other_conversion"),
+        selection_candidate("pl_gated", "gated"),
+    ];
+    let winner = revturbine::placements::resolve_local_placement_from_candidates(
+        &candidates,
+        revturbine::placements::CandidateResolutionOptions::default(),
+    )
+    .expect("a winner");
+    assert_eq!(
+        winner["output_id"],
+        json!("pl_gated"),
+        "the selection layer ranks gated (bucket 0) over conversion (bucket 4)",
+    );
+}
+
+/// The candidate shape the selection layer consumes, built from the same ids
+/// the resolver indexed so both lanes are compared on one candidate set.
+fn selection_candidate(id: &str, category: &str) -> Value {
+    json!({
+        "output_id": id,
+        "category": category,
+        "content": {},
+        "surface": { "template": "banner_placement", "type": "banner", "slot_id": id },
+    })
+}
+
+#[test]
 fn fixed_only_is_a_hard_filter_that_may_leave_nothing() {
     // A slot reserved for PM-wired content must never render an RT-initiated
     // nudge — even at the cost of rendering nothing.

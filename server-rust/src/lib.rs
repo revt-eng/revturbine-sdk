@@ -56,6 +56,7 @@ pub mod entitlements;
 pub mod helpers;
 pub mod js_num;
 pub mod placements;
+pub mod plans;
 pub mod rules;
 pub mod runtime;
 pub mod sdk;
@@ -66,6 +67,11 @@ pub mod user_context;
 
 #[allow(missing_docs, dead_code, clippy::all)]
 pub mod types;
+
+/// The minor-unit display formatter, re-exported at the crate root because the
+/// Python port exposes it as a module-level function rather than a method on
+/// the SDK type (`revturbine.core.plans.format_currency_minor_units`).
+pub use plans::format_currency_minor_units;
 
 /// The crate version, kept in lockstep with the TypeScript and Python SDKs.
 ///

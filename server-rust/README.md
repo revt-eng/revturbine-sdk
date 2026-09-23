@@ -4,11 +4,17 @@ Headless, local-mode placement and entitlement decisioning. A stateless,
 in-memory port of the same decision core the TypeScript SDK and the Python port
 implement, held **byte-identical** to them by a cross-language parity gate.
 
-Given a user context and a Playbook, it answers two questions:
+Given a user context and a Playbook, it answers the server-side decision
+questions:
 
-- **`check_entitlement`** — is a feature or limit allowed for this user?
+- **`check_entitlement`** (alias **`can`**) — is a feature or limit allowed for
+  this user?
 - **`get_placement_decision`** / **`get_placement_decisions`** — which placement
   payload, if any, should this user see?
+- **`get_eligible_plans`** / **`get_eligible_addons`** — which public catalog
+  variations may this user be offered?
+- **`evaluate_trial_status`** — what is this customer's trial state, per the
+  Playbook's own trial rules?
 
 No network call, no persistence, no async runtime. An entitlement gate is a
 pure in-process computation, safe on a request hot path.
@@ -75,6 +81,7 @@ if decision["visible"] == true {
 | `payment_failed` | — | Billing-recovery signal for the retention qualifiers. |
 | `payment_at_risk` | — | Billing-recovery signal for the retention qualifiers. |
 | `tiers` | — | Current tier per `capability_tier` entitlement, for the tier gate. |
+| `segment_ids` | — | Pre-resolved segment ids; read by the catalog-eligibility methods. |
 
 Everything but `tenant_id` / `user_id` is optional, and every optional field
 that is absent decides as "not set" rather than as a default value.
@@ -87,9 +94,17 @@ gate reads "no trial" and silently declines rather than erroring.
 | Method | Returns |
 |---|---|
 | `check_entitlement(handle, context)` | `EntitlementCheckResult` |
+| `can(handle, context)` | `EntitlementCheckResult` — the advertised alias |
 | `get_placement_decision(input)` | `serde_json::Value` |
 | `get_placement_decisions(inputs)` | `Vec<Value>`, order preserved |
 | `get_placement(config)` | `Option<Value>` — surface-keyed slot resolution |
+| `get_eligible_plans()` | `Vec<EligiblePlan>` |
+| `get_eligible_addons()` | `Vec<EligibleAddon>` |
+| `evaluate_trial_status(instances, now_iso, base_plan_handle, usage_balances)` | `TrialEvaluation` |
+
+Plus one free function, `revturbine::format_currency_minor_units(amount,
+currency, locale)`, which renders a catalog variation's minor-unit price the
+way the browser SDK and the Python port render it.
 
 That is the entire public API. There is no storage or persistence parameter —
 the instance is stateless by construction, so "refresh the Playbook" is just
