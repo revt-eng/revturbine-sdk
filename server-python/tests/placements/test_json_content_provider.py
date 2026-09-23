@@ -85,13 +85,11 @@ class TestReturnsNone:
         cfg = _config([_studio_payload(block_id=None)], BLOCKS)
         assert _build_json_content_provider(cfg, DATASET) is None
 
-    def test_linked_placement_has_no_active_payload(self) -> None:
-        # The surface_template_id is keyed off the placement's first ACTIVE
-        # payload surface; a draft-only placement maps no template, so the
-        # content-linked payload is dropped.
-        dataset = cast(
-            "LocalPlacementDataset", {"placements": [_placement(payload_status="draft")]}
-        )
+    def test_linked_placement_has_no_payload_surface(self) -> None:
+        # The surface_template_id is keyed off the placement's FIRST payload
+        # surface (BL-0151: no status filter). A placement with no payload
+        # surface at all maps no template, so the linked payload is dropped.
+        dataset = cast("LocalPlacementDataset", {"placements": [{"id": "pl_1", "payloads": []}]})
         cfg = _config([_studio_payload()], BLOCKS)
         assert _build_json_content_provider(cfg, dataset) is None
 
@@ -122,16 +120,27 @@ class TestBuildsProvider:
         block = provider.get_message_block_by_id("blk_1")
         assert block is not None and block["title"] == "Upgrade now"
 
-    def test_status_mapping_active_draft_other(self) -> None:
+    def test_authored_status_is_ignored(self) -> None:
+        """BL-0151: presence in an exported config means released (plan 76).
+
+        ``RevTurbineConfigPlacementPayloadItem`` has no ``status`` field, so
+        reading one off the wire always fell to ``inactive`` and the
+        content-lookup provider — which gates on its own ``status`` — dropped
+        every content-linked payload. The adapter shape's status is now
+        hardcoded ``active``, as in the TS port.
+        """
+        no_status = _studio_payload("pp_n")
+        del no_status["status"]
         cfg = _config(
             [
                 _studio_payload("pp_a", status="active"),
                 _studio_payload("pp_d", status="draft"),
                 _studio_payload("pp_x", status="archived"),
+                no_status,
             ],
             BLOCKS,
         )
         provider = _build_json_content_provider(cfg, DATASET)
         assert provider is not None
         by_id = {p["payload_id"]: p["status"] for p in provider.list_payloads("tpl_banner")}
-        assert by_id == {"pp_a": "active", "pp_d": "draft", "pp_x": "inactive"}
+        assert by_id == {"pp_a": "active", "pp_d": "active", "pp_x": "active", "pp_n": "active"}

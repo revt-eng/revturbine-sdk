@@ -231,18 +231,22 @@ fn build_content_linked(exported_config: &Value, placements: &[Value]) -> Option
         .and_then(Value::as_array)
         .filter(|a| !a.is_empty())?;
 
-    // placement id → surface template id, from the same active-payload surface
+    // placement id → surface template id, from the same FIRST-payload surface
     // the inline candidate was built from.
+    //
+    // BL-0151: no status filter. `RevTurbineConfigStudioPayload` carries no
+    // `status` field at all (scaffold config schema; the published JSON Schema
+    // is `additionalProperties: false`), so `status == "active"` was false for
+    // every payload of a schema-valid Playbook and this map came out empty.
+    // Runtime status is derived control-plane side (plan 76 REQ-1/Q-1);
+    // presence in an exported config means released. Mirrors the TS resolver.
     let mut placement_template: HashMap<String, String> = HashMap::new();
     for entry in placements {
         let Some(id) = s(entry, "id") else { continue };
         let template = entry
             .get("payloads")
             .and_then(Value::as_array)
-            .and_then(|ps| {
-                ps.iter()
-                    .find(|p| p.get("status").and_then(Value::as_str) == Some("active"))
-            })
+            .and_then(|ps| ps.first())
             .and_then(|p| p.get("surfaces"))
             .and_then(Value::as_array)
             .and_then(|v| v.first())
@@ -266,13 +270,13 @@ fn build_content_linked(exported_config: &Value, placements: &[Value]) -> Option
             continue;
         };
 
-        // Anything not explicitly active/draft is inactive — an unrecognized
-        // status must not read as publishable.
-        let status = match p.get("status").and_then(Value::as_str) {
-            Some("active") => "active",
-            Some("draft") => "draft",
-            _ => "inactive",
-        };
+        // BL-0151: presence in an exported config means released (plan 76).
+        // `RevTurbineConfigPlacementPayloadItem` has no `status` field, so
+        // reading one off the wire always fell to "inactive" and the
+        // content-lookup provider — which DOES gate on its own `status` —
+        // dropped every content-linked payload. The adapter shape's status is
+        // hardcoded, as in the TS port.
+        let status = "active";
 
         payloads.push(json!({
             "payload_id": p.get("payload_id").cloned().unwrap_or(Value::Null),
@@ -368,7 +372,7 @@ impl StaticPlacementResolver {
         let mut by_name: HashMap<String, Vec<usize>> = HashMap::new();
 
         for entry in placements {
-            // BL-0122: EVERY active payload of an entry is a candidate, not
+            // BL-0122: EVERY payload of an entry is a candidate, not
             // just the first. Targeting is a per-payload property — "the
             // user's plan and segment match a payload"
             // (placement-prioritization.md §1 stage 3) — so a placement whose
@@ -377,14 +381,19 @@ impl StaticPlacementResolver {
             // payloads 2+ unreachable and their `segment_chips`
             // unevaluatable. Drag precedence still ranks among payloads the
             // user DOES match; it is not a pre-filter. Mirrors the TS.
+            //
+            // BL-0151: and no `status` filter either. Runtime status is
+            // derived control-plane side (plan 76 REQ-1; Q-1 RESOLVED → DROP,
+            // which called for removing the local resolver's status filter),
+            // the stored column is gone, and `RevTurbineConfigStudioPayload`
+            // has no `status` field — so `status == "active"` was false for
+            // EVERY payload of a real Playbook and this port served nothing at
+            // all. Only a hand-written fixture that set `status` (a key the
+            // schema strips) kept the gate green. Presence means released.
             let entry_payloads: Vec<&Value> = entry
                 .get("payloads")
                 .and_then(Value::as_array)
-                .map(|ps| {
-                    ps.iter()
-                        .filter(|p| p.get("status").and_then(Value::as_str) == Some("active"))
-                        .collect()
-                })
+                .map(|ps| ps.iter().collect())
                 .unwrap_or_default();
 
             for (payload_order, payload) in entry_payloads.into_iter().enumerate() {

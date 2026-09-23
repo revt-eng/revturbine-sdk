@@ -265,7 +265,14 @@ class TestNormalizeCtaPath:
 
 
 class TestResolverIndex:
-    def test_inactive_payload_skipped(self) -> None:
+    def test_authored_payload_status_is_ignored(self) -> None:
+        """BL-0151: runtime status is derived control-plane side (plan 76).
+
+        ``RevTurbineConfigStudioPayload`` carries no ``status`` field, so the
+        old ``status == "active"`` filter was false for every payload of a
+        schema-valid Playbook and this port served nothing while TS served the
+        payload. A stray authored value must now change no decision.
+        """
         resolver = create_static_placement_resolver(
             {"placements": [_entry(payloads=[_payload(status="draft")])]},
             _config(),
@@ -275,8 +282,24 @@ class TestResolverIndex:
             _rec(name="pl_foo"),
             _ctx(),
         )
-        assert decision["visible"] is False
-        assert decision["reason_codes"] == ["placement_not_found"]
+        assert decision["visible"] is True
+        assert decision["content"]["header"] == "Hello"
+
+    def test_payload_with_no_status_key_is_a_candidate(self) -> None:
+        """The real wire shape: no ``status`` anywhere. The old filter dropped it."""
+        payload = _payload()
+        del payload["status"]
+        resolver = create_static_placement_resolver(
+            {"placements": [_entry(payloads=[payload])]},
+            _config(),
+        )
+        decision = resolver(
+            {"placement_id": "p1", "user_id": "u"},
+            _rec(name="pl_foo"),
+            _ctx(),
+        )
+        assert decision["visible"] is True
+        assert decision["content"]["header"] == "Hello"
 
     def test_no_surface_skipped(self) -> None:
         resolver = create_static_placement_resolver(

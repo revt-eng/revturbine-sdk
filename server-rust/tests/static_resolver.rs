@@ -104,14 +104,28 @@ fn an_unknown_authored_template_fails_loudly() {
 }
 
 #[test]
-fn a_payload_that_is_not_active_is_never_indexed() {
+fn a_payload_status_is_ignored_because_runtime_status_is_derived() {
+    // BL-0151. `RevTurbineConfigStudioPayload` has no `status` field — runtime
+    // status is derived control-plane side (plan 76 REQ-1/Q-1) and presence in
+    // an exported config means released. This port used to require
+    // `status == "active"`, which no schema-valid Playbook ever carries, so it
+    // indexed nothing while TS served the payload. A stray authored `status`
+    // must now change no decision.
     let mut e = entry("pl_banner", "fixed", 0, "Hello");
     e["payloads"][0]["status"] = json!("draft");
     let r = StaticPlacementResolver::new(&[e], &config());
-    assert_eq!(
-        r.resolve("pl_banner", None, None, None)["reason_codes"],
-        json!(["placement_not_found"])
-    );
+    let d = r.resolve("pl_banner", None, None, None);
+    assert_eq!(d["visible"], json!(true));
+    assert_eq!(d["content"]["header"], json!("Hello"));
+}
+
+#[test]
+fn a_payload_with_no_status_key_is_a_candidate() {
+    // The real wire shape: no `status` anywhere. The old filter dropped it.
+    let r = StaticPlacementResolver::new(&[entry("pl_banner", "fixed", 0, "Hello")], &config());
+    let d = r.resolve("pl_banner", None, None, None);
+    assert_eq!(d["visible"], json!(true));
+    assert_eq!(d["content"]["header"], json!("Hello"));
 }
 
 // ── Slot-based resolution ───────────────────────────────────────────────────
@@ -555,24 +569,36 @@ fn an_inline_studio_payload_is_not_treated_as_content_linked() {
 }
 
 #[test]
-fn a_non_active_content_linked_payload_is_not_overlaid() {
-    let mut c = config_with_content_link();
-    c["placement_payloads"][0]["status"] = json!("draft");
-    let r = StaticPlacementResolver::new(&[entry("pl_a", "fixed", 0, "Inline header")], &c);
-    assert_eq!(
-        r.resolve("pl_a", None, None, None)["content"]["header"],
-        json!("Inline header"),
-    );
+fn a_content_linked_payloads_status_is_ignored() {
+    // BL-0151. `RevTurbineConfigPlacementPayloadItem` has no `status` field
+    // either, so reading one off the wire always fell to "inactive" and the
+    // content-lookup provider dropped every content-linked payload — this port
+    // kept the inline copy where TS overlaid the linked block. Presence in an
+    // exported config means released (plan 76); a stray authored value on
+    // either side of the enum changes nothing.
+    for stray in ["draft", "something_new"] {
+        let mut c = config_with_content_link();
+        c["placement_payloads"][0]["status"] = json!(stray);
+        let r = StaticPlacementResolver::new(&[entry("pl_a", "fixed", 0, "Inline header")], &c);
+        assert_eq!(
+            r.resolve("pl_a", None, Some(&ctx_with_segments(&[])), None)["content"]["header"],
+            json!("Linked default"),
+            "authored status {stray} must not gate the overlay",
+        );
+    }
 }
 
 #[test]
-fn an_unrecognized_status_is_treated_as_inactive_not_publishable() {
+fn a_content_linked_payload_with_no_status_key_is_overlaid() {
+    // The real wire shape: no `status` anywhere on the studio payload.
     let mut c = config_with_content_link();
-    c["placement_payloads"][0]["status"] = json!("something_new");
+    c["placement_payloads"][0]
+        .as_object_mut()
+        .expect("studio payload is an object")
+        .remove("status");
     let r = StaticPlacementResolver::new(&[entry("pl_a", "fixed", 0, "Inline header")], &c);
     assert_eq!(
-        r.resolve("pl_a", None, None, None)["content"]["header"],
-        json!("Inline header"),
-        "an unknown status must not read as publishable",
+        r.resolve("pl_a", None, Some(&ctx_with_segments(&[])), None)["content"]["header"],
+        json!("Linked default"),
     );
 }

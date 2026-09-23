@@ -375,21 +375,22 @@ def _build_json_content_provider(
     if not isinstance(studio_payloads, list) or not studio_payloads:
         return None
 
-    # placement id → surface template id, from the placement's first active
-    # payload surface (the same surface the inline candidate is built from).
+    # placement id → surface template id, from the placement's FIRST payload
+    # surface (the same surface the inline candidate is built from).
+    #
+    # BL-0151: no status filter. `RevTurbineConfigStudioPayload` carries no
+    # `status` field at all (scaffold config schema; the published JSON Schema
+    # is `additionalProperties: false`), so `status == "active"` was false for
+    # every payload of a schema-valid Playbook and this map came out empty.
+    # Runtime status is derived control-plane side (plan 76 REQ-1/Q-1);
+    # presence in an exported config means released. Mirrors the TS resolver.
     placement_template: dict[str, str] = {}
     for entry in dataset["placements"]:
-        active_payload = next(
-            (
-                p
-                for p in (entry.get("payloads") or [])
-                if is_record(p) and p.get("status") == "active"
-            ),
-            None,
-        )
-        if not is_record(active_payload):
+        entry_payloads = entry.get("payloads") or []
+        first_payload = next((p for p in entry_payloads if is_record(p)), None)
+        if not is_record(first_payload):
             continue
-        surfaces = active_payload.get("surfaces")
+        surfaces = first_payload.get("surfaces")
         surface = surfaces[0] if isinstance(surfaces, list) and surfaces else None
         template_id = surface.get("template_id") if is_record(surface) else None
         entry_id = entry.get("id")
@@ -412,7 +413,6 @@ def _build_json_content_provider(
         )
         if not surface_template_id:
             continue
-        status = p.get("status")
         payloads.append(
             {
                 "payload_id": p.get("payload_id"),
@@ -422,9 +422,13 @@ def _build_json_content_provider(
                 "default_message_block_id": block_id,
                 "ui_path_id": content_link.get("ui_path_id"),
                 "promotion_id": content_link.get("promotion_id"),
-                "status": (
-                    "active" if status == "active" else "draft" if status == "draft" else "inactive"
-                ),
+                # BL-0151: presence in an exported config means released
+                # (plan 76). `RevTurbineConfigPlacementPayloadItem` has no
+                # `status` field, so reading one off the wire always yielded
+                # "inactive" and the content-lookup provider — which DOES gate
+                # on its own `status` — dropped every content-linked payload.
+                # The adapter shape's status is hardcoded, as in the TS port.
+                "status": "active",
             }
         )
     if not payloads:
@@ -508,7 +512,7 @@ def create_static_placement_resolver(
     outputs_by_name: dict[str, list[_CandidateOutput]] = {}
 
     for entry in dataset["placements"]:
-        # BL-0122: EVERY active payload of an entry is a candidate, not just
+        # BL-0122: EVERY payload of an entry is a candidate, not just
         # the first. Targeting is a per-payload property — "the user's plan and
         # segment match a payload" (placement-prioritization.md §1 stage 3) —
         # so a placement whose payloads are chipped to different segments must
@@ -516,9 +520,18 @@ def create_static_placement_resolver(
         # made payloads 2+ unreachable and their ``segment_chips``
         # unevaluatable. Drag precedence still ranks among payloads the user
         # DOES match; it is not a pre-filter. Mirrors the TS resolver.
+        #
+        # BL-0151: and no `status` filter either. Runtime status is derived
+        # control-plane side (plan 76 REQ-1; Q-1 RESOLVED → DROP, which called
+        # for removing the local resolver's status filter), the stored column
+        # is gone, and `RevTurbineConfigStudioPayload` has no `status` field —
+        # so `status == "active"` was false for EVERY payload of a real
+        # Playbook and this port served nothing at all. Only a hand-written
+        # fixture that set `status` (a key the schema strips) kept the gate
+        # green. Presence in an exported config means released.
         payload_order = -1
         for payload in entry.get("payloads") or []:
-            if not is_record(payload) or payload.get("status") != "active":
+            if not is_record(payload):
                 continue
             payload_order += 1
 
