@@ -87,10 +87,20 @@ representation simply changes.
 `server-python/tests/test_trial_overlay_upsert.py::test_overlay_preserves_integer_numeric_representation`
 and `server-rust/src/sdk.rs::overlay_preserves_integer_numeric_representation`
 — both assert the *type*, not just the value, because `100 == 100.0` in Python.
-The parity corpus cannot see this class of divergence (`tests/parity/normalize.*`
-rule 4 collapses integral floats by design); scenario
-`trial_overlay_integer_fields` locks that the three ports still decide
+Scenario `trial_overlay_integer_fields` locks that the three ports still decide
 identically from an all-integer trial status.
+
+> **Correction, 2026-09-23 (BL-0158, harness-only — no release).** This entry
+> originally said the parity corpus *cannot* see this class of divergence,
+> because `tests/parity/normalize.*` rule 4 collapses integral floats by design
+> and nothing in the corpus returned the overlaid provider state. Both halves
+> are now closed and the sentence no longer holds:
+> `trial_overlay_integer_fields` drives `resolveProviders` (already shipped on
+> all three runtimes) under a new per-scenario
+> `"normalize": "preserve-representation"` flag that turns the collapse off, so
+> `14` and `14.0` are different bytes and the cross-language byte-diff fails on
+> a widened field. No public API changed; the harness gained the ability to see
+> provider state.
 
 ---
 
