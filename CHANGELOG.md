@@ -22,12 +22,19 @@ A change whose "Fail-closed in" is later than its "Landed in" had a window where
 the old shape was accepted and did nothing. Those windows are the expensive ones.
 
 > **What this file is not yet.** A CI guard fails any PR that changes a
-> `@public`-tagged export signature without touching this file. That tagging is
-> thin: as of `0.8.0` it covers **4** methods on `RevTurbineCustomerSdk`, which
-> declares roughly **73**. `can()`, `getPlacementDecision()`, `identify()` and
-> `dismiss()` are among the untagged, so a breaking change to one of them will
-> not be caught automatically — it depends on whoever writes the PR. Entries here
-> are reliable; the absence of an entry is not yet proof that nothing changed.
+> `@public`-tagged export signature without touching this file. That tagging
+> was thin (4 of ~73 methods) until BL-0005 (2026-09-22, no release — TSDoc
+> and snapshot only) widened it to **34** of `RevTurbineCustomerSdk`'s **67**
+> non-private methods, plus 5 provider/hook entry points
+> (`initRevTurbine`, `RevTurbineProvider`, `useCan`, `useEntitlement`,
+> `useGatedAction`) — every method a customer-facing guide, skill, the
+> starter, or a demo app calls directly. The remaining ~33 methods are
+> internal-only paths (called only by the SDK's own placement components,
+> React bindings, or other internal packages) and stay untagged, so a
+> breaking change to one of *those* still will not be caught automatically —
+> it depends on whoever writes the PR. Entries here are reliable; the absence
+> of an entry for a currently-untagged method is not yet proof that nothing
+> changed.
 
 > **Note on 0.x.** These packages are pre-1.0, so breaking changes ship in the
 > **minor** position (`0.6.0` → `0.7.0`), not the major. `npm`'s caret on a `0.x`
