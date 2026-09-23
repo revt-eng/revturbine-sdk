@@ -20,6 +20,7 @@ import {
   TreatmentInteractionRequestSchema,
 } from '@revt-eng/schema/zod';
 import { RevTurbineCustomerSdk } from './customer-side';
+import { redactIdentityField } from './pii-redact';
 
 interface CapturedPost {
   url: string;
@@ -31,6 +32,7 @@ let interactionsRespondOk = true;
 
 const INTERACTIONS_PATH = '/api/events/interactions';
 const LEGACY_PATH = '/api/placements/interactions';
+const TRACK_PATH = '/api/track';
 
 function stubFetch(): void {
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -141,6 +143,99 @@ describe('the body flushInteractionQueue puts on the wire', () => {
     await client.trackTreatmentInteraction(interaction({ experimentId: 'exp_1', variantKey: 'B' }));
     await settle();
     expect(interactionPosts()[0].body).toMatchObject({ experiment_id: 'exp_1', variant_key: 'B' });
+  });
+});
+
+/**
+ * Account identity on the interaction wire (plan 232 REQ-4 / BL-0011).
+ *
+ * `placement_presentations.account_id` is a JOIN KEY — `monetization_funnel`
+ * matches it against account ids from `events_clickstream` / `events_billing`,
+ * and every experiment summary pipe reads it when `analysis_unit='account'`.
+ * The SDK never put the field on the wire, so the ingest route's
+ * `account_id ?? user_id` fallback stamped a USER id into that column: the
+ * funnel joined only by coincidence, and an account-grain experiment readout
+ * silently returned the user-grain n while looking valid.
+ */
+describe('the account identity the analytics joins key on', () => {
+  const EMAIL_ACCOUNT = 'billing@acme.example';
+
+  it('sends the identified account, distinct from the user id', async () => {
+    const client = sdk();
+    client.identify('user_1', { account_id: 'acct_acme' });
+    await client.trackTreatmentInteraction(interaction());
+    await settle();
+
+    const body = interactionPosts()[0].body as Record<string, unknown>;
+    expect(body.account_id).toBe('acct_acme');
+    expect(body.account_id).not.toBe(body.user_id);
+    // And the contract must actually carry it — a field zod strips is a field
+    // the route never sees.
+    const parsed = TreatmentInteractionInputSchema.parse(body) as Record<string, unknown>;
+    expect(parsed.account_id).toBe('acct_acme');
+  });
+
+  it('omits the account entirely when none was identified — never a copy of user_id', async () => {
+    const client = sdk();
+    await client.trackTreatmentInteraction(interaction());
+    await settle();
+
+    const body = interactionPosts()[0].body as Record<string, unknown>;
+    expect(body.account_id).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(body, 'account_id')).toBe(false);
+    // The thing this whole change exists to prevent.
+    expect(body.account_id).not.toBe(body.user_id);
+  });
+
+  it('redacts an email-shaped account id the same way /api/track does', async () => {
+    // Identity keys are hashed, not sentinelled, and the contract is
+    // byte-identical across lanes. Hash on one lane only and
+    // `monetization_funnel` joins a hash against a raw email — i.e. nothing.
+    const client = sdk();
+    client.identify('user_1', { account_id: EMAIL_ACCOUNT });
+    await client.trackTreatmentInteraction(interaction());
+    await settle();
+
+    const body = interactionPosts()[0].body as Record<string, unknown>;
+    expect(body.account_id).not.toBe(EMAIL_ACCOUNT);
+    expect(body.account_id).toBe(redactIdentityField(EMAIL_ACCOUNT).value);
+
+    // Same value the clickstream lane puts in `events_clickstream.account_id`.
+    await client.flushEvents();
+    await settle();
+    const tracked = posts.filter((p) => p.url.includes(TRACK_PATH));
+    const events = tracked.flatMap((p) => {
+      const b = p.body as { events?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>;
+      return Array.isArray(b) ? b : (b.events ?? []);
+    });
+    const withAccount = events.filter((e) => typeof e.account_id === 'string');
+    expect(withAccount.length, 'the clickstream lane should have flushed at least one event').toBeGreaterThan(0);
+    for (const event of withAccount) {
+      expect(event.account_id, 'the two lanes must be byte-identical or the funnel joins nothing')
+        .toBe(body.account_id);
+    }
+  });
+
+  it('stamps the account that was acting when the interaction happened', async () => {
+    // A queued batch can outlive an `identify()` that swapped the acting
+    // account. Resolving at flush time would re-attribute the earlier
+    // interaction to whichever account happened to be current.
+    const client = sdk();
+    client.identify('user_1', { account_id: 'acct_first' });
+    interactionsRespondOk = false;
+    await client.trackTreatmentInteraction(interaction());
+    await settle();
+
+    client.identify('user_1', { account_id: 'acct_second' });
+    interactionsRespondOk = true;
+    posts = [];
+    await client.trackTreatmentInteraction(interaction({ interactionType: 'cta_clicked' }));
+    await settle();
+
+    const batch = interactionPosts()[0].body as Array<Record<string, unknown>>;
+    expect(batch).toHaveLength(2);
+    expect(batch[0].account_id).toBe('acct_first');
+    expect(batch[1].account_id).toBe('acct_second');
   });
 });
 

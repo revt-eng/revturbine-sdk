@@ -2035,6 +2035,25 @@ interface OutputPlacementRef {
   variantKey?: string;
 }
 
+/**
+ * A queued interaction plus the account identity resolved at the moment the
+ * interaction happened (plan 232 REQ-4 / BL-0011).
+ *
+ * Internal only — {@link RevTurbineTreatmentInteractionInput} stays the public
+ * input shape. The account is read from the SDK's own user context rather than
+ * asked of the caller, and it is captured at `track` time rather than at flush
+ * time because a queued batch can outlive an `identify()` that swapped the
+ * acting account underneath it.
+ */
+interface QueuedTreatmentInteraction extends RevTurbineTreatmentInteractionInput {
+  /**
+   * The account the user acted on behalf of, already PII-redacted the same way
+   * `/api/track` redacts it, so the two land byte-identical and join. Absent
+   * when the integration identified no account — never a copy of `user_id`.
+   */
+  readonly accountId?: string;
+}
+
 interface CacheEntry<T> {
   expiresAt: number;
   value: T;
@@ -2662,7 +2681,7 @@ export class RevTurbineCustomerSdk {
   private readonly outputPlacementIndex = new Map<string, OutputPlacementRef>();
   private readonly outputPlacementIndexLimit = 200;
   private readonly interactionState = new Map<string, InteractionState>();
-  private readonly interactionQueue: RevTurbineTreatmentInteractionInput[] = [];
+  private readonly interactionQueue: QueuedTreatmentInteraction[] = [];
   private readonly defaultDecisionTtlMs = 60_000;
   private readonly defaultDismissCooldownMs = 24 * 60 * 60 * 1000;
   /**
@@ -6913,6 +6932,18 @@ export class RevTurbineCustomerSdk {
     // @revturbine-graph event:sdk:treatment_interaction
     const transitionPayload = pending.map((item) => ({
       user_id: item.userId,
+      // The account the user acted on behalf of (plan 232 REQ-4 / BL-0011).
+      // `placement_presentations.account_id` is an analytical JOIN KEY:
+      // `monetization_funnel` matches it against account ids from
+      // `events_clickstream` / `events_billing`, and experiment analysis reads
+      // it whenever `analysis_unit='account'`. The SDK never sent it, so the
+      // ingest route's `account_id ?? user_id` fallback stamped a USER id into
+      // an account column — every one of those joins then matched only by
+      // coincidence, and an account-grain experiment readout silently returned
+      // the user-grain n. OMITTED, never `user_id`, when no account was
+      // identified: the route's fallback is what a not-yet-upgraded SDK gets,
+      // and a wrong join key is worse than a missing one.
+      ...(item.accountId ? { account_id: item.accountId } : {}),
       placement_id: item.placementId,
       treatment_id: item.treatmentId,
       interaction_type: item.interactionType,
@@ -6968,17 +6999,47 @@ export class RevTurbineCustomerSdk {
    * flush — but it is now paired with a counter and a diagnostic, so a
    * persistent failure is observable instead of merely quiet.
    */
-  private failInteractionFlush(pending: readonly RevTurbineTreatmentInteractionInput[], reason: string): void {
+  private failInteractionFlush(pending: readonly QueuedTreatmentInteraction[], reason: string): void {
     this.telemetryCounters.failed += pending.length;
     this.interactionQueue.unshift(...pending);
     this.reportSdkError('interaction_flush_failed', reason);
   }
 
+  /**
+   * The account identity to stamp on a treatment interaction, or `undefined`
+   * when the integration has identified none.
+   *
+   * Two rules make this a usable join key rather than a label:
+   *
+   * 1. **Redacted identically to `/api/track`.** Both paths run the account id
+   *    through {@link redactIdentityField}, so an email-shaped account id
+   *    becomes the SAME hash in `placement_presentations` and in
+   *    `events_clickstream`. Hashing on one path only would produce a hash on
+   *    one side and a raw email on the other, and `monetization_funnel` would
+   *    join nothing (identity keys are hashed, not sentinelled — the contract
+   *    is byte-identical across repos).
+   * 2. **Never falls back to the user id.** An absent account is absent. The
+   *    ingest route keeps its own `account_id ?? user_id` fallback for SDKs
+   *    that do not send the field yet; this SDK no longer feeds it.
+   */
+  private interactionAccountId(): string | undefined {
+    const raw = this.userContext.account_id;
+    if (typeof raw !== 'string') return undefined;
+    const trimmed = raw.trim();
+    if (trimmed.length === 0) return undefined;
+    return redactIdentityField(trimmed).value;
+  }
+
   // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#trackTreatmentInteraction
   async trackTreatmentInteraction(input: RevTurbineTreatmentInteractionInput): Promise<void> {
-    const normalized: RevTurbineTreatmentInteractionInput = {
+    // Resolved HERE, not at flush: a queued batch can outlive an `identify()`
+    // that switched the acting account. Undefined when the integration
+    // identified no account — the wire then omits the field entirely.
+    const accountId = this.interactionAccountId();
+    const normalized: QueuedTreatmentInteraction = {
       ...input,
       interactionAt: input.interactionAt ?? new Date().toISOString(),
+      ...(accountId ? { accountId } : {}),
     };
 
     this.updateInteractionState(normalized);
@@ -8193,7 +8254,11 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
-   * Emit a canonical trigger event recognised by the decision engine.
+   * Emit a canonical trigger event. There is no in-SDK consumer that matches
+   * on trigger names — the shipped behavior is ingest to `events_clickstream`
+   * only (plan 250's wire/consumer matrix); a decision-engine placement
+   * trigger matches `trigger.slot_id` against registered slots, not this
+   * event's name.
    *
    * Convenience wrapper over {@link emitSemantic} that constrains the event
    * name to {@link RevTurbineTriggerEvent} and attaches standard context
