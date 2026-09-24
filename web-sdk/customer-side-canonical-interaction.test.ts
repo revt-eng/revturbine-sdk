@@ -171,12 +171,14 @@ describe('canonical placement_interaction (Q-3)', () => {
       expect('rule_handle' in semanticBag(ev!)).toBe(false);
     });
 
-    it('never reaches the treatment-interaction wire record', async () => {
-      // The clickstream carries payload fields inside a JSON column, so a new
-      // field is readable the moment producers send it. The interaction wire
-      // record is column-shaped (`placement_presentations`) and would need a
-      // datasource migration, so `ruleHandle` is deliberately not in its
-      // explicit field mapping — this asserts the mapping stays explicit.
+    it('carries it on the treatment-interaction wire record when known (BL-0200)', async () => {
+      // It used to be asserted ABSENT here. `placement_presentations` is
+      // column-shaped and a rule key would have needed a datasource migration,
+      // so BL-0182 put the rule on the clickstream alone and #530 pinned that
+      // omission. `placement_exposure_attribution.rule_handle` exists now (web
+      // ledger 015) and the contract declares the field, so the base exposure
+      // row records the rule the exposure was DECIDED by instead of waiting for
+      // the attribution worker to reconstruct one when a conversion lands.
       const sdk = makeSdk();
       await sdk.trackTreatmentInteraction({
         userId: 'user_1',
@@ -186,9 +188,38 @@ describe('canonical placement_interaction (Q-3)', () => {
       });
       await sdk.flushEvents();
 
-      const interactionPosts = calls.filter((c) => !c.url.endsWith('/api/track'));
+      const interactionPosts = calls.filter((c) => c.url.includes('/api/events/interactions'));
+      expect(interactionPosts.length).toBeGreaterThan(0);
       for (const call of interactionPosts) {
-        expect(String(call.init.body ?? '')).not.toContain('usage_70pct');
+        const body = JSON.parse(String(call.init.body ?? 'null'));
+        const records = Array.isArray(body) ? body : [body];
+        for (const record of records) {
+          expect(record.rule_handle).toBe('usage_70pct');
+        }
+      }
+    });
+
+    it('omits it from the wire record when no decision was in scope (BL-0200)', async () => {
+      // Absent, not null. The contract accepts an explicit `null` for "a rule
+      // was selected and none matched"; the SDK cannot tell that apart from
+      // "no decision in scope" — `PlacementOutput.rule_id` is simply missing in
+      // both — so it asserts neither.
+      const sdk = makeSdk();
+      await sdk.trackTreatmentInteraction({
+        userId: 'user_1',
+        placementId: 'usage_70_banner',
+        interactionType: 'cta_clicked',
+      });
+      await sdk.flushEvents();
+
+      const interactionPosts = calls.filter((c) => c.url.includes('/api/events/interactions'));
+      expect(interactionPosts.length).toBeGreaterThan(0);
+      for (const call of interactionPosts) {
+        const body = JSON.parse(String(call.init.body ?? 'null'));
+        const records = Array.isArray(body) ? body : [body];
+        for (const record of records) {
+          expect('rule_handle' in record).toBe(false);
+        }
       }
     });
   });

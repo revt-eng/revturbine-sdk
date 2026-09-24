@@ -739,6 +739,7 @@ export interface components {
             message_block_id?: components["schemas"]["Anon_4e04ec5cc4e6_10"];
             experiment_id?: components["schemas"]["Anon_4e04ec5cc4e6_11"];
             variant_key?: components["schemas"]["Anon_4e04ec5cc4e6_12"];
+            rule_handle?: components["schemas"]["Anon_94b7b4f4c44a"];
             test?: components["schemas"]["Anon_fb9ddeea992e_3"];
             metadata?: components["schemas"]["Anon_a249e58b3222"];
         };
@@ -1169,6 +1170,8 @@ export interface components {
         Anon_9ac136edb99a_17: string;
         Anon_4e04ec5cc4e6_12: components["schemas"]["Anon_9ac136edb99a_18"];
         Anon_9ac136edb99a_18: string;
+        Anon_94b7b4f4c44a: components["schemas"]["Anon_904af497346b"];
+        Anon_904af497346b: string | null;
         Anon_fb9ddeea992e_3: components["schemas"]["Anon_7cb541e84f22_31"];
         Anon_7cb541e84f22_31: boolean;
         Anon_a249e58b3222: components["schemas"]["Anon_c65c1fbd5acf_8"];

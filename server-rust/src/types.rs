@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.339/rust/revturbine_types.rs
+//   published/v0.1.342/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -106655,6 +106655,18 @@ impl ::std::convert::From<::std::vec::Vec<TreatmentInteractionInput>>
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"rule_handle\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"surface_slot_id\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"minLength\": 1,"]
@@ -106710,6 +106722,8 @@ pub struct TreatmentInteractionInput {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub payload_id: ::std::option::Option<TreatmentInteractionInputPayloadId>,
     pub placement_id: TreatmentInteractionInputPlacementId,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub rule_handle: ::std::option::Option<TreatmentInteractionInputRuleHandle>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub surface_slot_id: ::std::option::Option<TreatmentInteractionInputSurfaceSlotId>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -107129,6 +107143,74 @@ impl ::std::convert::TryFrom<::std::string::String> for TreatmentInteractionInpu
     }
 }
 impl<'de> ::serde::Deserialize<'de> for TreatmentInteractionInputPlacementId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`TreatmentInteractionInputRuleHandle`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct TreatmentInteractionInputRuleHandle(::std::string::String);
+impl ::std::ops::Deref for TreatmentInteractionInputRuleHandle {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<TreatmentInteractionInputRuleHandle> for ::std::string::String {
+    fn from(value: TreatmentInteractionInputRuleHandle) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for TreatmentInteractionInputRuleHandle {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for TreatmentInteractionInputRuleHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for TreatmentInteractionInputRuleHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for TreatmentInteractionInputRuleHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for TreatmentInteractionInputRuleHandle {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,

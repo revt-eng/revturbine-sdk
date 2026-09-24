@@ -7528,6 +7528,22 @@ export class RevTurbineCustomerSdk {
       // from being assigned to a control arm.
       ...(item.experimentId ? { experiment_id: item.experimentId } : {}),
       ...(item.variantKey ? { variant_key: item.variantKey } : {}),
+      // The rule the treatment was decided by (BL-0200). BL-0182 sent this on
+      // the clickstream `placement_interaction` event only, and #530 asserted
+      // it never reached here — the interaction wire record is column-shaped
+      // (`placement_presentations`) and a new key needed a datasource
+      // migration. `placement_exposure_attribution.rule_handle` exists since
+      // web ledger 015, and the contract now declares the field, so the base
+      // exposure row can record the rule the exposure was DECIDED by instead of
+      // waiting for the attribution worker to reconstruct one from the
+      // clickstream when a conversion lands.
+      //
+      // Spread, like the two above: ABSENT when no decision was in scope, never
+      // an empty string. The contract accepts an explicit `null` for "a rule was
+      // selected and none matched"; the SDK has no way to distinguish that from
+      // "no decision in scope" — `PlacementOutput.rule_id` is simply missing in
+      // both — so it sends neither rather than asserting one.
+      ...(item.ruleHandle ? { rule_handle: item.ruleHandle } : {}),
       metadata: item.metadata ?? {},
       tenant_id: this.tenantId,
       // Caller-declared test traffic (plan 164): stamped only when the
