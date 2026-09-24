@@ -47,6 +47,58 @@ also require a changelog entry.
 
 ---
 
+## 0.10.10
+
+### Trial tokens now reach placement content, not only `getPersonalizationTokens()` (BL-0169)
+
+**What changed.** A placement whose copy authors `{{trial_days_remaining}}` or
+`{{trial_days_total}}` now renders the live values. Content interpolation sources
+its token map from the **output content itself**, so a provider-derived token
+only reaches the copy if the resolver writes it onto that content first. The
+usage lane always did (`usage_current`, `usage_limit`, `usage_percent`,
+`usage_remaining`, `reset_date`); the trial lane never did, so a `trial_ending`
+body reading `"{{trial_days_remaining}} days left"` shipped the literal
+`{{trial_days_remaining}}` to the end user — on every port. The two names were
+derived for `getPersonalizationTokens()` all along, which is why the gap survived:
+a host that read the token map saw the right numbers and a host that authored the
+token into copy did not.
+
+| | before | now |
+|---|---|---|
+| `getPersonalizationTokens().trial_days_remaining` | live value | live value (unchanged) |
+| content `{{trial_days_remaining}}` / `{{trial_days_total}}` | literal `{{…}}` | live value |
+| `outputContent.trial_days_remaining` / `_total` | absent | written when the plan provider carries a finite number |
+
+Identical on all three ports (`ts:local-resolver.ts`,
+`py:core/placements/local_resolver.py`, `rs:placements/static_resolver.rs`): the
+same two token names, a `Number.isFinite` guard, provider state winning over an
+authored content value of the same key, and the value passed through **without
+widening** — `day_number` 7 + `days_remaining` 3 is `trial_days_total` `10`, never
+`10.0` (BL-0155).
+
+**Who this reaches.** Any host whose placement copy authors either token. Copy
+that hard-coded one of those keys as a decorative literal now has it overwritten
+by live state — the same precedence the usage lane and
+`derivePlacementPersonalizationTokens` have always had. `{{trial_plan_name}}` and
+`{{trial_features_used}}` remain **not yet wired** by the placement-studio-ui
+spec's own note and are untouched.
+
+**Landed in.** `0.10.10`.
+
+**Fail-closed in.** `0.10.10` — absence still leaves the raw token standing
+rather than rendering `0`, so a host with no trial provider state sees exactly
+what it saw before.
+
+**Proving test.** Parity scenario `trial_tokens_in_content` under
+`"normalize": "preserve-representation"` (byte-locked ts ≡ py ≡ rs), plus
+`py:tests/placements/test_local_resolver.py` and `rs:tests/static_resolver.rs`
+`trial_tokens_are_injected_from_plan_provider_state` and its two neighbours,
+mirroring the scaffold-side `local-resolver.test.ts` cases. Needs
+`@revt-eng/core` 0.1.331 or later (scaffold #382) for the TS half; this release
+pins 0.1.332.
+
+---
+
 ## 0.10.9
 
 ### The trial-status overlay no longer changes a number's type (BL-0155)
