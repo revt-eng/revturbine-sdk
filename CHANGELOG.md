@@ -47,10 +47,55 @@ also require a changelog entry.
 
 ---
 
-## Unreleased
+## 0.11.3
 
-Merged on `main`, not yet published. The first version bump after these entries
-ships them; until then no npm/PyPI/crates version contains them.
+### `placement_interaction` now carries `rule_handle` (BL-0182)
+
+**What changed.** #527 (BL-0062) stamped `rule_handle` at every verdict emit
+site by reading `decision.output.rule_id`, but `placement_interaction` is not
+a lifecycle event and does not spread `placementLifecycleBase` — its
+placement keys are all optional, because a bare `trackTreatmentInteraction`
+caller may supply none of them — so the click between exposure and outcome
+was the one step of the funnel with no rule key. That is the step
+click-through and CTR are computed over: the funnel was sliceable by rule at
+both ends and not in the middle.
+
+Five emit sites now reach the same stamped payload: `trackTreatmentInteraction`
+(the projection itself), `PlacementController.trackInteraction`
+(dismiss / remind_me_later / cta_clicked / cta_completed — and therefore every
+React hook and `useSurfaceSlot` / `FixedSurfaceSlot` click handler built on
+it), `PlacementController.fireImpression`, `trackOutputInteraction`
+(output-addressed `convert()` / `dismiss()` / `snooze()`), and the
+server-action `trackResult` resolver.
+
+Spread, not set: `rule_handle` is **absent** when no decision was in scope
+(a bare `trackTreatmentInteraction` call with no placement context), and
+`null` on the wire means "a rule was selected and none matched" — conflating
+the two would poison the slice's coverage numbers. The unknown-output branch
+of `trackOutputInteraction` stamps nothing on purpose: no decision from this
+SDK produced that output, so there is no rule to name.
+
+Companion to `revturbine-scaffold#391`, which added `rule_handle` to the
+`placement_interaction` payload contract and `ruleHandle` to
+`RevTurbineTreatmentInteractionInput` (published as `@revt-eng/*` v0.1.339,
+pinned in this release).
+
+**No wire-shape change beyond the new optional field.** `rule_handle` is
+optional-and-nullable on the schema side (#391), which keeps every
+already-deployed SDK out of `quarantineVerdict`. `@public` signatures are
+unchanged (`web-sdk/generated/public-api.json` untouched) and
+`flushInteractionQueue` still maps the treatment-interaction record field by
+field, so `ruleHandle` never reaches a customer webhook.
+
+**Python and Rust are unaffected.** Neither port emits events.
+
+**Landed in** `0.11.3` (BL-0182, #530).
+
+**Fail-closed in** not applicable — additive field, nothing old is rejected.
+
+**Proving test:** `web-sdk/customer-side-canonical-interaction.test.ts`.
+
+---
 
 ### A gate no longer paywalls forever when it loses the cold-start config race (BL-0179)
 
@@ -84,7 +129,7 @@ untouched.
 both take the Playbook as a required constructor argument, do no I/O, and have no
 not-yet-loaded window.
 
-**Landed in.** Unreleased (BL-0179).
+**Landed in.** `0.11.3` (BL-0179, #529).
 
 **Fail-closed in.** Not applicable — terminal behaviour is unchanged; only the
 transient race is now absorbed.
@@ -124,7 +169,7 @@ required constructor argument and raise on a missing or malformed one
 `new`), perform no I/O, and never emit `config_unavailable` — there is no
 not-yet-loaded window to retry. This is a browser/hosted-mode state only.
 
-**Landed in.** Unreleased (BL-0177).
+**Landed in.** `0.11.3` (BL-0177, #528).
 
 **Fail-closed in.** Not applicable — the terminal behaviour is unchanged; only
 the transient race is now absorbed.
