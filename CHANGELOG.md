@@ -47,6 +47,64 @@ also require a changelog entry.
 
 ---
 
+## 0.11.5
+
+### `registerSurfaceSlot()` no longer writes to the control plane (BL-0197)
+
+**What changed.** Outside `local_only`, `registerSurfaceSlot()` used to mirror
+every slot to the server: `upsertSurfaceSlot()` PUT a legacy surface-slot body
+(`{name, slug, slot_type, status, targeting_rules, content, priority,
+metadata}`) to `/api/placements/<slot id>`, then POSTed it to `/api/placements`
+on the 404. `/api/placements` is RevTurbine's **authored-config** CRUD; it
+validates against `PlacementSchema`, which requires `handle` and `category`, so
+that body could only ever be rejected. In production every non-`local_only`
+slot registration failed with `surface_slot_create_failed:422` and the React
+runtime turned the rejection into a `slot_error`
+(`dogfood_event_explorer`, 2026-09-24 18:36 UTC, request
+`030ccf51-d74b-4d55-bf4e-2a929a4ab297`).
+
+The write was also wrong in principle. On a same-origin integration the
+signed-in user's session cookie authenticates the request, so a body the route
+*did* accept would have created a draft placement in the tenant's Playbook just
+from loading a gated page. Only the 422 prevented that.
+
+`registerSurfaceSlot()` is now **client-local**: it records the slot in the
+in-process registry and resolves, with no network write of any kind. A write
+happens only when you configure `endpointOverrides.surfaceSlots` (or
+`custom_endpoints.surfaceSlots`) to point at a slot-inventory service you run —
+the same shape `persistPlacementTypes()` already uses. There is **no fallback
+to `/api/placements`** under any configuration.
+
+Nothing is lost by removing it. Surface-slot discovery is **ingestion-driven**:
+the SDK already emits `slot_evaluated` / `slot_filled` / `slot_empty` /
+`slot_suppressed` / `slot_error` and the `placement_*` lifecycle through
+`/api/track`, carrying `surface_slot_id`, `slot_name`, `template_ids`,
+`surface_type`, `category`, `decision_source` and `reason_codes`, and the
+pipeline derives discovered slots from that telemetry. `SurfaceSlotSchema` is a
+runtime-source (DISCOVERED) schema with `first_seen` / `last_seen` — it was
+never meant to be written by a browser.
+
+**Landed in.** `0.11.5` (BL-0197).
+
+**Fail-closed in.** `0.11.5` — same version. The removed path had no silent
+mode: before this release it threw `surface_slot_create_failed:<status>` on
+every default-transport registration, so there is no window where the old
+behaviour was quietly tolerated. An integration that genuinely relied on the
+write must set `endpointOverrides.surfaceSlots`; one that did not was already
+seeing `slot_error`.
+
+**Proving test.** `web-sdk/surface-slot-registration-no-write.test.ts` — the
+default transport performs zero writes (fetch spy, no `/api/placements` call)
+and resolves even when the route replays the production 404/422; the override
+path still PUTs, and falls back to POST on the override base, never on
+`/api/placements`. `e2e/journey.transport.spec.ts` no longer stubs
+`/api/placements` with a 200 (the stub that hid this): it records and aborts,
+and `assertNoPlacementWrites()` fails the test if anything calls it.
+
+**Ports.** No change — the Python and Rust SDKs never had a slot-registration
+write.
+
+---
 ## 0.11.4
 
 ### The treatment-interaction wire record now carries `rule_handle` (BL-0200)
