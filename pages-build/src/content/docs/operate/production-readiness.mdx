@@ -25,7 +25,7 @@ RevTurbine issues three kinds of key. Two you create in the dashboard; the third
 
 Which one goes where:
 
-- **In the browser**, pass the ingest key as `publicKey`. The name says what it is: a scanner or an agent that finds `publicKey` in a bundle knows it belongs there. (`apiKey` and `ingestPublicKey` are still accepted as aliases for one minor; precedence is `publicKey`, then `ingestPublicKey`, then `apiKey`, and a development build warns once when an alias is used.) Never a server key: RevTurbine refuses one presented from a browser.
+- **In the browser**, pass the ingest key as `publicKey`. The name says what it is: a scanner or an agent that finds `publicKey` in a bundle knows it belongs there. As of `0.11.0` it is the **only** name accepted there — `ingestPublicKey` was removed and `apiKey` is no longer read as a browser credential (BL-0113), so a browser init without `publicKey` fails instead of sending the wrong key. Never a server key: RevTurbine refuses one presented from a browser.
 - **On your backend**, pass the server key as `apiKey` — on the server SDK and on the headless SDK alike; the sample on [Server-Side Integration](/getting-started/server-side/) reads it from `REVTURBINE_API_KEY` — and use it to mint session keys.
 - **For server-derived context in the browser**, hand the SDK a `clientSession` callback that returns a session key from your backend. See [Configuration → Server-derived context](/reference/configuration/#server-derived-context-clientsession).
 - **Local mode needs no key at all.**

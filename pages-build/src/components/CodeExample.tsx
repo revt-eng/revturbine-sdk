@@ -15,7 +15,7 @@ import demoAppRaw from '../sandpack/DemoApp.tsx?raw';
 // Standard fixtures, mounted (hidden) into every example's virtual filesystem so
 // `DemoApp` — and the usage code, if it wants — can import the same demo config +
 // users the rest of the docs use. Raw-imported as strings via Vite's `?raw`.
-import exportedConfigRaw from '../sandpack/example-playbook.json?raw';
+import playbookRaw from '../sandpack/example-playbook.json?raw';
 import demoUsersRaw from '../sandpack/demoUsers.ts?raw';
 import sharedRaw from '../sandpack/shared.ts?raw';
 
@@ -104,7 +104,7 @@ export default function CodeExample({
     // RevTurbineProvider setup the example imports.
     '/DemoApp.tsx': { code: demoAppRaw as string },
     // Hidden fixtures — importable, but not shown as editor tabs.
-    '/playbook.json': { code: exportedConfigRaw as string, hidden: true },
+    '/playbook.json': { code: playbookRaw as string, hidden: true },
     '/demoUsers.ts': { code: demoUsersRaw as string, hidden: true },
     '/shared.ts': { code: sharedRaw as string, hidden: true },
     ...(files

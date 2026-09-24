@@ -47,6 +47,119 @@ also require a changelog entry.
 
 ---
 
+## 0.11.0
+
+### `Playbook` is the canonical name for every option that carries one (BL-0156)
+
+**What changed.** `ExportedConfig` is dead vocabulary. Plan 118 renamed the
+domain object to **Playbook** and plan 104 renamed the schema type to
+`RevTurbineConfig`, but the *option*, *keyword* and *method* names that carry a
+Playbook around the SDK still spelled it `exportedConfig` / `exported_config`.
+Every one of them now has a `Playbook`-named counterpart; every old name stays
+as a deprecated alias that still works.
+
+TypeScript:
+
+| deprecated | canonical |
+|---|---|
+| `localRuntime.exportedConfig` | `localRuntime.playbook` (already shipped; see below) |
+| `localRuntime.resolvers.resolveExportedConfig` | `localRuntime.resolvers.resolvePlaybook` |
+| `configProvider.getExportedConfig()` | `configProvider.getPlaybook()` |
+| `sdk.getExportedConfig()` | `sdk.getPlaybook()` |
+| `getPolicy().exportedConfigVersion` | `getPolicy().playbookVersion` |
+| `BrowserRuntimeOptions.exportedConfig` | `BrowserRuntimeOptions.playbook` |
+| `LocalEvaluationServerOptions.exportedConfig` | `LocalEvaluationServerOptions.playbook` |
+| `ExportedConfigProvider` (type) | `RevTurbineConfigProvider`, also exported as `PlaybookProvider` |
+| `ExportedConfig` (type) | `Playbook` |
+
+Python: `RevTurbineCustomerSdk(exported_config=…)`, `LocalRuntime(exported_config=…)`,
+`LocalRuntime.get_exported_config()`, `create_static_placement_resolver(exported_config=…)`,
+`derive_local_entitlement_from_configured_rules(exported_config=…)`,
+`configured_plan_name_from_exported_config`, `parse_exported_config_or_throw` and
+`static.ExportedConfig` all gained `playbook`-spelled counterparts.
+
+Rust: `configured_plan_name_from_exported_config` is now
+`configured_plan_name_from_playbook`, with the old name kept as the crate's
+first `#[deprecated]` item. Rust has no keyword arguments, so nothing else in
+that port was a caller-visible name.
+
+`RevTurbineConfigProvider`'s two accessors are both OPTIONAL on the interface so
+that an existing `implements RevTurbineConfigProvider` clause keeps compiling;
+the `configProvider` option intersects it with a union that still requires
+exactly one of them, so a provider implementing neither is a compile error where
+it is passed.
+
+Reading a deprecated name logs **one** development-build warning per runtime
+(one `DeprecationWarning` per process on Python) naming the canonical
+replacement — one flag for every alias, so an integration still spelling several
+of them gets a single line, not a wall. Production builds are silent. Requires
+`@revt-eng/core` ≥ 0.1.331, which made the same rename upstream (scaffold #380).
+
+Ruling: Kent, 2026-09-23 (BL-0156).
+
+**Landed in** `0.11.0`. **Fail-closed in** `0.12.0` for the `ExportedConfig`
+aliases — until then every old name works and warns once.
+
+**Proving test:** `web-sdk/playbook-option.test.ts` (canonical never warns, the
+alias still resolves, one warning across three read sites, both spellings reach
+the same Playbook at every public read site),
+`server-python/tests/test_playbook_option.py` (the same contract plus
+`get_exported_config()`), and `server-rust/src/user_context.rs`
+`playbook_rename_tests` (the alias returns exactly what the canonical returns).
+
+### `localRuntime.playbook` is the canonical local-mode config key
+
+**What changed.** The record this file owed and never carried: `localRuntime.playbook`
+shipped earlier as the canonical spelling of `localRuntime.exportedConfig`, with
+`resolveLocalPlaybook()` as the single resolver deciding precedence, but no
+changelog entry was ever written for it — so an integration could not date the
+change. It is recorded here rather than back-dated, because the version it
+landed in is not the version this entry appears in and pretending otherwise is
+exactly the confusion the "Landed in" / "Fail-closed in" split exists to
+prevent. As of `0.11.0` the alias also warns once (it did not before).
+
+**Landed in** a release before `0.11.0` (additive; the alias never stopped
+working). **Fail-closed in** `0.12.0`, with the rest of the `ExportedConfig`
+aliases.
+
+**Proving test:** `web-sdk/playbook-option.test.ts` — `resolveLocalPlaybook`
+accepts either key, prefers `playbook`, and warns only for the alias.
+
+### `publicKey` is the only browser credential; `ingestPublicKey` is gone (BL-0113)
+
+**What changed.** `0.10.0` made `publicKey` the browser credential and kept
+`apiKey` and `ingestPublicKey` working as aliases "for one minor". This is that
+minor:
+
+- **`ingestPublicKey` is removed from `RevTurbineInitOptions`.** Passing it is
+  now a **type error**, including when the options are built in a variable
+  (`ExactInitOptions` rejects it there too).
+- **`apiKey` is no longer read as a browser credential.** It still exists, and
+  still means exactly one thing: the secret **server key**, for
+  `@revturbine/sdk/server` and for the headless SDK on a backend. A browser init
+  that supplies only `apiKey` now resolves **no** browser credential and fails
+  at init, instead of silently sending a server key as the bearer.
+
+`resolveBrowserPublicKey()` reads `publicKey` and nothing else, and
+`resetBrowserKeyAliasWarning()` is gone with the warning it reset. Keyless
+local-only init is unchanged, and the plan 95 anonymous `sdk_init` beacon now
+keys off `publicKey` alone.
+
+Ruling: Kent, 2026-09-23 (BL-0113), closing the window plan 257 opened.
+
+**Landed in** `0.11.0`. **Fail-closed in** `0.11.0` — the same release. This IS
+the fail-closed half of the `0.10.0` entry below; there is no further tolerance
+window.
+
+**Proving test:** `web-sdk/public-key-option.test.ts` (`publicKey` is the bearer
+on ingest and every control-plane fetch; `apiKey` resolves nothing; nothing
+warns), `web-sdk/customer-side-ingest.test.ts` (the bearer no longer carries the
+server key), and `web-sdk/init-options-exactness.test-d.ts` (`ingestPublicKey`
+is a type error inline AND in a variable — if the key is ever re-added, `tsc`
+fails on the unused `@ts-expect-error`).
+
+---
+
 ## 0.10.10
 
 ### Trial tokens now reach placement content, not only `getPersonalizationTokens()` (BL-0169)
@@ -545,8 +658,9 @@ and the plan 95 anonymous `sdk_init` beacon still fires only when no public key
 
 Ruling: Kent, 2026-09-21, devkit PR #808 (closed).
 
-**Landed in** `0.10.0`. **Fail-closed in** not yet — the aliases are removed one
-minor later; until then the old shape works and warns.
+**Landed in** `0.10.0`. **Fail-closed in** `0.11.0` — `ingestPublicKey` was
+removed from the options type and `apiKey` stopped being read as a browser
+credential (BL-0113); see the `0.11.0` entry above.
 
 **Proving test:** `web-sdk/public-key-option.test.ts` — precedence, the single
 bearer across ingest and control-plane fetches, the browser-only warning, and

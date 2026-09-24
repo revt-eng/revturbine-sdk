@@ -15,7 +15,7 @@ Required in `revturbine_server` and `custom_endpoints` modes. In `local_only` mo
 |---|---|---|
 | `tenantId` | `string` | Your RevTurbine tenant identifier |
 | `publicKey` | `string` | In the browser: your public key (`rtk_…`, type `public`, minted under **Settings → API tokens → Ingest keys**). Safe to ship in a bundle. See [Production Readiness → Keys](/operate/production-readiness/#keys). |
-| `apiKey` | `string` | On a server only: your server key (`rtk_…`, type `server`), the same option the server SDK takes. Never ship it to a browser. In the browser it is a deprecated alias of `publicKey` for one minor (`ingestPublicKey` likewise). |
+| `apiKey` | `string` | On a server only: your server key (`rtk_…`, type `server`), the same option the server SDK takes. Never ship it to a browser. As of `0.11.0` it is **not** accepted as a browser credential — pass `publicKey` there; `ingestPublicKey` was removed (BL-0113). |
 
 ### Runtime Configuration
 
@@ -25,7 +25,7 @@ Required in `revturbine_server` and `custom_endpoints` modes. In `local_only` mo
 | `endpoint` | `string` | `'https://revturbine.com/app'` | RevTurbine control-plane URL; omit it for the hosted service |
 | `mode` | `'react' \| 'snippet' \| 'iframe'` | `'snippet'` (`'react'` when `<RevTurbineProvider>` initializes the SDK) | Integration label carried in telemetry; no decision depends on it |
 | `endpointOverrides` | `Partial<RevTurbineEndpointOverrides>` | — | Route the SDK's non-decision calls through your own endpoints (`custom_endpoints` mode) |
-| `configProvider` | `RevTurbineConfigProvider` | — | Custom provider for Playbook |
+| `configProvider` | `RevTurbineConfigProvider` | — | Custom provider for the Playbook; implement `getPlaybook()` |
 | `localRuntime` | `RevTurbineLocalRuntimeOptions` | — | Local-only mode configuration |
 
 ### Provider Configuration
@@ -156,7 +156,7 @@ grants through `initialData`.
 | `checkEntitlement` | `(handle, context?) => Promise<EntitlementResult>` |
 | `fetchUserContext` | `(userId) => Promise<UserTargetingContext>` |
 | `getTrialStatus` | `() => Promise<RevTurbineTrialContext>` |
-| `resolveExportedConfig` | `() => Promise<Playbook>` |
+| `resolvePlaybook` | `() => Promise<Playbook>` |
 
 ---
 

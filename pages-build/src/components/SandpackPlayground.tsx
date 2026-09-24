@@ -11,12 +11,12 @@ import { demoUsers } from '../sandpack/demoUsers';
 import { DEMO_USER_IDS, type DemoUserId } from '../sandpack/shared';
 
 // Raw string imports for Sandpack virtual filesystem
-import exportedConfigRaw from '../sandpack/example-playbook.json?raw';
+import playbookRaw from '../sandpack/example-playbook.json?raw';
 import demoUsersRaw from '../sandpack/demoUsers.ts?raw';
 import sharedRaw from '../sandpack/shared.ts?raw';
 
 // Typed import for host-side inspector usage
-import exportedConfigJson from '../sandpack/example-playbook.json';
+import playbookJson from '../sandpack/example-playbook.json';
 
 // Host-side SDK — the PUBLISHED package, not the sibling source tree. The docs
 // should demonstrate exactly what a customer installs, so the rendered output and
@@ -148,7 +148,7 @@ function buildSandpackFiles(
     // Fixtures — importable, but not worth a tab.
     '/demoUsers.ts': { code: demoUsersRaw as string, hidden: true },
     '/shared.ts': { code: sharedRaw as string, hidden: true },
-    '/playbook.json': { code: exportedConfigRaw as string, hidden: true },
+    '/playbook.json': { code: playbookRaw as string, hidden: true },
   };
 }
 
@@ -618,7 +618,7 @@ function PlaygroundRuntime(props: {
 }) {
   const options = useMemo(
     () => ({
-      localRuntime: { playbook: exportedConfigJson },
+      localRuntime: { playbook: playbookJson },
       // Live docs playground render — keep it out of SDK adoption telemetry.
       previewMode: true,
       uiPathResolvers: {
