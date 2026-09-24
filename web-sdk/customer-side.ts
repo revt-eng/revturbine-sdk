@@ -8952,13 +8952,28 @@ export class RevTurbineCustomerSdk {
     void this.emitPlatformEvent('gate_attempted', { entitlement_handle: action }, { immediate: false });
     const entitlement = await this.checkEntitlement(action, context);
     if (entitlement.allowed) {
-      void this.emitPlatformEvent('gate_allowed', { entitlement_handle: action }, { immediate: false });
+      // BL-0062 (gap G3): name the rule that granted, not merely that
+      // something did. `checkEntitlement` now returns it — scaffold's §2.6.5
+      // selection used to drop the winner after using its fields.
+      void this.emitPlatformEvent(
+        'gate_allowed',
+        { entitlement_handle: action, rule_handle: entitlement.rule_handle ?? null },
+        { immediate: false },
+      );
       const result = await fn();
       return { ran: true, result, entitlement };
     }
     void this.emitPlatformEvent(
       'gate_denied',
-      { entitlement_handle: action, reason: entitlement.reason ?? null },
+      {
+        entitlement_handle: action,
+        reason: entitlement.reason ?? null,
+        // BL-0062: null on the identity-shaped denials (`no_plan_identity`,
+        // `no_matching_entitlement_rule`) and on the fail-closed
+        // SDK-disabled path — in each of those no rule matched at all, which
+        // is a different fact from "a rule denied you".
+        rule_handle: entitlement.rule_handle ?? null,
+      },
       { immediate: false },
     );
     return { ran: false, entitlement };

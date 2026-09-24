@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.335/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.337/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -2348,6 +2348,7 @@ class Placement(BaseModel):
     handle: constr(min_length=1, max_length=100)
     description: constr(max_length=500) | None = None
     category: PlacementCategory
+    objective: constr(min_length=1, max_length=100) | None = None
     drag_order_in_category: conint(ge=-9007199254740991, le=9007199254740991) | None = 0
     surface_slot_id: str | None = None
     entitlement_id: str | None = None
@@ -3239,6 +3240,7 @@ class ServerEvaluationPayloadEntitlementsValue(BaseModel):
     limit: float | None = None
     used: float | None = None
     remaining: float | None = None
+    rule_handle: str | None = None
     placement: PlacementDecisionOutput | None = None
 
 
@@ -4835,6 +4837,7 @@ class EntitlementCheckResult(BaseModel):
     limit: float | None = None
     used: float | None = None
     remaining: float | None = None
+    rule_handle: str | None = None
     placement: PlacementDecisionOutput | None = None
 
 
@@ -4886,6 +4889,7 @@ class EntitlementRule(BaseModel):
     targets: list[EntitlementRuleTarget] = Field(..., min_length=1)
     segment_ids: list[str] | None = []
     visibility: RuleVisibility | None = "public"
+    objective: constr(min_length=1, max_length=100) | None = None
     period_scope: UsagePeriodScope | None = None
     instance: constr(max_length=100) | None = None
     reset_period: EntitlementRulePeriodUnit | None = None

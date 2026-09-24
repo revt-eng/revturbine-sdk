@@ -12,7 +12,7 @@ pub mod unlimited;
 
 pub use entitlement_check::{
     derive_local_entitlement_from_configured_rules, derive_result_from_rule_type_fields,
-    is_rule_shaped_kind, LocalEntitlementInput,
+    is_rule_shaped_kind, with_rule_handle, LocalEntitlementInput,
 };
 pub use rules::{
     evaluate_entitlement_rules, evaluate_plan_rules, find_matching_entitlement_rule,

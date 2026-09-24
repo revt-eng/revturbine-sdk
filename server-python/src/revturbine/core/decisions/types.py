@@ -66,6 +66,14 @@ class EntitlementCheckResult(_EntitlementCheckResultRequired, total=False):
     current_tier: str
     remaining: float
     tier: str
+    # BL-0062 (analytics worksheet gap G3): the ``unique_handle`` of the
+    # entitlement rule this verdict came from — the winner of the §2.6.5
+    # most-permissive selection. Both evaluators picked a winner and threw its
+    # identity away; the TS side fixed that in scaffold v0.1.337 and this port
+    # mirrors it, because the analytics rule slice is keyed on this token and a
+    # port that cannot name the rule is a parity gap, not an omission.
+    # Absent — never None — when no rule produced the verdict.
+    rule_handle: str
 
 
 # ── Placement input / output / decision ─────────────────────────────────────

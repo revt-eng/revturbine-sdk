@@ -317,6 +317,13 @@ export class PlacementController {
         // decision correlates (plan 144 TASK-10 / REQ-8).
         decision_id: decision?.output?.decision_id ?? null,
         decision_source: decision?.decisionSource ?? null,
+        // BL-0062 (gap G3): the placement rule that won. It has been sitting on
+        // `decision.output.rule_id` since plan 138 — the resolver selects it and
+        // `customer-side.ts` already reads it as the treatment id — and was
+        // never projected onto the event recording the verdict. Attribution
+        // stamps the winning touch's rule key onto a movement, so exposure and
+        // outcome need it, not just the resolve.
+        rule_handle: decision?.output?.rule_id ?? null,
         ...(basis ? { exposure_basis: basis } : {}),
       }, { immediate: false });
     } catch {
@@ -346,6 +353,11 @@ export class PlacementController {
       // Lifted → wire `decision_id` column so slot diagnostics correlate to the
       // decision that produced them (plan 144 TASK-10 / REQ-8).
       decision_id: decision?.output?.decision_id ?? null,
+      // BL-0062 (gap G3): which placement rule won this slot. `slot_filled`
+      // names it; `slot_empty` / `slot_suppressed` leave it null, because
+      // nothing won. `reason_codes` beside it says WHY a slot resolved as it
+      // did and never WHOSE rule it was.
+      rule_handle: decision?.output?.rule_id ?? null,
     };
   }
 
@@ -413,6 +425,9 @@ export class PlacementController {
         payload_id: decision?.output?.output_id ?? null,
         decision_id: decision?.output?.decision_id ?? null,
         decision_source: decision?.decisionSource ?? null,
+        // BL-0062: the outcome fact is what attribution reads, so it carries
+        // the winning rule like the rest of the lifecycle.
+        rule_handle: decision?.output?.rule_id ?? null,
         outcome: 'cta_completed',
         cta_target: ctaTarget,
       }, { immediate: false });
@@ -847,6 +862,12 @@ export class EntitlementGate {
         limit: res.limit ?? null,
         used: res.used ?? null,
         remaining: res.remaining ?? null,
+        // BL-0062 (gap G3): the rule whose limit/enablement produced `outcome`.
+        // This is not local plumbing — until scaffold v0.1.337 the winner was
+        // discarded inside `deriveLocalEntitlementFromConfiguredRules`, five
+        // frames below this emit, so there was nothing here to read. The result
+        // now carries it and the event names it.
+        rule_handle: res.rule_handle ?? null,
       }, { immediate: false });
     } catch {
       // Best-effort telemetry — never surface a gate error from this.

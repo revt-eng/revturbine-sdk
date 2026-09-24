@@ -52,7 +52,7 @@ def _rule(eid: str, type_fields: dict[str, Any], **kw: Any) -> dict[str, Any]:
 class TestFeature:
     def test_enabled(self) -> None:
         cfg = _cfg([_rule("f", {"kind": "feature", "enabled": True})])
-        assert _derive(cfg, "f") == {"status": "allowed", "allowed": True}
+        assert _derive(cfg, "f") == {"status": "allowed", "allowed": True, "rule_handle": "r_f"}
 
     def test_disabled(self) -> None:
         cfg = _cfg([_rule("f", {"kind": "feature", "enabled": False})])
@@ -60,12 +60,49 @@ class TestFeature:
             "status": "denied",
             "allowed": False,
             "reason": "feature_not_enabled_for_plan",
+            "rule_handle": "r_f",
         }
 
     def test_enabled_defaults_true_when_unset(self) -> None:
         # `enabled !== false` → only an explicit False disables.
         cfg = _cfg([_rule("f", {"kind": "feature"})])
         assert _derive(cfg, "f")["allowed"] is True
+
+
+class TestWinningRuleHandle:
+    """BL-0062 (analytics worksheet gap G3) — the §2.6.5 selection must NAME
+    its winner, not merely return its outcome.
+
+    This port dropped the winner at the line structurally identical to the TS
+    one: ``selected_rule`` was read for its type fields and never for its
+    identity. Parity here is not cosmetic — the analytics rule slice is keyed
+    on this token, so a port that cannot name the rule is a capability gap.
+    """
+
+    def test_names_the_rule_that_produced_the_verdict(self) -> None:
+        cfg = _cfg([_rule("f", {"kind": "feature", "enabled": True})])
+        assert _derive(cfg, "f")["rule_handle"] == "r_f"
+
+    def test_names_the_denying_rule_too(self) -> None:
+        cfg = _cfg([_rule("f", {"kind": "feature", "enabled": False})])
+        r = _derive(cfg, "f")
+        assert r["allowed"] is False
+        assert r["rule_handle"] == "r_f"
+
+    def test_absent_when_no_rule_matched(self) -> None:
+        # `no_matching_entitlement_rule`: nothing won, so nothing is named.
+        # ABSENT, never None — absence and null are different bytes in a
+        # canonical-JSON parity snapshot, and ts/py/rs are byte-compared.
+        cfg = _cfg([_rule("other", {"kind": "feature", "enabled": True})])
+        r = _derive(cfg, "missing")
+        assert r["reason"] == "no_matching_entitlement_rule"
+        assert "rule_handle" not in r
+
+    def test_absent_on_no_plan_identity(self) -> None:
+        cfg = _cfg([_rule("f", {"kind": "feature", "enabled": True})])
+        r = _derive(cfg, "f", plan="   ")  # trims to no identity
+        assert r["reason"] == "no_plan_identity"
+        assert "rule_handle" not in r
 
 
 class TestNoMatch:
@@ -111,6 +148,7 @@ class TestUsageEnforcement:
             "limit": 10,
             "used": 3,
             "remaining": 7,
+            "rule_handle": "r_u",
         }
 
     def test_hard_block(self) -> None:
@@ -121,6 +159,7 @@ class TestUsageEnforcement:
             "limit": 10,
             "used": 12,
             "remaining": 0,
+            "rule_handle": "r_u",
         }
 
     def test_block_with_upsell(self) -> None:
@@ -144,6 +183,7 @@ class TestUsageEnforcement:
             "limit": 10,
             "used": 12,
             "remaining": 0,
+            "rule_handle": "r_u",
         }
 
     def test_allow_overage(self) -> None:
@@ -155,6 +195,7 @@ class TestUsageEnforcement:
             "limit": 10,
             "used": 12,
             "remaining": 0,
+            "rule_handle": "r_u",
         }
 
     def test_unset_default_limited_not_allowed(self) -> None:
@@ -166,6 +207,7 @@ class TestUsageEnforcement:
             "limit": 10,
             "used": 12,
             "remaining": 0,
+            "rule_handle": "r_u",
         }
 
 
@@ -183,6 +225,7 @@ class TestCredits:
             "limit": 3,
             "used": 1,
             "remaining": 2,
+            "rule_handle": "r_c",
         }
 
 
@@ -193,6 +236,7 @@ class TestCapabilityTierAndUsageResolution:
             "status": "allowed",
             "allowed": True,
             "current_tier": "gold",
+            "rule_handle": "r_t",
         }
 
     def test_used_precedence_context_over_balances(self) -> None:
@@ -351,6 +395,7 @@ class TestSegmentDimensionLookup:
         assert _derive(cfg, "f", segment_ids={"emea", "admins"}) == {
             "status": "allowed",
             "allowed": True,
+            "rule_handle": "r_f",
         }
 
 
@@ -372,13 +417,17 @@ class TestSeatAndTierVocabulary:
         assert _derive(cfg, "f", context={"used": 3}) == {
             "status": "allowed",
             "allowed": True,
+            "rule_handle": "r_f",
         }
 
     def test_included_count_scores_most_permissive_selection(self) -> None:
         # included_count 5 outscores limit_value 2 -> seat rule shapes -> allowed.
+        # BL-0062: rule_handle names WHICH rule shaped it, so the selection is
+        # asserted directly instead of being inferred from the numbers.
         assert _derive(self._pair(5), "f", context={"used": 3}) == {
             "status": "allowed",
             "allowed": True,
+            "rule_handle": "r_f",
         }
         # included_count 1 is outscored -> usage_limit shapes -> limited.
         assert _derive(self._pair(1), "f", context={"used": 3}) == {
@@ -388,6 +437,7 @@ class TestSeatAndTierVocabulary:
             "limit": 2,
             "used": 3,
             "remaining": 0,
+            "rule_handle": "r_f_limit",
         }
 
     def test_tiered_lowering_vocabulary_is_not_evaluated(self) -> None:
@@ -395,4 +445,4 @@ class TestSeatAndTierVocabulary:
         # reads {kind:'capability_tier', tier_name}. Tiered-vocabulary rules
         # fall to the unknown-kind default: allowed, NO current_tier.
         cfg = _cfg([_rule("f", {"kind": "tiered", "tier_value": "gold"})])
-        assert _derive(cfg, "f") == {"status": "allowed", "allowed": True}
+        assert _derive(cfg, "f") == {"status": "allowed", "allowed": True, "rule_handle": "r_f"}

@@ -452,8 +452,20 @@ pub fn derive_local_entitlement_from_configured_rules(
         let kind = tf.get("kind").and_then(Value::as_str).unwrap_or("");
         rule_permissiveness(kind, tf)
     });
+    // BL-0062 (gap G3): read the winner's IDENTITY as well as its fields. The
+    // `(_, tf)` destructure that used to stand here threw the rule `&Value`
+    // away while it was in hand. Rule refs are handle-valued (plan 120
+    // TASK-4), so the rule's `id` IS its `unique_handle`; an empty id is
+    // missing data, not a rule named "". Mirrors entitlement-check.ts
+    // `selectedRuleHandle`.
+    let selected_rule = chosen.map_or(matching_rules[0], |(rule, _)| *rule);
     let type_fields =
         chosen.map_or_else(|| type_fields_of(matching_rules[0]), |(_, tf)| tf.clone());
+    let selected_rule_handle = selected_rule
+        .get("id")
+        .and_then(Value::as_str)
+        .filter(|id| !id.is_empty())
+        .map(str::to_string);
 
     // JS `??` chain: nullish-coalescing — 0 passes through, only absent falls
     // to the next source. Explicit `is_none()` checks, never `unwrap_or`,
@@ -482,5 +494,27 @@ pub fn derive_local_entitlement_from_configured_rules(
             .unwrap_or(0.0)
     });
 
-    Some(derive_result_from_rule_type_fields(&type_fields, used))
+    Some(with_rule_handle(
+        derive_result_from_rule_type_fields(&type_fields, used),
+        selected_rule_handle,
+    ))
+}
+
+/// Stamp the winning rule's handle onto a shaped result (BL-0062).
+///
+/// Kept out of `derive_result_from_rule_type_fields` deliberately: that shaper
+/// reads `type_fields`, and a rule's IDENTITY is not one of its type fields.
+/// Both evaluators own the selection, so both stamp. `None` leaves the field
+/// `None`, which `skip_serializing_if` omits entirely — absence and null are
+/// different bytes in a canonical-JSON parity snapshot.
+///
+/// Source: entitlement-check.ts (withRuleHandle)
+pub fn with_rule_handle(
+    mut result: EntitlementCheckResult,
+    rule_handle: Option<String>,
+) -> EntitlementCheckResult {
+    if let Some(handle) = rule_handle {
+        result.rule_handle = Some(handle);
+    }
+    result
 }

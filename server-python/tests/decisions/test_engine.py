@@ -451,6 +451,7 @@ class TestEntitlementRuleSurfacing:
             "limit": 5,
             "used": 3,
             "remaining": 2,
+            "rule_handle": "rule_limit",
         }
 
     def test_matched_rule_enforces_at_limit(self) -> None:
@@ -463,6 +464,7 @@ class TestEntitlementRuleSurfacing:
             "limit": 5,
             "used": 7,
             "remaining": 0,
+            "rule_handle": "rule_limit",
         }
 
     def test_no_matching_rule_fails_closed(self) -> None:
@@ -565,6 +567,7 @@ class TestEntitlementRuleSurfacing:
             "status": "denied",
             "allowed": False,
             "reason": "feature_not_enabled_for_plan",
+            "rule_handle": "rule_off",
         }
 
 

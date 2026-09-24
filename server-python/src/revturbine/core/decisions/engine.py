@@ -30,6 +30,7 @@ from revturbine.core.decisions.types import (
 from revturbine.core.entitlements.entitlement_check import (
     derive_result_from_rule_type_fields,
     is_rule_shaped_kind,
+    with_rule_handle,
 )
 from revturbine.core.entitlements.rules import RuleEvaluationContext, find_matching_entitlement_rule
 from revturbine.core.providers.registry import DomainProviderRegistry
@@ -270,9 +271,19 @@ class DecisionEngine:
                     ctx_used = context.get("used") if context is not None else None
                     if ctx_used is None and usage is not None:
                         ctx_used = usage.get("used")
-                    return derive_result_from_rule_type_fields(
-                        type_fields,
-                        float(ctx_used) if ctx_used is not None else 0.0,
+                    # BL-0062 (gap G3): stamp the winner of the §2.6.5
+                    # selection. The snapshot's `rule_id` comes from the
+                    # Playbook entry's handle-valued `id`, so both evaluators
+                    # agree on the VALUE, not merely on the field.
+                    matched_rule_id = matched.get("rule_id")
+                    return with_rule_handle(
+                        derive_result_from_rule_type_fields(
+                            type_fields,
+                            float(ctx_used) if ctx_used is not None else 0.0,
+                        ),
+                        matched_rule_id
+                        if isinstance(matched_rule_id, str) and matched_rule_id != ""
+                        else None,
                     )
                 # A matched rule of a kind the shaper doesn't model (e.g.
                 # legacy 'metered') proves the plan assignment exists — fall

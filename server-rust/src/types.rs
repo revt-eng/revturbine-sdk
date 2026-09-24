@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.335/rust/revturbine_types.rs
+//   published/v0.1.337/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -36422,6 +36422,10 @@ impl<'de> ::serde::Deserialize<'de> for EntitlementAnchorId {
 #[doc = "      \"type\": \"number\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"rule_handle\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"status\": {"]
 #[doc = "      \"$ref\": \"#/$defs/EntitlementStatus\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
@@ -36451,6 +36455,8 @@ pub struct EntitlementCheckResult {
     pub reason: ::std::option::Option<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub remaining: ::std::option::Option<f64>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub rule_handle: ::std::option::Option<::std::string::String>,
     pub status: EntitlementStatus,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub used: ::std::option::Option<f64>,
@@ -37502,6 +37508,12 @@ impl<'de> ::serde::Deserialize<'de> for EntitlementName {
 #[doc = "      ],"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"objective\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 100,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"overage_price_ref\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
@@ -37656,6 +37668,8 @@ pub struct EntitlementRule {
     pub max_balance: ::std::option::Option<EntitlementRuleMaxBalance>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub max_seats: ::std::option::Option<EntitlementRuleMaxSeats>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub objective: ::std::option::Option<EntitlementRuleObjective>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub overage_price_ref: ::std::option::Option<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -38375,6 +38389,79 @@ impl ::std::fmt::Display for EntitlementRuleMaxSeats {
 impl ::std::convert::From<f64> for EntitlementRuleMaxSeats {
     fn from(value: f64) -> Self {
         Self::Number(value)
+    }
+}
+#[doc = "`EntitlementRuleObjective`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 100,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct EntitlementRuleObjective(::std::string::String);
+impl ::std::ops::Deref for EntitlementRuleObjective {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<EntitlementRuleObjective> for ::std::string::String {
+    fn from(value: EntitlementRuleObjective) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for EntitlementRuleObjective {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for EntitlementRuleObjective {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for EntitlementRuleObjective {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for EntitlementRuleObjective {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for EntitlementRuleObjective {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
     }
 }
 #[doc = "`EntitlementRulePeriodUnit`"]
@@ -66881,6 +66968,12 @@ impl<'de> ::serde::Deserialize<'de> for PersonalizationTokenTenantId {
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"objective\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 100,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"playbook_version_id\": {"]
 #[doc = "      \"default\": null,"]
 #[doc = "      \"anyOf\": ["]
@@ -67006,6 +67099,8 @@ pub struct Placement {
     #[serde(default, skip_serializing_if = "::serde_json::Map::is_empty")]
     pub metadata: ::serde_json::Map<::std::string::String, ::serde_json::Value>,
     pub name: PlacementName,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub objective: ::std::option::Option<PlacementObjective>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub playbook_version_id: ::std::option::Option<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -67766,6 +67861,79 @@ impl ::std::convert::TryFrom<::std::string::String> for PlacementName {
     }
 }
 impl<'de> ::serde::Deserialize<'de> for PlacementName {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PlacementObjective`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 100,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PlacementObjective(::std::string::String);
+impl ::std::ops::Deref for PlacementObjective {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PlacementObjective> for ::std::string::String {
+    fn from(value: PlacementObjective) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PlacementObjective {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PlacementObjective {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PlacementObjective {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PlacementObjective {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PlacementObjective {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -97235,6 +97403,10 @@ pub struct ServerEvaluationPayloadDecisionsItem {
 #[doc = "      \"type\": \"number\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"rule_handle\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"status\": {"]
 #[doc = "      \"$ref\": \"#/$defs/EntitlementStatus\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
@@ -97264,6 +97436,8 @@ pub struct ServerEvaluationPayloadEntitlementsValue {
     pub reason: ::std::option::Option<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub remaining: ::std::option::Option<f64>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub rule_handle: ::std::option::Option<::std::string::String>,
     pub status: EntitlementStatus,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub used: ::std::option::Option<f64>,

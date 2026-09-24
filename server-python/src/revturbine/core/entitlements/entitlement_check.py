@@ -323,6 +323,16 @@ def derive_local_entitlement_from_configured_rules(
     selected_rule = chosen if chosen is not None else matching_rules[0]
     type_fields = _type_fields_of(selected_rule)
 
+    # BL-0062 (gap G3): the selection above is the whole point of §2.6.5, and
+    # its winner used to be dropped here — ``selected_rule`` was read for its
+    # type fields and never for its identity. Rule refs are handle-valued
+    # (plan 120 TASK-4), so the rule's ``id`` IS its ``unique_handle``.
+    # Mirrors entitlement-check.ts ``selectedRuleHandle``.
+    selected_rule_id = selected_rule.get("id")
+    selected_rule_handle = (
+        selected_rule_id if isinstance(selected_rule_id, str) and selected_rule_id != "" else None
+    )
+
     def _usage_amount_for(key: str) -> float | None:
         entry = (user_usage or {}).get(key)
         if (
@@ -362,7 +372,29 @@ def derive_local_entitlement_from_configured_rules(
         else:
             used = 0.0
 
-    return derive_result_from_rule_type_fields(type_fields, used)
+    return with_rule_handle(
+        derive_result_from_rule_type_fields(type_fields, used),
+        selected_rule_handle,
+    )
+
+
+def with_rule_handle(
+    result: EntitlementCheckResult,
+    rule_handle: str | None,
+) -> EntitlementCheckResult:
+    """Stamp the winning rule's handle onto a shaped result (BL-0062).
+
+    Kept out of ``derive_result_from_rule_type_fields`` deliberately: that
+    shaper reads ``type_fields``, and a rule's IDENTITY is not one of its type
+    fields. Both evaluators own the selection, so both stamp. ``None`` leaves
+    the key ABSENT rather than writing a null — absence and null are different
+    bytes in a canonical-JSON parity snapshot.
+
+    Source: entitlement-check.ts (withRuleHandle)
+    """
+    if rule_handle is None:
+        return result
+    return {**result, "rule_handle": rule_handle}
 
 
 def is_rule_shaped_kind(kind: Any) -> bool:

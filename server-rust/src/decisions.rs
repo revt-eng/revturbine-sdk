@@ -41,6 +41,18 @@ pub struct EntitlementCheckResult {
     /// Emitted by the `capability_tier` branch (plan 33 TASK-13).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub current_tier: Option<String>,
+    /// The `unique_handle` of the entitlement rule this verdict came from —
+    /// the winner of the §2.6.5 most-permissive selection (BL-0062, analytics
+    /// worksheet gap G3).
+    ///
+    /// Both evaluators picked a winner and discarded its identity; the TS side
+    /// fixed that in scaffold v0.1.337 and this port mirrors it, because the
+    /// analytics rule slice is keyed on this token. `None` means no rule
+    /// produced the verdict (unknown handle, no plan identity, default policy)
+    /// and is SKIPPED on the wire, never written as null — absence and null are
+    /// different bytes in a canonical-JSON parity snapshot.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rule_handle: Option<String>,
 }
 
 impl EntitlementCheckResult {
@@ -55,6 +67,7 @@ impl EntitlementCheckResult {
             used: None,
             remaining: None,
             current_tier: None,
+            rule_handle: None,
         }
     }
 

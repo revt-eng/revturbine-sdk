@@ -680,3 +680,83 @@ fn tiered_lowering_vocabulary_is_not_evaluated() {
     assert!(r.allowed);
     assert_eq!(r.current_tier, None);
 }
+
+// ── BL-0062: the winning rule handle ────────────────────────────────────────
+//
+// Analytics worksheet gap G3. The §2.6.5 most-permissive selection must NAME
+// its winner, not merely return its outcome. This port dropped it at the line
+// structurally identical to the TS one — the rule `&Value` was right there in
+// `chosen` and thrown away by the `(_, tf)` destructure. Parity here is a
+// capability, not a formality: the analytics rule slice is keyed on this token.
+
+#[test]
+fn names_the_rule_that_produced_the_verdict() {
+    let cfg = config(
+        "feature",
+        json!([{ "id": "r_feat_x", "entitlement_id": "feat_x", "plan_ids": ["pro"], "enabled": true }]),
+    );
+    let r = derive(&cfg, &input("feat_x", "pro"));
+    assert!(r.allowed);
+    assert_eq!(r.rule_handle.as_deref(), Some("r_feat_x"));
+}
+
+#[test]
+fn names_the_denying_rule_too() {
+    // A denial that cannot say which rule denied is exactly the blind spot G3
+    // describes.
+    let cfg = config(
+        "feature",
+        json!([{ "id": "r_off", "entitlement_id": "feat_x", "plan_ids": ["pro"], "enabled": false }]),
+    );
+    let r = derive(&cfg, &input("feat_x", "pro"));
+    assert!(!r.allowed);
+    assert_eq!(r.rule_handle.as_deref(), Some("r_off"));
+}
+
+#[test]
+fn names_the_most_permissive_winner_not_the_first_in_order() {
+    // The selection is only observable through the numbers it produces, so
+    // picking the right limit off the wrong rule used to be indistinguishable
+    // from correct. The handle makes the choice itself assertable.
+    let cfg = config(
+        "metered",
+        json!([
+            { "id": "r_low",  "entitlement_id": "feat_x", "plan_ids": ["pro"], "kind": "usage_limit", "limit_value": 10 },
+            { "id": "r_high", "entitlement_id": "feat_x", "plan_ids": ["pro"], "kind": "usage_limit", "limit_value": 100 },
+        ]),
+    );
+    let mut inp = input("feat_x", "pro");
+    inp.context_used = Some(50.0);
+    let r = derive(&cfg, &inp);
+    assert!(r.allowed);
+    assert_eq!(r.rule_handle.as_deref(), Some("r_high"));
+}
+
+#[test]
+fn is_none_and_omitted_when_no_rule_matched() {
+    // `no_matching_entitlement_rule`: nothing won, so nothing is named. It must
+    // be ABSENT on the wire, not null — absence and null are different bytes in
+    // a canonical-JSON parity snapshot, and ts/py/rs are byte-compared.
+    let cfg = config(
+        "feature",
+        json!([{ "id": "r_other", "entitlement_id": "ent_other", "plan_ids": ["pro"], "enabled": true }]),
+    );
+    let r = derive(&cfg, &input("feat_x", "pro"));
+    assert_eq!(r.reason.as_deref(), Some("no_matching_entitlement_rule"));
+    assert_eq!(r.rule_handle, None);
+    let wire = serde_json::to_string(&r).expect("serializes");
+    assert!(!wire.contains("rule_handle"), "wire was {wire}");
+}
+
+#[test]
+fn an_empty_rule_id_is_no_identity_rather_than_an_empty_handle() {
+    // A blank id is missing data, not a rule named "". Grouping the rule slice
+    // by an empty string would invent a bucket.
+    let cfg = config(
+        "feature",
+        json!([{ "id": "", "entitlement_id": "feat_x", "plan_ids": ["pro"], "enabled": true }]),
+    );
+    let r = derive(&cfg, &input("feat_x", "pro"));
+    assert!(r.allowed);
+    assert_eq!(r.rule_handle, None);
+}

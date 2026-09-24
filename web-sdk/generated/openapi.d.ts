@@ -863,6 +863,8 @@ export interface components {
         Anon_681004346c78: string[];
         /** @default public */
         Anon_b26f420c5d82: components["schemas"]["RuleVisibility"];
+        Anon_faa4addce751: components["schemas"]["Anon_479ce264714e"];
+        Anon_479ce264714e: components["schemas"]["Anon_0eb2e3b6e08c"];
         Anon_2923895ad8e0_1: components["schemas"]["UsagePeriodScope"];
         Anon_409d6333b38e_1: components["schemas"]["Anon_d856c03b0c72_1"];
         Anon_d856c03b0c72_1: string;
@@ -917,6 +919,7 @@ export interface components {
         Anon_373775e26848_1: string;
         Anon_853cc883e392: components["schemas"]["Anon_373775e26848_1"];
         Anon_843e92dde3b4: components["schemas"]["PlacementCategory"];
+        Anon_faa4addce751_1: components["schemas"]["Anon_479ce264714e"];
         /** @default 0 */
         Anon_f95d5b2e4f52_3: components["schemas"]["Anon_278eaeabce08_4"];
         Anon_278eaeabce08_4: number;
@@ -1316,6 +1319,7 @@ export interface components {
             targets: components["schemas"]["Anon_effbae05e941"];
             segment_ids: components["schemas"]["Anon_f8dbfffc0ce2_10"];
             visibility: components["schemas"]["Anon_b26f420c5d82_1"];
+            objective?: components["schemas"]["Anon_faa4addce751_2"];
             period_scope?: components["schemas"]["Anon_2923895ad8e0_3"];
             instance?: components["schemas"]["Anon_409d6333b38e_4"];
             reset_period?: components["schemas"]["Anon_49d496ef65c9_1"];
@@ -1358,6 +1362,7 @@ export interface components {
             targets: components["schemas"]["Anon_effbae05e941"];
             segment_ids: components["schemas"]["Anon_f8dbfffc0ce2_10"];
             visibility: components["schemas"]["Anon_b26f420c5d82_1"];
+            objective?: components["schemas"]["Anon_faa4addce751_2"];
             period_scope?: components["schemas"]["Anon_2923895ad8e0_3"];
             instance?: components["schemas"]["Anon_409d6333b38e_4"];
             reset_period?: components["schemas"]["Anon_49d496ef65c9_1"];
@@ -1426,6 +1431,7 @@ export interface components {
             handle: components["schemas"]["Anon_af12d548dbee_22"];
             description?: components["schemas"]["Anon_ee9224780226_4"];
             category: components["schemas"]["Anon_843e92dde3b4_1"];
+            objective?: components["schemas"]["Anon_faa4addce751_3"];
             drag_order_in_category: components["schemas"]["Anon_f95d5b2e4f52_8"];
             surface_slot_id?: components["schemas"]["Anon_96f9066c2fdc_41"];
             entitlement_id?: components["schemas"]["Anon_96f9066c2fdc_42"];
@@ -1457,6 +1463,7 @@ export interface components {
             handle: components["schemas"]["Anon_af12d548dbee_22"];
             description?: components["schemas"]["Anon_ee9224780226_4"];
             category: components["schemas"]["Anon_843e92dde3b4_1"];
+            objective?: components["schemas"]["Anon_faa4addce751_3"];
             drag_order_in_category: components["schemas"]["Anon_f95d5b2e4f52_8"];
             surface_slot_id?: components["schemas"]["Anon_96f9066c2fdc_41"];
             entitlement_id?: components["schemas"]["Anon_96f9066c2fdc_42"];
@@ -1677,6 +1684,8 @@ export interface components {
         Anon_681004346c78_13: string[];
         /** @default public */
         Anon_b26f420c5d82_1: components["schemas"]["RuleVisibility"];
+        Anon_faa4addce751_2: components["schemas"]["Anon_479ce264714e_1"];
+        Anon_479ce264714e_1: components["schemas"]["Anon_0eb2e3b6e08c_3"];
         Anon_2923895ad8e0_3: components["schemas"]["UsagePeriodScope"];
         Anon_409d6333b38e_4: components["schemas"]["Anon_d856c03b0c72_4"];
         Anon_d856c03b0c72_4: string;
@@ -1746,6 +1755,7 @@ export interface components {
         Anon_373775e26848_6: string;
         Anon_853cc883e392_1: components["schemas"]["Anon_373775e26848_6"];
         Anon_843e92dde3b4_1: components["schemas"]["PlacementCategory"];
+        Anon_faa4addce751_3: components["schemas"]["Anon_479ce264714e_1"];
         /** @default 0 */
         Anon_f95d5b2e4f52_8: components["schemas"]["Anon_278eaeabce08_10"];
         Anon_278eaeabce08_10: number;
@@ -2963,6 +2973,7 @@ export interface operations {
                     targets: components["schemas"]["Anon_49bb4dc12260"];
                     segment_ids?: components["schemas"]["Anon_f8dbfffc0ce2"];
                     visibility?: components["schemas"]["Anon_b26f420c5d82"];
+                    objective?: components["schemas"]["Anon_faa4addce751"];
                     period_scope?: components["schemas"]["Anon_2923895ad8e0_1"];
                     instance?: components["schemas"]["Anon_409d6333b38e_1"];
                     reset_period?: components["schemas"]["Anon_49d496ef65c9"];
@@ -3038,6 +3049,7 @@ export interface operations {
                     targets: components["schemas"]["Anon_49bb4dc12260"];
                     segment_ids?: components["schemas"]["Anon_f8dbfffc0ce2"];
                     visibility?: components["schemas"]["Anon_b26f420c5d82"];
+                    objective?: components["schemas"]["Anon_faa4addce751"];
                     period_scope?: components["schemas"]["Anon_2923895ad8e0_1"];
                     instance?: components["schemas"]["Anon_409d6333b38e_1"];
                     reset_period?: components["schemas"]["Anon_49d496ef65c9"];
@@ -3206,6 +3218,7 @@ export interface operations {
                     handle: components["schemas"]["Anon_af12d548dbee_3"];
                     description?: components["schemas"]["Anon_ee9224780226"];
                     category: components["schemas"]["Anon_843e92dde3b4"];
+                    objective?: components["schemas"]["Anon_faa4addce751_1"];
                     drag_order_in_category?: components["schemas"]["Anon_f95d5b2e4f52_3"];
                     surface_slot_id?: components["schemas"]["Anon_96f9066c2fdc_7"];
                     entitlement_id?: components["schemas"]["Anon_96f9066c2fdc_8"];
@@ -3302,6 +3315,7 @@ export interface operations {
                     handle: components["schemas"]["Anon_af12d548dbee_3"];
                     description?: components["schemas"]["Anon_ee9224780226"];
                     category: components["schemas"]["Anon_843e92dde3b4"];
+                    objective?: components["schemas"]["Anon_faa4addce751_1"];
                     drag_order_in_category?: components["schemas"]["Anon_f95d5b2e4f52_3"];
                     surface_slot_id?: components["schemas"]["Anon_96f9066c2fdc_7"];
                     entitlement_id?: components["schemas"]["Anon_96f9066c2fdc_8"];

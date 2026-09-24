@@ -26,7 +26,7 @@ use serde_json::{json, Map, Value};
 use crate::decisions::EntitlementCheckResult;
 use crate::entitlements::{
     derive_local_entitlement_from_configured_rules, derive_result_from_rule_type_fields,
-    find_matching_entitlement_rule, is_rule_shaped_kind, LocalEntitlementInput,
+    find_matching_entitlement_rule, is_rule_shaped_kind, with_rule_handle, LocalEntitlementInput,
     RuleEvaluationContext,
 };
 use crate::placements::StaticPlacementResolver;
@@ -446,7 +446,18 @@ impl LocalRuntime {
                             .and_then(Value::as_f64)
                             .or_else(|| usage.and_then(|u| u.get("used")).and_then(Value::as_f64))
                             .unwrap_or(0.0);
-                        return derive_result_from_rule_type_fields(&tf, used);
+                        // BL-0062 (gap G3): stamp the winner of the §2.6.5
+                        // selection. The snapshot's `rule_id` comes from the
+                        // Playbook entry's handle-valued `id`, so both
+                        // evaluators agree on the VALUE, not just the field.
+                        return with_rule_handle(
+                            derive_result_from_rule_type_fields(&tf, used),
+                            matched
+                                .get("rule_id")
+                                .and_then(Value::as_str)
+                                .filter(|id| !id.is_empty())
+                                .map(str::to_string),
+                        );
                     }
                     // A kind the shaper does not model (legacy 'metered')
                     // still proves the plan assignment exists — fall through.
