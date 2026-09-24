@@ -35,7 +35,7 @@ function makeLocalSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCust
   return new RevTurbineCustomerSdk({
     tenantId: 'tenant_identity',
     apiKey: 'sk_test',
-    ingestPublicKey: 'pub_test',
+    publicKey: 'pub_test',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
     runtimeMode: 'local_only',

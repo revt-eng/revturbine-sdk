@@ -35,13 +35,13 @@ pub fn plan_identity_from_context(context: &Value) -> Option<String> {
 /// TASK-4: plans resolve by `unique_handle` ALONE; a plan object resolves
 /// nothing (callers pass the identity via [`plan_identity_from_context`]).
 ///
-/// Source: helpers.ts (configuredPlanNameFromExportedConfig)
+/// Source: helpers.ts (configuredPlanNameFromPlaybook)
 #[must_use]
-pub fn configured_plan_name_from_exported_config(
-    exported_config: Option<&Value>,
+pub fn configured_plan_name_from_playbook(
+    playbook: Option<&Value>,
     plan_value: Option<&str>,
 ) -> Option<String> {
-    let plans = exported_config?.get("plans")?.as_array()?;
+    let plans = playbook?.get("plans")?.as_array()?;
     let plan_id = plan_value.map(str::trim).filter(|s| !s.is_empty())?;
     let normalized = plan_id.to_lowercase();
 
@@ -122,6 +122,29 @@ pub fn to_segment_evaluation_traits(
 /// Build the full targeting state from a user context snapshot: effective
 /// plan, merged traits, usage amounts, and the scalar-only
 /// segment-evaluation traits, as one pure computation. `plan_handle` is a
+/// Deprecated alias of [`configured_plan_name_from_playbook`].
+///
+/// `ExportedConfig` is dead vocabulary (BL-0156): plan 118 renamed the domain
+/// object to **Playbook** and plan 104 renamed the schema type to
+/// `RevTurbineConfig`, but the function names that carry a Playbook around still
+/// spelled it `ExportedConfig`. Kept so an existing `use` keeps compiling.
+///
+/// This is the crate's FIRST `#[deprecated]` item. Clippy runs with
+/// `-D warnings`, so every in-crate caller must either move to the canonical
+/// name or `#[allow(deprecated)]` at the call site — which is the point: the
+/// lint is the migration checklist.
+#[deprecated(
+    since = "0.11.0",
+    note = "renamed to `configured_plan_name_from_playbook` (BL-0156); removed in 0.12.0"
+)]
+#[must_use]
+pub fn configured_plan_name_from_exported_config(
+    exported_config: Option<&Value>,
+    plan_value: Option<&str>,
+) -> Option<String> {
+    configured_plan_name_from_playbook(exported_config, plan_value)
+}
+
 /// RESERVED trait key — a `custom.plan_handle` can never shadow or
 /// impersonate the first-class identity (plan 191 REQ-2).
 ///
@@ -129,12 +152,12 @@ pub fn to_segment_evaluation_traits(
 #[must_use]
 pub fn build_targeting_state(
     context: &Value,
-    exported_config: Option<&Value>,
+    playbook: Option<&Value>,
     usage_overrides: Option<&Map<String, Value>>,
 ) -> Value {
     let plan_identity = plan_identity_from_context(context);
     let configured_plan_name =
-        configured_plan_name_from_exported_config(exported_config, plan_identity.as_deref());
+        configured_plan_name_from_playbook(playbook, plan_identity.as_deref());
     let effective_plan = configured_plan_name
         .clone()
         .or_else(|| plan_identity.clone());
@@ -197,4 +220,55 @@ pub fn build_targeting_state(
     state.insert("usage".into(), Value::Object(usage.clone()));
     state.insert("segment_traits".into(), Value::Object(segment_traits));
     Value::Object(state)
+}
+
+#[cfg(test)]
+mod playbook_rename_tests {
+    //! BL-0156 — `configured_plan_name_from_exported_config` is a deprecated
+    //! alias of `configured_plan_name_from_playbook`.
+    //!
+    //! Rust has no keyword arguments, so unlike TypeScript and Python this port
+    //! needed only the FUNCTION name aliased: every other `exported_config`
+    //! occurrence was a positional parameter or a local, invisible to callers
+    //! and renamed outright.
+    //!
+    //! `#[allow(deprecated)]` is scoped to this module and nowhere else in the
+    //! crate. Clippy runs with `-D warnings`, so a blanket allow would defeat
+    //! the deprecation: the lint IS how the next migration finds its call sites.
+    #![allow(deprecated)]
+
+    use super::{configured_plan_name_from_exported_config, configured_plan_name_from_playbook};
+    use serde_json::json;
+
+    fn playbook() -> serde_json::Value {
+        json!({ "plans": [{ "unique_handle": "pro", "name": "Pro" }] })
+    }
+
+    #[test]
+    fn canonical_resolves_a_plan_display_name() {
+        assert_eq!(
+            configured_plan_name_from_playbook(Some(&playbook()), Some("pro")),
+            Some("Pro".to_string())
+        );
+    }
+
+    #[test]
+    fn deprecated_alias_returns_exactly_what_the_canonical_returns() {
+        let pb = playbook();
+        for plan in [Some("pro"), Some("PRO"), Some("missing"), None] {
+            assert_eq!(
+                configured_plan_name_from_exported_config(Some(&pb), plan),
+                configured_plan_name_from_playbook(Some(&pb), plan),
+                "alias diverged from the canonical fn for {plan:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn alias_handles_an_absent_playbook_like_the_canonical_fn() {
+        assert_eq!(
+            configured_plan_name_from_exported_config(None, Some("pro")),
+            configured_plan_name_from_playbook(None, Some("pro"))
+        );
+    }
 }

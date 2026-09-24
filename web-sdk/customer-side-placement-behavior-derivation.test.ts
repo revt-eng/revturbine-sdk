@@ -51,13 +51,13 @@ function makeSdk(
   const options: RevTurbineInitOptions = {
     tenantId: 'tenant_behavior_derivation',
     apiKey: 'sk_test',
-    ingestPublicKey: 'pub_test',
+    publicKey: 'pub_test',
     environmentId: 'staging',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
     runtimeMode: 'local_only',
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
-    ...(config ? { localRuntime: { exportedConfig: config } } : {}),
+    ...(config ? { localRuntime: { playbook: config } } : {}),
     ...(placementBehavior ? { placementBehavior } : {}),
   };
   return new RevTurbineCustomerSdk(options);

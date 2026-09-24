@@ -80,7 +80,7 @@ async function mount(options: RevTurbineInitOptions): Promise<void> {
 const BASE: RevTurbineInitOptions = {
   tenantId: 'tenant_theme',
   apiKey: 'sk_test',
-  ingestPublicKey: 'pub_test',
+  publicKey: 'pub_test',
   environmentId: 'production',
   endpoint: 'https://edge.example.com',
   mode: 'snippet',

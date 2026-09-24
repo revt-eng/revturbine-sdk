@@ -31,7 +31,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function makeExportedConfig(): RevTurbineConfig {
+function makePlaybook(): RevTurbineConfig {
   return {
     version: '1.0.0',
     exported_at: '2026-01-01T00:00:00Z',
@@ -53,13 +53,13 @@ function makeSdk(): RevTurbineCustomerSdk {
   return new RevTurbineCustomerSdk({
     tenantId: 'tenant_recs',
     apiKey: 'sk_test',
-    ingestPublicKey: 'pub_test',
+    publicKey: 'pub_test',
     environmentId: 'staging',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
     runtimeMode: 'local_only',
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
-    localRuntime: { exportedConfig: makeExportedConfig() },
+    localRuntime: { playbook: makePlaybook() },
   });
 }
 

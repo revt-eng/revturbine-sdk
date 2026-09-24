@@ -3,14 +3,14 @@
 (plan-32/34-reconciled).
 
 ``derive_local_entitlement_from_configured_rules`` is the
-ExportedConfig-rule fallback wired into
+Playbook-rule fallback wired into
 ``LocalRuntime._derive_entitlement_from_config`` (plan 33 TASK-6 leaf,
 faithful to TS local-runtime.ts:355-369). It does its **own** inline
 rule filtering and takes the **first** matching rule — distinct from
 ``rules.py``'s provider-snapshot most-permissive selector; both shapes
 are ported because plan 33 TASK-13 names both.
 
-Sync per Q-5. ExportedConfig / rule items stay loosely typed
+Sync per Q-5. Playbook / rule items stay loosely typed
 (``dict[str, Any]``) per the port convention; the parity suite is the
 drift backstop.
 
@@ -30,10 +30,13 @@ from revturbine.core.entitlements.rules import (
 from revturbine.core.entitlements.segment_matching import matches_rule_segments
 from revturbine.core.entitlements.unlimited import resolve_limit_value
 from revturbine.core.helpers import is_record
+from revturbine.playbook_option import resolve_playbook_option
 
 __all__ = ["derive_local_entitlement_from_configured_rules"]
 
-ExportedConfig = dict[str, Any]
+Playbook = dict[str, Any]
+#: Deprecated spelling of :data:`Playbook` (BL-0156). Removed in ``0.12.0``.
+ExportedConfig = Playbook
 
 
 def _js_number(v: Any) -> float:
@@ -109,9 +112,13 @@ def derive_local_entitlement_from_configured_rules(
     segment_ids: set[str],
     usage_balances: dict[str, float],
     user_usage: dict[str, Any] | None = None,
-    exported_config: ExportedConfig,
+    playbook: Playbook | None = None,
+    exported_config: Playbook | None = None,
 ) -> EntitlementCheckResult | None:
-    """Derive an entitlement result locally from ExportedConfig rules.
+    """Derive an entitlement result locally from Playbook rules.
+
+    ``playbook`` is canonical; ``exported_config`` is the deprecated spelling
+    kept for one minor (BL-0156) and removed in ``0.12.0``.
 
     Returns ``None`` when no config is available; an explicit result
     otherwise (including ``no_matching_entitlement_rule`` ⇒ denied,
@@ -120,7 +127,15 @@ def derive_local_entitlement_from_configured_rules(
     Source: entitlement-check.ts:77-211
     (deriveLocalEntitlementFromConfiguredRules)
     """
-    entitlements: list[dict[str, Any]] = exported_config.get("entitlements") or []
+    # One resolver, so `playbook` vs the deprecated `exported_config` cannot be
+    # decided differently here than anywhere else (BL-0156).
+    resolved = resolve_playbook_option(
+        playbook, exported_config, "derive_local_entitlement_from_configured_rules"
+    )
+    if resolved is None:
+        return None
+    playbook = resolved
+    entitlements: list[dict[str, Any]] = playbook.get("entitlements") or []
     # Plan 120 TASK-4 / plan 191 REQ-1: the config carries only the handle, so
     # entitlements resolve by handle alone. The `id` fallback this port used to
     # carry was a pre-plan-120 mirror that TS dropped; because the ids in the
@@ -142,7 +157,7 @@ def derive_local_entitlement_from_configured_rules(
     # only the collapsed form reports the actual cause (plan 194 REQ-1).
     normalized_plan_handle = str(current_plan_handle or "").strip().lower()
 
-    plans: list[dict[str, Any]] = exported_config.get("plans") or []
+    plans: list[dict[str, Any]] = playbook.get("plans") or []
     # Plan 191 REQ-1: plan identity IS the handle. `plans[].id` is DB-internal
     # and never participates in matching — a context whose only plan signal is
     # that id must miss every plan-targeted rule.
@@ -180,7 +195,7 @@ def derive_local_entitlement_from_configured_rules(
             "reason": "no_plan_identity",
         }
 
-    rules: list[dict[str, Any]] = exported_config.get("entitlement_rules") or []
+    rules: list[dict[str, Any]] = playbook.get("entitlement_rules") or []
 
     # Plan #39 REQ-28: build the segment_id → dimension_id lookup once per
     # call so the dimensional matcher can group rule segments. Segments
@@ -192,7 +207,7 @@ def derive_local_entitlement_from_configured_rules(
     # handles, collapsing all rule segments into `__no_dim__` and degrading
     # cross-dimension AND to flat OR (a grant where TS denies).
     segment_dimensions: dict[str, str] = {}
-    for seg in exported_config.get("segments") or []:
+    for seg in playbook.get("segments") or []:
         if not isinstance(seg, dict):
             continue
         sid = seg.get("handle")
@@ -385,7 +400,7 @@ def derive_result_from_rule_type_fields(
     used: float,
 ) -> EntitlementCheckResult:
     """Shape an EntitlementCheckResult from a matched rule's ``type_fields``
-    (plan 133). Single-sourced for BOTH evaluators — the ExportedConfig path
+    (plan 133). Single-sourced for BOTH evaluators — the Playbook path
     above and the DecisionEngine's provider-snapshot path (decisions/engine.py)
     — so a matched rule yields identical results on every surface.
     Limit-bearing outcomes carry ``limit`` / ``used`` / ``remaining``.

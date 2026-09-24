@@ -372,7 +372,7 @@ fn a_configured_entitlement_with_no_matching_rule_is_denied() {
 #[test]
 fn with_no_entitlements_provider_the_config_evaluator_takes_over() {
     // An ABSENT provider — not an empty one — is what routes to the
-    // ExportedConfig-rule fallback.
+    // Playbook-rule fallback.
     let cfg = json!({
         "version": "1",
         "entitlements": [{ "unique_handle": "exports", "type": "feature" }],

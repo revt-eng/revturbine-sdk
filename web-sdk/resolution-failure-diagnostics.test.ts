@@ -5,7 +5,7 @@
  * diagnostics on the keyless meta channel:
  *
  *   - KEYED installs emit (124 Q-7: the emit is decoupled from the
- *     `!ingestPublicKey` gate the adoption beacon keeps).
+ *     `!publicKey` gate the adoption beacon keeps).
  *   - BOTH opt-outs govern (124 Q-6, Kent 2026-08-12): either
  *     `anonymousTelemetry: false` or `analytics: false` silences diagnostics.
  *   - Session dedup per `(reason, primary handle)` + a session cap (Q-4).
@@ -81,7 +81,7 @@ function makeKeyedSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCust
   return new RevTurbineCustomerSdk({
     tenantId: 'tenant_diag',
     apiKey: 'sk_test',
-    ingestPublicKey: 'pub_test',
+    publicKey: 'pub_test',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
     runtimeMode: 'local_only',
@@ -154,7 +154,7 @@ describe('resolution_failure diagnostics — entitlement infra-denials (Q-3 scop
     const sdk = new RevTurbineCustomerSdk({
       tenantId: 'tenant_diag',
       apiKey: 'sk_test',
-      ingestPublicKey: 'pub_test',
+      publicKey: 'pub_test',
       endpoint: 'https://edge.example.com',
       mode: 'snippet',
       runtimeMode: 'revturbine_server',
@@ -178,7 +178,7 @@ describe('resolution_failure diagnostics — entitlement infra-denials (Q-3 scop
     const sdk = new RevTurbineCustomerSdk({
       tenantId: 'tenant_diag',
       apiKey: 'sk_test',
-      ingestPublicKey: 'pub_test',
+      publicKey: 'pub_test',
       endpoint: 'https://edge.example.com',
       mode: 'snippet',
       runtimeMode: 'local_only',

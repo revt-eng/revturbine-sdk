@@ -52,13 +52,35 @@ initRevTurbine({
   mode: 'react',
 });
 
-// The deprecated aliases still type-check for one minor.
+// `apiKey` still type-checks — it is the SERVER key, the right option for the
+// headless SDK on a backend. It is no longer read as a browser credential
+// (BL-0113), which is a runtime fact, not a type-level one.
 initRevTurbine({
   tenantId: 't_1',
   apiKey: 'sk_test',
   endpoint: 'https://edge.example.com',
   mode: 'react',
 });
+
+// BL-0113: `ingestPublicKey` is GONE from `RevTurbineInitOptions` in 0.11.0.
+// Plan 257 landed it as a `@deprecated` alias of `publicKey` in 0.10.0 and its
+// CHANGELOG entry promised removal "one minor later". This assertion is that
+// promise: if the key is ever re-added, `tsc` fails with "Unused
+// '@ts-expect-error' directive" and the removal has been silently undone.
+initRevTurbine({
+  tenantId: 't_1',
+  endpoint: 'https://edge.example.com',
+  mode: 'react',
+  // @ts-expect-error - `ingestPublicKey` was removed in 0.11.0 (BL-0113). Pass
+  // the same key as `publicKey`.
+  ingestPublicKey: 'rtk_test',
+});
+
+// Built in a VARIABLE, so the excess-property check is doing no work here and
+// `ExactInitOptions` is what rejects it — the load-bearing half of the guard.
+const withRemovedAlias = { tenantId: 't_1', localRuntime: { playbook }, ingestPublicKey: 'rtk_test' };
+// @ts-expect-error - `ingestPublicKey` was removed in 0.11.0 (BL-0113).
+initRevTurbine(withRemovedAlias);
 
 const withPublicKeyTypo = { tenantId: 't_1', localRuntime: { playbook }, publickey: 'rtk_test' };
 // @ts-expect-error - `publickey` is a casing typo for `publicKey`.

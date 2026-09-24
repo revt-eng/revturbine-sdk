@@ -212,7 +212,7 @@ const session = await initRevTurbine({
   ],
 
   // Optional: local runtime mode (no server)
-  localRuntime: { exportedConfig },
+  localRuntime: { playbook },
 });
 ```
 
@@ -220,7 +220,7 @@ const session = await initRevTurbine({
 
 1. `initRevTurbineCore(options)` — creates the SDK instance
 2. `sdk.identify(userId)` — if `options.user.id` is provided
-3. Theme resolution — from `localRuntime.exportedConfig.theme` or server API
+3. Theme resolution — from `localRuntime.playbook.theme` or server API
 4. `sdk.bootstrapPlacementDecisions()` — if `bootstrapPlacements` is provided
 5. Returns `SdkSession`
 

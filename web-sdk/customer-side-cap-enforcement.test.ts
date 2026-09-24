@@ -53,7 +53,7 @@ function makeSdk(
   const sdk = new RevTurbineCustomerSdk({
     tenantId: 'tenant_cap_test',
     apiKey: 'sk_test',
-    ingestPublicKey: 'pub_test',
+    publicKey: 'pub_test',
     environmentId: 'staging',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',

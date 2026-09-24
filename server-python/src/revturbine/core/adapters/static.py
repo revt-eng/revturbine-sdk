@@ -1,10 +1,10 @@
 """Static adapter — Python port of @revt-eng/core/adapters/static.ts.
 
-Builds domain providers from an ``ExportedConfig`` snapshot. No network,
+Builds domain providers from a ``Playbook`` snapshot. No network,
 no DB — the SDK's local-mode construction path: feed
 ``create_static_providers(...)`` into a ``LocalRuntime``.
 
-``ExportedConfig`` and its nested entries stay loosely typed
+``Playbook`` and its nested entries stay loosely typed
 (``dict[str, Any]``) — the same decision the resolver/engine ports made
 (avoid coupling to the generated types package; the parity suite is the
 drift backstop). Provider state keys are emitted **snake_case** to match
@@ -30,7 +30,9 @@ from revturbine.core.providers.types import (
 
 __all__ = ["create_static_providers"]
 
-ExportedConfig = dict[str, Any]
+Playbook = dict[str, Any]
+#: Deprecated spelling of :data:`Playbook` (BL-0156). Removed in ``0.12.0``.
+ExportedConfig = Playbook
 
 
 class _StaticProvider:
@@ -58,7 +60,7 @@ class _StaticProvider:
 
 def create_static_providers(
     *,
-    config: ExportedConfig,
+    config: Playbook,
     plan_handle: str | None = None,
     plan_name: str | None = None,
     usage: dict[str, dict[str, float]] | None = None,
@@ -68,7 +70,7 @@ def create_static_providers(
     default_entitlement_policy: Literal["allow", "deny"] = "allow",
     cache_ttl_ms: int | None = None,
 ) -> list[DomainProvider]:
-    """Create domain providers from a static ExportedConfig snapshot.
+    """Create domain providers from a static Playbook snapshot.
 
     Returns providers for (when the config carries the data): plan,
     entitlements, segments, rules, content, theme — mirroring

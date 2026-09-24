@@ -2,7 +2,7 @@
 TASK-7, narrowed headless-server scope).
 
 The load-bearing property is **output-transparency**: the SDK adds zero
-decision logic, so for the same ``(user_context, exported_config)`` it
+decision logic, so for the same ``(user_context, playbook)`` it
 must return results byte-equal to the parity-locked substrate it wraps
 (``create_static_providers`` + ``LocalRuntime``). That equality is
 exactly why ``tests/parity/py_runner.py`` can drive this public class
@@ -37,7 +37,7 @@ from revturbine.core.runtime import LocalRuntime
 
 
 def _config() -> dict[str, Any]:
-    """A minimal in-process ExportedConfig: two entitlements + one
+    """A minimal in-process Playbook: two entitlements + one
     placement. No network, no persistence — the headless model.
     """
     return {
@@ -92,14 +92,14 @@ def _reference_runtime(ctx: UserContext, cfg: dict[str, Any]) -> LocalRuntime:
     return LocalRuntime(
         tenant_id=ctx["tenant_id"],
         user_id=ctx["user_id"],
-        exported_config=cfg,
+        playbook=cfg,
         providers=providers,
     )
 
 
 class TestPublicSurface:
     def test_exports_and_methods_present(self) -> None:
-        sdk = RevTurbineCustomerSdk(user_context=_user_ctx(), exported_config=_config())
+        sdk = RevTurbineCustomerSdk(user_context=_user_ctx(), playbook=_config())
         for name in (
             "check_entitlement",
             "get_placement_decision",
@@ -116,21 +116,24 @@ class TestPublicSurface:
             with pytest.raises(ValueError, match="tenant_id.*user_id"):
                 RevTurbineCustomerSdk(
                     user_context=bad,  # type: ignore[arg-type]
-                    exported_config=cfg,
+                    playbook=cfg,
                 )
 
     def test_no_storage_injection_point(self) -> None:
         # The stateless / in-memory contract is enforced by the absence
         # of any persistence parameter: the constructor takes exactly
-        # the two server-supplied inputs, keyword-only.
+        # the two server-supplied inputs, keyword-only. `playbook` and
+        # `exported_config` are the SAME input under two spellings
+        # (BL-0156) — `exported_config` is deprecated and removed in
+        # 0.12.0, at which point this set shrinks back to two names.
         params = inspect.signature(RevTurbineCustomerSdk).parameters
-        assert set(params) == {"user_context", "exported_config"}
+        assert set(params) == {"user_context", "playbook", "exported_config"}
         for p in params.values():
             assert p.kind is inspect.Parameter.KEYWORD_ONLY
         assert "storage" not in params and "impression_store" not in params
 
     def test_legacy_playbook_defaults_environment_to_production(self) -> None:
-        sdk = RevTurbineCustomerSdk(user_context=_user_ctx(), exported_config=_config())
+        sdk = RevTurbineCustomerSdk(user_context=_user_ctx(), playbook=_config())
         assert sdk._playbook["environment_id"] == "production"
 
     def test_canonical_playbook_preserves_explicit_environment(self) -> None:
@@ -145,7 +148,7 @@ class TestPublicSurface:
                 "environment_id": "staging",
             }
         )
-        sdk = RevTurbineCustomerSdk(user_context=_user_ctx(), exported_config=cfg)
+        sdk = RevTurbineCustomerSdk(user_context=_user_ctx(), playbook=cfg)
         assert sdk._playbook["environment_id"] == "staging"
 
     def test_future_playbook_format_rejects_before_evaluation(self) -> None:
@@ -161,7 +164,7 @@ class TestPublicSurface:
             }
         )
         with pytest.raises(ValueError, match='unsupported "format_version"'):
-            RevTurbineCustomerSdk(user_context=_user_ctx(), exported_config=cfg)
+            RevTurbineCustomerSdk(user_context=_user_ctx(), playbook=cfg)
 
 
 class TestOutputTransparency:
@@ -170,7 +173,7 @@ class TestOutputTransparency:
     def test_check_entitlement_matches_localruntime(self) -> None:
         cfg = _config()
         ctx = _user_ctx(usage={"credits": {"used": 3.0, "limit": 10.0}})
-        sdk = RevTurbineCustomerSdk(user_context=ctx, exported_config=cfg)
+        sdk = RevTurbineCustomerSdk(user_context=ctx, playbook=cfg)
         ref = _reference_runtime(ctx, cfg)
         for handle in ("feat_x", "credits", "not_configured"):
             assert sdk.check_entitlement(handle) == ref.check_entitlement(handle)
@@ -178,7 +181,7 @@ class TestOutputTransparency:
     def test_get_placement_decision_matches_localruntime(self) -> None:
         cfg = _config()
         ctx = _user_ctx()
-        sdk = RevTurbineCustomerSdk(user_context=ctx, exported_config=cfg)
+        sdk = RevTurbineCustomerSdk(user_context=ctx, playbook=cfg)
         ref = _reference_runtime(ctx, cfg)
         for pid in ("pl_known", "does_not_exist"):
             inp: PlacementDecisionInput = {"placement_id": pid, "user_id": "user_u"}
@@ -189,7 +192,7 @@ class TestOutputTransparency:
     def test_get_placement_decisions_batch_order_and_transparency(self) -> None:
         cfg = _config()
         ctx = _user_ctx()
-        sdk = RevTurbineCustomerSdk(user_context=ctx, exported_config=cfg)
+        sdk = RevTurbineCustomerSdk(user_context=ctx, playbook=cfg)
         ref = _reference_runtime(ctx, cfg)
         inputs: list[PlacementDecisionInput] = [
             {"placement_id": "pl_known", "user_id": "user_u"},
@@ -203,8 +206,8 @@ class TestOutputTransparency:
         # Stateless: independent instances over equal inputs agree.
         cfg = _config()
         ctx = _user_ctx()
-        a = RevTurbineCustomerSdk(user_context=ctx, exported_config=cfg)
-        b = RevTurbineCustomerSdk(user_context=ctx, exported_config=cfg)
+        a = RevTurbineCustomerSdk(user_context=ctx, playbook=cfg)
+        b = RevTurbineCustomerSdk(user_context=ctx, playbook=cfg)
         assert a.check_entitlement("feat_x") == b.check_entitlement("feat_x")
 
 

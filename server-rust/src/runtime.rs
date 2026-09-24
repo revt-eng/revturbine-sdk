@@ -331,7 +331,7 @@ impl LocalRuntime {
 
     /// Check entitlement access.
     ///
-    /// Provider-backed first; the ExportedConfig-rule evaluator is the
+    /// Provider-backed first; the Playbook-rule evaluator is the
     /// fallback, used **only** when no entitlements provider is registered.
     ///
     /// Source: local-runtime.ts:198-214
@@ -496,7 +496,7 @@ impl LocalRuntime {
         result
     }
 
-    /// The ExportedConfig-rule fallback, used only when no entitlements
+    /// The Playbook-rule fallback, used only when no entitlements
     /// provider exists.
     ///
     /// # Deliberately plan- and segment-agnostic

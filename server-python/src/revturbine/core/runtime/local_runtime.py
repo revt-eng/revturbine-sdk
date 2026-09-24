@@ -13,7 +13,7 @@ their signatures permit ``Promise``; the bodies have no awaits. An
 ``a``-prefixed async/HTTP-backed variant is **out of the headless
 server SDK scope** (a residual non-goal of the narrowed plan 33).
 
-``ExportedConfig`` stays loosely typed (``dict[str, Any]``) — the same
+``Playbook`` stays loosely typed (``dict[str, Any]``) — the same
 deliberate decision the resolver/engine ports made (avoids coupling to
 the generated ``revturbine_types`` package, which server-python does
 not vendor — that vendoring is likewise a residual non-goal). The
@@ -63,8 +63,8 @@ from revturbine.core.entitlements import (
     derive_local_entitlement_from_configured_rules,
 )
 from revturbine.core.placements import (
-    ExportedConfig,
     LocalPlacementDataset,
+    Playbook,
     create_static_placement_resolver,
     resolve_placement_component_type,
 )
@@ -86,6 +86,10 @@ from revturbine.core.state import (
 )
 from revturbine.core.user_context import (
     build_targeting_state as _build_targeting_state,
+)
+from revturbine.playbook_option import (
+    require_playbook_option,
+    warn_deprecated_playbook_alias_once,
 )
 
 __all__ = ["LocalRuntime", "LocalRuntimeInteractionOptions"]
@@ -116,7 +120,8 @@ class LocalRuntime:
         *,
         tenant_id: str,
         user_id: str,
-        exported_config: ExportedConfig,
+        playbook: Playbook | None = None,
+        exported_config: Playbook | None = None,
         providers: list[DomainProvider],
         placements: LocalPlacementDataset | None = None,
         custom_resolver: PlacementResolver | None = None,
@@ -131,7 +136,9 @@ class LocalRuntime:
         """
         self.tenant_id = tenant_id
         self._user_id = user_id
-        self._exported_config = exported_config
+        # One resolver, so `playbook` vs the deprecated `exported_config`
+        # cannot be decided differently here than anywhere else (BL-0156).
+        self._playbook = require_playbook_option(playbook, exported_config, "LocalRuntime")
 
         resolved_storage: RevTurbineStorage = storage if storage is not None else InMemoryStorage()
 
@@ -168,7 +175,7 @@ class LocalRuntime:
         placement_resolver: PlacementResolver = (
             custom_resolver
             if custom_resolver is not None
-            else self._build_placement_resolver(placements, exported_config)
+            else self._build_placement_resolver(placements, self._playbook)
         )
 
         # Registry of placement records the engine looks up by id
@@ -256,7 +263,7 @@ class LocalRuntime:
         """Check entitlement access locally.
 
         Tries the engine (provider context) first; only falls back to
-        the ExportedConfig-rule evaluator when no entitlement provider
+        the Playbook-rule evaluator when no entitlement provider
         is registered. The fallback is the single deferred leaf
         (TASK-13); provider-backed entitlements work today.
 
@@ -327,7 +334,7 @@ class LocalRuntime:
 
         Source: local-runtime.ts:249-257
         """
-        segments = self._exported_config.get("segments") or []
+        segments = self._playbook.get("segments") or []
         return evaluate_segments(segments, traits, assignments)
 
     # ── Targeting state (deferred — REQ-14 non-goal) ──────────────────────
@@ -346,7 +353,7 @@ class LocalRuntime:
 
         Source: local-runtime.ts (buildTargetingState)
         """
-        return _build_targeting_state(context, self.get_exported_config(), usage_overrides)
+        return _build_targeting_state(context, self.get_playbook(), usage_overrides)
 
     # ── Personalization tokens (deferred — REQ-14 non-goal) ───────────────
 
@@ -391,12 +398,23 @@ class LocalRuntime:
 
     # ── Config access ─────────────────────────────────────────────────────
 
-    def get_exported_config(self) -> ExportedConfig:
-        """Return the active ExportedConfig snapshot.
+    def get_playbook(self) -> Playbook:
+        """Return the active Playbook snapshot.
 
         Source: local-runtime.ts:312-315
         """
-        return self._exported_config
+        return self._playbook
+
+    def get_exported_config(self) -> Playbook:
+        """Deprecated alias of :meth:`get_playbook` (BL-0156).
+
+        ``ExportedConfig`` is dead vocabulary. Identical behaviour; removed in
+        ``0.12.0``.
+        """
+        warn_deprecated_playbook_alias_once(
+            "`LocalRuntime.get_exported_config()` is deprecated; use `get_playbook()`."
+        )
+        return self.get_playbook()
 
     # ── Lifecycle ─────────────────────────────────────────────────────────
 
@@ -444,7 +462,7 @@ class LocalRuntime:
                 return existing
 
         component_type = resolve_placement_component_type(config)
-        slots = self._exported_config.get("placement_slots") or []
+        slots = self._playbook.get("placement_slots") or []
 
         def _matches(s: dict[str, Any]) -> bool:
             if slot_id:
@@ -482,21 +500,21 @@ class LocalRuntime:
     def _build_placement_resolver(
         self,
         placements: LocalPlacementDataset | None,
-        exported_config: ExportedConfig,
+        playbook: Playbook,
     ) -> PlacementResolver:
         """Build the static placement resolver from the dataset, falling
-        back to ``exported_config.placements``.
+        back to ``playbook.placements``.
 
         Source: local-runtime.ts:342-353
         """
         dataset: LocalPlacementDataset = (
             placements
             if placements is not None
-            else {"placements": exported_config.get("placements") or []}
+            else {"placements": playbook.get("placements") or []}
         )
         return create_static_placement_resolver(
             placements=dataset,
-            exported_config=exported_config,
+            playbook=playbook,
             impression_history=self.impression_history,
         )
 
@@ -506,7 +524,7 @@ class LocalRuntime:
         context: dict[str, Any] | None,
         current_plan_handle: str,
     ) -> EntitlementCheckResult:
-        """ExportedConfig-rule entitlement fallback.
+        """Playbook-rule entitlement fallback.
 
         Plan 33 TASK-13: faithful port of the plan-32/34-reconciled
         ``deriveLocalEntitlementFromConfiguredRules``.
@@ -542,7 +560,7 @@ class LocalRuntime:
             current_plan_handle=current_plan_handle,
             segment_ids=set(),
             usage_balances={},
-            exported_config=self._exported_config,
+            playbook=self._playbook,
         )
         if result is not None:
             return result

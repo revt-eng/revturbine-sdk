@@ -51,7 +51,7 @@ cfg = {
 }
 sdk = RevTurbineCustomerSdk(
     user_context={"tenant_id": "t", "user_id": "u", "plan_handle": "pro"},
-    exported_config=cfg,
+    playbook=cfg,
 )
 
 print(json.dumps({

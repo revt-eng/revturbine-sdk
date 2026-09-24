@@ -63,12 +63,12 @@ function makeKeylessSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCu
   return new RevTurbineCustomerSdk({
     tenantId: 'tenant_abc',
     apiKey: 'sk_secret_key',
-    ingestPublicKey: undefined, // keyless → the anonymous /api/sdk/meta beacon path
+    publicKey: undefined, // keyless → the anonymous /api/sdk/meta beacon path
     environmentId: 'production',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
-    localRuntime: { exportedConfig: makeConfig() },
+    localRuntime: { playbook: makeConfig() },
     ...over,
   });
 }

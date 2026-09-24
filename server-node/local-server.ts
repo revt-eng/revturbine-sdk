@@ -13,7 +13,8 @@
  *
  * const server = createLocalEvaluationServer({
  *   tenantId: 'tenant_abc',
- *   providers: createStaticProviders({ exportedConfig }),
+ *   playbook,
+ *   providers: createStaticProviders({ config: playbook }),
  * });
  *
  * const payload = await server.evaluate({
@@ -35,6 +36,7 @@ import {
   type ConfigArtifact,
 } from '../web-sdk/config-artifact';
 import { normalizeEnvironmentId } from '../web-sdk/environment';
+import { resolvePlaybookOption } from '../web-sdk/playbook-option';
 
 import type {
   ServerEvaluationPayload,
@@ -53,7 +55,14 @@ export interface LocalEvaluationServerOptions {
   tenantId: string;
   /** Pre-built domain providers (from createStaticProviders, createDrizzleProviders, etc.) */
   providers: AnyDomainProvider[];
-  /** RevTurbineConfig for local placement resolution. */
+  /** The Playbook this server resolves placements against. */
+  playbook?: ConfigArtifact;
+  /**
+   * @deprecated Renamed to {@link LocalEvaluationServerOptions.playbook} —
+   * `Playbook` is the canonical name for the artifact (BL-0156). Still fully
+   * supported: pass either one. When both are supplied `playbook` wins.
+   * Removed in `0.12.0`.
+   */
   exportedConfig?: ConfigArtifact;
   /** Target fallback for legacy configs. Omitted or blank resolves to `production`. */
   environmentId?: string;
@@ -86,26 +95,27 @@ export class LocalEvaluationServer {
     this.tenantId = options.tenantId;
     this.defaultTtlSeconds = options.defaultTtlSeconds ?? 60;
 
-    const exportedConfig = configArtifactForRuntime(
-      options.exportedConfig,
-      'LocalEvaluationServer.exportedConfig',
+    // One resolver, so `playbook` vs the deprecated `exportedConfig` cannot be
+    // decided differently here than anywhere else (BL-0156).
+    const playbook = configArtifactForRuntime(
+      resolvePlaybookOption(options, 'LocalEvaluationServer'),
+      'LocalEvaluationServer.playbook',
       {
         tenantId: options.tenantId,
         environmentId: normalizeEnvironmentId(options.environmentId),
       },
     );
-    if (!exportedConfig) {
-      throw new Error('LocalEvaluationServer requires exportedConfig');
+    if (!playbook) {
+      throw new Error('LocalEvaluationServer requires a playbook');
     }
 
     this.runtime = new LocalRuntime({
       tenantId: options.tenantId,
       userId: '__server__',
-      // Canonical option name in `@revt-eng/core` 0.1.330+ (scaffold #380); the
-      // deprecated `exportedConfig` alias resolves but warns once. The public
-      // `LocalEvaluationServerOptions.exportedConfig` name is unchanged —
-      // renaming it is BL-0156.
-      playbook: exportedConfig,
+      // `playbook` is the canonical LocalRuntimeOptions key as of
+      // @revt-eng/core 0.1.330; `exportedConfig` would trip core's own
+      // one-time deprecation warning.
+      playbook,
       providers: options.providers,
       storage: options.storage,
     });

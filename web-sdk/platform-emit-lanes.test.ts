@@ -43,7 +43,7 @@ function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerS
   return new RevTurbineCustomerSdk({
     tenantId: 'tenant_abc',
     apiKey: 'sk',
-    ingestPublicKey: 'pub',
+    publicKey: 'pub',
     environmentId: 'production',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',

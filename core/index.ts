@@ -197,8 +197,15 @@ export {
   sanitizeUsageTokenPrefix,
   looksGenericUsageUnit,
   usageAmountsFromEntries,
+  configuredPlanNameFromPlaybook,
+  parsePlaybookOrThrow,
+  playbookVersion,
+  // BL-0156: the `ExportedConfig` spellings of the three above. Deprecated in
+  // @revt-eng/core 0.1.330 and removed in this package's 0.12.0; re-exported
+  // meanwhile so a consumer importing them from here keeps compiling.
   configuredPlanNameFromExportedConfig,
   parseExportedConfigOrThrow,
+  exportedConfigVersion,
   categoryBucket,
   placementScore,
   placementPriority,

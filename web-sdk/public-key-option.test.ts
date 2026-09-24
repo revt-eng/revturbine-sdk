@@ -1,20 +1,24 @@
 /**
  * Plan 257 — `publicKey` is the browser option; `apiKey` is the server key.
+ * BL-0113 (0.11.0) — and now it is the ONLY browser option.
  *
- * Asserts the browser credential contract after the rename:
+ * Asserts the browser credential contract after the alias window closed:
  *   - `publicKey` is the bearer on ingest AND on control-plane fetches (AC-1),
- *   - precedence is `publicKey`, then `ingestPublicKey`, then `apiKey` (AC-2),
- *   - a deprecated alias without `publicKey` warns exactly once in a
- *     development build and never in production; `publicKey` never warns (AC-3),
+ *   - `publicKey` is the only name resolved; `apiKey` is NOT read as a browser
+ *     credential, so an `apiKey`-only browser init resolves nothing (AC-2),
+ *   - no alias remains to warn about, so nothing warns (AC-3),
  *   - a keyless local-only init fills the placeholder and does not warn (AC-4),
- *   - the keyless anonymous beacon (plan 95) still keys off a *real* public
- *     key, so a legacy `apiKey`-only init keeps sending it (REQ-6).
+ *   - the keyless anonymous beacon (plan 95) keys off a real `publicKey`, so an
+ *     `apiKey`-only init keeps sending it (REQ-6).
+ *
+ * `ingestPublicKey` is absent from `RevTurbineInitOptions` entirely — that is a
+ * TYPE-level assertion and lives in `init-options-exactness.test-d.ts`, since
+ * there is nothing left to run here.
  */
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import {
   RevTurbineCustomerSdk,
   initRevTurbine,
-  resetBrowserKeyAliasWarning,
   resolveBrowserPublicKey,
 } from './customer-side';
 import type { RevTurbineInitOptions } from './customer-side';
@@ -36,7 +40,6 @@ function okResponse(): Response {
 
 beforeEach(() => {
   calls = [];
-  resetBrowserKeyAliasWarning();
   vi.stubGlobal('fetch', vi.fn((url: string, init: RequestInit) => {
     calls.push({ url: String(url), init: init ?? {} });
     return Promise.resolve(okResponse());
@@ -71,22 +74,20 @@ function trackCall(): FetchCall | undefined {
   return calls.find((c) => c.url.includes('/api/track'));
 }
 
-describe('resolveBrowserPublicKey precedence (AC-2)', () => {
-  it('prefers publicKey over both aliases', () => {
-    expect(resolveBrowserPublicKey({ publicKey: 'pk', ingestPublicKey: 'ipk', apiKey: 'ak' })).toBe('pk');
+describe('resolveBrowserPublicKey reads publicKey and nothing else (AC-2, BL-0113)', () => {
+  it('resolves publicKey', () => {
+    expect(resolveBrowserPublicKey({ publicKey: 'pk' })).toBe('pk');
   });
 
-  it('prefers ingestPublicKey over apiKey when publicKey is absent', () => {
-    expect(resolveBrowserPublicKey({ ingestPublicKey: 'ipk', apiKey: 'ak' })).toBe('ipk');
-  });
-
-  it('falls back to apiKey alone', () => {
-    expect(resolveBrowserPublicKey({ apiKey: 'ak' })).toBe('ak');
+  it('does NOT read apiKey as a browser credential — the 0.10.0 alias is gone', () => {
+    // `apiKey` is the secret server key. Before 0.11.0 this returned 'ak', and a
+    // browser init that set only `apiKey` silently sent it as the bearer.
+    expect(resolveBrowserPublicKey({ apiKey: 'ak' } as { publicKey?: string })).toBeUndefined();
   });
 
   it('returns undefined when no key is supplied, and treats blanks as absent', () => {
     expect(resolveBrowserPublicKey({})).toBeUndefined();
-    expect(resolveBrowserPublicKey({ publicKey: '  ', apiKey: '' })).toBeUndefined();
+    expect(resolveBrowserPublicKey({ publicKey: '  ' })).toBeUndefined();
   });
 });
 
@@ -97,14 +98,14 @@ describe('publicKey is the browser bearer (AC-1)', () => {
     expect(bearerOf(trackCall())).toBe('Bearer rtk_public_key');
   });
 
-  it('authenticates ingest with publicKey even when the deprecated aliases are also set', async () => {
-    const sdk = makeSdk({ publicKey: 'rtk_public_key', ingestPublicKey: 'old_ingest', apiKey: 'old_api' });
+  it('authenticates ingest with publicKey even when a server apiKey is also set', async () => {
+    const sdk = makeSdk({ publicKey: 'rtk_public_key', apiKey: 'old_api' });
     await sdk.capture('feature_used', {}, { immediate: true });
     expect(bearerOf(trackCall())).toBe('Bearer rtk_public_key');
   });
 
   it('uses the same publicKey on every control-plane fetch, not only ingest', async () => {
-    const sdk = makeSdk({ publicKey: 'rtk_public_key', ingestPublicKey: 'old_ingest', apiKey: 'old_api' });
+    const sdk = makeSdk({ publicKey: 'rtk_public_key', apiKey: 'old_api' });
     await sdk.capture('feature_used', {}, { immediate: true });
     await sdk.getTrialStatus();
     await sdk.fetchUserContext('user_123').catch(() => undefined);
@@ -123,48 +124,22 @@ function stubBrowserGlobals(): void {
   vi.stubGlobal('document', { addEventListener: () => undefined });
 }
 
-describe('deprecated alias warning (AC-3)', () => {
-  it('warns once, naming publicKey, when apiKey is used without publicKey in a browser dev build', () => {
+describe('no browser-key alias remains to warn about (AC-3, BL-0113)', () => {
+  it('an apiKey-only browser init resolves NO browser credential', () => {
+    process.env.NODE_ENV = 'development';
+    stubBrowserGlobals();
+    // 0.10.0 warned and then used it. 0.11.0 does not read it at all, so the
+    // bearer is an empty resolution rather than a leaked server key.
+    expect(resolveBrowserPublicKey({ apiKey: 'rtk_server_key' } as { publicKey?: string })).toBeUndefined();
+  });
+
+  it('does not warn about a deprecated browser key alias in any runtime', () => {
     process.env.NODE_ENV = 'development';
     stubBrowserGlobals();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     makeSdk({ apiKey: 'legacy_key' });
-    makeSdk({ apiKey: 'legacy_key' });
-    const alias = warn.mock.calls.filter(([m]) => String(m).includes('publicKey'));
-    expect(alias).toHaveLength(1);
-    expect(String(alias[0]?.[0])).toContain('`apiKey` is deprecated');
-  });
-
-  it('does not warn for apiKey off the browser: on a backend it is the server key', () => {
-    process.env.NODE_ENV = 'development';
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    makeSdk({ apiKey: 'rtk_server_key' });
-    expect(warn.mock.calls.some(([m]) => String(m).includes('deprecated'))).toBe(false);
-  });
-
-  it('names ingestPublicKey when that alias is the one used, in any runtime', () => {
-    process.env.NODE_ENV = 'development';
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    makeSdk({ ingestPublicKey: 'legacy_ingest' });
-    const alias = warn.mock.calls.filter(([m]) => String(m).includes('publicKey'));
-    expect(alias).toHaveLength(1);
-    expect(String(alias[0]?.[0])).toContain('`ingestPublicKey` is deprecated');
-  });
-
-  it('never warns when publicKey is supplied, even alongside an alias', () => {
-    process.env.NODE_ENV = 'development';
-    stubBrowserGlobals();
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     makeSdk({ publicKey: 'rtk_public_key', apiKey: 'legacy_key' });
-    expect(warn.mock.calls.some(([m]) => String(m).includes('deprecated'))).toBe(false);
-  });
-
-  it('is silent in a production build', () => {
-    process.env.NODE_ENV = 'production';
-    stubBrowserGlobals();
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    makeSdk({ apiKey: 'legacy_key' });
-    expect(warn.mock.calls.some(([m]) => String(m).includes('deprecated'))).toBe(false);
+    expect(warn.mock.calls.some(([m]) => String(m).includes('is deprecated on the browser init'))).toBe(false);
   });
 });
 

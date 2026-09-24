@@ -220,13 +220,13 @@ fn s(v: &Value, k: &str) -> Option<String> {
 /// blocks — callers then keep the inline surface content.
 ///
 /// Source: local-resolver.ts buildJsonContentProvider
-fn build_content_linked(exported_config: &Value, placements: &[Value]) -> Option<ContentLinked> {
-    let message_blocks: Vec<Value> = exported_config
+fn build_content_linked(playbook: &Value, placements: &[Value]) -> Option<ContentLinked> {
+    let message_blocks: Vec<Value> = playbook
         .get("message_blocks")
         .and_then(Value::as_array)
         .filter(|a| !a.is_empty())?
         .clone();
-    let studio_payloads = exported_config
+    let studio_payloads = playbook
         .get("placement_payloads")
         .and_then(Value::as_array)
         .filter(|a| !a.is_empty())?;
@@ -297,7 +297,7 @@ fn build_content_linked(exported_config: &Value, placements: &[Value]) -> Option
     Some(ContentLinked {
         payloads,
         message_blocks,
-        tokens: exported_config
+        tokens: playbook
             .get("personalization_tokens")
             .and_then(Value::as_array)
             .cloned()
@@ -308,13 +308,13 @@ fn build_content_linked(exported_config: &Value, placements: &[Value]) -> Option
 impl StaticPlacementResolver {
     /// Build the candidate index from a Playbook and its placement dataset.
     #[must_use]
-    pub fn new(placements: &[Value], exported_config: &Value) -> Self {
+    pub fn new(placements: &[Value], playbook: &Value) -> Self {
         let mut template_to_surface: HashMap<String, String> = DEFAULT_TEMPLATE_COMPONENT_TYPES
             .iter()
             .chain(LEGACY_TEMPLATE_COMPONENT_TYPES.iter())
             .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
             .collect();
-        for t in exported_config
+        for t in playbook
             .get("surface_templates")
             .and_then(Value::as_array)
             .unwrap_or(&vec![])
@@ -330,7 +330,7 @@ impl StaticPlacementResolver {
         // Resolve by handle: the canonical Playbook is handle-only (post
         // plan-120). `id` is the legacy fallback.
         let mut plan_handle_to_id = HashMap::new();
-        for p in exported_config
+        for p in playbook
             .get("plans")
             .and_then(Value::as_array)
             .unwrap_or(&vec![])
@@ -343,7 +343,7 @@ impl StaticPlacementResolver {
 
         // Ordered tier ladder per entitlement handle — ARRAY ORDER IS RANK.
         let mut tier_ladders_by_handle: HashMap<String, Vec<String>> = HashMap::new();
-        for ent in exported_config
+        for ent in playbook
             .get("entitlements")
             .and_then(Value::as_array)
             .unwrap_or(&vec![])
@@ -361,9 +361,9 @@ impl StaticPlacementResolver {
             }
         }
 
-        let config_version = exported_config
+        let config_version = playbook
             .get("format_version")
-            .or_else(|| exported_config.get("version"))
+            .or_else(|| playbook.get("version"))
             .cloned()
             .unwrap_or(Value::Null);
 
@@ -537,7 +537,7 @@ impl StaticPlacementResolver {
             by_name,
             tier_ladders_by_handle,
             plan_handle_to_id,
-            content_linked: build_content_linked(exported_config, placements),
+            content_linked: build_content_linked(playbook, placements),
         }
     }
 

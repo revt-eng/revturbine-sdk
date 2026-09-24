@@ -66,7 +66,7 @@ def _make_runtime(**overrides: Any) -> LocalRuntime:
     kwargs: dict[str, Any] = {
         "tenant_id": "tenant_abc",
         "user_id": "u1",
-        "exported_config": EXPORTED_CONFIG,
+        "playbook": EXPORTED_CONFIG,
         "providers": [],
     }
     kwargs.update(overrides)
@@ -81,9 +81,9 @@ class TestLocalPlacementDecision:
         assert decision["placement_id"] == "p1"
         assert decision["content"]["header"] == "Upgrade!"
 
-    def test_default_static_resolver_built_from_exported_config(self) -> None:
+    def test_default_static_resolver_built_from_playbook(self) -> None:
         # No custom resolver → _build_placement_resolver derives the
-        # static resolver from exported_config["placements"]. An unknown
+        # static resolver from playbook["placements"]. An unknown
         # placement yields a structured invisible decision — proof the
         # default path constructs and decides with no error / no network.
         runtime = _make_runtime()
@@ -95,7 +95,7 @@ class TestLocalPlacementDecision:
 
     def test_custom_resolver_takes_precedence_over_config(self) -> None:
         runtime = _make_runtime(
-            exported_config={"placements": [{"placement_id": "p1"}]},
+            playbook={"placements": [{"placement_id": "p1"}]},
             custom_resolver=_stub_resolver_visible,
         )
         decision = runtime.get_placement_decision({"placement_id": "p1", "user_id": "u1"})
@@ -138,7 +138,7 @@ class TestGetPlacementBySlot:
     """
 
     def test_slot_record_derived_by_slot_id(self) -> None:
-        runtime = _make_runtime(exported_config=SLOT_CONFIG)
+        runtime = _make_runtime(playbook=SLOT_CONFIG)
         record = runtime._slot_record_for_config({"slot_id": "slot_banner"})
         assert record is not None
         assert record["placement_id"] == "slot_banner"
@@ -151,13 +151,13 @@ class TestGetPlacementBySlot:
         }
 
     def test_slot_record_by_canonical_component_type(self) -> None:
-        runtime = _make_runtime(exported_config=SLOT_CONFIG)
+        runtime = _make_runtime(playbook=SLOT_CONFIG)
         record = runtime._slot_record_for_config({"component_type": "modal"})
         assert record is not None
         assert record["placement_id"] == "slot_modal"
 
     def test_slot_record_keeps_surface_type_alias(self) -> None:
-        runtime = _make_runtime(exported_config=SLOT_CONFIG)
+        runtime = _make_runtime(playbook=SLOT_CONFIG)
         record = runtime._slot_record_for_config({"surface_type": "modal"})
         assert record is not None
         assert record["placement_id"] == "slot_modal"
@@ -165,7 +165,7 @@ class TestGetPlacementBySlot:
         assert record["metadata"]["surface_template_ids"] == []
 
     def test_component_type_precedes_surface_type_alias(self) -> None:
-        runtime = _make_runtime(exported_config=SLOT_CONFIG)
+        runtime = _make_runtime(playbook=SLOT_CONFIG)
         record = runtime._slot_record_for_config(
             {"component_type": "banner", "surface_type": "modal"}
         )
@@ -173,13 +173,13 @@ class TestGetPlacementBySlot:
         assert record["placement_id"] == "slot_banner"
 
     def test_slot_record_none_when_no_match(self) -> None:
-        runtime = _make_runtime(exported_config=SLOT_CONFIG)
+        runtime = _make_runtime(playbook=SLOT_CONFIG)
         assert runtime._slot_record_for_config({"slot_id": "nope"}) is None
         assert runtime._slot_record_for_config({"surface_type": "toast"}) is None
         assert runtime._slot_record_for_config({}) is None
 
     def test_slot_record_fixed_only_and_entitlement_metadata(self) -> None:
-        runtime = _make_runtime(exported_config=SLOT_CONFIG)
+        runtime = _make_runtime(playbook=SLOT_CONFIG)
         record = runtime._slot_record_for_config(
             {
                 "slot_id": "slot_banner",
@@ -194,7 +194,7 @@ class TestGetPlacementBySlot:
         assert record["metadata"]["entitlement_handle"] == "core_credits"
 
     def test_slot_record_placement_handle_override(self) -> None:
-        runtime = _make_runtime(exported_config=SLOT_CONFIG)
+        runtime = _make_runtime(playbook=SLOT_CONFIG)
         record = runtime._slot_record_for_config(
             {"slot_id": "slot_banner", "placement_handle": "override_h"}
         )
@@ -202,7 +202,7 @@ class TestGetPlacementBySlot:
         assert record["name"] == "override_h"
 
     def test_slot_record_prefers_registered(self) -> None:
-        runtime = _make_runtime(exported_config=SLOT_CONFIG)
+        runtime = _make_runtime(playbook=SLOT_CONFIG)
         pre = PlacementRecord(placement_id="slot_banner", name="pre-registered")
         runtime.register_placement(pre)
         # A prior registration short-circuits derivation (TS parity:
@@ -210,7 +210,7 @@ class TestGetPlacementBySlot:
         assert runtime._slot_record_for_config({"slot_id": "slot_banner"}) is pre
 
     def test_get_placement_registers_and_evaluates(self) -> None:
-        runtime = _make_runtime(exported_config=SLOT_CONFIG, custom_resolver=_stub_resolver_visible)
+        runtime = _make_runtime(playbook=SLOT_CONFIG, custom_resolver=_stub_resolver_visible)
         decision = runtime.get_placement({"slot_id": "slot_banner"})
         assert decision is not None
         assert decision["visible"] is True
@@ -218,7 +218,7 @@ class TestGetPlacementBySlot:
         assert "slot_banner" in runtime._registered_placements
 
     def test_get_placement_none_when_no_slot(self) -> None:
-        runtime = _make_runtime(exported_config=SLOT_CONFIG, custom_resolver=_stub_resolver_visible)
+        runtime = _make_runtime(playbook=SLOT_CONFIG, custom_resolver=_stub_resolver_visible)
         assert runtime.get_placement({"slot_id": "nope"}) is None
 
 
@@ -274,10 +274,10 @@ class TestIdentityAndConfig:
         runtime.set_user_id("u2")
         assert runtime.get_user_id() == "u2"
 
-    def test_get_exported_config_returns_snapshot(self) -> None:
+    def test_get_playbook_returns_snapshot(self) -> None:
         cfg: dict[str, Any] = {"placements": []}
-        runtime = _make_runtime(exported_config=cfg)
-        assert runtime.get_exported_config() is cfg
+        runtime = _make_runtime(playbook=cfg)
+        assert runtime.get_playbook() is cfg
 
     def test_clear_suppression_defaults_to_current_user(self) -> None:
         runtime = _make_runtime(custom_resolver=_stub_resolver_visible)

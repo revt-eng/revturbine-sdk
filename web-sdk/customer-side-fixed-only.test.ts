@@ -56,7 +56,7 @@ function makeLocalSdk(
   return new RevTurbineCustomerSdk({
     tenantId: 'tenant_fixed_only',
     apiKey: 'sk_test',
-    ingestPublicKey: 'pub_test',
+    publicKey: 'pub_test',
     environmentId: 'staging',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',

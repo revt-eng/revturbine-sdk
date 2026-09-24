@@ -3,7 +3,7 @@
 Plan 33 TASK-7, narrowed per the 2026-05-16 scope decision: a thin,
 **stateless, in-memory** wrapper over the cross-language-parity-locked
 decision substrate. Constructed from exactly a *user context* + an
-*ExportedConfig* (both supplied by the caller — the server holds them;
+*Playbook* (both supplied by the caller — the server holds them;
 the SDK fetches/persists nothing), it exposes the two server-side
 decision capabilities:
 
@@ -13,7 +13,7 @@ decision capabilities:
 
 It composes the already-shipped, parity-locked pieces —
 ``create_static_providers`` (TASK-7-b1) → ``LocalRuntime`` (TASK-6) →
-the §2.6.5 most-permissive ExportedConfig-rule entitlement evaluator
+the §2.6.5 most-permissive Playbook-rule entitlement evaluator
 (TASK-13) — adding **zero** decision logic of its own. Every method is
 a pure delegation, so this class's output is byte-identical to
 ``LocalRuntime``'s and the cross-language parity gate (which drives
@@ -58,6 +58,7 @@ from revturbine.core.plans import get_eligible_addons, get_eligible_plans
 from revturbine.core.providers.types import DomainProvider, DomainProviderName
 from revturbine.core.runtime import LocalRuntime
 from revturbine.core.trials import evaluate_trial_status as _evaluate_trial_status
+from revturbine.playbook_option import require_playbook_option
 
 __all__ = ["RevTurbineCustomerSdk", "UserContext"]
 
@@ -114,7 +115,7 @@ class UserContext(_UserContextRequired, total=False):
 class RevTurbineCustomerSdk:
     """Public, stateless, in-memory headless server SDK.
 
-    Construct once per ``(user_context, exported_config)``, then call
+    Construct once per ``(user_context, playbook)``, then call
     :meth:`check_entitlement` / :meth:`get_placement_decision` /
     :meth:`get_placement_decisions`. The instance carries no cross-user
     state — construct a fresh one per user context.
@@ -130,9 +131,15 @@ class RevTurbineCustomerSdk:
         self,
         *,
         user_context: UserContext,
-        exported_config: ConfigArtifact,
+        playbook: ConfigArtifact | None = None,
+        exported_config: ConfigArtifact | None = None,
     ) -> None:
         """Compose the parity-locked substrate for one user context.
+
+        Exactly one of ``playbook`` (canonical) or ``exported_config``
+        (deprecated, removed in ``0.12.0``) is required; supplying
+        neither raises ``ValueError``. ``exported_config`` emits a
+        one-time :class:`DeprecationWarning` naming ``playbook``.
 
         Raises ``ValueError`` if ``tenant_id`` / ``user_id`` are absent
         or empty (the only required identity). Storage defaults to
@@ -146,16 +153,20 @@ class RevTurbineCustomerSdk:
         if not tenant_id or not user_id:
             raise ValueError("user_context requires non-empty 'tenant_id' and 'user_id'")
 
-        playbook = parse_playbook_or_throw(
-            exported_config,
-            "exported_config",
+        # One resolver, so `playbook` vs the deprecated `exported_config`
+        # cannot be decided differently here than anywhere else (BL-0156).
+        raw_playbook = require_playbook_option(playbook, exported_config, "RevTurbineCustomerSdk")
+        parsed = parse_playbook_or_throw(
+            raw_playbook,
+            "playbook",
             {
                 "tenant_id": tenant_id,
                 "environment_id": _PRODUCTION_ENVIRONMENT_ID,
             },
         )
-        if playbook is None:
-            raise ValueError("exported_config is required")
+        if parsed is None:
+            raise ValueError("playbook is required")
+        playbook = parsed
         self._playbook = playbook
         self._segment_ids = user_context.get("segment_ids") or []
 
@@ -191,7 +202,11 @@ class RevTurbineCustomerSdk:
         self._runtime = LocalRuntime(
             tenant_id=tenant_id,
             user_id=user_id,
-            exported_config=playbook,
+            # Canonical keyword. Passing the deprecated `exported_config` here
+            # would spend the once-per-process DeprecationWarning on the SDK's
+            # OWN internal call, so a caller using the deprecated spelling
+            # would then never be warned.
+            playbook=playbook,
             providers=providers,
         )
 
@@ -229,7 +244,7 @@ class RevTurbineCustomerSdk:
 
         Pure delegation to the parity-locked
         ``LocalRuntime.check_entitlement`` — engine/provider path first,
-        then the §2.6.5 most-permissive ExportedConfig-rule fallback.
+        then the §2.6.5 most-permissive Playbook-rule fallback.
 
         Source: local-runtime.ts checkEntitlement (parity-locked).
         """

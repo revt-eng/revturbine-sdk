@@ -33,7 +33,7 @@ function makeSdk(overrides: Partial<RevTurbineInitOptions> = {}): RevTurbineCust
   return new RevTurbineCustomerSdk({
     tenantId: 'tenant_experiment_context',
     apiKey: 'sk_test',
-    ingestPublicKey: 'pub_test',
+    publicKey: 'pub_test',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
     runtimeMode: RuntimeMode.LocalOnly,
@@ -317,7 +317,7 @@ describe('effective experiment context', () => {
     } satisfies RevTurbineConfig;
     const sdk = makeSdk({
       user: { id: 'user_a' },
-      localRuntime: { exportedConfig: config },
+      localRuntime: { playbook: config },
       domainProviders: [{
         domain: 'experiments',
         providerHandle: 'fixture',

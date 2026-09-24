@@ -30,7 +30,7 @@ function serverSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustome
   const sdk = new RevTurbineCustomerSdk({
     tenantId: 'tenant_fc',
     apiKey: 'sk_test',
-    ingestPublicKey: 'pub_test',
+    publicKey: 'pub_test',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
     runtimeMode: 'revturbine_server',

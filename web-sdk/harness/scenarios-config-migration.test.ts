@@ -212,7 +212,7 @@ describe('harness Playbook projection migration', () => {
 
     const staticResolver = createStaticPlacementResolver({
       placements: { placements: runtimeConfig.placements ?? [] },
-      exportedConfig: runtimeConfig,
+      playbook: runtimeConfig,
     });
     const context = {
       __providers: {

@@ -6,7 +6,7 @@ import type { RevTurbineConfig } from '@revt-eng/schema';
  * Regression: in local-runtime, `getUsage()` must return the limit for the
  * USER'S plan, not the last rule in the config.
  *
- * Bug: `hydrateUsageLimitRulesFromExportedConfig` wrote every plan's
+ * Bug: `hydrateUsageLimitRulesFromPlaybook` wrote every plan's
  * `usage_limit` rule to the same map key with no plan filter, so the last rule
  * (here Enterprise = 999999) overwrote Free/Pro — for every user.
  */
@@ -42,13 +42,13 @@ function makeSdk(): RevTurbineCustomerSdk {
   return new RevTurbineCustomerSdk({
     tenantId: 'tenant_usage',
     apiKey: 'sk_test',
-    ingestPublicKey: 'pub_test',
+    publicKey: 'pub_test',
     environmentId: 'staging',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
     runtimeMode: 'local_only',
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
-    localRuntime: { exportedConfig: makeConfig() },
+    localRuntime: { playbook: makeConfig() },
   });
 }
 

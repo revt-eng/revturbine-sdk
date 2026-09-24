@@ -67,7 +67,7 @@ function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerS
   return new RevTurbineCustomerSdk({
     tenantId: 'tenant_abc',
     apiKey: 'sk_secret_key',
-    ingestPublicKey: 'pub_ingest_key',
+    publicKey: 'pub_ingest_key',
     environmentId: 'staging',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
@@ -163,7 +163,7 @@ describe('plan 144 TASK-10 — provenance columns on the wire', () => {
 
   describe('playbook_version lifting', () => {
     it('stamps the configured exported-config release version on every row', async () => {
-      const sdk = makeSdk({ localRuntime: { exportedConfig: makeConfig('pv_7_3_1') } });
+      const sdk = makeSdk({ localRuntime: { playbook: makeConfig('pv_7_3_1') } });
       await sdk.capture('feature_used', {}, { immediate: true });
       expect(wireEvent('feature_used').playbook_version).toBe('pv_7_3_1');
     });

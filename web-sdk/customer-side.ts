@@ -19,6 +19,7 @@ import type { BrandingConfig } from './generated';
 import { isServer, isBrowser } from './env';
 import { normalizeEnvironmentId } from './environment';
 import { devWarn as warnInDevelopmentBuild, isDevelopmentBuild } from './build-mode';
+import { warnDeprecatedPlaybookAliasOnce, resetPlaybookAliasWarning } from './playbook-option';
 import { redactPii, redactIdentityField, redactEnvelope } from './pii-redact';
 import { evaluateSegments } from './segments';
 import { buildControlPlaneEvent } from './control-plane-events';
@@ -111,7 +112,7 @@ import {
   sanitizeUsageTokenPrefix,
   looksGenericUsageUnit,
   usageAmountsFromEntries,
-  configuredPlanNameFromExportedConfig,
+  configuredPlanNameFromPlaybook,
   categoryBucket,
   placementScore,
   placementPriority,
@@ -646,6 +647,13 @@ export interface RevTurbinePolicySnapshot {
   contextPolicy: Required<RevTurbineContextPolicy>;
   placementBehavior: RevTurbinePlacementBehaviorFlags;
   runtimeMode: RevTurbineRuntimeMode;
+  /** `format_version` of the loaded Playbook, when the artifact declares one. */
+  playbookVersion?: string;
+  /**
+   * @deprecated Renamed to {@link RevTurbinePolicySnapshot.playbookVersion}
+   * (BL-0156). Still emitted with the identical value for one minor; removed in
+   * `0.12.0`. Read `playbookVersion`.
+   */
   exportedConfigVersion?: string;
 }
 
@@ -884,24 +892,92 @@ export interface RevTurbineUiPathResolverValidationOptions {
 }
 
 /**
- * Provider abstraction for RevTurbineConfig access inside the SDK.
+ * Provider abstraction for Playbook access inside the SDK.
  *
  * Local mode typically uses a static provider backed by `localRuntime.playbook` (or its deprecated `exportedConfig` alias).
  * Other modes can provide custom or REST-backed resolvers via `refresh()`.
+ *
+ * Implement **`getPlaybook()`** — `getExportedConfig()` is the deprecated
+ * spelling of the same accessor, kept so an already-shipped implementation
+ * keeps compiling. Both are optional *on this interface* so that neither
+ * spelling breaks an existing `implements` clause; the
+ * {@link RevTurbineInitOptions.configProvider} option intersects this with a
+ * union that still requires exactly one of them, so a provider supplying
+ * neither remains a compile error at the call site it is passed to.
  */
 export interface RevTurbineConfigProvider {
-  /** Return the latest available Playbook or deprecated RevTurbineConfig snapshot. */
-  getExportedConfig(): ConfigArtifact | undefined;
+  /** Return the latest available Playbook snapshot. */
+  getPlaybook?(): ConfigArtifact | undefined;
+  /**
+   * @deprecated Renamed to {@link RevTurbineConfigProvider.getPlaybook} —
+   * `Playbook` is the canonical name for the artifact (BL-0156). Still fully
+   * supported: implement either one. When both are present `getPlaybook()`
+   * wins. Removed in `0.12.0`.
+   */
+  getExportedConfig?(): ConfigArtifact | undefined;
   /** Optionally refresh the snapshot (for example, from a REST API). */
   refresh?(): Promise<ConfigArtifact | undefined>;
 }
 
 /**
+ * A {@link RevTurbineConfigProvider} that supplies at least one of the two
+ * Playbook accessors. This is the shape the SDK actually accepts — the bare
+ * interface leaves both optional only so an existing `implements` clause keeps
+ * compiling.
+ */
+export type RevTurbineConfigProviderInput = RevTurbineConfigProvider &
+  (
+    | { getPlaybook(): ConfigArtifact | undefined }
+    | {
+        /** @deprecated Implement `getPlaybook()` instead. Removed in `0.12.0`. */
+        getExportedConfig(): ConfigArtifact | undefined;
+      }
+  );
+
+/**
+ * Read a Playbook out of a customer-supplied provider, whichever accessor it
+ * implements.
+ *
+ * `getPlaybook()` is canonical; `getExportedConfig()` is the deprecated
+ * spelling. This is the ONE place that decides precedence, so no call site can
+ * disagree about which accessor wins — the same single-resolver rule plan 257
+ * established for `resolveBrowserPublicKey`.
+ *
+ * @internal
+ */
+export function resolveProviderPlaybook(
+  provider: RevTurbineConfigProvider,
+): ConfigArtifact | undefined {
+  if (typeof provider.getPlaybook === 'function') return provider.getPlaybook();
+  if (typeof provider.getExportedConfig === 'function') {
+    warnDeprecatedPlaybookAliasOnce(
+      'configProvider.getExportedConfig() is deprecated; implement `getPlaybook()` instead.',
+    );
+    return provider.getExportedConfig();
+  }
+  throw new Error(
+    'RevTurbine: `configProvider` must implement `getPlaybook()` (or the deprecated `getExportedConfig()`).',
+  );
+}
+
+/**
  * @deprecated Renamed to {@link RevTurbineConfigProvider} (plan 104). Kept as a
- * back-compat alias so existing integrations keep compiling; will be removed in
- * a future major. Use `RevTurbineConfigProvider`.
+ * back-compat alias so existing integrations keep compiling. Removed in
+ * `0.12.0` alongside the other `ExportedConfig`-spelled aliases (BL-0156). Use
+ * `RevTurbineConfigProvider`.
  */
 export type ExportedConfigProvider = RevTurbineConfigProvider;
+
+/**
+ * The Playbook-named counterpart of the deprecated
+ * {@link ExportedConfigProvider} alias (BL-0156).
+ *
+ * Identical to {@link RevTurbineConfigProvider}, which remains the primary
+ * name. This exists so code migrating off `ExportedConfigProvider` has a
+ * Playbook-spelled name to land on rather than only the `RevTurbineConfig`
+ * one.
+ */
+export type PlaybookProvider = RevTurbineConfigProvider;
 
 /**
  * Options for initializing the RevTurbine SDK.
@@ -974,20 +1050,13 @@ export interface RevTurbineInitOptions {
    * exactly as it does on `@revturbine/sdk/server`. Pass it here only from
    * server-side code such as a route handler using `@revturbine/sdk/headless`.
    *
-   * In the browser, pass {@link publicKey} instead. A browser init that
-   * supplies `apiKey` without `publicKey` is treated as the legacy alias of
-   * the public key (precedence: `publicKey`, then `ingestPublicKey`, then
-   * `apiKey`) and logs a one-time development warning; that alias is kept
-   * for one minor.
+   * In the browser, pass {@link publicKey} instead. As of `0.11.0` `apiKey`
+   * is **no longer accepted as an alias of the public key** (BL-0113): a
+   * browser init that supplies only `apiKey` resolves no browser credential
+   * and fails at init rather than silently sending a server key — or a
+   * placeholder — as the bearer. The `0.10.0` alias window is closed.
    */
   apiKey?: string;
-  /**
-   * @deprecated Use {@link publicKey} — the same key under its one name.
-   * Still accepted for one minor as an alias (precedence: `publicKey`,
-   * then `ingestPublicKey`, then `apiKey`) and logs a one-time development
-   * warning when used without `publicKey`.
-   */
-  ingestPublicKey?: string;
   /**
    * Optional Ed25519 trust store for signed Playbook manifests.
    *
@@ -1112,8 +1181,16 @@ export interface RevTurbineInitOptions {
   runtimeMode?: RevTurbineRuntimeMode;
   /** Optional endpoint overrides used in `custom_endpoints` mode. */
   endpointOverrides?: Partial<RevTurbineEndpointOverrides>;
-  /** Optional provider for RevTurbineConfig-backed data (plans, segments, rules, ui paths). */
-  configProvider?: RevTurbineConfigProvider;
+  /**
+   * Optional provider for Playbook-backed data (plans, segments, rules, ui paths).
+   *
+   * Must implement `getPlaybook()` — or the deprecated `getExportedConfig()`,
+   * accepted for one minor. The union is spelled here rather than on
+   * {@link RevTurbineConfigProvider} so that an existing `implements
+   * RevTurbineConfigProvider` clause keeps compiling while a provider
+   * implementing *neither* accessor is still rejected at this call site.
+   */
+  configProvider?: RevTurbineConfigProviderInput;
   /** Local-only runtime configuration used in `local_only` mode. */
   localRuntime?: RevTurbineLocalRuntimeOptions;
   /**
@@ -1334,8 +1411,36 @@ export interface RevTurbineLocalRuntimeResolvers {
   checkEntitlement?: (handle: string, context?: RevTurbineEntitlementContext) => EntitlementResult | Promise<EntitlementResult>;
   fetchUserContext?: (userId: string) => UserTargetingContext | Promise<UserTargetingContext>;
   getTrialStatus?: () => RevTurbineTrialContext | Promise<RevTurbineTrialContext>;
-  /** Optional RevTurbineConfig resolver for provider-backed config access in any mode. */
+  /** Optional Playbook resolver for provider-backed config access in any mode. */
+  resolvePlaybook?: () => ConfigArtifact | Promise<ConfigArtifact>;
+  /**
+   * @deprecated Renamed to {@link RevTurbineLocalRuntimeResolvers.resolvePlaybook}
+   * — `Playbook` is the canonical name for the artifact (BL-0156). Still fully
+   * supported: pass either one. When both are supplied `resolvePlaybook` wins.
+   * Removed in `0.12.0`.
+   */
   resolveExportedConfig?: () => ConfigArtifact | Promise<ConfigArtifact>;
+}
+
+/**
+ * Resolve the provider-backed Playbook resolver from either accepted key.
+ *
+ * `resolvePlaybook` is canonical; `resolveExportedConfig` is the deprecated
+ * alias. The one place that decides precedence (BL-0156).
+ *
+ * @internal
+ */
+export function resolvePlaybookResolver(
+  resolvers?: Pick<RevTurbineLocalRuntimeResolvers, 'resolvePlaybook' | 'resolveExportedConfig'> | null,
+): (() => ConfigArtifact | Promise<ConfigArtifact>) | undefined {
+  if (resolvers?.resolvePlaybook !== undefined) return resolvers.resolvePlaybook;
+  if (resolvers?.resolveExportedConfig !== undefined) {
+    warnDeprecatedPlaybookAliasOnce(
+      '`localRuntime.resolvers.resolveExportedConfig` is deprecated; rename it to `resolvePlaybook`.',
+    );
+    return resolvers.resolveExportedConfig;
+  }
+  return undefined;
 }
 
 /**
@@ -1353,8 +1458,24 @@ export interface RevTurbineLocalRuntimeResolvers {
 export function resolveLocalPlaybook(
   localRuntime?: Pick<RevTurbineLocalRuntimeOptions, 'playbook' | 'exportedConfig'> | null,
 ): ConfigArtifact | UnvalidatedConfigArtifact | undefined {
-  return localRuntime?.playbook ?? localRuntime?.exportedConfig;
+  if (localRuntime?.playbook !== undefined) return localRuntime.playbook;
+  if (localRuntime?.exportedConfig !== undefined) {
+    warnDeprecatedPlaybookAliasOnce(
+      '`localRuntime.exportedConfig` is deprecated; pass the same artifact as `localRuntime.playbook`.',
+    );
+    return localRuntime.exportedConfig;
+  }
+  return undefined;
 }
+
+/**
+ * Test-only: forget that the Playbook alias warning fired so the next read
+ * warns again. Re-exported from {@link ./playbook-option} so the whole alias
+ * surface is reachable from the barrel a customer already imports.
+ *
+ * @internal
+ */
+export { resetPlaybookAliasWarning };
 
 export interface RevTurbineLocalRuntimeOptions {
   /**
@@ -2318,20 +2439,20 @@ function matchesEntitlementRuleSegmentsForDiagnostics(
   return true;
 }
 
-interface RuntimeConfigProvider {
-  getExportedConfig(): RevTurbineConfig | undefined;
+interface RuntimePlaybookProvider {
+  getPlaybook(): RevTurbineConfig | undefined;
   refresh?(): Promise<RevTurbineConfig | undefined>;
 }
 
-class StaticExportedConfigProvider implements RuntimeConfigProvider {
-  private readonly exportedConfig?: RevTurbineConfig;
+class StaticPlaybookProvider implements RuntimePlaybookProvider {
+  private readonly playbook?: RevTurbineConfig;
 
-  constructor(exportedConfig?: RevTurbineConfig) {
-    this.exportedConfig = exportedConfig;
+  constructor(playbook?: RevTurbineConfig) {
+    this.playbook = playbook;
   }
 
-  getExportedConfig(): RevTurbineConfig | undefined {
-    return this.exportedConfig;
+  getPlaybook(): RevTurbineConfig | undefined {
+    return this.playbook;
   }
 }
 
@@ -2342,7 +2463,7 @@ class StaticExportedConfigProvider implements RuntimeConfigProvider {
  * `/api/sdk/config` endpoint remains the fail-soft fallback for any bootstrap,
  * manifest, integrity, decode, or compatibility failure.
  */
-class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
+class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
   private cached?: RevTurbineConfig;
   private etag?: string;
   private lastFetchedAt = 0;
@@ -2358,7 +2479,7 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
     private readonly trustedManifestKeys: readonly TrustedKey[],
   ) {}
 
-  getExportedConfig(): RevTurbineConfig | undefined {
+  getPlaybook(): RevTurbineConfig | undefined {
     return this.cached;
   }
 
@@ -2366,7 +2487,7 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
     const now = Date.now();
     // Poll no more than once per TTL — a launched Playbook is immutable per
     // version, so intra-TTL re-fetching only wastes requests.
-    if (this.cached && now - this.lastFetchedAt < ServerLaunchedConfigProvider.REFRESH_TTL_MS) {
+    if (this.cached && now - this.lastFetchedAt < ServerLaunchedPlaybookProvider.REFRESH_TTL_MS) {
       return this.cached;
     }
     if (this.inFlight) return this.inFlight;
@@ -2462,7 +2583,7 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
   private manifestWindowIsValid(manifest: BundleManifest, nowMs: number): boolean {
     const notBeforeMs = Date.parse(manifest.not_before);
     const validationTime = notBeforeMs > nowMs
-      && notBeforeMs - nowMs <= ServerLaunchedConfigProvider.MANIFEST_NOT_BEFORE_SKEW_MS
+      && notBeforeMs - nowMs <= ServerLaunchedPlaybookProvider.MANIFEST_NOT_BEFORE_SKEW_MS
       ? notBeforeMs
       : nowMs;
     // Allow only bounded client/server skew at the opening edge. Expiry stays
@@ -2526,7 +2647,7 @@ class ServerLaunchedConfigProvider implements RuntimeConfigProvider {
   }
 }
 
-class ResolverBackedExportedConfigProvider implements RuntimeConfigProvider {
+class ResolverBackedPlaybookProvider implements RuntimePlaybookProvider {
   private cached?: RevTurbineConfig;
   private readonly resolver: () => ConfigArtifact | Promise<ConfigArtifact>;
   private readonly targetDefaults: ConfigTargetDefaults;
@@ -2541,14 +2662,14 @@ class ResolverBackedExportedConfigProvider implements RuntimeConfigProvider {
     this.targetDefaults = targetDefaults;
   }
 
-  getExportedConfig(): RevTurbineConfig | undefined {
+  getPlaybook(): RevTurbineConfig | undefined {
     return this.cached;
   }
 
   async refresh(): Promise<RevTurbineConfig | undefined> {
     const next = configArtifactForRuntime(
       await this.resolver(),
-      'localRuntime.resolvers.resolveExportedConfig()',
+      'localRuntime.resolvers.resolvePlaybook()',
       this.targetDefaults,
     );
     if (next) {
@@ -2558,7 +2679,7 @@ class ResolverBackedExportedConfigProvider implements RuntimeConfigProvider {
   }
 }
 
-class ExternalRuntimeConfigProvider implements RuntimeConfigProvider {
+class ExternalRuntimePlaybookProvider implements RuntimePlaybookProvider {
   private readonly source: RevTurbineConfigProvider;
   private readonly targetDefaults: ConfigTargetDefaults;
 
@@ -2570,10 +2691,10 @@ class ExternalRuntimeConfigProvider implements RuntimeConfigProvider {
     this.targetDefaults = targetDefaults;
   }
 
-  getExportedConfig(): RevTurbineConfig | undefined {
+  getPlaybook(): RevTurbineConfig | undefined {
     return configArtifactForRuntime(
-      this.source.getExportedConfig(),
-      'configProvider.getExportedConfig()',
+      resolveProviderPlaybook(this.source),
+      'configProvider.getPlaybook()',
       this.targetDefaults,
     );
   }
@@ -2581,7 +2702,7 @@ class ExternalRuntimeConfigProvider implements RuntimeConfigProvider {
   async refresh(): Promise<RevTurbineConfig | undefined> {
     const refreshed = await this.source.refresh?.();
     return configArtifactForRuntime(
-      refreshed ?? this.source.getExportedConfig(),
+      refreshed ?? resolveProviderPlaybook(this.source),
       'configProvider.refresh()',
       this.targetDefaults,
     );
@@ -2619,11 +2740,10 @@ class ExternalRuntimeConfigProvider implements RuntimeConfigProvider {
  */
 export class RevTurbineCustomerSdk {
   private readonly tenantId: string;
-  /** The browser credential, resolved from `publicKey` and its deprecated aliases. */
+  /** The browser credential — `publicKey`, the only name it arrives under. */
   private readonly publicKey: string;
   /**
-   * True when the integration supplied a real public key (`publicKey` or
-   * `ingestPublicKey`), as opposed to a legacy `apiKey`-only init or the
+   * True when the integration supplied a real `publicKey`, as opposed to the
    * local-only placeholder. Gates the keyless anonymous beacon (plan 95).
    */
   private readonly ingestKeyConfigured: boolean;
@@ -2766,7 +2886,7 @@ export class RevTurbineCustomerSdk {
   private readonly segmentMembershipBySegmentId = new Map<string, boolean>();
   private segmentMembershipUserId?: string;
   private lastTrialTriggerStage: 'none' | 'midpoint' | 'expiring' | 'expired' = 'none';
-  private readonly configProvider?: RuntimeConfigProvider;
+  private readonly configProvider?: RuntimePlaybookProvider;
   private readonly branding?: BrandingConfig;
   // Not readonly: `setApiBranding` replaces it when the SDK fetches the
   // branding-API rung itself (plan 184 `fetchThemeOverride`), so `getBranding()`
@@ -2787,7 +2907,7 @@ export class RevTurbineCustomerSdk {
   constructor(options: RevTurbineInitOptions) {
     this.tenantId = options.tenantId;
     this.publicKey = resolveBrowserPublicKey(options) ?? '';
-    this.ingestKeyConfigured = hasValue(options.publicKey) || hasValue(options.ingestPublicKey);
+    this.ingestKeyConfigured = hasValue(options.publicKey);
     this.environmentId = normalizeEnvironmentId(options.environmentId);
     this.locale = options.locale?.trim() || undefined;
     this.testTraffic = options.test === true;
@@ -2923,7 +3043,7 @@ export class RevTurbineCustomerSdk {
     // Hydrate impression history so retired-placement cache is warm before resolutions.
     void this.impressionHistory.hydrate();
     this.rebuildSegmentPredicateFieldIndex();
-    void this.refreshExportedConfigSnapshot();
+    void this.refreshPlaybookSnapshot();
     // recalculateDerivedUsageTraits() hydrates usage limits for the current plan.
     this.recalculateDerivedUsageTraits();
 
@@ -2959,14 +3079,14 @@ export class RevTurbineCustomerSdk {
     return this.runtimeMode === RuntimeMode.LocalOnly;
   }
 
-  private resolveConfigProvider(options: RevTurbineInitOptions): RuntimeConfigProvider | undefined {
+  private resolveConfigProvider(options: RevTurbineInitOptions): RuntimePlaybookProvider | undefined {
     const targetDefaults: ConfigTargetDefaults = {
       tenantId: options.tenantId,
       environmentId: normalizeEnvironmentId(options.environmentId),
     };
 
     if (options.configProvider) {
-      return new ExternalRuntimeConfigProvider(options.configProvider, targetDefaults);
+      return new ExternalRuntimePlaybookProvider(options.configProvider, targetDefaults);
     }
 
     const initialConfig = configArtifactForRuntime(
@@ -2974,10 +3094,10 @@ export class RevTurbineCustomerSdk {
       'localRuntime.playbook',
       targetDefaults,
     );
-    const configResolver = options.localRuntime?.resolvers?.resolveExportedConfig;
+    const configResolver = resolvePlaybookResolver(options.localRuntime?.resolvers);
 
     if (configResolver) {
-      return new ResolverBackedExportedConfigProvider(
+      return new ResolverBackedPlaybookProvider(
         configResolver,
         targetDefaults,
         initialConfig,
@@ -2985,7 +3105,7 @@ export class RevTurbineCustomerSdk {
     }
 
     if (initialConfig) {
-      return new StaticExportedConfigProvider(initialConfig);
+      return new StaticPlaybookProvider(initialConfig);
     }
 
     // Server mode with no customer-supplied config: fetch the launched Playbook
@@ -2993,7 +3113,7 @@ export class RevTurbineCustomerSdk {
     const runtimeMode = options.runtimeMode ?? RuntimeMode.Server;
     const configToken = resolveBrowserPublicKey(options);
     if (runtimeMode !== RuntimeMode.LocalOnly && configToken) {
-      return new ServerLaunchedConfigProvider(
+      return new ServerLaunchedPlaybookProvider(
         this.endpoint,
         options.tenantId,
         configToken,
@@ -3005,12 +3125,12 @@ export class RevTurbineCustomerSdk {
     return undefined;
   }
 
-  private async refreshExportedConfigSnapshot(): Promise<void> {
+  private async refreshPlaybookSnapshot(): Promise<void> {
     try {
-      const previousConfig = this.getConfiguredExportedConfig();
+      const previousConfig = this.getConfiguredPlaybook();
       await this.configProvider?.refresh?.();
       this.rebuildSegmentPredicateFieldIndex();
-      if (previousConfig !== this.getConfiguredExportedConfig()) {
+      if (previousConfig !== this.getConfiguredPlaybook()) {
         this.invalidateEffectiveContext();
       }
     } catch {
@@ -3018,8 +3138,8 @@ export class RevTurbineCustomerSdk {
     }
   }
 
-  private getConfiguredExportedConfig(): RevTurbineConfig | undefined {
-    return this.configProvider?.getExportedConfig();
+  private getConfiguredPlaybook(): RevTurbineConfig | undefined {
+    return this.configProvider?.getPlaybook();
   }
 
   /**
@@ -3042,7 +3162,7 @@ export class RevTurbineCustomerSdk {
   }
 
   private derivePlacementBehaviorFromPlaybook(): RevTurbinePlacementBehaviorFlags {
-    const config = this.getConfiguredExportedConfig();
+    const config = this.getConfiguredPlaybook();
     if (this.derivedPlacementBehaviorMemo && this.derivedPlacementBehaviorMemo.config === config) {
       return this.derivedPlacementBehaviorMemo.flags;
     }
@@ -3070,8 +3190,8 @@ export class RevTurbineCustomerSdk {
     this.segmentIdsByPredicateField.clear();
     this.configuredSegmentsById.clear();
 
-    const exportedConfig = this.getConfiguredExportedConfig();
-    const configuredSegments = exportedConfig?.segments ?? [];
+    const playbook = this.getConfiguredPlaybook();
+    const configuredSegments = playbook?.segments ?? [];
 
     for (const segment of configuredSegments) {
       this.configuredSegmentsById.set(segment.handle, segment);
@@ -3104,24 +3224,22 @@ export class RevTurbineCustomerSdk {
     if (this.localRuntime?.resolvers?.getPlacementDecision) {
       return this.localRuntime.resolvers.getPlacementDecision;
     }
-    const exportedConfig = this.getConfiguredExportedConfig();
-    if (!exportedConfig) return undefined;
-    if (this.cachedPlacementResolver && this.cachedPlacementResolverConfig === exportedConfig) {
+    const playbook = this.getConfiguredPlaybook();
+    if (!playbook) return undefined;
+    if (this.cachedPlacementResolver && this.cachedPlacementResolverConfig === playbook) {
       return this.cachedPlacementResolver;
     }
     const placements = this.localRuntime?.placements
-      ?? (Array.isArray(exportedConfig.placements)
-        ? { placements: exportedConfig.placements }
+      ?? (Array.isArray(playbook.placements)
+        ? { placements: playbook.placements }
         : undefined);
     if (!placements) return undefined;
     this.cachedPlacementResolver = createStaticPlacementResolver({
       placements,
-      // Canonical option name in `@revt-eng/core` 0.1.330+ (scaffold #380).
-      // The `exportedConfig` alias still resolves but warns once per process.
-      playbook: exportedConfig,
+      playbook,
       impressionHistory: this.impressionHistory,
     });
-    this.cachedPlacementResolverConfig = exportedConfig;
+    this.cachedPlacementResolverConfig = playbook;
     return this.cachedPlacementResolver;
   }
 
@@ -3302,7 +3420,7 @@ export class RevTurbineCustomerSdk {
       const experimentAssignments = effective.userContext.experiments ?? {};
       const hasExperimentState = Object.keys(experimentSelections).length > 0
         || Object.keys(experimentAssignments).length > 0;
-      const configuredSegments = this.getConfiguredExportedConfig()?.segments ?? [];
+      const configuredSegments = this.getConfiguredPlaybook()?.segments ?? [];
       const targetingState = this.buildTargetingState(effective.userContext);
       const evaluatedSegmentIds = evaluateSegments(
         configuredSegments,
@@ -3502,7 +3620,7 @@ export class RevTurbineCustomerSdk {
     usage: Record<string, number>;
     segmentTraits: Record<string, string | number | boolean>;
   } {
-    return coreBuildTargetingState(context, this.getConfiguredExportedConfig(), this.usageBalances);
+    return coreBuildTargetingState(context, this.getConfiguredPlaybook(), this.usageBalances);
   }
 
   private markSegmentsDirtyFromContextChange(
@@ -3738,7 +3856,7 @@ export class RevTurbineCustomerSdk {
   private authoredSurfaceSlotFor(
     config: RevTurbinePlacementRequestConfig,
   ): AuthoredSurfaceSlot | undefined {
-    const slots = this.getConfiguredExportedConfig()?.placement_slots;
+    const slots = this.getConfiguredPlaybook()?.placement_slots;
     if (!Array.isArray(slots) || slots.length === 0) return undefined;
 
     if (config.slotId) {
@@ -4083,13 +4201,13 @@ export class RevTurbineCustomerSdk {
    * handle-based everywhere (plan 191): rule targets carry handles, and the
    * context supplies the handle via `plan_handle` or `plan.handle`.
    */
-  private activePlanIdentifiers(exportedConfig: RevTurbineConfig): Set<string> {
+  private activePlanIdentifiers(playbook: RevTurbineConfig): Set<string> {
     const raw = this.resolveContextPlanRaw();
     const current = String(raw || '').toLowerCase();
     const ids = new Set<string>();
     if (!current) return ids;
     ids.add(current);
-    for (const plan of exportedConfig.plans ?? []) {
+    for (const plan of playbook.plans ?? []) {
       const handle = typeof plan.unique_handle === 'string' ? plan.unique_handle.toLowerCase() : '';
       if (handle === current) {
         ids.add(handle);
@@ -4106,25 +4224,25 @@ export class RevTurbineCustomerSdk {
     return planTargets.some((t) => typeof t.id === 'string' && activePlanIds.has(t.id.toLowerCase()));
   }
 
-  private hydrateUsageLimitRulesFromExportedConfig(): void {
-    const exportedConfig = this.getConfiguredExportedConfig();
-    if (!exportedConfig) return;
+  private hydrateUsageLimitRulesFromPlaybook(): void {
+    const playbook = this.getConfiguredPlaybook();
+    if (!playbook) return;
 
     // Rebuilt on every context change (via recalculateDerivedUsageTraits), so
     // reset and re-scope to the CURRENT user's plan. Without this, every plan's
     // rule wrote to the same key (last-write-wins → the highest tier's limit
     // leaked to all users), and a plan switch kept the prior plan's limit.
     this.usageLimitByEntitlement.clear();
-    const activePlanIds = this.activePlanIdentifiers(exportedConfig);
+    const activePlanIds = this.activePlanIdentifiers(playbook);
 
     const entitlementHandleById = new Map<string, string>();
-    const entitlements = exportedConfig.entitlements ?? [];
+    const entitlements = playbook.entitlements ?? [];
     for (const item of entitlements) {
       const handle = typeof item.unique_handle === 'string' ? item.unique_handle : '';
       if (handle) entitlementHandleById.set(handle, handle);
     }
 
-    const rules = exportedConfig.entitlement_rules ?? [];
+    const rules = playbook.entitlement_rules ?? [];
 
     for (const rule of rules) {
       if (!isRecord(rule)) continue;
@@ -4173,21 +4291,21 @@ export class RevTurbineCustomerSdk {
 
   // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#recalculateDerivedUsageTraits
   private recalculateDerivedUsageTraits(): void {
-    const exportedConfig = this.getConfiguredExportedConfig();
+    const playbook = this.getConfiguredPlaybook();
 
     // Re-scope usage limits to the current plan on every context change — the
     // plan may have changed (identify / setUser) since the last hydrate.
-    this.hydrateUsageLimitRulesFromExportedConfig();
+    this.hydrateUsageLimitRulesFromPlaybook();
 
     const usageTokens = recalculateDerivedUsageTokens({
       context: this.userContext,
-      playbook: exportedConfig,
+      playbook,
       usageBalances: this.usageBalances,
       usageTokenPrefixByEntitlement: this.usageTokenPrefixByEntitlement,
       usageThresholdLookup: (entitlement) => this.usageThresholdForEntitlement(entitlement),
     });
 
-    const recommendationTokens = this.deriveRecommendedPlanTokens(exportedConfig);
+    const recommendationTokens = this.deriveRecommendedPlanTokens(playbook);
 
     this.userContext = {
       ...this.userContext,
@@ -4210,16 +4328,16 @@ export class RevTurbineCustomerSdk {
    * is the base; next-tier-up from Free is Pro.
    */
   private deriveRecommendedPlanTokens(
-    exportedConfig: RevTurbineConfig | undefined,
+    playbook: RevTurbineConfig | undefined,
     recommendation?: { strategy: RecommendationStrategy; planOverride?: string },
   ): { recommended_plan_handle: string; recommended_plan_name: string } {
     const empty = { recommended_plan_handle: '', recommended_plan_name: '' };
-    if (!exportedConfig?.plans?.length) return empty;
+    if (!playbook?.plans?.length) return empty;
 
     const currentPlanHandleRaw = this.resolveContextPlanRaw();
     const currentPlanHandle = String(currentPlanHandleRaw || '').toLowerCase();
 
-    const planIRs = exportedConfig.plans.map((p) => ({
+    const planIRs = playbook.plans.map((p) => ({
       source_id: p.unique_handle,
       unique_handle: p.unique_handle,
       name: p.name,
@@ -4272,8 +4390,8 @@ export class RevTurbineCustomerSdk {
     }
 
     if (tokens.plan_name === undefined) {
-      const configuredPlanName = configuredPlanNameFromExportedConfig(
-        this.getConfiguredExportedConfig(),
+      const configuredPlanName = configuredPlanNameFromPlaybook(
+        this.getConfiguredPlaybook(),
         this.userContext.plan,
       );
       if (configuredPlanName) {
@@ -4287,7 +4405,7 @@ export class RevTurbineCustomerSdk {
     // placement-specific recommended-plan tokens (dispatched on its authored
     // strategy) on top of the user-level default.
     if (payload?.recommendation_strategy) {
-      const recommended = this.deriveRecommendedPlanTokens(this.getConfiguredExportedConfig(), {
+      const recommended = this.deriveRecommendedPlanTokens(this.getConfiguredPlaybook(), {
         strategy: payload.recommendation_strategy,
         planOverride: payload.recommendation_plan_override ?? undefined,
       });
@@ -4349,9 +4467,9 @@ export class RevTurbineCustomerSdk {
     segmentIds: readonly string[];
     segmentDimensions: Record<string, string>;
   } {
-    const exportedConfig = this.getConfiguredExportedConfig();
+    const playbook = this.getConfiguredPlaybook();
     const segmentDimensions: Record<string, string> = {};
-    for (const segment of exportedConfig?.segments ?? []) {
+    for (const segment of playbook?.segments ?? []) {
       if (segment.dimension_id) segmentDimensions[segment.handle] = segment.dimension_id;
     }
     return {
@@ -4361,7 +4479,7 @@ export class RevTurbineCustomerSdk {
   }
 
   private eligiblePlansForSegments(segmentIds?: readonly string[]): EligiblePlan[] {
-    const config = this.getConfiguredExportedConfig();
+    const config = this.getConfiguredPlaybook();
     if (!config) return [];
     return coreGetEligiblePlans(
       config.plans ?? [],
@@ -4371,7 +4489,7 @@ export class RevTurbineCustomerSdk {
   }
 
   private eligibleAddonsForSegments(segmentIds?: readonly string[]): EligibleAddon[] {
-    const config = this.getConfiguredExportedConfig();
+    const config = this.getConfiguredPlaybook();
     if (!config) return [];
     return coreGetEligibleAddons(
       config.addons ?? [],
@@ -4382,8 +4500,8 @@ export class RevTurbineCustomerSdk {
 
   /** Return the public plan variations eligible for the active user. */
   async getEligiblePlans(): Promise<EligiblePlan[]> {
-    if (!this.getConfiguredExportedConfig() && !this.isLocalOnlyMode()) {
-      await this.refreshExportedConfigSnapshot();
+    if (!this.getConfiguredPlaybook() && !this.isLocalOnlyMode()) {
+      await this.refreshPlaybookSnapshot();
     }
     const { providers } = await this.resolveEffectiveProviderContext();
     return this.eligiblePlansForSegments(providers?.segments?.segmentIds);
@@ -4391,8 +4509,8 @@ export class RevTurbineCustomerSdk {
 
   /** Return the public add-on variations eligible for the active user. */
   async getEligibleAddons(): Promise<EligibleAddon[]> {
-    if (!this.getConfiguredExportedConfig() && !this.isLocalOnlyMode()) {
-      await this.refreshExportedConfigSnapshot();
+    if (!this.getConfiguredPlaybook() && !this.isLocalOnlyMode()) {
+      await this.refreshPlaybookSnapshot();
     }
     const { providers } = await this.resolveEffectiveProviderContext();
     return this.eligibleAddonsForSegments(providers?.segments?.segmentIds);
@@ -4413,7 +4531,7 @@ export class RevTurbineCustomerSdk {
       return candidates.find((plan) => plan.price.billingPeriod === billingPeriod) ?? candidates[0];
     };
     const current = selectVariation(currentHandle || undefined);
-    const recommendation = this.deriveRecommendedPlanTokens(this.getConfiguredExportedConfig());
+    const recommendation = this.deriveRecommendedPlanTokens(this.getConfiguredPlaybook());
     const upgrade = selectVariation(recommendation.recommended_plan_handle || undefined);
     return {
       plan_price: current
@@ -4438,14 +4556,14 @@ export class RevTurbineCustomerSdk {
     providers?: Awaited<ReturnType<DomainProviderRegistry['resolveAll']>>,
   ): Record<string, string> {
     const prices = this.priceTokensForProviders(providers);
-    const exportedConfig = this.getConfiguredExportedConfig();
-    const recommendation = this.deriveRecommendedPlanTokens(exportedConfig);
+    const playbook = this.getConfiguredPlaybook();
+    const recommendation = this.deriveRecommendedPlanTokens(playbook);
 
     // Plan 191 REQ-1: the plan's matching identity is its `unique_handle`, so
     // the name lookup takes the resolved identity — passing the plan OBJECT
     // (as the imperative token map does) resolves nothing by design.
-    const configuredPlanName = configuredPlanNameFromExportedConfig(
-      exportedConfig,
+    const configuredPlanName = configuredPlanNameFromPlaybook(
+      playbook,
       this.resolveContextPlanRaw(),
     );
     const contextPlanName = typeof this.userContext.plan === 'object'
@@ -4518,12 +4636,17 @@ export class RevTurbineCustomerSdk {
    * Return current SDK policy snapshot.
    */
   getPolicy(): RevTurbinePolicySnapshot {
-    const exportedConfig = this.getConfiguredExportedConfig();
+    const playbook = this.getConfiguredPlaybook();
     return {
       contextPolicy: this.policy,
       placementBehavior: this.placementBehavior,
       runtimeMode: this.runtimeMode,
-      ...(typeof exportedConfig?.format_version === 'string' ? { exportedConfigVersion: exportedConfig.format_version } : {}),
+      // Both keys carry the identical value for one minor. `playbookVersion`
+      // is canonical; `exportedConfigVersion` is emitted alongside it so a
+      // reader on the old key keeps working, and is removed in 0.12.0.
+      ...(typeof playbook?.format_version === 'string'
+        ? { playbookVersion: playbook.format_version, exportedConfigVersion: playbook.format_version }
+        : {}),
     };
   }
 
@@ -4542,7 +4665,7 @@ export class RevTurbineCustomerSdk {
   getBranding(): ResolvedBranding {
     return resolveBranding({
       explicit: this.branding,
-      legacyConfigTheme: this.getConfiguredExportedConfig()?.theme,
+      legacyConfigTheme: this.getConfiguredPlaybook()?.theme,
       apiBranding: this.apiBranding,
     });
   }
@@ -4569,8 +4692,8 @@ export class RevTurbineCustomerSdk {
     handle: string,
     context?: RevTurbineEntitlementContext,
   ): EntitlementResult | null {
-    const exportedConfig = this.getConfiguredExportedConfig();
-    if (!exportedConfig) return null;
+    const playbook = this.getConfiguredPlaybook();
+    if (!playbook) return null;
 
     const currentPlanHandleRaw = this.resolveContextPlanRaw();
     const currentPlanHandle = String(currentPlanHandleRaw || '').toLowerCase();
@@ -4587,7 +4710,7 @@ export class RevTurbineCustomerSdk {
     // set; `premium_plan_id` becomes effectivePlanHandle (the plan
     // whose limits should apply during the trial).
     const { trialGrantedEntitlementHandles, effectivePlanHandle } =
-      this.resolveReverseTrialGrants(exportedConfig);
+      this.resolveReverseTrialGrants(playbook);
 
     return coreDeriveLocalEntitlement({
       handle,
@@ -4596,7 +4719,7 @@ export class RevTurbineCustomerSdk {
       segmentIds,
       usageBalances: this.usageBalances,
       userUsage: this.userContext.usage as Record<string, unknown> | undefined, // sdk-ok: boundary-parse
-      playbook: exportedConfig,
+      playbook,
       ...(trialGrantedEntitlementHandles !== undefined ? { trialGrantedEntitlementHandles } : {}),
       ...(effectivePlanHandle !== undefined ? { effectivePlanHandle } : {}),
     });
@@ -4617,13 +4740,13 @@ export class RevTurbineCustomerSdk {
    * single configured rule the user can be on per spec §2.4.2.
    */
   private resolveReverseTrialGrants(
-    exportedConfig: RevTurbineConfig,
+    playbook: RevTurbineConfig,
   ): { trialGrantedEntitlementHandles?: ReadonlySet<string>; effectivePlanHandle?: string } {
     const trial = this.localTrialStatus;
     if (!trial.in_trial || trial.trial_type !== 'reverse') return {};
     const basePlanHandle = trial.plan_handle;
     if (!basePlanHandle) return {};
-    const rules = exportedConfig.reverse_trial_rules ?? [];
+    const rules = playbook.reverse_trial_rules ?? [];
     const rule = rules.find(
       (r) => r.fallback_plan_id === basePlanHandle && r.is_active !== false,
     );
@@ -4643,12 +4766,12 @@ export class RevTurbineCustomerSdk {
   getTargeting(): RevTurbineTargeting {
     const userId = this.userContext.id || this.anonymousId;
     const cachedContext = this.localUserContextsByUserId.get(userId);
-    const exportedConfig = this.getConfiguredExportedConfig();
-    const configuredPlanName = configuredPlanNameFromExportedConfig(exportedConfig, this.userContext.plan);
+    const playbook = this.getConfiguredPlaybook();
+    const configuredPlanName = configuredPlanNameFromPlaybook(playbook, this.userContext.plan);
     const effectivePlan = configuredPlanName
       ?? cachedContext?.plan
       ?? (this.resolveContextPlanRaw() || undefined);
-    const configuredSegments = [...(exportedConfig?.segments ?? [])];
+    const configuredSegments = [...(playbook?.segments ?? [])];
     const configuredTraitFields = Array.from(new Set(
       configuredSegments.flatMap((segment) => (segment.predicates ?? []).map((predicate) => predicate.field)),
     )).sort();
@@ -4755,7 +4878,7 @@ export class RevTurbineCustomerSdk {
     const targeting = this.getTargeting();
     const entitlements = this.getEntitlements();
     const policy = this.getPolicy();
-    const exportedConfig = this.getConfiguredExportedConfig();
+    const playbook = this.getConfiguredPlaybook();
 
     const segmentSet = new Set(targeting.segmentIds);
     const segments: RevTurbineSegmentEvaluation[] = targeting.configuredSegments.map((segment) => {
@@ -4776,8 +4899,8 @@ export class RevTurbineCustomerSdk {
 
     const entitlementHandleById = new Map<string, string>();
     const entitlementTypeById = new Map<string, string>();
-    if (Array.isArray(exportedConfig?.entitlements)) {
-      for (const entitlement of exportedConfig.entitlements) {
+    if (Array.isArray(playbook?.entitlements)) {
+      for (const entitlement of playbook.entitlements) {
         const entitlementHandle = firstStringValue(entitlement.unique_handle);
         const entitlementId = entitlementHandle;
         if (entitlementId && entitlementHandle) {
@@ -4791,8 +4914,8 @@ export class RevTurbineCustomerSdk {
     }
 
     const planHandleById = new Map<string, string>();
-    if (Array.isArray(exportedConfig?.plans)) {
-      for (const plan of exportedConfig.plans) {
+    if (Array.isArray(playbook?.plans)) {
+      for (const plan of playbook.plans) {
         const planHandle = firstStringValue(plan.unique_handle);
         const planId = planHandle;
         if (planId && planHandle) {
@@ -4816,16 +4939,16 @@ export class RevTurbineCustomerSdk {
     // (plan #39 REQ-8 / REQ-28). Older exports without `dimension_id`
     // fall back to flat-OR via the `__no_dim__` bucket inside the helper.
     const segmentDimensionsById = new Map<string, string>();
-    if (Array.isArray(exportedConfig?.segments)) {
-      for (const segment of exportedConfig.segments) {
+    if (Array.isArray(playbook?.segments)) {
+      for (const segment of playbook.segments) {
         const segId = firstStringValue(segment.handle);
         const dim = firstStringValue(segment.dimension_id);
         if (segId && dim) segmentDimensionsById.set(segId, dim);
       }
     }
 
-    const entitlementRules: RevTurbineEntitlementRuleEvaluation[] = Array.isArray(exportedConfig?.entitlement_rules)
-      ? exportedConfig.entitlement_rules
+    const entitlementRules: RevTurbineEntitlementRuleEvaluation[] = Array.isArray(playbook?.entitlement_rules)
+      ? playbook.entitlement_rules
         .map((rule, index) => {
           const ruleId = firstStringValue(rule.id) ?? `entitlement_rule_${index}`;
           const entitlementId = firstStringValue(rule.entitlement_id);
@@ -4961,8 +5084,8 @@ export class RevTurbineCustomerSdk {
     const candidatePlacements: RevTurbineConfigPlacementItem[] = [];
     const seenPlacementIds = new Set<string>();
 
-    if (Array.isArray(exportedConfig?.placements)) {
-      for (const configPlacement of exportedConfig.placements) {
+    if (Array.isArray(playbook?.placements)) {
+      for (const configPlacement of playbook.placements) {
         if (!configPlacement || typeof configPlacement !== 'object') continue;
         const configId = firstStringValue(configPlacement.id) ?? '';
         const configName = firstStringValue(configPlacement.name) ?? '';
@@ -5540,7 +5663,7 @@ export class RevTurbineCustomerSdk {
    * No names, ids, or user context. Returns undefined when no config is loaded.
    */
   private computeConfigShape(): SdkConfigShapeBody | undefined {
-    const cfg = this.getConfiguredExportedConfig();
+    const cfg = this.getConfiguredPlaybook();
     if (!cfg) return undefined;
     const placements = cfg.placements ?? [];
     const placementPayloads = placements.reduce(
@@ -5600,7 +5723,7 @@ export class RevTurbineCustomerSdk {
     // Whole body is best-effort: hashing, serialization, AND delivery must
     // never throw into the host app (REQ-3/REQ-4).
     try {
-      const cfg = this.getConfiguredExportedConfig();
+      const cfg = this.getConfiguredPlaybook();
       const bundleVersion = cfg?.format_version != null ? String(cfg.format_version) : undefined;
       // One-way, non-reversible attribution so distinct deployments can be
       // counted without exposing the real id (REQ-7). The tenant handle is an
@@ -5721,7 +5844,7 @@ export class RevTurbineCustomerSdk {
     // is the config *release* id (`playbook_version_id`), NOT the immutable
     // `format_version` constant — the latter would stamp the same value on
     // every event forever and correlate nothing.
-    const playbookVersion = this.getConfiguredExportedConfig()?.playbook_version_id;
+    const playbookVersion = this.getConfiguredPlaybook()?.playbook_version_id;
     const trackEvents: TrackEvent[] = sanitized.map((event) => {
       // `user_id` and the property bag were already scrubbed by
       // `redactEnvelope` above. `account_id` is not carried on the envelope,
@@ -6429,8 +6552,8 @@ export class RevTurbineCustomerSdk {
     const mountedIds = new Set(mounted.map((slot) => slot.slotId).filter((id) => id.length > 0));
 
     const authored: RevTurbineAuthoredSlotRef[] = [];
-    const exportedConfig = this.getConfiguredExportedConfig();
-    const placements = Array.isArray(exportedConfig?.placements) ? exportedConfig.placements : [];
+    const playbook = this.getConfiguredPlaybook();
+    const placements = Array.isArray(playbook?.placements) ? playbook.placements : [];
     for (const placement of placements) {
       if (!isRecord(placement)) continue;
       const trigger: Record<string, unknown> = isRecord(placement.trigger) // sdk-ok: boundary-parse
@@ -6460,7 +6583,7 @@ export class RevTurbineCustomerSdk {
       // same as reporting "nothing authored", which is what an empty list would
       // imply to a caller — and is exactly the both-look-the-same trap this
       // plan keeps running into.
-      configAvailable: exportedConfig !== undefined,
+      configAvailable: playbook !== undefined,
     };
   }
 
@@ -6964,7 +7087,7 @@ export class RevTurbineCustomerSdk {
     };
     // Kick the plan-159 config fetch so the NEXT call resolves locally
     // (fire-and-forget — this call still fails closed deterministically).
-    void this.refreshExportedConfigSnapshot();
+    void this.refreshPlaybookSnapshot();
     // Deliberately NOT cached: the config may arrive milliseconds later and
     // a cached fail-closed decision would mask it for the TTL window.
     return configUnavailable;
@@ -7045,7 +7168,7 @@ export class RevTurbineCustomerSdk {
     payloadId?: string,
   ): { cooldownMs?: number; remindMs?: number } {
     if (!payloadId) return {};
-    const config = this.getConfiguredExportedConfig();
+    const config = this.getConfiguredPlaybook();
     if (!config) return {};
 
     // The two payload lanes key their id differently — `placements[].payloads[]`
@@ -7566,8 +7689,8 @@ export class RevTurbineCustomerSdk {
     // (the same lookup semantics local_only has always had; decisions cached
     // by getPlacementDecision feed it). Configless Server mode kicks the
     // config fetch and returns null this call.
-    if (!this.getConfiguredExportedConfig() && !this.isLocalOnlyMode()) {
-      void this.refreshExportedConfigSnapshot();
+    if (!this.getConfiguredPlaybook() && !this.isLocalOnlyMode()) {
+      void this.refreshPlaybookSnapshot();
       void rid; // request id reserved for parity with the decision path
       return null;
     }
@@ -7618,7 +7741,7 @@ export class RevTurbineCustomerSdk {
       // Server mode (plan 159): fetch the launched Playbook from the control
       // plane so entitlements evaluate LOCALLY — no per-check round-trip. The
       // config provider is TTL-gated + ETag-revalidated, so this is a cheap poll.
-      await this.refreshExportedConfigSnapshot();
+      await this.refreshPlaybookSnapshot();
     }
 
     // Proven local evaluation against the configured Playbook (both modes).
@@ -7737,7 +7860,7 @@ export class RevTurbineCustomerSdk {
    */
   private reportUnmatchedUsageKeys(keys: string[]): void {
     if (keys.length === 0) return;
-    const config = this.getConfiguredExportedConfig();
+    const config = this.getConfiguredPlaybook();
     const entitlements = config?.entitlements;
     if (!Array.isArray(entitlements) || entitlements.length === 0) return;
 
@@ -8296,14 +8419,14 @@ export class RevTurbineCustomerSdk {
     instances: readonly TrialInstance[],
     options?: { nowIso?: string; basePlanHandle?: string },
   ): Promise<RevTurbineTrialContext> {
-    const exportedConfig = this.getConfiguredExportedConfig();
+    const playbook = this.getConfiguredPlaybook();
     const nowIso = options?.nowIso ?? new Date().toISOString();
     const { trial } = coreEvaluateTrialStatus({
-      ...(exportedConfig?.free_trial_rules !== undefined
-        ? { freeTrialRules: exportedConfig.free_trial_rules }
+      ...(playbook?.free_trial_rules !== undefined
+        ? { freeTrialRules: playbook.free_trial_rules }
         : {}),
-      ...(exportedConfig?.reverse_trial_rules !== undefined
-        ? { reverseTrialRules: exportedConfig.reverse_trial_rules }
+      ...(playbook?.reverse_trial_rules !== undefined
+        ? { reverseTrialRules: playbook.reverse_trial_rules }
         : {}),
       instances,
       nowIso,
@@ -8318,18 +8441,29 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
-   * Returns the legacy-compatible evaluator snapshot loaded at initialization.
-   * Canonical consumers should retain their Playbook or use
-   * {@link normalizeConfigArtifactOrThrow} at their ingestion boundary.
+   * Returns the Playbook snapshot loaded at initialization.
+   *
+   * Canonical consumers should retain their own Playbook or use
+   * {@link normalizeConfigArtifactOrThrow} at their ingestion boundary rather
+   * than reading it back out of the SDK.
+   */
+  getPlaybook(): RevTurbineConfig | undefined {
+    return this.getConfiguredPlaybook();
+  }
+
+  /**
+   * @deprecated Renamed to {@link RevTurbineCustomerSdk.getPlaybook} —
+   * `Playbook` is the canonical name for the artifact (BL-0156). Identical
+   * behaviour; removed in `0.12.0`.
    */
   getExportedConfig(): RevTurbineConfig | undefined {
-    return this.getConfiguredExportedConfig();
+    return this.getPlaybook();
   }
 
   /**
    * Validate that each configured UI path action has a resolver implementation.
    *
-  * By default this validates `localRuntime.exportedConfig.content_ui_paths` (when present)
+  * By default this validates `localRuntime.playbook.content_ui_paths` (when present)
    * against:
    * - `uiPathResolvers` passed at SDK init
    * - optional `resolvers` passed to this method
@@ -8340,12 +8474,12 @@ export class RevTurbineCustomerSdk {
   async validateUiPathResolvers(
     options: RevTurbineUiPathResolverValidationOptions = {},
   ): Promise<RevTurbineUiPathResolverValidationReport> {
-    await this.refreshExportedConfigSnapshot();
-    const exportedConfig = this.getConfiguredExportedConfig();
+    await this.refreshPlaybookSnapshot();
+    const playbook = this.getConfiguredPlaybook();
     const sourceUiPaths = Array.isArray(options.uiPaths)
       ? options.uiPaths
-      : (isRecord(exportedConfig) && Array.isArray(exportedConfig.content_ui_paths)
-        ? exportedConfig.content_ui_paths
+      : (isRecord(playbook) && Array.isArray(playbook.content_ui_paths)
+        ? playbook.content_ui_paths
         : []);
 
     const includeProviderHandlers = options.includeProviderHandlers ?? true;
@@ -8432,9 +8566,9 @@ export class RevTurbineCustomerSdk {
    * throwOnMissing: true })` remains the strict opt-in.
    */
   private warnOnUiPathResolverCoverageGaps(): void {
-    const exportedConfig = this.getConfiguredExportedConfig();
-    const uiPaths = isRecord(exportedConfig) && Array.isArray(exportedConfig.content_ui_paths)
-      ? exportedConfig.content_ui_paths
+    const playbook = this.getConfiguredPlaybook();
+    const uiPaths = isRecord(playbook) && Array.isArray(playbook.content_ui_paths)
+      ? playbook.content_ui_paths
       : [];
 
     if (uiPaths.length === 0) {
@@ -9061,59 +9195,42 @@ function hasValue(input: unknown): input is string { // sdk-ok: boundary-parse
   return typeof input === 'string' && input.trim().length > 0;
 }
 
-/** The three names the browser credential may arrive under. */
-type BrowserKeyOptions = Pick<RevTurbineInitOptions, 'publicKey' | 'ingestPublicKey' | 'apiKey'>;
-
-let warnedDeprecatedBrowserKeyAlias = false;
+/** The one name the browser credential arrives under (BL-0113). */
+type BrowserKeyOptions = Pick<RevTurbineInitOptions, 'publicKey'>;
 
 /**
- * Resolve the browser credential from `publicKey` and its deprecated aliases.
+ * Resolve the browser credential.
  *
- * Precedence is `publicKey`, then `ingestPublicKey`, then `apiKey`. Returns
- * `undefined` when no key was supplied so callers can apply their own default.
+ * `publicKey` is the ONLY name. Returns `undefined` when it was not supplied,
+ * so callers apply their own default (local-only mode) or fail init.
  *
- * A one-time development warning names `publicKey` when a deprecated alias is
- * used: always for `ingestPublicKey`, and for `apiKey` only in a browser —
- * on a backend running the headless SDK, `apiKey` is the server key and is
- * the right option. Production builds stay silent.
+ * **The `0.10.0` alias window closed in `0.11.0` (BL-0113).** `ingestPublicKey`
+ * is gone from {@link RevTurbineInitOptions} entirely — passing it is a type
+ * error — and `apiKey` is no longer read here: it means the secret **server**
+ * key, for `@revturbine/sdk/server` and for the headless SDK on a backend, and
+ * a browser init that supplies only `apiKey` now resolves nothing and fails at
+ * init. Plan 257's CHANGELOG entry promised removal "one minor later"; this is
+ * that minor.
  *
- * Every read site (the SDK class, the React provider, the controllers)
- * resolves through this one function so the precedence cannot drift.
+ * Kept as a function rather than inlined at the three read sites (the SDK
+ * class, the React provider, the controllers) so there stays exactly ONE place
+ * that decides what the browser credential is — the property that made this
+ * removal a three-line change instead of an audit.
  *
  * @internal
  */
 export function resolveBrowserPublicKey(options: BrowserKeyOptions): string | undefined {
-  if (hasValue(options.publicKey)) return options.publicKey;
-  const alias = hasValue(options.ingestPublicKey)
-    ? 'ingestPublicKey'
-    : hasValue(options.apiKey)
-      ? 'apiKey'
-      : undefined;
-  if (alias === undefined) return undefined;
-  const legacyBrowserUse = alias === 'ingestPublicKey' || isBrowser();
-  if (legacyBrowserUse && !warnedDeprecatedBrowserKeyAlias) {
-    warnedDeprecatedBrowserKeyAlias = true;
-    warnInDevelopmentBuild(
-      `\`${alias}\` is deprecated on the browser init; pass the same key as \`publicKey\`. `
-      + '`apiKey` means the secret server key, which must never reach a browser.',
-    );
-  }
-  return alias === 'ingestPublicKey' ? options.ingestPublicKey : options.apiKey;
-}
-
-/** Test-only: forget that the alias warning fired so the next resolve warns again. @internal */
-export function resetBrowserKeyAliasWarning(): void {
-  warnedDeprecatedBrowserKeyAlias = false;
+  return hasValue(options.publicKey) ? options.publicKey : undefined;
 }
 
 /**
  * Normalizes initialization options so local-only mode can be bootstrapped from
- * `localRuntime.exportedConfig` without requiring transport credentials.
+ * `localRuntime.playbook` without requiring transport credentials.
  */
 function normalizeInitOptions(options: RevTurbineInitInputOptions): RevTurbineInitWithProviderOptions {
   // Either config key counts: a Playbook supplied via the canonical `playbook`
-  // key (or the legacy `exportedConfig`) is what makes this a local-only init.
-  // Reading only `exportedConfig` here meant a `playbook`-only caller never got
+  // key (or the legacy `playbook`) is what makes this a local-only init.
+  // Reading only `playbook` here meant a `playbook`-only caller never got
   // the local-only defaults, so the SDK stayed in server mode and hung on init.
   const hasPlaybook = resolveLocalPlaybook(options.localRuntime) !== undefined;
   if (!hasPlaybook) {

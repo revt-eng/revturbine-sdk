@@ -7,7 +7,7 @@ must NOT clobber the value already on the base state. Only defined values
 overwrite.
 
 The Python server SDK is stateless (constructed once per
-``(user_context, exported_config)``) so it has no ``identify`` / ``set_user``
+``(user_context, playbook)``) so it has no ``identify`` / ``set_user``
 partial-update path — but ``_TrialOverlayPlanProvider`` is its one
 merge-like path, overlaying a customer-supplied ``trial_status`` onto the
 resolved PlanProviderState. These tests lock that it overlays with the

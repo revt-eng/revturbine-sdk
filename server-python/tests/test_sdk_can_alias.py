@@ -19,7 +19,7 @@ from revturbine import RevTurbineCustomerSdk
 def _sdk() -> RevTurbineCustomerSdk:
     return RevTurbineCustomerSdk(
         user_context={"tenant_id": "t", "user_id": "u"},
-        exported_config={
+        playbook={
             "version": "1.0.0",
             "plans": [],
             "entitlements": [],

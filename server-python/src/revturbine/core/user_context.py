@@ -14,7 +14,7 @@ from typing import Any
 
 from revturbine.core.helpers import (
     JsonObject,
-    configured_plan_name_from_exported_config,
+    configured_plan_name_from_playbook,
     is_record,
     plan_identity_from_context,
     usage_amounts_from_entries,
@@ -49,7 +49,7 @@ def to_segment_evaluation_traits(
 
 def build_targeting_state(
     context: JsonObject,
-    exported_config: JsonObject | None = None,
+    playbook: JsonObject | None = None,
     usage_overrides: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     """Build the full targeting state from a user context snapshot.
@@ -63,7 +63,7 @@ def build_targeting_state(
     Source: user-context.ts (buildTargetingState)
     """
     plan_identity = plan_identity_from_context(context)
-    configured_plan_name = configured_plan_name_from_exported_config(exported_config, plan_identity)
+    configured_plan_name = configured_plan_name_from_playbook(playbook, plan_identity)
     effective_plan = configured_plan_name or plan_identity
 
     custom = context.get("custom")

@@ -17,6 +17,7 @@ import re
 from typing import Any, Literal, TypedDict, TypeGuard
 
 from revturbine.config import parse_playbook_or_throw
+from revturbine.playbook_option import warn_deprecated_playbook_alias_once
 
 __all__ = [
     "is_record",
@@ -39,7 +40,9 @@ __all__ = [
     "sanitize_usage_token_prefix",
     "looks_generic_usage_unit",
     "usage_amounts_from_entries",
+    "configured_plan_name_from_playbook",
     "configured_plan_name_from_exported_config",
+    "parse_playbook_or_throw",
     "parse_exported_config_or_throw",
     "category_bucket",
     "placement_score",
@@ -658,8 +661,8 @@ def plan_identity_from_context(context: JsonObject) -> str | None:
 # ── Config plan name lookup ─────────────────────────────────────────────────
 
 
-def configured_plan_name_from_exported_config(
-    exported_config: JsonObject | None,
+def configured_plan_name_from_playbook(
+    playbook: JsonObject | None,
     plan_value: str | JsonObject | None,
 ) -> str | None:
     """Look up a plan's display name from a Playbook's plans list.
@@ -672,11 +675,11 @@ def configured_plan_name_from_exported_config(
     suffix fallback) while it had no callers; aligned by plan 234 TASK-8b
     before ``build_targeting_state`` became its first caller.
 
-    Source: helpers.ts (configuredPlanNameFromExportedConfig)
+    Source: helpers.ts (configuredPlanNameFromPlaybook)
     """
-    if not exported_config:
+    if not playbook:
         return None
-    plans = exported_config.get("plans")
+    plans = playbook.get("plans")
     if not isinstance(plans, list):
         return None
 
@@ -700,6 +703,22 @@ def configured_plan_name_from_exported_config(
                 return name
 
     return None
+
+
+def configured_plan_name_from_exported_config(
+    exported_config: JsonObject | None,
+    plan_value: str | None,
+) -> str | None:
+    """Deprecated alias of :func:`configured_plan_name_from_playbook`.
+
+    ``ExportedConfig`` is dead vocabulary (BL-0156). Kept so an existing import
+    keeps working; removed in ``0.12.0``.
+    """
+    warn_deprecated_playbook_alias_once(
+        "`configured_plan_name_from_exported_config` is deprecated; "
+        "use `configured_plan_name_from_playbook`."
+    )
+    return configured_plan_name_from_playbook(exported_config, plan_value)
 
 
 def parse_exported_config_or_throw(raw: Any, source: str) -> JsonObject | None:

@@ -66,7 +66,7 @@ describe('RevTurbineProvider init-error propagation (AC-4)', () => {
     await mount({
       tenantId: 'tenant_init_error',
       apiKey: 'sk_test',
-      ingestPublicKey: 'pub_test',
+      publicKey: 'pub_test',
       environmentId: 'staging',
       endpoint: 'https://edge.example.com',
       mode: 'snippet',

@@ -50,7 +50,7 @@ function localSdk(): RevTurbineCustomerSdk {
   const sdk = new RevTurbineCustomerSdk({
     tenantId: 'tenant_usage',
     apiKey: 'sk_test',
-    ingestPublicKey: 'pub_test',
+    publicKey: 'pub_test',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
     runtimeMode: 'local_only',
@@ -107,7 +107,7 @@ describe('a usage key matching no entitlement handle is reported', () => {
     const sdk = new RevTurbineCustomerSdk({
       tenantId: 'tenant_usage',
       apiKey: 'sk_test',
-      ingestPublicKey: 'pub_test',
+      publicKey: 'pub_test',
       endpoint: 'https://edge.example.com',
       mode: 'snippet',
       runtimeMode: 'revturbine_server',

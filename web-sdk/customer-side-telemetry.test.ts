@@ -82,7 +82,7 @@ function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerS
   const sdk = new RevTurbineCustomerSdk({
     tenantId: 'tenant_abc',
     apiKey: 'sk_secret_key',
-    ingestPublicKey: 'pub_ingest_key',
+    publicKey: 'pub_ingest_key',
     environmentId: 'staging',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
@@ -152,7 +152,7 @@ describe('TASK-6 — clickstream batching flush policy', () => {
 
 describe('TASK-7 — keyless anonymous init telemetry', () => {
   it('posts a single anonymous sdk_init to /api/sdk/meta with counts, hashed id, and no PII', async () => {
-    makeSdk({ ingestPublicKey: undefined, localRuntime: { exportedConfig: makeConfig() } });
+    makeSdk({ publicKey: undefined, localRuntime: { playbook: makeConfig() } });
 
     await vi.waitFor(() => expect(metaCalls().length).toBe(1));
 
@@ -191,7 +191,7 @@ describe('TASK-7 — keyless anonymous init telemetry', () => {
 
   it('logs the one-time opt-out notice naming the flag', async () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => {});
-    makeSdk({ ingestPublicKey: undefined });
+    makeSdk({ publicKey: undefined });
 
     await vi.waitFor(() => expect(metaCalls().length).toBe(1));
     expect(info).toHaveBeenCalledTimes(1);
@@ -200,7 +200,7 @@ describe('TASK-7 — keyless anonymous init telemetry', () => {
 
   it('sends nothing and logs nothing when anonymousTelemetry is false (AC-5)', async () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => {});
-    makeSdk({ ingestPublicKey: undefined, anonymousTelemetry: false });
+    makeSdk({ publicKey: undefined, anonymousTelemetry: false });
 
     // Give any stray async beacon a chance to (not) fire.
     await Promise.resolve();
@@ -210,7 +210,7 @@ describe('TASK-7 — keyless anonymous init telemetry', () => {
   });
 
   it('does NOT use the keyless beacon when an ingest key is configured', async () => {
-    makeSdk({ ingestPublicKey: 'pub_ingest_key' });
+    makeSdk({ publicKey: 'pub_ingest_key' });
     await Promise.resolve();
     await Promise.resolve();
     expect(metaCalls()).toHaveLength(0);
@@ -218,9 +218,9 @@ describe('TASK-7 — keyless anonymous init telemetry', () => {
 
   it('emits keyless telemetry in local_only mode (a bundled-Playbook install is still an install)', async () => {
     makeSdk({
-      ingestPublicKey: undefined,
+      publicKey: undefined,
       runtimeMode: 'local_only',
-      localRuntime: { exportedConfig: makeConfig() },
+      localRuntime: { playbook: makeConfig() },
     });
 
     await vi.waitFor(() => expect(metaCalls().length).toBe(1));
@@ -232,10 +232,10 @@ describe('TASK-7 — keyless anonymous init telemetry', () => {
   it('does NOT emit keyless telemetry when previewMode is true (docs/playground render)', async () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => {});
     makeSdk({
-      ingestPublicKey: undefined,
+      publicKey: undefined,
       previewMode: true,
       runtimeMode: 'local_only',
-      localRuntime: { exportedConfig: makeConfig() },
+      localRuntime: { playbook: makeConfig() },
     });
 
     // Give any stray async beacon a chance to (not) fire.

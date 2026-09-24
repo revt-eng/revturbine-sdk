@@ -44,13 +44,13 @@ function makeSdk(
   return new RevTurbineCustomerSdk({
     tenantId: 'tenant_ui_paths',
     apiKey: 'sk_test',
-    ingestPublicKey: 'pub_test',
+    publicKey: 'pub_test',
     environmentId: 'staging',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
     runtimeMode: 'local_only',
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
-    localRuntime: { exportedConfig: makeConfig(contentUiPaths) },
+    localRuntime: { playbook: makeConfig(contentUiPaths) },
     ...(uiPathResolvers ? { uiPathResolvers } : {}),
     ...(domainProviders ? { domainProviders } : {}),
   });

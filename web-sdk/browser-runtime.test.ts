@@ -83,7 +83,7 @@ describe('BrowserRuntime', () => {
       const runtime = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: config,
+        playbook: config,
         providers: createStaticProviders({ config, planHandle: 'starter' }),
         storage,
       });
@@ -97,7 +97,7 @@ describe('BrowserRuntime', () => {
       const runtime = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: config,
+        playbook: config,
         providers: createStaticProviders({ config, planHandle: 'starter' }),
       });
 
@@ -108,7 +108,7 @@ describe('BrowserRuntime', () => {
       const runtime = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: config,
+        playbook: config,
         providers: createStaticProviders({ config, planHandle: 'starter' }),
         autoHydrate: false,
       });
@@ -120,7 +120,7 @@ describe('BrowserRuntime', () => {
       const runtime = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: config,
+        playbook: config,
         providers: createStaticProviders({ config, planHandle: 'starter' }),
         autoHydrate: false,
       });
@@ -135,7 +135,7 @@ describe('BrowserRuntime', () => {
       const runtime = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: stagingConfig,
+        playbook: stagingConfig,
         providers: createStaticProviders({ config: stagingConfig, planHandle: 'starter' }),
         autoHydrate: false,
       });
@@ -151,7 +151,7 @@ describe('BrowserRuntime', () => {
       const runtime = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: config,
+        playbook: config,
         providers: createStaticProviders({ config, planHandle: 'starter' }),
       });
 
@@ -162,7 +162,7 @@ describe('BrowserRuntime', () => {
       const runtime = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: config,
+        playbook: config,
         providers: createStaticProviders({ config, planHandle: 'starter' }),
         autoHydrate: false,
       });
@@ -179,7 +179,7 @@ describe('BrowserRuntime', () => {
       const runtime1 = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: config,
+        playbook: config,
         providers: createStaticProviders({ config, planHandle: 'starter' }),
         storage,
       });
@@ -212,7 +212,7 @@ describe('BrowserRuntime', () => {
       const runtime2 = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: config,
+        playbook: config,
         providers: createStaticProviders({ config, planHandle: 'starter' }),
         storage,
       });
@@ -242,7 +242,7 @@ describe('BrowserRuntime', () => {
       const runtime1 = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: config,
+        playbook: config,
         providers: createStaticProviders({ config, planHandle: 'starter' }),
         storage,
       });
@@ -269,7 +269,7 @@ describe('BrowserRuntime', () => {
       const runtime2 = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: config,
+        playbook: config,
         providers: createStaticProviders({ config, planHandle: 'starter' }),
         storage,
       });
@@ -290,7 +290,7 @@ describe('BrowserRuntime', () => {
       const runtime = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: config,
+        playbook: config,
         providers: createStaticProviders({ config, planHandle: 'starter' }),
       });
       await runtime.ready();
@@ -318,7 +318,7 @@ describe('BrowserRuntime', () => {
       const runtime = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: config,
+        playbook: config,
         providers: createStaticProviders({ config, planHandle: 'pro' }),
       });
       await runtime.ready();
@@ -347,7 +347,7 @@ describe('BrowserRuntime', () => {
       const runtime = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: config,
+        playbook: config,
         providers: createStaticProviders({
           config,
           planHandle: 'pro',
@@ -369,7 +369,7 @@ describe('BrowserRuntime', () => {
       const runtime1 = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: config,
+        playbook: config,
         providers: createStaticProviders({ config, planHandle: 'starter' }),
         storage,
       });
@@ -410,7 +410,7 @@ describe('BrowserRuntime', () => {
       const runtime2 = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: config,
+        playbook: config,
         providers: createStaticProviders({ config, planHandle: 'starter' }),
         storage,
       });
@@ -443,7 +443,7 @@ describe('BrowserRuntime', () => {
       const runtime = new BrowserRuntime({
         tenantId: 'tenant_test',
         userId: 'user_1',
-        exportedConfig: config,
+        playbook: config,
         providers: createStaticProviders({ config, planHandle: 'starter' }),
         storage: new InMemoryStorage(),
       });

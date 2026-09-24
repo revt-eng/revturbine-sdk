@@ -180,7 +180,7 @@ pub fn evaluate_plan_rules<'a>(
 /// `"unlimited"` → `+∞`; finite numeric as-is; non-orderable kinds → neutral
 /// `0` (the deterministic source-order tie-break then applies).
 ///
-/// Takes the structural `{kind, fields}` pair so the ExportedConfig fallback in
+/// Takes the structural `{kind, fields}` pair so the Playbook fallback in
 /// [`super::entitlement_check`] reuses this single source — the §2.6.5 scoring
 /// is never implemented twice.
 ///

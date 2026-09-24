@@ -87,7 +87,7 @@ function sdk(overrides: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomer
   const client = new RevTurbineCustomerSdk({
     tenantId: TENANT,
     apiKey: 'sk_test',
-    ingestPublicKey: 'pub_test',
+    publicKey: 'pub_test',
     endpoint: ENDPOINT,
     mode: 'snippet',
     runtimeMode: 'revturbine_server',

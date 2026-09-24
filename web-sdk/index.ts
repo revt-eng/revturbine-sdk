@@ -119,8 +119,9 @@ export type { SurfaceSlotComponentProps as RTSlotProps } from './placements/Surf
  */
 export type { Playbook } from './generated';
 /**
- * Legacy alias of {@link Playbook} — the pre-plan-139 name for the same config
- * artifact. Prefer `Playbook` in new code.
+ * @deprecated Legacy alias of {@link Playbook} — the pre-plan-139 name for the
+ * same config artifact. `ExportedConfig` is dead vocabulary (BL-0156): use
+ * `Playbook`. Removed in `0.12.0`.
  */
 export type { Playbook as ExportedConfig } from './generated';
 /**

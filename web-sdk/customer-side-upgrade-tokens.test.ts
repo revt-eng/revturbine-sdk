@@ -83,7 +83,7 @@ function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerS
   const sdk = new RevTurbineCustomerSdk({
     tenantId: 'tenant_bl0121',
     apiKey: 'sk_test',
-    ingestPublicKey: 'pub_test',
+    publicKey: 'pub_test',
     environmentId: 'staging',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
@@ -91,7 +91,7 @@ function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerS
     locale: 'en-US',
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
     localRuntime: {
-      exportedConfig: config(),
+      playbook: config(),
       resolvers: {
         getPlacementDecision: async (input) => ({
           placementId: input.placementId,
@@ -167,7 +167,7 @@ describe('BL-0121 — tokens the SDK does not own are left verbatim', () => {
   it('passes an unknown token through for the render lane to resolve', async () => {
     const sdk = makeSdk({
       localRuntime: {
-        exportedConfig: config(),
+        playbook: config(),
         resolvers: {
           getPlacementDecision: async (input) => ({
             placementId: input.placementId,
@@ -195,7 +195,7 @@ describe('BL-0121 — tokens the SDK does not own are left verbatim', () => {
   it('does not treat an Object.prototype key as a token', async () => {
     const sdk = makeSdk({
       localRuntime: {
-        exportedConfig: config(),
+        playbook: config(),
         resolvers: {
           getPlacementDecision: async (input) => ({
             placementId: input.placementId,

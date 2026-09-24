@@ -51,7 +51,7 @@ function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerS
   return new RevTurbineCustomerSdk({
     tenantId: 'tenant_abc',
     apiKey: 'sk_secret_key',
-    ingestPublicKey: 'pub_ingest_key',
+    publicKey: 'pub_ingest_key',
     environmentId: 'staging',
     endpoint: 'https://edge.example.com',
     mode: 'snippet',
@@ -124,11 +124,15 @@ describe('web-SDK clickstream ingest → /api/track', () => {
     expect(calls.some((c) => c.url.includes('/api/telemetry'))).toBe(false);
   });
 
-  it('falls back to apiKey for auth when no ingestPublicKey is configured', async () => {
-    const sdk = makeSdk({ ingestPublicKey: undefined });
+  it('does NOT fall back to apiKey for auth when no publicKey is configured (BL-0113)', async () => {
+    // Until 0.11.0 this sent the SERVER key as the browser bearer. Plan 257
+    // deprecated that alias in 0.10.0 and promised removal one minor later;
+    // BL-0113 is that removal, so the bearer is now empty rather than a secret.
+    const sdk = makeSdk({ publicKey: undefined });
     await sdk.capture('feature_used', {}, { immediate: true });
     const headers = trackCall().init.headers as Record<string, string>;
-    expect(headers.authorization).toBe('Bearer sk_secret_key');
+    expect(headers.authorization).not.toContain('sk_secret_key');
+    expect(headers.authorization).toBe('Bearer ');
   });
 
   it.each([

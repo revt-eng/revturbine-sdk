@@ -42,7 +42,7 @@ function sdk(): RevTurbineCustomerSdk {
     runtimeMode: 'local_only',
     locale: 'en-US',
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
-    localRuntime: { exportedConfig: config() },
+    localRuntime: { playbook: config() },
   });
   instance.identify('user_1', { plan_handle: 'free', custom: { stage: 'startup' } });
   return instance;

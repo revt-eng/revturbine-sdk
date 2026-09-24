@@ -53,7 +53,7 @@ Creates a fully-initialized session. Handles:
 
 1. SDK initialization
 2. User identification (if `options.user.id` is provided)
-3. Theme resolution (from ExportedConfig or API)
+3. Theme resolution (from the Playbook or API)
 4. Placement bootstrapping (optional preloaded decisions)
 
 ```ts

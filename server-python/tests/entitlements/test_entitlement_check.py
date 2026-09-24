@@ -34,7 +34,7 @@ def _derive(cfg: dict[str, Any], handle: str, **kw: Any) -> Any:
         segment_ids=kw.get("segment_ids", set()),
         usage_balances=kw.get("usage_balances", {}),
         user_usage=kw.get("user_usage"),
-        exported_config=cfg,
+        playbook=cfg,
     )
 
 

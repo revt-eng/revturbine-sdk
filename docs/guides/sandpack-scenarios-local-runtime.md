@@ -8,7 +8,7 @@ This guide documents the scenario-per-page Sandpack setup under:
 
 Demonstrate the easiest wiring path for each scenario using the same local runtime shape used by the Next app demo:
 
-- `localRuntime.exportedConfig`
+- `localRuntime.playbook`
 - `SurfaceSlotComponent`
 - `sdk.setUserContext(...)`
 
@@ -79,7 +79,7 @@ Provider options are initialized once and keep parity with demo local mode:
 ```tsx
 const options = {
   localRuntime: {
-    exportedConfig,
+    playbook,
   },
   uiPathResolvers: {
     navigate_to_plans: async () => {},

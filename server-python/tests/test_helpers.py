@@ -15,7 +15,7 @@ import pytest
 from revturbine.core.helpers import (
     LocalLookupParts,
     category_bucket,
-    configured_plan_name_from_exported_config,
+    configured_plan_name_from_playbook,
     ensure_array,
     first_string_value,
     is_modal_safe_surface_type,
@@ -25,9 +25,9 @@ from revturbine.core.helpers import (
     normalize_event_type,
     normalized_route,
     parse_cap_rule,
-    parse_exported_config_or_throw,
     parse_local_lookup_key,
     parse_numberish,
+    parse_playbook_or_throw,
     period_window_start,
     placement_matches_plan_target,
     placement_priority,
@@ -679,7 +679,7 @@ class TestUsageAmountsFromEntries:
         assert usage_amounts_from_entries({}) == {}
 
 
-# ── configured_plan_name_from_exported_config (batch 2) ──────────────────────
+# ── configured_plan_name_from_playbook (batch 2) ──────────────────────
 
 
 class TestConfiguredPlanNameFromExportedConfig:
@@ -698,40 +698,40 @@ class TestConfiguredPlanNameFromExportedConfig:
         # never a matching identity. The old test asserted the opposite - it
         # was pinning the pre-plan-120 body this port carried while the
         # function had no callers (plan 234 TASK-8b).
-        assert configured_plan_name_from_exported_config(config, "plan_pro") is None
+        assert configured_plan_name_from_playbook(config, "plan_pro") is None
 
     def test_match_by_handle(self, config: dict[str, Any]) -> None:
-        assert configured_plan_name_from_exported_config(config, "pro") == "Pro"
+        assert configured_plan_name_from_playbook(config, "pro") == "Pro"
 
     def test_match_by_handle_case_insensitive(self, config: dict[str, Any]) -> None:
-        assert configured_plan_name_from_exported_config(config, "PRO") == "Pro"
+        assert configured_plan_name_from_playbook(config, "PRO") == "Pro"
 
     def test_id_suffix_never_matches(self, config: dict[str, Any]) -> None:
         # The `_handle` suffix fallback was pre-plan-120 tolerance; the
         # canonical matches the handle exactly. ("team" DOES match here -
         # via unique_handle, not via the "plan_team" suffix.)
-        assert configured_plan_name_from_exported_config(config, "team") == "Team"
-        assert configured_plan_name_from_exported_config(config, "plan_team") is None
+        assert configured_plan_name_from_playbook(config, "team") == "Team"
+        assert configured_plan_name_from_playbook(config, "plan_team") is None
 
     def test_plan_object_resolves_nothing(self, config: dict[str, Any]) -> None:
         # The plan OBJECT is display metadata; callers pass the identity via
         # plan_identity_from_context. An object here resolves nothing.
-        assert configured_plan_name_from_exported_config(config, {"id": "plan_pro"}) is None
-        assert configured_plan_name_from_exported_config(config, {"handle": "pro"}) is None
+        assert configured_plan_name_from_playbook(config, {"id": "plan_pro"}) is None
+        assert configured_plan_name_from_playbook(config, {"handle": "pro"}) is None
 
     def test_no_match_returns_none(self, config: dict[str, Any]) -> None:
-        assert configured_plan_name_from_exported_config(config, "missing") is None
+        assert configured_plan_name_from_playbook(config, "missing") is None
 
     def test_no_config_returns_none(self) -> None:
-        assert configured_plan_name_from_exported_config(None, "pro") is None
+        assert configured_plan_name_from_playbook(None, "pro") is None
 
     def test_config_without_plans_array(self) -> None:
-        assert configured_plan_name_from_exported_config({"plans": "not-a-list"}, "pro") is None
+        assert configured_plan_name_from_playbook({"plans": "not-a-list"}, "pro") is None
 
     def test_empty_plan_value(self, config: dict[str, Any]) -> None:
-        assert configured_plan_name_from_exported_config(config, "") is None
-        assert configured_plan_name_from_exported_config(config, "   ") is None
-        assert configured_plan_name_from_exported_config(config, None) is None
+        assert configured_plan_name_from_playbook(config, "") is None
+        assert configured_plan_name_from_playbook(config, "   ") is None
+        assert configured_plan_name_from_playbook(config, None) is None
 
     def test_plan_with_empty_name_falls_through(self) -> None:
         # When the matching plan's name is empty, the function continues
@@ -742,7 +742,7 @@ class TestConfiguredPlanNameFromExportedConfig:
                 {"unique_handle": "pro", "name": "Real Pro"},
             ],
         }
-        assert configured_plan_name_from_exported_config(config, "pro") == "Real Pro"
+        assert configured_plan_name_from_playbook(config, "pro") == "Real Pro"
 
     def test_skips_non_dict_plan_entries(self) -> None:
         config: dict[str, Any] = {
@@ -751,10 +751,10 @@ class TestConfiguredPlanNameFromExportedConfig:
                 {"unique_handle": "pro", "name": "Pro"},
             ],
         }
-        assert configured_plan_name_from_exported_config(config, "pro") == "Pro"
+        assert configured_plan_name_from_playbook(config, "pro") == "Pro"
 
 
-# ── parse_exported_config_or_throw (batch 2) ─────────────────────────────────
+# ── parse_playbook_or_throw (batch 2) ─────────────────────────────────
 
 
 class TestParseExportedConfigOrThrow:
@@ -774,32 +774,32 @@ class TestParseExportedConfigOrThrow:
         }
 
     def test_valid_passes(self, valid_config: dict[str, Any]) -> None:
-        parsed = parse_exported_config_or_throw(valid_config, "test")
+        parsed = parse_playbook_or_throw(valid_config, "test")
         assert parsed is not None
         assert parsed["artifact_type"] == "playbook"
         assert parsed["format_version"] == "1.0.0"
         assert "version" not in parsed
 
     def test_none_returns_none(self) -> None:
-        assert parse_exported_config_or_throw(None, "test") is None
+        assert parse_playbook_or_throw(None, "test") is None
 
     def test_non_dict_raises(self) -> None:
         with pytest.raises(ValueError, match="expected top-level object"):
-            parse_exported_config_or_throw("not-a-dict", "test")
+            parse_playbook_or_throw("not-a-dict", "test")
 
     def test_missing_version_raises(self, valid_config: dict[str, Any]) -> None:
         del valid_config["version"]
         with pytest.raises(ValueError, match='unsupported legacy "version"'):
-            parse_exported_config_or_throw(valid_config, "test")
+            parse_playbook_or_throw(valid_config, "test")
 
     def test_non_string_version_raises(self, valid_config: dict[str, Any]) -> None:
         valid_config["version"] = 1
         with pytest.raises(ValueError, match='unsupported legacy "version"'):
-            parse_exported_config_or_throw(valid_config, "test")
+            parse_playbook_or_throw(valid_config, "test")
 
     def test_missing_exported_at_is_allowed(self, valid_config: dict[str, Any]) -> None:
         del valid_config["exported_at"]
-        assert parse_exported_config_or_throw(valid_config, "test") is not None
+        assert parse_playbook_or_throw(valid_config, "test") is not None
 
     @pytest.mark.parametrize(
         "missing_field",
@@ -816,11 +816,11 @@ class TestParseExportedConfigOrThrow:
     ) -> None:
         valid_config[missing_field] = "not-a-list"
         with pytest.raises(ValueError, match=f'missing array "{missing_field}"'):
-            parse_exported_config_or_throw(valid_config, "test")
+            parse_playbook_or_throw(valid_config, "test")
 
     def test_source_name_in_error(self) -> None:
         with pytest.raises(ValueError, match="Invalid bootstrap-config"):
-            parse_exported_config_or_throw("bad", "bootstrap-config")
+            parse_playbook_or_throw("bad", "bootstrap-config")
 
     def test_canonical_playbook_passes(self, valid_config: dict[str, Any]) -> None:
         del valid_config["version"]
@@ -834,7 +834,7 @@ class TestParseExportedConfigOrThrow:
                 "experiments": [],
             }
         )
-        assert parse_exported_config_or_throw(valid_config, "test") == valid_config
+        assert parse_playbook_or_throw(valid_config, "test") == valid_config
 
     def test_future_canonical_version_rejects_without_legacy_fallback(
         self, valid_config: dict[str, Any]
@@ -846,13 +846,13 @@ class TestParseExportedConfigOrThrow:
             }
         )
         with pytest.raises(ValueError, match='unsupported "format_version"'):
-            parse_exported_config_or_throw(valid_config, "test")
+            parse_playbook_or_throw(valid_config, "test")
 
     def test_legacy_projection_warning(self, valid_config: dict[str, Any]) -> None:
         valid_config.update({"slot_configs": [], "content_overrides": {}})
 
         with pytest.warns(DeprecationWarning, match="slot_configs, content_overrides"):
-            parse_exported_config_or_throw(valid_config, "test")
+            parse_playbook_or_throw(valid_config, "test")
 
 
 # ── placement_score / placement_priority / proximity_score / server_order ───

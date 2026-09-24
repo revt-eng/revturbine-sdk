@@ -98,7 +98,7 @@ def _config() -> dict[str, Any]:
 def test_public_catalog_methods_apply_specificity() -> None:
     sdk = RevTurbineCustomerSdk(
         user_context={"tenant_id": "tenant", "user_id": "user", "segment_ids": ["startup"]},
-        exported_config=_config(),
+        playbook=_config(),
     )
     assert [item["variation_handle"] for item in sdk.get_eligible_plans()] == [
         "free_default",

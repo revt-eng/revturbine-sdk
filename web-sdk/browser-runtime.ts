@@ -14,8 +14,8 @@
  * const runtime = new BrowserRuntime({
  *   tenantId: 'tenant_abc',
  *   userId: 'user_123',
- *   exportedConfig: myConfig,
- *   providers: createStaticProviders({ config: myConfig, planHandle: 'pro' }),
+ *   playbook: myPlaybook,
+ *   providers: createStaticProviders({ config: myPlaybook, planHandle: 'pro' }),
  * });
  *
  * // State survives page reloads — impressions, dismissals, and caps
@@ -38,17 +38,16 @@ import {
   type ConfigArtifact,
 } from './config-artifact';
 import { normalizeEnvironmentId } from './environment';
+import { requirePlaybookOption } from './playbook-option';
 
 /* ------------------------------------------------------------------ */
 /*  Options                                                            */
 /* ------------------------------------------------------------------ */
 
-export interface BrowserRuntimeOptions extends Omit<
+type BrowserRuntimeOptionsBase = Omit<
   LocalRuntimeOptions,
-  'storage' | 'impressionStore' | 'exportedConfig'
-> {
-  /** Canonical Playbook or deprecated RevTurbineConfig input. */
-  exportedConfig: ConfigArtifact;
+  'storage' | 'impressionStore' | 'exportedConfig' | 'playbook'
+> & {
 
   /** Target fallback for legacy configs. Omitted or blank resolves to `production`. */
   environmentId?: string;
@@ -72,7 +71,34 @@ export interface BrowserRuntimeOptions extends Omit<
    * Default: true.
    */
   autoHydrate?: boolean;
-}
+};
+
+/**
+ * Options for {@link BrowserRuntime}.
+ *
+ * Exactly one of `playbook` (canonical) or `exportedConfig` (deprecated) is
+ * required — the union keeps that a compile-time requirement, exactly as the
+ * single required `exportedConfig` property did before the rename (BL-0156).
+ */
+export type BrowserRuntimeOptions = BrowserRuntimeOptionsBase &
+  (
+    | {
+        /** The Playbook this runtime evaluates against. */
+        playbook: ConfigArtifact;
+        /** @deprecated Use `playbook`. Removed in `0.12.0`. */
+        exportedConfig?: ConfigArtifact;
+      }
+    | {
+        /** The Playbook this runtime evaluates against. */
+        playbook?: ConfigArtifact;
+        /**
+         * @deprecated Renamed to `playbook` — `Playbook` is the canonical name
+         * for the artifact (BL-0156). Still fully supported: pass either one.
+         * When both are supplied `playbook` wins. Removed in `0.12.0`.
+         */
+        exportedConfig: ConfigArtifact;
+      }
+  );
 
 /* ------------------------------------------------------------------ */
 /*  BrowserRuntime                                                     */
@@ -82,21 +108,29 @@ export class BrowserRuntime extends LocalRuntime {
   private readonly _hydratePromise: Promise<void> | null;
 
   constructor(options: BrowserRuntimeOptions) {
+    // One resolver, so `playbook` vs the deprecated `exportedConfig` cannot be
+    // decided differently here than anywhere else in the SDK.
+    const rawConfig = requirePlaybookOption(options, 'BrowserRuntime');
     const {
-      exportedConfig: rawConfig,
+      playbook: _playbook,
+      exportedConfig: _exportedConfig,
       environmentId,
       ...runtimeOptions
-    } = options;
-    const exportedConfig = configArtifactForRuntime(
+    } = options as BrowserRuntimeOptionsBase & {
+      playbook?: ConfigArtifact;
+      exportedConfig?: ConfigArtifact;
+      environmentId?: string;
+    };
+    const playbook = configArtifactForRuntime(
       rawConfig,
-      'BrowserRuntime.exportedConfig',
+      'BrowserRuntime.playbook',
       {
         tenantId: options.tenantId,
         environmentId: normalizeEnvironmentId(environmentId),
       },
     );
-    if (!exportedConfig) {
-      throw new Error('BrowserRuntime requires exportedConfig');
+    if (!playbook) {
+      throw new Error('BrowserRuntime requires a playbook');
     }
     const storage = resolvePersistentStorage(options.storage);
 
@@ -108,12 +142,10 @@ export class BrowserRuntime extends LocalRuntime {
 
     super({
       ...runtimeOptions,
-      // Canonical option name in `@revt-eng/core` 0.1.330+ (scaffold #380).
-      // The deprecated `exportedConfig` alias still resolves, but it emits a
-      // one-time console deprecation warning — which a host that supplied no
-      // key and expected a silent init would see. `BrowserRuntimeOptions`
-      // keeps its public `exportedConfig` name; renaming that is BL-0156.
-      playbook: exportedConfig,
+      // `playbook` is the canonical LocalRuntimeOptions key as of
+      // @revt-eng/core 0.1.330; passing `exportedConfig` here would trip
+      // core's own one-time deprecation warning on every BrowserRuntime.
+      playbook,
       storage,
       impressionStore,
     });

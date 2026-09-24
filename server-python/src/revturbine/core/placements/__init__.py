@@ -13,6 +13,7 @@ from revturbine.core.placements.local_resolver import (
     ExportedConfig,
     LocalPlacementDataset,
     LocalPlacementEntry,
+    Playbook,
     create_static_placement_resolver,
 )
 from revturbine.core.placements.payload_resolution import (
@@ -64,6 +65,7 @@ __all__ = [
     # local_resolver
     "BUILT_IN_TEMPLATE_COMPONENT_TYPES",
     "DEFAULT_TEMPLATE_COMPONENT_TYPES",
+    "Playbook",
     "ExportedConfig",
     "LocalPlacementDataset",
     "LocalPlacementEntry",

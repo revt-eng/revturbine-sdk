@@ -2,7 +2,7 @@
 @revt-eng/placements/controllers/local-resolver.ts.
 
 Builds a sync :data:`PlacementResolver` from a static dataset
-(``ExportedConfig`` + a placement list). Decides locally without a
+(a ``Playbook`` + a placement list). Decides locally without a
 server: plan-target filtering, slot-metadata narrowing, impression-
 history suppression, usage-token injection, and content token
 interpolation.
@@ -11,7 +11,7 @@ Per Q-5 the resolver is sync (the TS source is ``async`` only because
 its signature allows ``Promise``; the body has no awaits). HTTP-mode
 async resolution would add an ``aresolve`` variant in TASK-7.
 
-``ExportedConfig`` / placement entries stay loosely typed
+``Playbook`` / placement entries stay loosely typed
 (``dict[str, Any]``) — the strongly-typed Pydantic models would couple
 this module to the generated ``revturbine_types`` package, which
 server-python doesn't vendor until TASK-7. The parity suite
@@ -62,8 +62,10 @@ from revturbine.core.placements.trial_gating import (
 from revturbine.core.rules.plan_eligibility import evaluate_plan_eligibility
 from revturbine.core.rules.segment_eligibility import evaluate_segment_eligibility
 from revturbine.core.state.impression_history import ImpressionHistory
+from revturbine.playbook_option import require_playbook_option
 
 __all__ = [
+    "Playbook",
     "ExportedConfig",
     "LocalPlacementDataset",
     "LocalPlacementEntry",
@@ -71,7 +73,9 @@ __all__ = [
 ]
 
 # Loose aliases — tightened to generated Pydantic models in TASK-7.
-ExportedConfig = dict[str, Any]
+Playbook = dict[str, Any]
+#: Deprecated spelling of :data:`Playbook` (BL-0156). Removed in ``0.12.0``.
+ExportedConfig = Playbook
 LocalPlacementEntry = dict[str, Any]
 
 
@@ -351,7 +355,7 @@ def _is_finite_number(value: Any) -> bool:
 
 
 def _build_json_content_provider(
-    exported_config: ExportedConfig,
+    playbook: Playbook,
     dataset: LocalPlacementDataset,
 ) -> PlacementContentLookupProvider | None:
     """Python port of local-resolver.ts ``buildJsonContentProvider`` (plan 77).
@@ -368,8 +372,8 @@ def _build_json_content_provider(
 
     Source: local-resolver.ts buildJsonContentProvider
     """
-    message_blocks = exported_config.get("message_blocks")
-    studio_payloads = exported_config.get("placement_payloads")
+    message_blocks = playbook.get("message_blocks")
+    studio_payloads = playbook.get("placement_payloads")
     if not isinstance(message_blocks, list) or not message_blocks:
         return None
     if not isinstance(studio_payloads, list) or not studio_payloads:
@@ -437,18 +441,23 @@ def _build_json_content_provider(
     return create_static_placement_content_lookup_provider(
         payloads=payloads,
         message_blocks=message_blocks,
-        ui_paths=exported_config.get("content_ui_paths"),
-        promotions=exported_config.get("content_promotions"),
-        tokens=exported_config.get("personalization_tokens"),
+        ui_paths=playbook.get("content_ui_paths"),
+        promotions=playbook.get("content_promotions"),
+        tokens=playbook.get("personalization_tokens"),
     )
 
 
 def create_static_placement_resolver(
     placements: LocalPlacementDataset,
-    exported_config: ExportedConfig,
+    playbook: Playbook | None = None,
     impression_history: ImpressionHistory | None = None,
+    *,
+    exported_config: Playbook | None = None,
 ) -> PlacementResolver:
     """Create a placement resolver from a static dataset.
+
+    ``playbook`` is canonical; the keyword-only ``exported_config`` is the
+    deprecated spelling kept for one minor (BL-0156), removed in ``0.12.0``.
 
     Supports plan-target filtering from payload targets, token
     interpolation from payload content, usage-token injection from the
@@ -457,8 +466,13 @@ def create_static_placement_resolver(
 
     Source: local-resolver.ts:129-449
     """
+    # One resolver, so `playbook` vs the deprecated `exported_config` cannot be
+    # decided differently here than anywhere else (BL-0156).
+    playbook = require_playbook_option(
+        playbook, exported_config, "create_static_placement_resolver"
+    )
     template_to_surface: dict[str, str] = {**BUILT_IN_TEMPLATE_COMPONENT_TYPES}
-    for template in exported_config.get("surface_templates") or []:
+    for template in playbook.get("surface_templates") or []:
         if is_record(template):
             surface_type_value = template.get("surface_type")
             if isinstance(surface_type_value, str):
@@ -471,7 +485,7 @@ def create_static_placement_resolver(
                 template_to_surface[template["id"]] = component_type
 
     plan_handle_to_id: dict[str, str] = {}
-    for plan in exported_config.get("plans") or []:
+    for plan in playbook.get("plans") or []:
         if is_record(plan):
             # Resolve by handle: the canonical Playbook (post plan-120, and every
             # `bundle_to_playbook` output) is handle-only — no separate `id`. Fall
@@ -482,7 +496,7 @@ def create_static_placement_resolver(
     # authored ``tier_definitions`` (array order = rank). Handles only — the
     # gate ranks by handle. Source: local-resolver.ts readJsonCandidates.
     tier_ladders_by_handle: dict[str, list[str]] = {}
-    for ent in exported_config.get("entitlements") or []:
+    for ent in playbook.get("entitlements") or []:
         if not is_record(ent):
             continue
         defs = ent.get("tier_definitions")
@@ -498,14 +512,14 @@ def create_static_placement_resolver(
     # (Kent 2026-09-23) so every use below reads `dataset["placements"]`.
     dataset: LocalPlacementDataset = placements
 
-    config_version = exported_config.get("format_version") or exported_config.get("version")
+    config_version = playbook.get("format_version") or playbook.get("version")
 
     # Content-linked content provider (plan 77). Built once per resolver from
     # the config's content-linked payloads + message blocks. When present, the
     # selected candidate's display copy is resolved against the user's segments
     # at decision time; when absent, candidates keep their inline surface
     # content.
-    content_provider = _build_json_content_provider(exported_config, dataset)
+    content_provider = _build_json_content_provider(playbook, dataset)
 
     # ── Index: template_id → candidate outputs (sorted by entry order) ──
     outputs_by_template: dict[str, list[_CandidateOutput]] = {}
@@ -901,7 +915,7 @@ def create_static_placement_resolver(
             # path), then fall back to input.placementId. The fallback lets
             # callers resolve placements directly by id without prior
             # `register_placement` — every placement comes from
-            # `exported_config.placements`. Plan 43 TASK-12.
+            # `playbook.placements`. Plan 43 TASK-12.
             name = placement.get("name") if is_record(placement) else None
             # BL-0122: a name maps to EVERY payload of the entry, in authored
             # order. Each is gated independently and the first one this user is

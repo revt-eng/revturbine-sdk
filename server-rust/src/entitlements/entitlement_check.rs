@@ -233,10 +233,10 @@ pub struct LocalEntitlementInput<'a> {
 #[must_use]
 pub fn derive_local_entitlement_from_configured_rules(
     input: &LocalEntitlementInput,
-    exported_config: &Value,
+    playbook: &Value,
 ) -> Option<EntitlementCheckResult> {
     let empty: Vec<Value> = Vec::new();
-    let entitlements = exported_config
+    let entitlements = playbook
         .get("entitlements")
         .and_then(Value::as_array)
         .unwrap_or(&empty);
@@ -261,7 +261,7 @@ pub fn derive_local_entitlement_from_configured_rules(
     // only the collapsed form reports the actual cause (plan 194 REQ-1).
     let normalized_plan_handle = input.current_plan_handle.trim().to_lowercase();
 
-    let plans = exported_config
+    let plans = playbook
         .get("plans")
         .and_then(Value::as_array)
         .unwrap_or(&empty);
@@ -306,7 +306,7 @@ pub fn derive_local_entitlement_from_configured_rules(
         ));
     };
 
-    let rules = exported_config
+    let rules = playbook
         .get("entitlement_rules")
         .and_then(Value::as_array)
         .unwrap_or(&empty);
@@ -315,7 +315,7 @@ pub fn derive_local_entitlement_from_configured_rules(
     // call. Segments missing a dimension fall into `__no_dim__` inside the
     // matcher, preserving flat-OR back-compat for pre-PR-B exports.
     let mut segment_dimensions: HashMap<String, String> = HashMap::new();
-    if let Some(segments) = exported_config.get("segments").and_then(Value::as_array) {
+    if let Some(segments) = playbook.get("segments").and_then(Value::as_array) {
         for seg in segments {
             // Plan 234 TASK-2: keyed by HANDLE, matching the TS canonical.
             // Rule `segment_ids` are handle-valued (plan 120 TASK-4); keying

@@ -274,7 +274,7 @@ class TestSdkEvaluateTrialStatus:
     def test_reads_free_trial_rules_from_config(self) -> None:
         sdk = RevTurbineCustomerSdk(
             user_context={"tenant_id": "t", "user_id": "u"},
-            exported_config=self._config(free_trial_rules=[_free_rule()]),
+            playbook=self._config(free_trial_rules=[_free_rule()]),
         )
         result = sdk.evaluate_trial_status(instances=[_instance()], now_iso="2026-05-08T00:00:00Z")
         assert result["trial"] is not None
@@ -285,7 +285,7 @@ class TestSdkEvaluateTrialStatus:
     def test_reverse_grants_from_config(self) -> None:
         sdk = RevTurbineCustomerSdk(
             user_context={"tenant_id": "t", "user_id": "u"},
-            exported_config=self._config(reverse_trial_rules=[_reverse_rule()]),
+            playbook=self._config(reverse_trial_rules=[_reverse_rule()]),
         )
         result = sdk.evaluate_trial_status(
             instances=[
@@ -306,7 +306,7 @@ class TestSdkEvaluateTrialStatus:
     def test_no_config_rules_returns_none(self) -> None:
         sdk = RevTurbineCustomerSdk(
             user_context={"tenant_id": "t", "user_id": "u"},
-            exported_config=self._config(),
+            playbook=self._config(),
         )
         result = sdk.evaluate_trial_status(instances=[], now_iso="2026-05-08T00:00:00Z")
         assert result == {"trial": None, "reverse_grants": None}

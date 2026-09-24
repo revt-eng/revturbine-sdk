@@ -66,7 +66,7 @@ describe('RevTurbineProvider identify context (options.user.id)', () => {
     await mount({
       tenantId: 'tenant_identify_ctx',
       apiKey: 'sk_test',
-      ingestPublicKey: 'pub_test',
+      publicKey: 'pub_test',
       environmentId: 'staging',
       endpoint: 'https://edge.example.com',
       mode: 'react',
