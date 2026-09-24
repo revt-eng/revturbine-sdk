@@ -54,9 +54,9 @@ fix rather than telling you something is wrong somewhere.
 
 If both lists are empty, `configAvailable` is `true`, targeting matches the
 user, and the placement still does not render — stop. That is a correct
-configuration producing silence, which is not a configuration problem. See
-[the escalation conditions](https://revturbine.com/docs/) in
-`revturbine-verify-integration`, and report it rather than working around it.
+configuration producing silence, which is not a configuration problem.
+[Open an issue](https://github.com/revt-eng/revturbine-sdk/issues/new) with the
+diagnostics output above and the SDK version, rather than working around it.
 
 Requires `@revturbine/sdk` 0.8.0 or newer.
 

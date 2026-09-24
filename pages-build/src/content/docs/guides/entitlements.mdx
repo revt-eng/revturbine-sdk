@@ -63,9 +63,11 @@ Entitlements define what users can do based on their plan. The SDK evaluates ent
 
 ## Checking Entitlements
 
+**One rule, every surface.** The verdict is `allowed` on an `EntitlementResult` — `rt.can()`, `useEntitlement().result`, the server re-check — and `can` on the `useCan` hook, which is `resolved && !denied` and so also covers the moment before the first answer arrives. `status` is the shape of the answer, never the verdict: `limited` appears on both sides of `allowed`.
+
 ### React Hook — `useCan`
 
-The simplest reactive check. `useCan(handle)` returns `{ can, limited, result }`. **`can` is the verdict**: `resolved && !denied`, where denied means `status === 'denied' || allowed === false`. A `limited` result that still grants (`allowed: true`) keeps `can` true; a `limited` result that denies is a deny. Gate on `!can`, never `!allowed`:
+The simplest reactive check. `useCan(handle)` returns `{ can, limited, result }`. **`can` is the verdict**: `resolved && !denied`, where denied means `status === 'denied' || allowed === false`. A `limited` result that still grants (`allowed: true`) keeps `can` true; a `limited` result that denies is a deny. Gate on `!can` — it folds in "not yet resolved", which `result.allowed` alone cannot:
 
 <LiveExample code={canCode} />
 

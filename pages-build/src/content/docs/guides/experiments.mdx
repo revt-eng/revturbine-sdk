@@ -1,6 +1,6 @@
 ---
-title: Use Experiment Assignments
-description: Inject an initialized GrowthBook or Optimizely client, normalize its variant assignments into RevTurbine, and use the same assignment for decisions and telemetry.
+title: Run an Experiment
+description: Let RevTurbine assign variants natively, or bring the assignment your GrowthBook or Optimizely client already made — either way, decisions, placements and telemetry read the same assignment.
 sidebar:
   order: 9
 ---
@@ -29,13 +29,40 @@ SDK.
 
 <Steps>
 
-1. In the experiment editor, choose **Customer SDK provider** as the assignment source.
-2. Initialize the vendor SDK using its normal client-side configuration.
-3. Create a RevTurbine adapter with explicit experiment and variant mappings.
-4. Pass the adapter in `domainProviders` when initializing RevTurbine.
-5. Use `getExperimentVariant()` when application code needs the selected variant directly; RevTurbine decisions and telemetry already use the same assignment.
+1. In the experiment editor, choose the assignment source: **native** (RevTurbine assigns) or **Customer SDK provider** (your vendor SDK assigns).
+2. Native: register the built-in bucketer (next section). Vendor: initialize the vendor SDK as usual and create a RevTurbine adapter with explicit experiment and variant mappings.
+3. Pass the provider in `domainProviders` when initializing RevTurbine.
+4. Use `getExperimentVariant()` when application code needs the selected variant directly; RevTurbine decisions and telemetry already use the same assignment.
 
 </Steps>
+
+## Native allocation
+
+No vendor SDK needed. Register the built-in bucketer as a domain provider. It assigns deterministically per subject, so the same user lands in the same arm on every load, and everything downstream — targeting, placements, `getExperimentVariant()`, telemetry — reads that one assignment.
+
+```ts
+import { initRevTurbine, createBasicExperimentProvider } from '@revturbine/sdk';
+
+const rt = initRevTurbine({
+  tenantId: 'tenant_abc',
+  apiKey: 'rtk_…', // publishable ingest key
+  endpoint: 'https://revturbine.com/app',
+  mode: 'snippet',
+  domainProviders: [
+    createBasicExperimentProvider({
+      subject: () => currentUserId, // re-read on every resolve
+      experiments: {
+        pricing_test: { variants: { control: 1, treatment: 1 } }, // relative weights
+        onboarding_copy: { variants: ['a', 'b'], exposure: 0.2 }, // 20% enrolled
+      },
+    }),
+  ],
+});
+```
+
+A subject outside `exposure` is **not enrolled** — the experiment is simply absent from their assignment, which is different from being in control. No stable subject, no assignment: bucketing an anonymous id would hand the same person a different arm on the next load.
+
+An allocation authored in the dashboard — an Experiment version with its handle, traffic allocation and weighted variants — drives `createNativeExperimentAssignmentProvider` instead, which also emits the assignment fact that ties results back to that version. See the API reference for its options.
 
 ## GrowthBook
 
