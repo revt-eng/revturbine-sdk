@@ -47,6 +47,39 @@ also require a changelog entry.
 
 ---
 
+## 0.11.4
+
+### The treatment-interaction wire record now carries `rule_handle` (BL-0200)
+
+**What changed.** `flushInteractionQueue`'s projection onto
+`POST /api/events/interactions` now includes `rule_handle`, taken from the same
+`ruleHandle` on `RevTurbineTreatmentInteractionInput` that 0.11.3 began stamping
+on the `placement_interaction` clickstream event.
+
+0.11.3 deliberately kept it off this record, and #530 asserted the omission with
+a "never reaches the treatment-interaction wire record" test. The reasoning was
+that the clickstream carries payload fields inside a JSON column — readable the
+moment a producer sends them — while this record is column-shaped
+(`placement_presentations`) and a new key needed a datasource migration.
+
+The migration has since landed (revturbine-web ledger 015 added
+`placement_exposure_attribution.rule_handle`), and the field is now declared on
+`TreatmentInteractionInputSchema` (`revturbine-scaffold#394`, published as
+`@revt-eng/*` v0.1.342). Sending it lets the app record the rule an exposure was
+**decided by**, on the base exposure row, instead of waiting for the attribution
+worker to reconstruct one from the clickstream when a conversion lands — which
+is what makes presentation-grain analytics cuts per rule honest rather than
+computed over the converted subset.
+
+**Nothing to change in your integration.** `ruleHandle` was already public and
+already populated by every `PlacementController` path; this only widens where the
+value is sent. Spread, not set: the key is **absent** when no decision was in
+scope. The contract accepts an explicit `null` for "a rule was selected and none
+matched", but the SDK cannot distinguish that from "no decision in scope" —
+`PlacementOutput.rule_id` is simply missing in both — so it asserts neither.
+
+**No `@public` surface moved**, hence a patch release.
+
 ## 0.11.3
 
 ### `placement_interaction` now carries `rule_handle` (BL-0182)
