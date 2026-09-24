@@ -6,6 +6,6 @@
     "declaration": false,
     "declarationMap": false
   },
-  "include": ["**/*.test-d.ts", "customer-side.ts"],
+  "include": ["**/*.test-d.ts", "customer-side.ts", "playbook-deprecation-arms.fixture.ts"],
   "exclude": ["dist", "node_modules"]
 }

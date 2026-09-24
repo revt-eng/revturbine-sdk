@@ -1537,7 +1537,10 @@ export type RevTurbineInitOptionsStrict =
       localRuntime: RevTurbineLocalRuntimeOptions &
         (
           | { playbook: ConfigArtifact }
-          | { exportedConfig: ConfigArtifact }
+          | {
+              /** @deprecated Use `playbook` — the canonical key for the same artifact. */
+              exportedConfig: ConfigArtifact;
+            }
         );
       uiPathResolvers: RevTurbineUiPathResolverMap;
     })
@@ -1595,6 +1598,7 @@ export function createLocalRuntimeConfig<const TUiPaths extends readonly unknown
               | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
           }
         | {
+            /** @deprecated Use `playbook` — the canonical key for the same artifact. */
             exportedConfig:
               | (Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths })
               | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
@@ -1645,6 +1649,7 @@ export function createStrictLocalRuntimeConfig<const TUiPaths extends readonly u
               | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
           }
         | {
+            /** @deprecated Use `playbook` — the canonical key for the same artifact. */
             exportedConfig:
               | (Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths })
               | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });

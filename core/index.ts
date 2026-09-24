@@ -96,7 +96,15 @@ export type {
 
 // ---- Segment evaluation ----
 export { evaluateSegments } from './evaluation/segments';
-export type { Trait, ExportedConfigSegmentsItem, ExportedConfigSegmentsItemPredicatesItem } from './evaluation/segments';
+export type { Trait, PlaybookSegmentsItem, PlaybookSegmentsItemPredicatesItem } from './evaluation/segments';
+// BL-0165: the `ExportedConfig` spellings of the two above. Both names are
+// generated from the same scaffold schema object, so they are the same type —
+// not merely structurally equal. Deprecated in 0.11.1; removed in 0.12.0
+// (BL-0167), the same window as the option/method aliases.
+/** @deprecated Use `PlaybookSegmentsItem`. Removed in 0.12.0 (BL-0167). */
+export type { ExportedConfigSegmentsItem } from './evaluation/segments';
+/** @deprecated Use `PlaybookSegmentsItemPredicatesItem`. Removed in 0.12.0 (BL-0167). */
+export type { ExportedConfigSegmentsItemPredicatesItem } from './evaluation/segments';
 
 // ---- Rules evaluation ----
 export {

@@ -33,6 +33,7 @@
     "**/*.stories.tsx",
     "harness",
     "playground",
-    "tsup.config.ts"
+    "tsup.config.ts",
+    "playbook-deprecation-arms.fixture.ts"
   ]
 }

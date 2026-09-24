@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.332/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.335/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -2483,6 +2483,37 @@ class PlaybookHeader(BaseModel):
     schema_version: constr(min_length=1) | None = None
     bundle_schema_version: conint(ge=0, le=9007199254740991) | None = None
     bundle_min_readable_schema_version: conint(ge=0, le=9007199254740991) | None = None
+
+
+class PlaybookSegmentsItemPredicatesItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    field: constr(min_length=1)
+    operator: Operator
+    value: str
+
+
+class PlaybookUiPathActionType(Enum):
+    open_checkout_modal = "open_checkout_modal"
+    navigate_to_plans = "navigate_to_plans"
+    open_upgrade_modal = "open_upgrade_modal"
+    open_placement = "open_placement"
+    book_demo = "book_demo"
+    open_feature_tour = "open_feature_tour"
+    extend_trial = "extend_trial"
+    switch_billing_period = "switch_billing_period"
+    custom_url = "custom_url"
+    dismiss = "dismiss"
+    contact_sales = "contact_sales"
+    complete_onboarding = "complete_onboarding"
+    invite_teammate = "invite_teammate"
+    refer_friend = "refer_friend"
+    verify_work_email = "verify_work_email"
+    update_payment_method = "update_payment_method"
+    enable_auto_renewal = "enable_auto_renewal"
+    manage_subscription = "manage_subscription"
+    snooze = "snooze"
 
 
 class PlaybookVersionDeployResult(BaseModel):
@@ -5391,6 +5422,17 @@ class PlanVariation(BaseModel):
     price_source: PriceSource | None = "static"
 
 
+class PlaybookSegmentsItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    name: constr(min_length=1)
+    handle: constr(min_length=1)
+    predicates: list[RevTurbineConfigSegmentsItemPredicatesItem] | None = None
+    dimension_id: str | None = None
+    experiment_handle: constr(min_length=1) | None = None
+
+
 class PlaybookVersionDiff(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -6193,6 +6235,18 @@ class OpportunityCandidate(BaseModel):
     impact: dict[str, Any] | None = None
     suggested_action: dict[str, Any] | None = None
     suggested_experiment: dict[str, Any] | None = None
+
+
+class PlaybookPlacementItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    name: constr(min_length=1)
+    category: RevTurbineConfigPlacementCategory
+    trigger: RevTurbineConfigPlacementTrigger
+    payloads: list[RevTurbineConfigStudioPayload]
+    order: conint(ge=0, le=9007199254740991)
 
 
 class RevTurbineConfigPlacementItem(BaseModel):

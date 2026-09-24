@@ -11,7 +11,8 @@ directly in this repo). The demo's goal is **breadth**:
 showcase as many RevTurbine capabilities as the published contract supports.
 
 Schema references below point at `revturbine-scaffold/src/config/models/schema.ts`
-(`ExportedConfigSchema` and its item schemas) and
+(`PlaybookSchema` and its item schemas — spelled `ExportedConfigSchema` when this
+audit was written; BL-0165 made `Playbook*` the canonical generated name) and
 `revturbine-scaffold/src/core/common.ts` (`EntitlementTypeSchema`).
 
 ## Demonstrated today (TASK-2 / TASK-3)

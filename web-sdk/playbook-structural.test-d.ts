@@ -42,12 +42,12 @@ import fixture from '../tests/parity/fixtures/playbook_dual_read_canonical.json'
 
 /* ── Accepted: the widened JSON import this type exists for ───────────────── */
 
-const fromJsonModule: UnvalidatedConfigArtifact = fixture.exportedConfig;
+const fromJsonModule: UnvalidatedConfigArtifact = fixture.playbook;
 void fromJsonModule;
 
 // The boundary itself, which is what actually matters — the type is only
 // interesting because `initRevTurbine` accepts it.
-initRevTurbine({ tenantId: 't_1', localRuntime: { playbook: fixture.exportedConfig } });
+initRevTurbine({ tenantId: 't_1', localRuntime: { playbook: fixture.playbook } });
 
 /* ── Accepted: the SERVED path is not made harder ─────────────────────────── */
 
@@ -60,7 +60,7 @@ initRevTurbine({ tenantId: 't_1', localRuntime: { playbook: servedArtifact } });
 // Unknown extra keys are fine: a Playbook carries many optional header fields,
 // and new ones must not break an SDK that predates them.
 const withExtraHeaderFields = {
-  ...fixture.exportedConfig,
+  ...fixture.playbook,
   some_future_header_field: 'added by a newer control plane',
 };
 initRevTurbine({ tenantId: 't_1', localRuntime: { playbook: withExtraHeaderFields } });

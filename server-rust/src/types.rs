@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.332/rust/revturbine_types.rs
+//   published/v0.1.335/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -75399,6 +75399,212 @@ impl<'de> ::serde::Deserialize<'de> for PlaybookObjectTenantId {
             })
     }
 }
+#[doc = "`PlaybookPlacementItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"category\","]
+#[doc = "    \"id\","]
+#[doc = "    \"name\","]
+#[doc = "    \"order\","]
+#[doc = "    \"payloads\","]
+#[doc = "    \"trigger\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"category\": {"]
+#[doc = "      \"$ref\": \"#/$defs/RevTurbineConfigPlacementCategory\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"id\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"name\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"order\": {"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"payloads\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"$ref\": \"#/$defs/RevTurbineConfigStudioPayload\""]
+#[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"trigger\": {"]
+#[doc = "      \"$ref\": \"#/$defs/RevTurbineConfigPlacementTrigger\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-context\": \"playbook\","]
+#[doc = "  \"x-revturbine-in-config\": true,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\","]
+#[doc = "  \"x-revturbine-sdk-input\": true,"]
+#[doc = "  \"x-revturbine-source\": \"customer\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PlaybookPlacementItem {
+    pub category: RevTurbineConfigPlacementCategory,
+    pub id: PlaybookPlacementItemId,
+    pub name: PlaybookPlacementItemName,
+    pub order: i64,
+    pub payloads: ::std::vec::Vec<RevTurbineConfigStudioPayload>,
+    pub trigger: RevTurbineConfigPlacementTrigger,
+}
+#[doc = "`PlaybookPlacementItemId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PlaybookPlacementItemId(::std::string::String);
+impl ::std::ops::Deref for PlaybookPlacementItemId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PlaybookPlacementItemId> for ::std::string::String {
+    fn from(value: PlaybookPlacementItemId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PlaybookPlacementItemId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PlaybookPlacementItemId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PlaybookPlacementItemId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PlaybookPlacementItemId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PlaybookPlacementItemId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PlaybookPlacementItemName`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PlaybookPlacementItemName(::std::string::String);
+impl ::std::ops::Deref for PlaybookPlacementItemName {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PlaybookPlacementItemName> for ::std::string::String {
+    fn from(value: PlaybookPlacementItemName) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PlaybookPlacementItemName {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PlaybookPlacementItemName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PlaybookPlacementItemName {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PlaybookPlacementItemName {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PlaybookPlacementItemName {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`PlaybookPlaybookHandle`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -75624,6 +75830,498 @@ impl<'de> ::serde::Deserialize<'de> for PlaybookSchemaVersion {
             .map_err(|e: self::error::ConversionError| {
                 <D::Error as ::serde::de::Error>::custom(e.to_string())
             })
+    }
+}
+#[doc = "`PlaybookSegmentsItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"handle\","]
+#[doc = "    \"name\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"dimension_id\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"experiment_handle\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"handle\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"name\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"predicates\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"$ref\": \"#/$defs/RevTurbineConfigSegmentsItemPredicatesItem\""]
+#[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-context\": \"playbook\","]
+#[doc = "  \"x-revturbine-in-config\": true,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\","]
+#[doc = "  \"x-revturbine-sdk-input\": true,"]
+#[doc = "  \"x-revturbine-source\": \"customer\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PlaybookSegmentsItem {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub dimension_id: ::std::option::Option<::std::string::String>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub experiment_handle: ::std::option::Option<PlaybookSegmentsItemExperimentHandle>,
+    pub handle: PlaybookSegmentsItemHandle,
+    pub name: PlaybookSegmentsItemName,
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub predicates: ::std::vec::Vec<RevTurbineConfigSegmentsItemPredicatesItem>,
+}
+#[doc = "`PlaybookSegmentsItemExperimentHandle`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PlaybookSegmentsItemExperimentHandle(::std::string::String);
+impl ::std::ops::Deref for PlaybookSegmentsItemExperimentHandle {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PlaybookSegmentsItemExperimentHandle> for ::std::string::String {
+    fn from(value: PlaybookSegmentsItemExperimentHandle) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PlaybookSegmentsItemExperimentHandle {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PlaybookSegmentsItemExperimentHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PlaybookSegmentsItemExperimentHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PlaybookSegmentsItemExperimentHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PlaybookSegmentsItemExperimentHandle {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PlaybookSegmentsItemHandle`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PlaybookSegmentsItemHandle(::std::string::String);
+impl ::std::ops::Deref for PlaybookSegmentsItemHandle {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PlaybookSegmentsItemHandle> for ::std::string::String {
+    fn from(value: PlaybookSegmentsItemHandle) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PlaybookSegmentsItemHandle {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PlaybookSegmentsItemHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PlaybookSegmentsItemHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PlaybookSegmentsItemHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PlaybookSegmentsItemHandle {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PlaybookSegmentsItemName`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PlaybookSegmentsItemName(::std::string::String);
+impl ::std::ops::Deref for PlaybookSegmentsItemName {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PlaybookSegmentsItemName> for ::std::string::String {
+    fn from(value: PlaybookSegmentsItemName) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PlaybookSegmentsItemName {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PlaybookSegmentsItemName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PlaybookSegmentsItemName {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PlaybookSegmentsItemName {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PlaybookSegmentsItemName {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PlaybookSegmentsItemPredicatesItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"field\","]
+#[doc = "    \"operator\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"field\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"operator\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"eq\","]
+#[doc = "        \"neq\","]
+#[doc = "        \"gt\","]
+#[doc = "        \"lt\","]
+#[doc = "        \"gte\","]
+#[doc = "        \"lte\","]
+#[doc = "        \"contains\","]
+#[doc = "        \"in\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PlaybookSegmentsItemPredicatesItem {
+    pub field: PlaybookSegmentsItemPredicatesItemField,
+    pub operator: PlaybookSegmentsItemPredicatesItemOperator,
+    pub value: ::std::string::String,
+}
+#[doc = "`PlaybookSegmentsItemPredicatesItemField`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PlaybookSegmentsItemPredicatesItemField(::std::string::String);
+impl ::std::ops::Deref for PlaybookSegmentsItemPredicatesItemField {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PlaybookSegmentsItemPredicatesItemField> for ::std::string::String {
+    fn from(value: PlaybookSegmentsItemPredicatesItemField) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PlaybookSegmentsItemPredicatesItemField {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PlaybookSegmentsItemPredicatesItemField {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PlaybookSegmentsItemPredicatesItemField {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PlaybookSegmentsItemPredicatesItemField {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PlaybookSegmentsItemPredicatesItemField {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PlaybookSegmentsItemPredicatesItemOperator`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"eq\","]
+#[doc = "    \"neq\","]
+#[doc = "    \"gt\","]
+#[doc = "    \"lt\","]
+#[doc = "    \"gte\","]
+#[doc = "    \"lte\","]
+#[doc = "    \"contains\","]
+#[doc = "    \"in\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PlaybookSegmentsItemPredicatesItemOperator {
+    #[serde(rename = "eq")]
+    Eq,
+    #[serde(rename = "neq")]
+    Neq,
+    #[serde(rename = "gt")]
+    Gt,
+    #[serde(rename = "lt")]
+    Lt,
+    #[serde(rename = "gte")]
+    Gte,
+    #[serde(rename = "lte")]
+    Lte,
+    #[serde(rename = "contains")]
+    Contains,
+    #[serde(rename = "in")]
+    In,
+}
+impl ::std::fmt::Display for PlaybookSegmentsItemPredicatesItemOperator {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Eq => f.write_str("eq"),
+            Self::Neq => f.write_str("neq"),
+            Self::Gt => f.write_str("gt"),
+            Self::Lt => f.write_str("lt"),
+            Self::Gte => f.write_str("gte"),
+            Self::Lte => f.write_str("lte"),
+            Self::Contains => f.write_str("contains"),
+            Self::In => f.write_str("in"),
+        }
+    }
+}
+impl ::std::str::FromStr for PlaybookSegmentsItemPredicatesItemOperator {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "eq" => Ok(Self::Eq),
+            "neq" => Ok(Self::Neq),
+            "gt" => Ok(Self::Gt),
+            "lt" => Ok(Self::Lt),
+            "gte" => Ok(Self::Gte),
+            "lte" => Ok(Self::Lte),
+            "contains" => Ok(Self::Contains),
+            "in" => Ok(Self::In),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PlaybookSegmentsItemPredicatesItemOperator {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for PlaybookSegmentsItemPredicatesItemOperator
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PlaybookSegmentsItemPredicatesItemOperator {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
     }
 }
 #[doc = "`PlaybookSignalCatalog`"]
@@ -76686,6 +77384,165 @@ impl<'de> ::serde::Deserialize<'de> for PlaybookTenantId {
             .map_err(|e: self::error::ConversionError| {
                 <D::Error as ::serde::de::Error>::custom(e.to_string())
             })
+    }
+}
+#[doc = "`PlaybookUiPathActionType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"open_checkout_modal\","]
+#[doc = "    \"navigate_to_plans\","]
+#[doc = "    \"open_upgrade_modal\","]
+#[doc = "    \"open_placement\","]
+#[doc = "    \"book_demo\","]
+#[doc = "    \"open_feature_tour\","]
+#[doc = "    \"extend_trial\","]
+#[doc = "    \"switch_billing_period\","]
+#[doc = "    \"custom_url\","]
+#[doc = "    \"dismiss\","]
+#[doc = "    \"contact_sales\","]
+#[doc = "    \"complete_onboarding\","]
+#[doc = "    \"invite_teammate\","]
+#[doc = "    \"refer_friend\","]
+#[doc = "    \"verify_work_email\","]
+#[doc = "    \"update_payment_method\","]
+#[doc = "    \"enable_auto_renewal\","]
+#[doc = "    \"manage_subscription\","]
+#[doc = "    \"snooze\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PlaybookUiPathActionType {
+    #[serde(rename = "open_checkout_modal")]
+    OpenCheckoutModal,
+    #[serde(rename = "navigate_to_plans")]
+    NavigateToPlans,
+    #[serde(rename = "open_upgrade_modal")]
+    OpenUpgradeModal,
+    #[serde(rename = "open_placement")]
+    OpenPlacement,
+    #[serde(rename = "book_demo")]
+    BookDemo,
+    #[serde(rename = "open_feature_tour")]
+    OpenFeatureTour,
+    #[serde(rename = "extend_trial")]
+    ExtendTrial,
+    #[serde(rename = "switch_billing_period")]
+    SwitchBillingPeriod,
+    #[serde(rename = "custom_url")]
+    CustomUrl,
+    #[serde(rename = "dismiss")]
+    Dismiss,
+    #[serde(rename = "contact_sales")]
+    ContactSales,
+    #[serde(rename = "complete_onboarding")]
+    CompleteOnboarding,
+    #[serde(rename = "invite_teammate")]
+    InviteTeammate,
+    #[serde(rename = "refer_friend")]
+    ReferFriend,
+    #[serde(rename = "verify_work_email")]
+    VerifyWorkEmail,
+    #[serde(rename = "update_payment_method")]
+    UpdatePaymentMethod,
+    #[serde(rename = "enable_auto_renewal")]
+    EnableAutoRenewal,
+    #[serde(rename = "manage_subscription")]
+    ManageSubscription,
+    #[serde(rename = "snooze")]
+    Snooze,
+}
+impl ::std::fmt::Display for PlaybookUiPathActionType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::OpenCheckoutModal => f.write_str("open_checkout_modal"),
+            Self::NavigateToPlans => f.write_str("navigate_to_plans"),
+            Self::OpenUpgradeModal => f.write_str("open_upgrade_modal"),
+            Self::OpenPlacement => f.write_str("open_placement"),
+            Self::BookDemo => f.write_str("book_demo"),
+            Self::OpenFeatureTour => f.write_str("open_feature_tour"),
+            Self::ExtendTrial => f.write_str("extend_trial"),
+            Self::SwitchBillingPeriod => f.write_str("switch_billing_period"),
+            Self::CustomUrl => f.write_str("custom_url"),
+            Self::Dismiss => f.write_str("dismiss"),
+            Self::ContactSales => f.write_str("contact_sales"),
+            Self::CompleteOnboarding => f.write_str("complete_onboarding"),
+            Self::InviteTeammate => f.write_str("invite_teammate"),
+            Self::ReferFriend => f.write_str("refer_friend"),
+            Self::VerifyWorkEmail => f.write_str("verify_work_email"),
+            Self::UpdatePaymentMethod => f.write_str("update_payment_method"),
+            Self::EnableAutoRenewal => f.write_str("enable_auto_renewal"),
+            Self::ManageSubscription => f.write_str("manage_subscription"),
+            Self::Snooze => f.write_str("snooze"),
+        }
+    }
+}
+impl ::std::str::FromStr for PlaybookUiPathActionType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "open_checkout_modal" => Ok(Self::OpenCheckoutModal),
+            "navigate_to_plans" => Ok(Self::NavigateToPlans),
+            "open_upgrade_modal" => Ok(Self::OpenUpgradeModal),
+            "open_placement" => Ok(Self::OpenPlacement),
+            "book_demo" => Ok(Self::BookDemo),
+            "open_feature_tour" => Ok(Self::OpenFeatureTour),
+            "extend_trial" => Ok(Self::ExtendTrial),
+            "switch_billing_period" => Ok(Self::SwitchBillingPeriod),
+            "custom_url" => Ok(Self::CustomUrl),
+            "dismiss" => Ok(Self::Dismiss),
+            "contact_sales" => Ok(Self::ContactSales),
+            "complete_onboarding" => Ok(Self::CompleteOnboarding),
+            "invite_teammate" => Ok(Self::InviteTeammate),
+            "refer_friend" => Ok(Self::ReferFriend),
+            "verify_work_email" => Ok(Self::VerifyWorkEmail),
+            "update_payment_method" => Ok(Self::UpdatePaymentMethod),
+            "enable_auto_renewal" => Ok(Self::EnableAutoRenewal),
+            "manage_subscription" => Ok(Self::ManageSubscription),
+            "snooze" => Ok(Self::Snooze),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PlaybookUiPathActionType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PlaybookUiPathActionType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PlaybookUiPathActionType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
     }
 }
 #[doc = "`PlaybookVersion`"]
