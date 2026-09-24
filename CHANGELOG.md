@@ -52,6 +52,51 @@ also require a changelog entry.
 Merged on `main`, not yet published. The first version bump after these entries
 ships them; until then no npm/PyPI/crates version contains them.
 
+### A gate no longer paywalls forever when it loses the cold-start config race (BL-0179)
+
+**What changed.** BL-0177 (below) split `config_unavailable` into a transient and
+a terminal state for **placements** and left `checkEntitlement` on the old
+behaviour. So the same cold-start race denied entitlements instead: while the
+Playbook load was in flight, `checkEntitlement` — and therefore `can()`,
+`gate()`, `useCan`, `useEntitlement` and `useGatedAction` — returned the
+fail-closed deny with reason `config_unavailable`, which is indistinguishable
+from a rule denial. A gate mounted before config resolution rendered its paywall
+and never re-evaluated, hiding a feature the user had paid for.
+
+The entitlement path now takes the same two-state split:
+
+| state | when | behaviour |
+|---|---|---|
+| **transient** | a Playbook load is in flight (`getPlaybookLoadState() === 'loading'`) | `checkEntitlement` waits for it (bounded, 4s) and re-evaluates. If the load outruns that bound, `EntitlementGate` **parks** the deny instead of publishing it — `result` stays `null`, `denied` stays `false`, `isLoading` stays `true`, and **no** `gate_evaluated` is emitted — then re-checks when the load settles, at most twice per cycle. |
+| **terminal** | no config provider is configured, or the load settled without a config | unchanged: fail-CLOSED deny, reason `config_unavailable` in Server mode / `entitlement_not_in_playbook` in local mode, with its `resolution_failure` diagnostic and exactly one `gate_evaluated` carrying the verdict (and its `rule_handle`). |
+
+The emission rule is the one worth stating plainly: **exactly one
+`gate_evaluated` per settled verdict, and none for the transient state** — a
+lost race is not an evaluation and must not enter the gate funnel as a denial.
+
+**No API, wire or reason-code change.** `@public` signatures are unchanged
+(`web-sdk/generated/public-api.json` is untouched), both reason codes keep their
+meanings, and `tests/reason-contract.json` is unchanged. A `limited`-but-allowed
+result is untouched; the fail-closed contract for terminal unavailability is
+untouched.
+
+**Python and Rust are unaffected by design**, for the same reason as BL-0177:
+both take the Playbook as a required constructor argument, do no I/O, and have no
+not-yet-loaded window.
+
+**Landed in.** Unreleased (BL-0179).
+
+**Fail-closed in.** Not applicable — terminal behaviour is unchanged; only the
+transient race is now absorbed.
+
+**Proving test.** `web-sdk/react/useCan.config-race.test.tsx` (a gate mounted
+mid-race ends on the rule's verdict, allow and deny) and
+`web-sdk/entitlement-config-race.test.ts` (both states, the emission rule, and
+the bounded post-bound retry for `PlacementController` and `EntitlementGate`,
+reached by injecting a `0` wait bound rather than with fake timers).
+
+---
+
 ### A slot no longer paints its fallback forever when it loses the cold-start config race (BL-0177)
 
 **What changed.** `getPlacementDecision` returns `config_unavailable` when the
