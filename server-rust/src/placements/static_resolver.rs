@@ -1039,7 +1039,7 @@ impl StaticPlacementResolver {
         })
     }
 
-    /// Enrich the winner with usage tokens, interpolate, and shape the
+    /// Enrich the winner with usage + trial tokens, interpolate, and shape the
     /// decision.
     fn shape_decision(
         &self,
@@ -1112,6 +1112,26 @@ impl StaticPlacementResolver {
                 .filter(|s| !s.is_empty())
             {
                 content.insert("reset_date".into(), json!(rd));
+            }
+        }
+
+        // Trial tokens (BL-0169). `interpolate_content_tokens` sources its token
+        // map from the output content itself, so a provider-derived token only
+        // reaches the copy if it is written here. Mirrors
+        // `ts:local-resolver.ts` verbatim: the same two token names, the same
+        // `Number.isFinite` guard, the same provider-wins precedence, and the
+        // value cloned through without widening (BL-0155).
+        if let Some(plan) = providers
+            .and_then(|p| p.get("plan"))
+            .filter(|p| p.is_object())
+        {
+            for key in ["trial_days_remaining", "trial_days_total"] {
+                let value = plan.get(key);
+                if is_finite_number(value) {
+                    if let Some(v) = value {
+                        content.insert(key.into(), v.clone());
+                    }
+                }
             }
         }
 

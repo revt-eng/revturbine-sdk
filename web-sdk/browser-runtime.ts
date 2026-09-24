@@ -108,7 +108,12 @@ export class BrowserRuntime extends LocalRuntime {
 
     super({
       ...runtimeOptions,
-      exportedConfig,
+      // Canonical option name in `@revt-eng/core` 0.1.330+ (scaffold #380).
+      // The deprecated `exportedConfig` alias still resolves, but it emits a
+      // one-time console deprecation warning — which a host that supplied no
+      // key and expected a silent init would see. `BrowserRuntimeOptions`
+      // keeps its public `exportedConfig` name; renaming that is BL-0156.
+      playbook: exportedConfig,
       storage,
       impressionStore,
     });

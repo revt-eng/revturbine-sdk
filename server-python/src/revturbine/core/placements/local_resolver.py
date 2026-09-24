@@ -1054,6 +1054,20 @@ def create_static_placement_resolver(
             if isinstance(reset_date, str) and len(reset_date) > 0:
                 output_content["reset_date"] = reset_date
 
+        # Trial tokens (BL-0169). ``_interpolate_content_tokens`` sources its
+        # token map from the output content itself, so a provider-derived token
+        # only reaches the copy if it is written here. Mirrors
+        # ``ts:local-resolver.ts`` verbatim: the same two token names, the same
+        # ``Number.isFinite`` guard, the same provider-wins precedence, and the
+        # value passed through without widening (BL-0155).
+        if is_record(plan):
+            trial_days_remaining = plan.get("trial_days_remaining")
+            if _is_finite_number(trial_days_remaining):
+                output_content["trial_days_remaining"] = trial_days_remaining
+            trial_days_total = plan.get("trial_days_total")
+            if _is_finite_number(trial_days_total):
+                output_content["trial_days_total"] = trial_days_total
+
         interpolated_content = _interpolate_content_tokens(output_content)
         resolved_output: PlacementOutput = {
             **selected_output,

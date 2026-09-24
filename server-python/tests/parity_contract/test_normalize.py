@@ -27,8 +27,11 @@ _PARITY = Path(__file__).resolve().parents[3] / "tests" / "parity"
 sys.path.insert(0, str(_PARITY))
 
 from normalize import (  # type: ignore[import-not-found]  # noqa: E402
+    CANONICAL,
     NONDETERMINISTIC_KEYS,
+    PRESERVE_REPRESENTATION,
     canonical_json,
+    normalize_mode_of,
     normalize_value,
 )
 
@@ -121,6 +124,58 @@ class TestPlan34AuditEdges:
         assert normalize_value(-0.0) == 0
         assert normalize_value(1.5) == 1.5
         assert canonical_json({"limit": 10.0}) == '{\n  "limit": 10\n}\n'
+
+    def test_bl0158_preserve_representation_keeps_the_float_a_float(self) -> None:
+        """BL-0158. THIS is where the mode earns its keep.
+
+        On the TS canonical side the mode is a no-op — JS has one number
+        type, so ``JSON.stringify(14.0)`` is ``"14"`` whatever the mode
+        says. Python is the side that can actually print ``14.0``, so
+        this is the assertion that makes the byte-diff able to fail on a
+        representation divergence at all. BL-0155's overlay coerced four
+        integer trial fields through ``float()``; under ``CANONICAL``
+        that is invisible, under ``PRESERVE_REPRESENTATION`` it is a
+        different byte than the TS canonical's ``14``.
+        """
+        # Canonical: the collapse hides int-vs-float (the rule-4 behaviour).
+        assert canonical_json({"trial_days_total": 14.0}) == '{\n  "trial_days_total": 14\n}\n'
+        assert canonical_json({"trial_days_total": 14}) == '{\n  "trial_days_total": 14\n}\n'
+
+        # Preserve: the float stays a float, so the two DIFFER — and only
+        # the int form matches what TS emits.
+        assert (
+            canonical_json({"trial_days_total": 14.0}, PRESERVE_REPRESENTATION)
+            == '{\n  "trial_days_total": 14.0\n}\n'
+        )
+        assert (
+            canonical_json({"trial_days_total": 14}, PRESERVE_REPRESENTATION)
+            == '{\n  "trial_days_total": 14\n}\n'
+        )
+
+        # Nested and inside arrays, not just at the top level.
+        assert (
+            canonical_json({"plan": {"days": [3.0]}}, PRESERVE_REPRESENTATION)
+            == '{\n  "plan": {\n    "days": [\n      3.0\n    ]\n  }\n}\n'
+        )
+
+        # The rest of rule 4 is untouched: sentinels and the -0.0 collapse
+        # (JS prints `0` for -0, so a signed zero is a serialization
+        # artefact rather than a representation the port chose).
+        assert normalize_value(math.nan, PRESERVE_REPRESENTATION) == "<nan>"
+        assert normalize_value(math.inf, PRESERVE_REPRESENTATION) == "<inf>"
+        assert normalize_value(-math.inf, PRESERVE_REPRESENTATION) == "<-inf>"
+        assert canonical_json({"z": -0.0}, PRESERVE_REPRESENTATION) == '{\n  "z": 0\n}\n'
+
+        # A genuine non-integral float is unchanged by either mode.
+        assert normalize_value(1.5, PRESERVE_REPRESENTATION) == 1.5
+
+    def test_bl0158_mode_flag_defaults_to_canonical(self) -> None:
+        """Byte-mirror of ``normalize.ts::normalizeModeOf``."""
+        assert normalize_mode_of({}) == CANONICAL
+        assert normalize_mode_of({"normalize": CANONICAL}) == CANONICAL
+        assert normalize_mode_of({"normalize": PRESERVE_REPRESENTATION}) == PRESERVE_REPRESENTATION
+        # An unrecognized value is canonical, never a silent third behaviour.
+        assert normalize_mode_of({"normalize": "nonsense"}) == CANONICAL
 
     def test_edge5_fnv1a_hash_golden_vector(self) -> None:
         # FNV-1a fallback hash — full TS-generated golden corpus lives in

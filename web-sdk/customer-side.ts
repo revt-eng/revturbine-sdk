@@ -3116,7 +3116,9 @@ export class RevTurbineCustomerSdk {
     if (!placements) return undefined;
     this.cachedPlacementResolver = createStaticPlacementResolver({
       placements,
-      exportedConfig,
+      // Canonical option name in `@revt-eng/core` 0.1.330+ (scaffold #380).
+      // The `exportedConfig` alias still resolves but warns once per process.
+      playbook: exportedConfig,
       impressionHistory: this.impressionHistory,
     });
     this.cachedPlacementResolverConfig = exportedConfig;
@@ -4179,7 +4181,7 @@ export class RevTurbineCustomerSdk {
 
     const usageTokens = recalculateDerivedUsageTokens({
       context: this.userContext,
-      exportedConfig,
+      playbook: exportedConfig,
       usageBalances: this.usageBalances,
       usageTokenPrefixByEntitlement: this.usageTokenPrefixByEntitlement,
       usageThresholdLookup: (entitlement) => this.usageThresholdForEntitlement(entitlement),
@@ -4594,7 +4596,7 @@ export class RevTurbineCustomerSdk {
       segmentIds,
       usageBalances: this.usageBalances,
       userUsage: this.userContext.usage as Record<string, unknown> | undefined, // sdk-ok: boundary-parse
-      exportedConfig,
+      playbook: exportedConfig,
       ...(trialGrantedEntitlementHandles !== undefined ? { trialGrantedEntitlementHandles } : {}),
       ...(effectivePlanHandle !== undefined ? { effectivePlanHandle } : {}),
     });

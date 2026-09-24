@@ -322,6 +322,76 @@ fn usage_tokens_are_injected_and_percent_uses_js_rounding() {
     assert_eq!(d["content"]["header"], json!("7 of 8"));
 }
 
+// ── Trial enrichment (BL-0169) ──────────────────────────────────────────────
+
+/// `interpolate_content_tokens` sources its token map from the output content
+/// itself, so a provider-derived token only reaches the copy if the resolver
+/// writes it there first. Mirrors `ts:local-resolver.test.ts` "trial tokens
+/// injected from plan provider state (BL-0169)".
+#[test]
+fn trial_tokens_are_injected_from_plan_provider_state() {
+    let mut e = entry(
+        "pl_trial",
+        "trials",
+        0,
+        "{{trial_days_remaining}} days left",
+    );
+    e["payloads"][0]["surfaces"][0]["fields"]["body"] =
+        json!("Day {{trial_days_remaining}} of {{trial_days_total}}");
+    e["trigger"] = json!({ "type": "trial_ending", "days_before_end": 3 });
+    let r = StaticPlacementResolver::new(&[e], &config());
+
+    let c = ctx(json!({
+        "trial_active": true,
+        "trial_state": "active",
+        "trial_limit_type": "time",
+        "trial_days_remaining": 3,
+        "trial_days_total": 10,
+    }));
+    let d = r.resolve("pl_trial", None, Some(&c), None);
+
+    assert_eq!(d["visible"], json!(true));
+    let content = &d["output"]["content"];
+    // Integer representation is preserved, not widened (BL-0155).
+    assert_eq!(content["trial_days_remaining"], json!(3));
+    assert_eq!(content["trial_days_total"], json!(10));
+    assert_eq!(d["content"]["header"], json!("3 days left"));
+    assert_eq!(d["content"]["body"], json!("Day 3 of 10"));
+}
+
+#[test]
+fn an_absent_trial_state_leaves_the_raw_trial_token() {
+    let r = StaticPlacementResolver::new(
+        &[entry(
+            "pl_trial",
+            "fixed",
+            0,
+            "{{trial_days_remaining}} days left",
+        )],
+        &config(),
+    );
+    let c = ctx(json!({ "current_plan_handle": "starter" }));
+    let d = r.resolve("pl_trial", None, Some(&c), None);
+
+    assert!(d["output"]["content"]["trial_days_remaining"].is_null());
+    assert_eq!(
+        d["content"]["header"],
+        json!("{{trial_days_remaining}} days left")
+    );
+}
+
+#[test]
+fn live_trial_state_overrides_an_authored_trial_value() {
+    let mut e = entry("pl_trial", "fixed", 0, "{{trial_days_remaining}} days left");
+    e["payloads"][0]["surfaces"][0]["fields"]["trial_days_remaining"] = json!(99);
+    let r = StaticPlacementResolver::new(&[e], &config());
+
+    let c = ctx(json!({ "trial_active": true, "trial_days_remaining": 3 }));
+    let d = r.resolve("pl_trial", None, Some(&c), None);
+
+    assert_eq!(d["content"]["header"], json!("3 days left"));
+}
+
 #[test]
 fn usage_percent_is_zero_when_the_limit_is_not_positive() {
     let mut e = entry("pl_u", "usage_credit_seat", 0, "H");

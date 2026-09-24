@@ -101,7 +101,11 @@ export class LocalEvaluationServer {
     this.runtime = new LocalRuntime({
       tenantId: options.tenantId,
       userId: '__server__',
-      exportedConfig,
+      // Canonical option name in `@revt-eng/core` 0.1.330+ (scaffold #380); the
+      // deprecated `exportedConfig` alias resolves but warns once. The public
+      // `LocalEvaluationServerOptions.exportedConfig` name is unchanged —
+      // renaming it is BL-0156.
+      playbook: exportedConfig,
       providers: options.providers,
       storage: options.storage,
     });

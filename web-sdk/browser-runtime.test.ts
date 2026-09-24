@@ -125,7 +125,7 @@ describe('BrowserRuntime', () => {
         autoHydrate: false,
       });
 
-      expect(Reflect.get(runtime, 'exportedConfig')).toMatchObject({
+      expect(Reflect.get(runtime, 'playbook')).toMatchObject({
         environment_id: 'production',
       });
     });
@@ -140,7 +140,7 @@ describe('BrowserRuntime', () => {
         autoHydrate: false,
       });
 
-      expect(Reflect.get(runtime, 'exportedConfig')).toMatchObject({
+      expect(Reflect.get(runtime, 'playbook')).toMatchObject({
         environment_id: 'staging',
       });
     });

@@ -115,14 +115,19 @@ def _ctx(
     plan_handle: str | None = None,
     billing_period: str | None = None,
     usage: dict[str, Any] | None = None,
+    plan_fields: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     providers: dict[str, Any] = {}
-    if plan_handle is not None or billing_period is not None:
+    if plan_handle is not None or billing_period is not None or plan_fields is not None:
         plan: dict[str, Any] = {}
         if plan_handle is not None:
             plan["current_plan_handle"] = plan_handle
         if billing_period is not None:
             plan["billing_period"] = billing_period
+        # Raw PlanProviderState fields (``trial_*``, …) exactly as the facade's
+        # trial overlay writes them — BL-0169 reads them off this dict.
+        if plan_fields is not None:
+            plan.update(plan_fields)
         providers["plan"] = plan
     if usage is not None:
         providers["entitlements"] = {"usage": usage}
@@ -731,6 +736,115 @@ class TestResolverEnrichment:
         assert out["header"] == "Used 33%"
         assert decision["content"]["header"] == "Used 33%"
         assert decision["content"]["title"] == "Used 33%"
+
+    def test_trial_tokens_injected_from_plan_provider(self) -> None:
+        """BL-0169 — ``{{trial_days_remaining}}`` must reach CONTENT.
+
+        ``_interpolate_content_tokens`` sources its token map from the output
+        content itself, so a provider-derived token only interpolates if the
+        resolver writes it there first. Mirrors
+        ``ts:local-resolver.test.ts`` "trial tokens injected from plan provider
+        state (BL-0169)" case for case.
+        """
+        resolver = create_static_placement_resolver(
+            {
+                "placements": [
+                    _entry(
+                        trigger={"type": "trial_ending", "days_before_end": 3},
+                        payloads=[
+                            _payload(
+                                surfaces=[
+                                    _surface(
+                                        fields={
+                                            "header": "{{trial_days_remaining}} days left",
+                                            "body": "Day {{trial_days_remaining}} of {{trial_days_total}}",
+                                        }
+                                    )
+                                ]
+                            )
+                        ],
+                    )
+                ]
+            },
+            _config(),
+        )
+        decision = resolver(
+            {"placement_id": "p1", "user_id": "u"},
+            _rec(name="pl_foo"),
+            _ctx(
+                plan_fields={
+                    "trial_active": True,
+                    "trial_state": "active",
+                    "trial_limit_type": "time",
+                    "trial_days_remaining": 3,
+                    "trial_days_total": 10,
+                }
+            ),
+        )
+        assert decision["visible"] is True
+        out = decision["output"]["content"]
+        assert out["trial_days_remaining"] == 3
+        assert out["trial_days_total"] == 10
+        # Integer representation is preserved, not widened (BL-0155).
+        assert isinstance(out["trial_days_remaining"], int)
+        assert decision["content"]["header"] == "3 days left"
+        assert decision["content"]["body"] == "Day 3 of 10"
+
+    def test_trial_tokens_absent_leave_the_raw_token(self) -> None:
+        resolver = create_static_placement_resolver(
+            {
+                "placements": [
+                    _entry(
+                        payloads=[
+                            _payload(
+                                surfaces=[
+                                    _surface(
+                                        fields={"header": "{{trial_days_remaining}} days left"}
+                                    )
+                                ]
+                            )
+                        ],
+                    )
+                ]
+            },
+            _config(),
+        )
+        decision = resolver(
+            {"placement_id": "p1", "user_id": "u"},
+            _rec(name="pl_foo"),
+            _ctx(plan_handle="professional"),
+        )
+        assert "trial_days_remaining" not in decision["output"]["content"]
+        assert decision["content"]["header"] == "{{trial_days_remaining}} days left"
+
+    def test_live_trial_state_overrides_authored_trial_value(self) -> None:
+        resolver = create_static_placement_resolver(
+            {
+                "placements": [
+                    _entry(
+                        payloads=[
+                            _payload(
+                                surfaces=[
+                                    _surface(
+                                        fields={
+                                            "header": "{{trial_days_remaining}} days left",
+                                            "trial_days_remaining": 99,
+                                        }
+                                    )
+                                ]
+                            )
+                        ],
+                    )
+                ]
+            },
+            _config(),
+        )
+        decision = resolver(
+            {"placement_id": "p1", "user_id": "u"},
+            _rec(name="pl_foo"),
+            _ctx(plan_fields={"trial_active": True, "trial_days_remaining": 3}),
+        )
+        assert decision["content"]["header"] == "3 days left"
 
     def test_usage_percent_clamped_to_100_and_limit_zero(self) -> None:
         resolver = create_static_placement_resolver(
