@@ -47,6 +47,66 @@ also require a changelog entry.
 
 ---
 
+## 0.11.1
+
+### The generated schema *types* gained their `Playbook*` names (BL-0165)
+
+**What changed.** `0.11.0` renamed every option, keyword and method that carries a
+Playbook. It did not rename the **generated type identifiers**, which come from
+scaffold and are vendored here — so a `0.11.0` integration still had to import
+`ExportedConfigSegmentsItem` to name a segment. Those types now have `Playbook*`
+spellings too.
+
+| deprecated | canonical |
+|---|---|
+| `ExportedConfigSegmentsItem` | `PlaybookSegmentsItem` |
+| `ExportedConfigSegmentsItemPredicatesItem` | `PlaybookSegmentsItemPredicatesItem` |
+| `ExportedConfigPlacementItem` | `PlaybookPlacementItem` |
+| `ExportedConfigUiPathActionType` | `PlaybookUiPathActionType` |
+| `ExportedConfig` | `Playbook` (already shipped in `0.11.0`) |
+
+**This renames nothing on the wire.** The names are generated from exported keys
+of scaffold's Zod barrel: both spellings resolve to the **same schema object**, so
+no payload field, default or validation rule differs between them, and the OpenAPI
+component names are unchanged (they come from `.meta({ id })` on the underlying
+schemas, not from the key). A Playbook written by an older SDK parses byte-for-byte
+identically. Scaffold's payload contract — `bundle_schema_version` /
+`bundle_min_readable_schema_version` — is untouched, so there is no minimum-reader
+floor to raise.
+
+**The aliases are duplicate definitions, not type aliases.** Scaffold's generators
+emit one full TS type, Pydantic model and serde struct per barrel key rather than an
+alias, so in Python (`revturbine.types`) and Rust (`revturbine::types`) the old
+names remain as their own complete models/structs, generated from the same schema.
+No hand-written shim exists in either port, and none is wanted: it would collide
+with the generated definition. In TypeScript the `core` barrel re-exports the old
+pair with `@deprecated` TSDoc.
+
+Requires `@revt-eng/schema` / `@revt-eng/core` ≥ 0.1.335, which added the
+`Playbook*` keys upstream (scaffold #387).
+
+Ruling: Kent, 2026-09-23 (BL-0156 — `ExportedConfig` naming deprecated, Playbook
+canonical).
+
+**Landed in** `0.11.1` (additive — every old name still resolves).
+**Fail-closed in** `0.12.0`, when BL-0167 removes the `ExportedConfig*` keys from
+scaffold's barrel and the generated definitions disappear from the vendored types
+along with them. That is the same window as the `0.11.0` option/method aliases, so
+an integration has one removal to absorb, not two.
+
+**Proving test:** scaffold's `src/core/zod/playbook-generated-names.test.ts` (each
+`Playbook*` key is the same object as its `RevTurbineConfig*` and `ExportedConfig*`
+counterparts; a legacy `export-config.json` payload parses to an equal result
+through both spellings of the config schema), plus this repo's
+`scripts/check-vendored-types.mjs` (the vendored py/rs copies agree with the pin).
+
+**Public-API snapshot: unchanged.** `pnpm check:public-api` still reports the same
+**62** `@public` exports and `web-sdk/generated/public-api.json` is byte-identical,
+because the `core` barrel's type re-exports carry no `@public` tag. Recorded here
+rather than left implicit: a rename touching the SDK's type vocabulary that moves
+*no* snapshot entry is worth stating, so a reader does not go looking for the diff.
+No existing export's signature changed and none was removed.
+
 ## 0.11.0
 
 ### `Playbook` is the canonical name for every option that carries one (BL-0156)
