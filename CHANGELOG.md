@@ -47,6 +47,49 @@ also require a changelog entry.
 
 ---
 
+## Unreleased
+
+Merged on `main`, not yet published. The first version bump after these entries
+ships them; until then no npm/PyPI/crates version contains them.
+
+### A slot no longer paints its fallback forever when it loses the cold-start config race (BL-0177)
+
+**What changed.** `getPlacementDecision` returns `config_unavailable` when the
+Playbook has not arrived, uncached, specifically so a retry can succeed — but
+nothing retried. `useSurfaceSlot` / `FixedSurfaceSlot` decide once per mount, so
+on a cold `revturbine_server` load, whenever the first decision beat the two-hop
+bootstrap → `/api/sdk/config` chain, the slot rendered its `fallback`
+permanently and every integration had to hand-roll a retry.
+
+`config_unavailable` now has two distinct states and the SDK handles each:
+
+| state | when | behaviour |
+|---|---|---|
+| **transient** | a Playbook load is in flight | `getPlacementDecision` waits for it (bounded, 4s) and re-resolves. If the load outruns that bound, `PlacementController` re-decides when it settles — at most twice per load cycle. The slot stays in `isLoading` meanwhile and emits **no** `placement_resolved` / `slot_empty`: a lost race is not a resolution and must not enter the funnel as one. |
+| **terminal** | no config provider is configured, or the load settled without a config | unchanged from before: the decision is `config_unavailable`, `visible: false`, uncached, with the resolution-failure diagnostic and the lifecycle + slot events. Bounded retries mean it settles rather than spinning. |
+
+**No API, wire or reason-code change.** `config_unavailable` is still the reason
+code, the decision shape is untouched, and `tests/reason-contract.json` is
+unchanged. Customer code that already hand-rolls a retry keeps working — it is
+now redundant, not wrong.
+
+**Python and Rust are unaffected by design.** Both ports take the Playbook as a
+required constructor argument and raise on a missing or malformed one
+(`server-python/src/revturbine/sdk.py` `__init__`, `server-rust/src/sdk.rs`
+`new`), perform no I/O, and never emit `config_unavailable` — there is no
+not-yet-loaded window to retry. This is a browser/hosted-mode state only.
+
+**Landed in.** Unreleased (BL-0177).
+
+**Fail-closed in.** Not applicable — the terminal behaviour is unchanged; only
+the transient race is now absorbed.
+
+**Proving test.** `web-sdk/placements/FixedSurfaceSlot.config-race.test.tsx`
+(both states), plus `e2e/journey.transport.spec.ts`, whose two hand-rolled retry
+loops were deleted — a retry loop reappearing there is the regression signal.
+
+---
+
 ## 0.11.1
 
 ### The generated schema *types* gained their `Playbook*` names (BL-0165)
