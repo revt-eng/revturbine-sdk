@@ -1,6 +1,6 @@
 ---
 title: Production Readiness
-description: The pre-launch checklist for a billing-adjacent SDK — keys, fail-closed checks, local-only limits, caching, config versioning, and testing plan changes before you deploy.
+description: The pre-launch checklist for a billing-adjacent SDK — keys, versioning, what a check returns when it can't justify a grant, local-only limits, caching, and testing plan changes before you deploy.
 sidebar:
   order: 1
 ---
@@ -38,9 +38,9 @@ Stamp `environmentId` (`'production'` / `'staging'`) so analytics stays separate
 
 Pin `@revturbine/sdk` and the CLI per project; `revturbine --help` from the project-pinned CLI is authoritative for its command surface. A change to any `@public` signature requires a CHANGELOG entry — CI enforces it — and the Playbook schema version the SDK expects is listed on the [Compatibility Matrix](/reference/compatibility/). Pin the SDK to a version whose schema matches the Playbook you deploy.
 
-## Fail-closed checks
+## No grant, no access
 
-Entitlement checks fail closed: a check that can't produce an affirmative grant denies rather than leaking a paid feature. The Playbook is cached locally, so real answers need no round trip, and billing-critical actions are re-checked on your server before value is granted. Tune what a slot renders on provider failure with `providerFailureSlotBehavior` (default: render nothing). See [Error Handling](/guides/error-handling/).
+A check that can't justify a grant denies rather than leaking a paid feature — the [reason codes](/guides/entitlements/#fail-closed-semantics) say why. The Playbook is cached locally, so real answers need no round trip, and billing-critical actions are re-checked on your server before value is granted. Tune what a slot renders on provider failure with `providerFailureSlotBehavior` (default: render nothing). See [Error Handling](/guides/error-handling/).
 
 ## Local-only limits
 

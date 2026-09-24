@@ -17,7 +17,7 @@ sidebar:
 | Decisions feel stale | Cache TTL too long | Lower `ttlMs` in decision requests or call refresh flows explicitly. |
 | Interactions not visible in backend telemetry | Ingestion endpoint misconfigured | Validate `ingestEvents`/`touchpointTransition` endpoint wiring and auth. |
 | Runtime mode behavior is incorrect | Wrong mode or incomplete mode config | Re-check mode selection in the [runtime modes guide](/guides/runtime-modes/) and use mode helper builders. |
-| Console warns primary provider failed | Provider chain is failing and SDK entered fail-closed mode | Configure `providerFallbacks`, verify provider health, and choose `providerFailureSlotBehavior` intentionally. |
+| Console warns primary provider failed | The provider chain is failing: entitlement checks deny with `sdk_disabled_provider_failure` and slots follow `providerFailureSlotBehavior` | Configure `providerFallbacks`, verify provider health, and choose `providerFailureSlotBehavior` intentionally. |
 | Type is `unknown` from SDK route | Contract/schema title mismatch | Ensure the SDK version matches the schema version and reinstall. |
 | Build fails after SDK API changes | Missing migration updates in caller code | Migrate to object-style request helpers and rerun typecheck. |
 

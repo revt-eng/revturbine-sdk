@@ -26,7 +26,7 @@ Returned in `decision.reasonCodes[]` to explain why a placement was or wasn't sh
 
 Returned in `result.reason` to explain the entitlement check outcome.
 
-Entitlement checks are **fail-closed**: when the SDK cannot produce an
+Entitlement checks are [**fail-closed**](/guides/entitlements/#fail-closed-semantics): when the SDK cannot produce an
 affirmative grant it denies and names the cause. This is the complete emitted
 set — see [Error handling](/guides/error-handling/) for the enforcement-mode
 suffixes on the two limit codes.

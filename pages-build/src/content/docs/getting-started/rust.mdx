@@ -150,7 +150,7 @@ decided, which is what supersession reads.
 <Aside type="caution">
 A malformed `Playbook` is an **error at construction**, not a degraded
 decision: `RevTurbineCustomerSdk::new` returns `Err`. A partially-understood
-Playbook can silently over-grant, so it fails closed instead of guessing.
+Playbook can silently over-grant, so construction refuses it rather than guessing.
 </Aside>
 
 ## Runtime model

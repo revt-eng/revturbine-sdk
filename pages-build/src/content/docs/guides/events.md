@@ -209,7 +209,7 @@ When a placement or entitlement can't resolve for **infrastructure** reasons, th
 |---|---|
 | `placement_not_registered` | A decision is requested for a placement the app never registered — the classic "my payload renders nothing, silently" |
 | `config_unavailable` | The Playbook never arrived, so a placement fell back or an entitlement check denied without a rule saying no |
-| `sdk_disabled_provider_failure` | The provider chain failed and the SDK disabled itself fail-closed |
+| `sdk_disabled_provider_failure` | The provider chain failed: entitlement checks deny with this reason and slots follow `providerFailureSlotBehavior` |
 
 Diagnostics carry **only** author-defined handles (placement, slot, plan, entitlement) and closed reason codes — never user context, free text, or your tenant identifier (deployments are counted through a one-way hash). They're deduplicated per session and capped, fire from keyed production installs as well as keyless ones, and are silenced by **either** opt-out:
 

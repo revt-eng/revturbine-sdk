@@ -1,6 +1,6 @@
 ---
 title: Client vs Server Enforcement
-description: How RevTurbine splits responsibility — RevTurbine owns monetization policy, your app owns enforcement, entitlement checks fail closed, and billing-critical actions are re-checked on your server. Plus the difference between <Gate>, gate(), and can().
+description: How RevTurbine splits responsibility — RevTurbine owns monetization policy, your app owns enforcement, a check that can't justify a grant denies, and billing-critical actions are re-checked on your server. Plus the difference between <Gate>, gate(), and can().
 sidebar:
   order: 2
 ---
@@ -17,7 +17,7 @@ The rest of this page is the division of responsibility, and which tool to use w
 
 - **RevTurbine is authoritative for monetization *policy*.** Which plans exist, what each plan entitles, when a placement shows — that lives in your [Playbook](/getting-started/api-overview/#the-vocabulary-slot--gate--playbook) and the control plane, and a PM changes it with no code deploy.
 - **Your app owns *enforcement*.** RevTurbine tells you the policy answer; your app is what actually allows or blocks the action.
-- **Checks fail closed.** An entitlement check that can't produce an affirmative grant denies, so a misconfiguration never *leaks* a paid feature.
+- **No grant, no access.** An entitlement check that can't justify a grant denies rather than guessing, so a misconfiguration never *leaks* a paid feature ([the reason codes](/guides/entitlements/#fail-closed-semantics) say why).
 - **Money-safe decisions belong on your server.** A browser check can be tampered with. For anything that costs money or invites abuse, re-run the check server-side before you grant access.
 
 ## Three tools, and where each runs
@@ -30,7 +30,7 @@ The SDK gives you three ways to act on an entitlement. They sound alike; they ar
 | `rt.gate(action, fn)` | Imperative verb | Client | Run `fn` only if entitled; get the entitlement back to open a paywall |
 | `rt.can(handle)` · `useCan` · `checkEntitlement` | Check | Client **or** server | Ask "is this allowed?" and get the full result — the one you re-run server-side |
 
-`<Gate>` and `gate()` are convenience wrappers around a `can()`/`checkEntitlement()` call. All three run in the browser and are **fail-closed** — a check that can't affirm a grant denies. The check itself — `checkEntitlement` / `can` — is also what you run on your server (via the server SDK or your own logic) when the decision has to be trusted.
+`<Gate>` and `gate()` are convenience wrappers around a `can()`/`checkEntitlement()` call. All three run in the browser and deny whenever they can't affirm a grant. The check itself — `checkEntitlement` / `can` — is also what you run on your server (via the server SDK or your own logic) when the decision has to be trusted.
 
 <Aside type="caution" title="Custom resolvers own their network behavior">
 The built-in evaluator decides from the loaded Playbook in memory, so an entitlement check makes no per-check network call. If you inject `localRuntime.resolvers`, your resolver can introduce network I/O; its caching, timeout, and failure behavior are your responsibility. The SDK still requires an affirmative result before granting access.
@@ -55,7 +55,7 @@ Use the client check for a fast, friendly UX:
 ```tsx
 import { Gate } from '@revturbine/sdk';
 
-// Client: instant show/hide + upsell when denied. Fails closed.
+// Client: instant show/hide + upsell when denied; no grant means no access.
 <Gate id="editor_export" can="data_export">
   <ExportButton />
 </Gate>
@@ -92,4 +92,4 @@ The client `<Gate>` keeps the UI honest and fast; the server check keeps the rev
 - [Recommended API Path](/getting-started/api-overview/) — when to reach for `can()` vs `gate()` vs `<Gate>`
 - [Server-Side Integration](/getting-started/server-side/) — running entitlement checks on your backend
 - [Entitlements](/guides/entitlements/) — the entitlement model behind every check
-- [Error Handling](/guides/error-handling/) — placement degradation and fail-closed checks in detail
+- [Error Handling](/guides/error-handling/) — placement degradation and what a check returns when it can't justify a grant

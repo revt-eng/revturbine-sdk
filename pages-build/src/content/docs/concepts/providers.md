@@ -188,7 +188,7 @@ If all providers fail:
 | `'invisible'` (default) | Slots render nothing |
 | `'placeholder'` | Slots show fallback content |
 
-Entitlement checks are **fail-closed**: a check that can't produce an affirmative grant denies (`{ allowed: false }`). Slot rendering on provider failure is governed separately, by the table above.
+An entitlement check that can't justify a grant denies — here with `{ allowed: false, reason: 'sdk_disabled_provider_failure' }`. Slot rendering on provider failure is governed separately, by the table above.
 
 ## Analytics Provider
 

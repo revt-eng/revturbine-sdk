@@ -289,7 +289,7 @@ if (denied) {
 
 ## Fail-Closed Semantics
 
-Entitlement checks are **fail-closed** — if a check can't produce an affirmative grant, `can` returns `allowed: false` rather than granting access. The `reason` names the cause, so you can still tell an infrastructure failure apart from a real denial:
+A check grants access only when it can affirmatively justify the grant; every other outcome denies, with `allowed: false` and a `reason` naming why. That is what **fail-closed** means wherever these docs use it — and it is about the answer, not the network: the Playbook is cached locally, so a configured runtime answers without a round trip, and the no-rule cases below are the only ones where there was nothing to evaluate. The `reason` lets you tell those apart from a real denial:
 
 ```ts
 // Hosted mode, the launched Playbook could not be fetched:

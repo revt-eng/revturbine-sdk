@@ -1,6 +1,6 @@
 ---
 title: Error Handling
-description: SDK error model, placement and entitlement degradation, fail-closed entitlement checks, provider failure cascade, and graceful degradation patterns.
+description: SDK error model — what a placement does when it can't resolve, what an entitlement check returns when it can't justify a grant, the provider failure cascade, and graceful degradation patterns.
 sidebar:
   order: 11
 ---
@@ -13,7 +13,7 @@ The SDK never throws into your app and never blocks your render. But *placements
 
 **A placement that can't resolve renders nothing** (or your configured fallback), so it can never take your product down.
 
-**Entitlement checks are fail-closed.** If a check can't produce an affirmative grant, it returns `{ status: 'denied', allowed: false }` rather than granting access. The Playbook is cached and persisted locally, so a configured runtime evaluates real allow/deny answers with no network round-trip; the failure fallback only fires when the SDK has *no basis to answer at all* — no config, no cache, nothing reachable — which is exactly where denying is the safe, non-leaking default. The `reason` code is preserved so you can still tell an infrastructure failure apart from a real denial.
+**Entitlement checks are [fail-closed](/guides/entitlements/#fail-closed-semantics).** If a check can't produce an affirmative grant, it returns `{ status: 'denied', allowed: false }` rather than granting access. The Playbook is cached and persisted locally, so a configured runtime evaluates real allow/deny answers with no network round-trip; the failure fallback only fires when the SDK has *no basis to answer at all* — no config, no cache, nothing reachable — which is exactly where denying is the safe, non-leaking default. The `reason` code is preserved so you can still tell an infrastructure failure apart from a real denial.
 
 | API failure scenario | SDK behavior |
 |---|---|
