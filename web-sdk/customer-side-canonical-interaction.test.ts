@@ -134,4 +134,62 @@ describe('canonical placement_interaction (Q-3)', () => {
     expect(bag.payload, 'semantic fields must not be double-wrapped').toBeUndefined();
     expect(bag.semantic, 'the unread `semantic` marker must not come back').toBeUndefined();
   });
+
+  // BL-0182, the follow-up BL-0062 left behind. #389/#527 stamped
+  // `rule_handle` through `placementLifecycleBase`, which reached exposure and
+  // outcome. `placement_interaction` does not share that base, so the CLICK
+  // between them carried no rule key — and the click is what CTR is computed
+  // over. The funnel could be sliced by rule at both ends and not in the middle.
+  describe('rule_handle on the interaction (BL-0182)', () => {
+    it('stamps the winning rule when the caller supplies one', async () => {
+      const sdk = makeSdk();
+      await sdk.trackTreatmentInteraction({
+        userId: 'user_1',
+        placementId: 'usage_70_banner',
+        interactionType: 'cta_clicked',
+        ruleHandle: 'usage_70pct',
+      });
+      await sdk.flushEvents();
+
+      const ev = trackedRows().find((r) => r.event_name === 'placement_interaction');
+      expect(semanticBag(ev!).rule_handle).toBe('usage_70pct');
+    });
+
+    it('omits the key entirely when no decision was in scope', async () => {
+      // ABSENT, not null. `null` on the wire means "a rule was selected and
+      // none matched"; a bare caller with no decision is a different fact, and
+      // conflating them is what would poison the slice's coverage numbers.
+      const sdk = makeSdk();
+      await sdk.trackTreatmentInteraction({
+        userId: 'user_1',
+        placementId: 'usage_70_banner',
+        interactionType: 'cta_clicked',
+      });
+      await sdk.flushEvents();
+
+      const ev = trackedRows().find((r) => r.event_name === 'placement_interaction');
+      expect('rule_handle' in semanticBag(ev!)).toBe(false);
+    });
+
+    it('never reaches the treatment-interaction wire record', async () => {
+      // The clickstream carries payload fields inside a JSON column, so a new
+      // field is readable the moment producers send it. The interaction wire
+      // record is column-shaped (`placement_presentations`) and would need a
+      // datasource migration, so `ruleHandle` is deliberately not in its
+      // explicit field mapping — this asserts the mapping stays explicit.
+      const sdk = makeSdk();
+      await sdk.trackTreatmentInteraction({
+        userId: 'user_1',
+        placementId: 'usage_70_banner',
+        interactionType: 'cta_clicked',
+        ruleHandle: 'usage_70pct',
+      });
+      await sdk.flushEvents();
+
+      const interactionPosts = calls.filter((c) => !c.url.endsWith('/api/track'));
+      for (const call of interactionPosts) {
+        expect(String(call.init.body ?? '')).not.toContain('usage_70pct');
+      }
+    });
+  });
 });

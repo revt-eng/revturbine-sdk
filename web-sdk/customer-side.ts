@@ -405,6 +405,37 @@ export const DEFAULT_HOSTED_ENDPOINT = 'https://revturbine.com/app';
 export const DEFAULT_SDK_MODE: RevTurbineSdkMode = 'snippet';
 
 /**
+ * Where the Playbook config load stands (BL-0177).
+ *
+ * `config_unavailable` used to be a single undifferentiated outcome, so a slot
+ * that lost the race against a cold config fetch could not tell "wait, it is
+ * coming" from "nothing is coming" and rendered its fallback permanently. This
+ * is the distinction: `loading` makes a `config_unavailable` decision
+ * retriable, `unavailable` makes it terminal for now.
+ */
+export type RevTurbinePlaybookLoadState = 'ready' | 'loading' | 'unavailable';
+
+/**
+ * How long a placement decision waits for an in-flight Playbook load before
+ * failing closed (BL-0177).
+ *
+ * Bounded deliberately: the decision path stays a bounded async call, and a
+ * provider that never settles degrades to today's fail-closed behavior instead
+ * of hanging a render. A load that lands after the bound still re-decides,
+ * through `onPlaybookSettled`.
+ */
+const DEFAULT_PLAYBOOK_WAIT_MS = 4_000;
+
+/**
+ * Lower bound on the Playbook wait, in ms (BL-0179).
+ *
+ * `0` is a legitimate injected value — it is how a test reaches the
+ * post-bound retry path (the load always outruns a zero wait) without fake
+ * timers, which fight `act()`.
+ */
+const MIN_PLAYBOOK_WAIT_MS = 0;
+
+/**
  * Canonical component type for placement rendering.
  * Re-exported from `@revt-eng/core` — single source of truth.
  */
@@ -2165,6 +2196,15 @@ interface OutputPlacementRef {
   decisionId?: string;
   experimentId?: string;
   variantKey?: string;
+  /**
+   * The winning placement rule (BL-0182). Held separately from `treatmentId`
+   * even though `indexDecisionOutput` currently fills both from
+   * `decision.output.rule_id`: `treatmentId` is an addressing key that other
+   * paths derive differently (the React controller reads
+   * `decision.placementId` for it), while this one is the analytics identity
+   * and must not drift with it.
+   */
+  ruleHandle?: string;
 }
 
 /**
@@ -2903,6 +2943,16 @@ export class RevTurbineCustomerSdk {
   // the cache invalidates whenever configProvider hands back a new object.
   private cachedPlacementResolver?: NonNullable<RevTurbineLocalRuntimeResolvers['getPlacementDecision']>;
   private cachedPlacementResolverConfig?: RevTurbineConfig;
+  // Playbook load bookkeeping (BL-0177). `config_unavailable` means two
+  // different things and callers could not tell them apart: the config is still
+  // in flight (retriable — a later decision succeeds) or no config is coming
+  // (terminal for now). These three fields are the whole distinction.
+  private playbookLoadInFlight: Promise<void> | null = null;
+  private playbookLoadAttempted = false;
+  private readonly playbookSettleListeners = new Set<() => void>();
+  // Injectable so the post-bound retry path is testable (BL-0179). See
+  // `setPlaybookWaitBoundMs`.
+  private playbookWaitMs = DEFAULT_PLAYBOOK_WAIT_MS;
   private sdkDisabledByProviderFailure = false;
   private sdkDisabledReason?: string;
   readonly providerRegistry: DomainProviderRegistry;
@@ -3037,6 +3087,11 @@ export class RevTurbineCustomerSdk {
         decision_id: context.placement.decision_id ?? null,
         user_id: this.userContext.id ?? null,
         interaction_at: new Date().toISOString(),
+        // BL-0182: `context.placement` is the full `PlacementOutput`, so the
+        // winning rule is right here — the same `rule_id` the lifecycle emits
+        // stamp. A server-action CTA is a click like any other and belongs in
+        // the same rule slice.
+        rule_handle: context.placement.rule_id ?? null,
         action_outcome: error ? 'rejected' : success ? 'success' : 'failure',
       }, { immediate: false }),
     });
@@ -3131,15 +3186,127 @@ export class RevTurbineCustomerSdk {
   }
 
   private async refreshPlaybookSnapshot(): Promise<void> {
-    try {
-      const previousConfig = this.getConfiguredPlaybook();
-      await this.configProvider?.refresh?.();
-      this.rebuildSegmentPredicateFieldIndex();
-      if (previousConfig !== this.getConfiguredPlaybook()) {
-        this.invalidateEffectiveContext();
+    // Concurrent callers share one attempt (BL-0177): a cold load kicks this
+    // from the constructor and from every racing `getPlacementDecision`, and
+    // awaiting the same in-flight promise is what lets those decisions wait for
+    // the fetch instead of each firing their own.
+    if (this.playbookLoadInFlight) return this.playbookLoadInFlight;
+
+    const attempt = (async () => {
+      try {
+        const previousConfig = this.getConfiguredPlaybook();
+        await this.configProvider?.refresh?.();
+        this.rebuildSegmentPredicateFieldIndex();
+        if (previousConfig !== this.getConfiguredPlaybook()) {
+          this.invalidateEffectiveContext();
+        }
+      } catch {
+        // Config refresh is best-effort; keep SDK operational without throwing.
       }
-    } catch {
-      // Config refresh is best-effort; keep SDK operational without throwing.
+    })();
+
+    this.playbookLoadInFlight = attempt;
+    try {
+      await attempt;
+    } finally {
+      this.playbookLoadInFlight = null;
+      this.playbookLoadAttempted = true;
+      this.notifyPlaybookSettled();
+    }
+  }
+
+  /**
+   * Where the Playbook load stands right now (BL-0177).
+   *
+   * - `ready` — a config is loaded; decisions resolve locally.
+   * - `loading` — a load is in flight (or none has been attempted yet) and a
+   *   later decision can succeed. A `config_unavailable` seen in this state is
+   *   TRANSIENT.
+   * - `unavailable` — no config provider is configured, or the last load
+   *   settled without one. A `config_unavailable` seen in this state is
+   *   TERMINAL for now: nothing is pending, so nothing will re-decide on its
+   *   own until something kicks another refresh.
+   *
+   * @internal
+   */
+  getPlaybookLoadState(): RevTurbinePlaybookLoadState {
+    if (this.getConfiguredPlaybook()) return 'ready';
+    if (!this.configProvider) return 'unavailable';
+    if (this.playbookLoadInFlight) return 'loading';
+    return this.playbookLoadAttempted ? 'unavailable' : 'loading';
+  }
+
+  /**
+   * Resolve once the in-flight Playbook load settles, or once `timeoutMs`
+   * elapses — whichever comes first — and report the state then (BL-0177).
+   *
+   * Never rejects and never waits when nothing is pending, so a caller can
+   * always await it before failing closed.
+   *
+   * @internal
+   */
+  async whenPlaybookSettled(timeoutMs = this.playbookWaitMs): Promise<RevTurbinePlaybookLoadState> {
+    if (this.getPlaybookLoadState() !== 'loading') return this.getPlaybookLoadState();
+
+    const pending = this.playbookLoadInFlight ?? this.refreshPlaybookSnapshot();
+    await new Promise<void>((resolve) => {
+      let done = false;
+      const settle = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve();
+      };
+      // Cleared on settle (below), so the timer never outlives the wait — a
+      // Node consumer is not held open by it.
+      const timer = setTimeout(settle, Math.max(0, timeoutMs));
+      void pending.then(settle, settle);
+    });
+    return this.getPlaybookLoadState();
+  }
+
+  /**
+   * Subscribe to Playbook load attempts settling (BL-0177).
+   *
+   * Fires after every attempt, whether it produced a config or not, so a
+   * subscriber holding a `config_unavailable` decision can re-decide exactly
+   * once per attempt rather than polling. Returns an unsubscribe function.
+   *
+   * @internal
+   */
+  /**
+   * Override how long {@link whenPlaybookSettled} waits for an in-flight load
+   * (BL-0179) — the seam that makes the post-bound retry path testable.
+   *
+   * The retry path only runs when a load OUTRUNS the wait, which at the 4s
+   * default means either a 4s test or fake timers, and fake timers fight
+   * React's `act()` (BL-0177 hit exactly this and shipped that path untested).
+   * Injecting `0` makes every load outrun the bound deterministically, with
+   * real timers.
+   *
+   * Not part of the supported surface: production code has no reason to move
+   * this, and nothing persists it.
+   *
+   * @internal
+   */
+  setPlaybookWaitBoundMs(ms: number): void {
+    this.playbookWaitMs = Math.max(MIN_PLAYBOOK_WAIT_MS, ms);
+  }
+
+  onPlaybookSettled(listener: () => void): () => void {
+    this.playbookSettleListeners.add(listener);
+    return () => {
+      this.playbookSettleListeners.delete(listener);
+    };
+  }
+
+  private notifyPlaybookSettled(): void {
+    for (const listener of [...this.playbookSettleListeners]) {
+      try {
+        listener();
+      } catch {
+        // A subscriber must never break a config refresh for the host app.
+      }
     }
   }
 
@@ -4061,6 +4228,10 @@ export class RevTurbineCustomerSdk {
       decisionId: decision.output?.decision_id,
       experimentId: decision.output?.experiment_id,
       variantKey: decision.output?.variant_key,
+      // BL-0182: remembered here so an output-addressed `convert()` /
+      // `dismiss()` / `snooze()`, which receives only an output id, can still
+      // name the rule it acted on.
+      ruleHandle: decision.output?.rule_id,
     });
 
     while (this.outputPlacementIndex.size > this.outputPlacementIndexLimit) {
@@ -6974,6 +7145,38 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
+   * Run the config-driven resolver and apply the standard post-passes —
+   * price tokens, interaction suppression, presentation caps, cache write.
+   *
+   * Extracted so the first-pass resolve and the post-config-wait resolve
+   * (BL-0177) cannot drift apart: a second copy of this sequence is how a
+   * retry ends up skipping a cap tick or a cache write.
+   */
+  private async resolveDecisionLocally(
+    resolver: NonNullable<RevTurbineLocalRuntimeResolvers['getPlacementDecision']>,
+    input: RevTurbinePlacementDecisionInput,
+    placement: RevTurbinePlacementRecord,
+    cacheKey: string,
+    legacyCtx: JsonObject | undefined,
+    providerCtx: ResolvedProviderContext | undefined,
+  ): Promise<RevTurbinePlacementDecision> {
+    const ctx = {
+      ...legacyCtx,
+      ...(providerCtx ? { __providers: providerCtx } : {}),
+    } as JsonObject;
+    const resolved = this.applyPriceTokens(await resolver(input, placement, ctx), providerCtx);
+    const interacting = this.gateDecisionByInteraction(resolved, input);
+    // Interaction suppression is temporary; do not cache it as a resolver
+    // result or consume presentation budget for a hidden decision.
+    if (resolved.visible && !interacting.visible) return interacting;
+    const decision = this.gateDecisionByCaps(interacting);
+    this.localDecisionsByPlacementId.set(input.placementId, decision);
+    this.writeDecisionCache(cacheKey, decision, input.ttlMs);
+    this.persistLocalRuntimeState();
+    return decision;
+  }
+
+  /**
    * Resolve the placement decision for a registered surface slot — the
    * evaluated payload (or lack of one), its reason, and the metadata needed
    * to report the interaction lifecycle ({@link trackTreatmentInteraction},
@@ -7040,20 +7243,7 @@ export class RevTurbineCustomerSdk {
     {
       const resolver = this.getOrBuildPlacementResolver();
       if (resolver) {
-        const ctx = {
-          ...legacyCtx,
-          ...(providerCtx ? { __providers: providerCtx } : {}),
-        } as JsonObject;
-        const resolved = this.applyPriceTokens(await resolver(input, placement, ctx), providerCtx);
-        const interacting = this.gateDecisionByInteraction(resolved, input);
-        // Interaction suppression is temporary; do not cache it as a resolver
-        // result or consume presentation budget for a hidden decision.
-        if (resolved.visible && !interacting.visible) return interacting;
-        const decision = this.gateDecisionByCaps(interacting);
-        this.localDecisionsByPlacementId.set(input.placementId, decision);
-        this.writeDecisionCache(key, decision, input.ttlMs);
-        this.persistLocalRuntimeState();
-        return decision;
+        return this.resolveDecisionLocally(resolver, input, placement, key, legacyCtx, providerCtx);
       }
 
       const localDecision = this.localDecisionsByPlacementId.get(input.placementId);
@@ -7068,7 +7258,23 @@ export class RevTurbineCustomerSdk {
       }
     }
 
-    // No config yet (Server mode before the plan-159 fetch lands, or a
+    // No config YET. Before failing closed, wait out an in-flight load
+    // (BL-0177): on a cold Server-mode start the first decision routinely beats
+    // the two-hop bootstrap → /api/sdk/config chain by milliseconds, and
+    // returning `config_unavailable` there made every consumer hand-roll a
+    // retry — or, far more often, render its fallback permanently. `loading`
+    // means a later decision can succeed, so wait for it here, once, and
+    // re-resolve. `unavailable` (no provider, or the load already settled
+    // empty) skips the wait and fails closed immediately, as before.
+    if (this.getPlaybookLoadState() === 'loading') {
+      await this.whenPlaybookSettled();
+      const settledResolver = this.getOrBuildPlacementResolver();
+      if (settledResolver) {
+        return this.resolveDecisionLocally(settledResolver, input, placement, key, legacyCtx, providerCtx);
+      }
+    }
+
+    // Still no config (Server mode whose fetch failed or outran the bound, or a
     // configless init): FAIL CLOSED with a distinct reason — the remote
     // per-decision path (/api/sdk/decide-context) is retired per Q-2/Q-4,
     // exactly as TASK-3 retired check-entitlement. The next call after the
@@ -7465,6 +7671,14 @@ export class RevTurbineCustomerSdk {
       // never reaches the `experiment_id` / `variant_key` columns (plan 183).
       ...(normalized.experimentId ? { experiment_id: normalized.experimentId } : {}),
       ...(normalized.variantKey ? { variant_key: normalized.variantKey } : {}),
+      // BL-0182: the placement rule whose treatment was acted on. #389 stamped
+      // this on exposure and outcome through `placementLifecycleBase`, which
+      // `placement_interaction` does not share, so the click between them was
+      // the one step of the funnel with no rule key — and the step CTR is
+      // computed over. Spread rather than set: ABSENT when no decision was in
+      // scope, never an empty string, because absence is what keeps the rule
+      // slice's coverage honest.
+      ...(normalized.ruleHandle ? { rule_handle: normalized.ruleHandle } : {}),
       metadata: interactionMeta,
     }, { immediate: false });
   }
@@ -7714,9 +7928,33 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
+   * Evaluate one handle against the configured Playbook and record the result.
+   *
+   * Extracted so the first-pass evaluation and the post-config-wait evaluation
+   * (BL-0179) cannot drift apart: a second copy of this sequence is how a
+   * re-evaluation ends up skipping the local cache write or the persist.
+   * Returns `null` when no Playbook rule covers the handle — which, before a
+   * config has loaded, is every handle.
+   */
+  private resolveEntitlementLocally(
+    handle: string,
+    context?: RevTurbineEntitlementContext,
+  ): EntitlementResult | null {
+    const derived = this.deriveLocalEntitlementFromConfiguredRules(handle, context);
+    if (!derived) return null;
+    this.localEntitlementsByHandle.set(handle, derived);
+    this.persistLocalRuntimeState();
+    return derived;
+  }
+
+  /**
    * Evaluate a single entitlement handle for the active user, purely from the
    * loaded UserContext and Playbook. The advertised {@link can} alias wraps
    * this with the friendly verb name.
+   *
+   * A check that lands before the Playbook does waits out the in-flight load,
+   * bounded, and re-evaluates (BL-0179); it fails CLOSED only once nothing more
+   * is coming. See {@link RevTurbinePlaybookLoadState}.
    *
    * @public
    */
@@ -7750,15 +7988,26 @@ export class RevTurbineCustomerSdk {
     }
 
     // Proven local evaluation against the configured Playbook (both modes).
-    const derived = this.deriveLocalEntitlementFromConfiguredRules(handle, context);
-    if (derived) {
-      this.localEntitlementsByHandle.set(handle, derived);
-      this.persistLocalRuntimeState();
-      return derived;
-    }
+    const derived = this.resolveEntitlementLocally(handle, context);
+    if (derived) return derived;
 
     const existing = this.localEntitlementsByHandle.get(handle);
     if (existing) return existing;
+
+    // No config YET. Before failing closed, wait out an in-flight load
+    // (BL-0179 — the entitlement half of BL-0177). A gate that mounts on a cold
+    // start routinely beats the two-hop bootstrap → /api/sdk/config chain by
+    // milliseconds, and the fail-closed deny it got back is indistinguishable
+    // from a rule denial: `useCan` / `useEntitlement` render the paywall and
+    // never re-evaluate. `loading` means a later check can succeed, so wait for
+    // it here, once, and re-derive. `unavailable` (no provider, or the load
+    // already settled empty) skips the wait and fails closed immediately, as
+    // before — the terminal contract is unchanged.
+    if (this.getPlaybookLoadState() === 'loading') {
+      await this.whenPlaybookSettled();
+      const settled = this.resolveEntitlementLocally(handle, context);
+      if (settled) return settled;
+    }
 
     // Fail-closed: no configured Playbook means no basis to grant access. In
     // Server mode this fires only when the launched config could not be fetched.
@@ -8662,6 +8911,10 @@ export class RevTurbineCustomerSdk {
       payloadId: outputId,
       experimentId: ref.experimentId,
       variantKey: ref.variantKey,
+      // BL-0182. The unknown-output branch above deliberately stamps nothing:
+      // no decision from this SDK produced that output, so there is no rule to
+      // name and guessing one would be worse than the gap.
+      ruleHandle: ref.ruleHandle,
       metadata: ref.decisionId ? { ...metadata, decision_id: ref.decisionId } : metadata,
     });
   }

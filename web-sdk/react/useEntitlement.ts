@@ -126,6 +126,10 @@ export function useEntitlement({
     return () => {
       unsub();
       unwatch();
+      // BL-0179 — release the Playbook-settled subscription the gate may hold
+      // while waiting out a config race, or an unmounted gate keeps a listener
+      // (and re-checks) alive on the SDK.
+      gate.dispose();
       gateRef.current = null;
     };
   // `contextKey` (not `context`) so an inline literal does not rebuild the gate

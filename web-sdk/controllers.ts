@@ -53,6 +53,7 @@ import type {
   UsageBalances,
   JsonObject,
   SdkEventProperties,
+  RevTurbinePlaybookLoadState,
 } from './customer-side';
 import {
   DEFAULT_HOSTED_ENDPOINT,
@@ -148,6 +149,32 @@ export type SlotLifecycleEvent =
   | 'slot_error';
 
 /**
+ * How many times one load cycle re-decides after a Playbook load settles
+ * (BL-0177).
+ *
+ * Small on purpose: the SDK already waits out an in-flight load inside
+ * `getPlacementDecision`, so this budget only covers a load that outran that
+ * bound or a first attempt that failed and a second that succeeded. It is what
+ * keeps a provider that never yields a config from re-deciding forever.
+ */
+const MAX_CONFIG_RETRIES = 2;
+
+/**
+ * Entitlement reasons that mean "no Playbook rule covered this handle"
+ * (BL-0179).
+ *
+ * One fact, two mode-specific names: Server mode reports
+ * `config_unavailable`, local mode `entitlement_not_in_playbook`. Either one
+ * seen while the load state is still `loading` is a race, not a verdict — the
+ * load-state check is what keeps `entitlement_not_in_playbook` the honest
+ * terminal verdict it has always been once a Playbook IS loaded.
+ */
+const CONFIG_MISS_REASONS: ReadonlySet<string> = new Set([
+  'config_unavailable',
+  'entitlement_not_in_playbook',
+]);
+
+/**
  * Read-only snapshot of a {@link PlacementController}'s state.
  */
 export interface PlacementControllerState {
@@ -199,10 +226,80 @@ export class PlacementController {
   // Re-emits only when the resolved decision identity or outcome changes, so a
   // re-render against the same cached decision stays silent.
   private _lastSlotKey: string | null = null;
+  // BL-0177 — a `config_unavailable` decision taken while the Playbook is still
+  // in flight is not an answer, it is a race the slot lost. The controller waits
+  // for the load to settle and re-decides itself, so no consumer has to.
+  private _awaitingConfig = false;
+  private _configRetries = 0;
+  private _playbookUnsubscribe: (() => void) | null = null;
 
   constructor(sdk: RevTurbineCustomerSdk, options: PlacementControllerOptions) {
     this.sdk = sdk;
     this.options = options;
+  }
+
+  /**
+   * Stop listening for Playbook loads. Idempotent; call it when the owning
+   * component unmounts (`usePlacement` does).
+   */
+  dispose(): void {
+    this._playbookUnsubscribe?.();
+    this._playbookUnsubscribe = null;
+    this._awaitingConfig = false;
+  }
+
+  /**
+   * Is this decision a race against a Playbook load rather than a verdict?
+   *
+   * `config_unavailable` carries both meanings (see
+   * `RevTurbinePlaybookLoadState`). Only the transient one is retried, and only
+   * while the retry budget holds — a provider that never produces a config must
+   * settle into the honest fallback instead of re-deciding forever.
+   */
+  private isTransientConfigMiss(decision: RevTurbinePlacementDecision): boolean {
+    if (!decision.reasonCodes?.includes('config_unavailable')) return false;
+    if (this._configRetries >= MAX_CONFIG_RETRIES) return false;
+    return this.sdk.getPlaybookLoadState() === 'loading';
+  }
+
+  /**
+   * Re-decide once a Playbook load attempt settles, if the decision we are
+   * holding was only a config race and a config is now available.
+   *
+   * Bounded three ways: only while the held decision says
+   * `config_unavailable`, only when the settled state is `ready`, and never
+   * more than {@link MAX_CONFIG_RETRIES} times per load cycle. A successful
+   * re-decide clears the reason, which ends the cycle on its own.
+   */
+  private handlePlaybookSettled(): void {
+    if (!this._decision?.reasonCodes?.includes('config_unavailable')) {
+      this.dispose();
+      return;
+    }
+    if (this._configRetries >= MAX_CONFIG_RETRIES || this.sdk.getPlaybookLoadState() !== 'ready') {
+      // Nothing more is coming — finalize the fallback we already hold so the
+      // slot stops reporting "loading" (and emits its diagnostics honestly).
+      if (this.sdk.getPlaybookLoadState() !== 'loading') this.finalizeAwaitedConfig();
+      return;
+    }
+    this._configRetries += 1;
+    this.dispose();
+    void this.load();
+  }
+
+  /**
+   * Give up waiting: publish the `config_unavailable` decision as the answer,
+   * with the lifecycle + slot diagnostics that were withheld while a retry was
+   * still expected.
+   */
+  private finalizeAwaitedConfig(): void {
+    if (!this._awaitingConfig) return;
+    this._awaitingConfig = false;
+    this._isLoading = false;
+    this.dispose();
+    this.emitPlacementLifecycle('placement_resolved', null);
+    this.emitSlotResolution();
+    this.notify();
   }
 
   /** Current state snapshot. */
@@ -291,6 +388,11 @@ export class PlacementController {
       // user is not enrolled — which stays distinct from being in control.
       experimentId: decision.output?.experiment_id,
       variantKey: decision.output?.variant_key,
+      // BL-0182: the impression is an interaction like the rest, and the
+      // decision that produced it is right here. `emitPlacementLifecycle`
+      // beside this already stamps the same `rule_id` (BL-0062 / #389); the
+      // interaction path was the one that did not.
+      ruleHandle: decision.output?.rule_id,
       metadata: {
         decision_source: decision.decisionSource,
         exposure_basis: basis,
@@ -506,6 +608,18 @@ export class PlacementController {
 
       this._decision = decision;
 
+      // BL-0177 — the Playbook is still loading and this decision only says so.
+      // Stay in `isLoading`, withhold the lifecycle + slot diagnostics (a
+      // transient race is not a resolution and must not land in the funnel as
+      // `slot_empty`), and re-decide when the load settles.
+      if (this.isTransientConfigMiss(decision)) {
+        this._awaitingConfig = true;
+        this._playbookUnsubscribe ??= this.sdk.onPlaybookSettled(() => { this.handlePlaybookSettled(); });
+        return decision;
+      }
+      this._awaitingConfig = false;
+      this.dispose();
+
       // A decision resolved — emit the lifecycle marker once per load, with
       // decision provenance, regardless of visibility (plan 144 TASK-10).
       this.emitPlacementLifecycle('placement_resolved', null);
@@ -536,7 +650,10 @@ export class PlacementController {
       return null;
     } finally {
       if (seq === this._loadSeq) {
-        this._isLoading = false;
+        // Still `isLoading` while a config-race retry is pending (BL-0177):
+        // reporting a settled `config_unavailable` is what made slots paint a
+        // permanent fallback.
+        this._isLoading = this._awaitingConfig;
         this.notify();
       }
     }
@@ -548,6 +665,9 @@ export class PlacementController {
     this._rendered = false;
     this._exposed = false;
     this._exposureBasis = null;
+    // An explicit refresh is a fresh load cycle, so the config-race budget
+    // resets with it (BL-0177).
+    this._configRetries = 0;
     return this.load();
   }
 
@@ -658,6 +778,11 @@ export class PlacementController {
       messageBlockId: output?.message_block_id,
       experimentId: this._decision?.output?.experiment_id,
       variantKey: this._decision?.output?.variant_key,
+      // BL-0182: dismiss / remind_me_later / cta_clicked / cta_completed all
+      // arrive here, so this one line puts every React and headless click into
+      // the rule slice. Undefined when the controller holds no decision —
+      // absent, not empty.
+      ruleHandle: this._decision?.output?.rule_id,
       metadata: decisionId ? { ...metadata, decision_id: decisionId } : metadata,
     });
 
@@ -757,10 +882,26 @@ export class EntitlementGate {
   // Dedup key for the passive gate_evaluated signal (plan 144 TASK-10). Re-emits
   // only when the evaluated outcome actually changes, not on every recheck.
   private _lastEvaluatedKey: string | null = null;
+  // BL-0179 — a `config_unavailable` deny taken while the Playbook is still in
+  // flight is not a verdict, it is a race the gate lost. It is PARKED here
+  // rather than published: `_result` stays null, so `denied` stays false and no
+  // `gate_evaluated` is emitted, until the load settles and the gate re-checks.
+  private _awaitedResult: EntitlementResult | null = null;
+  private _configRetries = 0;
+  private _playbookUnsubscribe: (() => void) | null = null;
 
   constructor(sdk: RevTurbineCustomerSdk, options: EntitlementGateOptions) {
     this.sdk = sdk;
     this.options = options;
+  }
+
+  /**
+   * Stop listening for Playbook loads. Idempotent; call it when the owning
+   * component unmounts (`useEntitlement` does).
+   */
+  dispose(): void {
+    this._playbookUnsubscribe?.();
+    this._playbookUnsubscribe = null;
   }
 
   /** Current state snapshot. */
@@ -797,51 +938,182 @@ export class EntitlementGate {
    * also resolves a gated placement.
    */
   async check(): Promise<EntitlementResult | null> {
-    const { handle, context, autoGate, gatePlacementRequest } = this.options;
+    const { handle, context } = this.options;
     this._isLoading = true;
     this._error = null;
     this.notify();
 
     try {
       const res = await this.sdk.checkEntitlement(handle, context);
-      this._result = res;
 
-      // Passive evaluation → `gate_evaluated` (plan 144 TASK-10 / REQ-20, AC-11).
-      // NEVER `gate_attempted` — that names an active, user-invoked gate run
-      // (useGatedAction, TASK-14). `gate_limited` / `gate_denied` are not
-      // separate emissions: the outcome field carries the status, which the
-      // existing `limited` state and `onDenied` callback already surface.
-      // Deduped so a recheck with an unchanged outcome stays quiet; best-effort
-      // so a telemetry hiccup never breaks the gate.
-      this.emitGateEvaluated(handle, res);
-
-      if (!autoGate || !entitlementResultDenies(res)) {
-        this._gatedPlacement = null;
-      } else if (res.placement) {
-        this._gatedPlacement = res.placement;
-      } else {
-        // Fetch gated placement from API
-        const resolved = await this.sdk.getPlacement({
-          ...gatePlacementRequest,
-          entitlementHandle: handle,
-        });
-        this._gatedPlacement = resolved;
+      // BL-0179 — the Playbook outran `checkEntitlement`'s own bounded wait and
+      // is still loading, so this deny only says "not yet". Park it, stay in
+      // `isLoading`, withhold `gate_evaluated` (a lost race is not an
+      // evaluation and must not land in the gate funnel as a denial), and
+      // re-check when the load settles.
+      if (this.isTransientConfigMiss(res)) {
+        const unsubscribe = this._playbookUnsubscribe ?? this.subscribeToPlaybookSettled();
+        if (unsubscribe) {
+          this._playbookUnsubscribe = unsubscribe;
+          this._awaitedResult = res;
+          return res;
+        }
+        // Cannot subscribe (a test double without `onPlaybookSettled`): nothing
+        // would ever wake this gate, so publish the deny rather than park it.
       }
 
+      this._awaitedResult = null;
+      this.dispose();
+      // A real verdict ends the cycle, so the next race starts with a full
+      // budget (a context change re-checks through this path).
+      if (!CONFIG_MISS_REASONS.has(res.reason ?? '')) this._configRetries = 0;
+      await this.publishResult(res);
       return res;
     } catch (err) {
       this._error = err instanceof Error ? err.message : String(err);
       this._gatedPlacement = null;
+      this._awaitedResult = null;
+      this.dispose();
       return null;
+    } finally {
+      // Still `isLoading` while a config-race re-check is pending (BL-0179):
+      // publishing a transient `config_unavailable` as a settled deny is what
+      // made gates paint a permanent paywall.
+      this._isLoading = this._awaitedResult !== null;
+      this.notify();
+    }
+  }
+
+  /**
+   * Re-run the entitlement check (alias of {@link check}).
+   *
+   * An explicit recheck is a fresh cycle, so the config-race budget resets with
+   * it (BL-0179) — the caller asking again is not the SDK retrying itself.
+   */
+  async recheck(): Promise<EntitlementResult | null> {
+    this._configRetries = 0;
+    return this.check();
+  }
+
+  /**
+   * Publish a settled entitlement result: the state, the passive telemetry, and
+   * the auto-gated placement.
+   *
+   * Extracted so the first-pass check and the post-config-wait finalize
+   * (BL-0179) cannot drift apart — a second copy is how a re-check ends up
+   * skipping the `gate_evaluated` emit or the `autoGate` resolution.
+   */
+  private async publishResult(res: EntitlementResult): Promise<void> {
+    const { handle, autoGate, gatePlacementRequest } = this.options;
+    this._result = res;
+
+    // Passive evaluation → `gate_evaluated` (plan 144 TASK-10 / REQ-20, AC-11).
+    // NEVER `gate_attempted` — that names an active, user-invoked gate run
+    // (useGatedAction, TASK-14). `gate_limited` / `gate_denied` are not
+    // separate emissions: the outcome field carries the status, which the
+    // existing `limited` state and `onDenied` callback already surface.
+    // Deduped so a recheck with an unchanged outcome stays quiet; best-effort
+    // so a telemetry hiccup never breaks the gate.
+    this.emitGateEvaluated(handle, res);
+
+    if (!autoGate || !entitlementResultDenies(res)) {
+      this._gatedPlacement = null;
+    } else if (res.placement) {
+      this._gatedPlacement = res.placement;
+    } else {
+      // Fetch gated placement from API
+      const resolved = await this.sdk.getPlacement({
+        ...gatePlacementRequest,
+        entitlementHandle: handle,
+      });
+      this._gatedPlacement = resolved;
+    }
+  }
+
+  /**
+   * Is this deny a race against a Playbook load rather than a verdict?
+   *
+   * Two conditions, both required. The reason must name a config miss —
+   * `config_unavailable` in Server mode, `entitlement_not_in_playbook` in
+   * local mode, which is the same fact under a mode-specific name — AND the
+   * load state must still be `loading`. Once a Playbook is loaded the state is
+   * `ready` and `entitlement_not_in_playbook` is the honest terminal verdict it
+   * has always been; this never reinterprets it.
+   *
+   * Bounded by {@link MAX_CONFIG_RETRIES}: a provider that never yields a
+   * config must settle into the fail-closed deny instead of re-checking
+   * forever.
+   */
+  private isTransientConfigMiss(res: EntitlementResult): boolean {
+    if (!CONFIG_MISS_REASONS.has(res.reason ?? '')) return false;
+    if (!entitlementResultDenies(res)) return false;
+    if (this._configRetries >= MAX_CONFIG_RETRIES) return false;
+    return this.playbookLoadState() === 'loading';
+  }
+
+  /**
+   * Re-check once a Playbook load attempt settles, if the deny we parked was
+   * only a config race and a config is now available (BL-0179).
+   *
+   * Bounded three ways, mirroring `PlacementController`: only while a parked
+   * deny exists, only when the settled state is `ready`, and never more than
+   * {@link MAX_CONFIG_RETRIES} times.
+   */
+  private handlePlaybookSettled(): void {
+    if (!this._awaitedResult) {
+      this.dispose();
+      return;
+    }
+    const state = this.playbookLoadState();
+    if (this._configRetries >= MAX_CONFIG_RETRIES || state !== 'ready') {
+      // Nothing more is coming — publish the deny we are holding so the gate
+      // stops reporting `isLoading` and reports it honestly.
+      if (state !== 'loading') void this.finalizeAwaitedConfig();
+      return;
+    }
+    this._configRetries += 1;
+    this.dispose();
+    void this.check();
+  }
+
+  /**
+   * Give up waiting: publish the parked `config_unavailable` deny as the
+   * answer, with the `gate_evaluated` emit that was withheld while a re-check
+   * was still expected.
+   */
+  private async finalizeAwaitedConfig(): Promise<void> {
+    const parked = this._awaitedResult;
+    if (!parked) return;
+    this._awaitedResult = null;
+    this.dispose();
+    try {
+      await this.publishResult(parked);
+    } catch (err) {
+      this._error = err instanceof Error ? err.message : String(err);
+      this._gatedPlacement = null;
     } finally {
       this._isLoading = false;
       this.notify();
     }
   }
 
-  /** Re-run the entitlement check (alias of {@link check}). */
-  async recheck(): Promise<EntitlementResult | null> {
-    return this.check();
+  /**
+   * Read the SDK's Playbook load state, degrading to `null` on a hand-rolled
+   * test double that predates it — same contract as {@link watchUserContext}:
+   * an SDK that can break the host app's render has failed at its one hard
+   * guarantee. A `null` state is never transient, so such a double keeps
+   * today's fail-closed behaviour exactly.
+   */
+  private playbookLoadState(): RevTurbinePlaybookLoadState | null {
+    const read = (this.sdk as Partial<RevTurbineCustomerSdk>).getPlaybookLoadState;
+    return typeof read === 'function' ? read.call(this.sdk) : null;
+  }
+
+  /** Subscribe to Playbook load settles, degrading on an older test double. */
+  private subscribeToPlaybookSettled(): (() => void) | null {
+    const subscribe = (this.sdk as Partial<RevTurbineCustomerSdk>).onPlaybookSettled;
+    if (typeof subscribe !== 'function') return null;
+    return subscribe.call(this.sdk, () => { this.handlePlaybookSettled(); });
   }
 
   /**

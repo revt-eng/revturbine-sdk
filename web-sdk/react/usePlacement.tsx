@@ -158,6 +158,9 @@ export function usePlacement({
 
     return () => {
       unsub();
+      // Drops the controller's Playbook-load subscription too (BL-0177), so an
+      // unmounted slot never re-decides.
+      ctrl.dispose();
       controllerRef.current = null;
     };
   // Deps intentionally limited — surfaceKey identity triggers refetch -- keyed on serialized placementKey for referential stability
