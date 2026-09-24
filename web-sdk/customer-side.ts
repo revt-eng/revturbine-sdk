@@ -1410,6 +1410,16 @@ export interface RevTurbineEndpointOverrides {
    */
   legacyInteractions?: string;
   placementTypes: string;
+  /**
+   * Optional sink for registered surface slots.
+   *
+   * RevTurbine hosts **no default route** for this verb (BL-0197). Slot
+   * registration is client-local and discovery is ingestion-driven — the
+   * pipeline derives discovered slots from the `slot_*` telemetry the SDK
+   * already emits through `/api/track`. Set this only when you run your own
+   * slot-inventory service; unset, `registerSurfaceSlot()` performs no
+   * network write.
+   */
   surfaceSlots: string;
 }
 
@@ -6778,13 +6788,43 @@ export class RevTurbineCustomerSdk {
     });
   }
 
+  /**
+   * Mirror a registered surface slot to an explicitly configured backend.
+   *
+   * **Requires an explicit `surfaceSlots` endpoint override** (BL-0197).
+   * There is no default route for this verb and there never was a correct
+   * one: the previous default pointed at `/api/placements`, RevTurbine's
+   * *authored-config* CRUD. That route validates against `PlacementSchema`
+   * (which requires `handle` and `category`), so the legacy surface-slot body
+   * this method sends could only ever be rejected — in production every
+   * non-`local_only` registration failed with
+   * `surface_slot_create_failed:422` and the React runtime turned that into a
+   * `slot_error`.
+   *
+   * It was also wrong in principle. On a same-origin integration the signed-in
+   * user's session cookie authenticates the request, so a body the route *did*
+   * accept would have let merely loading a gated page create a draft placement
+   * in the tenant's Playbook. Only the 422 prevented that.
+   *
+   * Surface-slot **discovery is ingestion-driven**: the SDK emits its
+   * `slot_*` / `placement_*` telemetry through `/api/track` and the pipeline
+   * derives discovered slots from it. Registration itself is client-local.
+   *
+   * @internal
+   */
   private async upsertSurfaceSlot(record: RevTurbinePlacementRecord): Promise<void> {
     if (this.isLocalOnlyMode()) {
       return;
     }
 
+    // No default route exists for this verb. Never fall back to
+    // `/api/placements` — that is the authored-config CRUD, not a slot sink.
+    if (!this.hasEndpointOverride('surfaceSlots')) {
+      return;
+    }
+
     const requestIdValue = requestId();
-    const baseUrl = this.endpointFor('surfaceSlots', '/api/placements').replace(/\/+$/, '');
+    const baseUrl = this.endpointFor('surfaceSlots', '').replace(/\/+$/, '');
     const slug = sanitizeSlug(record.placementScopeKey || record.id || record.name);
     const metadata = {
       ...(isRecord(record.metadata) ? record.metadata : {}),
@@ -6899,6 +6939,18 @@ export class RevTurbineCustomerSdk {
     this.syncedSurfaceSlotIds.delete(record.id);
   }
 
+  /**
+   * Register a surface slot with the local runtime and return its placement id.
+   *
+   * **Client-local by default** (BL-0197): this performs no network write. The
+   * slot is recorded in the in-process registry, and the pipeline discovers it
+   * from the `slot_*` / `placement_*` telemetry the SDK emits through
+   * `/api/track`. A write happens only when `custom_endpoints.surfaceSlots`
+   * points at a slot-inventory service you run; there is no fallback to
+   * `/api/placements`.
+   *
+   * @public
+   */
   async registerSurfaceSlot(config: RevTurbineSurfaceSlotConfig): Promise<string> {
     const route = normalizedRoute(this.currentPathname());
     const slotId = String(config?.id || '').trim();

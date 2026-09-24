@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "count": 62,
+  "count": 63,
   "exports": [
     {
       "name": "baseThemeForScheme",
@@ -235,6 +235,12 @@
       "kind": "method",
       "file": "web-sdk/customer-side.ts",
       "signature": "async registerPlacement(config: RevTurbinePlacementConfig): Promise<string>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.registerSurfaceSlot",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async registerSurfaceSlot(config: RevTurbineSurfaceSlotConfig): Promise<string>"
     },
     {
       "name": "RevTurbineCustomerSdk.reset",
