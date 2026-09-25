@@ -47,6 +47,79 @@ also require a changelog entry.
 
 ---
 
+## 0.11.6
+
+### `sdk.convert()` reloads the UserContext, so a mounted slot re-decides (BL-0004)
+
+**What changed.** `sdk.convert(outputId)` used to record the conversion and stop
+there. Conversion writes **no** cooldown and **no** permanent retirement — by
+design (Kent's plan 254 D-9 ruling; the `convert` row of the spec's interaction
+table) — so eligibility is a function of the user's CURRENT plan and targeting.
+That left a real gap: a host that called the public convert path while the
+placement was mounted saw the upgrade banner stay on screen until the slot next
+happened to resolve a decision. The documented workaround was a manual
+`refresh()` or the component's `ctaComplete()`. Plan 236 TASK-13 recorded it as
+an open product call rather than asserting it away.
+
+Kent ruled on it, 2026-09-25: *"Converting should trigger a reloading of
+UserContext with the new plan/billing state the user has converted to."*
+
+So `convert()` now, after recording the interaction:
+
+1. **Optimistically** moves the held plan when the converted output's CTA names
+   one (`cta_path.plan_handle` — e.g. `open_checkout` with `config.purchase`).
+   The Playbook supplies the plan's display name when it knows it.
+2. Notifies user-context subscribers **either way** — a CTA that names no plan
+   still re-decides mounted surfaces.
+3. **Then** refreshes from `GET /api/sdk/client-context`, which overlays the
+   RevTurbine-authoritative trial / billing-health / plan fields. Best-effort and
+   never throwing, exactly as before; a no-op when no client-session minter is
+   configured.
+
+Optimistic-first because billing truth arrives by Stripe webhook: a
+`client-context` read that races the webhook still reports the OLD plan, and
+waiting for it would leave the upgrade prompt up at the exact moment the user
+paid. For the same reason, while a conversion is pending a server plan **equal to
+the plan converted away from** is dropped (plan fields only — trial and
+billing-health always apply). Any other value clears the pending state and
+applies, so the suppression cannot outlive the lag it covers.
+
+Mounted `PlacementController`s re-decide and mounted `EntitlementGate`s re-check
+through `watchUserContext()`. The React bindings attach it for you
+(`usePlacement`, and so every surface slot built on it; `useEntitlement` /
+`useCan` already did), and `SdkSession.placement()` / `.entitlement()` attach it
+for headless consumers. `dispose()` drops it. `PlacementController.ctaComplete()`
+is unchanged.
+
+**What did NOT change.** `convert()`'s signature. Conversion still writes no
+suppression and no retirement: back on the old plan, the placement is eligible
+again. The optimistic plan move is a session-local overlay, not a new source of
+plan truth — a host that re-declares `plan_handle` on mount wins, and that is the
+intended precedence.
+
+**Landed in.** `0.11.6` (BL-0004; refs BL-0177, BL-0179 for the re-decide
+mechanism this reuses).
+
+**Fail-closed in.** `0.11.6` — same version. Nothing was silently tolerated
+before: the old behaviour was a placement that stayed visible, which is why the
+limitation was documented rather than dated.
+
+**Proving test.** `web-sdk/convert-reloads-user-context.test.ts` (headless: the
+mounted controller's decision goes invisible, a failed conversion moves nothing,
+a CTA with no plan still notifies, and the stale-server-plan guard both
+suppresses and releases); `web-sdk/react/convert-reloads-user-context.test.tsx`
+(a mounted `usePlacement` banner disappears in place and a mounted `useCan` gate
+flips denied → granted, with no remount); `e2e/journey.spec.ts` BL-0004 legs (a
+real browser: the converted placement leaves the screen with **no** page
+refresh, and the optimistic overlay does not outrank the host's declaration).
+
+**Ports.** No change. The Python and Rust SDKs are synchronous-with-config and
+have no mounted surfaces to notify; they expose no `convert()` and no
+UserContext-reload API, so there is no port-side behaviour to match. The
+decision-level contract they do share — a context carrying the new plan yields
+decisions for that plan — is unchanged, so no parity fixture moves.
+
+---
 ## 0.11.5
 
 ### `registerSurfaceSlot()` no longer writes to the control plane (BL-0197)
