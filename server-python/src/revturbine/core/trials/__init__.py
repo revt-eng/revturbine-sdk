@@ -8,6 +8,16 @@ arrays directly (:func:`evaluate_trial_status`). Pure + deterministic;
 parity = Python ≡ TS.
 """
 
+from revturbine.core.trials.trial_revision import (
+    TRIAL_EVIDENCE_KINDS,
+    TRIAL_PENDING_UNKNOWN_REASONS,
+    TRIAL_REVISION_KINDS,
+    USER_GRAIN_SIGNUP_SOURCES,
+    build_trial_revision_payload,
+    classify_trial_revision,
+    record_account_created,
+    record_trial_revision,
+)
 from revturbine.core.trials.trial_status import (
     derive_local_trial_status_from_instance,
     derive_reverse_trial_grants,
@@ -17,6 +27,14 @@ from revturbine.core.trials.trial_status import (
 )
 
 __all__ = [
+    "TRIAL_EVIDENCE_KINDS",
+    "TRIAL_PENDING_UNKNOWN_REASONS",
+    "TRIAL_REVISION_KINDS",
+    "USER_GRAIN_SIGNUP_SOURCES",
+    "build_trial_revision_payload",
+    "classify_trial_revision",
+    "record_account_created",
+    "record_trial_revision",
     "derive_local_trial_status_from_instance",
     "derive_reverse_trial_grants",
     "evaluate_trial_status",

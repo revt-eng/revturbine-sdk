@@ -161,6 +161,15 @@ import {
   evaluateTrialStatus as coreEvaluateTrialStatus,
 } from '@revt-eng/core';
 import {
+  NO_TRIAL_PROVIDER_NOTICE,
+  USER_GRAIN_SIGNUP_SOURCES,
+  resolveTrialRevision,
+  type AccountCreatedPayload,
+  type TrialEpisodeFacts,
+  type TrialRevisionLabels,
+  type TrialRevisionRecordResult,
+} from './trial-revision';
+import {
   configArtifactForRuntime,
   type ConfigArtifact,
   type ConfigTargetDefaults,
@@ -2858,6 +2867,7 @@ export class RevTurbineCustomerSdk {
   private flushTimer?: ReturnType<typeof setInterval>;
   private readonly batchingTeardown: Array<() => void> = [];
   private anonTelemetryNoticeShown = false;
+  private trialProviderNoticeShown = false;
   private piiRedactionWarned = false;
   private readonly endpoint: string;
   private readonly runtimeMode: RevTurbineRuntimeMode;
@@ -8864,7 +8874,117 @@ export class RevTurbineCustomerSdk {
     this.localTrialStatus = status;
     await this.evaluateTrialLifecycleTriggers(status);
     this.persistLocalRuntimeState();
+    // Ruling D-21: the app just told the SDK about its trials, and without a
+    // trial provider (or an explicit `recordTrialRevision` call) not one of
+    // them will ever be recorded anywhere. This is the moment the integrator
+    // can act on, so it is where the nudge fires — once, at info level.
+    if (instances.length > 0) this.noteMissingTrialProviderOnce();
     return status;
+  }
+
+  /**
+   * Record one app-owned trial-episode revision (plan 276 R-1(b), TASK-13).
+   *
+   * **Trial execution and ownership stay with your app.** RevTurbine runs no
+   * trial, enrols nobody and decides nothing about when a trial ended; it
+   * records the fact your app states. Pass the episode's facts — including the
+   * `evidence` that proves the revision — and the SDK runs the same pure
+   * classifier every RevTurbine port runs, then emits one `trial_revision` on
+   * the typed platform lane if, and only if, the evidence supports one.
+   *
+   * The classifier reads **no clock**. An episode whose scheduled end has
+   * merely passed emits nothing and comes back `pending_unknown`: an elapsed
+   * deadline proves only that the time passed, never that your app ended
+   * anything. Supply `actual_end_at` and an `end_evidence` when it did.
+   *
+   * In `local_only` mode the SDK makes no server calls, so the fact reaches any
+   * registered event consumer and never RevTurbine; the result says
+   * `recorded_locally` rather than pretending otherwise.
+   *
+   * Never throws, and never blocks a decision.
+   *
+   * @param episode - The episode's facts, as your app holds them.
+   * @param labels - Playbook vocabulary that rides along for grouping:
+   *   `rule_handle`, `plan_handle`, `trial_type`, `provider_ref`. None of it
+   *   affects the classification (plan 276 R-1(c)).
+   *
+   * @public
+   */
+  async recordTrialRevision(
+    episode: TrialEpisodeFacts,
+    labels: TrialRevisionLabels = {},
+  ): Promise<TrialRevisionRecordResult> {
+    const { classification, payload } = resolveTrialRevision(episode, labels);
+    if (!payload) return { status: 'pending_unknown', classification, payload: null };
+    await this.emitPlatformEvent('trial_revision', payload);
+    return {
+      status: this.isLocalOnlyMode() ? 'recorded_locally' : 'recorded',
+      classification,
+      payload,
+    };
+  }
+
+  /**
+   * Record every revision the registered trial provider currently states.
+   *
+   * Resolves the `'trial'` domain provider, classifies each episode it returns
+   * and records the ones whose evidence supports a revision. An episode that
+   * resolves to `pending_unknown` is reported and emits nothing.
+   *
+   * With **no trial provider registered** this records nothing, logs the
+   * one-time notice naming the gap, and returns a single
+   * `no_trial_provider` result — never an error (ruling D-21). Call
+   * {@link RevTurbineCustomerSdk.recordTrialRevision} directly if you would
+   * rather push episodes than have them pulled.
+   *
+   * @public
+   */
+  async syncTrialRevisions(labels: TrialRevisionLabels = {}): Promise<TrialRevisionRecordResult[]> {
+    const { providers } = await this.resolveEffectiveProviderContext();
+    const episodes = providers?.trial?.episodes;
+    if (!episodes) {
+      this.noteMissingTrialProviderOnce();
+      return [{ status: 'no_trial_provider', classification: null, payload: null }];
+    }
+    const results: TrialRevisionRecordResult[] = [];
+    for (const episode of episodes) {
+      results.push(await this.recordTrialRevision(episode, labels));
+    }
+    return results;
+  }
+
+  /**
+   * Record that a customer account came into existence (plan 276 REQ-3).
+   *
+   * Requires the account grain, the creation time, the creating act and the
+   * evidence that proves it. A **user** signup is not account creation
+   * (plan 276 R-2) — emit `user_signed_up` for that; a payload whose `source`
+   * names a user-grain act is rejected without emitting, and the result says so.
+   *
+   * @public
+   */
+  async recordAccountCreated(payload: AccountCreatedPayload): Promise<{ recorded: boolean; reason: string | null }> {
+    if (USER_GRAIN_SIGNUP_SOURCES.includes(payload.source)) {
+      this.emitSdkWarning(
+        'recordAccountCreated received a user-grain source; a user signup is not account creation',
+        { source_event_type: 'account_created', violation: payload.source },
+      );
+      return { recorded: false, reason: 'user_grain_signup_is_not_account_creation' };
+    }
+    await this.emitPlatformEvent('account_created', payload);
+    return { recorded: true, reason: null };
+  }
+
+  /**
+   * The D-21 nudge: one info-level console line per SDK runtime when trials
+   * exist but nothing will record their revisions. Never an error, never a
+   * throw, and it changes no decision.
+   */
+  private noteMissingTrialProviderOnce(): void {
+    if (this.trialProviderNoticeShown) return;
+    if (this.providerRegistry.has('trial')) return;
+    this.trialProviderNoticeShown = true;
+    console.info(NO_TRIAL_PROVIDER_NOTICE);
   }
 
   /**

@@ -63,6 +63,7 @@ pub mod runtime;
 pub mod sdk;
 pub mod segments;
 pub mod state;
+pub mod trial_revision;
 pub mod trials;
 pub mod user_context;
 

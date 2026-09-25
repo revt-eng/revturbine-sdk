@@ -1,7 +1,13 @@
 {
   "schema": 1,
-  "count": 66,
+  "count": 76,
   "exports": [
+    {
+      "name": "AccountCreatedPayload",
+      "kind": "interface",
+      "file": "web-sdk/trial-revision.ts",
+      "signature": "export interface AccountCreatedPayload extends EventPayloadInput<'account_created'> { account_id: string; created_at: string; source: string; evidence: { kind: 'provider_fact' | 'app_fact' | 'usage_exhaustion'; ref: string }; acquisition_source?: string; }"
+    },
     {
       "name": "baseThemeForScheme",
       "kind": "function",
@@ -91,6 +97,12 @@
       "kind": "type",
       "file": "web-sdk/config-artifact.ts",
       "signature": "export type LegacyConfigTargetDefaults = ConfigTargetDefaults"
+    },
+    {
+      "name": "NO_TRIAL_PROVIDER_NOTICE",
+      "kind": "const",
+      "file": "web-sdk/trial-revision.ts",
+      "signature": "export const NO_TRIAL_PROVIDER_NOTICE = '[RevTurbine] No trial provider supplied; trial revisions will not be recorded — ' + 'see https: + \"`domain: 'trial'`, or call `recordTrialRevision(episode)` yourself. Trials keep \" + 'working; only the lifecycle facts are missing.'; export function buildTrialRevisionPayload( facts: TrialEpisodeFacts, classification: TrialRevisionClassification, labels: TrialRevisionLabels ="
     },
     {
       "name": "remediationFor",
@@ -249,6 +261,18 @@
       "signature": "identify<T extends IdentifyContextInput>(userId: string, context?: Exact<IdentifyContextInput, T>): void"
     },
     {
+      "name": "RevTurbineCustomerSdk.recordAccountCreated",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async recordAccountCreated(payload: AccountCreatedPayload): Promise<"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.recordTrialRevision",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async recordTrialRevision( episode: TrialEpisodeFacts, labels: TrialRevisionLabels ="
+    },
+    {
       "name": "RevTurbineCustomerSdk.registerPlacement",
       "kind": "method",
       "file": "web-sdk/customer-side.ts",
@@ -301,6 +325,12 @@
       "kind": "method",
       "file": "web-sdk/customer-side.ts",
       "signature": "async snooze(outputId: string, seconds?: number): Promise<void>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.syncTrialRevisions",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "async syncTrialRevisions(labels: TrialRevisionLabels ="
     },
     {
       "name": "RevTurbineCustomerSdk.track",
@@ -369,6 +399,30 @@
       "signature": "export type SurfaceSlotHiddenReason = 'dismissed' | 'no_match' | null"
     },
     {
+      "name": "TrialRevisionLabels",
+      "kind": "interface",
+      "file": "web-sdk/trial-revision.ts",
+      "signature": "export interface TrialRevisionLabels { rule_handle?: string | null; plan_handle?: string | null; trial_type?: string | null; provider_ref?: string | null; }"
+    },
+    {
+      "name": "TrialRevisionPayload",
+      "kind": "interface",
+      "file": "web-sdk/trial-revision.ts",
+      "signature": "export interface TrialRevisionPayload extends EventPayloadInput<'trial_revision'> { trial_episode_id: string; account_id: string; subject_scope: 'account' | 'user'; rule_handle: string | null; plan_handle: string | null; trial_type: string | null; revision: TrialRevisionKind; effective_at: string; scheduled_end_at: string | null; actual_end_at: string | null; evidence: { kind: 'provider_fact' | 'app_fact' | 'usage_exhaustion'; ref: string }; provider_ref: string | null; }"
+    },
+    {
+      "name": "TrialRevisionRecordResult",
+      "kind": "interface",
+      "file": "web-sdk/trial-revision.ts",
+      "signature": "export interface TrialRevisionRecordResult { status: TrialRevisionRecordStatus; classification: TrialRevisionClassification | null; payload: TrialRevisionPayload | null; }"
+    },
+    {
+      "name": "TrialRevisionRecordStatus",
+      "kind": "type",
+      "file": "web-sdk/trial-revision.ts",
+      "signature": "export type TrialRevisionRecordStatus = | 'recorded' | 'recorded_locally' | 'pending_unknown' | 'no_trial_provider'"
+    },
+    {
       "name": "useCan",
       "kind": "function",
       "file": "web-sdk/react/useCan.ts",
@@ -385,6 +439,12 @@
       "kind": "function",
       "file": "web-sdk/react/useGatedAction.ts",
       "signature": "export function useGatedAction<A extends unknown[], R>( action: string, fn: (...args: A) => Promise<R> | R, context?: RevTurbineEntitlementContext, options?: TrackOptions, ): GatedAction<A, R>"
+    },
+    {
+      "name": "USER_GRAIN_SIGNUP_SOURCES",
+      "kind": "const",
+      "file": "web-sdk/trial-revision.ts",
+      "signature": "export const USER_GRAIN_SIGNUP_SOURCES: readonly string[] = ["
     },
     {
       "name": "useResolvedColorScheme",

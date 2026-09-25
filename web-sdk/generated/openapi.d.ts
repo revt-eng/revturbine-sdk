@@ -671,7 +671,7 @@ export interface components {
         };
         TrackEvent: {
             environment_id: components["schemas"]["Anon_57796118d046_16"];
-            user_id: components["schemas"]["Anon_761f976a1da1_1"];
+            user_id: components["schemas"]["Anon_57796118d046_17"];
             account_id?: components["schemas"]["Anon_4e04ec5cc4e6_3"];
             event_name: components["schemas"]["Anon_cd76cef95ac8"];
             event_ts: components["schemas"]["Anon_3c179513a5d9_2"];
@@ -726,19 +726,19 @@ export interface components {
         };
         TreatmentInteractionRequest: components["schemas"]["TreatmentInteractionInput"] | components["schemas"]["TreatmentInteractionBatch"];
         TreatmentInteractionInput: {
-            user_id: components["schemas"]["Anon_761f976a1da1_2"];
-            account_id?: components["schemas"]["Anon_0a729b73253d"];
-            placement_id: components["schemas"]["Anon_57796118d046_17"];
-            treatment_id?: components["schemas"]["Anon_4e04ec5cc4e6_5"];
-            surface_slot_id?: components["schemas"]["Anon_4e04ec5cc4e6_6"];
-            surface_template_id?: components["schemas"]["Anon_4e04ec5cc4e6_7"];
-            payload_id?: components["schemas"]["Anon_4e04ec5cc4e6_8"];
+            user_id: components["schemas"]["Anon_57796118d046_18"];
+            account_id?: components["schemas"]["Anon_4e04ec5cc4e6_5"];
+            placement_id: components["schemas"]["Anon_57796118d046_19"];
+            treatment_id?: components["schemas"]["Anon_4e04ec5cc4e6_6"];
+            surface_slot_id?: components["schemas"]["Anon_4e04ec5cc4e6_7"];
+            surface_template_id?: components["schemas"]["Anon_4e04ec5cc4e6_8"];
+            payload_id?: components["schemas"]["Anon_4e04ec5cc4e6_9"];
             interaction_type: components["schemas"]["Anon_b540c131c269"];
             interaction_at?: components["schemas"]["Anon_e077e17ea982_3"];
-            message_block_handle?: components["schemas"]["Anon_4e04ec5cc4e6_9"];
-            message_block_id?: components["schemas"]["Anon_4e04ec5cc4e6_10"];
-            experiment_id?: components["schemas"]["Anon_4e04ec5cc4e6_11"];
-            variant_key?: components["schemas"]["Anon_4e04ec5cc4e6_12"];
+            message_block_handle?: components["schemas"]["Anon_4e04ec5cc4e6_10"];
+            message_block_id?: components["schemas"]["Anon_4e04ec5cc4e6_11"];
+            experiment_id?: components["schemas"]["Anon_4e04ec5cc4e6_12"];
+            variant_key?: components["schemas"]["Anon_4e04ec5cc4e6_13"];
             rule_handle?: components["schemas"]["Anon_94b7b4f4c44a"];
             test?: components["schemas"]["Anon_fb9ddeea992e_3"];
             metadata?: components["schemas"]["Anon_a249e58b3222"];
@@ -1075,7 +1075,7 @@ export interface components {
         Anon_f27cb44c32f6_4: components["schemas"]["Anon_f2d1b3e449b4"];
         Anon_3f2bab3833ef: components["schemas"]["TrackEvent"][];
         Anon_57796118d046_16: string;
-        Anon_761f976a1da1_1: string;
+        Anon_57796118d046_17: string;
         Anon_4e04ec5cc4e6_3: components["schemas"]["Anon_9ac136edb99a_8"];
         Anon_9ac136edb99a_8: string;
         Anon_cd76cef95ac8: string;
@@ -1146,29 +1146,29 @@ export interface components {
         Anon_520c691f88f7_9: string;
         Anon_e17de468dbc9_10: components["schemas"]["Anon_520c691f88f7_10"];
         Anon_520c691f88f7_10: string;
-        Anon_761f976a1da1_2: string;
-        Anon_0a729b73253d: components["schemas"]["Anon_9ac136edb99a_10"];
+        Anon_57796118d046_18: string;
+        Anon_4e04ec5cc4e6_5: components["schemas"]["Anon_9ac136edb99a_10"];
         Anon_9ac136edb99a_10: string;
-        Anon_57796118d046_17: string;
-        Anon_4e04ec5cc4e6_5: components["schemas"]["Anon_9ac136edb99a_11"];
+        Anon_57796118d046_19: string;
+        Anon_4e04ec5cc4e6_6: components["schemas"]["Anon_9ac136edb99a_11"];
         Anon_9ac136edb99a_11: string;
-        Anon_4e04ec5cc4e6_6: components["schemas"]["Anon_9ac136edb99a_12"];
+        Anon_4e04ec5cc4e6_7: components["schemas"]["Anon_9ac136edb99a_12"];
         Anon_9ac136edb99a_12: string;
-        Anon_4e04ec5cc4e6_7: components["schemas"]["Anon_9ac136edb99a_13"];
+        Anon_4e04ec5cc4e6_8: components["schemas"]["Anon_9ac136edb99a_13"];
         Anon_9ac136edb99a_13: string;
-        Anon_4e04ec5cc4e6_8: components["schemas"]["Anon_9ac136edb99a_14"];
+        Anon_4e04ec5cc4e6_9: components["schemas"]["Anon_9ac136edb99a_14"];
         Anon_9ac136edb99a_14: string;
         Anon_b540c131c269: components["schemas"]["TreatmentInteractionType"];
         Anon_e077e17ea982_3: components["schemas"]["Anon_02ecf48bed22_3"];
         /** Format: date-time */
         Anon_02ecf48bed22_3: string;
-        Anon_4e04ec5cc4e6_9: components["schemas"]["Anon_9ac136edb99a_15"];
+        Anon_4e04ec5cc4e6_10: components["schemas"]["Anon_9ac136edb99a_15"];
         Anon_9ac136edb99a_15: string;
-        Anon_4e04ec5cc4e6_10: components["schemas"]["Anon_9ac136edb99a_16"];
+        Anon_4e04ec5cc4e6_11: components["schemas"]["Anon_9ac136edb99a_16"];
         Anon_9ac136edb99a_16: string;
-        Anon_4e04ec5cc4e6_11: components["schemas"]["Anon_9ac136edb99a_17"];
+        Anon_4e04ec5cc4e6_12: components["schemas"]["Anon_9ac136edb99a_17"];
         Anon_9ac136edb99a_17: string;
-        Anon_4e04ec5cc4e6_12: components["schemas"]["Anon_9ac136edb99a_18"];
+        Anon_4e04ec5cc4e6_13: components["schemas"]["Anon_9ac136edb99a_18"];
         Anon_9ac136edb99a_18: string;
         Anon_94b7b4f4c44a: components["schemas"]["Anon_904af497346b"];
         Anon_904af497346b: string | null;
@@ -1212,7 +1212,7 @@ export interface components {
             base_sequence: components["schemas"]["Anon_71a2fb329804_1"];
             anchor_id: components["schemas"]["Anon_fb248bf5a9f7_12"];
             handle: components["schemas"]["Anon_2457cccd64aa_2"];
-            plan_id: components["schemas"]["Anon_57796118d046_27"];
+            plan_id: components["schemas"]["Anon_57796118d046_29"];
             billing_period: components["schemas"]["Anon_129e203b1449_2"];
             segment_id: components["schemas"]["Anon_f7fb9744a6e4_12"];
             price_amount: components["schemas"]["Anon_7ab7b70b014d_3"];
@@ -1255,7 +1255,7 @@ export interface components {
             base_sequence: components["schemas"]["Anon_71a2fb329804_1"];
             anchor_id: components["schemas"]["Anon_fb248bf5a9f7_14"];
             handle: components["schemas"]["Anon_2457cccd64aa_3"];
-            addon_id: components["schemas"]["Anon_57796118d046_28"];
+            addon_id: components["schemas"]["Anon_57796118d046_30"];
             billing_period: components["schemas"]["Anon_129e203b1449_3"];
             segment_id: components["schemas"]["Anon_f7fb9744a6e4_13"];
             price_amount: components["schemas"]["Anon_7ab7b70b014d_4"];
@@ -1270,8 +1270,8 @@ export interface components {
             created_at: components["schemas"]["Anon_be3e2585472d_2"];
             updated_at: components["schemas"]["Anon_be3e2585472d_3"];
             tenant_id: components["schemas"]["Anon_fb248bf5a9f7_10"];
-            stripe_price_id: components["schemas"]["Anon_57796118d046_29"];
-            stripe_product_id: components["schemas"]["Anon_57796118d046_30"];
+            stripe_price_id: components["schemas"]["Anon_57796118d046_31"];
+            stripe_product_id: components["schemas"]["Anon_57796118d046_32"];
             billing_period: components["schemas"]["Anon_cf08caa6d850_1"];
             unit_amount_cents: components["schemas"]["Anon_79391150fda1_1"];
             currency: components["schemas"]["Anon_1788a9a8a0b9_2"];
@@ -1318,7 +1318,7 @@ export interface components {
             base_sequence: components["schemas"]["Anon_71a2fb329804_1"];
             anchor_id: components["schemas"]["Anon_fb248bf5a9f7_16"];
             handle: components["schemas"]["Anon_2457cccd64aa_4"];
-            entitlement_id: components["schemas"]["Anon_57796118d046_31"];
+            entitlement_id: components["schemas"]["Anon_57796118d046_33"];
             targets: components["schemas"]["Anon_effbae05e941"];
             segment_ids: components["schemas"]["Anon_f8dbfffc0ce2_10"];
             visibility: components["schemas"]["Anon_b26f420c5d82_1"];
@@ -1361,7 +1361,7 @@ export interface components {
             base_sequence: components["schemas"]["Anon_71a2fb329804_1"];
             anchor_id: components["schemas"]["Anon_fb248bf5a9f7_16"];
             handle: components["schemas"]["Anon_2457cccd64aa_4"];
-            entitlement_id: components["schemas"]["Anon_57796118d046_31"];
+            entitlement_id: components["schemas"]["Anon_57796118d046_33"];
             targets: components["schemas"]["Anon_effbae05e941"];
             segment_ids: components["schemas"]["Anon_f8dbfffc0ce2_10"];
             visibility: components["schemas"]["Anon_b26f420c5d82_1"];
@@ -1393,7 +1393,7 @@ export interface components {
         };
         EntitlementRuleWarning: {
             code: components["schemas"]["Anon_47cb53910d2c"];
-            message: components["schemas"]["Anon_57796118d046_33"];
+            message: components["schemas"]["Anon_57796118d046_35"];
             path?: components["schemas"]["Anon_e5444c6c0ca5"];
         };
         /** @enum {string} */
@@ -1411,8 +1411,8 @@ export interface components {
             sequence: components["schemas"]["Anon_ffffc3c874cb_1"];
             base_sequence: components["schemas"]["Anon_71a2fb329804_1"];
             handle: components["schemas"]["Anon_2457cccd64aa_5"];
-            rule_id: components["schemas"]["Anon_57796118d046_34"];
-            experiment_id: components["schemas"]["Anon_57796118d046_35"];
+            rule_id: components["schemas"]["Anon_57796118d046_36"];
+            experiment_id: components["schemas"]["Anon_57796118d046_37"];
             variant_name: components["schemas"]["Anon_872e58432369_1"];
             is_control: components["schemas"]["Anon_062d958a93c4_5"];
             override_fields: components["schemas"]["Anon_5142f8473790_6"];
@@ -1484,7 +1484,7 @@ export interface components {
         };
         PlacementWarning: {
             code: components["schemas"]["Anon_9481d431ae03"];
-            message: components["schemas"]["Anon_57796118d046_36"];
+            message: components["schemas"]["Anon_57796118d046_38"];
             path?: components["schemas"]["Anon_e5444c6c0ca5_1"];
         };
         /** @enum {string} */
@@ -1503,13 +1503,13 @@ export interface components {
             base_sequence: components["schemas"]["Anon_71a2fb329804_1"];
             anchor_id: components["schemas"]["Anon_fb248bf5a9f7_18"];
             handle: components["schemas"]["Anon_2457cccd64aa_6"];
-            placement_id: components["schemas"]["Anon_57796118d046_37"];
+            placement_id: components["schemas"]["Anon_57796118d046_39"];
             drag_order: components["schemas"]["Anon_f95d5b2e4f52_9"];
             target_plan_ids: components["schemas"]["Anon_f8dbfffc0ce2_11"];
             target_plan_billing_cadences: components["schemas"]["Anon_f8dbfffc0ce2_12"];
             target_segments: components["schemas"]["Anon_f8dbfffc0ce2_13"];
             surface_slot_ids: components["schemas"]["Anon_f8dbfffc0ce2_14"];
-            surface_template_id: components["schemas"]["Anon_57796118d046_38"];
+            surface_template_id: components["schemas"]["Anon_57796118d046_40"];
             content_fields: components["schemas"]["Anon_5142f8473790_7"];
             cta_list: components["schemas"]["Anon_6ff5f738216c"];
             max_per_period: components["schemas"]["Anon_45e0e0d4a0da_3"];
@@ -1596,7 +1596,7 @@ export interface components {
         Anon_f2d1b3e449b4_1: components["schemas"]["Anon_c65c1fbd5acf_11"];
         Anon_fb248bf5a9f7_12: string;
         Anon_2457cccd64aa_2: components["schemas"]["Anon_0eb2e3b6e08c_3"];
-        Anon_57796118d046_27: string;
+        Anon_57796118d046_29: string;
         /** @enum {string} */
         Anon_129e203b1449_2: "monthly" | "annual" | "one_time" | "custom";
         /** @default null */
@@ -1623,7 +1623,7 @@ export interface components {
         Anon_f27cb44c32f6_14: components["schemas"]["Anon_f2d1b3e449b4_1"];
         Anon_fb248bf5a9f7_14: string;
         Anon_2457cccd64aa_3: components["schemas"]["Anon_0eb2e3b6e08c_3"];
-        Anon_57796118d046_28: string;
+        Anon_57796118d046_30: string;
         /** @enum {string} */
         Anon_129e203b1449_3: "monthly" | "annual" | "one_time" | "custom";
         /** @default null */
@@ -1638,8 +1638,8 @@ export interface components {
         Anon_00404e686415_39: string;
         /** @default static */
         Anon_b5714cb1e73b_3: components["schemas"]["PriceSource"];
-        Anon_57796118d046_29: string;
-        Anon_57796118d046_30: string;
+        Anon_57796118d046_31: string;
+        Anon_57796118d046_32: string;
         Anon_cf08caa6d850_1: components["schemas"]["StripePriceBillingPeriod"];
         /** @default null */
         Anon_79391150fda1_1: components["schemas"]["Anon_c648138a0918_8"];
@@ -1678,10 +1678,10 @@ export interface components {
         Anon_f27cb44c32f6_15: components["schemas"]["Anon_f2d1b3e449b4_1"];
         Anon_fb248bf5a9f7_16: string;
         Anon_2457cccd64aa_4: components["schemas"]["Anon_0eb2e3b6e08c_3"];
-        Anon_57796118d046_31: string;
+        Anon_57796118d046_33: string;
         Anon_effbae05e941: components["schemas"]["EntitlementRuleTargetOutput"][];
         Anon_70ee2ddbc798_1: components["schemas"]["EntitlementRuleTargetKind"];
-        Anon_57796118d046_32: string;
+        Anon_57796118d046_34: string;
         /** @default [] */
         Anon_f8dbfffc0ce2_10: components["schemas"]["Anon_681004346c78_13"];
         Anon_681004346c78_13: string[];
@@ -1736,12 +1736,12 @@ export interface components {
         Anon_94e2b717b43e: components["schemas"]["Anon_b9f8542e5a53"];
         Anon_b9f8542e5a53: components["schemas"]["EntitlementRuleWarning"][];
         Anon_47cb53910d2c: components["schemas"]["EntitlementRuleWarningCode"];
-        Anon_57796118d046_33: string;
+        Anon_57796118d046_35: string;
         Anon_e5444c6c0ca5: components["schemas"]["Anon_9b45bb8cfd31"];
         Anon_9b45bb8cfd31: (string | number)[];
         Anon_2457cccd64aa_5: components["schemas"]["Anon_0eb2e3b6e08c_3"];
-        Anon_57796118d046_34: string;
-        Anon_57796118d046_35: string;
+        Anon_57796118d046_36: string;
+        Anon_57796118d046_37: string;
         Anon_872e58432369_1: string;
         /** @default false */
         Anon_062d958a93c4_5: components["schemas"]["Anon_7cb541e84f22_42"];
@@ -1791,12 +1791,12 @@ export interface components {
         Anon_deca7bd23776: components["schemas"]["Anon_4683dfa2b0e7"];
         Anon_4683dfa2b0e7: components["schemas"]["PlacementWarning"][];
         Anon_9481d431ae03: components["schemas"]["PlacementWarningCode"];
-        Anon_57796118d046_36: string;
+        Anon_57796118d046_38: string;
         Anon_e5444c6c0ca5_1: components["schemas"]["Anon_9b45bb8cfd31_1"];
         Anon_9b45bb8cfd31_1: (string | number)[];
         Anon_fb248bf5a9f7_18: string;
         Anon_2457cccd64aa_6: components["schemas"]["Anon_0eb2e3b6e08c_3"];
-        Anon_57796118d046_37: string;
+        Anon_57796118d046_39: string;
         /** @default 0 */
         Anon_f95d5b2e4f52_9: components["schemas"]["Anon_278eaeabce08_11"];
         Anon_278eaeabce08_11: number;
@@ -1812,7 +1812,7 @@ export interface components {
         /** @default [] */
         Anon_f8dbfffc0ce2_14: components["schemas"]["Anon_681004346c78_17"];
         Anon_681004346c78_17: string[];
-        Anon_57796118d046_38: string;
+        Anon_57796118d046_40: string;
         /** @default {} */
         Anon_5142f8473790_7: components["schemas"]["Anon_c65c1fbd5acf_13"];
         Anon_c65c1fbd5acf_13: {
@@ -1920,7 +1920,7 @@ export interface components {
         CurrencyOutput: components["schemas"]["Anon_063c0cce3710_1"];
         EntitlementRuleTargetOutput: {
             kind: components["schemas"]["Anon_70ee2ddbc798_1"];
-            id: components["schemas"]["Anon_57796118d046_32"];
+            id: components["schemas"]["Anon_57796118d046_34"];
         };
         CtaObjectOutput: {
             label: components["schemas"]["Anon_872e58432369_2"];
