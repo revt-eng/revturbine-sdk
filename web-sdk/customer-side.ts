@@ -299,6 +299,48 @@ function devWarn(message: string): void {
   if (IS_DEV_ENV) console.warn(message);
 }
 
+/**
+ * Identity values already warned about, so a re-render or a per-navigation
+ * `identify()` cannot turn one integration mistake into a console flood
+ * (BL-0131). Keyed by `"<field>:<value>"` so a genuinely different bad id still
+ * gets its own warning — a single global flag would hide the second mistake.
+ *
+ * Module-scoped rather than per-instance: the point is one message per mistake
+ * per page, and an app that constructs two clients has still only made one.
+ */
+const warnedIdentityValues = new Set<string>();
+
+/**
+ * Warn once, gently, when an identity value looks like an email (BL-0131,
+ * Kent's ruling **D-19**, 2026-09-25: *"We want our customers to use UUIDs, but
+ * if they pass an email, we need to hash it consistently."*).
+ *
+ * The SDK **detects but never hashes**: the app should fix the id, not have it
+ * silently rewritten client-side. Consistent hashing belongs to the ingest
+ * boundary — `events_clickstream` and `placement_presentations` must agree on
+ * one key, and a client that hashed identity independently would also diverge
+ * from the offline decisions evaluated against the un-hashed context.
+ *
+ * `identify()` has warned on an email-shaped `user_id` since plan 191.
+ * `account_id` — the other identity key, and the one
+ * `monetization_funnel`/`cohort_rollup` build their account map from — had no
+ * such warning, so the more consequential of the two mistakes was the silent one.
+ */
+function warnOnEmailShapedIdentity(field: 'user id' | 'account_id', value: string): void {
+  if (!EMAIL_SHAPED_ID.test(value)) return;
+  const key = `${field}:${value}`;
+  if (warnedIdentityValues.has(key)) return;
+  warnedIdentityValues.add(key);
+  devWarn(
+    `[RevTurbine] identify() received an email-shaped ${field} ("${value}"). `
+      + 'Identity keys should be opaque and stable — a UUID is ideal. Pass the '
+      + 'email as { email } instead. Ingest will hash an email-shaped identity '
+      + 'key consistently so analytics still join, but the raw address is not '
+      + 'stored and the id is not yours to recognize afterwards.',
+  );
+}
+
+
 /** Properties attached to analytics events. */
 export type SdkEventProperties = Record<string, JsonValue>;
 
@@ -6571,6 +6613,16 @@ export class RevTurbineCustomerSdk {
    * @public
    */
   setUserContext(userContext: RevTurbineUserContext): void {
+    // BL-0131 (D-19): the same email-shaped-identity warning as `identify()`.
+    // This is the other way an app sets identity, so guarding only `identify()`
+    // would leave the diagnostic trivially avoidable — and `update()` routes
+    // through here too, so a later `account_id` still gets checked.
+    if (typeof userContext.id === 'string') {
+      warnOnEmailShapedIdentity('user id', userContext.id);
+    }
+    if (typeof userContext.account_id === 'string') {
+      warnOnEmailShapedIdentity('account_id', userContext.account_id);
+    }
     const previousContext = this.userContext;
     this.userContext = this.mergeUserContext(userContext);
     this.recalculateDerivedUsageTraits();
@@ -9434,11 +9486,13 @@ export class RevTurbineCustomerSdk {
       console.error('[RevTurbine] identify() requires a non-empty user id; call ignored. Pass your stable internal user id.');
       return;
     }
-    if (EMAIL_SHAPED_ID.test(userId)) {
-      devWarn(
-        `[RevTurbine] identify() received an email-shaped user id ("${userId}"). ` +
-          'Use an opaque stable id and pass the email as { email } instead.',
-      );
+    warnOnEmailShapedIdentity('user id', userId);
+    // BL-0131 (D-19): `account_id` is the OTHER identity key, and the one the
+    // account-map joins are built from, so an email there is at least as
+    // consequential as one in `user_id` — and until now it was the silent case.
+    const accountIdInput = isRecord(context) ? context.account_id : undefined;
+    if (typeof accountIdInput === 'string') {
+      warnOnEmailShapedIdentity('account_id', accountIdInput);
     }
     const previousContext = this.userContext;
     // Plan 191 REQ-3 (Q-2 ruling): there is no legacy traits overload — a
