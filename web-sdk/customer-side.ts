@@ -21,6 +21,15 @@ import { normalizeEnvironmentId } from './environment';
 import { devWarn as warnInDevelopmentBuild, isDevelopmentBuild } from './build-mode';
 import { warnDeprecatedPlaybookAliasOnce, resetPlaybookAliasWarning } from './playbook-option';
 import { redactPii, redactIdentityField, redactEnvelope } from './pii-redact';
+import { fallbackAccountId } from './account-identity';
+// Re-exported here rather than only from the barrel: the account-identity
+// contract is part of the same wire surface this module emits, and the TSDoc
+// on `identify` / `track` / `trackControlPlaneEvent` links straight to it.
+export {
+  FALLBACK_ACCOUNT_ID_PREFIX,
+  fallbackAccountId,
+  isFallbackAccountId,
+} from './account-identity';
 import { evaluateSegments } from './segments';
 import { buildControlPlaneEvent } from './control-plane-events';
 import type { ControlPlaneEventType } from './control-plane-events';
@@ -2240,10 +2249,12 @@ interface OutputPlacementRef {
 interface QueuedTreatmentInteraction extends RevTurbineTreatmentInteractionInput {
   /**
    * The account the user acted on behalf of, already PII-redacted the same way
-   * `/api/track` redacts it, so the two land byte-identical and join. Absent
-   * when the integration identified no account — never a copy of `user_id`.
+   * `/api/track` redacts it, so the two land byte-identical and join. When the
+   * integration identified no account this is the PREFIXED user-derived
+   * fallback (`user-fallback:<user_id>`), never a bare copy of `user_id`
+   * (Kent's D-13, BL-0117).
    */
-  readonly accountId?: string;
+  readonly accountId: string;
 }
 
 interface CacheEntry<T> {
@@ -6055,9 +6066,10 @@ export class RevTurbineCustomerSdk {
     // Map each envelope to the canonical scaffold `TrackEvent`
     // (`@revt-eng/schema`). The SDK has no first-class environment /
     // account concept, so: `environment_id` comes from the init option
-    // (default `'default'`), `user_id` falls back to the always-present
-    // anonymous id, and `account_id` falls back through user → anon so
-    // the required min-1 fields are never empty. The full SDK property
+    // (default `'default'`) and `user_id` falls back to the always-present
+    // anonymous id. `account_id` carries the PREFIXED user-derived fallback
+    // (`user-fallback:<user_id>`) when the integration identified no account —
+    // see {@link resolveAccountIdentity}. The full SDK property
     // bag (level/message/url/traits/raw payload) is preserved as the
     // optional `properties` JSON string; `experiment_id`/`variant_key`
     // are lifted out so they survive end-to-end (plan 41 REQ-7).
@@ -6072,7 +6084,7 @@ export class RevTurbineCustomerSdk {
       // `redactEnvelope` above. `account_id` is not carried on the envelope,
       // so it is the one identity field redacted here.
       const userId = event.user_id || event.anonymous_id;
-      const accountId = redactIdentityField(this.userContext.account_id || userId);
+      const accountId = this.resolveAccountIdentity();
       // Idempotent second pass: the envelope is already clean, so this only
       // covers the SDK-generated fields assembled here. Already-redacted
       // values no longer match, so the count does not double up.
@@ -6089,10 +6101,16 @@ export class RevTurbineCustomerSdk {
         payload: event.properties,
         source: SDK_EVENT_SOURCE,
       });
-      valuesRedacted += redactedProps.redactions + (accountId.redacted ? 1 : 0);
+      valuesRedacted += redactedProps.redactions + (accountId?.redacted ? 1 : 0);
       return {
         environment_id: this.environmentId,
         user_id: userId,
+        // `events_clickstream.account_id` is the account map
+        // `monetization_funnel` joins on. When the integration identified no
+        // account this carries the PREFIXED user-derived fallback
+        // (`user-fallback:<user_id>`), never a bare user id: the row stays
+        // countable and joinable, and read-time guards can exclude a
+        // fabricated key from account denominators (Kent's D-13, BL-0117).
         account_id: accountId.value,
         event_name: normalizeEventType(event.type).slice(0, 120),
         event_ts: event.event_time,
@@ -6342,7 +6360,11 @@ export class RevTurbineCustomerSdk {
    * Identity comes from the active user context set via {@link identify} /
    * {@link setUserContext}: the operator is `user_id` and the acting RevTurbine
    * customer tenant is `account_id`. `tenant_id` is stamped server-side and is
-   * never carried on the event (plan 112 REQ-3/REQ-4).
+   * never carried on the event (plan 112 REQ-3/REQ-4). When no account has been
+   * identified, `account_id` carries the labelled fallback
+   * `user-fallback:<user_id>` — a bare, unlabelled user id is never stamped
+   * into an account column (BL-0117, Kent's D-13). Classify it with
+   * {@link isFallbackAccountId}.
    *
    * @param eventType - A canonical control-plane event type.
    * @param payload - Optional event-specific properties (e.g. `{ resource, resource_id }`).
@@ -7599,10 +7621,11 @@ export class RevTurbineCustomerSdk {
       // ingest route's `account_id ?? user_id` fallback stamped a USER id into
       // an account column — every one of those joins then matched only by
       // coincidence, and an account-grain experiment readout silently returned
-      // the user-grain n. OMITTED, never `user_id`, when no account was
-      // identified: the route's fallback is what a not-yet-upgraded SDK gets,
-      // and a wrong join key is worse than a missing one.
-      ...(item.accountId ? { account_id: item.accountId } : {}),
+      // the user-grain n. When no account was identified this carries the
+      // PREFIXED fallback (`user-fallback:<user_id>`) instead: still a bare
+      // derivation of the user id, but labelled as one so the warehouse can
+      // exclude it from account denominators (Kent's D-13, BL-0117).
+      account_id: item.accountId,
       placement_id: item.placementId,
       treatment_id: item.treatmentId,
       interaction_type: item.interactionType,
@@ -7681,8 +7704,8 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
-   * The account identity to stamp on a treatment interaction, or `undefined`
-   * when the integration has identified none.
+   * The account identity to stamp on a treatment interaction — the identified
+   * account, or the prefixed user-derived fallback when none was identified.
    *
    * Two rules make this a usable join key rather than a label:
    *
@@ -7693,16 +7716,59 @@ export class RevTurbineCustomerSdk {
    *    one side and a raw email on the other, and `monetization_funnel` would
    *    join nothing (identity keys are hashed, not sentinelled — the contract
    *    is byte-identical across repos).
-   * 2. **Never falls back to the user id.** An absent account is absent. The
-   *    ingest route keeps its own `account_id ?? user_id` fallback for SDKs
-   *    that do not send the field yet; this SDK no longer feeds it.
+   * 2. **A user-derived key is labelled as one.** The ingest route's own
+   *    `account_id ?? user_id` fallback stamped a bare user id into an account
+   *    column, indistinguishable from a real account. This lane sends
+   *    `user-fallback:<user_id>` instead, so the warehouse can exclude it from
+   *    account denominators (Kent's D-13, BL-0117).
    */
-  private interactionAccountId(): string | undefined {
+  private interactionAccountId(): string {
+    return this.resolveAccountIdentity().value;
+  }
+
+  /**
+   * The account identity to stamp on any wire payload — the clickstream lane
+   * (`/api/track` → `events_clickstream.account_id`) and the interaction lane
+   * (`placement_presentations.account_id`).
+   *
+   * Both lanes resolve it HERE so they are byte-identical: `monetization_funnel`
+   * joins one against the other, and a divergence in trimming, hashing or
+   * fallback derivation joins nothing. The rules:
+   *
+   * 1. **An identified account is sent verbatim**, PII-redacted through
+   *    {@link redactIdentityField} — the same hash on both lanes and in every
+   *    repo that writes an identity key. A blank/whitespace `account_id` is
+   *    not an account; it falls through to rule 2.
+   * 2. **No identified account yields a labelled fallback**, never a bare user
+   *    id and never a sentinel: {@link fallbackAccountId} prefixes the acting
+   *    user's (already-redacted) id with
+   *    `FALLBACK_ACCOUNT_ID_PREFIX`. The row stays countable and joinable while
+   *    being unmistakably fabricated, which is precisely what BL-0117's
+   *    poisoned account map lacked — `monetization_funnel` and `cohort_rollup`
+   *    filter these out of account denominators at read time.
+   *
+   *    Absence stays valid **on the wire** (`TrackEvent.account_id` is optional
+   *    as of `@revt-eng/schema` 0.1.325 / scaffold #375) for producers that
+   *    have no user identity to derive from; the browser SDK always has one,
+   *    so it always sends the fallback rather than a hole.
+   *
+   * The fallback is derived from `userContext.id || anonymousId` — the SAME
+   * source both lanes' `user_id` resolves from — and redacted the same way, so
+   * `user-fallback:<x>` on one lane matches `user-fallback:<x>` on the other.
+   *
+   * @returns The account id to send, whether a hash was applied, and whether
+   *   the value is the fabricated fallback rather than an identified account.
+   */
+  private resolveAccountIdentity(): { value: string; redacted: boolean; fallback: boolean } {
     const raw = this.userContext.account_id;
-    if (typeof raw !== 'string') return undefined;
-    const trimmed = raw.trim();
-    if (trimmed.length === 0) return undefined;
-    return redactIdentityField(trimmed).value;
+    if (typeof raw === 'string') {
+      const trimmed = raw.trim();
+      if (trimmed.length > 0) {
+        return { ...redactIdentityField(trimmed), fallback: false };
+      }
+    }
+    const identity = redactIdentityField(this.userContext.id || this.anonymousId);
+    return { value: fallbackAccountId(identity.value), redacted: identity.redacted, fallback: true };
   }
 
   // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#trackTreatmentInteraction
@@ -7715,13 +7781,12 @@ export class RevTurbineCustomerSdk {
    */
   async trackTreatmentInteraction(input: RevTurbineTreatmentInteractionInput): Promise<void> {
     // Resolved HERE, not at flush: a queued batch can outlive an `identify()`
-    // that switched the acting account. Undefined when the integration
-    // identified no account — the wire then omits the field entirely.
-    const accountId = this.interactionAccountId();
+    // that switched the acting account. Always defined — the prefixed
+    // user-derived fallback when the integration identified no account.
     const normalized: QueuedTreatmentInteraction = {
       ...input,
       interactionAt: input.interactionAt ?? new Date().toISOString(),
-      ...(accountId ? { accountId } : {}),
+      accountId: this.interactionAccountId(),
     };
 
     this.updateInteractionState(normalized);
@@ -9227,6 +9292,15 @@ export class RevTurbineCustomerSdk {
    * keys are named in a dev warning instead of being dropped or routed
    * silently. Legacy-traits behavior is unchanged beyond the diagnostic.
    *
+   * `account_id` is OPTIONAL. Identify no account and every event this SDK
+   * emits carries `user-fallback:<user_id>` instead — the acting user's id
+   * behind the {@link FALLBACK_ACCOUNT_ID_PREFIX} namespace marker, never a
+   * bare user id (BL-0117, Kent's D-13). `events_clickstream.account_id` and
+   * `placement_presentations.account_id` are the join keys
+   * `monetization_funnel` matches accounts on, so the prefix is what lets the
+   * warehouse keep a fabricated key out of an account denominator instead of
+   * counting it as a real account. Identify an account when you have one.
+   *
    * @example
    * ```ts
    * rt.identify('user_123', { plan_handle: 'pro' }); // THE matching identity
@@ -9450,6 +9524,11 @@ export class RevTurbineCustomerSdk {
   /**
    * Track an event — the advertised alias of {@link trackEvent}. Powers
    * analytics, frequency caps, attribution, and experiments.
+   *
+   * Identity comes from the active user context ({@link identify} /
+   * {@link setUserContext}). `account_id` carries the identified account when
+   * there is one and the labelled fallback `user-fallback:<user_id>` when there
+   * is not — never a bare, unlabelled user id (BL-0117, Kent's D-13).
    *
    * @example
    * rt.track('ai_generation_completed', { credits: 3 });

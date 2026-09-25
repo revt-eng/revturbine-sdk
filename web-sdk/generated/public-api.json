@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "count": 63,
+  "count": 66,
   "exports": [
     {
       "name": "baseThemeForScheme",
@@ -45,6 +45,18 @@
       "signature": "export type ExactInitOptions<T> = { [K in keyof T]: K extends RevTurbineInitOptionKey ? T[K] : never; }"
     },
     {
+      "name": "FALLBACK_ACCOUNT_ID_PREFIX",
+      "kind": "const",
+      "file": "web-sdk/account-identity.ts",
+      "signature": "export const FALLBACK_ACCOUNT_ID_PREFIX = 'user-fallback:'; /** * Build the fallback account key for a user id — {"
+    },
+    {
+      "name": "fallbackAccountId",
+      "kind": "function",
+      "file": "web-sdk/account-identity.ts",
+      "signature": "export function fallbackAccountId(userId: string): string"
+    },
+    {
       "name": "InitFailureDiagnostic",
       "kind": "function",
       "file": "web-sdk/react/InitFailureDiagnostic.tsx",
@@ -67,6 +79,12 @@
       "kind": "function",
       "file": "web-sdk/react/init-status.ts",
       "signature": "export function initStatusForError( phase: RevTurbineInitPhase, error: unknown, ): RevTurbineInitStatus"
+    },
+    {
+      "name": "isFallbackAccountId",
+      "kind": "function",
+      "file": "web-sdk/account-identity.ts",
+      "signature": "export function isFallbackAccountId(accountId: string | null | undefined): boolean"
     },
     {
       "name": "LegacyConfigTargetDefaults",

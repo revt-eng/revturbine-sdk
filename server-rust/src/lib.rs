@@ -47,6 +47,7 @@
 // - `clippy::all`: generated code trips ~33 style lints (`derivable_impls`,
 //   etc). Fixing them would mean editing a file the next `sync:rust-types`
 //   overwrites.
+pub mod account_identity;
 pub mod adapters;
 pub mod canonical_json;
 pub mod config;
@@ -67,6 +68,13 @@ pub mod user_context;
 
 #[allow(missing_docs, dead_code, clippy::all)]
 pub mod types;
+
+/// The account-identity fallback contract (BL-0117 / D-13), re-exported at the
+/// crate root: a service that writes an identity join key needs the prefix as
+/// readily as the SDK that emits it.
+pub use account_identity::{
+    fallback_account_id, is_fallback_account_id, FALLBACK_ACCOUNT_ID_PREFIX,
+};
 
 /// The minor-unit display formatter, re-exported at the crate root because the
 /// Python port exposes it as a module-level function rather than a method on

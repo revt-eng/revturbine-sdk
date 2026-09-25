@@ -18,6 +18,7 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { RevTurbineCustomerSdk } from './customer-side';
 import type { RevTurbineInitOptions } from './customer-side';
+import { fallbackAccountId, isFallbackAccountId } from './account-identity';
 
 type FetchCall = { url: string; init: RequestInit };
 
@@ -92,7 +93,13 @@ describe('web-SDK clickstream ingest → /api/track', () => {
     expect(ev.environment_id).toBe('staging');
     expect(typeof ev.user_id).toBe('string');
     expect((ev.user_id as string).length).toBeGreaterThan(0);
-    expect((ev.account_id as string).length).toBeGreaterThan(0);
+    // BL-0117 / Kent's D-13: no account was identified on this SDK, so
+    // `account_id` carries the LABELLED user fallback. It used to be the bare
+    // user id, indistinguishable from a real account, which is what poisoned
+    // the account map.
+    expect(isFallbackAccountId(ev.account_id as string)).toBe(true);
+    expect(ev.account_id).toBe(fallbackAccountId(ev.user_id as string));
+    expect(ev.account_id).not.toBe(ev.user_id);
     expect(typeof ev.event_ts).toBe('string');
     // REQ-7: experiment_id / variant_key preserved end-to-end.
     expect(ev.experiment_id).toBe('exp_1');

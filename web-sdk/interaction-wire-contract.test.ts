@@ -15,11 +15,17 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  TrackEventSchema,
   TreatmentInteractionBatchSchema,
   TreatmentInteractionInputSchema,
   TreatmentInteractionRequestSchema,
 } from '@revt-eng/schema/zod';
 import { RevTurbineCustomerSdk } from './customer-side';
+import {
+  FALLBACK_ACCOUNT_ID_PREFIX,
+  fallbackAccountId,
+  isFallbackAccountId,
+} from './account-identity';
 import { redactIdentityField } from './pii-redact';
 
 interface CapturedPost {
@@ -153,9 +159,11 @@ describe('the body flushInteractionQueue puts on the wire', () => {
  * matches it against account ids from `events_clickstream` / `events_billing`,
  * and every experiment summary pipe reads it when `analysis_unit='account'`.
  * The SDK never put the field on the wire, so the ingest route's
- * `account_id ?? user_id` fallback stamped a USER id into that column: the
+ * `account_id ?? user_id` fallback stamped a BARE USER id into that column: the
  * funnel joined only by coincidence, and an account-grain experiment readout
- * silently returned the user-grain n while looking valid.
+ * silently returned the user-grain n while looking valid. Per Kent's D-13 the
+ * SDK now sends the same derivation LABELLED — `user-fallback:<user_id>` — so
+ * the two cases are distinguishable at read time.
  */
 describe('the account identity the analytics joins key on', () => {
   const EMAIL_ACCOUNT = 'billing@acme.example';
@@ -175,16 +183,37 @@ describe('the account identity the analytics joins key on', () => {
     expect(parsed.account_id).toBe('acct_acme');
   });
 
-  it('omits the account entirely when none was identified — never a copy of user_id', async () => {
+  it('sends the PREFIXED user fallback when no account was identified — never a bare user_id', async () => {
+    // Kent's D-13: keep the user-id fallback, but label it. A bare user id in
+    // an account column is indistinguishable from a real account, which is the
+    // whole of BL-0117; `user-fallback:<user_id>` is countable, joinable, and
+    // obviously fabricated.
     const client = sdk();
+    client.identify('user_1');
     await client.trackTreatmentInteraction(interaction());
     await settle();
 
     const body = interactionPosts()[0].body as Record<string, unknown>;
-    expect(body.account_id).toBeUndefined();
-    expect(Object.prototype.hasOwnProperty.call(body, 'account_id')).toBe(false);
-    // The thing this whole change exists to prevent.
+    expect(body.account_id).toBe(fallbackAccountId('user_1'));
+    expect(body.account_id).toBe(`${FALLBACK_ACCOUNT_ID_PREFIX}user_1`);
+    expect(isFallbackAccountId(body.account_id as string)).toBe(true);
+    // The thing this whole change exists to prevent: a BARE user id.
     expect(body.account_id).not.toBe(body.user_id);
+    // And the contract must carry it — a field zod strips is a field the route
+    // never sees.
+    expect(
+      (TreatmentInteractionInputSchema.parse(body) as Record<string, unknown>).account_id,
+    ).toBe(fallbackAccountId('user_1'));
+  });
+
+  it('classifies an identified account as NOT a fallback', async () => {
+    const client = sdk();
+    client.identify('user_1', { account_id: 'acct_acme' });
+    await client.trackTreatmentInteraction(interaction());
+    await settle();
+
+    const body = interactionPosts()[0].body as Record<string, unknown>;
+    expect(isFallbackAccountId(body.account_id as string)).toBe(false);
   });
 
   it('redacts an email-shaped account id the same way /api/track does', async () => {
@@ -236,6 +265,122 @@ describe('the account identity the analytics joins key on', () => {
     expect(batch).toHaveLength(2);
     expect(batch[0].account_id).toBe('acct_first');
     expect(batch[1].account_id).toBe('acct_second');
+  });
+});
+
+/**
+ * Account identity on the CLICKSTREAM wire (BL-0117; scaffold #375).
+ *
+ * `TrackEvent.account_id` used to be required, and the SDK satisfied it with
+ * `userContext.account_id || userId`. Every app that identified no account
+ * therefore sent its USER id as the account id, and `monetization_funnel`
+ * built its account map out of those rows — a user-grain n dressed up as an
+ * account-grain one. Scaffold #375 made the field optional, so absence is valid
+ * on the wire — but Kent ruled (D-13, 2026-09-25) that the browser SDK KEEPS the
+ * user-id fallback and PREFIXES it: `user-fallback:<user_id>`. The row stays
+ * countable and joinable, and a fabricated key is unmistakably fabricated, so
+ * the warehouse can keep it out of account denominators.
+ *
+ * These drive the real SDK and read the body it actually put on the wire,
+ * parsed against the canonical scaffold schema, so the two sides cannot drift
+ * apart again silently.
+ */
+describe('the account identity on the /api/track wire', () => {
+  const trackedEvents = (): Array<Record<string, unknown>> =>
+    posts
+      .filter((p) => p.url.includes(TRACK_PATH))
+      .flatMap((p) => {
+        const b = p.body as { events?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>;
+        return Array.isArray(b) ? b : (b.events ?? []);
+      });
+
+  it('sends the PREFIXED user fallback for an identified user with no account', async () => {
+    const client = sdk();
+    client.identify('user_1');
+    await client.capture('feature_used', {}, { immediate: true });
+    await settle();
+
+    const events = trackedEvents();
+    expect(events.length, 'expected at least one clickstream event on the wire').toBeGreaterThan(0);
+    for (const event of events) {
+      // The fabricated key is labelled: `user-fallback:<user_id>`, never the
+      // bare user id, never '' and never null.
+      expect(event.account_id).toBe(fallbackAccountId('user_1'));
+      expect(isFallbackAccountId(event.account_id as string)).toBe(true);
+      expect(event.account_id).not.toBe(event.user_id);
+      // And the canonical contract must accept it — a prefixed id is just an
+      // id, so the route does not 422 on an un-accounted app.
+      expect(TrackEventSchema.safeParse(event).success).toBe(true);
+      expect((TrackEventSchema.parse(event) as Record<string, unknown>).account_id)
+        .toBe(fallbackAccountId('user_1'));
+    }
+  });
+
+  it('survives /api/track serialization — the prefix reaches the wire bytes intact', async () => {
+    // The guards in monetization_funnel / cohort_rollup match the literal
+    // prefix in the SERIALIZED body, so a JSON round-trip that mangled the
+    // colon or re-encoded the marker would silently stop excluding fabricated
+    // keys from account denominators.
+    const client = sdk();
+    client.identify('user_1');
+    await client.capture('feature_used', {}, { immediate: true });
+    await settle();
+
+    const raw = posts.filter((p) => p.url.includes(TRACK_PATH)).map((p) => JSON.stringify(p.body));
+    expect(raw.length).toBeGreaterThan(0);
+    for (const bytes of raw) {
+      expect(bytes).toContain('"account_id":"user-fallback:user_1"');
+    }
+  });
+
+  it('derives the fallback from the anonymous id when no user was identified', async () => {
+    // There is always an identity to derive from: an un-identified visitor
+    // still has the anonymous id the same row carries in `user_id`, so the
+    // fallback stays joinable rather than becoming absence.
+    const client = sdk();
+    await client.capture('feature_used', {}, { immediate: true });
+    await settle();
+
+    const events = trackedEvents();
+    expect(events.length).toBeGreaterThan(0);
+    for (const event of events) {
+      expect(isFallbackAccountId(event.account_id as string)).toBe(true);
+      expect(event.account_id).toBe(fallbackAccountId(event.user_id as string));
+      expect(TrackEventSchema.safeParse(event).success).toBe(true);
+    }
+  });
+
+  it('sends the identified account byte-identically to the identity supplied', async () => {
+    const client = sdk();
+    client.identify('user_1', { account_id: 'acct_acme' });
+    await client.capture('feature_used', {}, { immediate: true });
+    await settle();
+
+    const events = trackedEvents();
+    expect(events.length).toBeGreaterThan(0);
+    for (const event of events) {
+      expect(event.account_id).toBe('acct_acme');
+      expect(event.account_id).not.toBe(event.user_id);
+      expect(TrackEventSchema.safeParse(event).success).toBe(true);
+      // A field zod strips is a field the route never sees.
+      expect((TrackEventSchema.parse(event) as Record<string, unknown>).account_id).toBe('acct_acme');
+    }
+  });
+
+  it('treats a blank account id as no account at all', async () => {
+    // `''` is not a valid account id on the wire (the schema still rejects an
+    // empty string) and it is not an account either — so it falls through to
+    // the labelled fallback rather than being sent as a blank account.
+    const client = sdk();
+    client.identify('user_1', { account_id: '   ' });
+    await client.capture('feature_used', {}, { immediate: true });
+    await settle();
+
+    for (const event of trackedEvents()) {
+      expect(event.account_id).toBe(fallbackAccountId('user_1'));
+      expect(isFallbackAccountId(event.account_id as string)).toBe(true);
+      expect(TrackEventSchema.safeParse(event).success).toBe(true);
+    }
   });
 });
 
