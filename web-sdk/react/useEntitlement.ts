@@ -144,10 +144,21 @@ export function useEntitlement({
     if (autoCheck && isReady && gateRef.current) {
       void gateRef.current.check();
     }
-  // `handle` and `contextKey` are here because the effect above rebuilds the
-  // gate when either moves, and a rebuilt gate that never checks renders its
-  // three-state loading form forever.
-  }, [autoCheck, isReady, handle, contextKey]);
+  // These deps must be a SUPERSET of the gate-building effect's above, or a
+  // gate can be rebuilt without ever being checked — and an unchecked gate has
+  // `result === null` with `isLoading === false`, which `<Gate>` reads as
+  // "unresolved" and renders as nothing, forever.
+  //
+  // `handle` and `contextKey` were here for that reason. `sdk` was not, and
+  // that was BL-0251: a host whose provider options change identity once the
+  // session settles (revturbine-web's dogfood provider memoizes them on the
+  // Better Auth session) publishes a NEW sdk instance with `isReady` still
+  // true. The gate above was rebuilt against it; this effect did not re-run,
+  // so nothing ever checked it, and every page whose body sits inside a
+  // `<Gate>` rendered blank until it was remounted by navigating away and
+  // back. A hard refresh hit it every time, because that is exactly when the
+  // session resolves after the gate has mounted.
+  }, [autoCheck, isReady, handle, contextKey, sdk]);
 
   const state = gateRef.current?.state;
   return {

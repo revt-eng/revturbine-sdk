@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.344/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.350/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -4049,7 +4049,39 @@ class AnalyticsCatalogStatus(RootModel[Any]):
     root: Any
 
 
+class AnalyticsConceptBuild(RootModel[Any]):
+    root: Any
+
+
+class AnalyticsConceptEventAttribute(RootModel[Any]):
+    root: Any
+
+
+class AnalyticsConceptKey(RootModel[Any]):
+    root: Any
+
+
+class AnalyticsConceptMaturity(RootModel[Any]):
+    root: Any
+
+
+class AnalyticsConceptMeasure(RootModel[Any]):
+    root: Any
+
+
+class AnalyticsConceptOracleFamily(RootModel[Any]):
+    root: Any
+
+
+class AnalyticsConceptPolicyDependency(RootModel[Any]):
+    root: Any
+
+
 class AnalyticsConceptProducer(RootModel[Any]):
+    root: Any
+
+
+class AnalyticsConceptSource(RootModel[Any]):
     root: Any
 
 
@@ -4066,6 +4098,10 @@ class AnalyticsMetricDerivation(RootModel[Any]):
 
 
 class AnalyticsMetricLayer(RootModel[Any]):
+    root: Any
+
+
+class AnalyticsRecordContract(RootModel[Any]):
     root: Any
 
 
@@ -4346,6 +4382,21 @@ class AnalyticsCatalogConcept(BaseModel):
     producer: AnalyticsConceptProducer | None = None
     materialization: Materialization | None = None
     livemode_qualified: bool | None = None
+    record_contract: AnalyticsRecordContract | None = None
+    keys: list[AnalyticsConceptKey] | None = Field(None, max_length=24)
+    measures: list[AnalyticsConceptMeasure] | None = Field(None, max_length=32)
+    event_attributes: list[AnalyticsConceptEventAttribute] | None = Field(
+        None, max_length=32
+    )
+    sources: list[AnalyticsConceptSource] | None = Field(
+        None, max_length=12, min_length=1
+    )
+    build: AnalyticsConceptBuild | None = None
+    maturity: AnalyticsConceptMaturity | None = None
+    oracle_family: AnalyticsConceptOracleFamily | None = None
+    policy_dependencies: list[AnalyticsConceptPolicyDependency] | None = Field(
+        None, max_length=8
+    )
     deprecation: AnalyticsCatalogDeprecation | None = None
 
 
@@ -5836,6 +5887,9 @@ class TrialInstance(BaseModel):
     usage_limit_value: conint(ge=1, le=9007199254740991) | None = None
     converted_at: AwareDatetime | None = None
     cancelled_at: AwareDatetime | None = None
+    trial_episode_id: constr(min_length=1) | None = None
+    stripe_subscription_id: constr(min_length=1) | None = None
+    actual_end_at: AwareDatetime | None = None
     metadata: dict[str, Any] | None = {}
 
 

@@ -182,11 +182,17 @@ export function usePlacement({
     // from the constructor. For simplicity, if key options change we reset.
   }, [resolvedUserId, contextMode, overrides, traits, ttlMs, sdk]);
 
+  // BL-0251 — `sdk` and `placementKey` are dependencies even though the body
+  // does not read them: they are what rebuilds the controller above, and the
+  // effect below re-loads only when this callback's identity changes. Without
+  // them a controller rebuilt because the host published a new SDK instance
+  // (or changed the slot config) was never loaded, so the slot stayed parked
+  // on its initial empty state for the life of the mount.
   const loadDecision = useCallback(async () => {
     const ctrl = controllerRef.current;
     if (!ctrl || !isReady || !resolvedUserId) return;
     await ctrl.load();
-  }, [isReady, resolvedUserId]);
+  }, [isReady, resolvedUserId, sdk, placementKey]);
 
   useEffect(() => {
     if (!autoLoad) return;
