@@ -232,6 +232,11 @@ export class PlacementController {
   private _awaitingConfig = false;
   private _configRetries = 0;
   private _playbookUnsubscribe: (() => void) | null = null;
+  // BL-0004 — the user-context subscription is a MOUNT-lifetime concern, so it is
+  // held separately from the Playbook one. The Playbook subscription is torn down
+  // and re-established inside a single load cycle; if the two shared a field, the
+  // first successful load would silently cancel the context watch.
+  private _userContextUnsubscribe: (() => void) | null = null;
 
   constructor(sdk: RevTurbineCustomerSdk, options: PlacementControllerOptions) {
     this.sdk = sdk;
@@ -239,13 +244,67 @@ export class PlacementController {
   }
 
   /**
-   * Stop listening for Playbook loads. Idempotent; call it when the owning
-   * component unmounts (`usePlacement` does).
+   * Stop listening for Playbook loads and user-context changes. Idempotent; call
+   * it when the owning component unmounts (`usePlacement` does).
    */
   dispose(): void {
+    this.unsubscribePlaybook();
+    this._userContextUnsubscribe?.();
+    this._userContextUnsubscribe = null;
+  }
+
+  /**
+   * Drop only the Playbook-load subscription — the within-load-cycle teardown
+   * (BL-0177). A mounted controller keeps watching the user context (BL-0004).
+   */
+  private unsubscribePlaybook(): void {
     this._playbookUnsubscribe?.();
     this._playbookUnsubscribe = null;
     this._awaitingConfig = false;
+  }
+
+  /**
+   * Re-decide whenever the user context changes (BL-0004).
+   *
+   * The counterpart to {@link EntitlementGate.watchUserContext}, and the reason
+   * `sdk.convert()` now removes a converted placement in place: conversion writes
+   * no suppression — eligibility is a function of the user's CURRENT plan and
+   * targeting — so the only thing that can take a converted upgrade banner off
+   * screen is a re-decide against the reloaded context. Without this the
+   * placement stayed mounted until something else happened to re-resolve it, and
+   * the host had to call `refresh()` itself or use the component's
+   * `ctaComplete()` (the limitation plan 236 TASK-13 recorded).
+   *
+   * Only re-decides a controller that has already resolved something: before the
+   * first `load()` there is nothing on screen to be stale, and firing then would
+   * turn every startup `identify()` into a duplicate decision.
+   *
+   * Calls `load()` rather than `refresh()` on purpose — `refresh()` clears
+   * impression/exposure tracking, so a context change would re-credit a
+   * presentation the user never saw again.
+   *
+   * Returns an unsubscribe function; {@link dispose} also drops it.
+   */
+  watchUserContext(): () => void {
+    // Idempotent: a second call must not orphan the first subscription.
+    const existing = this._userContextUnsubscribe;
+    if (existing) return existing;
+    // Same tolerance as `EntitlementGate.watchUserContext`: consumers hand-roll
+    // test doubles for `RevTurbineCustomerSdk`, and one built against an older
+    // surface must not throw from inside a React effect.
+    const subscribe = (this.sdk as Partial<RevTurbineCustomerSdk>).onUserContextChange;
+    if (typeof subscribe !== 'function') return () => {};
+
+    const inner = subscribe.call(this.sdk, () => {
+      if (this._decision === null && !this._isLoading) return;
+      void this.load();
+    });
+    const unsubscribe = () => {
+      inner();
+      this._userContextUnsubscribe = null;
+    };
+    this._userContextUnsubscribe = unsubscribe;
+    return unsubscribe;
   }
 
   /**
@@ -273,7 +332,7 @@ export class PlacementController {
    */
   private handlePlaybookSettled(): void {
     if (!this._decision?.reasonCodes?.includes('config_unavailable')) {
-      this.dispose();
+      this.unsubscribePlaybook();
       return;
     }
     if (this._configRetries >= MAX_CONFIG_RETRIES || this.sdk.getPlaybookLoadState() !== 'ready') {
@@ -283,7 +342,7 @@ export class PlacementController {
       return;
     }
     this._configRetries += 1;
-    this.dispose();
+    this.unsubscribePlaybook();
     void this.load();
   }
 
@@ -296,7 +355,7 @@ export class PlacementController {
     if (!this._awaitingConfig) return;
     this._awaitingConfig = false;
     this._isLoading = false;
-    this.dispose();
+    this.unsubscribePlaybook();
     this.emitPlacementLifecycle('placement_resolved', null);
     this.emitSlotResolution();
     this.notify();
@@ -618,7 +677,7 @@ export class PlacementController {
         return decision;
       }
       this._awaitingConfig = false;
-      this.dispose();
+      this.unsubscribePlaybook();
 
       // A decision resolved — emit the lifecycle marker once per load, with
       // decision provenance, regardless of visibility (plan 144 TASK-10).
@@ -889,6 +948,10 @@ export class EntitlementGate {
   private _awaitedResult: EntitlementResult | null = null;
   private _configRetries = 0;
   private _playbookUnsubscribe: (() => void) | null = null;
+  // BL-0004 — held separately from the Playbook subscription for the same reason
+  // `PlacementController` does: the Playbook one is torn down inside a check
+  // cycle, the user-context one lives as long as the gate is mounted.
+  private _userContextUnsubscribe: (() => void) | null = null;
 
   constructor(sdk: RevTurbineCustomerSdk, options: EntitlementGateOptions) {
     this.sdk = sdk;
@@ -896,10 +959,20 @@ export class EntitlementGate {
   }
 
   /**
-   * Stop listening for Playbook loads. Idempotent; call it when the owning
-   * component unmounts (`useEntitlement` does).
+   * Stop listening for Playbook loads and user-context changes. Idempotent; call
+   * it when the owning component unmounts (`useEntitlement` does).
    */
   dispose(): void {
+    this.unsubscribePlaybook();
+    this._userContextUnsubscribe?.();
+    this._userContextUnsubscribe = null;
+  }
+
+  /**
+   * Drop only the Playbook-load subscription — the within-check-cycle teardown
+   * (BL-0179). A mounted gate keeps watching the user context (BL-0004).
+   */
+  private unsubscribePlaybook(): void {
     this._playbookUnsubscribe?.();
     this._playbookUnsubscribe = null;
   }
@@ -963,7 +1036,7 @@ export class EntitlementGate {
       }
 
       this._awaitedResult = null;
-      this.dispose();
+      this.unsubscribePlaybook();
       // A real verdict ends the cycle, so the next race starts with a full
       // budget (a context change re-checks through this path).
       if (!CONFIG_MISS_REASONS.has(res.reason ?? '')) this._configRetries = 0;
@@ -973,7 +1046,7 @@ export class EntitlementGate {
       this._error = err instanceof Error ? err.message : String(err);
       this._gatedPlacement = null;
       this._awaitedResult = null;
-      this.dispose();
+      this.unsubscribePlaybook();
       return null;
     } finally {
       // Still `isLoading` while a config-race re-check is pending (BL-0179):
@@ -1061,7 +1134,7 @@ export class EntitlementGate {
    */
   private handlePlaybookSettled(): void {
     if (!this._awaitedResult) {
-      this.dispose();
+      this.unsubscribePlaybook();
       return;
     }
     const state = this.playbookLoadState();
@@ -1072,7 +1145,7 @@ export class EntitlementGate {
       return;
     }
     this._configRetries += 1;
-    this.dispose();
+    this.unsubscribePlaybook();
     void this.check();
   }
 
@@ -1085,7 +1158,7 @@ export class EntitlementGate {
     const parked = this._awaitedResult;
     if (!parked) return;
     this._awaitedResult = null;
-    this.dispose();
+    this.unsubscribePlaybook();
     try {
       await this.publishResult(parked);
     } catch (err) {
@@ -1165,10 +1238,17 @@ export class EntitlementGate {
    * `check()` there is nothing on screen to be stale, and firing then would
    * turn every `identify()` at startup into a redundant evaluation.
    *
+   * `sdk.convert()` reloads the UserContext (BL-0004), so this is also what
+   * flips a mounted `useCan` gate to allowed after a conversion.
+   *
    * Returns an unsubscribe function. Call it when the gate is discarded —
    * without that, a gate outlives its consumer and keeps re-checking.
+   * Idempotent: a second call returns the first subscription rather than
+   * orphaning it, and {@link dispose} drops it too.
    */
   watchUserContext(): () => void {
+    const existing = this._userContextUnsubscribe;
+    if (existing) return existing;
     // `onUserContextChange` is new in this release, and `RevTurbineCustomerSdk`
     // is a class consumers hand-roll test doubles for. A double built against
     // the previous surface would otherwise throw from inside a React effect —
@@ -1177,10 +1257,16 @@ export class EntitlementGate {
     const subscribe = (this.sdk as Partial<RevTurbineCustomerSdk>).onUserContextChange;
     if (typeof subscribe !== 'function') return () => {};
 
-    return subscribe.call(this.sdk, () => {
+    const inner = subscribe.call(this.sdk, () => {
       if (this._result === null && !this._isLoading) return;
       void this.check();
     });
+    const unsubscribe = () => {
+      inner();
+      this._userContextUnsubscribe = null;
+    };
+    this._userContextUnsubscribe = unsubscribe;
+    return unsubscribe;
   }
 
   private notify(): void {
@@ -1333,7 +1419,13 @@ export class SdkSession {
    * ```
    */
   placement(options: PlacementControllerOptions): PlacementController {
-    return new PlacementController(this.sdk, options);
+    const controller = new PlacementController(this.sdk, options);
+    // BL-0004 — a session-created controller is the headless equivalent of a
+    // mounted slot, so it watches the user context from the start: `sdk.convert()`
+    // reloads the context and this is what re-decides against it. `dispose()`
+    // drops the subscription, exactly as the React binding's unmount does.
+    controller.watchUserContext();
+    return controller;
   }
 
   /**
@@ -1350,7 +1442,13 @@ export class SdkSession {
       ...options,
       surfaceSlot: { id: slotId, name: slotId },
     });
-    return ctrl.load();
+    try {
+      return await ctrl.load();
+    } finally {
+      // One-shot: nothing holds this controller afterwards, so its subscriptions
+      // must not outlive the call (BL-0004).
+      ctrl.dispose();
+    }
   }
 
   /**
@@ -1374,7 +1472,14 @@ export class SdkSession {
    * ```
    */
   entitlement(options: EntitlementGateOptions): EntitlementGate {
-    return new EntitlementGate(this.sdk, options);
+    const gate = new EntitlementGate(this.sdk, options);
+    // BL-0004 — symmetric with `placement()`: a session-created gate is the
+    // headless equivalent of a mounted gate, so a `convert()` that reloads the
+    // UserContext re-checks it without the host wiring the subscription itself.
+    // `dispose()` drops it. (React's `useEntitlement` calls `watchUserContext()`
+    // for the same reason; it is idempotent.)
+    gate.watchUserContext();
+    return gate;
   }
 
   /**

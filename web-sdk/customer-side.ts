@@ -2215,6 +2215,16 @@ interface OutputPlacementRef {
    * and must not drift with it.
    */
   ruleHandle?: string;
+  /**
+   * The plan the output's CTA converts the user ONTO, when the authored CTA
+   * names one (`cta_path.plan_handle`, e.g. an `open_checkout_modal` upgrade).
+   *
+   * BL-0004: `convert()` receives only an output id, so this is the only place
+   * the optimistic post-conversion plan can come from. Absent when the CTA
+   * names no plan (`navigate_to_plans`, a bare `custom_url`) — then the
+   * conversion's plan effect is left entirely to the server refresh.
+   */
+  targetPlanHandle?: string;
 }
 
 /**
@@ -2243,6 +2253,23 @@ interface CacheEntry<T> {
 
 // InteractionState, CapPeriod, PlacementCapRule, PlacementCapPolicy,
 // PresentationCapState — imported from @revt-eng/core at top of file.
+
+/**
+ * The plan handle an output's primary CTA converts onto, when it names one.
+ *
+ * BL-0004. `cta_path` and `ui_path` are the same object on a normalized output
+ * (`normalizePlacementOutput` assigns both from one source), so `cta_path` is
+ * read first and `ui_path` covers a hand-built output that only set the alias.
+ * `Record<string, unknown>` on the schema side, hence the `typeof` guard rather
+ * than a cast.
+ */
+function outputCtaPlanHandle(output: PlacementOutput | undefined): string | undefined {
+  for (const path of [output?.cta_path, output?.ui_path]) {
+    const handle = path?.['plan_handle'];
+    if (typeof handle === 'string' && handle.trim().length > 0) return handle.trim();
+  }
+  return undefined;
+}
 
 /**
  * Pull an optional clickstream string field (`placement_id`,
@@ -2926,6 +2953,12 @@ export class RevTurbineCustomerSdk {
    * redundant segment re-evaluation.
    */
   private lastServerContextHash?: string;
+  /**
+   * The plan move an optimistic `convert()` made ahead of the server (BL-0004),
+   * held only until a `client-context` read stops reporting the old plan. See
+   * {@link dropStalePostConversionPlan}.
+   */
+  private pendingConversionPlan?: { from?: string; to: string };
   private usageBalances: UsageBalances = {};
   private localDecisionsByPlacementId = new Map<string, RevTurbinePlacementDecision>();
   private localPlacementsByLookupKey = new Map<string, PlacementOutput | null>();
@@ -4242,6 +4275,9 @@ export class RevTurbineCustomerSdk {
       // `dismiss()` / `snooze()`, which receives only an output id, can still
       // name the rule it acted on.
       ruleHandle: decision.output?.rule_id,
+      // BL-0004: the plan this output's CTA converts onto, for the optimistic
+      // half of the post-conversion context refresh.
+      targetPlanHandle: outputCtaPlanHandle(decision.output),
     });
 
     while (this.outputPlacementIndex.size > this.outputPlacementIndexLimit) {
@@ -8386,7 +8422,7 @@ export class RevTurbineCustomerSdk {
         return;
       }
       const data = (await response.json()) as ClientSafeContextResponse; // sdk-ok: boundary-parse — client-context response
-      const patch = this.mapClientSafeContext(data);
+      const patch = this.dropStalePostConversionPlan(this.mapClientSafeContext(data));
       if (Object.keys(patch).length === 0) return;
 
       // Surface the token-authenticated server signals into the `traits:server`
@@ -8422,7 +8458,7 @@ export class RevTurbineCustomerSdk {
         `:${patch.payment_at_risk === true ? 1 : 0}`;
       if (nextHash === this.lastServerContextHash) return;
       this.lastServerContextHash = nextHash;
-      this.applyServerContextPatch(patch);
+      this.applyUserContextPatch(patch);
     } catch {
       // Best-effort enrichment — never surface to the app.
     }
@@ -8505,12 +8541,16 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
-   * Apply a server-derived UserContext patch (plan 157) — mirrors setUserContext
-   * but accepts a partial. The patch's RevTurbine-authoritative fields (trial,
-   * billing signals) overlay the held context; undefined fields are skipped by
-   * the merge, so app-set values are never nulled.
+   * Apply a UserContext patch — mirrors setUserContext but accepts a partial.
+   * RevTurbine-authoritative fields (trial, billing signals, server plan)
+   * overlay the held context; undefined fields are skipped by the merge, so
+   * app-set values are never nulled.
+   *
+   * Two callers: the server client-context fetch (plan 157) and the optimistic
+   * post-conversion plan move (BL-0004). Both notify subscribers, which is what
+   * makes mounted slots and gates re-resolve.
    */
-  private applyServerContextPatch(patch: Partial<RevTurbineUserContext>): void {
+  private applyUserContextPatch(patch: Partial<RevTurbineUserContext>): void {
     const previousContext = this.userContext;
     this.userContext = this.mergeUserContext(patch, 'update');
     this.recalculateDerivedUsageTraits();
@@ -9010,14 +9050,115 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
-   * Record a confirmed CTA completion and retire the decision's placement
-   * permanently — future calls to `getPlacementDecision` for it will not
-   * return it again.
+   * Record a confirmed CTA completion, then reload the UserContext so every
+   * mounted surface re-decides against the plan the user just converted to.
+   *
+   * Conversion is **not** a suppression: it writes no cooldown and no permanent
+   * retirement (spec §"interaction" table; Kent's plan 254 D-9 ruling). What
+   * makes a converted upgrade banner leave the screen is the user no longer
+   * matching it — so a conversion that did not refresh the context left the
+   * placement mounted until something else happened to re-resolve it. Kent,
+   * 2026-09-25 (BL-0004): *"Converting should trigger a reloading of UserContext
+   * with the new plan/billing state the user has converted to."*
+   *
+   * Ordering, and why it is this way round:
+   *
+   * 1. The interaction is recorded (analytics + attribution), as before.
+   * 2. **Optimistically**, locally: when the converted output's CTA names a
+   *    target plan (`cta_path.plan_handle`), the held context moves to that plan
+   *    immediately. Billing truth arrives by Stripe webhook, so
+   *    `GET /api/sdk/client-context` can still report the OLD plan for seconds
+   *    after a successful checkout — waiting for it would leave the upgrade
+   *    prompt on screen exactly when the user has just paid.
+   * 3. Subscribers are notified either way — a conversion whose CTA names no
+   *    plan still re-decides mounted slots and re-checks mounted gates, which is
+   *    what turns a plan change the host applied itself into a re-render.
+   * 4. **Then** the server refresh (`fetchClientContext()`), which overlays the
+   *    RevTurbine-authoritative trial / billing-health / plan fields and
+   *    notifies again if it changed anything. It is best-effort and never
+   *    throws, so awaiting it cannot fail a conversion; with no client-session
+   *    minter configured it is a no-op and the optimistic state stands.
+   *
+   * Mounted `PlacementController`s re-decide and mounted `EntitlementGate`s
+   * re-check through their `watchUserContext()` subscriptions — which the React
+   * bindings attach for you. Re-resolution emits the normal lifecycle events
+   * once per final decision; the transient states emit nothing.
+   * `PlacementController.ctaComplete()` is unchanged and remains the
+   * component-level path.
    *
    * @public
    */
   async convert(outputId: string): Promise<void> {
     await this.trackOutputInteraction(outputId, 'cta_completed');
+    await this.reloadUserContextAfterConversion(outputId);
+  }
+
+  /**
+   * The BL-0004 post-conversion context reload: optimistic local plan move,
+   * then the server refresh. See {@link convert} for the ordering rationale.
+   */
+  private async reloadUserContextAfterConversion(outputId: string): Promise<void> {
+    const targetPlanHandle = this.outputPlacementIndex.get(outputId)?.targetPlanHandle;
+
+    if (targetPlanHandle && targetPlanHandle !== this.userContext.plan_handle) {
+      this.pendingConversionPlan = { from: this.userContext.plan_handle, to: targetPlanHandle };
+      this.applyUserContextPatch({
+        plan_handle: targetPlanHandle,
+        plan: { handle: targetPlanHandle, name: this.planNameForHandle(targetPlanHandle) },
+      });
+    } else {
+      // No plan move to make locally, but the conversion still has to reach
+      // mounted surfaces: the host may have changed the plan itself, and a
+      // re-decide against the unchanged context is the honest answer either way.
+      this.notifyUserContextChanged();
+    }
+
+    await this.fetchClientContext();
+  }
+
+  /**
+   * Keep a stale server plan from undoing an optimistic conversion (BL-0004).
+   *
+   * Billing truth arrives by Stripe webhook, so a `client-context` read that
+   * races the webhook reports the PRE-conversion plan — and the server plan
+   * deliberately overlays the app-supplied one (plan 179 TASK-1), so applying
+   * that read verbatim would put the upgrade prompt straight back on screen
+   * seconds after the user paid.
+   *
+   * So while a conversion is pending, a server plan equal to the plan converted
+   * AWAY from is dropped — only the plan fields, never the trial or billing-health
+   * signals, which are authoritative regardless. Any other value (the new plan,
+   * or a third one the user was moved to out-of-band) clears the pending state
+   * and applies, so this can suppress at most the one value it was created for
+   * and cannot outlive the lag it exists to cover.
+   */
+  private dropStalePostConversionPlan(
+    patch: Partial<RevTurbineUserContext>,
+  ): Partial<RevTurbineUserContext> {
+    const pending = this.pendingConversionPlan;
+    if (!pending) return patch;
+    if (patch.plan_handle === undefined) return patch;
+    if (patch.plan_handle !== pending.from) {
+      this.pendingConversionPlan = undefined;
+      return patch;
+    }
+    const { plan_handle: _planHandle, plan: _plan, ...rest } = patch;
+    return rest;
+  }
+
+  /**
+   * The display name the loaded Playbook gives a plan handle, else the handle.
+   * Keeps an optimistic plan move from putting a raw handle in front of a user
+   * when the Playbook already knows the plan's name.
+   */
+  private planNameForHandle(handle: string): string {
+    const plans = this.getConfiguredPlaybook()?.plans ?? [];
+    for (const plan of plans) {
+      if (plan.unique_handle === handle && typeof plan.name === 'string' && plan.name.length > 0) {
+        return plan.name;
+      }
+    }
+    return handle;
   }
 
   /**
@@ -9157,6 +9298,10 @@ export class RevTurbineCustomerSdk {
       this.clientContextToken = undefined;
       this.autoFetchClientContext();
     }
+    // A pending optimistic conversion belongs to the identity that converted
+    // (BL-0004) — carrying it across an identify would suppress the new user's
+    // real plan.
+    this.pendingConversionPlan = undefined;
     // Only the customer's own `custom` map is observed (plan 114 TASK-4); the
     // legacy traits-as-custom path is gone (plan 191 Q-2).
     this.emitObservedContextFields(ctx.custom);
@@ -9211,6 +9356,8 @@ export class RevTurbineCustomerSdk {
       personalization: {},
     };
     this.usageBalances = {};
+    // BL-0004: the pending optimistic conversion is this user's, not the next one's.
+    this.pendingConversionPlan = undefined;
     this.recalculateDerivedUsageTraits();
     this.markSegmentsDirtyFromContextChange(previousContext, this.userContext);
     this.decisionCache.clear();

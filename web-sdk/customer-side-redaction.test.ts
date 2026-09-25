@@ -37,13 +37,27 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // Hardening, added after AC-6's "does not warn for a clean batch" failed once
+  // on a CI runner and passed on an immediate re-run of the same commit
+  // (BL-0004's PR gate, 2026-09-25). The PII warning is per-instance, so the only
+  // way that test sees one is another instance emitting it while its spy is
+  // installed — and every SDK built here was left holding a live batching flush
+  // timer (5s by default) with no `dispose()`, so earlier tests' instances stayed
+  // able to flush mid-way through later ones. That is a real cross-test leak
+  // whether or not it was this failure's cause: the exact mechanism was NOT
+  // reproduced locally, so this closes the leak rather than claiming the
+  // diagnosis. If the assertion flakes again, the cause is elsewhere.
+  for (const sdk of created.splice(0)) sdk.dispose();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   vi.clearAllMocks();
 });
 
+/** Instances to tear down — see the flush-timer note in `afterEach`. */
+const created: RevTurbineCustomerSdk[] = [];
+
 function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerSdk {
-  return new RevTurbineCustomerSdk({
+  const sdk = new RevTurbineCustomerSdk({
     tenantId: 'tenant_abc',
     apiKey: 'sk_secret_key',
     publicKey: 'pub_ingest_key',
@@ -53,6 +67,8 @@ function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerS
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
     ...over,
   });
+  created.push(sdk);
+  return sdk;
 }
 
 function trackBody(): { events: Array<Record<string, unknown>> } {

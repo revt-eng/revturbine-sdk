@@ -156,8 +156,15 @@ export function usePlacement({
       forceUpdate((v) => v + 1);
     });
 
+    // BL-0004 — re-decide when the user context changes. This is what takes a
+    // converted placement off screen in place: `sdk.convert()` reloads the
+    // UserContext, and a mounted slot that is not watching it keeps rendering a
+    // placement the user has just upgraded past.
+    const unwatch = ctrl.watchUserContext();
+
     return () => {
       unsub();
+      unwatch();
       // Drops the controller's Playbook-load subscription too (BL-0177), so an
       // unmounted slot never re-decides.
       ctrl.dispose();
