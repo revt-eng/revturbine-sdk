@@ -47,6 +47,42 @@ also require a changelog entry.
 
 ---
 
+## 0.11.7
+
+### A rebuilt gate/slot re-runs its check, so a page inside `<Gate>` no longer renders blank (BL-0251)
+
+**What changed.** `RevTurbineProvider` re-initializes and publishes a **new**
+`sdk` instance whenever its `options` prop changes identity, with `isReady`
+staying `true`. Hosts do this routinely: options derived from an async session
+change once, shortly after first paint.
+
+`useEntitlement` rebuilt its `EntitlementGate` on that change, but the effect
+that *runs* the check keyed on `[autoCheck, isReady, handle, contextKey]` — none
+of which move when only `sdk` does. The replacement gate was therefore never
+checked, and an unchecked gate reports `result: null` with `isLoading: false`,
+which `<Gate>` reads as *unresolved* and renders as `null`. A page whose whole
+body sits inside a `<Gate>` rendered **nothing**, permanently, until the gate was
+remounted — which is why navigating away and back "fixed" it and a hard refresh
+hit it every time (the session settles after the gate mounts).
+
+`usePlacement` had the same defect: `loadDecision` was memoized on
+`[isReady, resolvedUserId]`, so a controller rebuilt for a new `sdk` **or** a
+changed slot config was never loaded and the slot stayed empty for the life of
+the mount.
+
+Both auto-run dependency lists are now supersets of the lists that rebuild the
+object they act on (`sdk` added to both; `placementKey` added to
+`loadDecision`). No retry, no polling — the trigger simply covers every reason
+the underlying object was replaced.
+
+**Landed in.** `0.11.7`.
+
+**Fail-closed in.** n/a — this was a fail-**blank**, not a tolerated old shape.
+Nothing a host passes changes.
+
+**Proving test.** `web-sdk/placements/AccessGateSurfaceSlot.sdk-rebuild.test.tsx`
+and `web-sdk/react/usePlacement.sdk-rebuild.test.tsx`.
+
 ## 0.11.6
 
 ### `sdk.convert()` reloads the UserContext, so a mounted slot re-decides (BL-0004)
