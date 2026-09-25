@@ -47,6 +47,71 @@ also require a changelog entry.
 
 ---
 
+## 0.11.9
+
+### The SDK can record app-owned trial revisions and evidenced account creation (BL-0237, plan 276 TASK-13)
+
+**What changed.** Three new `@public` methods on `RevTurbineCustomerSdk` and the
+matching capability on the Python and Rust ports:
+
+| Method | Does |
+|---|---|
+| `recordTrialRevision(episode, labels?)` | Classifies one trial episode's facts and emits one `trial_revision` if — and only if — the evidence supports a revision |
+| `syncTrialRevisions(labels?)` | Does the same for every episode the registered `'trial'` domain provider states |
+| `recordAccountCreated(payload)` | Emits `account_created` with plan 276 REQ-3 evidence; refuses a user-grain source |
+
+**Trial execution and ownership stay with your app.** RevTurbine runs no trial,
+enrols nobody, and decides nothing about when a trial ended. There is no
+trial-enrollment service and no server-side evaluation. These methods *record*
+the fact your app states, after running the same pure classifier every
+RevTurbine port runs — so the fact that reaches the warehouse agrees with the
+fact your app believes.
+
+**The classifier reads no clock.** An episode whose scheduled end has merely
+passed emits **nothing** and comes back `pending_unknown`. An elapsed deadline
+proves only that the time passed, never that your app ended anything — supply
+`actual_end_at` plus an `end_evidence` when it did. A conversion links only its
+own episode's commitment, at or after that evidenced end, so card collection at
+enrolment and unrelated paid activity cannot convert a trial. A usage-metered
+episode needs exhaustion evidence before it can expire.
+
+**The gentle nudge.** Registering no `'trial'` provider is a perfectly valid
+integration: nothing breaks, no decision changes, every trial keeps working. But
+trial revisions then go unrecorded, so the SDK logs **one** info-level console
+line per runtime the first time trials exist and nothing will record them:
+
+> `[RevTurbine] No trial provider supplied; trial revisions will not be recorded — see https://docs.revturbine.com/sdk/trials. Register a domain provider with domain: 'trial', or call recordTrialRevision(episode) yourself. Trials keep working; only the lifecycle facts are missing.`
+
+It fires from `setTrialInstances()` (the moment your app hands the SDK trials)
+and from `syncTrialRevisions()`. It is never a warning and never an error.
+
+**Local mode.** In `local_only` the SDK makes no server calls at all, so a
+recorded revision reaches any registered event consumer and never RevTurbine.
+The result says `recorded_locally` rather than `recorded`, so an integrator can
+tell the difference instead of assuming the warehouse has it.
+
+**The ports.** `revturbine.core.trials.record_trial_revision` (Python) and
+`revturbine::trial_revision::record_trial_revision` (Rust) classify an episode
+and return the **validated payload for the host to ship** through its existing
+ingest path. They emit nothing themselves: the server ports have never held an
+event transport, and adding one would make each a second, unversioned ingest
+client. What they guarantee is that the payload is byte-identical to the browser
+SDK's for the same facts, asserted by the
+`trial_revision_classification` cross-language parity fixture.
+
+| field | value |
+|---|---|
+| Lands in | `0.11.9` |
+| Fails closed in | n/a — additive. No existing call site changes behaviour. |
+| Action needed | None to keep working. To record trial lifecycle facts, register a `'trial'` domain provider or call `recordTrialRevision` where your app changes a trial. |
+| Proven by | `web-sdk/trial-revision.test.ts`, `tests/parity/fixtures/trial_revision_classification.json` (ts/py/rs), scaffold `src/trials/models/trial-revision.test.ts` |
+
+Requires `@revt-eng/*` **0.1.352**, which adds the `trial_revision` taxonomy
+name, the `TrialRevisionPayload` / `AccountCreatedPayload` contracts and the
+`classifyTrialRevision` classifier.
+
+---
+
 ## 0.11.8
 
 ### `account_id` falls back to a PREFIXED user key instead of a bare user id (BL-0117)
