@@ -99,7 +99,7 @@ initialization, through an experiment provider, or through the lower-level
 | Field | Type | Guidance |
 |---|---|---|
 | `id` | `string` | Your stable, opaque user identifier. Supply it in `options.user`; pass it as the first argument to `identify()`. Avoid emails and other guessable identifiers |
-| `account_id` | `string \| null` | The organization, workspace, or account the user is acting in |
+| `account_id` | `string \| null` | The organization, workspace, or account the user is acting in. Optional — leave it unset and every event the SDK emits carries `user-fallback:<user_id>` instead. That prefix is the point: `account_id` is the join key RevTurbine's account-grain analytics match on, so a *bare* user id stamped there is indistinguishable from a real account, while a prefixed one is countable and obviously fabricated (RevTurbine's own account-grain readouts exclude it). Use `isFallbackAccountId()` to classify a value. Set `account_id` whenever your product has a notion of an account |
 | `email` | `string \| null` | Optional contact identity. Put email here, never in `id` |
 | `email_type` | `string` | Optional classification such as `business` or `personal` |
 

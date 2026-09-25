@@ -47,6 +47,103 @@ also require a changelog entry.
 
 ---
 
+## 0.11.8
+
+### `account_id` falls back to a PREFIXED user key instead of a bare user id (BL-0117)
+
+**What changed.** Every clickstream event the SDK sends to `/api/track` used to
+carry `account_id: userContext.account_id || userId`. `TrackEvent.account_id`
+was a required, min-length-1 field, so an app that identified no account had to
+send *something* — and what it sent was the **user** id, bare and
+indistinguishable from a real account. `monetization_funnel` and `cohort_rollup`
+build their account map out of `events_clickstream.account_id`, and experiment
+analysis reads that column whenever `analysis_unit = 'account'`: every such row
+contributed a bogus `user_id → user_id` account, so an account-grain readout
+returned a user-grain n while looking perfectly valid. The treatment-interaction
+lane had the same hole from the other side — the SDK sent no `account_id` at all
+and the ingest route's own `account_id ?? user_id` fallback stamped a user id
+into `placement_presentations.account_id`.
+
+Kent ruled on it, 2026-09-25 (**D-13**): *"Keep the user-id fallback but
+explicitly prefix it to make it obvious its a fallback key."*
+
+So the fallback stays — a row with no identified account still needs an
+attribution handle, and a hole in a join key is not an improvement — but it is
+now **self-describing**:
+
+```text
+identified account   →  account_id: "acct_acme"
+no account           →  account_id: "user-fallback:user_123"
+```
+
+Both wire lanes (`/api/track` → `events_clickstream.account_id`, and
+`/api/events/interactions` → `placement_presentations.account_id`) resolve the
+value through one private helper, so they cannot drift apart: the funnel joins
+one against the other, and a divergence in trimming, hashing or fallback
+derivation joins nothing. The fallback is derived from the same
+`userContext.id || anonymousId` the row's `user_id` comes from and redacted the
+same way, so an email-shaped user id is the SAME hash behind the marker on both
+lanes. A blank or whitespace-only `account_id` is not an account and falls
+through to the fallback.
+
+Two new `@public` exports carry the contract to integrators and to anything
+reading the warehouse:
+
+```ts
+import { FALLBACK_ACCOUNT_ID_PREFIX, isFallbackAccountId } from '@revturbine/sdk';
+
+FALLBACK_ACCOUNT_ID_PREFIX;                       // 'user-fallback:'
+isFallbackAccountId('user-fallback:user_123');    // true  — fabricated
+isFallbackAccountId('acct_acme');                 // false — a real account
+```
+
+`isFallbackAccountId` is position- and case-sensitive by contract, matching the
+read-time SQL guards: an account id that merely *contains* the marker is a real
+account, and the bare prefix with nothing after it is not a key at all. The same
+constant and predicate ship in `server-python`
+(`revturbine.core.account_identity`) and `server-rust`
+(`revturbine::account_identity`, re-exported at the crate root), and the
+cross-language parity corpus drives all three
+(`tests/parity/fixtures/account_id_fallback_prefix.json`) so the literal cannot
+drift between ports.
+
+**Absence is still valid on the wire.** `@revt-eng/schema` 0.1.325 (scaffold
+[#375](https://github.com/revt-eng/revturbine-scaffold/pull/375)) made
+`TrackEvent.account_id` optional, and web migration 014 made
+`events_clickstream.account_id` nullable — absence means "no account
+identified", and a producer with no user identity to derive from may still omit
+the field. The browser SDK always has an identity (an un-identified visitor
+still has the anonymous id), so its default emit always sends the prefixed
+fallback rather than a hole.
+
+No public API change to an existing signature: nothing moved, and nothing new is
+asked of the caller. `identify(userId, { account_id })` is still the only way to
+supply an account. Integrations that identify one see no wire change at all.
+
+**Read-time consequence, stated plainly.** Account-grain analytics exclude
+fallback-prefixed ids from account denominators, so an app that never identifies
+an account now reports **zero** accounts rather than one-per-user. That is a
+correction, not a regression — those rows were never accounts — but a dashboard
+that silently read them as account-grain will show a drop.
+
+**Landed in** `0.11.8`. **Fail-closed in** `0.11.8` — the bare fallback is gone
+in the same version that introduced the prefixed one; there is no window where
+both shapes are emitted.
+
+**Proving test:** `web-sdk/account-identity.test.ts` (the literal, the
+classifier's position/case sensitivity, and the bare-prefix and absence cases)
+plus `web-sdk/interaction-wire-contract.test.ts` — "the account identity on the
+/api/track wire" and "the account identity the analytics joins key on": an
+identified user with no account produces `user-fallback:<user_id>` on both
+lanes, the prefix survives `/api/track` JSON serialization byte-for-byte, an
+identified account reaches the wire byte-identically to the value supplied, a
+blank account id is treated as absence, an un-identified visitor derives from
+the anonymous id, and every body parses against the canonical
+`TrackEventSchema` / `TreatmentInteractionInputSchema`. Also
+`web-sdk/customer-side-ingest.test.ts` on the plain `capture()` path,
+`server-python/tests/test_account_identity.py`, the unit tests in
+`server-rust/src/account_identity.rs`, and the three-way parity fixture.
+
 ## 0.11.7
 
 ### A rebuilt gate/slot re-runs its check, so a page inside `<Gate>` no longer renders blank (BL-0251)
