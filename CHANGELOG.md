@@ -47,6 +47,26 @@ also require a changelog entry.
 
 ---
 
+## Unreleased (no version bump — docs and TSDoc only)
+
+### `RevTurbineServer` documents `apiKey` as the server key (BL-0107, plan 256 TASK-4)
+
+**What changed.** The control plane's `POST /api/sdk/client-sessions` now accepts
+the customer's **server key** (`rtk_…`, type `server`) as the minting authority;
+the separate `rt_secret_` mint secret it used to require was never issuable and
+is retired (revturbine-web, plan 256 TASK-2/3). `RevTurbineServer`'s TSDoc,
+`server-node/README.md` and the `@revt-eng/sdk/server` example now say so: pass
+the server key as `apiKey`, read from `REVTURBINE_API_KEY` (was
+`REVTURBINE_SECRET_KEY`). The examples also now call
+`createClientSession({ subject })` and read `client_token` — the shapes the
+method has always had (the old examples passed `userId` and read `token`).
+
+**Landed in:** no release — no signature changed; the `apiKey` option already
+existed and already sent the server key as the Bearer.
+**Fail-closed in:** n/a — no customer-visible behaviour changed in this package.
+**Proving test:** `tests/server-node-client-sessions.test.ts` (mints via the
+endpoint with the key as Bearer; the key never reaches errors or the console).
+
 ## 0.11.9
 
 ### The SDK can record app-owned trial revisions and evidenced account creation (BL-0237, plan 276 TASK-13)
