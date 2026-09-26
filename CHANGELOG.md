@@ -47,6 +47,38 @@ also require a changelog entry.
 
 ---
 
+## 0.11.11
+
+### Built-in segment dimensions: reserved `rt_*` segment traits (BL-0310/BL-0311, plan 279 TASK-3/TASK-4)
+
+**What changed.** The user context gains an optional `builtin_dimensions` object with the
+built-in segment dimension values: `activity_level`, `subscription_state`, `trial_type`,
+`seat_type`, `buyer_role`, `email_type`, `billing_health`, `region` and `device_type`.
+Targeting-state derivation (`buildTargetingState`, Python `build_targeting_state`, Rust
+`build_targeting_state`) now:
+
+- always stamps `rt_registration_state`: `registered` when the context has a non-empty
+  `id`, otherwise `unregistered`;
+- stamps each other `rt_<dimension>` segment trait **only** from an in-vocabulary
+  `builtin_dimensions` value. An absent or unknown value stamps nothing, so every
+  built-in segment of that dimension fails closed;
+- **deletes** any `rt_*` key that arrives through `custom`, `entitlements`, usage
+  entries or usage overrides. `rt_` is now a reserved trait-key prefix, like
+  `plan_handle`.
+
+Before this release, an app trait named `rt_<anything>` reached segment evaluation. It is
+now removed. Python and Rust also export the new helpers: `derive_builtin_dimension_traits`,
+`is_reserved_trait_key`, `BUILTIN_DIMENSION_VOCABULARIES` and `BUILTIN_TRAIT_KEY_PREFIX`.
+Contract: targeting-studio-ui.md §4.1 "Built-in segment resolution contract".
+
+**Landed in:** 0.11.11 (all three ports, `@revt-eng/core` 0.1.359).
+**Fail-closed in:** 0.11.11. A custom `rt_*` trait is dropped from the first version that
+reserves the prefix.
+**Proving test:** parity fixture `tests/parity/fixtures/builtin_dimension_traits.json`
+(ts == py == rs) with `tests/parity/builtin-dimension-chain.test.ts`, plus
+`server-python/tests/test_builtin_dimension_traits.py` and the
+`user_context::builtin_dimension_tests` Rust module.
+
 ## Unreleased (no version bump — docs and TSDoc only)
 
 ### `RevTurbineServer` documents `apiKey` as the server key (BL-0107, plan 256 TASK-4)
