@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.352/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.359/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -3821,6 +3821,83 @@ class UsageTriggerPayload(BaseModel):
     seats_allowed: conint(ge=0, le=9007199254740991) | None = None
 
 
+class SubscriptionState(Enum):
+    none = "none"
+    trial = "trial"
+    paid = "paid"
+    cancelled = "cancelled"
+
+
+class TrialType2(Enum):
+    none = "none"
+    free_trial = "free_trial"
+    reverse_trial = "reverse_trial"
+
+
+class BuyerRole(Enum):
+    buyer = "buyer"
+    non_buyer = "non_buyer"
+
+
+class EmailType(Enum):
+    business = "business"
+    personal = "personal"
+    unknown = "unknown"
+
+
+class BillingHealth(Enum):
+    no_billing = "no_billing"
+    good_standing = "good_standing"
+    trial_payment_method_attached = "trial_payment_method_attached"
+    payment_method_missing = "payment_method_missing"
+    payment_failed = "payment_failed"
+    payment_overdue = "payment_overdue"
+    cancelled = "cancelled"
+
+
+class Region(Enum):
+    us_canada = "us_canada"
+    europe = "europe"
+    rest_of_world = "rest_of_world"
+
+
+class DeviceType(Enum):
+    desktop = "desktop"
+    mobile = "mobile"
+    tablet = "tablet"
+    unknown = "unknown"
+
+
+class UserBuiltinDimensions(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    activity_level: ActivityLevel | None = None
+    subscription_state: SubscriptionState | None = None
+    trial_type: TrialType2 | None = None
+    seat_type: constr(pattern=r"^[a-z0-9._]{1,87}$") | None = None
+    buyer_role: BuyerRole | None = None
+    email_type: EmailType | None = None
+    billing_health: BillingHealth | None = None
+    region: Region | None = None
+    device_type: DeviceType | None = None
+
+
+class BuiltinDimensions(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    activity_level: ActivityLevel | None = None
+    subscription_state: SubscriptionState | None = None
+    trial_type: TrialType2 | None = None
+    seat_type: constr(pattern=r"^[a-z0-9._]{1,87}$") | None = None
+    buyer_role: BuyerRole | None = None
+    email_type: EmailType | None = None
+    billing_health: BillingHealth | None = None
+    region: Region | None = None
+    device_type: DeviceType | None = None
+
+
 class BillingPeriod4(Enum):
     monthly = "monthly"
     annual = "annual"
@@ -4110,6 +4187,10 @@ class BinaryVariantStatisticalSummary(RootModel[Any]):
 
 
 class ClientContextBilling(RootModel[Any]):
+    root: Any
+
+
+class ClientContextBuiltinDimensions(RootModel[Any]):
     root: Any
 
 
@@ -4761,6 +4842,7 @@ class ClientContext(BaseModel):
     billing: ClientContextBilling | None = None
     plan: ClientContextPlan | None = None
     capabilities: ClientContextCapabilities | None = None
+    builtin_dimensions: ClientContextBuiltinDimensions | None = None
 
 
 class ContentUiPath(BaseModel):
@@ -6421,6 +6503,7 @@ class UserContext(BaseModel):
     instances: list[UserInstanceContext] | None = None
     custom: dict[str, str | float | bool | None] | None = {}
     personalization: dict[str, str | float] | None = {}
+    builtin_dimensions: BuiltinDimensions | None = None
     derived_config_version: str | None = None
     context_hash: str | None = None
     derived_computed_at: AwareDatetime | None = None

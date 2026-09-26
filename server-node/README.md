@@ -10,8 +10,9 @@ evaluate locally.
 
 ## Minting a client session
 
-`RevTurbineServer` exchanges your secret key for a short-lived, browser-safe
-`rt_client_` token. The client SDK's `clientSession` callback consumes it and
+`RevTurbineServer` uses your **server key** (`rtk_…`, type `server`, minted under
+**Settings → API tokens → Server token**) to mint a short-lived, browser-safe
+`rt_client_` session key for one user. The client SDK's `clientSession` callback consumes it and
 re-mints on expiry, so server-derived plan / trial / payment state stays fresh
 with no further application code.
 
@@ -20,12 +21,12 @@ import { RevTurbineServer } from '@revt-eng/server-node';
 
 const server = new RevTurbineServer({
   tenantId: 'tenant_abc',
-  apiKey: process.env.REVTURBINE_SECRET_KEY!,
+  apiKey: process.env.REVTURBINE_API_KEY!, // the server key — never the browser publicKey
   endpoint: 'https://api.revturbine.io',
 });
 
 // Hand the token to the browser.
-const { token } = await server.createClientSession({ userId: 'user_123' });
+const { client_token } = await server.createClientSession({ subject: 'user_123' });
 ```
 
 ## Evaluating locally

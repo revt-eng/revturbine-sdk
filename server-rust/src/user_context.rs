@@ -87,6 +87,116 @@ pub fn usage_amounts_from_entries(usage: Option<&Value>) -> Map<String, Value> {
     amounts
 }
 
+// ── Built-in segment dimensions (plan 279 PD-1/PD-4) ──────────────────────
+//
+// Contract: targeting-studio-ui.md §4.1 "Built-in segment resolution
+// contract". Source: scaffold `segments/controllers/builtin-dimensions.ts`
+// (the catalogue) and `user/controllers/user-context.ts`
+// (`deriveBuiltinDimensionTraits`).
+
+/// The reserved trait-key prefix. Only `builtin_dimensions` (and `id`, for
+/// registration) may set a key under it.
+pub const BUILTIN_TRAIT_KEY_PREFIX: &str = "rt_";
+
+/// The delivered dimensions in catalogue order, each with its closed
+/// vocabulary. `None` marks Seat Type, whose values are tenant seat-type
+/// handles. Registration State is absent: it is SDK-local (from `id`).
+pub const BUILTIN_DIMENSION_VOCABULARIES: &[(&str, Option<&[&str]>)] = &[
+    (
+        "activity_level",
+        Some(&["new", "high", "medium", "low", "inactive"]),
+    ),
+    (
+        "subscription_state",
+        Some(&["none", "trial", "paid", "cancelled"]),
+    ),
+    ("trial_type", Some(&["none", "free_trial", "reverse_trial"])),
+    ("seat_type", None),
+    ("buyer_role", Some(&["buyer", "non_buyer"])),
+    ("email_type", Some(&["business", "personal", "unknown"])),
+    (
+        "billing_health",
+        Some(&[
+            "no_billing",
+            "good_standing",
+            "trial_payment_method_attached",
+            "payment_method_missing",
+            "payment_failed",
+            "payment_overdue",
+            "cancelled",
+        ]),
+    ),
+    ("region", Some(&["us_canada", "europe", "rest_of_world"])),
+    (
+        "device_type",
+        Some(&["desktop", "mobile", "tablet", "unknown"]),
+    ),
+];
+
+/// Whether a trait key falls under the reserved `rt_` prefix.
+///
+/// Source: builtin-dimensions.ts (isReservedTraitKey)
+#[must_use]
+pub fn is_reserved_trait_key(key: &str) -> bool {
+    key.starts_with(BUILTIN_TRAIT_KEY_PREFIX)
+}
+
+/// `HANDLE_PATTERN` (`^[a-z0-9._]{1,100}$`) capped at 87 characters, so that
+/// `rt.seat_type.<handle>` stays within the 100-character handle limit. Every
+/// accepted character is ASCII, so byte length equals the TS UTF-16 length.
+fn is_seat_type_value(value: &str) -> bool {
+    (1..=87).contains(&value.len())
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'.' || b == b'_')
+}
+
+/// The reserved `rt_<dimension>` segment traits for a user context.
+///
+/// `rt_registration_state` is always stamped: `registered` iff `id` is a
+/// non-empty string. Every other dimension is stamped only from
+/// `builtin_dimensions`, and only with an in-vocabulary string; an absent or
+/// out-of-vocabulary value stamps nothing (unknown is absence). A
+/// `registration_state` key inside `builtin_dimensions` is ignored.
+///
+/// Source: user-context.ts (deriveBuiltinDimensionTraits)
+#[must_use]
+pub fn derive_builtin_dimension_traits(context: &Value) -> Map<String, Value> {
+    let mut traits = Map::new();
+    let registered = context
+        .get("id")
+        .and_then(Value::as_str)
+        .is_some_and(|id| !id.is_empty());
+    traits.insert(
+        "rt_registration_state".into(),
+        json!(if registered {
+            "registered"
+        } else {
+            "unregistered"
+        }),
+    );
+    let Some(delivered) = context.get("builtin_dimensions").and_then(Value::as_object) else {
+        return traits;
+    };
+    for (key, vocabulary) in BUILTIN_DIMENSION_VOCABULARIES {
+        let Some(value) = delivered.get(*key).and_then(Value::as_str) else {
+            continue;
+        };
+        let in_vocabulary = match vocabulary {
+            Some(values) => values.contains(&value),
+            None => is_seat_type_value(value),
+        };
+        if in_vocabulary {
+            traits.insert(format!("{BUILTIN_TRAIT_KEY_PREFIX}{key}"), json!(value));
+        }
+    }
+    traits
+}
+
+fn strip_reserved_trait_keys(bag: &mut Map<String, Value>) {
+    bag.retain(|key, _| !is_reserved_trait_key(key));
+}
+
 fn is_scalar(value: &Value) -> bool {
     value.is_string() || value.is_number() || value.is_boolean()
 }
@@ -146,7 +256,9 @@ pub fn configured_plan_name_from_exported_config(
 }
 
 /// RESERVED trait key — a `custom.plan_handle` can never shadow or
-/// impersonate the first-class identity (plan 191 REQ-2).
+/// impersonate the first-class identity (plan 191 REQ-2). So is every `rt_*`
+/// key: stamped only from `builtin_dimensions` and `id`, and deleted when it
+/// arrives through `custom`, `entitlements` or usage (plan 279 PD-1).
 ///
 /// Source: user-context.ts (buildTargetingState)
 #[must_use]
@@ -176,6 +288,13 @@ pub fn build_targeting_state(
         }
     }
 
+    // `rt_*` is a reserved trait-key PREFIX (plan 279 PD-1 — plan 191
+    // REQ-2's `plan_handle` rule extended to a namespace): a custom or
+    // entitlement `rt_*` key is DELETED, and the built-in dimension traits
+    // are stamped from the first-class fields only.
+    strip_reserved_trait_keys(&mut traits);
+    traits.extend(derive_builtin_dimension_traits(context));
+
     match &plan_identity {
         Some(identity) => {
             traits.insert("plan_handle".into(), json!(identity));
@@ -201,6 +320,8 @@ pub fn build_targeting_state(
             usage.insert(key.clone(), value.clone());
         }
     }
+    // Usage never reaches a reserved key either (plan 279 PD-1).
+    strip_reserved_trait_keys(&mut usage);
 
     for (key, amount) in &usage {
         if !traits.contains_key(key) {
@@ -270,5 +391,113 @@ mod playbook_rename_tests {
             configured_plan_name_from_exported_config(None, Some("pro")),
             configured_plan_name_from_playbook(None, Some("pro"))
         );
+    }
+}
+
+#[cfg(test)]
+mod builtin_dimension_tests {
+    //! Plan 279 TASK-4 (BL-0310/BL-0311): built-in dimension trait stamping.
+    //! The byte-level contract with TS and Python is the parity fixture
+    //! `builtin_dimension_traits.json`; these tests pin the port's own rules.
+
+    use super::{
+        build_targeting_state, derive_builtin_dimension_traits, BUILTIN_DIMENSION_VOCABULARIES,
+    };
+    use serde_json::{json, Map, Value};
+
+    fn rt(bag: &Value) -> Map<String, Value> {
+        bag.as_object()
+            .expect("object")
+            .iter()
+            .filter(|(k, _)| k.starts_with("rt_"))
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect()
+    }
+
+    fn unregistered_only() -> Map<String, Value> {
+        let mut only = Map::new();
+        only.insert("rt_registration_state".into(), json!("unregistered"));
+        only
+    }
+
+    #[test]
+    fn anonymous_context_stamps_only_unregistered() {
+        let state = build_targeting_state(&json!({}), None, None);
+        assert_eq!(rt(&state["traits"]), unregistered_only());
+        assert_eq!(rt(&state["segment_traits"]), unregistered_only());
+    }
+
+    #[test]
+    fn registration_follows_a_non_empty_string_id() {
+        let reg =
+            |ctx: Value| derive_builtin_dimension_traits(&ctx)["rt_registration_state"].clone();
+        assert_eq!(reg(json!({ "id": "u" })), json!("registered"));
+        assert_eq!(reg(json!({ "id": "" })), json!("unregistered"));
+        assert_eq!(reg(json!({ "id": 7 })), json!("unregistered"));
+    }
+
+    #[test]
+    fn every_in_vocabulary_value_stamps() {
+        let long = "a".repeat(87);
+        for (key, vocabulary) in BUILTIN_DIMENSION_VOCABULARIES {
+            let values: Vec<&str> = match vocabulary {
+                Some(values) => values.to_vec(),
+                None => vec!["editor", long.as_str()],
+            };
+            for value in values {
+                let traits = derive_builtin_dimension_traits(
+                    &json!({ "builtin_dimensions": { *key: value } }),
+                );
+                let mut expected = unregistered_only();
+                expected.insert(format!("rt_{key}"), json!(value));
+                assert_eq!(traits, expected, "{key}={value}");
+            }
+        }
+    }
+
+    #[test]
+    fn out_of_vocabulary_and_wrong_type_values_drop() {
+        let traits = derive_builtin_dimension_traits(&json!({
+            "builtin_dimensions": {
+                "registration_state": "registered",
+                "activity_level": "active",
+                "trial_type": "free",
+                "email_type": "Business",
+                "seat_type": "a".repeat(88),
+                "buyer_role": true,
+                "region": 3,
+                "device_type": null,
+                "billing_health": ""
+            }
+        }));
+        assert_eq!(traits, unregistered_only());
+        assert_eq!(
+            derive_builtin_dimension_traits(&json!({ "builtin_dimensions": ["paid"] })),
+            unregistered_only()
+        );
+    }
+
+    #[test]
+    fn reserved_keys_from_custom_entitlements_and_usage_are_deleted() {
+        let mut overrides = Map::new();
+        overrides.insert("rt_device_type".into(), json!(1));
+        overrides.insert("seats".into(), json!(2));
+        let state = build_targeting_state(
+            &json!({
+                "custom": { "rt_subscription_state": "paid", "rt_email_type": "business", "role": "admin" },
+                "entitlements": { "rt_region": true, "beta": true },
+                "usage": { "rt_activity_level": { "amount": 5 }, "api_calls": { "amount": 3 } },
+                "builtin_dimensions": { "subscription_state": "trial" }
+            }),
+            None,
+            Some(&overrides),
+        );
+        let mut expected = unregistered_only();
+        expected.insert("rt_subscription_state".into(), json!("trial"));
+        assert_eq!(rt(&state["traits"]), expected);
+        assert_eq!(rt(&state["segment_traits"]), expected);
+        assert!(rt(&state["usage"]).is_empty());
+        assert_eq!(state["traits"]["role"], json!("admin"));
+        assert_eq!(state["traits"]["beta"], json!(true));
     }
 }

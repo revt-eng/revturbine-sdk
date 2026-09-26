@@ -24,12 +24,12 @@
  *
  * const server = new RevTurbineServer({
  *   tenantId: 'tenant_abc',
- *   apiKey: process.env.REVTURBINE_SECRET_KEY!,
+ *   apiKey: process.env.REVTURBINE_API_KEY!, // the server key (rtk_…, type server)
  *   endpoint: 'https://edge.example.com',
  * });
  *
  * // Hand this to the browser; the client SDK re-mints on expiry.
- * const { token } = await server.createClientSession({ userId: 'user_123' });
+ * const { client_token } = await server.createClientSession({ subject: 'user_123' });
  * ```
  */
 export { RevTurbineServer, RevTurbineClientSessionError } from './client';

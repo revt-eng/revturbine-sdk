@@ -96,8 +96,8 @@ export interface ServerEvaluationRequest {
  * Input for minting a short-lived, per-user client-session token.
  *
  * The customer backend attests the end user, then mints a browser-safe token
- * scoped to exactly that subject. Tenant / application / environment are derived
- * server-side from the mint secret — never from this input.
+ * scoped to exactly that subject. The tenant is derived server-side from the
+ * server key ({@link RevTurbineServerOptions.apiKey}) — never from this input.
  */
 export interface CreateClientSessionInput {
   /** The end-user subject the token is minted for (opaque to RevTurbine). */

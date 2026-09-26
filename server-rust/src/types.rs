@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.352/rust/revturbine_types.rs
+//   published/v0.1.359/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -33019,6 +33019,11 @@ impl<'de> ::serde::Deserialize<'de> for ChangeLogEntryTenantId {
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
 #[doc = "    },"]
+#[doc = "    \"builtin_dimensions\": {"]
+#[doc = "      \"$ref\": \"#/$defs/ClientContextBuiltinDimensions\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "    },"]
 #[doc = "    \"capabilities\": {"]
 #[doc = "      \"$ref\": \"#/$defs/ClientContextCapabilities\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
@@ -33057,6 +33062,8 @@ impl<'de> ::serde::Deserialize<'de> for ChangeLogEntryTenantId {
 pub struct ClientContext {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub billing: ::std::option::Option<ClientContextBilling>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub builtin_dimensions: ::std::option::Option<ClientContextBuiltinDimensions>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub capabilities: ::std::option::Option<ClientContextCapabilities>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -33274,6 +33281,782 @@ impl ::std::convert::TryFrom<&::std::string::String> for ClientContextBillingIss
     }
 }
 impl ::std::convert::TryFrom<::std::string::String> for ClientContextBillingIssuesItem {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ClientContextBuiltinDimensions`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"activity_level\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"new\","]
+#[doc = "        \"high\","]
+#[doc = "        \"medium\","]
+#[doc = "        \"low\","]
+#[doc = "        \"inactive\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "    },"]
+#[doc = "    \"buyer_role\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"buyer\","]
+#[doc = "        \"non_buyer\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "    },"]
+#[doc = "    \"device_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"desktop\","]
+#[doc = "        \"mobile\","]
+#[doc = "        \"tablet\","]
+#[doc = "        \"unknown\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "    },"]
+#[doc = "    \"email_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"business\","]
+#[doc = "        \"personal\","]
+#[doc = "        \"unknown\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "    },"]
+#[doc = "    \"region\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"us_canada\","]
+#[doc = "        \"europe\","]
+#[doc = "        \"rest_of_world\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "    },"]
+#[doc = "    \"seat_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^[a-z0-9._]{1,87}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_state\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"none\","]
+#[doc = "        \"trial\","]
+#[doc = "        \"paid\","]
+#[doc = "        \"cancelled\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "    },"]
+#[doc = "    \"trial_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"none\","]
+#[doc = "        \"free_trial\","]
+#[doc = "        \"reverse_trial\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct ClientContextBuiltinDimensions {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub activity_level: ::std::option::Option<ClientContextBuiltinDimensionsActivityLevel>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub buyer_role: ::std::option::Option<ClientContextBuiltinDimensionsBuyerRole>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub device_type: ::std::option::Option<ClientContextBuiltinDimensionsDeviceType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub email_type: ::std::option::Option<ClientContextBuiltinDimensionsEmailType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub region: ::std::option::Option<ClientContextBuiltinDimensionsRegion>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub seat_type: ::std::option::Option<ClientContextBuiltinDimensionsSeatType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub subscription_state: ::std::option::Option<ClientContextBuiltinDimensionsSubscriptionState>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub trial_type: ::std::option::Option<ClientContextBuiltinDimensionsTrialType>,
+}
+impl ::std::default::Default for ClientContextBuiltinDimensions {
+    fn default() -> Self {
+        Self {
+            activity_level: Default::default(),
+            buyer_role: Default::default(),
+            device_type: Default::default(),
+            email_type: Default::default(),
+            region: Default::default(),
+            seat_type: Default::default(),
+            subscription_state: Default::default(),
+            trial_type: Default::default(),
+        }
+    }
+}
+#[doc = "`ClientContextBuiltinDimensionsActivityLevel`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"new\","]
+#[doc = "    \"high\","]
+#[doc = "    \"medium\","]
+#[doc = "    \"low\","]
+#[doc = "    \"inactive\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ClientContextBuiltinDimensionsActivityLevel {
+    #[serde(rename = "new")]
+    New,
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "inactive")]
+    Inactive,
+}
+impl ::std::fmt::Display for ClientContextBuiltinDimensionsActivityLevel {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::New => f.write_str("new"),
+            Self::High => f.write_str("high"),
+            Self::Medium => f.write_str("medium"),
+            Self::Low => f.write_str("low"),
+            Self::Inactive => f.write_str("inactive"),
+        }
+    }
+}
+impl ::std::str::FromStr for ClientContextBuiltinDimensionsActivityLevel {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "new" => Ok(Self::New),
+            "high" => Ok(Self::High),
+            "medium" => Ok(Self::Medium),
+            "low" => Ok(Self::Low),
+            "inactive" => Ok(Self::Inactive),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClientContextBuiltinDimensionsActivityLevel {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ClientContextBuiltinDimensionsActivityLevel
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ClientContextBuiltinDimensionsActivityLevel
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ClientContextBuiltinDimensionsBuyerRole`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"buyer\","]
+#[doc = "    \"non_buyer\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ClientContextBuiltinDimensionsBuyerRole {
+    #[serde(rename = "buyer")]
+    Buyer,
+    #[serde(rename = "non_buyer")]
+    NonBuyer,
+}
+impl ::std::fmt::Display for ClientContextBuiltinDimensionsBuyerRole {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Buyer => f.write_str("buyer"),
+            Self::NonBuyer => f.write_str("non_buyer"),
+        }
+    }
+}
+impl ::std::str::FromStr for ClientContextBuiltinDimensionsBuyerRole {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "buyer" => Ok(Self::Buyer),
+            "non_buyer" => Ok(Self::NonBuyer),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClientContextBuiltinDimensionsBuyerRole {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ClientContextBuiltinDimensionsBuyerRole {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClientContextBuiltinDimensionsBuyerRole {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ClientContextBuiltinDimensionsDeviceType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"desktop\","]
+#[doc = "    \"mobile\","]
+#[doc = "    \"tablet\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ClientContextBuiltinDimensionsDeviceType {
+    #[serde(rename = "desktop")]
+    Desktop,
+    #[serde(rename = "mobile")]
+    Mobile,
+    #[serde(rename = "tablet")]
+    Tablet,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for ClientContextBuiltinDimensionsDeviceType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Desktop => f.write_str("desktop"),
+            Self::Mobile => f.write_str("mobile"),
+            Self::Tablet => f.write_str("tablet"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for ClientContextBuiltinDimensionsDeviceType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "desktop" => Ok(Self::Desktop),
+            "mobile" => Ok(Self::Mobile),
+            "tablet" => Ok(Self::Tablet),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClientContextBuiltinDimensionsDeviceType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ClientContextBuiltinDimensionsDeviceType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClientContextBuiltinDimensionsDeviceType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ClientContextBuiltinDimensionsEmailType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"business\","]
+#[doc = "    \"personal\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ClientContextBuiltinDimensionsEmailType {
+    #[serde(rename = "business")]
+    Business,
+    #[serde(rename = "personal")]
+    Personal,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for ClientContextBuiltinDimensionsEmailType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Business => f.write_str("business"),
+            Self::Personal => f.write_str("personal"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for ClientContextBuiltinDimensionsEmailType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "business" => Ok(Self::Business),
+            "personal" => Ok(Self::Personal),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClientContextBuiltinDimensionsEmailType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ClientContextBuiltinDimensionsEmailType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClientContextBuiltinDimensionsEmailType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ClientContextBuiltinDimensionsRegion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"us_canada\","]
+#[doc = "    \"europe\","]
+#[doc = "    \"rest_of_world\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ClientContextBuiltinDimensionsRegion {
+    #[serde(rename = "us_canada")]
+    UsCanada,
+    #[serde(rename = "europe")]
+    Europe,
+    #[serde(rename = "rest_of_world")]
+    RestOfWorld,
+}
+impl ::std::fmt::Display for ClientContextBuiltinDimensionsRegion {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::UsCanada => f.write_str("us_canada"),
+            Self::Europe => f.write_str("europe"),
+            Self::RestOfWorld => f.write_str("rest_of_world"),
+        }
+    }
+}
+impl ::std::str::FromStr for ClientContextBuiltinDimensionsRegion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "us_canada" => Ok(Self::UsCanada),
+            "europe" => Ok(Self::Europe),
+            "rest_of_world" => Ok(Self::RestOfWorld),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClientContextBuiltinDimensionsRegion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ClientContextBuiltinDimensionsRegion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClientContextBuiltinDimensionsRegion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ClientContextBuiltinDimensionsSeatType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[a-z0-9._]{1,87}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ClientContextBuiltinDimensionsSeatType(::std::string::String);
+impl ::std::ops::Deref for ClientContextBuiltinDimensionsSeatType {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ClientContextBuiltinDimensionsSeatType> for ::std::string::String {
+    fn from(value: ClientContextBuiltinDimensionsSeatType) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ClientContextBuiltinDimensionsSeatType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z0-9._]{1,87}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z0-9._]{1,87}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClientContextBuiltinDimensionsSeatType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ClientContextBuiltinDimensionsSeatType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClientContextBuiltinDimensionsSeatType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ClientContextBuiltinDimensionsSeatType {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ClientContextBuiltinDimensionsSubscriptionState`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"trial\","]
+#[doc = "    \"paid\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ClientContextBuiltinDimensionsSubscriptionState {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "trial")]
+    Trial,
+    #[serde(rename = "paid")]
+    Paid,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for ClientContextBuiltinDimensionsSubscriptionState {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::Trial => f.write_str("trial"),
+            Self::Paid => f.write_str("paid"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for ClientContextBuiltinDimensionsSubscriptionState {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "trial" => Ok(Self::Trial),
+            "paid" => Ok(Self::Paid),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClientContextBuiltinDimensionsSubscriptionState {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ClientContextBuiltinDimensionsSubscriptionState
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ClientContextBuiltinDimensionsSubscriptionState
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ClientContextBuiltinDimensionsTrialType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"free_trial\","]
+#[doc = "    \"reverse_trial\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ClientContextBuiltinDimensionsTrialType {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "free_trial")]
+    FreeTrial,
+    #[serde(rename = "reverse_trial")]
+    ReverseTrial,
+}
+impl ::std::fmt::Display for ClientContextBuiltinDimensionsTrialType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::FreeTrial => f.write_str("free_trial"),
+            Self::ReverseTrial => f.write_str("reverse_trial"),
+        }
+    }
+}
+impl ::std::str::FromStr for ClientContextBuiltinDimensionsTrialType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "free_trial" => Ok(Self::FreeTrial),
+            "reverse_trial" => Ok(Self::ReverseTrial),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClientContextBuiltinDimensionsTrialType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ClientContextBuiltinDimensionsTrialType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClientContextBuiltinDimensionsTrialType {
     type Error = self::error::ConversionError;
     fn try_from(
         value: ::std::string::String,
@@ -114130,6 +114913,870 @@ impl ::std::default::Default for UsageTriggerPayload {
         }
     }
 }
+#[doc = "`UserBuiltinDimensions`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"activity_level\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"new\","]
+#[doc = "        \"high\","]
+#[doc = "        \"medium\","]
+#[doc = "        \"low\","]
+#[doc = "        \"inactive\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"billing_health\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"no_billing\","]
+#[doc = "        \"good_standing\","]
+#[doc = "        \"trial_payment_method_attached\","]
+#[doc = "        \"payment_method_missing\","]
+#[doc = "        \"payment_failed\","]
+#[doc = "        \"payment_overdue\","]
+#[doc = "        \"cancelled\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"buyer_role\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"buyer\","]
+#[doc = "        \"non_buyer\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"device_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"desktop\","]
+#[doc = "        \"mobile\","]
+#[doc = "        \"tablet\","]
+#[doc = "        \"unknown\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"email_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"business\","]
+#[doc = "        \"personal\","]
+#[doc = "        \"unknown\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"region\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"us_canada\","]
+#[doc = "        \"europe\","]
+#[doc = "        \"rest_of_world\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"seat_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^[a-z0-9._]{1,87}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_state\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"none\","]
+#[doc = "        \"trial\","]
+#[doc = "        \"paid\","]
+#[doc = "        \"cancelled\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"trial_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"none\","]
+#[doc = "        \"free_trial\","]
+#[doc = "        \"reverse_trial\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct UserBuiltinDimensions {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub activity_level: ::std::option::Option<UserBuiltinDimensionsActivityLevel>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub billing_health: ::std::option::Option<UserBuiltinDimensionsBillingHealth>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub buyer_role: ::std::option::Option<UserBuiltinDimensionsBuyerRole>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub device_type: ::std::option::Option<UserBuiltinDimensionsDeviceType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub email_type: ::std::option::Option<UserBuiltinDimensionsEmailType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub region: ::std::option::Option<UserBuiltinDimensionsRegion>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub seat_type: ::std::option::Option<UserBuiltinDimensionsSeatType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub subscription_state: ::std::option::Option<UserBuiltinDimensionsSubscriptionState>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub trial_type: ::std::option::Option<UserBuiltinDimensionsTrialType>,
+}
+impl ::std::default::Default for UserBuiltinDimensions {
+    fn default() -> Self {
+        Self {
+            activity_level: Default::default(),
+            billing_health: Default::default(),
+            buyer_role: Default::default(),
+            device_type: Default::default(),
+            email_type: Default::default(),
+            region: Default::default(),
+            seat_type: Default::default(),
+            subscription_state: Default::default(),
+            trial_type: Default::default(),
+        }
+    }
+}
+#[doc = "`UserBuiltinDimensionsActivityLevel`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"new\","]
+#[doc = "    \"high\","]
+#[doc = "    \"medium\","]
+#[doc = "    \"low\","]
+#[doc = "    \"inactive\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserBuiltinDimensionsActivityLevel {
+    #[serde(rename = "new")]
+    New,
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "inactive")]
+    Inactive,
+}
+impl ::std::fmt::Display for UserBuiltinDimensionsActivityLevel {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::New => f.write_str("new"),
+            Self::High => f.write_str("high"),
+            Self::Medium => f.write_str("medium"),
+            Self::Low => f.write_str("low"),
+            Self::Inactive => f.write_str("inactive"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserBuiltinDimensionsActivityLevel {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "new" => Ok(Self::New),
+            "high" => Ok(Self::High),
+            "medium" => Ok(Self::Medium),
+            "low" => Ok(Self::Low),
+            "inactive" => Ok(Self::Inactive),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserBuiltinDimensionsActivityLevel {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserBuiltinDimensionsActivityLevel {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserBuiltinDimensionsActivityLevel {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserBuiltinDimensionsBillingHealth`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"no_billing\","]
+#[doc = "    \"good_standing\","]
+#[doc = "    \"trial_payment_method_attached\","]
+#[doc = "    \"payment_method_missing\","]
+#[doc = "    \"payment_failed\","]
+#[doc = "    \"payment_overdue\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserBuiltinDimensionsBillingHealth {
+    #[serde(rename = "no_billing")]
+    NoBilling,
+    #[serde(rename = "good_standing")]
+    GoodStanding,
+    #[serde(rename = "trial_payment_method_attached")]
+    TrialPaymentMethodAttached,
+    #[serde(rename = "payment_method_missing")]
+    PaymentMethodMissing,
+    #[serde(rename = "payment_failed")]
+    PaymentFailed,
+    #[serde(rename = "payment_overdue")]
+    PaymentOverdue,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for UserBuiltinDimensionsBillingHealth {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::NoBilling => f.write_str("no_billing"),
+            Self::GoodStanding => f.write_str("good_standing"),
+            Self::TrialPaymentMethodAttached => f.write_str("trial_payment_method_attached"),
+            Self::PaymentMethodMissing => f.write_str("payment_method_missing"),
+            Self::PaymentFailed => f.write_str("payment_failed"),
+            Self::PaymentOverdue => f.write_str("payment_overdue"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserBuiltinDimensionsBillingHealth {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "no_billing" => Ok(Self::NoBilling),
+            "good_standing" => Ok(Self::GoodStanding),
+            "trial_payment_method_attached" => Ok(Self::TrialPaymentMethodAttached),
+            "payment_method_missing" => Ok(Self::PaymentMethodMissing),
+            "payment_failed" => Ok(Self::PaymentFailed),
+            "payment_overdue" => Ok(Self::PaymentOverdue),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserBuiltinDimensionsBillingHealth {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserBuiltinDimensionsBillingHealth {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserBuiltinDimensionsBillingHealth {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserBuiltinDimensionsBuyerRole`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"buyer\","]
+#[doc = "    \"non_buyer\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserBuiltinDimensionsBuyerRole {
+    #[serde(rename = "buyer")]
+    Buyer,
+    #[serde(rename = "non_buyer")]
+    NonBuyer,
+}
+impl ::std::fmt::Display for UserBuiltinDimensionsBuyerRole {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Buyer => f.write_str("buyer"),
+            Self::NonBuyer => f.write_str("non_buyer"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserBuiltinDimensionsBuyerRole {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "buyer" => Ok(Self::Buyer),
+            "non_buyer" => Ok(Self::NonBuyer),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserBuiltinDimensionsBuyerRole {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserBuiltinDimensionsBuyerRole {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserBuiltinDimensionsBuyerRole {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserBuiltinDimensionsDeviceType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"desktop\","]
+#[doc = "    \"mobile\","]
+#[doc = "    \"tablet\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserBuiltinDimensionsDeviceType {
+    #[serde(rename = "desktop")]
+    Desktop,
+    #[serde(rename = "mobile")]
+    Mobile,
+    #[serde(rename = "tablet")]
+    Tablet,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for UserBuiltinDimensionsDeviceType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Desktop => f.write_str("desktop"),
+            Self::Mobile => f.write_str("mobile"),
+            Self::Tablet => f.write_str("tablet"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserBuiltinDimensionsDeviceType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "desktop" => Ok(Self::Desktop),
+            "mobile" => Ok(Self::Mobile),
+            "tablet" => Ok(Self::Tablet),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserBuiltinDimensionsDeviceType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserBuiltinDimensionsDeviceType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserBuiltinDimensionsDeviceType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserBuiltinDimensionsEmailType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"business\","]
+#[doc = "    \"personal\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserBuiltinDimensionsEmailType {
+    #[serde(rename = "business")]
+    Business,
+    #[serde(rename = "personal")]
+    Personal,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for UserBuiltinDimensionsEmailType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Business => f.write_str("business"),
+            Self::Personal => f.write_str("personal"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserBuiltinDimensionsEmailType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "business" => Ok(Self::Business),
+            "personal" => Ok(Self::Personal),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserBuiltinDimensionsEmailType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserBuiltinDimensionsEmailType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserBuiltinDimensionsEmailType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserBuiltinDimensionsRegion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"us_canada\","]
+#[doc = "    \"europe\","]
+#[doc = "    \"rest_of_world\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserBuiltinDimensionsRegion {
+    #[serde(rename = "us_canada")]
+    UsCanada,
+    #[serde(rename = "europe")]
+    Europe,
+    #[serde(rename = "rest_of_world")]
+    RestOfWorld,
+}
+impl ::std::fmt::Display for UserBuiltinDimensionsRegion {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::UsCanada => f.write_str("us_canada"),
+            Self::Europe => f.write_str("europe"),
+            Self::RestOfWorld => f.write_str("rest_of_world"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserBuiltinDimensionsRegion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "us_canada" => Ok(Self::UsCanada),
+            "europe" => Ok(Self::Europe),
+            "rest_of_world" => Ok(Self::RestOfWorld),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserBuiltinDimensionsRegion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserBuiltinDimensionsRegion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserBuiltinDimensionsRegion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserBuiltinDimensionsSeatType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[a-z0-9._]{1,87}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct UserBuiltinDimensionsSeatType(::std::string::String);
+impl ::std::ops::Deref for UserBuiltinDimensionsSeatType {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<UserBuiltinDimensionsSeatType> for ::std::string::String {
+    fn from(value: UserBuiltinDimensionsSeatType) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for UserBuiltinDimensionsSeatType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z0-9._]{1,87}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z0-9._]{1,87}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserBuiltinDimensionsSeatType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserBuiltinDimensionsSeatType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserBuiltinDimensionsSeatType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for UserBuiltinDimensionsSeatType {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`UserBuiltinDimensionsSubscriptionState`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"trial\","]
+#[doc = "    \"paid\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserBuiltinDimensionsSubscriptionState {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "trial")]
+    Trial,
+    #[serde(rename = "paid")]
+    Paid,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for UserBuiltinDimensionsSubscriptionState {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::Trial => f.write_str("trial"),
+            Self::Paid => f.write_str("paid"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserBuiltinDimensionsSubscriptionState {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "trial" => Ok(Self::Trial),
+            "paid" => Ok(Self::Paid),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserBuiltinDimensionsSubscriptionState {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserBuiltinDimensionsSubscriptionState {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserBuiltinDimensionsSubscriptionState {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserBuiltinDimensionsTrialType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"free_trial\","]
+#[doc = "    \"reverse_trial\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserBuiltinDimensionsTrialType {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "free_trial")]
+    FreeTrial,
+    #[serde(rename = "reverse_trial")]
+    ReverseTrial,
+}
+impl ::std::fmt::Display for UserBuiltinDimensionsTrialType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::FreeTrial => f.write_str("free_trial"),
+            Self::ReverseTrial => f.write_str("reverse_trial"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserBuiltinDimensionsTrialType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "free_trial" => Ok(Self::FreeTrial),
+            "reverse_trial" => Ok(Self::ReverseTrial),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserBuiltinDimensionsTrialType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserBuiltinDimensionsTrialType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserBuiltinDimensionsTrialType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 #[doc = "`UserContext`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -114182,6 +115829,98 @@ impl ::std::default::Default for UsageTriggerPayload {
 #[doc = "        }"]
 #[doc = "      ],"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"builtin_dimensions\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"activity_level\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"new\","]
+#[doc = "            \"high\","]
+#[doc = "            \"medium\","]
+#[doc = "            \"low\","]
+#[doc = "            \"inactive\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"billing_health\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"no_billing\","]
+#[doc = "            \"good_standing\","]
+#[doc = "            \"trial_payment_method_attached\","]
+#[doc = "            \"payment_method_missing\","]
+#[doc = "            \"payment_failed\","]
+#[doc = "            \"payment_overdue\","]
+#[doc = "            \"cancelled\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"buyer_role\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"buyer\","]
+#[doc = "            \"non_buyer\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"device_type\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"desktop\","]
+#[doc = "            \"mobile\","]
+#[doc = "            \"tablet\","]
+#[doc = "            \"unknown\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"email_type\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"business\","]
+#[doc = "            \"personal\","]
+#[doc = "            \"unknown\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"region\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"us_canada\","]
+#[doc = "            \"europe\","]
+#[doc = "            \"rest_of_world\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"seat_type\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"pattern\": \"^[a-z0-9._]{1,87}$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"subscription_state\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"none\","]
+#[doc = "            \"trial\","]
+#[doc = "            \"paid\","]
+#[doc = "            \"cancelled\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"trial_type\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"none\","]
+#[doc = "            \"free_trial\","]
+#[doc = "            \"reverse_trial\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-persistence\": \"transient\""]
 #[doc = "    },"]
 #[doc = "    \"context_hash\": {"]
 #[doc = "      \"anyOf\": ["]
@@ -114332,8 +116071,7 @@ impl ::std::default::Default for UsageTriggerPayload {
 #[doc = "      \"propertyNames\": {"]
 #[doc = "        \"type\": \"string\""]
 #[doc = "      },"]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
-#[doc = "      \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"plan\": {"]
 #[doc = "      \"$ref\": \"#/$defs/UserPlanContext\","]
@@ -114404,6 +116142,8 @@ pub struct UserContext {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub activity_score_computed_at:
         ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub builtin_dimensions: ::std::option::Option<UserContextBuiltinDimensions>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub context_hash: ::std::option::Option<::std::string::String>,
     pub created_at: ::chrono::DateTime<::chrono::offset::Utc>,
@@ -114530,6 +116270,876 @@ impl<'de> ::serde::Deserialize<'de> for UserContextAccountId {
             .map_err(|e: self::error::ConversionError| {
                 <D::Error as ::serde::de::Error>::custom(e.to_string())
             })
+    }
+}
+#[doc = "`UserContextBuiltinDimensions`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"activity_level\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"new\","]
+#[doc = "        \"high\","]
+#[doc = "        \"medium\","]
+#[doc = "        \"low\","]
+#[doc = "        \"inactive\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"billing_health\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"no_billing\","]
+#[doc = "        \"good_standing\","]
+#[doc = "        \"trial_payment_method_attached\","]
+#[doc = "        \"payment_method_missing\","]
+#[doc = "        \"payment_failed\","]
+#[doc = "        \"payment_overdue\","]
+#[doc = "        \"cancelled\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"buyer_role\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"buyer\","]
+#[doc = "        \"non_buyer\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"device_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"desktop\","]
+#[doc = "        \"mobile\","]
+#[doc = "        \"tablet\","]
+#[doc = "        \"unknown\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"email_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"business\","]
+#[doc = "        \"personal\","]
+#[doc = "        \"unknown\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"region\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"us_canada\","]
+#[doc = "        \"europe\","]
+#[doc = "        \"rest_of_world\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"seat_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^[a-z0-9._]{1,87}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_state\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"none\","]
+#[doc = "        \"trial\","]
+#[doc = "        \"paid\","]
+#[doc = "        \"cancelled\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"trial_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"none\","]
+#[doc = "        \"free_trial\","]
+#[doc = "        \"reverse_trial\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct UserContextBuiltinDimensions {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub activity_level: ::std::option::Option<UserContextBuiltinDimensionsActivityLevel>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub billing_health: ::std::option::Option<UserContextBuiltinDimensionsBillingHealth>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub buyer_role: ::std::option::Option<UserContextBuiltinDimensionsBuyerRole>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub device_type: ::std::option::Option<UserContextBuiltinDimensionsDeviceType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub email_type: ::std::option::Option<UserContextBuiltinDimensionsEmailType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub region: ::std::option::Option<UserContextBuiltinDimensionsRegion>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub seat_type: ::std::option::Option<UserContextBuiltinDimensionsSeatType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub subscription_state: ::std::option::Option<UserContextBuiltinDimensionsSubscriptionState>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub trial_type: ::std::option::Option<UserContextBuiltinDimensionsTrialType>,
+}
+impl ::std::default::Default for UserContextBuiltinDimensions {
+    fn default() -> Self {
+        Self {
+            activity_level: Default::default(),
+            billing_health: Default::default(),
+            buyer_role: Default::default(),
+            device_type: Default::default(),
+            email_type: Default::default(),
+            region: Default::default(),
+            seat_type: Default::default(),
+            subscription_state: Default::default(),
+            trial_type: Default::default(),
+        }
+    }
+}
+#[doc = "`UserContextBuiltinDimensionsActivityLevel`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"new\","]
+#[doc = "    \"high\","]
+#[doc = "    \"medium\","]
+#[doc = "    \"low\","]
+#[doc = "    \"inactive\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserContextBuiltinDimensionsActivityLevel {
+    #[serde(rename = "new")]
+    New,
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "inactive")]
+    Inactive,
+}
+impl ::std::fmt::Display for UserContextBuiltinDimensionsActivityLevel {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::New => f.write_str("new"),
+            Self::High => f.write_str("high"),
+            Self::Medium => f.write_str("medium"),
+            Self::Low => f.write_str("low"),
+            Self::Inactive => f.write_str("inactive"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserContextBuiltinDimensionsActivityLevel {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "new" => Ok(Self::New),
+            "high" => Ok(Self::High),
+            "medium" => Ok(Self::Medium),
+            "low" => Ok(Self::Low),
+            "inactive" => Ok(Self::Inactive),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextBuiltinDimensionsActivityLevel {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserContextBuiltinDimensionsActivityLevel {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserContextBuiltinDimensionsActivityLevel {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserContextBuiltinDimensionsBillingHealth`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"no_billing\","]
+#[doc = "    \"good_standing\","]
+#[doc = "    \"trial_payment_method_attached\","]
+#[doc = "    \"payment_method_missing\","]
+#[doc = "    \"payment_failed\","]
+#[doc = "    \"payment_overdue\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserContextBuiltinDimensionsBillingHealth {
+    #[serde(rename = "no_billing")]
+    NoBilling,
+    #[serde(rename = "good_standing")]
+    GoodStanding,
+    #[serde(rename = "trial_payment_method_attached")]
+    TrialPaymentMethodAttached,
+    #[serde(rename = "payment_method_missing")]
+    PaymentMethodMissing,
+    #[serde(rename = "payment_failed")]
+    PaymentFailed,
+    #[serde(rename = "payment_overdue")]
+    PaymentOverdue,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for UserContextBuiltinDimensionsBillingHealth {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::NoBilling => f.write_str("no_billing"),
+            Self::GoodStanding => f.write_str("good_standing"),
+            Self::TrialPaymentMethodAttached => f.write_str("trial_payment_method_attached"),
+            Self::PaymentMethodMissing => f.write_str("payment_method_missing"),
+            Self::PaymentFailed => f.write_str("payment_failed"),
+            Self::PaymentOverdue => f.write_str("payment_overdue"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserContextBuiltinDimensionsBillingHealth {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "no_billing" => Ok(Self::NoBilling),
+            "good_standing" => Ok(Self::GoodStanding),
+            "trial_payment_method_attached" => Ok(Self::TrialPaymentMethodAttached),
+            "payment_method_missing" => Ok(Self::PaymentMethodMissing),
+            "payment_failed" => Ok(Self::PaymentFailed),
+            "payment_overdue" => Ok(Self::PaymentOverdue),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextBuiltinDimensionsBillingHealth {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserContextBuiltinDimensionsBillingHealth {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserContextBuiltinDimensionsBillingHealth {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserContextBuiltinDimensionsBuyerRole`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"buyer\","]
+#[doc = "    \"non_buyer\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserContextBuiltinDimensionsBuyerRole {
+    #[serde(rename = "buyer")]
+    Buyer,
+    #[serde(rename = "non_buyer")]
+    NonBuyer,
+}
+impl ::std::fmt::Display for UserContextBuiltinDimensionsBuyerRole {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Buyer => f.write_str("buyer"),
+            Self::NonBuyer => f.write_str("non_buyer"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserContextBuiltinDimensionsBuyerRole {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "buyer" => Ok(Self::Buyer),
+            "non_buyer" => Ok(Self::NonBuyer),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextBuiltinDimensionsBuyerRole {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserContextBuiltinDimensionsBuyerRole {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserContextBuiltinDimensionsBuyerRole {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserContextBuiltinDimensionsDeviceType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"desktop\","]
+#[doc = "    \"mobile\","]
+#[doc = "    \"tablet\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserContextBuiltinDimensionsDeviceType {
+    #[serde(rename = "desktop")]
+    Desktop,
+    #[serde(rename = "mobile")]
+    Mobile,
+    #[serde(rename = "tablet")]
+    Tablet,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for UserContextBuiltinDimensionsDeviceType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Desktop => f.write_str("desktop"),
+            Self::Mobile => f.write_str("mobile"),
+            Self::Tablet => f.write_str("tablet"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserContextBuiltinDimensionsDeviceType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "desktop" => Ok(Self::Desktop),
+            "mobile" => Ok(Self::Mobile),
+            "tablet" => Ok(Self::Tablet),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextBuiltinDimensionsDeviceType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserContextBuiltinDimensionsDeviceType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserContextBuiltinDimensionsDeviceType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserContextBuiltinDimensionsEmailType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"business\","]
+#[doc = "    \"personal\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserContextBuiltinDimensionsEmailType {
+    #[serde(rename = "business")]
+    Business,
+    #[serde(rename = "personal")]
+    Personal,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for UserContextBuiltinDimensionsEmailType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Business => f.write_str("business"),
+            Self::Personal => f.write_str("personal"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserContextBuiltinDimensionsEmailType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "business" => Ok(Self::Business),
+            "personal" => Ok(Self::Personal),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextBuiltinDimensionsEmailType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserContextBuiltinDimensionsEmailType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserContextBuiltinDimensionsEmailType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserContextBuiltinDimensionsRegion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"us_canada\","]
+#[doc = "    \"europe\","]
+#[doc = "    \"rest_of_world\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserContextBuiltinDimensionsRegion {
+    #[serde(rename = "us_canada")]
+    UsCanada,
+    #[serde(rename = "europe")]
+    Europe,
+    #[serde(rename = "rest_of_world")]
+    RestOfWorld,
+}
+impl ::std::fmt::Display for UserContextBuiltinDimensionsRegion {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::UsCanada => f.write_str("us_canada"),
+            Self::Europe => f.write_str("europe"),
+            Self::RestOfWorld => f.write_str("rest_of_world"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserContextBuiltinDimensionsRegion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "us_canada" => Ok(Self::UsCanada),
+            "europe" => Ok(Self::Europe),
+            "rest_of_world" => Ok(Self::RestOfWorld),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextBuiltinDimensionsRegion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserContextBuiltinDimensionsRegion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserContextBuiltinDimensionsRegion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserContextBuiltinDimensionsSeatType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[a-z0-9._]{1,87}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct UserContextBuiltinDimensionsSeatType(::std::string::String);
+impl ::std::ops::Deref for UserContextBuiltinDimensionsSeatType {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<UserContextBuiltinDimensionsSeatType> for ::std::string::String {
+    fn from(value: UserContextBuiltinDimensionsSeatType) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for UserContextBuiltinDimensionsSeatType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z0-9._]{1,87}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z0-9._]{1,87}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextBuiltinDimensionsSeatType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserContextBuiltinDimensionsSeatType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserContextBuiltinDimensionsSeatType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for UserContextBuiltinDimensionsSeatType {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`UserContextBuiltinDimensionsSubscriptionState`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"trial\","]
+#[doc = "    \"paid\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserContextBuiltinDimensionsSubscriptionState {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "trial")]
+    Trial,
+    #[serde(rename = "paid")]
+    Paid,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for UserContextBuiltinDimensionsSubscriptionState {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::Trial => f.write_str("trial"),
+            Self::Paid => f.write_str("paid"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserContextBuiltinDimensionsSubscriptionState {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "trial" => Ok(Self::Trial),
+            "paid" => Ok(Self::Paid),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextBuiltinDimensionsSubscriptionState {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for UserContextBuiltinDimensionsSubscriptionState
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for UserContextBuiltinDimensionsSubscriptionState
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserContextBuiltinDimensionsTrialType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"free_trial\","]
+#[doc = "    \"reverse_trial\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserContextBuiltinDimensionsTrialType {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "free_trial")]
+    FreeTrial,
+    #[serde(rename = "reverse_trial")]
+    ReverseTrial,
+}
+impl ::std::fmt::Display for UserContextBuiltinDimensionsTrialType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::FreeTrial => f.write_str("free_trial"),
+            Self::ReverseTrial => f.write_str("reverse_trial"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserContextBuiltinDimensionsTrialType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "free_trial" => Ok(Self::FreeTrial),
+            "reverse_trial" => Ok(Self::ReverseTrial),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextBuiltinDimensionsTrialType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserContextBuiltinDimensionsTrialType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserContextBuiltinDimensionsTrialType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
     }
 }
 #[doc = "`UserContextCustomValue`"]

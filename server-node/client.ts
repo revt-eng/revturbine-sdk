@@ -1,14 +1,14 @@
 /**
  * RevTurbine Server-Side SDK Client.
  *
- * Performs server-to-server evaluation calls against the RevTurbine decision
- * engine and returns a serializable `ServerEvaluationPayload` that the
- * client-side SDK can hydrate.
+ * Holds the customer's **server key** and mints short-lived, browser-safe
+ * `rt_client_` session keys for one end user at a time. Evaluation does not
+ * happen here (plan 192) — it runs in the customer SDKs.
  *
  * Designed for:
- * - Next.js `getServerSideProps` / RSC / API routes
+ * - Next.js RSC / route handlers / `getServerSideProps`
  * - Express / Fastify middleware
- * - Any Node.js server-side rendering pipeline
+ * - Any Node.js backend
  *
  * @example
  * ```ts
@@ -16,20 +16,12 @@
  *
  * const server = new RevTurbineServer({
  *   tenantId: 'tenant_abc',
- *   apiKey: process.env.REVTURBINE_SECRET_KEY!,
+ *   apiKey: process.env.REVTURBINE_API_KEY!, // the server key (rtk_…, type server)
  *   endpoint: 'https://edge.example.com',
  * });
  *
- * // In getServerSideProps:
- * const payload = await server.evaluate({
- *   userId: session.user.id,
- *   traits: { plan: 'pro' },
- *   placements: [{ slotId: 'hero_banner' }],
- *   entitlementHandles: ['advanced_analytics'],
- *   includeTheme: true,
- * });
- *
- * return { props: { rtPayload: payload } };
+ * // Mint a session key for the signed-in user and hand it to the browser.
+ * const { client_token } = await server.createClientSession({ subject: session.user.id });
  * ```
  */
 
@@ -57,7 +49,7 @@ function generateRequestId(): string {
 /**
  * Error thrown when a client-session mint request is rejected by the control
  * plane. Carries only the HTTP status and a correlation id — deliberately never
- * the mint secret, request headers, or response body — so the secret cannot leak
+ * the server key, request headers, or response body — so the key cannot leak
  * through error logs (plan 157 AC-8).
  */
 export class RevTurbineClientSessionError extends Error {
@@ -106,7 +98,8 @@ export class RevTurbineServer {
   }
 
   /**
-   * Mint a short-lived, opaque per-user client-session token (plan 157).
+   * Mint a short-lived, opaque per-user client-session token (plan 157; the
+   * server key is the minting authority, plan 256).
    *
    * The customer backend — which holds the server key (passed as
    * {@link RevTurbineServerOptions.apiKey}) — calls this to obtain a browser-safe
@@ -115,11 +108,11 @@ export class RevTurbineServer {
    * it to read the user's client-safe context.
    *
    * This is a **server-only** capability: the browser SDK never mints tokens (it
-   * only consumes them). Tenant / application / environment are derived
-   * server-side from the mint secret, never from this call.
+   * only consumes them). The tenant is derived server-side from the server key,
+   * never from this call.
    *
    * @throws {RevTurbineClientSessionError} if the control plane rejects the mint.
-   *   The error carries only the HTTP status + request id — never the secret.
+   *   The error carries only the HTTP status + request id — never the key.
    */
   async createClientSession(input: CreateClientSessionInput): Promise<ClientSessionResult> {
     const requestId = generateRequestId();
