@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.359/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.366/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -827,6 +827,39 @@ class AuthVerification(BaseModel):
     expires_at: AwareDatetime
 
 
+class B2BSegmentEventName(Enum):
+    Account_Created = "Account Created"
+    Account_Deleted = "Account Deleted"
+    Signed_Up = "Signed Up"
+    Signed_In = "Signed In"
+    Signed_Out = "Signed Out"
+    Invite_Sent = "Invite Sent"
+    Account_Added_User = "Account Added User"
+    Account_Removed_User = "Account Removed User"
+    Trial_Started = "Trial Started"
+    Trial_Ended = "Trial Ended"
+
+
+class BillingAllocation(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    allocation_id: constr(min_length=1, max_length=255)
+    invoice_id: constr(min_length=1, max_length=255)
+    invoice_line_id: constr(min_length=1, max_length=255) | None
+    amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+
+
+class BalanceType(Enum):
+    customer_balance = "customer_balance"
+    invoice_credit_balance = "invoice_credit_balance"
+
+
+class Category(Enum):
+    paid = "paid"
+    promotional = "promotional"
+
+
 class BillingCadence(Enum):
     monthly = "monthly"
     annual = "annual"
@@ -835,9 +868,351 @@ class BillingCadence(Enum):
     usage_based = "usage_based"
 
 
+class BillingCreditNoteLine(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    credit_line_id: constr(min_length=1, max_length=255)
+    invoice_line_id: constr(min_length=1, max_length=255) | None
+    amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+
+
+class Reason(Enum):
+    duplicate = "duplicate"
+    fraudulent = "fraudulent"
+    order_change = "order_change"
+    product_unsatisfactory = "product_unsatisfactory"
+    other = "other"
+
+
+class LinesCoverage(Enum):
+    complete = "complete"
+    partial = "partial"
+
+
+class BillingCreditSettlement1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    method: Literal["refund"]
+    refund_id: constr(min_length=1, max_length=255)
+
+
+class BillingCreditSettlement2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    method: Literal["customer_balance"]
+    balance_transaction_id: constr(min_length=1, max_length=255)
+
+
+class BillingCreditSettlement3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    method: Literal["out_of_band"]
+    out_of_band_amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+
+
+class BillingCreditSettlement(
+    RootModel[
+        BillingCreditSettlement1 | BillingCreditSettlement2 | BillingCreditSettlement3
+    ]
+):
+    root: BillingCreditSettlement1 | BillingCreditSettlement2 | BillingCreditSettlement3
+
+
 class BillingHealthStatus(Enum):
     payment_failed = "payment_failed"
     payment_method_missing = "payment_method_missing"
+
+
+class Status(Enum):
+    warning_needs_response = "warning_needs_response"
+    warning_under_review = "warning_under_review"
+    warning_closed = "warning_closed"
+    needs_response = "needs_response"
+    under_review = "under_review"
+    won = "won"
+    lost = "lost"
+
+
+class BillingOccurrence(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    identity_version: Literal[2]
+    occurrence_key: constr(min_length=1, max_length=512)
+    source_revision: constr(min_length=1, max_length=255)
+    source_order: conint(ge=0, le=9007199254740991) | None = None
+    supersedes_revision: constr(min_length=1, max_length=255) | None = None
+    delivery_id: constr(min_length=1, max_length=255) | None = None
+    legacy_billing_ref: constr(min_length=1, max_length=512) | None = None
+
+
+class Interval(Enum):
+    day = "day"
+    week = "week"
+    month = "month"
+    year = "year"
+
+
+class UsageType(Enum):
+    licensed = "licensed"
+    metered = "metered"
+
+
+class BillingRecurringPrice(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    price_id: constr(min_length=1, max_length=255)
+    product_id: constr(min_length=1, max_length=255) | None = None
+    interval: Interval
+    interval_count: conint(ge=1, le=9007199254740991)
+    usage_type: UsageType
+    unit_amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40) | None
+
+
+class Status1(Enum):
+    pending = "pending"
+    requires_action = "requires_action"
+    succeeded = "succeeded"
+    failed = "failed"
+    canceled = "canceled"
+
+
+class Reason2(Enum):
+    duplicate = "duplicate"
+    fraudulent = "fraudulent"
+    requested_by_customer = "requested_by_customer"
+    expired_uncaptured_charge = "expired_uncaptured_charge"
+    other = "other"
+
+
+class BillingRepeatableOccurrence(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    identity_version: Literal[2]
+    occurrence_key: constr(min_length=1, max_length=512)
+    source_revision: constr(min_length=1, max_length=255)
+    source_order: conint(ge=0, le=9007199254740991) | None = None
+    supersedes_revision: constr(min_length=1, max_length=255) | None = None
+    delivery_id: constr(min_length=1, max_length=255) | None = None
+    legacy_billing_ref: constr(min_length=1, max_length=512) | None = None
+    source_occurrence_ref: constr(min_length=1, max_length=255)
+
+
+class PhasesCoverage(Enum):
+    complete = "complete"
+    partial = "partial"
+
+
+class Provider(Enum):
+    stripe = "stripe"
+
+
+class BillingSourceScope(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1)
+    account_id: constr(min_length=1, max_length=255) = Field(
+        ..., description="Connected Stripe account the observation was made against."
+    )
+    livemode: bool = Field(..., description="Stripe live (true) or test (false) mode.")
+    provider: Provider
+    simulation_id: constr(min_length=1, max_length=255) | None = None
+
+
+class BillingSubscriptionItemSnapshot(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    item_id: constr(min_length=1, max_length=255)
+    price: BillingRecurringPrice
+    quantity: conint(ge=0, le=9007199254740991)
+    trial_end_at: AwareDatetime | None = None
+
+
+class ItemsCoverage(Enum):
+    complete = "complete"
+    partial = "partial"
+
+
+class CancelMode(Enum):
+    immediate = "immediate"
+    period_end = "period_end"
+
+
+class PauseMode(Enum):
+    service = "service"
+    collection = "collection"
+
+
+class BillingSubscriptionProfile5(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["subscription"]
+    kind: Literal["pause"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    subscription_id: constr(min_length=1, max_length=255)
+    pause_mode: PauseMode
+    resumes_at: AwareDatetime | None
+
+
+class BillingSubscriptionProfile6(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["subscription"]
+    kind: Literal["resume"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    subscription_id: constr(min_length=1, max_length=255)
+    pause_mode: PauseMode
+
+
+class BillingSubscriptionProfile10(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["subscription"]
+    kind: Literal["retract"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    subscription_id: constr(min_length=1, max_length=255)
+    target_occurrence_key: constr(min_length=1, max_length=512)
+
+
+class ObservedObjectType(Enum):
+    payment_intent = "payment_intent"
+    charge = "charge"
+    invoice = "invoice"
+    invoice_payment = "invoice_payment"
+    checkout_session = "checkout_session"
+
+
+class BillingTransactionProfile1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["transaction"]
+    kind: Literal["payment_captured"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    payment_id: constr(min_length=1, max_length=255)
+    observed_object_type: ObservedObjectType
+    observed_object_id: constr(min_length=1, max_length=255)
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    amount_captured_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    amount_requested_minor: (
+        constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40) | None
+    ) = None
+
+
+class BillingTransactionProfile2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["transaction"]
+    kind: Literal["payment_failed"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    payment_id: constr(min_length=1, max_length=255)
+    observed_object_type: ObservedObjectType
+    observed_object_id: constr(min_length=1, max_length=255)
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    amount_requested_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    failure_code: constr(min_length=1, max_length=128)
+
+
+class BillingTransactionProfile3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["transaction"]
+    kind: Literal["payment_pending"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    payment_id: constr(min_length=1, max_length=255)
+    observed_object_type: ObservedObjectType
+    observed_object_id: constr(min_length=1, max_length=255)
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    amount_requested_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+
+
+class BillingTransactionProfile4(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["transaction"]
+    kind: Literal["payment_canceled"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    payment_id: constr(min_length=1, max_length=255)
+    observed_object_type: ObservedObjectType
+    observed_object_id: constr(min_length=1, max_length=255)
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    amount_requested_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+
+
+class BillingTransactionProfile(
+    RootModel[
+        BillingTransactionProfile1
+        | BillingTransactionProfile2
+        | BillingTransactionProfile3
+        | BillingTransactionProfile4
+    ]
+):
+    root: (
+        BillingTransactionProfile1
+        | BillingTransactionProfile2
+        | BillingTransactionProfile3
+        | BillingTransactionProfile4
+    )
 
 
 class BrandingConfig(BaseModel):
@@ -937,7 +1312,7 @@ class ContentPayloadSegmentEntry(BaseModel):
     promotion_id: str | None = None
 
 
-class Status(Enum):
+class Status2(Enum):
     draft = "draft"
     active = "active"
     inactive = "inactive"
@@ -955,7 +1330,7 @@ class ContentPlacementPayload(BaseModel):
     segment_content_map: list[ContentPayloadSegmentEntry] | None = None
     ui_path_id: str | None = None
     promotion_id: str | None = None
-    status: Status
+    status: Status2
     created_at: AwareDatetime | None = None
     updated_at: AwareDatetime | None = None
 
@@ -1108,7 +1483,7 @@ class SubscriptionStatus(Enum):
     none = "none"
 
 
-class Status1(Enum):
+class Status3(Enum):
     active = "active"
     churned = "churned"
     trial = "trial"
@@ -1572,7 +1947,7 @@ class ExperimentDecisionType(Enum):
     redesign_randomization = "redesign_randomization"
 
 
-class Status2(Enum):
+class Status4(Enum):
     healthy = "healthy"
     warning = "warning"
     unhealthy = "unhealthy"
@@ -1988,7 +2363,7 @@ class ChildBlock(BaseModel):
     block_id: str
 
 
-class Status3(Enum):
+class Status5(Enum):
     draft = "draft"
     active = "active"
     archived = "archived"
@@ -2006,7 +2381,7 @@ class MessageBlock(BaseModel):
     segment_overrides: list[SegmentOverride] | None = None
     child_blocks: list[ChildBlock] | None = None
     tokens_used: list[str] | None = None
-    status: Status3
+    status: Status5
     created_at: AwareDatetime
     updated_at: AwareDatetime
 
@@ -2081,6 +2456,28 @@ class MeteringConfig(BaseModel):
     reset_period: ResetPeriod | None = "monthly"
     stripe_meter_id: str | None = None
     is_active: bool | None = True
+    metadata: dict[str, Any] | None = {}
+
+
+class Objective(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    tenant_id: constr(min_length=1)
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
+    anchor_id: constr(min_length=1)
+    handle: constr(min_length=1, max_length=100)
+    name: constr(min_length=1, max_length=200)
+    description: constr(max_length=500) | None = None
     metadata: dict[str, Any] | None = {}
 
 
@@ -2202,7 +2599,7 @@ class Permission(BaseModel):
     action: PermissionAction
 
 
-class Category(Enum):
+class Category3(Enum):
     user = "user"
     plan = "plan"
     usage = "usage"
@@ -2239,7 +2636,7 @@ class PersonalizationToken(BaseModel):
     handle: constr(min_length=1, max_length=100)
     label: constr(min_length=1)
     description: str | None = None
-    category: Category
+    category: Category3
     data_source: str | None = None
     example_value: str | None = None
     value_map: dict[str, str] | None = {}
@@ -2576,6 +2973,18 @@ class PricingModel(Enum):
     metered = "metered"
 
 
+class PrimaryContactDesignation(Enum):
+    first_user_default = "first_user_default"
+    explicit = "explicit"
+
+
+class PrimaryContactUnresolvedReason(Enum):
+    no_binding = "no_binding"
+    ambiguous_binding = "ambiguous_binding"
+    contact_deleted = "contact_deleted"
+    out_of_scope = "out_of_scope"
+
+
 class PromotionStatus(Enum):
     draft = "draft"
     scheduled = "scheduled"
@@ -2708,6 +3117,15 @@ class RevTurbineConfigMeterBindingsItem(BaseModel):
     reset_period: str | None = None
 
 
+class RevTurbineConfigObjectivesItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    handle: constr(min_length=1, max_length=100)
+    name: constr(min_length=1, max_length=200)
+    description: constr(max_length=500) | None = None
+
+
 class Period1(Enum):
     session = "session"
     day = "day"
@@ -2731,7 +3149,7 @@ class RevTurbineConfigPersonalizationTokensItem(BaseModel):
     token: constr(pattern=r"^[a-z][a-z0-9_]*$")
     label: constr(min_length=1)
     description: str | None = None
-    category: Category
+    category: Category3
     data_source: str | None = None
     example_value: str | None = None
     value_map: dict[str, str] | None = None
@@ -3066,6 +3484,342 @@ class ReverseTrialStartPolicy(Enum):
     manual = "manual"
 
 
+class Context(BaseModel):
+    groupId: constr(min_length=1)
+
+
+class Properties(BaseModel):
+    account_name: constr(min_length=1) | None = None
+
+
+class RevturbineB2BTrackEvent1(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Account Created"]
+    context: Context
+    properties: Properties | None = None
+
+
+class RevturbineB2BTrackEvent2(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Account Created"]
+    context: Context
+    properties: Properties | None = None
+
+
+class RevturbineB2BTrackEvent3(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Account Deleted"]
+    context: Context
+    properties: Properties | None = None
+
+
+class RevturbineB2BTrackEvent4(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Account Deleted"]
+    context: Context
+    properties: Properties | None = None
+
+
+class Properties4(BaseModel):
+    type: constr(min_length=1) | None = None
+    first_name: constr(min_length=1) | None = None
+    last_name: constr(min_length=1) | None = None
+    email: constr(min_length=1) | None = None
+    phone: constr(min_length=1) | None = None
+    username: constr(min_length=1) | None = None
+    title: constr(min_length=1) | None = None
+
+
+class RevturbineB2BTrackEvent5(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Signed Up"]
+    context: Context
+    properties: Properties4 | None = None
+
+
+class RevturbineB2BTrackEvent6(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Signed Up"]
+    context: Context
+    properties: Properties4 | None = None
+
+
+class Properties6(BaseModel):
+    username: constr(min_length=1) | None = None
+
+
+class RevturbineB2BTrackEvent7(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Signed In"]
+    context: Context
+    properties: Properties6 | None = None
+
+
+class RevturbineB2BTrackEvent8(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Signed In"]
+    context: Context
+    properties: Properties6 | None = None
+
+
+class RevturbineB2BTrackEvent9(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Signed Out"]
+    context: Context
+    properties: Properties6 | None = None
+
+
+class RevturbineB2BTrackEvent10(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Signed Out"]
+    context: Context
+    properties: Properties6 | None = None
+
+
+class Properties10(BaseModel):
+    invitee_email: constr(min_length=1) | None = None
+    invitee_first_name: constr(min_length=1) | None = None
+    invitee_last_name: constr(min_length=1) | None = None
+    invitee_role: constr(min_length=1) | None = None
+
+
+class RevturbineB2BTrackEvent11(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Invite Sent"]
+    context: Context
+    properties: Properties10 | None = None
+
+
+class RevturbineB2BTrackEvent12(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Invite Sent"]
+    context: Context
+    properties: Properties10 | None = None
+
+
+class Properties12(BaseModel):
+    role: constr(min_length=1) | None = None
+
+
+class RevturbineB2BTrackEvent13(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Account Added User"]
+    context: Context
+    properties: Properties12 | None = None
+
+
+class RevturbineB2BTrackEvent14(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Account Added User"]
+    context: Context
+    properties: Properties12 | None = None
+
+
+class RevturbineB2BTrackEvent15(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Account Removed User"]
+    context: Context
+    properties: dict[str, Any] | None = None
+
+
+class RevturbineB2BTrackEvent16(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Account Removed User"]
+    context: Context
+    properties: dict[str, Any] | None = None
+
+
+class Properties14(BaseModel):
+    trial_start_date: AwareDatetime
+    trial_end_date: AwareDatetime
+    trial_plan_name: constr(min_length=1)
+
+
+class RevturbineB2BTrackEvent17(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Trial Started"]
+    context: Context
+    properties: Properties14
+
+
+class RevturbineB2BTrackEvent18(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Trial Started"]
+    context: Context
+    properties: Properties14
+
+
+class TrialOutcome(Enum):
+    converted = "converted"
+    expired = "expired"
+    reverted = "reverted"
+    revoked = "revoked"
+
+
+class Properties16(BaseModel):
+    trial_start_date: AwareDatetime
+    trial_end_date: AwareDatetime
+    trial_plan_name: constr(min_length=1)
+    trial_outcome: TrialOutcome
+
+
+class RevturbineB2BTrackEvent19(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Trial Ended"]
+    context: Context
+    properties: Properties16
+
+
+class Properties17(BaseModel):
+    trial_start_date: AwareDatetime
+    trial_end_date: AwareDatetime
+    trial_plan_name: constr(min_length=1)
+    trial_outcome: TrialOutcome
+
+
+class RevturbineB2BTrackEvent20(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Trial Ended"]
+    context: Context
+    properties: Properties17
+
+
+class RevturbineB2BTrackEvent(
+    RootModel[
+        RevturbineB2BTrackEvent1
+        | RevturbineB2BTrackEvent2
+        | RevturbineB2BTrackEvent3
+        | RevturbineB2BTrackEvent4
+        | RevturbineB2BTrackEvent5
+        | RevturbineB2BTrackEvent6
+        | RevturbineB2BTrackEvent7
+        | RevturbineB2BTrackEvent8
+        | RevturbineB2BTrackEvent9
+        | RevturbineB2BTrackEvent10
+        | RevturbineB2BTrackEvent11
+        | RevturbineB2BTrackEvent12
+        | RevturbineB2BTrackEvent13
+        | RevturbineB2BTrackEvent14
+        | RevturbineB2BTrackEvent15
+        | RevturbineB2BTrackEvent16
+        | RevturbineB2BTrackEvent17
+        | RevturbineB2BTrackEvent18
+        | RevturbineB2BTrackEvent19
+        | RevturbineB2BTrackEvent20
+    ]
+):
+    root: (
+        RevturbineB2BTrackEvent1
+        | RevturbineB2BTrackEvent2
+        | RevturbineB2BTrackEvent3
+        | RevturbineB2BTrackEvent4
+        | RevturbineB2BTrackEvent5
+        | RevturbineB2BTrackEvent6
+        | RevturbineB2BTrackEvent7
+        | RevturbineB2BTrackEvent8
+        | RevturbineB2BTrackEvent9
+        | RevturbineB2BTrackEvent10
+        | RevturbineB2BTrackEvent11
+        | RevturbineB2BTrackEvent12
+        | RevturbineB2BTrackEvent13
+        | RevturbineB2BTrackEvent14
+        | RevturbineB2BTrackEvent15
+        | RevturbineB2BTrackEvent16
+        | RevturbineB2BTrackEvent17
+        | RevturbineB2BTrackEvent18
+        | RevturbineB2BTrackEvent19
+        | RevturbineB2BTrackEvent20
+    )
+
+
+class Tag(RootModel[constr(min_length=1, max_length=64)]):
+    root: constr(min_length=1, max_length=64)
+
+
+class RevturbineIdentitySource(Enum):
+    account_primary_contact = "account_primary_contact"
+
+
 class Role(Enum):
     viewer = "viewer"
     collaborator = "collaborator"
@@ -3134,6 +3888,327 @@ class SeatType(BaseModel):
     metadata: dict[str, Any] | None = {}
 
 
+class Context20(BaseModel):
+    groupId: constr(min_length=1) | None = None
+
+
+class Properties18(BaseModel):
+    account_name: constr(min_length=1) | None = None
+
+
+class SegmentB2BTrackEvent1(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Account Created"]
+    context: Context20 | None = None
+    properties: Properties18 | None = None
+
+
+class SegmentB2BTrackEvent2(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Account Created"]
+    context: Context20 | None = None
+    properties: Properties18 | None = None
+
+
+class SegmentB2BTrackEvent3(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Account Deleted"]
+    context: Context20 | None = None
+    properties: Properties18 | None = None
+
+
+class SegmentB2BTrackEvent4(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Account Deleted"]
+    context: Context20 | None = None
+    properties: Properties18 | None = None
+
+
+class Properties22(BaseModel):
+    type: constr(min_length=1) | None = None
+    first_name: constr(min_length=1) | None = None
+    last_name: constr(min_length=1) | None = None
+    email: constr(min_length=1) | None = None
+    phone: constr(min_length=1) | None = None
+    username: constr(min_length=1) | None = None
+    title: constr(min_length=1) | None = None
+
+
+class SegmentB2BTrackEvent5(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Signed Up"]
+    context: Context20 | None = None
+    properties: Properties22 | None = None
+
+
+class SegmentB2BTrackEvent6(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Signed Up"]
+    context: Context20 | None = None
+    properties: Properties22 | None = None
+
+
+class Properties24(BaseModel):
+    username: constr(min_length=1) | None = None
+
+
+class SegmentB2BTrackEvent7(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Signed In"]
+    context: Context20 | None = None
+    properties: Properties24 | None = None
+
+
+class SegmentB2BTrackEvent8(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Signed In"]
+    context: Context20 | None = None
+    properties: Properties24 | None = None
+
+
+class SegmentB2BTrackEvent9(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Signed Out"]
+    context: Context20 | None = None
+    properties: Properties24 | None = None
+
+
+class SegmentB2BTrackEvent10(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Signed Out"]
+    context: Context20 | None = None
+    properties: Properties24 | None = None
+
+
+class Properties28(BaseModel):
+    invitee_email: constr(min_length=1) | None = None
+    invitee_first_name: constr(min_length=1) | None = None
+    invitee_last_name: constr(min_length=1) | None = None
+    invitee_role: constr(min_length=1) | None = None
+
+
+class SegmentB2BTrackEvent11(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Invite Sent"]
+    context: Context20 | None = None
+    properties: Properties28 | None = None
+
+
+class SegmentB2BTrackEvent12(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Invite Sent"]
+    context: Context20 | None = None
+    properties: Properties28 | None = None
+
+
+class Properties30(BaseModel):
+    role: constr(min_length=1) | None = None
+
+
+class SegmentB2BTrackEvent13(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Account Added User"]
+    context: Context20 | None = None
+    properties: Properties30 | None = None
+
+
+class SegmentB2BTrackEvent14(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Account Added User"]
+    context: Context20 | None = None
+    properties: Properties30 | None = None
+
+
+class SegmentB2BTrackEvent15(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Account Removed User"]
+    context: Context20 | None = None
+    properties: dict[str, Any] | None = None
+
+
+class SegmentB2BTrackEvent16(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Account Removed User"]
+    context: Context20 | None = None
+    properties: dict[str, Any] | None = None
+
+
+class Properties32(BaseModel):
+    trial_start_date: AwareDatetime | None = None
+    trial_end_date: AwareDatetime | None = None
+    trial_plan_name: constr(min_length=1) | None = None
+
+
+class SegmentB2BTrackEvent17(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Trial Started"]
+    context: Context20 | None = None
+    properties: Properties32 | None = None
+
+
+class SegmentB2BTrackEvent18(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Trial Started"]
+    context: Context20 | None = None
+    properties: Properties32 | None = None
+
+
+class Properties34(BaseModel):
+    trial_start_date: AwareDatetime | None = None
+    trial_end_date: AwareDatetime | None = None
+    trial_plan_name: constr(min_length=1) | None = None
+    trial_outcome: TrialOutcome | None = None
+
+
+class SegmentB2BTrackEvent19(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Trial Ended"]
+    context: Context20 | None = None
+    properties: Properties34 | None = None
+
+
+class Properties35(BaseModel):
+    trial_start_date: AwareDatetime | None = None
+    trial_end_date: AwareDatetime | None = None
+    trial_plan_name: constr(min_length=1) | None = None
+    trial_outcome: TrialOutcome | None = None
+
+
+class SegmentB2BTrackEvent20(BaseModel):
+    type: Literal["track"]
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    event: Literal["Trial Ended"]
+    context: Context20 | None = None
+    properties: Properties35 | None = None
+
+
+class SegmentB2BTrackEvent(
+    RootModel[
+        SegmentB2BTrackEvent1
+        | SegmentB2BTrackEvent2
+        | SegmentB2BTrackEvent3
+        | SegmentB2BTrackEvent4
+        | SegmentB2BTrackEvent5
+        | SegmentB2BTrackEvent6
+        | SegmentB2BTrackEvent7
+        | SegmentB2BTrackEvent8
+        | SegmentB2BTrackEvent9
+        | SegmentB2BTrackEvent10
+        | SegmentB2BTrackEvent11
+        | SegmentB2BTrackEvent12
+        | SegmentB2BTrackEvent13
+        | SegmentB2BTrackEvent14
+        | SegmentB2BTrackEvent15
+        | SegmentB2BTrackEvent16
+        | SegmentB2BTrackEvent17
+        | SegmentB2BTrackEvent18
+        | SegmentB2BTrackEvent19
+        | SegmentB2BTrackEvent20
+    ]
+):
+    root: (
+        SegmentB2BTrackEvent1
+        | SegmentB2BTrackEvent2
+        | SegmentB2BTrackEvent3
+        | SegmentB2BTrackEvent4
+        | SegmentB2BTrackEvent5
+        | SegmentB2BTrackEvent6
+        | SegmentB2BTrackEvent7
+        | SegmentB2BTrackEvent8
+        | SegmentB2BTrackEvent9
+        | SegmentB2BTrackEvent10
+        | SegmentB2BTrackEvent11
+        | SegmentB2BTrackEvent12
+        | SegmentB2BTrackEvent13
+        | SegmentB2BTrackEvent14
+        | SegmentB2BTrackEvent15
+        | SegmentB2BTrackEvent16
+        | SegmentB2BTrackEvent17
+        | SegmentB2BTrackEvent18
+        | SegmentB2BTrackEvent19
+        | SegmentB2BTrackEvent20
+    )
+
+
 class SegmentDimension(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -3156,6 +4231,19 @@ class SegmentDimension(BaseModel):
     visibility_toggle: bool | None = True
     source_type: DimensionSourceType | None = "system"
     estimated_size: conint(ge=0, le=9007199254740991) | None = None
+
+
+class SegmentLibraryContext(BaseModel):
+    name: constr(min_length=1) | None = None
+    version: constr(min_length=1) | None = None
+
+
+class SegmentPageContext(BaseModel):
+    path: str | None = None
+    referrer: str | None = None
+    search: str | None = None
+    title: str | None = None
+    url: str | None = None
 
 
 class Segment(BaseModel):
@@ -3541,35 +4629,9 @@ class SurfaceSlotCategory(Enum):
     triggered = "triggered"
 
 
-class Status4(Enum):
-    active = "active"
-    inactive = "inactive"
-    new = "new"
-
-
-class SurfaceSlot(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-    tenant_id: constr(min_length=1)
-    environment_id: constr(min_length=1) | None = "production"
-    playbook_version_id: str | None = None
-    is_current: bool | None = True
-    is_deleted: bool | None = False
-    delete_date: AwareDatetime | None = None
-    sequence: conint(ge=1, le=9007199254740991) | None = 1
-    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
-    surface_slot_handle: constr(min_length=1, max_length=200)
-    surface_type: ComponentType
-    surface_template_ids: list[str] | None = []
-    surface_slot_category: SurfaceSlotCategory | None = "fixed"
-    first_seen: AwareDatetime
-    last_seen: AwareDatetime
-    status: Status4 | None = "new"
-    placement_count: conint(ge=0, le=9007199254740991) | None = 0
+class SurfaceSlotStatus(Enum):
+    live = "live"
+    idle = "idle"
 
 
 class SurfaceTypeCapRule(BaseModel):
@@ -4306,6 +5368,18 @@ class FieldSchema4(RootModel[Any]):
     root: Any
 
 
+class AccountPrimaryContactBinding(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1)
+    account_id: constr(min_length=1)
+    contact_user_id: constr(min_length=1)
+    designation: PrimaryContactDesignation
+    revision: conint(ge=1, le=9007199254740991)
+    designated_at: AwareDatetime
+
+
 class AddOn(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -4832,6 +5906,757 @@ class AuthUser(BaseModel):
     two_factor_enabled: bool | None = False
 
 
+class BillingBalanceProfile1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["balance"]
+    kind: Literal["balance_adjusted"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    balance_transaction_id: constr(min_length=1, max_length=255)
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    amount_minor: constr(pattern=r"^-?(0|[1-9][0-9]*)$", max_length=40)
+    balance_type: BalanceType
+    invoice_id: constr(min_length=1, max_length=255) | None
+
+
+class BillingBalanceProfile2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["balance"]
+    kind: Literal["credit_grant_funded"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    grant_id: constr(min_length=1, max_length=255)
+    category: Category
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    expires_at: AwareDatetime | None
+
+
+class BillingBalanceProfile3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["balance"]
+    kind: Literal["credit_grant_applied"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    grant_id: constr(min_length=1, max_length=255)
+    category: Category
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    invoice_id: constr(min_length=1, max_length=255)
+    amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+
+
+class BillingBalanceProfile4(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["balance"]
+    kind: Literal["credit_grant_expired"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    grant_id: constr(min_length=1, max_length=255)
+    category: Category
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+
+
+class BillingBalanceProfile(
+    RootModel[
+        BillingBalanceProfile1
+        | BillingBalanceProfile2
+        | BillingBalanceProfile3
+        | BillingBalanceProfile4
+    ]
+):
+    root: (
+        BillingBalanceProfile1
+        | BillingBalanceProfile2
+        | BillingBalanceProfile3
+        | BillingBalanceProfile4
+    )
+
+
+class BillingCreditProfile1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["credit"]
+    kind: Literal["issued_pre_payment"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    credit_note_id: constr(min_length=1, max_length=255)
+    invoice_id: constr(min_length=1, max_length=255)
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    total_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    reason: Reason | None
+    lines: list[BillingCreditNoteLine] = Field(..., max_length=250)
+    lines_coverage: LinesCoverage
+
+
+class BillingCreditProfile2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["credit"]
+    kind: Literal["issued_post_payment"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    credit_note_id: constr(min_length=1, max_length=255)
+    invoice_id: constr(min_length=1, max_length=255)
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    total_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    reason: Reason | None
+    lines: list[BillingCreditNoteLine] = Field(..., max_length=250)
+    lines_coverage: LinesCoverage
+    settlements: list[BillingCreditSettlement] = Field(
+        ..., max_length=250, min_length=1
+    )
+
+
+class BillingCreditProfile3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["credit"]
+    kind: Literal["voided"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    credit_note_id: constr(min_length=1, max_length=255)
+    invoice_id: constr(min_length=1, max_length=255)
+
+
+class BillingCreditProfile(
+    RootModel[BillingCreditProfile1 | BillingCreditProfile2 | BillingCreditProfile3]
+):
+    root: BillingCreditProfile1 | BillingCreditProfile2 | BillingCreditProfile3
+
+
+class BillingInvoiceProfile1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["invoice"]
+    kind: Literal["finalized"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    invoice_id: constr(min_length=1, max_length=255)
+    subscription_id: constr(min_length=1, max_length=255) | None
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    total_minor: constr(pattern=r"^-?(0|[1-9][0-9]*)$", max_length=40)
+    amount_due_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    due_at: AwareDatetime | None
+    line_count: conint(ge=0, le=9007199254740991)
+    lines_coverage: LinesCoverage
+
+
+class BillingInvoiceProfile2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["invoice"]
+    kind: Literal["recurring_line"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    invoice_id: constr(min_length=1, max_length=255)
+    line_id: constr(min_length=1, max_length=255)
+    subscription_id: constr(min_length=1, max_length=255)
+    subscription_item_id: constr(min_length=1, max_length=255)
+    price: BillingRecurringPrice
+    quantity: conint(ge=0, le=9007199254740991)
+    service_period_start_at: AwareDatetime
+    service_period_end_at: AwareDatetime
+    proration: bool
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    subtotal_minor: constr(pattern=r"^-?(0|[1-9][0-9]*)$", max_length=40)
+    discount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    tax_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    total_minor: constr(pattern=r"^-?(0|[1-9][0-9]*)$", max_length=40)
+
+
+class BillingInvoiceProfile3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["invoice"]
+    kind: Literal["trial_line"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    invoice_id: constr(min_length=1, max_length=255)
+    line_id: constr(min_length=1, max_length=255)
+    subscription_id: constr(min_length=1, max_length=255)
+    subscription_item_id: constr(min_length=1, max_length=255)
+    trial_start_at: AwareDatetime
+    trial_end_at: AwareDatetime
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    subtotal_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    discount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    tax_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    total_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+
+
+class BillingInvoiceProfile4(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["invoice"]
+    kind: Literal["one_time_line"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    invoice_id: constr(min_length=1, max_length=255)
+    line_id: constr(min_length=1, max_length=255)
+    price_id: constr(min_length=1, max_length=255) | None
+    quantity: conint(ge=0, le=9007199254740991)
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    subtotal_minor: constr(pattern=r"^-?(0|[1-9][0-9]*)$", max_length=40)
+    discount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    tax_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    total_minor: constr(pattern=r"^-?(0|[1-9][0-9]*)$", max_length=40)
+
+
+class BillingInvoiceProfile(
+    RootModel[
+        BillingInvoiceProfile1
+        | BillingInvoiceProfile2
+        | BillingInvoiceProfile3
+        | BillingInvoiceProfile4
+    ]
+):
+    root: (
+        BillingInvoiceProfile1
+        | BillingInvoiceProfile2
+        | BillingInvoiceProfile3
+        | BillingInvoiceProfile4
+    )
+
+
+class BillingLossProfile1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["loss"]
+    kind: Literal["dispute_funds_withdrawn"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    dispute_id: constr(min_length=1, max_length=255)
+    payment_id: constr(min_length=1, max_length=255)
+    balance_transaction_id: constr(min_length=1, max_length=255)
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+
+
+class BillingLossProfile2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["loss"]
+    kind: Literal["dispute_funds_reinstated"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    dispute_id: constr(min_length=1, max_length=255)
+    payment_id: constr(min_length=1, max_length=255)
+    balance_transaction_id: constr(min_length=1, max_length=255)
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+
+
+class BillingLossProfile3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["loss"]
+    kind: Literal["dispute_status_changed"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    dispute_id: constr(min_length=1, max_length=255)
+    payment_id: constr(min_length=1, max_length=255)
+    status: Status
+
+
+class BillingLossProfile4(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["loss"]
+    kind: Literal["payment_returned"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    return_id: constr(min_length=1, max_length=255)
+    payment_id: constr(min_length=1, max_length=255)
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+
+
+class BillingLossProfile(
+    RootModel[
+        BillingLossProfile1
+        | BillingLossProfile2
+        | BillingLossProfile3
+        | BillingLossProfile4
+    ]
+):
+    root: (
+        BillingLossProfile1
+        | BillingLossProfile2
+        | BillingLossProfile3
+        | BillingLossProfile4
+    )
+
+
+class BillingRefundProfile1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["refund"]
+    kind: Literal["refund"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    refund_id: constr(min_length=1, max_length=255)
+    payment_id: constr(min_length=1, max_length=255)
+    status: Status1
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    reason: Reason2 | None
+    credit_note_id: constr(min_length=1, max_length=255) | None
+    allocations: list[BillingAllocation] = Field(..., max_length=250)
+
+
+class BillingRefundProfile2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["refund"]
+    kind: Literal["refund_total_observed"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    payment_id: constr(min_length=1, max_length=255)
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    amount_refunded_cumulative_minor: constr(
+        pattern=r"^(0|[1-9][0-9]*)$", max_length=40
+    )
+
+
+class BillingRefundProfile(RootModel[BillingRefundProfile1 | BillingRefundProfile2]):
+    root: BillingRefundProfile1 | BillingRefundProfile2
+
+
+class BillingScheduleProfile1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["schedule"]
+    kind: Literal["phase_declared"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    schedule_id: constr(min_length=1, max_length=255)
+    subscription_id: constr(min_length=1, max_length=255) | None
+    phase_index: conint(ge=0, le=9007199254740991)
+    phase_start_at: AwareDatetime
+    phase_end_at: AwareDatetime | None
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    items: list[BillingSubscriptionItemSnapshot] = Field(
+        ..., max_length=250, min_length=1
+    )
+    observed_through: AwareDatetime
+    phases_coverage: PhasesCoverage
+
+
+class BillingScheduleProfile2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["schedule"]
+    kind: Literal["cancellation_scheduled"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    subscription_id: constr(min_length=1, max_length=255)
+    cancel_effective_at: AwareDatetime
+
+
+class BillingScheduleProfile3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["schedule"]
+    kind: Literal["cancellation_withdrawn"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    subscription_id: constr(min_length=1, max_length=255)
+    target_occurrence_key: constr(min_length=1, max_length=512)
+
+
+class BillingScheduleProfile4(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["schedule"]
+    kind: Literal["retract"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    schedule_id: constr(min_length=1, max_length=255)
+    target_occurrence_key: constr(min_length=1, max_length=512)
+
+
+class BillingScheduleProfile(
+    RootModel[
+        BillingScheduleProfile1
+        | BillingScheduleProfile2
+        | BillingScheduleProfile3
+        | BillingScheduleProfile4
+    ]
+):
+    root: (
+        BillingScheduleProfile1
+        | BillingScheduleProfile2
+        | BillingScheduleProfile3
+        | BillingScheduleProfile4
+    )
+
+
+class BillingSubscriptionProfile1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["subscription"]
+    kind: Literal["create"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    subscription_id: constr(min_length=1, max_length=255)
+    status_after: StripeSubscriptionStatus
+    next_effective_at: AwareDatetime | None
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    items: list[BillingSubscriptionItemSnapshot] = Field(
+        ..., max_length=250, min_length=1
+    )
+    items_coverage: ItemsCoverage
+
+
+class BillingSubscriptionProfile2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["subscription"]
+    kind: Literal["change"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    subscription_id: constr(min_length=1, max_length=255)
+    status_after: StripeSubscriptionStatus
+    next_effective_at: AwareDatetime | None
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    items: list[BillingSubscriptionItemSnapshot] = Field(
+        ..., max_length=250, min_length=1
+    )
+    items_coverage: ItemsCoverage
+
+
+class BillingSubscriptionProfile3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["subscription"]
+    kind: Literal["renew"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    subscription_id: constr(min_length=1, max_length=255)
+    status_after: StripeSubscriptionStatus
+    next_effective_at: AwareDatetime | None
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    items: list[BillingSubscriptionItemSnapshot] = Field(
+        ..., max_length=250, min_length=1
+    )
+    items_coverage: ItemsCoverage
+    current_period_start_at: AwareDatetime
+    current_period_end_at: AwareDatetime
+
+
+class BillingSubscriptionProfile4(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["subscription"]
+    kind: Literal["cancel"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    subscription_id: constr(min_length=1, max_length=255)
+    status_after: StripeSubscriptionStatus
+    cancel_mode: CancelMode
+    reason: constr(min_length=1, max_length=64) | None = None
+
+
+class BillingSubscriptionProfile7(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["subscription"]
+    kind: Literal["trial_start"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    subscription_id: constr(min_length=1, max_length=255)
+    status_after: StripeSubscriptionStatus
+    next_effective_at: AwareDatetime | None
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    items: list[BillingSubscriptionItemSnapshot] = Field(
+        ..., max_length=250, min_length=1
+    )
+    items_coverage: ItemsCoverage
+    trial_start_at: AwareDatetime
+    trial_end_at: AwareDatetime
+
+
+class BillingSubscriptionProfile8(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["subscription"]
+    kind: Literal["trial_convert"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    subscription_id: constr(min_length=1, max_length=255)
+    status_after: StripeSubscriptionStatus
+    next_effective_at: AwareDatetime | None
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    items: list[BillingSubscriptionItemSnapshot] = Field(
+        ..., max_length=250, min_length=1
+    )
+    items_coverage: ItemsCoverage
+    trial_start_at: AwareDatetime
+    trial_end_at: AwareDatetime
+
+
+class BillingSubscriptionProfile9(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["subscription"]
+    kind: Literal["trial_expire"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    subscription_id: constr(min_length=1, max_length=255)
+    status_after: StripeSubscriptionStatus
+    trial_start_at: AwareDatetime
+    trial_end_at: AwareDatetime
+
+
+class BillingSubscriptionProfile11(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["subscription"]
+    kind: Literal["correct"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    subscription_id: constr(min_length=1, max_length=255)
+    status_after: StripeSubscriptionStatus
+    next_effective_at: AwareDatetime | None
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    items: list[BillingSubscriptionItemSnapshot] = Field(
+        ..., max_length=250, min_length=1
+    )
+    items_coverage: ItemsCoverage
+    target_occurrence_key: constr(min_length=1, max_length=512)
+
+
+class BillingSubscriptionProfile(
+    RootModel[
+        BillingSubscriptionProfile1
+        | BillingSubscriptionProfile2
+        | BillingSubscriptionProfile3
+        | BillingSubscriptionProfile4
+        | BillingSubscriptionProfile5
+        | BillingSubscriptionProfile6
+        | BillingSubscriptionProfile7
+        | BillingSubscriptionProfile8
+        | BillingSubscriptionProfile9
+        | BillingSubscriptionProfile10
+        | BillingSubscriptionProfile11
+    ]
+):
+    root: (
+        BillingSubscriptionProfile1
+        | BillingSubscriptionProfile2
+        | BillingSubscriptionProfile3
+        | BillingSubscriptionProfile4
+        | BillingSubscriptionProfile5
+        | BillingSubscriptionProfile6
+        | BillingSubscriptionProfile7
+        | BillingSubscriptionProfile8
+        | BillingSubscriptionProfile9
+        | BillingSubscriptionProfile10
+        | BillingSubscriptionProfile11
+    )
+
+
 class ClientContext(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -4911,7 +6736,7 @@ class Customer(BaseModel):
     stripe_customer_id: str | None = None
     current_plan_id: str | None = None
     subscription_status: SubscriptionStatus | None = "none"
-    status: Status1 | None = "active"
+    status: Status3 | None = "active"
     billing_health_issues: list[BillingHealthIssue] | None = []
     metadata: dict[str, Any] | None = {}
 
@@ -5214,7 +7039,7 @@ class ExperimentHealth(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    status: Status2
+    status: Status4
     sample_ratio_mismatch: ExperimentSampleRatioMismatch | None = None
     issues: list[Issue] | None = Field([], validate_default=True)
 
@@ -5614,6 +7439,33 @@ class PlaybookVersion(BaseModel):
     metadata: dict[str, Any] | None = {}
 
 
+class PrimaryContactResolution1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    status: Literal["resolved"]
+    binding: AccountPrimaryContactBinding
+    resolved_at: AwareDatetime
+
+
+class PrimaryContactResolution2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    status: Literal["unresolved"]
+    code: Literal["primary_contact_unresolved"]
+    reason: PrimaryContactUnresolvedReason
+    tenant_id: constr(min_length=1)
+    account_id: constr(min_length=1)
+    resolved_at: AwareDatetime
+
+
+class PrimaryContactResolution(
+    RootModel[PrimaryContactResolution1 | PrimaryContactResolution2]
+):
+    root: PrimaryContactResolution1 | PrimaryContactResolution2
+
+
 class Promotion(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -5691,6 +7543,7 @@ class RevTurbineConfigEntitlementRulesItem(BaseModel):
     currency: str | None = None
     current_usage: float | None = 0
     allocation: UsageAllocation | None = None
+    objective: constr(min_length=1, max_length=100) | None = None
 
 
 class RevTurbineConfigPlacementPayloadItem(BaseModel):
@@ -5782,6 +7635,125 @@ class ReverseTrialSettings(BaseModel):
     eligibility_scope: TrialEligibilityScope | None = "per_customer"
 
 
+class RevturbineCanonicalEventContext(BaseModel):
+    tenant_id: constr(min_length=1)
+    environment_id: constr(min_length=1)
+    origin: EventOrigin | None = None
+    test: bool | None = None
+    playbook_version: constr(min_length=1) | None = None
+    decision_id: constr(min_length=1) | None = None
+    request_id: constr(min_length=1) | None = None
+    session_id: constr(min_length=1) | None = None
+    tags: list[Tag] | None = Field(None, max_length=32)
+    surface_slot_id: constr(min_length=1) | None = None
+    placement_id: constr(min_length=1) | None = None
+    payload_id: constr(min_length=1) | None = None
+    experiment_id: constr(min_length=1) | None = None
+    variant_key: constr(min_length=1) | None = None
+    experiment_version_id: constr(min_length=1) | None = None
+    simulation_id: constr(min_length=1) | None = None
+    simulation_scenario_id: constr(min_length=1) | None = None
+    identity_source: RevturbineIdentitySource | None = None
+    schema_version: conint(ge=2, le=2)
+
+
+class RevturbineEventContext(BaseModel):
+    schema_version: conint(ge=2, le=2) | None = None
+    tenant_id: constr(min_length=1) | None = None
+    environment_id: constr(min_length=1) | None = None
+    origin: EventOrigin | None = None
+    test: bool | None = None
+    playbook_version: constr(min_length=1) | None = None
+    decision_id: constr(min_length=1) | None = None
+    request_id: constr(min_length=1) | None = None
+    session_id: constr(min_length=1) | None = None
+    tags: list[Tag] | None = Field(None, max_length=32)
+    surface_slot_id: constr(min_length=1) | None = None
+    placement_id: constr(min_length=1) | None = None
+    payload_id: constr(min_length=1) | None = None
+    experiment_id: constr(min_length=1) | None = None
+    variant_key: constr(min_length=1) | None = None
+    experiment_version_id: constr(min_length=1) | None = None
+    simulation_id: constr(min_length=1) | None = None
+    simulation_scenario_id: constr(min_length=1) | None = None
+    identity_source: RevturbineIdentitySource | None = None
+
+
+class RevturbineProducerEventContext(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1) | None = None
+    environment_id: constr(min_length=1)
+    origin: EventOrigin
+    test: bool | None = None
+    playbook_version: constr(min_length=1) | None = None
+    decision_id: constr(min_length=1) | None = None
+    request_id: constr(min_length=1) | None = None
+    session_id: constr(min_length=1) | None = None
+    tags: list[Tag] | None = Field(None, max_length=32)
+    surface_slot_id: constr(min_length=1) | None = None
+    placement_id: constr(min_length=1) | None = None
+    payload_id: constr(min_length=1) | None = None
+    experiment_id: constr(min_length=1) | None = None
+    variant_key: constr(min_length=1) | None = None
+    experiment_version_id: constr(min_length=1) | None = None
+    simulation_id: constr(min_length=1) | None = None
+    simulation_scenario_id: constr(min_length=1) | None = None
+    identity_source: RevturbineIdentitySource | None = None
+    schema_version: Literal[2]
+
+
+class RevturbineProducerSegmentContext(BaseModel):
+    groupId: constr(min_length=1) | None = None
+    traits: dict[str, Any] | None = None
+    page: SegmentPageContext | None = None
+    library: SegmentLibraryContext | None = None
+    ip: constr(min_length=1) | None = None
+    userAgent: constr(min_length=1) | None = None
+    locale: constr(min_length=1) | None = None
+    timezone: constr(min_length=1) | None = None
+    revturbine: RevturbineProducerEventContext
+
+
+class RevturbineProducerTrackEvent1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: RevturbineProducerSegmentContext
+    type: Literal["track"]
+    event: constr(min_length=1)
+    properties: dict[str, Any] | None = None
+
+
+class RevturbineProducerTrackEvent2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: RevturbineProducerSegmentContext
+    type: Literal["track"]
+    event: constr(min_length=1)
+    properties: dict[str, Any] | None = None
+
+
+class RevturbineProducerTrackEvent(
+    RootModel[RevturbineProducerTrackEvent1 | RevturbineProducerTrackEvent2]
+):
+    root: RevturbineProducerTrackEvent1 | RevturbineProducerTrackEvent2
+
+
 class SdkMetaEvent(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -5809,6 +7781,196 @@ class SdkMetaIngestBatch(BaseModel):
         extra="forbid",
     )
     events: list[SdkMetaEvent] = Field(..., max_length=10, min_length=1)
+
+
+class SegmentEventContext(BaseModel):
+    groupId: constr(min_length=1) | None = None
+    traits: dict[str, Any] | None = None
+    page: SegmentPageContext | None = None
+    library: SegmentLibraryContext | None = None
+    ip: constr(min_length=1) | None = None
+    userAgent: constr(min_length=1) | None = None
+    locale: constr(min_length=1) | None = None
+    timezone: constr(min_length=1) | None = None
+    revturbine: RevturbineEventContext | None = None
+
+
+class SegmentGroupInput1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: SegmentEventContext | None = None
+    type: Literal["group"]
+    groupId: constr(min_length=1)
+    traits: dict[str, Any] | None = None
+
+
+class SegmentGroupInput2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: SegmentEventContext | None = None
+    type: Literal["group"]
+    groupId: constr(min_length=1)
+    traits: dict[str, Any] | None = None
+
+
+class SegmentGroupInput(RootModel[SegmentGroupInput1 | SegmentGroupInput2]):
+    root: SegmentGroupInput1 | SegmentGroupInput2
+
+
+class SegmentIdentifyInput1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: SegmentEventContext | None = None
+    type: Literal["identify"]
+    traits: dict[str, Any] | None = None
+
+
+class SegmentIdentifyInput2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: SegmentEventContext | None = None
+    type: Literal["identify"]
+    traits: dict[str, Any] | None = None
+
+
+class SegmentIdentifyInput(RootModel[SegmentIdentifyInput1 | SegmentIdentifyInput2]):
+    root: SegmentIdentifyInput1 | SegmentIdentifyInput2
+
+
+class SegmentPageInput1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: SegmentEventContext | None = None
+    type: Literal["page"]
+    name: constr(min_length=1) | None = None
+    properties: dict[str, Any] | None = None
+
+
+class SegmentPageInput2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: SegmentEventContext | None = None
+    type: Literal["page"]
+    name: constr(min_length=1) | None = None
+    properties: dict[str, Any] | None = None
+
+
+class SegmentPageInput(RootModel[SegmentPageInput1 | SegmentPageInput2]):
+    root: SegmentPageInput1 | SegmentPageInput2
+
+
+class SegmentScreenInput1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: SegmentEventContext | None = None
+    type: Literal["screen"]
+    name: constr(min_length=1) | None = None
+    properties: dict[str, Any] | None = None
+
+
+class SegmentScreenInput2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: SegmentEventContext | None = None
+    type: Literal["screen"]
+    name: constr(min_length=1) | None = None
+    properties: dict[str, Any] | None = None
+
+
+class SegmentScreenInput(RootModel[SegmentScreenInput1 | SegmentScreenInput2]):
+    root: SegmentScreenInput1 | SegmentScreenInput2
+
+
+class SegmentTrackInput1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: SegmentEventContext | None = None
+    type: Literal["track"]
+    event: constr(min_length=1)
+    properties: dict[str, Any] | None = None
+
+
+class SegmentTrackInput2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: SegmentEventContext | None = None
+    type: Literal["track"]
+    event: constr(min_length=1)
+    properties: dict[str, Any] | None = None
+
+
+class SegmentTrackInput(RootModel[SegmentTrackInput1 | SegmentTrackInput2]):
+    root: SegmentTrackInput1 | SegmentTrackInput2
 
 
 class ServerEvaluationPayloadTrialStatus(RootModel[UserTrialStatus]):
@@ -5858,6 +8020,32 @@ class SubscriptionEvidenceResult(
     RootModel[SubscriptionEvidenceKnown | SubscriptionEvidenceUnavailable]
 ):
     root: SubscriptionEvidenceKnown | SubscriptionEvidenceUnavailable
+
+
+class SurfaceSlot(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    tenant_id: constr(min_length=1)
+    environment_id: constr(min_length=1) | None = "production"
+    playbook_version_id: str | None = None
+    is_current: bool | None = True
+    is_deleted: bool | None = False
+    delete_date: AwareDatetime | None = None
+    sequence: conint(ge=1, le=9007199254740991) | None = 1
+    base_sequence: conint(ge=-9007199254740991, le=9007199254740991) | None = None
+    surface_slot_handle: constr(min_length=1, max_length=200)
+    surface_type: ComponentType
+    surface_template_ids: list[str] | None = []
+    surface_slot_category: SurfaceSlotCategory | None = "fixed"
+    first_seen: AwareDatetime
+    last_seen: AwareDatetime
+    route: constr(min_length=1, max_length=512) | None = None
+    status: SurfaceSlotStatus | None = "idle"
+    placement_count: conint(ge=0, le=9007199254740991) | None = 0
 
 
 class SurfaceTemplate(BaseModel):
@@ -6273,6 +8461,78 @@ class AnalyticsView(BaseModel):
     customization_policy: AnalyticsCustomizationPolicy
 
 
+class BillingProfile(
+    RootModel[
+        BillingSubscriptionProfile
+        | BillingScheduleProfile
+        | BillingInvoiceProfile
+        | BillingTransactionProfile
+        | BillingRefundProfile
+        | BillingCreditProfile
+        | BillingBalanceProfile
+        | BillingLossProfile
+    ]
+):
+    root: (
+        BillingSubscriptionProfile
+        | BillingScheduleProfile
+        | BillingInvoiceProfile
+        | BillingTransactionProfile
+        | BillingRefundProfile
+        | BillingCreditProfile
+        | BillingBalanceProfile
+        | BillingLossProfile
+    )
+
+
+class CanonicalSegmentContext(BaseModel):
+    groupId: constr(min_length=1) | None = None
+    traits: dict[str, Any] | None = None
+    page: SegmentPageContext | None = None
+    library: SegmentLibraryContext | None = None
+    ip: constr(min_length=1) | None = None
+    userAgent: constr(min_length=1) | None = None
+    locale: constr(min_length=1) | None = None
+    timezone: constr(min_length=1) | None = None
+    revturbine: RevturbineCanonicalEventContext
+
+
+class CanonicalTrackEvent1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: CanonicalSegmentContext
+    type: Literal["track"]
+    event: constr(min_length=1)
+    properties: dict[str, Any] | None = None
+
+
+class CanonicalTrackEvent2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: CanonicalSegmentContext
+    type: Literal["track"]
+    event: constr(min_length=1)
+    properties: dict[str, Any] | None = None
+
+
+class CanonicalTrackEvent(RootModel[CanonicalTrackEvent1 | CanonicalTrackEvent2]):
+    root: CanonicalTrackEvent1 | CanonicalTrackEvent2
+
+
 class ExperimentAnalysisResult(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -6350,6 +8610,7 @@ class ExportedConfigPlacementItem(BaseModel):
     trigger: RevTurbineConfigPlacementTrigger
     payloads: list[RevTurbineConfigStudioPayload]
     order: conint(ge=0, le=9007199254740991)
+    objective: constr(min_length=1, max_length=100) | None = None
 
 
 class GrowthSignalBundle(BaseModel):
@@ -6388,6 +8649,7 @@ class PlaybookPlacementItem(BaseModel):
     trigger: RevTurbineConfigPlacementTrigger
     payloads: list[RevTurbineConfigStudioPayload]
     order: conint(ge=0, le=9007199254740991)
+    objective: constr(min_length=1, max_length=100) | None = None
 
 
 class RevTurbineConfigPlacementItem(BaseModel):
@@ -6400,6 +8662,7 @@ class RevTurbineConfigPlacementItem(BaseModel):
     trigger: RevTurbineConfigPlacementTrigger
     payloads: list[RevTurbineConfigStudioPayload]
     order: conint(ge=0, le=9007199254740991)
+    objective: constr(min_length=1, max_length=100) | None = None
 
 
 class RevTurbineConfig(BaseModel):
@@ -6439,6 +8702,7 @@ class RevTurbineConfig(BaseModel):
     surface_templates: list[RevTurbineConfigSurfaceTemplatesItem] | None = None
     free_trial_rules: list[RevTurbineConfigFreeTrialRuleItem] | None = None
     reverse_trial_rules: list[RevTurbineConfigReverseTrialRuleItem] | None = None
+    objectives: list[RevTurbineConfigObjectivesItem] | None = None
     plan_variations: list[RevTurbineConfigPlanVariationsItem] | None = None
     addon_variations: list[RevTurbineConfigAddonVariationsItem] | None = None
     extension_rules: list[RevTurbineConfigExtensionRulesItem] | None = None
@@ -6449,6 +8713,233 @@ class RevTurbineConfig(BaseModel):
     meter_bindings: list[RevTurbineConfigMeterBindingsItem] | None = None
     experiments: list[Any] | None = Field(None, max_length=0)
     signal_catalog: dict[str, Any] | None = None
+
+
+class RevturbineProducerAliasEvent(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: RevturbineProducerSegmentContext
+    type: Literal["alias"]
+    previousId: constr(min_length=1)
+
+
+class RevturbineProducerGroupEvent1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: RevturbineProducerSegmentContext
+    type: Literal["group"]
+    groupId: constr(min_length=1)
+    traits: dict[str, Any] | None = None
+
+
+class RevturbineProducerGroupEvent2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: RevturbineProducerSegmentContext
+    type: Literal["group"]
+    groupId: constr(min_length=1)
+    traits: dict[str, Any] | None = None
+
+
+class RevturbineProducerGroupEvent(
+    RootModel[RevturbineProducerGroupEvent1 | RevturbineProducerGroupEvent2]
+):
+    root: RevturbineProducerGroupEvent1 | RevturbineProducerGroupEvent2
+
+
+class RevturbineProducerIdentifyEvent1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: RevturbineProducerSegmentContext
+    type: Literal["identify"]
+    traits: dict[str, Any] | None = None
+
+
+class RevturbineProducerIdentifyEvent2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: RevturbineProducerSegmentContext
+    type: Literal["identify"]
+    traits: dict[str, Any] | None = None
+
+
+class RevturbineProducerIdentifyEvent(
+    RootModel[RevturbineProducerIdentifyEvent1 | RevturbineProducerIdentifyEvent2]
+):
+    root: RevturbineProducerIdentifyEvent1 | RevturbineProducerIdentifyEvent2
+
+
+class RevturbineProducerPageEvent1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: RevturbineProducerSegmentContext
+    type: Literal["page"]
+    name: constr(min_length=1) | None = None
+    properties: dict[str, Any] | None = None
+
+
+class RevturbineProducerPageEvent2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: RevturbineProducerSegmentContext
+    type: Literal["page"]
+    name: constr(min_length=1) | None = None
+    properties: dict[str, Any] | None = None
+
+
+class RevturbineProducerPageEvent(
+    RootModel[RevturbineProducerPageEvent1 | RevturbineProducerPageEvent2]
+):
+    root: RevturbineProducerPageEvent1 | RevturbineProducerPageEvent2
+
+
+class RevturbineProducerScreenEvent1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: RevturbineProducerSegmentContext
+    type: Literal["screen"]
+    name: constr(min_length=1) | None = None
+    properties: dict[str, Any] | None = None
+
+
+class RevturbineProducerScreenEvent2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: RevturbineProducerSegmentContext
+    type: Literal["screen"]
+    name: constr(min_length=1) | None = None
+    properties: dict[str, Any] | None = None
+
+
+class RevturbineProducerScreenEvent(
+    RootModel[RevturbineProducerScreenEvent1 | RevturbineProducerScreenEvent2]
+):
+    root: RevturbineProducerScreenEvent1 | RevturbineProducerScreenEvent2
+
+
+class SegmentAliasInput1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: SegmentEventContext | None = None
+    type: Literal["alias"]
+    previousId: constr(min_length=1)
+
+
+class SegmentAliasInput2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100) | None = None
+    timestamp: AwareDatetime | None = None
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime | None = None
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: SegmentEventContext | None = None
+    type: Literal["alias"]
+    previousId: constr(min_length=1)
+
+
+class SegmentAliasInput(RootModel[SegmentAliasInput1 | SegmentAliasInput2]):
+    root: SegmentAliasInput1 | SegmentAliasInput2
+
+
+class SegmentEventInput(
+    RootModel[
+        SegmentTrackInput
+        | SegmentIdentifyInput
+        | SegmentGroupInput
+        | SegmentPageInput
+        | SegmentScreenInput
+        | SegmentAliasInput
+    ]
+):
+    root: (
+        SegmentTrackInput
+        | SegmentIdentifyInput
+        | SegmentGroupInput
+        | SegmentPageInput
+        | SegmentScreenInput
+        | SegmentAliasInput
+    )
+
+
+class SegmentIngestBatch(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    batch: list[SegmentEventInput] = Field(..., max_length=500, min_length=1)
+    sentAt: AwareDatetime | None = None
 
 
 class ServerEvaluationPayload(BaseModel):
@@ -6546,6 +9037,184 @@ class AnalyticsViewRevision(BaseModel):
     content_hash: constr(pattern=r"^[a-f0-9]{64}$")
     created_by: constr(min_length=1)
     created_at: AwareDatetime
+
+
+class CanonicalAliasEvent1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: CanonicalSegmentContext
+    type: Literal["alias"]
+    previousId: constr(min_length=1)
+
+
+class CanonicalAliasEvent2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: CanonicalSegmentContext
+    type: Literal["alias"]
+    previousId: constr(min_length=1)
+
+
+class CanonicalAliasEvent(RootModel[CanonicalAliasEvent1 | CanonicalAliasEvent2]):
+    root: CanonicalAliasEvent1 | CanonicalAliasEvent2
+
+
+class CanonicalGroupEvent1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: CanonicalSegmentContext
+    type: Literal["group"]
+    groupId: constr(min_length=1)
+    traits: dict[str, Any] | None = None
+
+
+class CanonicalGroupEvent2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: CanonicalSegmentContext
+    type: Literal["group"]
+    groupId: constr(min_length=1)
+    traits: dict[str, Any] | None = None
+
+
+class CanonicalGroupEvent(RootModel[CanonicalGroupEvent1 | CanonicalGroupEvent2]):
+    root: CanonicalGroupEvent1 | CanonicalGroupEvent2
+
+
+class CanonicalIdentifyEvent1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: CanonicalSegmentContext
+    type: Literal["identify"]
+    traits: dict[str, Any] | None = None
+
+
+class CanonicalIdentifyEvent2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: CanonicalSegmentContext
+    type: Literal["identify"]
+    traits: dict[str, Any] | None = None
+
+
+class CanonicalIdentifyEvent(
+    RootModel[CanonicalIdentifyEvent1 | CanonicalIdentifyEvent2]
+):
+    root: CanonicalIdentifyEvent1 | CanonicalIdentifyEvent2
+
+
+class CanonicalPageEvent1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: CanonicalSegmentContext
+    type: Literal["page"]
+    name: constr(min_length=1) | None = None
+    properties: dict[str, Any] | None = None
+
+
+class CanonicalPageEvent2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: CanonicalSegmentContext
+    type: Literal["page"]
+    name: constr(min_length=1) | None = None
+    properties: dict[str, Any] | None = None
+
+
+class CanonicalPageEvent(RootModel[CanonicalPageEvent1 | CanonicalPageEvent2]):
+    root: CanonicalPageEvent1 | CanonicalPageEvent2
+
+
+class CanonicalScreenEvent1(BaseModel):
+    userId: constr(min_length=1)
+    anonymousId: constr(min_length=1) | None = None
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: CanonicalSegmentContext
+    type: Literal["screen"]
+    name: constr(min_length=1) | None = None
+    properties: dict[str, Any] | None = None
+
+
+class CanonicalScreenEvent2(BaseModel):
+    userId: constr(min_length=1) | None = None
+    anonymousId: constr(min_length=1)
+    messageId: constr(min_length=1, max_length=100)
+    timestamp: AwareDatetime
+    sentAt: AwareDatetime | None = None
+    receivedAt: AwareDatetime
+    originalTimestamp: AwareDatetime | None = None
+    channel: constr(min_length=1) | None = None
+    integrations: dict[str, Any] | None = None
+    context: CanonicalSegmentContext
+    type: Literal["screen"]
+    name: constr(min_length=1) | None = None
+    properties: dict[str, Any] | None = None
+
+
+class CanonicalScreenEvent(RootModel[CanonicalScreenEvent1 | CanonicalScreenEvent2]):
+    root: CanonicalScreenEvent1 | CanonicalScreenEvent2
 
 
 class ExperimentAnalysisResultRecord(BaseModel):
@@ -6669,6 +9338,7 @@ class ExportedConfig(BaseModel):
     surface_templates: list[RevTurbineConfigSurfaceTemplatesItem] | None = None
     free_trial_rules: list[RevTurbineConfigFreeTrialRuleItem] | None = None
     reverse_trial_rules: list[RevTurbineConfigReverseTrialRuleItem] | None = None
+    objectives: list[RevTurbineConfigObjectivesItem] | None = None
     plan_variations: list[RevTurbineConfigPlanVariationsItem] | None = None
     addon_variations: list[RevTurbineConfigAddonVariationsItem] | None = None
     extension_rules: list[RevTurbineConfigExtensionRulesItem] | None = None
@@ -6707,6 +9377,7 @@ class PlaybookBody(BaseModel):
     surface_templates: list[RevTurbineConfigSurfaceTemplatesItem] | None = None
     free_trial_rules: list[RevTurbineConfigFreeTrialRuleItem] | None = None
     reverse_trial_rules: list[RevTurbineConfigReverseTrialRuleItem] | None = None
+    objectives: list[RevTurbineConfigObjectivesItem] | None = None
     plan_variations: list[RevTurbineConfigPlanVariationsItem] | None = None
     addon_variations: list[RevTurbineConfigAddonVariationsItem] | None = None
     extension_rules: list[RevTurbineConfigExtensionRulesItem] | None = None
@@ -6756,6 +9427,7 @@ class PlaybookObject(BaseModel):
     surface_templates: list[RevTurbineConfigSurfaceTemplatesItem] | None = None
     free_trial_rules: list[RevTurbineConfigFreeTrialRuleItem] | None = None
     reverse_trial_rules: list[RevTurbineConfigReverseTrialRuleItem] | None = None
+    objectives: list[RevTurbineConfigObjectivesItem] | None = None
     plan_variations: list[RevTurbineConfigPlanVariationsItem] | None = None
     addon_variations: list[RevTurbineConfigAddonVariationsItem] | None = None
     extension_rules: list[RevTurbineConfigExtensionRulesItem] | None = None
@@ -6805,6 +9477,7 @@ class Playbook(BaseModel):
     surface_templates: list[RevTurbineConfigSurfaceTemplatesItem] | None = None
     free_trial_rules: list[RevTurbineConfigFreeTrialRuleItem] | None = None
     reverse_trial_rules: list[RevTurbineConfigReverseTrialRuleItem] | None = None
+    objectives: list[RevTurbineConfigObjectivesItem] | None = None
     plan_variations: list[RevTurbineConfigPlanVariationsItem] | None = None
     addon_variations: list[RevTurbineConfigAddonVariationsItem] | None = None
     extension_rules: list[RevTurbineConfigExtensionRulesItem] | None = None
@@ -6854,6 +9527,7 @@ class PlaybookStrict(BaseModel):
     surface_templates: list[RevTurbineConfigSurfaceTemplatesItem] | None = None
     free_trial_rules: list[RevTurbineConfigFreeTrialRuleItem] | None = None
     reverse_trial_rules: list[RevTurbineConfigReverseTrialRuleItem] | None = None
+    objectives: list[RevTurbineConfigObjectivesItem] | None = None
     plan_variations: list[RevTurbineConfigPlanVariationsItem] | None = None
     addon_variations: list[RevTurbineConfigAddonVariationsItem] | None = None
     extension_rules: list[RevTurbineConfigExtensionRulesItem] | None = None
@@ -6864,3 +9538,43 @@ class PlaybookStrict(BaseModel):
     meter_bindings: list[RevTurbineConfigMeterBindingsItem] | None = None
     experiments: list[Any] | None = Field(None, max_length=0)
     signal_catalog: dict[str, Any] | None = None
+
+
+class RevturbineProducerEvent(
+    RootModel[
+        RevturbineProducerTrackEvent
+        | RevturbineProducerIdentifyEvent
+        | RevturbineProducerGroupEvent
+        | RevturbineProducerPageEvent
+        | RevturbineProducerScreenEvent
+        | RevturbineProducerAliasEvent
+    ]
+):
+    root: (
+        RevturbineProducerTrackEvent
+        | RevturbineProducerIdentifyEvent
+        | RevturbineProducerGroupEvent
+        | RevturbineProducerPageEvent
+        | RevturbineProducerScreenEvent
+        | RevturbineProducerAliasEvent
+    )
+
+
+class CanonicalAnalyticsEvent(
+    RootModel[
+        CanonicalTrackEvent
+        | CanonicalIdentifyEvent
+        | CanonicalGroupEvent
+        | CanonicalPageEvent
+        | CanonicalScreenEvent
+        | CanonicalAliasEvent
+    ]
+):
+    root: (
+        CanonicalTrackEvent
+        | CanonicalIdentifyEvent
+        | CanonicalGroupEvent
+        | CanonicalPageEvent
+        | CanonicalScreenEvent
+        | CanonicalAliasEvent
+    )

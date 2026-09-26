@@ -19,6 +19,7 @@ from revturbine.core.placements import (
     BUILT_IN_TEMPLATE_COMPONENT_TYPES,
     DEFAULT_TEMPLATE_COMPONENT_TYPES,
     create_static_placement_resolver,
+    resolve_local_placement_from_candidates,
 )
 from revturbine.core.placements.local_resolver import (
     _header_str,
@@ -1091,3 +1092,72 @@ class TestLocalResolverPilotCorpus:
 
     def test_corpus_has_ten_fixtures(self) -> None:
         assert len(self._FIXTURES) == 10
+
+
+# ── D-34 entry-order contract (BL-0149) ────────────────────────────────────
+
+
+class TestEntryOrderIsTheDecisionContract:
+    """Kent's ruling D-34 (2026-09-26): list order implies priority and the
+    first eligible candidate takes precedence. The decision path never
+    consults the selection layer (buckets, two-stage urgency, supersession,
+    conflict suppression). Mirrors ``ts:local-resolver.test.ts`` "D-34 entry
+    order is the decision contract" case for case.
+    """
+
+    _FIRST = _entry(
+        entry_id="pl_first",
+        order=0,
+        category="other_conversion",
+        trigger={},
+        payloads=[_payload(payload_id="p_first", surfaces=[_surface(fields={"header": "First"})])],
+    )
+    # Every numeric the selection comparator reads, maxed out.
+    _URGENT = _entry(
+        entry_id="pl_urgent",
+        order=1,
+        category="usage_credit_seat",
+        trigger={"entitlement_handle": "api_calls"},
+        payloads=[
+            _payload(
+                payload_id="p_urgent",
+                surfaces=[
+                    _surface(
+                        fields={
+                            "header": "Urgent",
+                            "score": "99",
+                            "ranking_score": "99",
+                            "priority": "99",
+                        }
+                    )
+                ],
+            )
+        ],
+    )
+
+    def _decide(self, entries: list[dict[str, Any]]) -> PlacementDecision:
+        resolver = create_static_placement_resolver({"placements": entries}, _config())
+        # 100/100 → usage_percent 100 → tier-3 class 2 ("limit reached").
+        return resolver(
+            {"placement_id": "p1", "user_id": "u"},
+            _rec(metadata={"surface_template_ids": ["modal_overlay"]}),
+            _ctx(usage={"api_calls": {"used": 100, "limit": 100, "remaining": 0}}),
+        )
+
+    def test_first_eligible_wins_over_a_more_urgent_later_entry(self) -> None:
+        decision = self._decide([self._FIRST, self._URGENT])
+        assert decision["visible"] is True
+        assert decision["content"]["header"] == "First"
+
+    def test_selection_layer_would_have_picked_the_urgent_candidate(self) -> None:
+        first = self._decide([self._FIRST]).get("output")
+        urgent = self._decide([self._URGENT]).get("output")
+        assert first is not None and urgent is not None
+        assert urgent["content"]["usage_percent"] == 100
+        picked = resolve_local_placement_from_candidates([first, urgent], True)
+        assert picked is not None
+        assert picked["output_id"] == urgent["output_id"]
+
+    def test_reversing_authored_order_reverses_the_winner(self) -> None:
+        decision = self._decide([{**self._URGENT, "order": 0}, {**self._FIRST, "order": 1}])
+        assert decision["content"]["header"] == "Urgent"

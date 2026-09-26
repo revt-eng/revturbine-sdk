@@ -149,6 +149,17 @@ export type {
 // ── Environment detection ───────────────────────────────────────────────────
 export { isServer, isBrowser } from './env';
 
+// ── Slot route (BL-0207 / D-30 — the route stamped on slot lifecycle events) ─
+export {
+  SLOT_ROUTE_MAX_LENGTH,
+  SLOT_ROUTE_ID_PLACEHOLDER,
+  currentBrowserRoute,
+  isIdentifierLikeSegment,
+  normalizeSlotRoute,
+  routePatternFromParams,
+} from './slot-route';
+export type { SlotRouteParams } from './slot-route';
+
 // ── Storage ─────────────────────────────────────────────────────────────────
 export {
   InMemoryStorage,

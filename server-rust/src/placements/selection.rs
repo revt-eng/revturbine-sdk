@@ -7,6 +7,12 @@
 //! conflict suppression, the multi-key comparator with the plan-53
 //! two-stage tier-3 urgency — had no third side, which is why TASK-15's
 //! competing-categories fixture had to be deferred.
+//!
+//! Not the placement decision. Per Kent's ruling D-34 (2026-09-26) the
+//! decision contract is entry order — the first plan/segment-eligible
+//! candidate wins — and `static_resolver` implements it without calling this
+//! module (BL-0149). It stays 3-way parity-locked because the browser SDK's
+//! cached `getPlacement` lookup uses the TS original.
 
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};

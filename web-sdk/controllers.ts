@@ -66,6 +66,7 @@ import type { ExposureBasis } from './telemetry';
 import type { RevTurbineTheme, RevTurbineThemeInput } from './theme/types';
 import { DEFAULT_THEME, mergeTheme } from './theme/defaults';
 import { loadTheme } from './theme/theme-loader';
+import { normalizeSlotRoute } from './slot-route';
 
 // ── Change listener type ────────────────────────────────────────────────────
 
@@ -119,6 +120,20 @@ export interface PlacementControllerOptions {
    * its history unchanged.
    */
   placementExposure?: PlacementExposureMode;
+  /**
+   * The app route this slot renders on, stamped onto every slot lifecycle
+   * event as `route` (BL-0207 / D-30) so ingestion-driven discovery can
+   * persist it on the discovered surface slot.
+   *
+   * A string, or a getter read at emission time (so a slot that outlives a
+   * client-side navigation reports the route it was evaluated on). Either is
+   * normalized by {@link normalizeSlotRoute}: origin, query string and
+   * fragment are dropped and identifier-like segments templated to `:id`.
+   * The React `usePlacement()` hook supplies this automatically — the nearest
+   * `<RevTurbineRoute>` pattern, else `window.location.pathname`. Omitted, a
+   * headless controller emits `route: null`.
+   */
+  route?: string | (() => string | null | undefined);
 }
 
 /**
@@ -519,7 +534,23 @@ export class PlacementController {
       // nothing won. `reason_codes` beside it says WHY a slot resolved as it
       // did and never WHOSE rule it was.
       rule_handle: decision?.output?.rule_id ?? null,
+      // BL-0207 / D-30: the route the slot rendered on, computed by the React
+      // layer (or the headless host) and read at emission time. A path only —
+      // never a query string or origin; `null` when none was supplied.
+      route: this.resolveRoute(),
     };
+  }
+
+  /** The slot's route for this emission, normalized; `null` when unknown. Never throws. */
+  private resolveRoute(): string | null {
+    const source = this.options.route;
+    if (source === undefined) return null;
+    try {
+      return normalizeSlotRoute(typeof source === 'function' ? source() : source);
+    } catch {
+      // A throwing host getter must never break slot diagnostics.
+      return null;
+    }
   }
 
   /**

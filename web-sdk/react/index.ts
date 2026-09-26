@@ -14,6 +14,11 @@ export {
   type InitFailureDiagnosticProps,
 } from './InitFailureDiagnostic';
 export * from './usePlacement';
+export {
+  RevTurbineRoute,
+  useSlotRoute,
+  type RevTurbineRouteProps,
+} from './RevTurbineRoute';
 export * from './Placement';
 export * from './SurfaceTypes';
 export * from './PlacementDecisionInspector';

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type RevTurbinePlacementConfig,
   type RevTurbineSurfaceSlotConfig,
@@ -13,6 +13,8 @@ import { PlacementController } from '../controllers';
 import type { PlacementExposureMode } from '../controllers';
 import { exposureManager, type ExposureBasis } from '../telemetry';
 import { useRevTurbine } from './useRevTurbine';
+import { RevTurbineRouteContext } from './RevTurbineRoute';
+import { currentBrowserRoute } from '../slot-route';
 
 /**
  * Options for the {@link usePlacement} hook.
@@ -124,6 +126,15 @@ export function usePlacement({
   const controllerRef = useRef<PlacementController | null>(null);
   const exposureCleanupRef = useRef<(() => void) | null>(null);
 
+  // BL-0207 / D-30 — the slot's route is computed HERE, in the React layer:
+  // the nearest <RevTurbineRoute> pattern, else the browser pathname. Held in
+  // a ref and read by the controller at emission time, so a route change
+  // never rebuilds the controller and a slot evaluated after a client-side
+  // navigation reports the route it was evaluated on.
+  const declaredRoute = useContext(RevTurbineRouteContext);
+  const routeRef = useRef<string | null>(declaredRoute);
+  routeRef.current = declaredRoute;
+
   const resolvedUserId = userId || (sdk ? sdk.getUserContext().user_id : '');
   const placementKey = useMemo(
     () => JSON.stringify({ placement: placement ?? null, surfaceSlot: surfaceSlot ?? null }),
@@ -147,6 +158,7 @@ export function usePlacement({
       ttlMs,
       autoTrackImpression,
       placementExposure,
+      route: () => routeRef.current ?? currentBrowserRoute(),
     });
 
     controllerRef.current = ctrl;

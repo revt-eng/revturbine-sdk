@@ -199,6 +199,67 @@ fn entry_order_beats_the_category_bucket_and_the_selection_layer_disagrees() {
     );
 }
 
+/// D-34 (Kent, 2026-09-26): "The list order does imply priority. The first
+/// eligible should take precedence." (BL-0149.) The later candidate here holds
+/// every selection-layer advantage — bucket 2 vs 4, tier-3 class 2 at 100/100
+/// usage, proximity 100, `score`/`ranking_score`/`priority` 99 — and still
+/// loses the decision; the selection layer fed the same outputs picks it, and
+/// reversing authored order reverses the winner. Mirrors
+/// `ts:local-resolver.test.ts` "D-34 entry order is the decision contract".
+#[test]
+fn d34_first_eligible_wins_even_when_a_later_candidate_is_more_urgent() {
+    let first = entry("pl_first", "other_conversion", 0, "First");
+    let mut urgent = entry("pl_urgent", "usage_credit_seat", 1, "Urgent");
+    urgent["trigger"] = json!({ "entitlement_handle": "api_calls" });
+    let fields = &mut urgent["payloads"][0]["surfaces"][0]["fields"];
+    fields["score"] = json!("99");
+    fields["ranking_score"] = json!("99");
+    fields["priority"] = json!("99");
+    let at_limit = json!({ "__providers": {
+        "entitlements": { "usage": { "api_calls": { "used": 100, "limit": 100, "remaining": 0 } } }
+    }});
+    let decide = |entries: &[Value]| {
+        StaticPlacementResolver::new(entries, &config()).resolve(
+            "slot_1",
+            Some(&slot(&["banner_placement"])),
+            Some(&at_limit),
+            None,
+        )
+    };
+
+    let d = decide(&[first.clone(), urgent.clone()]);
+    assert_eq!(d["visible"], json!(true));
+    assert_eq!(
+        d["content"]["header"],
+        json!("First"),
+        "first eligible wins"
+    );
+
+    let first_out = decide(std::slice::from_ref(&first))["output"].clone();
+    let urgent_out = decide(std::slice::from_ref(&urgent))["output"].clone();
+    assert_eq!(urgent_out["content"]["usage_percent"], json!(100));
+    let picked = revturbine::placements::resolve_local_placement_from_candidates(
+        &[first_out, urgent_out.clone()],
+        revturbine::placements::CandidateResolutionOptions::default(),
+    )
+    .expect("a winner");
+    assert_eq!(
+        picked["output_id"], urgent_out["output_id"],
+        "the selection layer would have picked the urgent candidate",
+    );
+
+    let mut urgent_first = urgent;
+    urgent_first["order"] = json!(0);
+    let mut first_second = first;
+    first_second["order"] = json!(1);
+    let d = decide(&[urgent_first, first_second]);
+    assert_eq!(
+        d["content"]["header"],
+        json!("Urgent"),
+        "reversed order, reversed winner"
+    );
+}
+
 /// The candidate shape the selection layer consumes, built from the same ids
 /// the resolver indexed so both lanes are compared on one candidate set.
 fn selection_candidate(id: &str, category: &str) -> Value {
