@@ -47,6 +47,55 @@ also require a changelog entry.
 
 ---
 
+## 0.11.13
+
+### Slot lifecycle events carry the slot's `route` (BL-0207, ruling D-30)
+
+**What changed.** Every slot lifecycle event (`slot_evaluated`, `slot_filled`,
+`slot_empty`, `slot_suppressed`, `slot_error`) now carries `route`: the app
+route the slot rendered on. Ingestion-driven surface-slot discovery reads it
+and persists it on the discovered slot. There is no SDK write to any CRUD
+route. The field is additive and optional in the scaffold contract
+(`slotContextBase.route`).
+
+A route is a **path, never a URL**. It has no origin, query string or
+fragment. The React layer computes it at emission time:
+
+- **Default:** `window.location.pathname`, with identifier-like segments
+  templated to `:id`. That covers numbers, UUIDs, long hex, prefixed ids like
+  `cus_…`, long opaque tokens and email-shaped values, raw or
+  percent-encoded. For example, `/accounts/4821/billing?coupon=X` reports
+  `/accounts/:id/billing`.
+- **`<RevTurbineRoute route={…}>`** (new, renderless) declares the framework
+  route pattern for its subtree, and the innermost boundary wins.
+- **Next.js App Router:** build the pattern with the new pure helper
+  `routePatternFromParams(usePathname(), useParams())`, which gives
+  `/projects/[projectId]/settings`. The SDK does not import `next/navigation`.
+
+Also new:
+
+- **Headless exports:** `normalizeSlotRoute`, `routePatternFromParams`,
+  `currentBrowserRoute`, `isIdentifierLikeSegment` and `SLOT_ROUTE_MAX_LENGTH`
+  (512).
+- **React hook:** `useSlotRoute()`.
+- **Headless controller option:** `PlacementControllerOptions.route` accepts a
+  string or a getter. When it is omitted, a headless controller emits
+  `route: null`.
+
+**Landed in:** 0.11.13 (`web-sdk` only; `server-python`/`server-rust` bumped
+in lockstep with no behavior change — no port emits slot events). The
+`@revt-eng/*` pins move to `0.1.366` (the scaffold contract: `slotContextBase.route`,
+`SurfaceSlotSchema.route`, and the `SurfaceSlotStatus` = `live | idle`
+vocabulary), and the vendored port types are re-synced — `SurfaceSlot.status`
+is now `SurfaceSlotStatus` (`live`/`idle`, default `idle`) in both ports.
+**Fail-closed in:** n/a (additive telemetry field).
+**Proving test:**
+- `web-sdk/slot-route.test.ts`: normalization, PII/query stripping, the
+  Next.js params recipe, and controller emission including the
+  throwing-getter case.
+- `web-sdk/react/usePlacement.route.test.tsx`: the plain-DOM pathname case and
+  the `<RevTurbineRoute>` Next.js pattern case.
+
 ## 0.11.12
 
 ### `builtin_dimensions` now reaches the browser SDK from the client-context fetch (BL-0312, plan 279 TASK-5)
