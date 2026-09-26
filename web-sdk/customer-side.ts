@@ -46,6 +46,7 @@ import type {
   RevTurbineConfigSegmentsItem,
   RevTurbineConfigSegmentsItemPredicatesItem,
   ContentUiPath,
+  ClientContext,
   UserContext,
   UserTrialStatus,
   TrialInstance,
@@ -814,6 +815,25 @@ export interface RevTurbineUserContext
    * `string | number` when serialized.
    */
   personalization?: SdkTraits;
+  /**
+   * Server-evaluated built-in segment dimensions (plan 279 PD-3), one leaf
+   * per resolved dimension keyed by its dimension key (e.g.
+   * `subscription_state`, `region`) — see the built-in segment resolution
+   * contract in `targeting-studio-ui.md` §4.1 for the full vocabulary.
+   *
+   * `fetchClientContext` delivers this from `GET /api/sdk/client-context`
+   * and merges it the way it merges `plan_handle`: **server values overlay
+   * app-set values**, per leaf. A dimension the server did not evaluate on a
+   * given fetch leaves whatever the app (or a prior fetch) had set for that
+   * leaf untouched; a dimension is simply absent when neither side has ever
+   * set it (unknown is trait absence — plan 255).
+   *
+   * Feeds the reserved `rt_<dimension>` segment traits that built-in
+   * Playbook segments match on — never read or write those trait keys
+   * directly. Set this yourself only to seed `local_only` mode or a
+   * server-side port, which has no client-context fetch of its own.
+   */
+  builtin_dimensions?: UserContextInput['builtin_dimensions'];
 }
 
 /**
@@ -835,6 +855,13 @@ interface ClientSafeContextResponse {
    */
   plan?: { handle?: string; name?: string } | null;
   capabilities?: { can_upgrade?: boolean; can_manage_billing?: boolean };
+  /**
+   * Server-evaluated built-in segment dimensions (plan 279 PD-3). Present
+   * only for the dimensions the control plane classified for this subject —
+   * a dimension it has not evaluated is simply absent from this object
+   * (unknown is trait absence, plan 255), not `null` or a sentinel string.
+   */
+  builtin_dimensions?: ClientContext['builtin_dimensions'];
 }
 
 /** Page-level context automatically inferred or manually set. */
@@ -8567,12 +8594,22 @@ export class RevTurbineCustomerSdk {
         payment_at_risk: patch.payment_at_risk,
       });
 
-      // Hash-skip (plan 165 REQ-4): re-apply — which triggers segment
-      // re-evaluation — only when the fetch actually changed the
-      // evaluation-relevant inputs. A redundant fetch that hashes the same as
-      // the last applied context is dropped. The coarse `payment_at_risk`
-      // billing signal is not part of the evaluation hash input, so it is folded
-      // into the skip key explicitly.
+      // Hash-skip (plan 165 REQ-4; plan 279 PD-3/AC-4): re-apply — which
+      // triggers segment re-evaluation — only when the fetch actually
+      // changed the evaluation-relevant inputs. A redundant fetch that
+      // hashes the same as the last applied context is dropped.
+      //
+      // `computeUserContextHash` (from `@revt-eng/core`) does NOT hash
+      // whatever object it is given — it re-projects its input through
+      // `canonicalHashProjection`, which keeps only a fixed key set
+      // (`plan_handle`, `plan`, `usage`, `custom`, `trial`, `instances`) and
+      // silently drops everything else. `builtin_dimensions` is not in that
+      // set, so adding it to `serverHashInput` below would be a no-op — the
+      // premise this task set out to verify. The coarse `payment_at_risk`
+      // signal has the same problem and is already folded into the skip key
+      // as a literal suffix rather than hashed; `builtin_dimensions` is
+      // folded in the same way, via the SDK's own `stableStringify` (stable
+      // key order, so leaf order in the response can't defeat the compare).
       const serverHashInput = JSON.parse(
         JSON.stringify({
           trial: patch.trial ?? null,
@@ -8582,7 +8619,8 @@ export class RevTurbineCustomerSdk {
       );
       const nextHash =
         (await computeUserContextHash(serverHashInput)) +
-        `:${patch.payment_at_risk === true ? 1 : 0}`;
+        `:${patch.payment_at_risk === true ? 1 : 0}` +
+        `:${this.stableStringify(patch.builtin_dimensions ?? null)}`;
       if (nextHash === this.lastServerContextHash) return;
       this.lastServerContextHash = nextHash;
       this.applyUserContextPatch(patch);
@@ -8662,6 +8700,17 @@ export class RevTurbineCustomerSdk {
             ? data.plan.name
             : planHandle,
       };
+    }
+
+    // Server-evaluated built-in segment dimensions (plan 279 PD-3). Passed
+    // through as-is — `coreMergeUserContext` already overlays this field
+    // per key (server leaf wins when present; an app-set leaf the server
+    // did not evaluate for this fetch survives), so this function does not
+    // need to merge against the held context itself. Skipped entirely when
+    // the server evaluated nothing, so a context that never carried
+    // `builtin_dimensions` keeps its exact shape.
+    if (data.builtin_dimensions && Object.keys(data.builtin_dimensions).length > 0) {
+      patch.builtin_dimensions = data.builtin_dimensions;
     }
 
     return patch;

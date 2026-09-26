@@ -173,6 +173,108 @@ describe('web-SDK fetchClientContext (plan 157 T5)', () => {
     expect(priv(sdk).userContext.plan).toMatchObject({ handle: 'free', name: 'Free' });
   });
 
+  // Plan 279 TASK-5 / AC-4: `builtin_dimensions` maps onto the user context
+  // the way `plan_handle` does — server overlays app, per leaf.
+  describe('builtin_dimensions (plan 279 AC-4)', () => {
+    it('overlays a server-evaluated leaf onto an app-set value', async () => {
+      stubFetch({
+        ok: true,
+        status: 200,
+        json: async () => ({ ...CLIENT_CTX, builtin_dimensions: { region: 'europe' } }),
+        text: async () => '',
+      });
+      const sdk = makeSdk();
+      sdk.setUserContext({
+        id: 'u1',
+        builtin_dimensions: { region: 'us_canada' },
+      } as RevTurbineUserContext);
+
+      await sdk.fetchClientContext('rt_client_abc');
+
+      expect(priv(sdk).userContext.builtin_dimensions).toMatchObject({ region: 'europe' });
+    });
+
+    it('leaves an app-set leaf untouched when the server response omits it', async () => {
+      stubFetch({
+        ok: true,
+        status: 200,
+        json: async () => ({ ...CLIENT_CTX, builtin_dimensions: { region: 'europe' } }),
+        text: async () => '',
+      });
+      const sdk = makeSdk();
+      sdk.setUserContext({
+        id: 'u1',
+        // `device_type` is app-set (e.g. local_only); the server response
+        // below evaluates only `region`, so `device_type` must survive.
+        builtin_dimensions: { device_type: 'mobile' },
+      } as RevTurbineUserContext);
+
+      await sdk.fetchClientContext('rt_client_abc');
+
+      expect(priv(sdk).userContext.builtin_dimensions).toMatchObject({
+        region: 'europe',
+        device_type: 'mobile',
+      });
+    });
+
+    it('re-applies (new context object) when only builtin_dimensions changes', async () => {
+      // Segment re-evaluation can itself issue unrelated fetches (see the
+      // T5 test above), so the client-context call count is tracked by URL,
+      // not by the mock's total call count.
+      let clientContextCalls = 0;
+      const fetchMock = vi.fn(async (url: unknown) => {
+        if (String(url).endsWith('/api/sdk/client-context')) clientContextCalls += 1;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            ...CLIENT_CTX,
+            builtin_dimensions: { region: clientContextCalls === 1 ? 'europe' : 'rest_of_world' },
+          }),
+          text: async () => '',
+        } as unknown as Response;
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      const sdk = makeSdk();
+      sdk.setUserContext({ id: 'u1' } as RevTurbineUserContext);
+
+      await sdk.fetchClientContext('rt_client_abc');
+      const afterFirst = priv(sdk).userContext;
+      expect(afterFirst.builtin_dimensions).toMatchObject({ region: 'europe' });
+
+      await sdk.fetchClientContext('rt_client_abc');
+      const afterSecond = priv(sdk).userContext;
+
+      // A changed builtin_dimensions value must re-apply: a NEW context
+      // object, carrying the new value (this is what makes segments
+      // re-evaluate — `applyUserContextPatch` is the only path that creates
+      // a new `userContext` object).
+      expect(afterSecond).not.toBe(afterFirst);
+      expect(afterSecond.builtin_dimensions).toMatchObject({ region: 'rest_of_world' });
+    });
+
+    it('does not re-apply (same context object) when builtin_dimensions is unchanged', async () => {
+      stubFetch({
+        ok: true,
+        status: 200,
+        json: async () => ({ ...CLIENT_CTX, builtin_dimensions: { region: 'europe' } }),
+        text: async () => '',
+      });
+      const sdk = makeSdk();
+      sdk.setUserContext({ id: 'u1' } as RevTurbineUserContext);
+
+      await sdk.fetchClientContext('rt_client_abc');
+      const afterFirst = priv(sdk).userContext;
+
+      // Identical response a second time — trial/plan/builtin_dimensions all
+      // hash the same, so the hash-skip must drop the redundant re-apply.
+      await sdk.fetchClientContext('rt_client_abc');
+      const afterSecond = priv(sdk).userContext;
+
+      expect(afterSecond).toBe(afterFirst);
+    });
+  });
+
   it('never logs the client token', async () => {
     const logs: string[] = [];
     const methods = ['log', 'warn', 'error', 'info', 'debug'] as const;
