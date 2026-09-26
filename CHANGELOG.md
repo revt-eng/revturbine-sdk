@@ -47,6 +47,43 @@ also require a changelog entry.
 
 ---
 
+## 0.11.12
+
+### `builtin_dimensions` now reaches the browser SDK from the client-context fetch (BL-0312, plan 279 TASK-5)
+
+**What changed.** `0.11.11` (BL-0310/BL-0311) taught the shared evaluator to
+stamp `rt_<dimension>` segment traits from a `builtin_dimensions` object on the
+user context, but nothing yet delivered that object into `web-sdk`'s held
+context. `fetchClientContext` (`GET /api/sdk/client-context`) now maps the
+response's `builtin_dimensions` onto `RevTurbineUserContext.builtin_dimensions`,
+overlaying per leaf the same way it overlays `plan_handle`: a leaf the server
+evaluated on this fetch replaces the held value; a leaf it did not evaluate
+leaves whatever the app (or a prior fetch) had set untouched. A leaf absent on
+both sides stays absent — unknown is trait absence (plan 255), never a
+sentinel.
+
+The hash-skip that decides whether a fetch actually changed anything and
+should re-apply (and so re-evaluate segments) now accounts for
+`builtin_dimensions`. This surfaced a real gap: the shared
+`computeUserContextHash` helper re-projects its input to a fixed key set
+(`plan_handle`, `plan`, `usage`, `custom`, `trial`, `instances`) and silently
+drops anything outside it, so simply adding `builtin_dimensions` to the object
+passed to it was a no-op. `builtin_dimensions` is folded into the skip key as
+a literal suffix instead — the same technique already used for the coarse
+`payment_at_risk` signal, which has the identical problem.
+
+**Landed in:** 0.11.12 (`web-sdk` only; `server-python`/`server-rust` bumped
+in lockstep with no behavior change — the ports have no client-context fetch
+of their own and resolve built-ins only from an app-supplied
+`builtin_dimensions`, per plan 279's TASK-17 backlog note).
+**Fail-closed in:** 0.11.12. Before this release, a client-context response
+that changed only `builtin_dimensions` was hash-skipped and segments never
+re-evaluated against the new value.
+**Proving test:** `web-sdk/customer-side-client-context.test.ts`, describe
+block `builtin_dimensions (plan 279 AC-4)` — server-overlays-app, an
+unevaluated leaf survives, a changed value re-applies (new context object),
+an unchanged value does not.
+
 ## 0.11.11
 
 ### Built-in segment dimensions: reserved `rt_*` segment traits (BL-0310/BL-0311, plan 279 TASK-3/TASK-4)
