@@ -94,26 +94,45 @@ Use `'placeholder'` during development to visually verify that slots are wired c
 
 ## Reason Codes
 
-Placement decisions include `reasonCodes` that explain why a placement was hidden or shown:
+Placement decisions include `reasonCodes` that explain why a placement was hidden or shown. This is the complete set the SDK emits, generated from the public contract in `tests/reason-contract.json`.
+
+An interaction-flush failure and a client-side cap-enforcement fallback are each documented in their own place on the [Error Codes reference page](/reference/errors/) instead of the table below, since neither is part of that contract.
+
+<!-- BEGIN GENERATED: placement-reason-codes (scripts/gen-reason-codes.mjs) -->
 
 | Code | Meaning |
 |---|---|
-| `cap_exceeded` | Impression cap reached |
-| `suppressed` | User recently dismissed/snoozed |
-| `plan_mismatch` | User's plan doesn't match targeting |
-| `segment_mismatch` | User doesn't match targeting segment |
-| `config_unavailable` | Playbook not available |
-| `api_error` | API returned non-200 |
-| `network_error` | Network/timeout failure |
-| `fallback_content` | Using fallback placeholder |
+| `config_unavailable` | The Playbook could not be fetched, or a fetch is still in flight — the SDK has no config to decide against yet. |
+| `entitlement_gate_unmet` | The candidate's entitlement-gate trigger did not match the user's current entitlement state. |
+| `no_eligible_candidate` | No candidate placement survived eligibility filtering for this slot. |
+| `no_resolver_configured` | No placement resolver is configured, so the SDK has nothing to evaluate against. |
+| `placement_not_found` | No candidate output matched the requested placement id or name. |
+| `placement_not_registered` | The payload targets a placement handle the app never registered with the SDK. |
+| `placement_retired` | The candidate's rule is hidden — for example, superseded by a conversion — per impression history. |
+| `plan_target_mismatch` | The user's plan or billing period doesn't match the candidate's plan targeting. |
+| `qualifier_trigger_unmet` | The candidate's qualifier trigger condition was not satisfied for the user's plan or category. |
+| `sdk_disabled_provider_failure` | The SDK disabled itself after its configured providers failed, so it fails closed rather than risk showing something wrong. |
+| `segment_target_mismatch` | The user doesn't belong to any of the candidate's target segments. |
+| `suppressed_by_dismiss_cooldown` | The user dismissed this placement and its cooldown window has not elapsed. |
+| `suppressed_by_payload_cap_day` | The payload's per-day impression cap has been reached. |
+| `suppressed_by_payload_cap_lifetime` | The payload's lifetime impression cap has been reached. |
+| `suppressed_by_payload_cap_month` | The payload's per-month impression cap has been reached. |
+| `suppressed_by_payload_cap_session` | The payload's per-session impression cap has been reached. |
+| `suppressed_by_payload_cap_week` | The payload's per-week impression cap has been reached. |
+| `suppressed_by_payload_cooldown` | The payload is still inside its configured cooldown window since it was last shown. |
+| `suppressed_until_remind_window` | The user chose "remind me later" and that reminder window has not elapsed yet. |
+| `threshold_trigger_unmet` | The candidate's threshold trigger did not match the user's current entitlement usage. |
+| `trial_trigger_unmet` | The candidate's trial trigger did not match the user's trial state. |
+
+<!-- END GENERATED: placement-reason-codes -->
 
 ### Inspecting Reason Codes
 
 ```tsx
 const { decision } = usePlacement({ placement: { name: 'hero_banner' } });
 
-if (decision?.reasonCodes?.includes('cap_exceeded')) {
-  // User has seen this placement too many times
+if (decision?.reasonCodes?.includes('suppressed_by_payload_cap_day')) {
+  // User has hit this payload's daily impression cap
 }
 ```
 

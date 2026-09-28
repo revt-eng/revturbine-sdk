@@ -7,20 +7,45 @@ This page lists all error and reason codes the SDK may return, organized by cate
 
 ## Placement Reason Codes
 
-Returned in `decision.reasonCodes[]` to explain why a placement was or wasn't shown.
+Returned in `decision.reasonCodes[]` to explain why a placement was or wasn't shown. This is the complete set the SDK emits — generated from the public reason contract (`tests/reason-contract.json` in revturbine-sdk-internal), the same file [`reason-contract.test.ts`](https://github.com/revt-eng/revturbine-sdk-internal/blob/main/web-sdk/reason-contract.test.ts) enforces against live SDK fixtures. Do not hand-edit the table below; run `pnpm gen:reason-codes` (from `pages-build/`) after the contract changes.
 
-| Code | Meaning | Fix |
-|---|---|---|
-| `cap_exceeded` | Impression cap reached (session/day/week/month/lifetime) | Increase cap in dashboard or wait for period reset |
-| `suppressed` | User recently dismissed, snoozed, or completed CTA | Wait for cooldown to expire |
-| `plan_mismatch` | User's plan doesn't match placement targeting | Verify targeting rules or user context |
-| `segment_mismatch` | User doesn't match the required segment | Check segment definitions |
-| `config_unavailable` | Playbook not available | Ensure the Playbook is bundled or the hosted-mode config endpoint is reachable |
-| `api_error` | API returned non-200 response | Check endpoint URL, API key, and network connectivity |
-| `network_error` | Network timeout or unreachable endpoint | Verify endpoint is accessible from client |
-| `fallback_content` | Using fallback placeholder content | Provider failure — check API connectivity |
-| `no_matching_template` | Slot's `surfaceTemplateIds` don't match any available template | Verify template IDs match dashboard config |
-| `no_matching_placement` | No placement rules match the current user | Expected — slot renders nothing for this user |
+<!-- BEGIN GENERATED: placement-reason-codes (scripts/gen-reason-codes.mjs) -->
+
+| Code | Meaning |
+|---|---|
+| `config_unavailable` | The Playbook could not be fetched, or a fetch is still in flight — the SDK has no config to decide against yet. |
+| `entitlement_gate_unmet` | The candidate's entitlement-gate trigger did not match the user's current entitlement state. |
+| `no_eligible_candidate` | No candidate placement survived eligibility filtering for this slot. |
+| `no_resolver_configured` | No placement resolver is configured, so the SDK has nothing to evaluate against. |
+| `placement_not_found` | No candidate output matched the requested placement id or name. |
+| `placement_not_registered` | The payload targets a placement handle the app never registered with the SDK. |
+| `placement_retired` | The candidate's rule is hidden — for example, superseded by a conversion — per impression history. |
+| `plan_target_mismatch` | The user's plan or billing period doesn't match the candidate's plan targeting. |
+| `qualifier_trigger_unmet` | The candidate's qualifier trigger condition was not satisfied for the user's plan or category. |
+| `sdk_disabled_provider_failure` | The SDK disabled itself after its configured providers failed, so it fails closed rather than risk showing something wrong. |
+| `segment_target_mismatch` | The user doesn't belong to any of the candidate's target segments. |
+| `suppressed_by_dismiss_cooldown` | The user dismissed this placement and its cooldown window has not elapsed. |
+| `suppressed_by_payload_cap_day` | The payload's per-day impression cap has been reached. |
+| `suppressed_by_payload_cap_lifetime` | The payload's lifetime impression cap has been reached. |
+| `suppressed_by_payload_cap_month` | The payload's per-month impression cap has been reached. |
+| `suppressed_by_payload_cap_session` | The payload's per-session impression cap has been reached. |
+| `suppressed_by_payload_cap_week` | The payload's per-week impression cap has been reached. |
+| `suppressed_by_payload_cooldown` | The payload is still inside its configured cooldown window since it was last shown. |
+| `suppressed_until_remind_window` | The user chose "remind me later" and that reminder window has not elapsed yet. |
+| `threshold_trigger_unmet` | The candidate's threshold trigger did not match the user's current entitlement usage. |
+| `trial_trigger_unmet` | The candidate's trial trigger did not match the user's trial state. |
+
+<!-- END GENERATED: placement-reason-codes -->
+
+:::note[Client-side cap enforcement]
+When `enableClientCapsEnforcement` is on, the SDK also ticks `cap.v1`
+presentation-cap policies locally and can add `cap_exceeded` to
+`reasonCodes` on a cache-hit re-evaluation once the local budget is
+consumed. This is a client-side fallback default distinct from the
+`suppressed_by_payload_cap_*` family above (which come from the evaluated
+Playbook itself) and from the protected reason contract, so it is called out
+here rather than generated into the table.
+:::
 
 ## Entitlement Reason Codes
 
@@ -62,6 +87,7 @@ alias. The old name stated a verdict the result does not have (it denies).
 |---|---|---|
 | `interaction_tracking_failed` | `trackTreatmentInteraction()` | Event delivery failed — silently dropped |
 | `event_delivery_failed` | `trackEvent()` | Custom event could not be sent — buffered for retry |
+| `network_error` | Interaction-flush fetch | The touchpoint-transition request threw (offline, DNS, CORS) — the batch is re-queued and retried |
 
 ## Storage Errors
 
