@@ -49,6 +49,50 @@ also require a changelog entry.
 
 ## Unreleased (ships with the next release; no version bump in this PR)
 
+### server-node `setBuiltinDimensions()` — your backend sets built-in dimension values, with an `override` flag (BL-0382, rulings D-46 / D-47)
+
+**What changed.** Additive. The customer's backend can now SET built-in
+segment dimension values for a user, not just read the control plane's
+(D-46: "the customer's backend calling revturbine to set the dimension").
+
+- **server-node** — `RevTurbineServer.setBuiltinDimensions(userId, dimensions,
+  { override })` calls the widened `upsertServerUserContext`
+  (`POST /api/sdk/user-contexts`) with `{ user_id, builtin_dimensions,
+  override }` and the server key. Settable: `subscription_state`,
+  `trial_type`, `billing_health`, `activity_level`, `buyer_role`,
+  `email_type`, `region`, `device_type` (typed as
+  `ServerBuiltinDimensionsWrite`, each a closed vocabulary; `null` clears a
+  dimension). `seat_type` stays `assignSeatType`. It resolves to the stored
+  state — `seat_type_handle`, the customer-set `builtin_dimensions`, the
+  pinned `overrides`, `updated_at`. A refusal throws the new
+  `RevTurbineDimensionWriteError` (`status`, `requestId`, machine `code`,
+  typed `reason`: `invalid_request` / `unauthorized` / `forbidden` /
+  `unknown_dimension_value` / `request_failed`); it never carries the key.
+- **`override` (D-47).** `false` (default) is an UPDATE: the value is delivered
+  until a newer RevTurbine enrichment change supersedes it (last writer wins,
+  enrichment included), and writing a pinned dimension without the flag
+  unpins it. `true` is an OVERRIDE: the dimension is pinned and enrichment
+  never replaces it until you write it again without the flag or clear it.
+  The control plane applies this before delivery, so the browser SDK's client
+  context and `getBuiltinDimensions()` both return the result; the SDK
+  delivery rule and the parity goldens are unchanged.
+- **`assignSeatType(userId, handle, { builtinDimensions, override })`** can
+  write dimension values in the same upsert. Its `SeatAssignmentErrorReason`
+  gains `unknown_dimension_value` (a 422 with code `UNKNOWN_DIMENSION_VALUE`).
+  Its response now also carries `builtin_dimensions` and `overrides`.
+- **Python and Rust get no HTTP client** (unchanged: neither port has a
+  server-key transport). A backend on those stacks calls the endpoint itself.
+- Browser input types are untouched: `builtin_dimensions` is never a browser
+  write path.
+
+The `@revt-eng/*` pins move to `0.1.374`, which widens the operation
+(scaffold #431).
+
+**Landed in:** the next release after `0.11.13`.
+**Fail-closed in:** n/a (additive).
+**Proving test:** `tests/server-node-set-builtin-dimensions.test.ts`,
+`tests/server-node-assign-seat-type.test.ts`.
+
 ### Behaviour change: the browser SDK ignores app-set `builtin_dimensions` (BL-0381, ruling D-46)
 
 **What changed.** Trust in a built-in dimension value is decided by *party*
