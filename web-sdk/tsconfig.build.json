@@ -16,7 +16,10 @@
     "noEmit": false,
     "outDir": "dist",
     "rootDir": "..",
-    "ignoreDeprecations": "5.0"
+    "ignoreDeprecations": "5.0",
+    "paths": {
+      "openapi-fetch": ["./node_modules/openapi-fetch"]
+    }
   },
   "include": [
     "index.ts",
