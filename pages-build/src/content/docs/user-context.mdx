@@ -139,7 +139,7 @@ export const professionalUser: RevTurbineUserContext = {
 |---|---|---|
 | `custom` | `Record<string, JsonValue>` | Customer-owned attributes for Segment targeting, such as role, region, or company size. Use string, number, or boolean values for predicates |
 | `usage` | `Record<string, UserUsageEntry>` | Usage-limit and credit entitlements. Keys are entitlement handles; see [Report usage](#report-usage) |
-| `trial` | `RevTurbineTrialContext` | Trial entitlements and trial-lifecycle placements |
+| `trial` | `RevTurbineTrialContext` | Reverse-trial entitlement grants, trial-lifecycle placements (`trial_ending`, `trial_progress`, `trial_ended`, `trial_converted`) and the `{{trial_days_remaining}}` / `{{trial_days_total}}` tokens. When a server-delivered or hydrated trial status is also present, the most recent change wins |
 | `tiers` | `Record<string, string>` | Current tier handle per capability-tier entitlement handle |
 | `entitlements` | `Record<string, boolean>` | Precomputed grants. Most apps should let the Playbook derive these rather than asserting them in the browser |
 | `experiments` | `Record<string, string>` | Experiment handle to variant handle assignments; see [Use Experiment Assignments](/guides/experiments/) |

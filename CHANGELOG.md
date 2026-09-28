@@ -95,6 +95,55 @@ does: the banner shows from 80%, and at 100% `can('api_calls')` denies.
 
 **Proving test.** `web-sdk/usage-reaches-placements.test.ts`.
 
+### App-supplied trial context now reaches trial placements, trial tokens and reverse-trial grants (BL-0403)
+
+**What changed.** A behaviour fix in the browser SDK (`@revturbine/sdk`); no
+signature changes. `user.trial` at init, `update({ trial })`,
+`setUserContext({ trial })` and a server action's `userContext` result all
+merged into the user context's `trial`, but neither trial reader looked there.
+The placement resolver's plan state (which gates `trial_started`,
+`trial_progress`, `trial_ending`, `trial_ended` and `trial_converted`
+placements) and the reverse-trial entitlement grants read only the SDK's own
+trial status, written by `localRuntime.initialData.trialStatus`, `hydrate()`,
+`getTrialStatus()` and `setTrialInstances()`. So an app that supplied its
+trial saw no trial placement fire, no reverse-trial grant apply, and
+`{{trial_days_remaining}}` stay raw.
+
+Both readers now use one trial view:
+
+- **Sources.** The user context's `trial` (what the app supplies, plus the
+  authenticated client-context delivery, which merges its trial into the same
+  field) and the SDK trial status (`initialData.trialStatus`, `hydrate()`,
+  `getTrialStatus()`, `setTrialInstances()`).
+- **Precedence: the most recent change wins**, the same rule the usage view
+  applies to reported balances (BL-0402). A server-delivered or hydrated
+  status wins when it arrives after the app's trial (an
+  `initialData.trialStatus` passed alongside init `user.trial` counts as
+  later). An app `update({ trial })` made after it wins over it. Re-sending
+  an unchanged trial is not a newer write, so passing the same trial on every
+  render never displaces a fresher server status. A source that was never
+  supplied does not compete.
+- **Tokens.** The SDK now fills `{{trial_days_remaining}}` and
+  `{{trial_days_total}}` in decision content from the same plan state the
+  trial gate read. A token whose value is unknown is left untouched.
+- **`getTrialStatus()`** in `local_only` mode with no `getTrialStatus`
+  resolver returns this trial view, the app-supplied trial included.
+
+**React.** `<RevTurbineProvider>` no longer reports `trial`, `tiers`,
+`payment_failed`, `payment_at_risk`, `instances`, `experiments`, `email_type`,
+`derived_config_version`, `context_hash` or `derived_computed_at` in
+`options.user` as "dropped unrecognized user-context key(s)" on mount. The SDK
+constructor already merges them from `options.user`; the provider now forwards
+only the identity fields `identify()` merges. Unknown keys and server-assigned
+keys are still reported.
+
+The headless server ports (Python, Rust, `server-node`) take an
+already-derived trial status and are unaffected; the cross-language parity
+corpus is untouched.
+
+**Proving tests.** `web-sdk/trial-reaches-placements.test.ts`,
+`web-sdk/react/RevTurbineProvider.identify-context.test.tsx`.
+
 ## 0.11.16
 
 ### Build fix, part two: the npm declaration build resolves `openapi-fetch` too (no API change)
