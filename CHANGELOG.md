@@ -49,6 +49,55 @@ also require a changelog entry.
 
 ## Unreleased (ships with the next release; no version bump in this PR)
 
+### Server SDKs get the control plane's built-in dimensions: `getBuiltinDimensions()` + a server overlay (BL-0366, plan 279 PD-3)
+
+**What changed.** Additive. Before this, a server-side decision never saw the
+control plane's Subscription State, Trial Type, Activity State, Seat Type or
+Buyer Role. The Python and Rust ports stamped `rt_*` traits only from the
+app-supplied `builtin_dimensions`, and the fetch that delivers the server's
+values existed only in the browser SDK's client-context lane.
+
+- **server-node** — `RevTurbineServer.getBuiltinDimensions(userId)` calls
+  `getServerUserBuiltinDimensions`
+  (`GET /api/sdk/user-contexts/{userId}/builtin-dimensions`) through the
+  generated typed client with the server key the client already holds. It
+  resolves to `{ tenant_id, user_id, builtin_dimensions, resolved_at }`
+  (re-exported as `ServerUserBuiltinDimensions`). The tenant comes from the
+  key: it is not a parameter, and no tenant header is sent. A refusal throws
+  the new `RevTurbineBuiltinDimensionsError` (`status`, `requestId`, machine
+  `code`, typed `reason`: `invalid_request` / `unauthorized` / `forbidden` /
+  `request_failed`). It never carries the key.
+- **The overlay (all three ports).** `createStaticProviders` takes
+  `serverBuiltinDimensions` (from `@revt-eng/core`, re-exported by server-node
+  together with `applyServerBuiltinDimensions`). Python's
+  `create_static_providers(server_builtin_dimensions=…)` and the
+  `RevTurbineCustomerSdk` user context key `server_builtin_dimensions` take
+  the same object. So do Rust's `StaticProviderOptions::server_builtin_dimensions`
+  and `sdk::UserContext::server_builtin_dimensions`, plus the
+  `apply_server_builtin_dimensions` helper in both ports. The object is
+  overlaid per key on the app-set `builtin_dimensions` before segment
+  membership is evaluated. A delivered leaf wins over the app's value (PD-3),
+  and an app-set leaf the server did not deliver is kept. This is the overlay
+  the browser SDK already applies to a client-context delivery. Without a user
+  context it is ignored, because nothing is evaluated then.
+- **Python and Rust get no HTTP client.** Neither port has a transport or a
+  server-key client (BL-0354), and this change does not add one. The app's
+  backend reads the endpoint itself (or through server-node) and passes the
+  response's `builtin_dimensions` in.
+
+Rust callers that build `StaticProviderOptions` or `sdk::UserContext` as a
+full struct literal without `..Default::default()` must add the new field.
+
+The `@revt-eng/*` pins move to `0.1.373`, which adds the operation and the
+core overlay (scaffold #430).
+
+**Landed in:** the next release after `0.11.13`.
+**Fail-closed in:** n/a (additive).
+**Proving test:** `tests/server-node-get-builtin-dimensions.test.ts`,
+`server-python/tests/adapters/test_static.py`,
+`server-rust/tests/static_providers.rs`, and the parity fixtures
+`segment_membership_server_overlay_wins` / `segment_membership_server_overlay_demotes`.
+
 ### `RevTurbineProvider` disposes the previous SDK instance on an `options` change (BL-0375)
 
 **What changed.** `RevTurbineProvider`'s init effect creates a new SDK instance
