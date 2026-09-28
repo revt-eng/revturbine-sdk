@@ -7,7 +7,10 @@
 
 use serde_json::{json, Value};
 
-use revturbine::adapters::{create_static_providers, EntitlementPolicy, StaticProviderOptions};
+use revturbine::adapters::{
+    apply_server_builtin_dimensions, create_static_providers, EntitlementPolicy,
+    StaticProviderOptions,
+};
 
 fn opts(plan_handle: Option<&str>) -> StaticProviderOptions {
     StaticProviderOptions {
@@ -210,25 +213,184 @@ fn tiers_are_passed_through_only_when_supplied() {
 
 // ── Segments ────────────────────────────────────────────────────────────────
 
-#[test]
-fn segment_ids_fall_back_to_the_handle_when_there_is_no_id() {
-    // The canonical Playbook is handle-only (plan 120); `id` is the legacy
-    // shape. Both must resolve.
-    let ctx = create_static_providers(&config(), &opts(Some("starter")));
-    assert_eq!(ctx["segments"]["segment_ids"], json!(["paid", "trialing"]));
-    assert_eq!(
-        ctx["segments"]["segment_slugs"],
-        json!(["paid", "trialing"])
-    );
+// The segments provider reports the user's MEMBERSHIP (BL-0369). It used to
+// report every configured segment, so a payload or rule chipped to any segment
+// was served to every user. Mirrors server-python's test_static.py.
 
-    let legacy = json!({ "segments": [{ "id": "seg_1", "handle": "paid" }] });
-    let ctx2 = create_static_providers(&legacy, &opts(Some("starter")));
-    assert_eq!(ctx2["segments"]["segment_ids"], json!(["seg_1"]), "id wins");
-    assert_eq!(
-        ctx2["segments"]["segment_slugs"],
-        json!(["paid"]),
-        "slugs stay handles either way",
+fn membership_config() -> Value {
+    json!({
+        "segments": [
+            {
+                "id": "seg_paid",
+                "handle": "rt.subscription_state.paid",
+                "dimension_id": "rt.subscription_state",
+                "predicates": [{ "field": "rt_subscription_state", "operator": "eq", "value": "paid" }],
+            },
+            {
+                "handle": "power_users",
+                "predicates": [{ "field": "sessions", "operator": "gte", "value": "10" }],
+            },
+            { "handle": "vip_accounts" },
+        ],
+    })
+}
+
+fn membership(segment_ids: Option<Vec<&str>>, user_context: Option<Value>) -> Value {
+    let ctx = create_static_providers(
+        &membership_config(),
+        &StaticProviderOptions {
+            segment_ids: segment_ids.map(|ids| ids.into_iter().map(str::to_string).collect()),
+            user_context,
+            ..Default::default()
+        },
     );
+    ctx["segments"]["segment_ids"].clone()
+}
+
+#[test]
+fn segments_report_no_membership_without_inputs() {
+    let ctx = create_static_providers(&membership_config(), &opts(Some("starter")));
+    assert_eq!(
+        ctx["segments"],
+        json!({ "segment_ids": [], "segment_slugs": [] })
+    );
+}
+
+#[test]
+fn builtin_segments_match_only_from_builtin_dimensions() {
+    // Handles, never the legacy `id` — segment identity is the handle (plan 120).
+    let paid = json!({ "id": "u1", "builtin_dimensions": { "subscription_state": "paid" } });
+    assert_eq!(
+        membership(None, Some(paid)),
+        json!(["rt.subscription_state.paid"])
+    );
+    assert_eq!(membership(None, Some(json!({ "id": "u1" }))), json!([]));
+    // A reserved rt_* key arriving through custom is deleted (plan 279 PD-1).
+    let shadow = json!({ "id": "u1", "custom": { "rt_subscription_state": "paid" } });
+    assert_eq!(membership(None, Some(shadow)), json!([]));
+}
+
+#[test]
+fn trait_segments_evaluate_their_predicates() {
+    let power = json!({ "id": "u1", "custom": { "sessions": 12 } });
+    let casual = json!({ "id": "u1", "custom": { "sessions": 3 } });
+    assert_eq!(membership(None, Some(power)), json!(["power_users"]));
+    assert_eq!(membership(None, Some(casual)), json!([]));
+}
+
+#[test]
+fn supplied_segment_ids_come_first_deduplicated() {
+    let power = json!({ "id": "u1", "custom": { "sessions": 12 } });
+    assert_eq!(
+        membership(Some(vec!["vip_accounts", "power_users"]), Some(power)),
+        json!(["vip_accounts", "power_users"]),
+    );
+}
+
+// The server built-in dimension overlay (BL-0366, plan 279 PD-3). Mirrors
+// server-python's test_static.py and scaffold's static.test.ts.
+
+fn overlaid_membership(user_context: Option<Value>, server: Value) -> Value {
+    let ctx = create_static_providers(
+        &membership_config(),
+        &StaticProviderOptions {
+            user_context,
+            server_builtin_dimensions: Some(server),
+            ..Default::default()
+        },
+    );
+    ctx["segments"]["segment_ids"].clone()
+}
+
+#[test]
+fn server_builtin_dimensions_win_over_the_app_set_value() {
+    let free = json!({ "id": "u1", "builtin_dimensions": { "subscription_state": "free" } });
+    assert_eq!(
+        overlaid_membership(Some(free), json!({ "subscription_state": "paid" })),
+        json!(["rt.subscription_state.paid"])
+    );
+    // And the reverse: a server value demotes an app-set paid.
+    let paid = json!({ "id": "u1", "builtin_dimensions": { "subscription_state": "paid" } });
+    assert_eq!(
+        overlaid_membership(Some(paid), json!({ "subscription_state": "trial" })),
+        json!([])
+    );
+}
+
+#[test]
+fn server_overlay_keeps_app_leaves_the_server_did_not_deliver() {
+    let app = json!({
+        "id": "u1",
+        "builtin_dimensions": { "subscription_state": "trial", "seat_type": "admin" },
+    });
+    let overlaid =
+        apply_server_builtin_dimensions(Some(&app), Some(&json!({ "activity_level": "high" })))
+            .expect("a context in is a context out");
+    assert_eq!(
+        overlaid["builtin_dimensions"],
+        json!({ "subscription_state": "trial", "seat_type": "admin", "activity_level": "high" })
+    );
+    // Pure: the app context is untouched.
+    assert_eq!(
+        app["builtin_dimensions"]["subscription_state"],
+        json!("trial")
+    );
+}
+
+#[test]
+fn server_overlay_applies_onto_a_context_with_no_dimensions() {
+    assert_eq!(
+        overlaid_membership(
+            Some(json!({ "id": "u1" })),
+            json!({ "subscription_state": "paid" })
+        ),
+        json!(["rt.subscription_state.paid"])
+    );
+}
+
+#[test]
+fn server_overlay_is_ignored_without_a_user_context() {
+    assert_eq!(
+        overlaid_membership(None, json!({ "subscription_state": "paid" })),
+        json!([])
+    );
+    assert_eq!(
+        apply_server_builtin_dimensions(None, Some(&json!({}))),
+        None
+    );
+    let app = json!({ "id": "u1" });
+    assert_eq!(
+        apply_server_builtin_dimensions(Some(&app), None),
+        Some(app.clone())
+    );
+}
+
+#[test]
+fn supplied_segment_ids_build_the_provider_without_configured_segments() {
+    let ctx = create_static_providers(
+        &json!({ "segments": [] }),
+        &StaticProviderOptions {
+            segment_ids: Some(vec!["vip_accounts".into()]),
+            ..Default::default()
+        },
+    );
+    assert_eq!(
+        ctx["segments"],
+        json!({ "segment_ids": ["vip_accounts"], "segment_slugs": ["vip_accounts"] }),
+    );
+}
+
+#[test]
+fn rules_carry_segment_dimensions_and_the_playbook_version() {
+    let mut c = membership_config();
+    c["format_version"] = json!("1.0.0");
+    c["entitlement_rules"] = json!([{ "id": "r1", "entitlement_id": "x", "segment_ids": [] }]);
+    let ctx = create_static_providers(&c, &opts(None));
+    assert_eq!(
+        ctx["rules"]["segment_dimensions"],
+        json!({ "rt.subscription_state.paid": "rt.subscription_state" }),
+    );
+    assert_eq!(ctx["rules"]["config_version"], json!("1.0.0"));
 }
 
 // ── Rules ───────────────────────────────────────────────────────────────────

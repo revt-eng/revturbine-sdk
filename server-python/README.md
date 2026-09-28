@@ -103,6 +103,18 @@ Cross-language parity (run from the SDK repo root):
 node scripts/run-parity.mjs   # TS + Python runners, byte-diff (the gate)
 ```
 
+### Regenerating vendored types
+
+`src/revturbine/types.py` is generated from revturbine-scaffold's published
+Pydantic models (`node scripts/sync-python-types.mjs`, run from the SDK repo
+root) — never hand-edit it. The generator resolves revturbine-scaffold from
+`$REVTURBINE_SCAFFOLD_DIR`, falling back to the sibling checkout
+(`../revturbine-scaffold` next to the SDK repo root). **Inside a `.worktrees/`
+checkout that sibling path resolves to `.worktrees/revturbine-scaffold`, not
+the canonical `revt-eng/revturbine-scaffold`** — set `REVTURBINE_SCAFFOLD_DIR`
+explicitly when running `sync:python-types` (or the Rust equivalent,
+`sync:rust-types`) from a worktree.
+
 ## Dependencies
 
 - Runtime: `pydantic>=2.0`.

@@ -14,7 +14,15 @@
  * const server = createLocalEvaluationServer({
  *   tenantId: 'tenant_abc',
  *   playbook,
- *   providers: createStaticProviders({ config: playbook }),
+ *   providers: createStaticProviders({
+ *     config: playbook,
+ *     // Segment membership (BL-0369): the providers decide which
+ *     // segment-chipped payloads and rules this user matches. Pass the
+ *     // tenant segments you resolved and the user context built-in / trait
+ *     // segments evaluate from; omit both and no chipped payload is served.
+ *     segmentIds: ['vip_accounts'],
+ *     userContext: { id: 'user_123', builtin_dimensions: { subscription_state: 'paid' } },
+ *   }),
  * });
  *
  * const payload = await server.evaluate({
@@ -53,7 +61,12 @@ function generateRequestId(): string {
 
 export interface LocalEvaluationServerOptions {
   tenantId: string;
-  /** Pre-built domain providers (from createStaticProviders, createDrizzleProviders, etc.) */
+  /**
+   * Pre-built domain providers (from createStaticProviders, createDrizzleProviders, etc.).
+   * Segment membership comes from these providers, not from
+   * {@link LocalEvaluationRequest.traits}: build them for the user being
+   * evaluated (BL-0369).
+   */
   providers: AnyDomainProvider[];
   /** The Playbook this server resolves placements against. */
   playbook?: ConfigArtifact;

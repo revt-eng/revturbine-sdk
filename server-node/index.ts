@@ -30,9 +30,27 @@
  *
  * // Hand this to the browser; the client SDK re-mints on expiry.
  * const { client_token } = await server.createClientSession({ subject: 'user_123' });
+ *
+ * // Server-only user state (D-36): assign a seat type, or clear it with null.
+ * await server.assignSeatType('user_123', 'admin');
+ *
+ * // Built-in dimension values from your backend (BL-0382): an update that newer
+ * // RevTurbine enrichment may supersede, or pinned with { override: true }.
+ * await server.setBuiltinDimensions('user_123', { subscription_state: 'paid' }, { override: true });
+ *
+ * // The control plane's built-in dimensions for local evaluation (BL-0366):
+ * // overlaid on the app's own values, the server value wins (PD-3).
+ * const { builtin_dimensions } = await server.getBuiltinDimensions('user_123');
+ * createStaticProviders({ config: playbook, userContext, serverBuiltinDimensions: builtin_dimensions });
  * ```
  */
-export { RevTurbineServer, RevTurbineClientSessionError } from './client';
+export {
+  RevTurbineServer,
+  RevTurbineClientSessionError,
+  RevTurbineSeatAssignmentError,
+  RevTurbineDimensionWriteError,
+  RevTurbineBuiltinDimensionsError,
+} from './client';
 export type {
   RevTurbineServerOptions,
   ServerEvaluationPayload,
@@ -48,6 +66,14 @@ export type {
   ServerUserContext,
   CreateClientSessionInput,
   ClientSessionResult,
+  SeatAssignmentErrorReason,
+  AssignSeatTypeOptions,
+  ServerUserContextAssignment,
+  ServerBuiltinDimensionsWrite,
+  SetBuiltinDimensionsOptions,
+  DimensionWriteErrorReason,
+  BuiltinDimensionsErrorReason,
+  ServerUserBuiltinDimensions,
 } from './types';
 
 // Local evaluation using core DecisionEngine
@@ -58,6 +84,7 @@ export type { LocalEvaluationServerOptions, LocalEvaluationRequest } from './loc
 export {
   LocalRuntime,
   createStaticProviders,
+  applyServerBuiltinDimensions,
   createHydrationProviders,
   DecisionEngine,
   DomainProviderRegistry,

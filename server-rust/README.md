@@ -81,10 +81,17 @@ if decision["visible"] == true {
 | `payment_failed` | — | Billing-recovery signal for the retention qualifiers. |
 | `payment_at_risk` | — | Billing-recovery signal for the retention qualifiers. |
 | `tiers` | — | Current tier per `capability_tier` entitlement, for the tier gate. |
-| `segment_ids` | — | Pre-resolved segment ids; read by the catalog-eligibility methods. |
+| `segment_ids` | — | Tenant segment handles the app already resolved. They count as membership for chipped payloads, segment-targeted rules and catalog eligibility. |
+| `custom` | — | Customer traits that segment predicates evaluate over. |
+| `builtin_dimensions` | — | Built-in dimension values the app sets (plan 279 PD-3). This is the only way a built-in `rt.<dimension>.<value>` segment can match. |
+| `experiments` | — | Experiment-handle to variant-handle assignments, for experiment segments. |
 
 Everything but `tenant_id` / `user_id` is optional, and every optional field
 that is absent decides as "not set" rather than as a default value.
+
+Segment membership fails closed. A segment counts only if `segment_ids` names
+it or its predicates match `custom`, the plan or `builtin_dimensions`. Before
+BL-0369 every configured segment was treated as matched.
 
 Omitting `trial_status` is the one easy mistake: without it every `trial_*`
 gate reads "no trial" and silently declines rather than erroring.

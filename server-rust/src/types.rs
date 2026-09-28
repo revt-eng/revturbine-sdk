@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.366/rust/revturbine_types.rs
+//   published/v0.1.374/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -32095,6 +32095,1604 @@ impl ::std::convert::TryFrom<::std::string::String> for B2bSegmentEventName {
         value.parse()
     }
 }
+#[doc = "`BillingAccountMappingRevision`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"basis\","]
+#[doc = "        \"customer_ref\","]
+#[doc = "        \"effective_from\","]
+#[doc = "        \"effective_to\","]
+#[doc = "        \"mapping_revision\","]
+#[doc = "        \"mapping_version\","]
+#[doc = "        \"observed_at\","]
+#[doc = "        \"rt_account_id\","]
+#[doc = "        \"source\","]
+#[doc = "        \"supersedes_mapping_revision\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"basis\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"explicit_binding\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"customer_ref\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"effective_from\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"effective_to\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"format\": \"date-time\","]
+#[doc = "              \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"mapping_revision\": {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 9007199254740991.0,"]
+#[doc = "          \"minimum\": 1.0,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"mapping_version\": {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"const\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"observed_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"rt_account_id\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"maxLength\": 255,"]
+#[doc = "              \"minLength\": 1"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"source\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"supersedes_mapping_revision\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"integer\","]
+#[doc = "              \"maximum\": 9007199254740991.0,"]
+#[doc = "              \"minimum\": 1.0"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"basis\","]
+#[doc = "        \"customer_ref\","]
+#[doc = "        \"effective_from\","]
+#[doc = "        \"effective_to\","]
+#[doc = "        \"mapping_revision\","]
+#[doc = "        \"mapping_version\","]
+#[doc = "        \"observed_at\","]
+#[doc = "        \"rt_account_id\","]
+#[doc = "        \"source\","]
+#[doc = "        \"supersedes_mapping_revision\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"basis\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"integration_sync\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"customer_ref\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"effective_from\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"effective_to\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"format\": \"date-time\","]
+#[doc = "              \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"mapping_revision\": {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 9007199254740991.0,"]
+#[doc = "          \"minimum\": 1.0,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"mapping_version\": {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"const\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"observed_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"rt_account_id\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"maxLength\": 255,"]
+#[doc = "              \"minLength\": 1"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"source\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"supersedes_mapping_revision\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"integer\","]
+#[doc = "              \"maximum\": 9007199254740991.0,"]
+#[doc = "              \"minimum\": 1.0"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"basis\","]
+#[doc = "        \"correction_generation_id\","]
+#[doc = "        \"customer_ref\","]
+#[doc = "        \"effective_from\","]
+#[doc = "        \"effective_to\","]
+#[doc = "        \"mapping_revision\","]
+#[doc = "        \"mapping_version\","]
+#[doc = "        \"observed_at\","]
+#[doc = "        \"restatement_reason\","]
+#[doc = "        \"rt_account_id\","]
+#[doc = "        \"source\","]
+#[doc = "        \"supersedes_mapping_revision\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"basis\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"approved_correction\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"correction_generation_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"customer_ref\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"effective_from\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"effective_to\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"format\": \"date-time\","]
+#[doc = "              \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"mapping_revision\": {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 9007199254740991.0,"]
+#[doc = "          \"minimum\": 1.0,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"mapping_version\": {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"const\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"observed_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"restatement_reason\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"merge\","]
+#[doc = "            \"split\","]
+#[doc = "            \"provider_migration\","]
+#[doc = "            \"reassignment\","]
+#[doc = "            \"error_correction\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"rt_account_id\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"maxLength\": 255,"]
+#[doc = "              \"minLength\": 1"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"source\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"supersedes_mapping_revision\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"integer\","]
+#[doc = "              \"maximum\": 9007199254740991.0,"]
+#[doc = "              \"minimum\": 1.0"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    }"]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(tag = "basis", deny_unknown_fields)]
+pub enum BillingAccountMappingRevision {
+    #[serde(rename = "explicit_binding")]
+    ExplicitBinding {
+        customer_ref: BillingAccountMappingRevisionCustomerRef,
+        effective_from: ::chrono::DateTime<::chrono::offset::Utc>,
+        effective_to: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+        mapping_revision: ::std::num::NonZeroU64,
+        mapping_version: f64,
+        observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        rt_account_id: ::std::option::Option<BillingAccountMappingRevisionRtAccountId>,
+        source: BillingSourceScope,
+        supersedes_mapping_revision: ::std::option::Option<::std::num::NonZeroU64>,
+    },
+    #[serde(rename = "integration_sync")]
+    IntegrationSync {
+        customer_ref: BillingAccountMappingRevisionCustomerRef,
+        effective_from: ::chrono::DateTime<::chrono::offset::Utc>,
+        effective_to: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+        mapping_revision: ::std::num::NonZeroU64,
+        mapping_version: f64,
+        observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        rt_account_id: ::std::option::Option<BillingAccountMappingRevisionRtAccountId>,
+        source: BillingSourceScope,
+        supersedes_mapping_revision: ::std::option::Option<::std::num::NonZeroU64>,
+    },
+    #[serde(rename = "approved_correction")]
+    ApprovedCorrection {
+        correction_generation_id: BillingAccountMappingRevisionCorrectionGenerationId,
+        customer_ref: BillingAccountMappingRevisionCustomerRef,
+        effective_from: ::chrono::DateTime<::chrono::offset::Utc>,
+        effective_to: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+        mapping_revision: ::std::num::NonZeroU64,
+        mapping_version: f64,
+        observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        restatement_reason: BillingAccountMappingRevisionRestatementReason,
+        rt_account_id: ::std::option::Option<BillingAccountMappingRevisionRtAccountId>,
+        source: BillingSourceScope,
+        supersedes_mapping_revision: ::std::option::Option<::std::num::NonZeroU64>,
+    },
+}
+#[doc = "`BillingAccountMappingRevisionCorrectionGenerationId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 128,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingAccountMappingRevisionCorrectionGenerationId(::std::string::String);
+impl ::std::ops::Deref for BillingAccountMappingRevisionCorrectionGenerationId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingAccountMappingRevisionCorrectionGenerationId>
+    for ::std::string::String
+{
+    fn from(value: BillingAccountMappingRevisionCorrectionGenerationId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingAccountMappingRevisionCorrectionGenerationId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Za-z0-9_.:-]+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Za-z0-9_.:-]+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountMappingRevisionCorrectionGenerationId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingAccountMappingRevisionCorrectionGenerationId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for BillingAccountMappingRevisionCorrectionGenerationId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingAccountMappingRevisionCorrectionGenerationId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingAccountMappingRevisionCustomerRef`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingAccountMappingRevisionCustomerRef(::std::string::String);
+impl ::std::ops::Deref for BillingAccountMappingRevisionCustomerRef {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingAccountMappingRevisionCustomerRef> for ::std::string::String {
+    fn from(value: BillingAccountMappingRevisionCustomerRef) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingAccountMappingRevisionCustomerRef {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountMappingRevisionCustomerRef {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingAccountMappingRevisionCustomerRef {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountMappingRevisionCustomerRef {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingAccountMappingRevisionCustomerRef {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingAccountMappingRevisionRestatementReason`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"merge\","]
+#[doc = "    \"split\","]
+#[doc = "    \"provider_migration\","]
+#[doc = "    \"reassignment\","]
+#[doc = "    \"error_correction\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingAccountMappingRevisionRestatementReason {
+    #[serde(rename = "merge")]
+    Merge,
+    #[serde(rename = "split")]
+    Split,
+    #[serde(rename = "provider_migration")]
+    ProviderMigration,
+    #[serde(rename = "reassignment")]
+    Reassignment,
+    #[serde(rename = "error_correction")]
+    ErrorCorrection,
+}
+impl ::std::fmt::Display for BillingAccountMappingRevisionRestatementReason {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Merge => f.write_str("merge"),
+            Self::Split => f.write_str("split"),
+            Self::ProviderMigration => f.write_str("provider_migration"),
+            Self::Reassignment => f.write_str("reassignment"),
+            Self::ErrorCorrection => f.write_str("error_correction"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingAccountMappingRevisionRestatementReason {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "merge" => Ok(Self::Merge),
+            "split" => Ok(Self::Split),
+            "provider_migration" => Ok(Self::ProviderMigration),
+            "reassignment" => Ok(Self::Reassignment),
+            "error_correction" => Ok(Self::ErrorCorrection),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountMappingRevisionRestatementReason {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingAccountMappingRevisionRestatementReason
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for BillingAccountMappingRevisionRestatementReason
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingAccountMappingRevisionRtAccountId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingAccountMappingRevisionRtAccountId(::std::string::String);
+impl ::std::ops::Deref for BillingAccountMappingRevisionRtAccountId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingAccountMappingRevisionRtAccountId> for ::std::string::String {
+    fn from(value: BillingAccountMappingRevisionRtAccountId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingAccountMappingRevisionRtAccountId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountMappingRevisionRtAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingAccountMappingRevisionRtAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountMappingRevisionRtAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingAccountMappingRevisionRtAccountId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingAccountingRevision`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"economic_ownership\","]
+#[doc = "    \"effective_at\","]
+#[doc = "    \"fact_digest\","]
+#[doc = "    \"kind\","]
+#[doc = "    \"legacy_billing_ref\","]
+#[doc = "    \"observed_at\","]
+#[doc = "    \"occurrence_key\","]
+#[doc = "    \"profile\","]
+#[doc = "    \"revision_key\","]
+#[doc = "    \"revision_version\","]
+#[doc = "    \"source\","]
+#[doc = "    \"source_order\","]
+#[doc = "    \"source_recorded_at\","]
+#[doc = "    \"source_revision\","]
+#[doc = "    \"supersedes_revision\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"economic_ownership\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"owner\","]
+#[doc = "        \"non_owner\","]
+#[doc = "        \"unknown\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"effective_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"fact_digest\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^sha256:[0-9a-f]{64}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"kind\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 64,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"legacy_billing_ref\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 512,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"observed_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"occurrence_key\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 512,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"profile\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"subscription\","]
+#[doc = "        \"schedule\","]
+#[doc = "        \"invoice\","]
+#[doc = "        \"transaction\","]
+#[doc = "        \"refund\","]
+#[doc = "        \"credit\","]
+#[doc = "        \"balance\","]
+#[doc = "        \"loss\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"revision_key\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 800,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"revision_version\": {"]
+#[doc = "      \"type\": \"number\","]
+#[doc = "      \"const\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"source\": {"]
+#[doc = "      \"$ref\": \"#/$defs/BillingSourceScope\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"source_order\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 9007199254740991.0,"]
+#[doc = "          \"minimum\": 0.0"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"source_recorded_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"source_revision\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"supersedes_revision\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BillingAccountingRevision {
+    pub economic_ownership: BillingAccountingRevisionEconomicOwnership,
+    pub effective_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub fact_digest: BillingAccountingRevisionFactDigest,
+    pub kind: BillingAccountingRevisionKind,
+    pub legacy_billing_ref: ::std::option::Option<BillingAccountingRevisionLegacyBillingRef>,
+    pub observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub occurrence_key: BillingAccountingRevisionOccurrenceKey,
+    pub profile: BillingAccountingRevisionProfile,
+    pub revision_key: BillingAccountingRevisionRevisionKey,
+    pub revision_version: f64,
+    pub source: BillingSourceScope,
+    pub source_order: ::std::option::Option<i64>,
+    pub source_recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub source_revision: BillingAccountingRevisionSourceRevision,
+    pub supersedes_revision: ::std::option::Option<BillingAccountingRevisionSupersedesRevision>,
+}
+#[doc = "`BillingAccountingRevisionEconomicOwnership`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"owner\","]
+#[doc = "    \"non_owner\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingAccountingRevisionEconomicOwnership {
+    #[serde(rename = "owner")]
+    Owner,
+    #[serde(rename = "non_owner")]
+    NonOwner,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for BillingAccountingRevisionEconomicOwnership {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Owner => f.write_str("owner"),
+            Self::NonOwner => f.write_str("non_owner"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingAccountingRevisionEconomicOwnership {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "owner" => Ok(Self::Owner),
+            "non_owner" => Ok(Self::NonOwner),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountingRevisionEconomicOwnership {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingAccountingRevisionEconomicOwnership
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountingRevisionEconomicOwnership {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingAccountingRevisionFactDigest`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^sha256:[0-9a-f]{64}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingAccountingRevisionFactDigest(::std::string::String);
+impl ::std::ops::Deref for BillingAccountingRevisionFactDigest {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingAccountingRevisionFactDigest> for ::std::string::String {
+    fn from(value: BillingAccountingRevisionFactDigest) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingAccountingRevisionFactDigest {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^sha256:[0-9a-f]{64}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^sha256:[0-9a-f]{64}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountingRevisionFactDigest {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingAccountingRevisionFactDigest {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountingRevisionFactDigest {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingAccountingRevisionFactDigest {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingAccountingRevisionKind`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 64,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingAccountingRevisionKind(::std::string::String);
+impl ::std::ops::Deref for BillingAccountingRevisionKind {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingAccountingRevisionKind> for ::std::string::String {
+    fn from(value: BillingAccountingRevisionKind) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingAccountingRevisionKind {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 64usize {
+            return Err("longer than 64 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountingRevisionKind {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingAccountingRevisionKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountingRevisionKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingAccountingRevisionKind {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingAccountingRevisionLegacyBillingRef`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 512,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingAccountingRevisionLegacyBillingRef(::std::string::String);
+impl ::std::ops::Deref for BillingAccountingRevisionLegacyBillingRef {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingAccountingRevisionLegacyBillingRef> for ::std::string::String {
+    fn from(value: BillingAccountingRevisionLegacyBillingRef) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingAccountingRevisionLegacyBillingRef {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 512usize {
+            return Err("longer than 512 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountingRevisionLegacyBillingRef {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingAccountingRevisionLegacyBillingRef {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountingRevisionLegacyBillingRef {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingAccountingRevisionLegacyBillingRef {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingAccountingRevisionOccurrenceKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 512,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingAccountingRevisionOccurrenceKey(::std::string::String);
+impl ::std::ops::Deref for BillingAccountingRevisionOccurrenceKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingAccountingRevisionOccurrenceKey> for ::std::string::String {
+    fn from(value: BillingAccountingRevisionOccurrenceKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingAccountingRevisionOccurrenceKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 512usize {
+            return Err("longer than 512 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountingRevisionOccurrenceKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingAccountingRevisionOccurrenceKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountingRevisionOccurrenceKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingAccountingRevisionOccurrenceKey {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingAccountingRevisionProfile`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"subscription\","]
+#[doc = "    \"schedule\","]
+#[doc = "    \"invoice\","]
+#[doc = "    \"transaction\","]
+#[doc = "    \"refund\","]
+#[doc = "    \"credit\","]
+#[doc = "    \"balance\","]
+#[doc = "    \"loss\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingAccountingRevisionProfile {
+    #[serde(rename = "subscription")]
+    Subscription,
+    #[serde(rename = "schedule")]
+    Schedule,
+    #[serde(rename = "invoice")]
+    Invoice,
+    #[serde(rename = "transaction")]
+    Transaction,
+    #[serde(rename = "refund")]
+    Refund,
+    #[serde(rename = "credit")]
+    Credit,
+    #[serde(rename = "balance")]
+    Balance,
+    #[serde(rename = "loss")]
+    Loss,
+}
+impl ::std::fmt::Display for BillingAccountingRevisionProfile {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Subscription => f.write_str("subscription"),
+            Self::Schedule => f.write_str("schedule"),
+            Self::Invoice => f.write_str("invoice"),
+            Self::Transaction => f.write_str("transaction"),
+            Self::Refund => f.write_str("refund"),
+            Self::Credit => f.write_str("credit"),
+            Self::Balance => f.write_str("balance"),
+            Self::Loss => f.write_str("loss"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingAccountingRevisionProfile {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "subscription" => Ok(Self::Subscription),
+            "schedule" => Ok(Self::Schedule),
+            "invoice" => Ok(Self::Invoice),
+            "transaction" => Ok(Self::Transaction),
+            "refund" => Ok(Self::Refund),
+            "credit" => Ok(Self::Credit),
+            "balance" => Ok(Self::Balance),
+            "loss" => Ok(Self::Loss),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountingRevisionProfile {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingAccountingRevisionProfile {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountingRevisionProfile {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingAccountingRevisionRevisionKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 800,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingAccountingRevisionRevisionKey(::std::string::String);
+impl ::std::ops::Deref for BillingAccountingRevisionRevisionKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingAccountingRevisionRevisionKey> for ::std::string::String {
+    fn from(value: BillingAccountingRevisionRevisionKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingAccountingRevisionRevisionKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 800usize {
+            return Err("longer than 800 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountingRevisionRevisionKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingAccountingRevisionRevisionKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountingRevisionRevisionKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingAccountingRevisionRevisionKey {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingAccountingRevisionSourceRevision`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingAccountingRevisionSourceRevision(::std::string::String);
+impl ::std::ops::Deref for BillingAccountingRevisionSourceRevision {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingAccountingRevisionSourceRevision> for ::std::string::String {
+    fn from(value: BillingAccountingRevisionSourceRevision) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingAccountingRevisionSourceRevision {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountingRevisionSourceRevision {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingAccountingRevisionSourceRevision {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountingRevisionSourceRevision {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingAccountingRevisionSourceRevision {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingAccountingRevisionSupersedesRevision`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingAccountingRevisionSupersedesRevision(::std::string::String);
+impl ::std::ops::Deref for BillingAccountingRevisionSupersedesRevision {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingAccountingRevisionSupersedesRevision> for ::std::string::String {
+    fn from(value: BillingAccountingRevisionSupersedesRevision) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingAccountingRevisionSupersedesRevision {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountingRevisionSupersedesRevision {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingAccountingRevisionSupersedesRevision
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for BillingAccountingRevisionSupersedesRevision
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingAccountingRevisionSupersedesRevision {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`BillingAllocation`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -32482,6 +34080,21 @@ impl<'de> ::serde::Deserialize<'de> for BillingAllocationInvoiceLineId {
 #[doc = "        \"source_recorded_at\""]
 #[doc = "      ],"]
 #[doc = "      \"properties\": {"]
+#[doc = "        \"adjustment_source\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"invoice_applied\","]
+#[doc = "            \"invoice_unapplied\","]
+#[doc = "            \"credit_note\","]
+#[doc = "            \"overpayment\","]
+#[doc = "            \"rollover\","]
+#[doc = "            \"manual_adjustment\","]
+#[doc = "            \"migration\","]
+#[doc = "            \"other\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
 #[doc = "        \"amount_minor\": {"]
 #[doc = "          \"type\": \"string\","]
 #[doc = "          \"maxLength\": 40,"]
@@ -32503,6 +34116,20 @@ impl<'de> ::serde::Deserialize<'de> for BillingAllocationInvoiceLineId {
 #[doc = "            \"invoice_credit_balance\""]
 #[doc = "          ],"]
 #[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"credit_note_id\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"maxLength\": 255,"]
+#[doc = "              \"minLength\": 1"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "        },"]
 #[doc = "        \"currency\": {"]
@@ -32779,6 +34406,13 @@ impl<'de> ::serde::Deserialize<'de> for BillingAllocationInvoiceLineId {
 #[doc = "          \"x-revturbine-data-classification\": \"operational\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "        },"]
+#[doc = "        \"funding_occurrence_key\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 512,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
 #[doc = "        \"grant_id\": {"]
 #[doc = "          \"type\": \"string\","]
 #[doc = "          \"maxLength\": 255,"]
@@ -32959,9 +34593,13 @@ impl<'de> ::serde::Deserialize<'de> for BillingAllocationInvoiceLineId {
 pub enum BillingBalanceProfile {
     #[serde(rename = "balance_adjusted")]
     BalanceAdjusted {
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        adjustment_source: ::std::option::Option<BillingBalanceProfileAdjustmentSource>,
         amount_minor: BillingBalanceProfileAmountMinor,
         balance_transaction_id: BillingBalanceProfileBalanceTransactionId,
         balance_type: BillingBalanceProfileBalanceType,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        credit_note_id: ::std::option::Option<BillingBalanceProfileCreditNoteId>,
         currency: BillingBalanceProfileCurrency,
         currency_exponent: i64,
         customer_ref: BillingBalanceProfileCustomerRef,
@@ -32999,6 +34637,8 @@ pub enum BillingBalanceProfile {
         currency_exponent: i64,
         customer_ref: BillingBalanceProfileCustomerRef,
         effective_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        funding_occurrence_key: ::std::option::Option<BillingBalanceProfileFundingOccurrenceKey>,
         grant_id: BillingBalanceProfileGrantId,
         invoice_id: BillingBalanceProfileInvoiceId,
         observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
@@ -33024,6 +34664,110 @@ pub enum BillingBalanceProfile {
         source: BillingSourceScope,
         source_recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
     },
+}
+#[doc = "`BillingBalanceProfileAdjustmentSource`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"invoice_applied\","]
+#[doc = "    \"invoice_unapplied\","]
+#[doc = "    \"credit_note\","]
+#[doc = "    \"overpayment\","]
+#[doc = "    \"rollover\","]
+#[doc = "    \"manual_adjustment\","]
+#[doc = "    \"migration\","]
+#[doc = "    \"other\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingBalanceProfileAdjustmentSource {
+    #[serde(rename = "invoice_applied")]
+    InvoiceApplied,
+    #[serde(rename = "invoice_unapplied")]
+    InvoiceUnapplied,
+    #[serde(rename = "credit_note")]
+    CreditNote,
+    #[serde(rename = "overpayment")]
+    Overpayment,
+    #[serde(rename = "rollover")]
+    Rollover,
+    #[serde(rename = "manual_adjustment")]
+    ManualAdjustment,
+    #[serde(rename = "migration")]
+    Migration,
+    #[serde(rename = "other")]
+    Other,
+}
+impl ::std::fmt::Display for BillingBalanceProfileAdjustmentSource {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::InvoiceApplied => f.write_str("invoice_applied"),
+            Self::InvoiceUnapplied => f.write_str("invoice_unapplied"),
+            Self::CreditNote => f.write_str("credit_note"),
+            Self::Overpayment => f.write_str("overpayment"),
+            Self::Rollover => f.write_str("rollover"),
+            Self::ManualAdjustment => f.write_str("manual_adjustment"),
+            Self::Migration => f.write_str("migration"),
+            Self::Other => f.write_str("other"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingBalanceProfileAdjustmentSource {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "invoice_applied" => Ok(Self::InvoiceApplied),
+            "invoice_unapplied" => Ok(Self::InvoiceUnapplied),
+            "credit_note" => Ok(Self::CreditNote),
+            "overpayment" => Ok(Self::Overpayment),
+            "rollover" => Ok(Self::Rollover),
+            "manual_adjustment" => Ok(Self::ManualAdjustment),
+            "migration" => Ok(Self::Migration),
+            "other" => Ok(Self::Other),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingBalanceProfileAdjustmentSource {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingBalanceProfileAdjustmentSource {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingBalanceProfileAdjustmentSource {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
 }
 #[doc = "`BillingBalanceProfileAmountMinor`"]
 #[doc = r""]
@@ -33323,6 +35067,78 @@ impl ::std::convert::TryFrom<::std::string::String> for BillingBalanceProfileCat
         value.parse()
     }
 }
+#[doc = "`BillingBalanceProfileCreditNoteId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingBalanceProfileCreditNoteId(::std::string::String);
+impl ::std::ops::Deref for BillingBalanceProfileCreditNoteId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingBalanceProfileCreditNoteId> for ::std::string::String {
+    fn from(value: BillingBalanceProfileCreditNoteId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingBalanceProfileCreditNoteId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingBalanceProfileCreditNoteId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingBalanceProfileCreditNoteId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingBalanceProfileCreditNoteId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingBalanceProfileCreditNoteId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`BillingBalanceProfileCurrency`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -33458,6 +35274,80 @@ impl ::std::convert::TryFrom<::std::string::String> for BillingBalanceProfileCus
     }
 }
 impl<'de> ::serde::Deserialize<'de> for BillingBalanceProfileCustomerRef {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingBalanceProfileFundingOccurrenceKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 512,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingBalanceProfileFundingOccurrenceKey(::std::string::String);
+impl ::std::ops::Deref for BillingBalanceProfileFundingOccurrenceKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingBalanceProfileFundingOccurrenceKey> for ::std::string::String {
+    fn from(value: BillingBalanceProfileFundingOccurrenceKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingBalanceProfileFundingOccurrenceKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 512usize {
+            return Err("longer than 512 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingBalanceProfileFundingOccurrenceKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingBalanceProfileFundingOccurrenceKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingBalanceProfileFundingOccurrenceKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingBalanceProfileFundingOccurrenceKey {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -33697,6 +35587,957 @@ impl ::std::convert::TryFrom<&::std::string::String> for BillingCadence {
     }
 }
 impl ::std::convert::TryFrom<::std::string::String> for BillingCadence {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingCompletedGenerationCheckpoint`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"completed\","]
+#[doc = "    \"cursor_revision_key\","]
+#[doc = "    \"processed_revisions\","]
+#[doc = "    \"processed_through\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"completed\": {"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"const\": true,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"cursor_revision_key\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 800,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"processed_revisions\": {"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"processed_through\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BillingCompletedGenerationCheckpoint {
+    pub completed: bool,
+    pub cursor_revision_key:
+        ::std::option::Option<BillingCompletedGenerationCheckpointCursorRevisionKey>,
+    pub processed_revisions: i64,
+    pub processed_through: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+}
+#[doc = "`BillingCompletedGenerationCheckpointCursorRevisionKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 800,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingCompletedGenerationCheckpointCursorRevisionKey(::std::string::String);
+impl ::std::ops::Deref for BillingCompletedGenerationCheckpointCursorRevisionKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingCompletedGenerationCheckpointCursorRevisionKey>
+    for ::std::string::String
+{
+    fn from(value: BillingCompletedGenerationCheckpointCursorRevisionKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingCompletedGenerationCheckpointCursorRevisionKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 800usize {
+            return Err("longer than 800 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingCompletedGenerationCheckpointCursorRevisionKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingCompletedGenerationCheckpointCursorRevisionKey
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for BillingCompletedGenerationCheckpointCursorRevisionKey
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingCompletedGenerationCheckpointCursorRevisionKey {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingCoverageCheckpoint`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"checkpoint_version\","]
+#[doc = "        \"covered_through\","]
+#[doc = "        \"earliest_complete_at\","]
+#[doc = "        \"family\","]
+#[doc = "        \"opening_seed\","]
+#[doc = "        \"recorded_at\","]
+#[doc = "        \"rt_account_id\","]
+#[doc = "        \"source\","]
+#[doc = "        \"state\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"checkpoint_version\": {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"const\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"covered_through\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"earliest_complete_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"family\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"subscription_stock\","]
+#[doc = "            \"movement_history\","]
+#[doc = "            \"schedule_phases\","]
+#[doc = "            \"invoices\","]
+#[doc = "            \"invoice_payments\","]
+#[doc = "            \"payments\","]
+#[doc = "            \"adjustments\","]
+#[doc = "            \"balances\","]
+#[doc = "            \"losses\","]
+#[doc = "            \"receivables\","]
+#[doc = "            \"account_mappings\","]
+#[doc = "            \"cohort_membership\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"opening_seed\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"$ref\": \"#/$defs/BillingOpeningSeed\""]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"recorded_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"rt_account_id\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"maxLength\": 255,"]
+#[doc = "              \"minLength\": 1"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"source\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"state\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"complete\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"checkpoint_version\","]
+#[doc = "        \"covered_through\","]
+#[doc = "        \"earliest_complete_at\","]
+#[doc = "        \"family\","]
+#[doc = "        \"gaps\","]
+#[doc = "        \"opening_seed\","]
+#[doc = "        \"recorded_at\","]
+#[doc = "        \"rt_account_id\","]
+#[doc = "        \"source\","]
+#[doc = "        \"state\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"checkpoint_version\": {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"const\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"covered_through\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"earliest_complete_at\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"format\": \"date-time\","]
+#[doc = "              \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"family\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"subscription_stock\","]
+#[doc = "            \"movement_history\","]
+#[doc = "            \"schedule_phases\","]
+#[doc = "            \"invoices\","]
+#[doc = "            \"invoice_payments\","]
+#[doc = "            \"payments\","]
+#[doc = "            \"adjustments\","]
+#[doc = "            \"balances\","]
+#[doc = "            \"losses\","]
+#[doc = "            \"receivables\","]
+#[doc = "            \"account_mappings\","]
+#[doc = "            \"cohort_membership\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"gaps\": {"]
+#[doc = "          \"type\": \"array\","]
+#[doc = "          \"items\": {"]
+#[doc = "            \"$ref\": \"#/$defs/BillingCoverageGapRange\""]
+#[doc = "          },"]
+#[doc = "          \"maxItems\": 250,"]
+#[doc = "          \"minItems\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"opening_seed\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"$ref\": \"#/$defs/BillingOpeningSeed\""]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"recorded_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"rt_account_id\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"maxLength\": 255,"]
+#[doc = "              \"minLength\": 1"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"source\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"state\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"partial\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"checkpoint_version\","]
+#[doc = "        \"family\","]
+#[doc = "        \"last_observed_at\","]
+#[doc = "        \"reason\","]
+#[doc = "        \"recorded_at\","]
+#[doc = "        \"rt_account_id\","]
+#[doc = "        \"source\","]
+#[doc = "        \"state\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"checkpoint_version\": {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"const\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"family\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"subscription_stock\","]
+#[doc = "            \"movement_history\","]
+#[doc = "            \"schedule_phases\","]
+#[doc = "            \"invoices\","]
+#[doc = "            \"invoice_payments\","]
+#[doc = "            \"payments\","]
+#[doc = "            \"adjustments\","]
+#[doc = "            \"balances\","]
+#[doc = "            \"losses\","]
+#[doc = "            \"receivables\","]
+#[doc = "            \"account_mappings\","]
+#[doc = "            \"cohort_membership\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"last_observed_at\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"format\": \"date-time\","]
+#[doc = "              \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"reason\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingCoverageUnavailableReason\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"recorded_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"rt_account_id\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"maxLength\": 255,"]
+#[doc = "              \"minLength\": 1"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"source\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"state\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"unavailable\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    }"]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(tag = "state", deny_unknown_fields)]
+pub enum BillingCoverageCheckpoint {
+    #[serde(rename = "complete")]
+    Complete {
+        checkpoint_version: f64,
+        covered_through: ::chrono::DateTime<::chrono::offset::Utc>,
+        earliest_complete_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        family: BillingCoverageCheckpointFamily,
+        opening_seed: ::std::option::Option<BillingOpeningSeed>,
+        recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        rt_account_id: ::std::option::Option<BillingCoverageCheckpointRtAccountId>,
+        source: BillingSourceScope,
+    },
+    #[serde(rename = "partial")]
+    Partial {
+        checkpoint_version: f64,
+        covered_through: ::chrono::DateTime<::chrono::offset::Utc>,
+        earliest_complete_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+        family: BillingCoverageCheckpointFamily,
+        gaps: ::std::vec::Vec<BillingCoverageGapRange>,
+        opening_seed: ::std::option::Option<BillingOpeningSeed>,
+        recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        rt_account_id: ::std::option::Option<BillingCoverageCheckpointRtAccountId>,
+        source: BillingSourceScope,
+    },
+    #[serde(rename = "unavailable")]
+    Unavailable {
+        checkpoint_version: f64,
+        family: BillingCoverageCheckpointFamily,
+        last_observed_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+        reason: BillingCoverageUnavailableReason,
+        recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        rt_account_id: ::std::option::Option<BillingCoverageCheckpointRtAccountId>,
+        source: BillingSourceScope,
+    },
+}
+#[doc = "`BillingCoverageCheckpointFamily`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"subscription_stock\","]
+#[doc = "    \"movement_history\","]
+#[doc = "    \"schedule_phases\","]
+#[doc = "    \"invoices\","]
+#[doc = "    \"invoice_payments\","]
+#[doc = "    \"payments\","]
+#[doc = "    \"adjustments\","]
+#[doc = "    \"balances\","]
+#[doc = "    \"losses\","]
+#[doc = "    \"receivables\","]
+#[doc = "    \"account_mappings\","]
+#[doc = "    \"cohort_membership\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingCoverageCheckpointFamily {
+    #[serde(rename = "subscription_stock")]
+    SubscriptionStock,
+    #[serde(rename = "movement_history")]
+    MovementHistory,
+    #[serde(rename = "schedule_phases")]
+    SchedulePhases,
+    #[serde(rename = "invoices")]
+    Invoices,
+    #[serde(rename = "invoice_payments")]
+    InvoicePayments,
+    #[serde(rename = "payments")]
+    Payments,
+    #[serde(rename = "adjustments")]
+    Adjustments,
+    #[serde(rename = "balances")]
+    Balances,
+    #[serde(rename = "losses")]
+    Losses,
+    #[serde(rename = "receivables")]
+    Receivables,
+    #[serde(rename = "account_mappings")]
+    AccountMappings,
+    #[serde(rename = "cohort_membership")]
+    CohortMembership,
+}
+impl ::std::fmt::Display for BillingCoverageCheckpointFamily {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::SubscriptionStock => f.write_str("subscription_stock"),
+            Self::MovementHistory => f.write_str("movement_history"),
+            Self::SchedulePhases => f.write_str("schedule_phases"),
+            Self::Invoices => f.write_str("invoices"),
+            Self::InvoicePayments => f.write_str("invoice_payments"),
+            Self::Payments => f.write_str("payments"),
+            Self::Adjustments => f.write_str("adjustments"),
+            Self::Balances => f.write_str("balances"),
+            Self::Losses => f.write_str("losses"),
+            Self::Receivables => f.write_str("receivables"),
+            Self::AccountMappings => f.write_str("account_mappings"),
+            Self::CohortMembership => f.write_str("cohort_membership"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingCoverageCheckpointFamily {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "subscription_stock" => Ok(Self::SubscriptionStock),
+            "movement_history" => Ok(Self::MovementHistory),
+            "schedule_phases" => Ok(Self::SchedulePhases),
+            "invoices" => Ok(Self::Invoices),
+            "invoice_payments" => Ok(Self::InvoicePayments),
+            "payments" => Ok(Self::Payments),
+            "adjustments" => Ok(Self::Adjustments),
+            "balances" => Ok(Self::Balances),
+            "losses" => Ok(Self::Losses),
+            "receivables" => Ok(Self::Receivables),
+            "account_mappings" => Ok(Self::AccountMappings),
+            "cohort_membership" => Ok(Self::CohortMembership),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingCoverageCheckpointFamily {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingCoverageCheckpointFamily {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingCoverageCheckpointFamily {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingCoverageCheckpointRtAccountId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingCoverageCheckpointRtAccountId(::std::string::String);
+impl ::std::ops::Deref for BillingCoverageCheckpointRtAccountId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingCoverageCheckpointRtAccountId> for ::std::string::String {
+    fn from(value: BillingCoverageCheckpointRtAccountId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingCoverageCheckpointRtAccountId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingCoverageCheckpointRtAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingCoverageCheckpointRtAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingCoverageCheckpointRtAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingCoverageCheckpointRtAccountId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingCoverageGapRange`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"from\","]
+#[doc = "    \"reason\","]
+#[doc = "    \"to\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"from\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"reason\": {"]
+#[doc = "      \"$ref\": \"#/$defs/BillingCoverageGapReason\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"to\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BillingCoverageGapRange {
+    pub from: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub reason: BillingCoverageGapReason,
+    pub to: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+}
+#[doc = "`BillingCoverageGapReason`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"partial_hydration\","]
+#[doc = "    \"missing_history\","]
+#[doc = "    \"ambiguous_revision\","]
+#[doc = "    \"missing_price_terms\","]
+#[doc = "    \"unmapped_customer\","]
+#[doc = "    \"missing_linkage\","]
+#[doc = "    \"missing_ownership\","]
+#[doc = "    \"provider_error\","]
+#[doc = "    \"retention_window\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingCoverageGapReason {
+    #[serde(rename = "partial_hydration")]
+    PartialHydration,
+    #[serde(rename = "missing_history")]
+    MissingHistory,
+    #[serde(rename = "ambiguous_revision")]
+    AmbiguousRevision,
+    #[serde(rename = "missing_price_terms")]
+    MissingPriceTerms,
+    #[serde(rename = "unmapped_customer")]
+    UnmappedCustomer,
+    #[serde(rename = "missing_linkage")]
+    MissingLinkage,
+    #[serde(rename = "missing_ownership")]
+    MissingOwnership,
+    #[serde(rename = "provider_error")]
+    ProviderError,
+    #[serde(rename = "retention_window")]
+    RetentionWindow,
+}
+impl ::std::fmt::Display for BillingCoverageGapReason {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::PartialHydration => f.write_str("partial_hydration"),
+            Self::MissingHistory => f.write_str("missing_history"),
+            Self::AmbiguousRevision => f.write_str("ambiguous_revision"),
+            Self::MissingPriceTerms => f.write_str("missing_price_terms"),
+            Self::UnmappedCustomer => f.write_str("unmapped_customer"),
+            Self::MissingLinkage => f.write_str("missing_linkage"),
+            Self::MissingOwnership => f.write_str("missing_ownership"),
+            Self::ProviderError => f.write_str("provider_error"),
+            Self::RetentionWindow => f.write_str("retention_window"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingCoverageGapReason {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "partial_hydration" => Ok(Self::PartialHydration),
+            "missing_history" => Ok(Self::MissingHistory),
+            "ambiguous_revision" => Ok(Self::AmbiguousRevision),
+            "missing_price_terms" => Ok(Self::MissingPriceTerms),
+            "unmapped_customer" => Ok(Self::UnmappedCustomer),
+            "missing_linkage" => Ok(Self::MissingLinkage),
+            "missing_ownership" => Ok(Self::MissingOwnership),
+            "provider_error" => Ok(Self::ProviderError),
+            "retention_window" => Ok(Self::RetentionWindow),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingCoverageGapReason {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingCoverageGapReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingCoverageGapReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingCoverageUnavailableReason`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"uninitialized\","]
+#[doc = "    \"not_connected\","]
+#[doc = "    \"hydration_in_progress\","]
+#[doc = "    \"history_unavailable\","]
+#[doc = "    \"provider_error\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingCoverageUnavailableReason {
+    #[serde(rename = "uninitialized")]
+    Uninitialized,
+    #[serde(rename = "not_connected")]
+    NotConnected,
+    #[serde(rename = "hydration_in_progress")]
+    HydrationInProgress,
+    #[serde(rename = "history_unavailable")]
+    HistoryUnavailable,
+    #[serde(rename = "provider_error")]
+    ProviderError,
+}
+impl ::std::fmt::Display for BillingCoverageUnavailableReason {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Uninitialized => f.write_str("uninitialized"),
+            Self::NotConnected => f.write_str("not_connected"),
+            Self::HydrationInProgress => f.write_str("hydration_in_progress"),
+            Self::HistoryUnavailable => f.write_str("history_unavailable"),
+            Self::ProviderError => f.write_str("provider_error"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingCoverageUnavailableReason {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "uninitialized" => Ok(Self::Uninitialized),
+            "not_connected" => Ok(Self::NotConnected),
+            "hydration_in_progress" => Ok(Self::HydrationInProgress),
+            "history_unavailable" => Ok(Self::HistoryUnavailable),
+            "provider_error" => Ok(Self::ProviderError),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingCoverageUnavailableReason {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingCoverageUnavailableReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingCoverageUnavailableReason {
     type Error = self::error::ConversionError;
     fn try_from(
         value: ::std::string::String,
@@ -35309,6 +38150,1819 @@ impl<'de> ::serde::Deserialize<'de> for BillingCreditSettlementRefundId {
             })
     }
 }
+#[doc = "`BillingEconomicOwner`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"charge_type\","]
+#[doc = "    \"owner_account_id\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"charge_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"platform\","]
+#[doc = "        \"direct\","]
+#[doc = "        \"destination\","]
+#[doc = "        \"separate_charges_and_transfers\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"on_behalf_of_account_id\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"owner_account_id\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"transfer_id\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BillingEconomicOwner {
+    pub charge_type: BillingEconomicOwnerChargeType,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub on_behalf_of_account_id: ::std::option::Option<BillingEconomicOwnerOnBehalfOfAccountId>,
+    pub owner_account_id: BillingEconomicOwnerOwnerAccountId,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub transfer_id: ::std::option::Option<BillingEconomicOwnerTransferId>,
+}
+#[doc = "`BillingEconomicOwnerChargeType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"platform\","]
+#[doc = "    \"direct\","]
+#[doc = "    \"destination\","]
+#[doc = "    \"separate_charges_and_transfers\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingEconomicOwnerChargeType {
+    #[serde(rename = "platform")]
+    Platform,
+    #[serde(rename = "direct")]
+    Direct,
+    #[serde(rename = "destination")]
+    Destination,
+    #[serde(rename = "separate_charges_and_transfers")]
+    SeparateChargesAndTransfers,
+}
+impl ::std::fmt::Display for BillingEconomicOwnerChargeType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Platform => f.write_str("platform"),
+            Self::Direct => f.write_str("direct"),
+            Self::Destination => f.write_str("destination"),
+            Self::SeparateChargesAndTransfers => f.write_str("separate_charges_and_transfers"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingEconomicOwnerChargeType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "platform" => Ok(Self::Platform),
+            "direct" => Ok(Self::Direct),
+            "destination" => Ok(Self::Destination),
+            "separate_charges_and_transfers" => Ok(Self::SeparateChargesAndTransfers),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingEconomicOwnerChargeType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingEconomicOwnerChargeType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingEconomicOwnerChargeType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingEconomicOwnerOnBehalfOfAccountId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingEconomicOwnerOnBehalfOfAccountId(::std::string::String);
+impl ::std::ops::Deref for BillingEconomicOwnerOnBehalfOfAccountId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingEconomicOwnerOnBehalfOfAccountId> for ::std::string::String {
+    fn from(value: BillingEconomicOwnerOnBehalfOfAccountId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingEconomicOwnerOnBehalfOfAccountId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingEconomicOwnerOnBehalfOfAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingEconomicOwnerOnBehalfOfAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingEconomicOwnerOnBehalfOfAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingEconomicOwnerOnBehalfOfAccountId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingEconomicOwnerOwnerAccountId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingEconomicOwnerOwnerAccountId(::std::string::String);
+impl ::std::ops::Deref for BillingEconomicOwnerOwnerAccountId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingEconomicOwnerOwnerAccountId> for ::std::string::String {
+    fn from(value: BillingEconomicOwnerOwnerAccountId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingEconomicOwnerOwnerAccountId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingEconomicOwnerOwnerAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingEconomicOwnerOwnerAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingEconomicOwnerOwnerAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingEconomicOwnerOwnerAccountId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingEconomicOwnerTransferId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingEconomicOwnerTransferId(::std::string::String);
+impl ::std::ops::Deref for BillingEconomicOwnerTransferId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingEconomicOwnerTransferId> for ::std::string::String {
+    fn from(value: BillingEconomicOwnerTransferId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingEconomicOwnerTransferId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingEconomicOwnerTransferId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingEconomicOwnerTransferId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingEconomicOwnerTransferId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingEconomicOwnerTransferId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingGeneration`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"checkpoint\","]
+#[doc = "        \"created_at\","]
+#[doc = "        \"generation_id\","]
+#[doc = "        \"generation_version\","]
+#[doc = "        \"input_watermark\","]
+#[doc = "        \"policy_pins\","]
+#[doc = "        \"policy_version\","]
+#[doc = "        \"reconciliation\","]
+#[doc = "        \"source\","]
+#[doc = "        \"status\","]
+#[doc = "        \"tenant_id\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"checkpoint\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingGenerationCheckpoint\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"created_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"generation_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"generation_version\": {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"const\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"input_watermark\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"policy_pins\": {"]
+#[doc = "          \"type\": \"object\","]
+#[doc = "          \"additionalProperties\": {"]
+#[doc = "            \"type\": \"integer\","]
+#[doc = "            \"maximum\": 9007199254740991.0,"]
+#[doc = "            \"minimum\": 1.0"]
+#[doc = "          },"]
+#[doc = "          \"propertyNames\": {"]
+#[doc = "            \"type\": \"string\","]
+#[doc = "            \"pattern\": \"^[a-z][a-z0-9_]{0,63}$\""]
+#[doc = "          },"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"policy_version\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"reconciliation\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingReconciliation\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"source\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"status\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"building\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"tenant_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"checkpoint\","]
+#[doc = "        \"created_at\","]
+#[doc = "        \"generation_id\","]
+#[doc = "        \"generation_version\","]
+#[doc = "        \"input_watermark\","]
+#[doc = "        \"policy_pins\","]
+#[doc = "        \"policy_version\","]
+#[doc = "        \"reconciliation\","]
+#[doc = "        \"source\","]
+#[doc = "        \"status\","]
+#[doc = "        \"tenant_id\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"checkpoint\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingGenerationCheckpoint\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"created_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"generation_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"generation_version\": {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"const\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"input_watermark\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"policy_pins\": {"]
+#[doc = "          \"type\": \"object\","]
+#[doc = "          \"additionalProperties\": {"]
+#[doc = "            \"type\": \"integer\","]
+#[doc = "            \"maximum\": 9007199254740991.0,"]
+#[doc = "            \"minimum\": 1.0"]
+#[doc = "          },"]
+#[doc = "          \"propertyNames\": {"]
+#[doc = "            \"type\": \"string\","]
+#[doc = "            \"pattern\": \"^[a-z][a-z0-9_]{0,63}$\""]
+#[doc = "          },"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"policy_version\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"reconciliation\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingReconciliation\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"source\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"status\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"shadow\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"tenant_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"activated_at\","]
+#[doc = "        \"checkpoint\","]
+#[doc = "        \"created_at\","]
+#[doc = "        \"generation_id\","]
+#[doc = "        \"generation_version\","]
+#[doc = "        \"input_watermark\","]
+#[doc = "        \"policy_pins\","]
+#[doc = "        \"policy_version\","]
+#[doc = "        \"reconciliation\","]
+#[doc = "        \"source\","]
+#[doc = "        \"status\","]
+#[doc = "        \"tenant_id\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"activated_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"checkpoint\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingCompletedGenerationCheckpoint\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"created_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"generation_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"generation_version\": {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"const\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"input_watermark\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"policy_pins\": {"]
+#[doc = "          \"type\": \"object\","]
+#[doc = "          \"additionalProperties\": {"]
+#[doc = "            \"type\": \"integer\","]
+#[doc = "            \"maximum\": 9007199254740991.0,"]
+#[doc = "            \"minimum\": 1.0"]
+#[doc = "          },"]
+#[doc = "          \"propertyNames\": {"]
+#[doc = "            \"type\": \"string\","]
+#[doc = "            \"pattern\": \"^[a-z][a-z0-9_]{0,63}$\""]
+#[doc = "          },"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"policy_version\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"reconciliation\": {"]
+#[doc = "          \"type\": \"object\","]
+#[doc = "          \"required\": ["]
+#[doc = "            \"checked_at\","]
+#[doc = "            \"compared_with_generation_id\","]
+#[doc = "            \"state\","]
+#[doc = "            \"unresolved_residuals\""]
+#[doc = "          ],"]
+#[doc = "          \"properties\": {"]
+#[doc = "            \"checked_at\": {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"format\": \"date-time\","]
+#[doc = "              \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "              \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "              \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "            },"]
+#[doc = "            \"compared_with_generation_id\": {"]
+#[doc = "              \"anyOf\": ["]
+#[doc = "                {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"maxLength\": 128,"]
+#[doc = "                  \"minLength\": 1,"]
+#[doc = "                  \"pattern\": \"^[A-Za-z0-9_.:-]+$\""]
+#[doc = "                },"]
+#[doc = "                {"]
+#[doc = "                  \"type\": \"null\""]
+#[doc = "                }"]
+#[doc = "              ],"]
+#[doc = "              \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "              \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "            },"]
+#[doc = "            \"state\": {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"const\": \"passed\","]
+#[doc = "              \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "              \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "            },"]
+#[doc = "            \"unresolved_residuals\": {"]
+#[doc = "              \"type\": \"integer\","]
+#[doc = "              \"maximum\": 9007199254740991.0,"]
+#[doc = "              \"minimum\": 0.0,"]
+#[doc = "              \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "              \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "            }"]
+#[doc = "          },"]
+#[doc = "          \"additionalProperties\": false,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"source\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"status\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"active\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"tenant_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"activated_at\","]
+#[doc = "        \"checkpoint\","]
+#[doc = "        \"created_at\","]
+#[doc = "        \"generation_id\","]
+#[doc = "        \"generation_version\","]
+#[doc = "        \"input_watermark\","]
+#[doc = "        \"policy_pins\","]
+#[doc = "        \"policy_version\","]
+#[doc = "        \"reconciliation\","]
+#[doc = "        \"source\","]
+#[doc = "        \"status\","]
+#[doc = "        \"superseded_at\","]
+#[doc = "        \"superseded_by_generation_id\","]
+#[doc = "        \"tenant_id\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"activated_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"checkpoint\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingCompletedGenerationCheckpoint\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"created_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"generation_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"generation_version\": {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"const\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"input_watermark\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"policy_pins\": {"]
+#[doc = "          \"type\": \"object\","]
+#[doc = "          \"additionalProperties\": {"]
+#[doc = "            \"type\": \"integer\","]
+#[doc = "            \"maximum\": 9007199254740991.0,"]
+#[doc = "            \"minimum\": 1.0"]
+#[doc = "          },"]
+#[doc = "          \"propertyNames\": {"]
+#[doc = "            \"type\": \"string\","]
+#[doc = "            \"pattern\": \"^[a-z][a-z0-9_]{0,63}$\""]
+#[doc = "          },"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"policy_version\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"reconciliation\": {"]
+#[doc = "          \"type\": \"object\","]
+#[doc = "          \"required\": ["]
+#[doc = "            \"checked_at\","]
+#[doc = "            \"compared_with_generation_id\","]
+#[doc = "            \"state\","]
+#[doc = "            \"unresolved_residuals\""]
+#[doc = "          ],"]
+#[doc = "          \"properties\": {"]
+#[doc = "            \"checked_at\": {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"format\": \"date-time\","]
+#[doc = "              \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "              \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "              \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "            },"]
+#[doc = "            \"compared_with_generation_id\": {"]
+#[doc = "              \"anyOf\": ["]
+#[doc = "                {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"maxLength\": 128,"]
+#[doc = "                  \"minLength\": 1,"]
+#[doc = "                  \"pattern\": \"^[A-Za-z0-9_.:-]+$\""]
+#[doc = "                },"]
+#[doc = "                {"]
+#[doc = "                  \"type\": \"null\""]
+#[doc = "                }"]
+#[doc = "              ],"]
+#[doc = "              \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "              \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "            },"]
+#[doc = "            \"state\": {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"const\": \"passed\","]
+#[doc = "              \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "              \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "            },"]
+#[doc = "            \"unresolved_residuals\": {"]
+#[doc = "              \"type\": \"integer\","]
+#[doc = "              \"maximum\": 9007199254740991.0,"]
+#[doc = "              \"minimum\": 0.0,"]
+#[doc = "              \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "              \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "            }"]
+#[doc = "          },"]
+#[doc = "          \"additionalProperties\": false,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"source\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"status\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"superseded\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"superseded_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"superseded_by_generation_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"tenant_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"checkpoint\","]
+#[doc = "        \"created_at\","]
+#[doc = "        \"failure_code\","]
+#[doc = "        \"generation_id\","]
+#[doc = "        \"generation_version\","]
+#[doc = "        \"input_watermark\","]
+#[doc = "        \"policy_pins\","]
+#[doc = "        \"policy_version\","]
+#[doc = "        \"reconciliation\","]
+#[doc = "        \"source\","]
+#[doc = "        \"status\","]
+#[doc = "        \"tenant_id\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"checkpoint\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingGenerationCheckpoint\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"created_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"failure_code\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"generation_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"generation_version\": {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"const\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"input_watermark\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"policy_pins\": {"]
+#[doc = "          \"type\": \"object\","]
+#[doc = "          \"additionalProperties\": {"]
+#[doc = "            \"type\": \"integer\","]
+#[doc = "            \"maximum\": 9007199254740991.0,"]
+#[doc = "            \"minimum\": 1.0"]
+#[doc = "          },"]
+#[doc = "          \"propertyNames\": {"]
+#[doc = "            \"type\": \"string\","]
+#[doc = "            \"pattern\": \"^[a-z][a-z0-9_]{0,63}$\""]
+#[doc = "          },"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"policy_version\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"reconciliation\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingReconciliation\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"source\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"status\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"failed\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"tenant_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    }"]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(tag = "status", deny_unknown_fields)]
+pub enum BillingGeneration {
+    #[serde(rename = "building")]
+    Building {
+        checkpoint: BillingGenerationCheckpoint,
+        created_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        generation_id: BillingGenerationGenerationId,
+        generation_version: f64,
+        input_watermark: ::chrono::DateTime<::chrono::offset::Utc>,
+        policy_pins:
+            ::std::collections::HashMap<BillingGenerationPolicyPinsKey, ::std::num::NonZeroU64>,
+        policy_version: BillingGenerationPolicyVersion,
+        reconciliation: BillingReconciliation,
+        source: BillingSourceScope,
+        tenant_id: BillingGenerationTenantId,
+    },
+    #[serde(rename = "shadow")]
+    Shadow {
+        checkpoint: BillingGenerationCheckpoint,
+        created_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        generation_id: BillingGenerationGenerationId,
+        generation_version: f64,
+        input_watermark: ::chrono::DateTime<::chrono::offset::Utc>,
+        policy_pins:
+            ::std::collections::HashMap<BillingGenerationPolicyPinsKey, ::std::num::NonZeroU64>,
+        policy_version: BillingGenerationPolicyVersion,
+        reconciliation: BillingReconciliation,
+        source: BillingSourceScope,
+        tenant_id: BillingGenerationTenantId,
+    },
+    #[serde(rename = "active")]
+    Active {
+        activated_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        checkpoint: BillingCompletedGenerationCheckpoint,
+        created_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        generation_id: BillingGenerationGenerationId,
+        generation_version: f64,
+        input_watermark: ::chrono::DateTime<::chrono::offset::Utc>,
+        policy_pins:
+            ::std::collections::HashMap<BillingGenerationPolicyPinsKey, ::std::num::NonZeroU64>,
+        policy_version: BillingGenerationPolicyVersion,
+        reconciliation: BillingGenerationReconciliation,
+        source: BillingSourceScope,
+        tenant_id: BillingGenerationTenantId,
+    },
+    #[serde(rename = "superseded")]
+    Superseded {
+        activated_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        checkpoint: BillingCompletedGenerationCheckpoint,
+        created_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        generation_id: BillingGenerationGenerationId,
+        generation_version: f64,
+        input_watermark: ::chrono::DateTime<::chrono::offset::Utc>,
+        policy_pins:
+            ::std::collections::HashMap<BillingGenerationPolicyPinsKey, ::std::num::NonZeroU64>,
+        policy_version: BillingGenerationPolicyVersion,
+        reconciliation: BillingGenerationReconciliation,
+        source: BillingSourceScope,
+        superseded_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        superseded_by_generation_id: BillingGenerationSupersededByGenerationId,
+        tenant_id: BillingGenerationTenantId,
+    },
+    #[serde(rename = "failed")]
+    Failed {
+        checkpoint: BillingGenerationCheckpoint,
+        created_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        failure_code: BillingGenerationFailureCode,
+        generation_id: BillingGenerationGenerationId,
+        generation_version: f64,
+        input_watermark: ::chrono::DateTime<::chrono::offset::Utc>,
+        policy_pins:
+            ::std::collections::HashMap<BillingGenerationPolicyPinsKey, ::std::num::NonZeroU64>,
+        policy_version: BillingGenerationPolicyVersion,
+        reconciliation: BillingReconciliation,
+        source: BillingSourceScope,
+        tenant_id: BillingGenerationTenantId,
+    },
+}
+#[doc = "`BillingGenerationCheckpoint`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"completed\","]
+#[doc = "    \"cursor_revision_key\","]
+#[doc = "    \"processed_revisions\","]
+#[doc = "    \"processed_through\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"completed\": {"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"cursor_revision_key\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 800,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"processed_revisions\": {"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"processed_through\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BillingGenerationCheckpoint {
+    pub completed: bool,
+    pub cursor_revision_key: ::std::option::Option<BillingGenerationCheckpointCursorRevisionKey>,
+    pub processed_revisions: i64,
+    pub processed_through: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+}
+#[doc = "`BillingGenerationCheckpointCursorRevisionKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 800,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingGenerationCheckpointCursorRevisionKey(::std::string::String);
+impl ::std::ops::Deref for BillingGenerationCheckpointCursorRevisionKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingGenerationCheckpointCursorRevisionKey> for ::std::string::String {
+    fn from(value: BillingGenerationCheckpointCursorRevisionKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingGenerationCheckpointCursorRevisionKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 800usize {
+            return Err("longer than 800 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingGenerationCheckpointCursorRevisionKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingGenerationCheckpointCursorRevisionKey
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for BillingGenerationCheckpointCursorRevisionKey
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingGenerationCheckpointCursorRevisionKey {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingGenerationFailureCode`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 128,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingGenerationFailureCode(::std::string::String);
+impl ::std::ops::Deref for BillingGenerationFailureCode {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingGenerationFailureCode> for ::std::string::String {
+    fn from(value: BillingGenerationFailureCode) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingGenerationFailureCode {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingGenerationFailureCode {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingGenerationFailureCode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingGenerationFailureCode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingGenerationFailureCode {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingGenerationGenerationId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 128,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingGenerationGenerationId(::std::string::String);
+impl ::std::ops::Deref for BillingGenerationGenerationId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingGenerationGenerationId> for ::std::string::String {
+    fn from(value: BillingGenerationGenerationId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingGenerationGenerationId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Za-z0-9_.:-]+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Za-z0-9_.:-]+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingGenerationGenerationId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingGenerationGenerationId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingGenerationGenerationId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingGenerationGenerationId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingGenerationPolicyPinsKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[a-z][a-z0-9_]{0,63}$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingGenerationPolicyPinsKey(::std::string::String);
+impl ::std::ops::Deref for BillingGenerationPolicyPinsKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingGenerationPolicyPinsKey> for ::std::string::String {
+    fn from(value: BillingGenerationPolicyPinsKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingGenerationPolicyPinsKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z][a-z0-9_]{0,63}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z][a-z0-9_]{0,63}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingGenerationPolicyPinsKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingGenerationPolicyPinsKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingGenerationPolicyPinsKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingGenerationPolicyPinsKey {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingGenerationPolicyVersion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 128,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingGenerationPolicyVersion(::std::string::String);
+impl ::std::ops::Deref for BillingGenerationPolicyVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingGenerationPolicyVersion> for ::std::string::String {
+    fn from(value: BillingGenerationPolicyVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingGenerationPolicyVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Za-z0-9_.:-]+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Za-z0-9_.:-]+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingGenerationPolicyVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingGenerationPolicyVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingGenerationPolicyVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingGenerationPolicyVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingGenerationReconciliation`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"checked_at\","]
+#[doc = "    \"compared_with_generation_id\","]
+#[doc = "    \"state\","]
+#[doc = "    \"unresolved_residuals\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"checked_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"compared_with_generation_id\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^[A-Za-z0-9_.:-]+$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"state\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"passed\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"unresolved_residuals\": {"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BillingGenerationReconciliation {
+    pub checked_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub compared_with_generation_id:
+        ::std::option::Option<BillingGenerationReconciliationComparedWithGenerationId>,
+    pub state: ::std::string::String,
+    pub unresolved_residuals: i64,
+}
+#[doc = "`BillingGenerationReconciliationComparedWithGenerationId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 128,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"pattern\": \"^[A-Za-z0-9_.:-]+$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingGenerationReconciliationComparedWithGenerationId(::std::string::String);
+impl ::std::ops::Deref for BillingGenerationReconciliationComparedWithGenerationId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingGenerationReconciliationComparedWithGenerationId>
+    for ::std::string::String
+{
+    fn from(value: BillingGenerationReconciliationComparedWithGenerationId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingGenerationReconciliationComparedWithGenerationId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Za-z0-9_.:-]+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Za-z0-9_.:-]+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingGenerationReconciliationComparedWithGenerationId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingGenerationReconciliationComparedWithGenerationId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for BillingGenerationReconciliationComparedWithGenerationId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingGenerationReconciliationComparedWithGenerationId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingGenerationSupersededByGenerationId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 128,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingGenerationSupersededByGenerationId(::std::string::String);
+impl ::std::ops::Deref for BillingGenerationSupersededByGenerationId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingGenerationSupersededByGenerationId> for ::std::string::String {
+    fn from(value: BillingGenerationSupersededByGenerationId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingGenerationSupersededByGenerationId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Za-z0-9_.:-]+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Za-z0-9_.:-]+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingGenerationSupersededByGenerationId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingGenerationSupersededByGenerationId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingGenerationSupersededByGenerationId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingGenerationSupersededByGenerationId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingGenerationTenantId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingGenerationTenantId(::std::string::String);
+impl ::std::ops::Deref for BillingGenerationTenantId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingGenerationTenantId> for ::std::string::String {
+    fn from(value: BillingGenerationTenantId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingGenerationTenantId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingGenerationTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingGenerationTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingGenerationTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingGenerationTenantId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`BillingHealthStatus`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -35379,6 +40033,164 @@ impl ::std::convert::TryFrom<::std::string::String> for BillingHealthStatus {
         value: ::std::string::String,
     ) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
+    }
+}
+#[doc = "`BillingInvoicePaymentSource`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"payment_id\","]
+#[doc = "        \"type\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"payment_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"type\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"payment_intent\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"payment_id\","]
+#[doc = "        \"type\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"payment_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"type\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"charge\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"type\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"type\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"out_of_band\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    }"]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(tag = "type", content = "payment_id")]
+pub enum BillingInvoicePaymentSource {
+    #[serde(rename = "payment_intent")]
+    PaymentIntent(BillingInvoicePaymentSourcePaymentId),
+    #[serde(rename = "charge")]
+    Charge(BillingInvoicePaymentSourcePaymentId),
+    #[serde(rename = "out_of_band")]
+    OutOfBand,
+}
+#[doc = "`BillingInvoicePaymentSourcePaymentId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingInvoicePaymentSourcePaymentId(::std::string::String);
+impl ::std::ops::Deref for BillingInvoicePaymentSourcePaymentId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingInvoicePaymentSourcePaymentId> for ::std::string::String {
+    fn from(value: BillingInvoicePaymentSourcePaymentId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingInvoicePaymentSourcePaymentId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingInvoicePaymentSourcePaymentId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingInvoicePaymentSourcePaymentId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingInvoicePaymentSourcePaymentId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingInvoicePaymentSourcePaymentId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
     }
 }
 #[doc = "`BillingInvoiceProfile`"]
@@ -35498,6 +40310,22 @@ impl ::std::convert::TryFrom<::std::string::String> for BillingHealthStatus {
 #[doc = "        \"occurrence\": {"]
 #[doc = "          \"$ref\": \"#/$defs/BillingOccurrence\","]
 #[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"payment_count\": {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 9007199254740991.0,"]
+#[doc = "          \"minimum\": 0.0,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"payments_coverage\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"complete\","]
+#[doc = "            \"partial\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "        },"]
 #[doc = "        \"profile\": {"]
 #[doc = "          \"type\": \"string\","]
@@ -36053,6 +40881,342 @@ impl ::std::convert::TryFrom<::std::string::String> for BillingHealthStatus {
 #[doc = "        }"]
 #[doc = "      },"]
 #[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"amount_paid_minor\","]
+#[doc = "        \"amount_requested_minor\","]
+#[doc = "        \"currency\","]
+#[doc = "        \"currency_exponent\","]
+#[doc = "        \"customer_ref\","]
+#[doc = "        \"effective_at\","]
+#[doc = "        \"invoice_id\","]
+#[doc = "        \"invoice_payment_id\","]
+#[doc = "        \"kind\","]
+#[doc = "        \"observed_at\","]
+#[doc = "        \"occurrence\","]
+#[doc = "        \"paid_at\","]
+#[doc = "        \"payment\","]
+#[doc = "        \"profile\","]
+#[doc = "        \"profile_version\","]
+#[doc = "        \"source\","]
+#[doc = "        \"source_recorded_at\","]
+#[doc = "        \"status\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"amount_paid_minor\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"maxLength\": 40,"]
+#[doc = "              \"pattern\": \"^(0|[1-9][0-9]*)$\""]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"amount_requested_minor\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 40,"]
+#[doc = "          \"pattern\": \"^(0|[1-9][0-9]*)$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"currency\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"pattern\": \"^[A-Z]{3}$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"currency_exponent\": {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 4.0,"]
+#[doc = "          \"minimum\": 0.0,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"customer_ref\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"economic_owner\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingEconomicOwner\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "        },"]
+#[doc = "        \"effective_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"invoice_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"invoice_payment_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"is_default\": {"]
+#[doc = "          \"type\": \"boolean\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"kind\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"payment_allocation\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"observed_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"occurrence\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingOccurrence\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"paid_at\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"format\": \"date-time\","]
+#[doc = "              \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"payment\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingInvoicePaymentSource\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "        },"]
+#[doc = "        \"profile\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"invoice\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"profile_version\": {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"const\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"source\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"source_recorded_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"status\": {"]
+#[doc = "          \"$ref\": \"#/$defs/InvoicePaymentStatus\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"amount_due_minor\","]
+#[doc = "        \"amount_paid_minor\","]
+#[doc = "        \"amount_remaining_minor\","]
+#[doc = "        \"currency\","]
+#[doc = "        \"currency_exponent\","]
+#[doc = "        \"customer_ref\","]
+#[doc = "        \"due_at\","]
+#[doc = "        \"effective_at\","]
+#[doc = "        \"from_status\","]
+#[doc = "        \"invoice_id\","]
+#[doc = "        \"kind\","]
+#[doc = "        \"observed_at\","]
+#[doc = "        \"occurrence\","]
+#[doc = "        \"paid_out_of_band\","]
+#[doc = "        \"profile\","]
+#[doc = "        \"profile_version\","]
+#[doc = "        \"settlement_basis\","]
+#[doc = "        \"source\","]
+#[doc = "        \"source_recorded_at\","]
+#[doc = "        \"subscription_id\","]
+#[doc = "        \"to_status\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"amount_due_minor\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 40,"]
+#[doc = "          \"pattern\": \"^(0|[1-9][0-9]*)$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"amount_paid_minor\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 40,"]
+#[doc = "          \"pattern\": \"^(0|[1-9][0-9]*)$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"amount_remaining_minor\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 40,"]
+#[doc = "          \"pattern\": \"^(0|[1-9][0-9]*)$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"currency\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"pattern\": \"^[A-Z]{3}$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"currency_exponent\": {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 4.0,"]
+#[doc = "          \"minimum\": 0.0,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"customer_ref\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"due_at\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"format\": \"date-time\","]
+#[doc = "              \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"effective_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"from_status\": {"]
+#[doc = "          \"$ref\": \"#/$defs/InvoiceStatus\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"invoice_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"kind\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"status_transition\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"observed_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"occurrence\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingRepeatableOccurrence\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"paid_out_of_band\": {"]
+#[doc = "          \"type\": \"boolean\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"profile\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"invoice\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"profile_version\": {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"const\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"settlement_basis\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"$ref\": \"#/$defs/InvoiceSettlementBasis\""]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"source\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"source_recorded_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"subscription_id\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"maxLength\": 255,"]
+#[doc = "              \"minLength\": 1"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"to_status\": {"]
+#[doc = "          \"$ref\": \"#/$defs/InvoiceStatus\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
 #[doc = "    }"]
 #[doc = "  ],"]
 #[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
@@ -36076,6 +41240,10 @@ pub enum BillingInvoiceProfile {
         lines_coverage: BillingInvoiceProfileLinesCoverage,
         observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
         occurrence: BillingOccurrence,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        payment_count: ::std::option::Option<i64>,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        payments_coverage: ::std::option::Option<BillingInvoiceProfilePaymentsCoverage>,
         profile: ::std::string::String,
         profile_version: f64,
         source: BillingSourceScope,
@@ -36153,6 +41321,53 @@ pub enum BillingInvoiceProfile {
         tax_minor: BillingInvoiceProfileTaxMinor,
         total_minor: BillingInvoiceProfileTotalMinor,
     },
+    #[serde(rename = "payment_allocation")]
+    PaymentAllocation {
+        amount_paid_minor: ::std::option::Option<BillingInvoiceProfileAmountPaidMinor>,
+        amount_requested_minor: BillingInvoiceProfileAmountRequestedMinor,
+        currency: BillingInvoiceProfileCurrency,
+        currency_exponent: i64,
+        customer_ref: BillingInvoiceProfileCustomerRef,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        economic_owner: ::std::option::Option<BillingEconomicOwner>,
+        effective_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        invoice_id: BillingInvoiceProfileInvoiceId,
+        invoice_payment_id: BillingInvoiceProfileInvoicePaymentId,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        is_default: ::std::option::Option<bool>,
+        observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        occurrence: BillingOccurrence,
+        paid_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+        payment: BillingInvoicePaymentSource,
+        profile: ::std::string::String,
+        profile_version: f64,
+        source: BillingSourceScope,
+        source_recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        status: InvoicePaymentStatus,
+    },
+    #[serde(rename = "status_transition")]
+    StatusTransition {
+        amount_due_minor: BillingInvoiceProfileAmountDueMinor,
+        amount_paid_minor: BillingInvoiceProfileAmountPaidMinor,
+        amount_remaining_minor: BillingInvoiceProfileAmountRemainingMinor,
+        currency: BillingInvoiceProfileCurrency,
+        currency_exponent: i64,
+        customer_ref: BillingInvoiceProfileCustomerRef,
+        due_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+        effective_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        from_status: InvoiceStatus,
+        invoice_id: BillingInvoiceProfileInvoiceId,
+        observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        occurrence: BillingRepeatableOccurrence,
+        paid_out_of_band: bool,
+        profile: ::std::string::String,
+        profile_version: f64,
+        settlement_basis: ::std::option::Option<InvoiceSettlementBasis>,
+        source: BillingSourceScope,
+        source_recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        subscription_id: ::std::option::Option<BillingInvoiceProfileSubscriptionId>,
+        to_status: InvoiceStatus,
+    },
 }
 #[doc = "`BillingInvoiceProfileAmountDueMinor`"]
 #[doc = r""]
@@ -36219,6 +41434,232 @@ impl ::std::convert::TryFrom<::std::string::String> for BillingInvoiceProfileAmo
     }
 }
 impl<'de> ::serde::Deserialize<'de> for BillingInvoiceProfileAmountDueMinor {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingInvoiceProfileAmountPaidMinor`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 40,"]
+#[doc = "  \"pattern\": \"^(0|[1-9][0-9]*)$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingInvoiceProfileAmountPaidMinor(::std::string::String);
+impl ::std::ops::Deref for BillingInvoiceProfileAmountPaidMinor {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingInvoiceProfileAmountPaidMinor> for ::std::string::String {
+    fn from(value: BillingInvoiceProfileAmountPaidMinor) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingInvoiceProfileAmountPaidMinor {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 40usize {
+            return Err("longer than 40 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^(0|[1-9][0-9]*)$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^(0|[1-9][0-9]*)$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingInvoiceProfileAmountPaidMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingInvoiceProfileAmountPaidMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingInvoiceProfileAmountPaidMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingInvoiceProfileAmountPaidMinor {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingInvoiceProfileAmountRemainingMinor`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 40,"]
+#[doc = "  \"pattern\": \"^(0|[1-9][0-9]*)$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingInvoiceProfileAmountRemainingMinor(::std::string::String);
+impl ::std::ops::Deref for BillingInvoiceProfileAmountRemainingMinor {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingInvoiceProfileAmountRemainingMinor> for ::std::string::String {
+    fn from(value: BillingInvoiceProfileAmountRemainingMinor) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingInvoiceProfileAmountRemainingMinor {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 40usize {
+            return Err("longer than 40 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^(0|[1-9][0-9]*)$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^(0|[1-9][0-9]*)$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingInvoiceProfileAmountRemainingMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingInvoiceProfileAmountRemainingMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingInvoiceProfileAmountRemainingMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingInvoiceProfileAmountRemainingMinor {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingInvoiceProfileAmountRequestedMinor`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 40,"]
+#[doc = "  \"pattern\": \"^(0|[1-9][0-9]*)$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingInvoiceProfileAmountRequestedMinor(::std::string::String);
+impl ::std::ops::Deref for BillingInvoiceProfileAmountRequestedMinor {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingInvoiceProfileAmountRequestedMinor> for ::std::string::String {
+    fn from(value: BillingInvoiceProfileAmountRequestedMinor) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingInvoiceProfileAmountRequestedMinor {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 40usize {
+            return Err("longer than 40 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^(0|[1-9][0-9]*)$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^(0|[1-9][0-9]*)$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingInvoiceProfileAmountRequestedMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingInvoiceProfileAmountRequestedMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingInvoiceProfileAmountRequestedMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingInvoiceProfileAmountRequestedMinor {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -36526,6 +41967,80 @@ impl<'de> ::serde::Deserialize<'de> for BillingInvoiceProfileInvoiceId {
             })
     }
 }
+#[doc = "`BillingInvoiceProfileInvoicePaymentId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingInvoiceProfileInvoicePaymentId(::std::string::String);
+impl ::std::ops::Deref for BillingInvoiceProfileInvoicePaymentId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingInvoiceProfileInvoicePaymentId> for ::std::string::String {
+    fn from(value: BillingInvoiceProfileInvoicePaymentId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingInvoiceProfileInvoicePaymentId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingInvoiceProfileInvoicePaymentId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingInvoiceProfileInvoicePaymentId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingInvoiceProfileInvoicePaymentId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingInvoiceProfileInvoicePaymentId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`BillingInvoiceProfileLineId`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -36667,6 +42182,80 @@ impl ::std::convert::TryFrom<&::std::string::String> for BillingInvoiceProfileLi
     }
 }
 impl ::std::convert::TryFrom<::std::string::String> for BillingInvoiceProfileLinesCoverage {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingInvoiceProfilePaymentsCoverage`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"complete\","]
+#[doc = "    \"partial\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingInvoiceProfilePaymentsCoverage {
+    #[serde(rename = "complete")]
+    Complete,
+    #[serde(rename = "partial")]
+    Partial,
+}
+impl ::std::fmt::Display for BillingInvoiceProfilePaymentsCoverage {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Complete => f.write_str("complete"),
+            Self::Partial => f.write_str("partial"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingInvoiceProfilePaymentsCoverage {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "complete" => Ok(Self::Complete),
+            "partial" => Ok(Self::Partial),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingInvoiceProfilePaymentsCoverage {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingInvoiceProfilePaymentsCoverage {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingInvoiceProfilePaymentsCoverage {
     type Error = self::error::ConversionError;
     fn try_from(
         value: ::std::string::String,
@@ -37188,6 +42777,10 @@ impl<'de> ::serde::Deserialize<'de> for BillingInvoiceProfileTotalMinor {
 #[doc = "          \"x-revturbine-data-classification\": \"financial\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "        },"]
+#[doc = "        \"economic_owner\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingEconomicOwner\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "        },"]
 #[doc = "        \"effective_at\": {"]
 #[doc = "          \"type\": \"string\","]
 #[doc = "          \"format\": \"date-time\","]
@@ -37230,6 +42823,10 @@ impl<'de> ::serde::Deserialize<'de> for BillingInvoiceProfileTotalMinor {
 #[doc = "          \"const\": 1,"]
 #[doc = "          \"x-revturbine-data-classification\": \"operational\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"settlement_amount\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingSettlementAmount\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\""]
 #[doc = "        },"]
 #[doc = "        \"source\": {"]
 #[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
@@ -37306,6 +42903,10 @@ impl<'de> ::serde::Deserialize<'de> for BillingInvoiceProfileTotalMinor {
 #[doc = "          \"x-revturbine-data-classification\": \"financial\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "        },"]
+#[doc = "        \"economic_owner\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingEconomicOwner\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "        },"]
 #[doc = "        \"effective_at\": {"]
 #[doc = "          \"type\": \"string\","]
 #[doc = "          \"format\": \"date-time\","]
@@ -37348,6 +42949,17 @@ impl<'de> ::serde::Deserialize<'de> for BillingInvoiceProfileTotalMinor {
 #[doc = "          \"const\": 1,"]
 #[doc = "          \"x-revturbine-data-classification\": \"operational\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"reverses_occurrence_key\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 512,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"settlement_amount\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingSettlementAmount\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\""]
 #[doc = "        },"]
 #[doc = "        \"source\": {"]
 #[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
@@ -37511,6 +43123,10 @@ impl<'de> ::serde::Deserialize<'de> for BillingInvoiceProfileTotalMinor {
 #[doc = "          \"x-revturbine-data-classification\": \"financial\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "        },"]
+#[doc = "        \"economic_owner\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingEconomicOwner\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "        },"]
 #[doc = "        \"effective_at\": {"]
 #[doc = "          \"type\": \"string\","]
 #[doc = "          \"format\": \"date-time\","]
@@ -37561,6 +43177,10 @@ impl<'de> ::serde::Deserialize<'de> for BillingInvoiceProfileTotalMinor {
 #[doc = "          \"x-revturbine-data-classification\": \"financial\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "        },"]
+#[doc = "        \"settlement_amount\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingSettlementAmount\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "        },"]
 #[doc = "        \"source\": {"]
 #[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
 #[doc = "          \"x-revturbine-data-classification\": \"operational\""]
@@ -37592,12 +43212,16 @@ pub enum BillingLossProfile {
         currency_exponent: i64,
         customer_ref: BillingLossProfileCustomerRef,
         dispute_id: BillingLossProfileDisputeId,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        economic_owner: ::std::option::Option<BillingEconomicOwner>,
         effective_at: ::chrono::DateTime<::chrono::offset::Utc>,
         observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
         occurrence: BillingRepeatableOccurrence,
         payment_id: BillingLossProfilePaymentId,
         profile: ::std::string::String,
         profile_version: f64,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        settlement_amount: ::std::option::Option<BillingSettlementAmount>,
         source: BillingSourceScope,
         source_recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
     },
@@ -37609,12 +43233,18 @@ pub enum BillingLossProfile {
         currency_exponent: i64,
         customer_ref: BillingLossProfileCustomerRef,
         dispute_id: BillingLossProfileDisputeId,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        economic_owner: ::std::option::Option<BillingEconomicOwner>,
         effective_at: ::chrono::DateTime<::chrono::offset::Utc>,
         observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
         occurrence: BillingRepeatableOccurrence,
         payment_id: BillingLossProfilePaymentId,
         profile: ::std::string::String,
         profile_version: f64,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        reverses_occurrence_key: ::std::option::Option<BillingLossProfileReversesOccurrenceKey>,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        settlement_amount: ::std::option::Option<BillingSettlementAmount>,
         source: BillingSourceScope,
         source_recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
     },
@@ -37638,6 +43268,8 @@ pub enum BillingLossProfile {
         currency: BillingLossProfileCurrency,
         currency_exponent: i64,
         customer_ref: BillingLossProfileCustomerRef,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        economic_owner: ::std::option::Option<BillingEconomicOwner>,
         effective_at: ::chrono::DateTime<::chrono::offset::Utc>,
         observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
         occurrence: BillingOccurrence,
@@ -37645,6 +43277,8 @@ pub enum BillingLossProfile {
         profile: ::std::string::String,
         profile_version: f64,
         return_id: BillingLossProfileReturnId,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        settlement_amount: ::std::option::Option<BillingSettlementAmount>,
         source: BillingSourceScope,
         source_recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
     },
@@ -38156,6 +43790,80 @@ impl ::std::convert::TryFrom<::std::string::String> for BillingLossProfileReturn
     }
 }
 impl<'de> ::serde::Deserialize<'de> for BillingLossProfileReturnId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingLossProfileReversesOccurrenceKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 512,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingLossProfileReversesOccurrenceKey(::std::string::String);
+impl ::std::ops::Deref for BillingLossProfileReversesOccurrenceKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingLossProfileReversesOccurrenceKey> for ::std::string::String {
+    fn from(value: BillingLossProfileReversesOccurrenceKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingLossProfileReversesOccurrenceKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 512usize {
+            return Err("longer than 512 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingLossProfileReversesOccurrenceKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingLossProfileReversesOccurrenceKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingLossProfileReversesOccurrenceKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingLossProfileReversesOccurrenceKey {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -38731,6 +44439,1205 @@ impl<'de> ::serde::Deserialize<'de> for BillingOccurrenceSupersedesRevision {
             })
     }
 }
+#[doc = "`BillingOpeningSeed`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"as_of\","]
+#[doc = "    \"basis\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"as_of\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"basis\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"imported_opening_balance\","]
+#[doc = "        \"verified_snapshot\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BillingOpeningSeed {
+    pub as_of: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub basis: BillingOpeningSeedBasis,
+}
+#[doc = "`BillingOpeningSeedBasis`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"imported_opening_balance\","]
+#[doc = "    \"verified_snapshot\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingOpeningSeedBasis {
+    #[serde(rename = "imported_opening_balance")]
+    ImportedOpeningBalance,
+    #[serde(rename = "verified_snapshot")]
+    VerifiedSnapshot,
+}
+impl ::std::fmt::Display for BillingOpeningSeedBasis {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::ImportedOpeningBalance => f.write_str("imported_opening_balance"),
+            Self::VerifiedSnapshot => f.write_str("verified_snapshot"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingOpeningSeedBasis {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "imported_opening_balance" => Ok(Self::ImportedOpeningBalance),
+            "verified_snapshot" => Ok(Self::VerifiedSnapshot),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingOpeningSeedBasis {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingOpeningSeedBasis {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingOpeningSeedBasis {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingOutputRowKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"generation_id\","]
+#[doc = "    \"output_key\","]
+#[doc = "    \"output_kind\","]
+#[doc = "    \"policy_version\","]
+#[doc = "    \"tenant_id\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"generation_id\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 128,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"output_key\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 1500,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"pattern\": \"^bout1\\\\|.*\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"output_kind\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"stock_snapshot\","]
+#[doc = "        \"committed_snapshot\","]
+#[doc = "        \"receivable_snapshot\","]
+#[doc = "        \"movement\","]
+#[doc = "        \"collection\","]
+#[doc = "        \"allocation\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"policy_version\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 128,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"tenant_id\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BillingOutputRowKey {
+    pub generation_id: BillingOutputRowKeyGenerationId,
+    pub output_key: BillingOutputRowKeyOutputKey,
+    pub output_kind: BillingOutputRowKeyOutputKind,
+    pub policy_version: BillingOutputRowKeyPolicyVersion,
+    pub tenant_id: BillingOutputRowKeyTenantId,
+}
+#[doc = "`BillingOutputRowKeyGenerationId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 128,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingOutputRowKeyGenerationId(::std::string::String);
+impl ::std::ops::Deref for BillingOutputRowKeyGenerationId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingOutputRowKeyGenerationId> for ::std::string::String {
+    fn from(value: BillingOutputRowKeyGenerationId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingOutputRowKeyGenerationId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Za-z0-9_.:-]+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Za-z0-9_.:-]+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingOutputRowKeyGenerationId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingOutputRowKeyGenerationId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingOutputRowKeyGenerationId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingOutputRowKeyGenerationId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingOutputRowKeyOutputKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 1500,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"pattern\": \"^bout1\\\\|.*\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingOutputRowKeyOutputKey(::std::string::String);
+impl ::std::ops::Deref for BillingOutputRowKeyOutputKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingOutputRowKeyOutputKey> for ::std::string::String {
+    fn from(value: BillingOutputRowKeyOutputKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingOutputRowKeyOutputKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 1500usize {
+            return Err("longer than 1500 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^bout1\\|.*").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^bout1\\|.*\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingOutputRowKeyOutputKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingOutputRowKeyOutputKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingOutputRowKeyOutputKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingOutputRowKeyOutputKey {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingOutputRowKeyOutputKind`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"stock_snapshot\","]
+#[doc = "    \"committed_snapshot\","]
+#[doc = "    \"receivable_snapshot\","]
+#[doc = "    \"movement\","]
+#[doc = "    \"collection\","]
+#[doc = "    \"allocation\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingOutputRowKeyOutputKind {
+    #[serde(rename = "stock_snapshot")]
+    StockSnapshot,
+    #[serde(rename = "committed_snapshot")]
+    CommittedSnapshot,
+    #[serde(rename = "receivable_snapshot")]
+    ReceivableSnapshot,
+    #[serde(rename = "movement")]
+    Movement,
+    #[serde(rename = "collection")]
+    Collection,
+    #[serde(rename = "allocation")]
+    Allocation,
+}
+impl ::std::fmt::Display for BillingOutputRowKeyOutputKind {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::StockSnapshot => f.write_str("stock_snapshot"),
+            Self::CommittedSnapshot => f.write_str("committed_snapshot"),
+            Self::ReceivableSnapshot => f.write_str("receivable_snapshot"),
+            Self::Movement => f.write_str("movement"),
+            Self::Collection => f.write_str("collection"),
+            Self::Allocation => f.write_str("allocation"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingOutputRowKeyOutputKind {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "stock_snapshot" => Ok(Self::StockSnapshot),
+            "committed_snapshot" => Ok(Self::CommittedSnapshot),
+            "receivable_snapshot" => Ok(Self::ReceivableSnapshot),
+            "movement" => Ok(Self::Movement),
+            "collection" => Ok(Self::Collection),
+            "allocation" => Ok(Self::Allocation),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingOutputRowKeyOutputKind {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingOutputRowKeyOutputKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingOutputRowKeyOutputKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingOutputRowKeyPolicyVersion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 128,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingOutputRowKeyPolicyVersion(::std::string::String);
+impl ::std::ops::Deref for BillingOutputRowKeyPolicyVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingOutputRowKeyPolicyVersion> for ::std::string::String {
+    fn from(value: BillingOutputRowKeyPolicyVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingOutputRowKeyPolicyVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Za-z0-9_.:-]+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Za-z0-9_.:-]+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingOutputRowKeyPolicyVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingOutputRowKeyPolicyVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingOutputRowKeyPolicyVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingOutputRowKeyPolicyVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingOutputRowKeyTenantId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingOutputRowKeyTenantId(::std::string::String);
+impl ::std::ops::Deref for BillingOutputRowKeyTenantId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingOutputRowKeyTenantId> for ::std::string::String {
+    fn from(value: BillingOutputRowKeyTenantId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingOutputRowKeyTenantId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingOutputRowKeyTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingOutputRowKeyTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingOutputRowKeyTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingOutputRowKeyTenantId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingPriceTerms`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"billing_scheme\","]
+#[doc = "        \"transform_quantity\","]
+#[doc = "        \"unit_amount_decimal\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"billing_scheme\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"per_unit\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"transform_quantity\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"object\","]
+#[doc = "              \"required\": ["]
+#[doc = "                \"divide_by\","]
+#[doc = "                \"round\""]
+#[doc = "              ],"]
+#[doc = "              \"properties\": {"]
+#[doc = "                \"divide_by\": {"]
+#[doc = "                  \"type\": \"integer\","]
+#[doc = "                  \"maximum\": 9007199254740991.0,"]
+#[doc = "                  \"minimum\": 1.0,"]
+#[doc = "                  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "                  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "                },"]
+#[doc = "                \"round\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"enum\": ["]
+#[doc = "                    \"up\","]
+#[doc = "                    \"down\""]
+#[doc = "                  ],"]
+#[doc = "                  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "                  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "                }"]
+#[doc = "              },"]
+#[doc = "              \"additionalProperties\": false"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"unit_amount_decimal\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 64,"]
+#[doc = "          \"pattern\": \"^(0|[1-9][0-9]*)(\\\\.[0-9]{1,12})?$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"billing_scheme\","]
+#[doc = "        \"tiers\","]
+#[doc = "        \"tiers_mode\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"billing_scheme\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"tiered\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"tiers\": {"]
+#[doc = "          \"type\": \"array\","]
+#[doc = "          \"items\": {"]
+#[doc = "            \"$ref\": \"#/$defs/BillingPriceTier\""]
+#[doc = "          },"]
+#[doc = "          \"maxItems\": 100,"]
+#[doc = "          \"minItems\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"tiers_mode\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"graduated\","]
+#[doc = "            \"volume\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    }"]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(tag = "billing_scheme", deny_unknown_fields)]
+pub enum BillingPriceTerms {
+    #[serde(rename = "per_unit")]
+    PerUnit {
+        transform_quantity: ::std::option::Option<BillingPriceTermsTransformQuantity>,
+        unit_amount_decimal: BillingPriceTermsUnitAmountDecimal,
+    },
+    #[serde(rename = "tiered")]
+    Tiered {
+        tiers: ::std::vec::Vec<BillingPriceTier>,
+        tiers_mode: BillingPriceTermsTiersMode,
+    },
+}
+#[doc = "`BillingPriceTermsTiersMode`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"graduated\","]
+#[doc = "    \"volume\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingPriceTermsTiersMode {
+    #[serde(rename = "graduated")]
+    Graduated,
+    #[serde(rename = "volume")]
+    Volume,
+}
+impl ::std::fmt::Display for BillingPriceTermsTiersMode {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Graduated => f.write_str("graduated"),
+            Self::Volume => f.write_str("volume"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingPriceTermsTiersMode {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "graduated" => Ok(Self::Graduated),
+            "volume" => Ok(Self::Volume),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingPriceTermsTiersMode {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingPriceTermsTiersMode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingPriceTermsTiersMode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingPriceTermsTransformQuantity`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"divide_by\","]
+#[doc = "    \"round\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"divide_by\": {"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"round\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"up\","]
+#[doc = "        \"down\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BillingPriceTermsTransformQuantity {
+    pub divide_by: ::std::num::NonZeroU64,
+    pub round: BillingPriceTermsTransformQuantityRound,
+}
+#[doc = "`BillingPriceTermsTransformQuantityRound`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"up\","]
+#[doc = "    \"down\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingPriceTermsTransformQuantityRound {
+    #[serde(rename = "up")]
+    Up,
+    #[serde(rename = "down")]
+    Down,
+}
+impl ::std::fmt::Display for BillingPriceTermsTransformQuantityRound {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Up => f.write_str("up"),
+            Self::Down => f.write_str("down"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingPriceTermsTransformQuantityRound {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "up" => Ok(Self::Up),
+            "down" => Ok(Self::Down),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingPriceTermsTransformQuantityRound {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingPriceTermsTransformQuantityRound {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingPriceTermsTransformQuantityRound {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingPriceTermsUnitAmountDecimal`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 64,"]
+#[doc = "  \"pattern\": \"^(0|[1-9][0-9]*)(\\\\.[0-9]{1,12})?$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingPriceTermsUnitAmountDecimal(::std::string::String);
+impl ::std::ops::Deref for BillingPriceTermsUnitAmountDecimal {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingPriceTermsUnitAmountDecimal> for ::std::string::String {
+    fn from(value: BillingPriceTermsUnitAmountDecimal) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingPriceTermsUnitAmountDecimal {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 64usize {
+            return Err("longer than 64 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| {
+                ::regress::Regex::new("^(0|[1-9][0-9]*)(\\.[0-9]{1,12})?$").unwrap()
+            });
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^(0|[1-9][0-9]*)(\\.[0-9]{1,12})?$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingPriceTermsUnitAmountDecimal {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingPriceTermsUnitAmountDecimal {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingPriceTermsUnitAmountDecimal {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingPriceTermsUnitAmountDecimal {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingPriceTier`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"flat_amount_minor\","]
+#[doc = "    \"unit_amount_decimal\","]
+#[doc = "    \"up_to\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"flat_amount_minor\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 40,"]
+#[doc = "          \"pattern\": \"^(0|[1-9][0-9]*)$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"unit_amount_decimal\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 64,"]
+#[doc = "          \"pattern\": \"^(0|[1-9][0-9]*)(\\\\.[0-9]{1,12})?$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"up_to\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 9007199254740991.0,"]
+#[doc = "          \"minimum\": 1.0"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BillingPriceTier {
+    pub flat_amount_minor: ::std::option::Option<BillingPriceTierFlatAmountMinor>,
+    pub unit_amount_decimal: ::std::option::Option<BillingPriceTierUnitAmountDecimal>,
+    pub up_to: ::std::option::Option<::std::num::NonZeroU64>,
+}
+#[doc = "`BillingPriceTierFlatAmountMinor`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 40,"]
+#[doc = "  \"pattern\": \"^(0|[1-9][0-9]*)$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingPriceTierFlatAmountMinor(::std::string::String);
+impl ::std::ops::Deref for BillingPriceTierFlatAmountMinor {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingPriceTierFlatAmountMinor> for ::std::string::String {
+    fn from(value: BillingPriceTierFlatAmountMinor) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingPriceTierFlatAmountMinor {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 40usize {
+            return Err("longer than 40 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^(0|[1-9][0-9]*)$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^(0|[1-9][0-9]*)$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingPriceTierFlatAmountMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingPriceTierFlatAmountMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingPriceTierFlatAmountMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingPriceTierFlatAmountMinor {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingPriceTierUnitAmountDecimal`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 64,"]
+#[doc = "  \"pattern\": \"^(0|[1-9][0-9]*)(\\\\.[0-9]{1,12})?$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingPriceTierUnitAmountDecimal(::std::string::String);
+impl ::std::ops::Deref for BillingPriceTierUnitAmountDecimal {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingPriceTierUnitAmountDecimal> for ::std::string::String {
+    fn from(value: BillingPriceTierUnitAmountDecimal) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingPriceTierUnitAmountDecimal {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 64usize {
+            return Err("longer than 64 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| {
+                ::regress::Regex::new("^(0|[1-9][0-9]*)(\\.[0-9]{1,12})?$").unwrap()
+            });
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^(0|[1-9][0-9]*)(\\.[0-9]{1,12})?$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingPriceTierUnitAmountDecimal {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingPriceTierUnitAmountDecimal {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingPriceTierUnitAmountDecimal {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingPriceTierUnitAmountDecimal {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`BillingProfile`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -38820,6 +45727,640 @@ impl ::std::convert::From<BillingLossProfile> for BillingProfile {
         Self::LossProfile(value)
     }
 }
+#[doc = "`BillingReconciliation`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"state\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"state\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"pending\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"checked_at\","]
+#[doc = "        \"compared_with_generation_id\","]
+#[doc = "        \"state\","]
+#[doc = "        \"unresolved_residuals\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"checked_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"compared_with_generation_id\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"maxLength\": 128,"]
+#[doc = "              \"minLength\": 1,"]
+#[doc = "              \"pattern\": \"^[A-Za-z0-9_.:-]+$\""]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"state\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"passed\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"unresolved_residuals\": {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 9007199254740991.0,"]
+#[doc = "          \"minimum\": 0.0,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"checked_at\","]
+#[doc = "        \"compared_with_generation_id\","]
+#[doc = "        \"failure_codes\","]
+#[doc = "        \"state\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"checked_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"compared_with_generation_id\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"maxLength\": 128,"]
+#[doc = "              \"minLength\": 1,"]
+#[doc = "              \"pattern\": \"^[A-Za-z0-9_.:-]+$\""]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"failure_codes\": {"]
+#[doc = "          \"type\": \"array\","]
+#[doc = "          \"items\": {"]
+#[doc = "            \"type\": \"string\","]
+#[doc = "            \"enum\": ["]
+#[doc = "              \"stock_equation\","]
+#[doc = "              \"collection_conservation\","]
+#[doc = "              \"allocation_conservation\","]
+#[doc = "              \"receivable_conservation\","]
+#[doc = "              \"source_totals\","]
+#[doc = "              \"shadow_divergence\""]
+#[doc = "            ]"]
+#[doc = "          },"]
+#[doc = "          \"maxItems\": 250,"]
+#[doc = "          \"minItems\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"state\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"failed\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    }"]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(tag = "state", deny_unknown_fields)]
+pub enum BillingReconciliation {
+    #[serde(rename = "pending")]
+    Pending,
+    #[serde(rename = "passed")]
+    Passed {
+        checked_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        compared_with_generation_id:
+            ::std::option::Option<BillingReconciliationComparedWithGenerationId>,
+        unresolved_residuals: i64,
+    },
+    #[serde(rename = "failed")]
+    Failed {
+        checked_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        compared_with_generation_id:
+            ::std::option::Option<BillingReconciliationComparedWithGenerationId>,
+        failure_codes: ::std::vec::Vec<BillingReconciliationFailureCodesItem>,
+    },
+}
+#[doc = "`BillingReconciliationComparedWithGenerationId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 128,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"pattern\": \"^[A-Za-z0-9_.:-]+$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingReconciliationComparedWithGenerationId(::std::string::String);
+impl ::std::ops::Deref for BillingReconciliationComparedWithGenerationId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingReconciliationComparedWithGenerationId> for ::std::string::String {
+    fn from(value: BillingReconciliationComparedWithGenerationId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingReconciliationComparedWithGenerationId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Za-z0-9_.:-]+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Za-z0-9_.:-]+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingReconciliationComparedWithGenerationId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingReconciliationComparedWithGenerationId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for BillingReconciliationComparedWithGenerationId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingReconciliationComparedWithGenerationId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingReconciliationFailureCodesItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"stock_equation\","]
+#[doc = "    \"collection_conservation\","]
+#[doc = "    \"allocation_conservation\","]
+#[doc = "    \"receivable_conservation\","]
+#[doc = "    \"source_totals\","]
+#[doc = "    \"shadow_divergence\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingReconciliationFailureCodesItem {
+    #[serde(rename = "stock_equation")]
+    StockEquation,
+    #[serde(rename = "collection_conservation")]
+    CollectionConservation,
+    #[serde(rename = "allocation_conservation")]
+    AllocationConservation,
+    #[serde(rename = "receivable_conservation")]
+    ReceivableConservation,
+    #[serde(rename = "source_totals")]
+    SourceTotals,
+    #[serde(rename = "shadow_divergence")]
+    ShadowDivergence,
+}
+impl ::std::fmt::Display for BillingReconciliationFailureCodesItem {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::StockEquation => f.write_str("stock_equation"),
+            Self::CollectionConservation => f.write_str("collection_conservation"),
+            Self::AllocationConservation => f.write_str("allocation_conservation"),
+            Self::ReceivableConservation => f.write_str("receivable_conservation"),
+            Self::SourceTotals => f.write_str("source_totals"),
+            Self::ShadowDivergence => f.write_str("shadow_divergence"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingReconciliationFailureCodesItem {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "stock_equation" => Ok(Self::StockEquation),
+            "collection_conservation" => Ok(Self::CollectionConservation),
+            "allocation_conservation" => Ok(Self::AllocationConservation),
+            "receivable_conservation" => Ok(Self::ReceivableConservation),
+            "source_totals" => Ok(Self::SourceTotals),
+            "shadow_divergence" => Ok(Self::ShadowDivergence),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingReconciliationFailureCodesItem {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingReconciliationFailureCodesItem {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingReconciliationFailureCodesItem {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingRecurrence`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"billing_cycle_anchor_at\","]
+#[doc = "    \"collection_method\","]
+#[doc = "    \"proration_behavior\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"billing_cycle_anchor_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"billing_mode\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"classic\","]
+#[doc = "        \"flexible\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"collection_method\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"charge_automatically\","]
+#[doc = "        \"send_invoice\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"days_until_due\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 9007199254740991.0,"]
+#[doc = "          \"minimum\": 0.0"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"proration_behavior\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"create_prorations\","]
+#[doc = "        \"always_invoice\","]
+#[doc = "        \"none\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BillingRecurrence {
+    pub billing_cycle_anchor_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub billing_mode: ::std::option::Option<BillingRecurrenceBillingMode>,
+    pub collection_method: BillingRecurrenceCollectionMethod,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub days_until_due: ::std::option::Option<i64>,
+    pub proration_behavior: BillingRecurrenceProrationBehavior,
+}
+#[doc = "`BillingRecurrenceBillingMode`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"classic\","]
+#[doc = "    \"flexible\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingRecurrenceBillingMode {
+    #[serde(rename = "classic")]
+    Classic,
+    #[serde(rename = "flexible")]
+    Flexible,
+}
+impl ::std::fmt::Display for BillingRecurrenceBillingMode {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Classic => f.write_str("classic"),
+            Self::Flexible => f.write_str("flexible"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingRecurrenceBillingMode {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "classic" => Ok(Self::Classic),
+            "flexible" => Ok(Self::Flexible),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingRecurrenceBillingMode {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingRecurrenceBillingMode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingRecurrenceBillingMode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingRecurrenceCollectionMethod`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"charge_automatically\","]
+#[doc = "    \"send_invoice\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingRecurrenceCollectionMethod {
+    #[serde(rename = "charge_automatically")]
+    ChargeAutomatically,
+    #[serde(rename = "send_invoice")]
+    SendInvoice,
+}
+impl ::std::fmt::Display for BillingRecurrenceCollectionMethod {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::ChargeAutomatically => f.write_str("charge_automatically"),
+            Self::SendInvoice => f.write_str("send_invoice"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingRecurrenceCollectionMethod {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "charge_automatically" => Ok(Self::ChargeAutomatically),
+            "send_invoice" => Ok(Self::SendInvoice),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingRecurrenceCollectionMethod {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingRecurrenceCollectionMethod {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingRecurrenceCollectionMethod {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingRecurrenceProrationBehavior`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"create_prorations\","]
+#[doc = "    \"always_invoice\","]
+#[doc = "    \"none\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingRecurrenceProrationBehavior {
+    #[serde(rename = "create_prorations")]
+    CreateProrations,
+    #[serde(rename = "always_invoice")]
+    AlwaysInvoice,
+    #[serde(rename = "none")]
+    None,
+}
+impl ::std::fmt::Display for BillingRecurrenceProrationBehavior {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::CreateProrations => f.write_str("create_prorations"),
+            Self::AlwaysInvoice => f.write_str("always_invoice"),
+            Self::None => f.write_str("none"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingRecurrenceProrationBehavior {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "create_prorations" => Ok(Self::CreateProrations),
+            "always_invoice" => Ok(Self::AlwaysInvoice),
+            "none" => Ok(Self::None),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingRecurrenceProrationBehavior {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingRecurrenceProrationBehavior {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingRecurrenceProrationBehavior {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 #[doc = "`BillingRecurringPrice`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -38867,6 +46408,10 @@ impl ::std::convert::From<BillingLossProfile> for BillingProfile {
 #[doc = "      \"x-revturbine-data-classification\": \"financial\","]
 #[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "    },"]
+#[doc = "    \"terms\": {"]
+#[doc = "      \"$ref\": \"#/$defs/BillingPriceTerms\","]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "    },"]
 #[doc = "    \"unit_amount_minor\": {"]
 #[doc = "      \"anyOf\": ["]
 #[doc = "        {"]
@@ -38905,6 +46450,8 @@ pub struct BillingRecurringPrice {
     pub price_id: BillingRecurringPricePriceId,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub product_id: ::std::option::Option<BillingRecurringPriceProductId>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub terms: ::std::option::Option<BillingPriceTerms>,
     pub unit_amount_minor: ::std::option::Option<BillingRecurringPriceUnitAmountMinor>,
     pub usage_type: BillingRecurringPriceUsageType,
 }
@@ -39368,6 +46915,10 @@ impl ::std::convert::TryFrom<::std::string::String> for BillingRecurringPriceUsa
 #[doc = "          \"x-revturbine-data-classification\": \"financial\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "        },"]
+#[doc = "        \"economic_owner\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingEconomicOwner\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "        },"]
 #[doc = "        \"effective_at\": {"]
 #[doc = "          \"type\": \"string\","]
 #[doc = "          \"format\": \"date-time\","]
@@ -39582,6 +47133,8 @@ pub enum BillingRefundProfile {
         currency: BillingRefundProfileCurrency,
         currency_exponent: i64,
         customer_ref: BillingRefundProfileCustomerRef,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        economic_owner: ::std::option::Option<BillingEconomicOwner>,
         effective_at: ::chrono::DateTime<::chrono::offset::Utc>,
         observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
         occurrence: BillingOccurrence,
@@ -41013,6 +48566,10 @@ impl<'de> ::serde::Deserialize<'de> for BillingRepeatableOccurrenceSupersedesRev
 #[doc = "          \"x-revturbine-data-classification\": \"operational\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "        },"]
+#[doc = "        \"recurrence\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingRecurrence\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
 #[doc = "        \"schedule_id\": {"]
 #[doc = "          \"type\": \"string\","]
 #[doc = "          \"maxLength\": 255,"]
@@ -41334,6 +48891,8 @@ pub enum BillingScheduleProfile {
         phases_coverage: BillingScheduleProfilePhasesCoverage,
         profile: ::std::string::String,
         profile_version: f64,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        recurrence: ::std::option::Option<BillingRecurrence>,
         schedule_id: BillingScheduleProfileScheduleId,
         source: BillingSourceScope,
         source_recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
@@ -41808,6 +49367,201 @@ impl ::std::convert::TryFrom<::std::string::String> for BillingScheduleProfileTa
     }
 }
 impl<'de> ::serde::Deserialize<'de> for BillingScheduleProfileTargetOccurrenceKey {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingSettlementAmount`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"amount_minor\","]
+#[doc = "    \"currency\","]
+#[doc = "    \"currency_exponent\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"amount_minor\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 40,"]
+#[doc = "      \"pattern\": \"^(0|[1-9][0-9]*)$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"currency\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^[A-Z]{3}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"currency_exponent\": {"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 4.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BillingSettlementAmount {
+    pub amount_minor: BillingSettlementAmountAmountMinor,
+    pub currency: BillingSettlementAmountCurrency,
+    pub currency_exponent: i64,
+}
+#[doc = "`BillingSettlementAmountAmountMinor`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 40,"]
+#[doc = "  \"pattern\": \"^(0|[1-9][0-9]*)$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingSettlementAmountAmountMinor(::std::string::String);
+impl ::std::ops::Deref for BillingSettlementAmountAmountMinor {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingSettlementAmountAmountMinor> for ::std::string::String {
+    fn from(value: BillingSettlementAmountAmountMinor) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingSettlementAmountAmountMinor {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 40usize {
+            return Err("longer than 40 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^(0|[1-9][0-9]*)$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^(0|[1-9][0-9]*)$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingSettlementAmountAmountMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingSettlementAmountAmountMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingSettlementAmountAmountMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingSettlementAmountAmountMinor {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingSettlementAmountCurrency`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[A-Z]{3}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingSettlementAmountCurrency(::std::string::String);
+impl ::std::ops::Deref for BillingSettlementAmountCurrency {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingSettlementAmountCurrency> for ::std::string::String {
+    fn from(value: BillingSettlementAmountCurrency) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingSettlementAmountCurrency {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Z]{3}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Z]{3}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingSettlementAmountCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingSettlementAmountCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingSettlementAmountCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingSettlementAmountCurrency {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -42432,6 +50186,10 @@ impl<'de> ::serde::Deserialize<'de> for BillingSubscriptionItemSnapshotItemId {
 #[doc = "          \"x-revturbine-data-classification\": \"operational\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "        },"]
+#[doc = "        \"recurrence\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingRecurrence\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
 #[doc = "        \"source\": {"]
 #[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
 #[doc = "          \"x-revturbine-data-classification\": \"operational\""]
@@ -42566,6 +50324,10 @@ impl<'de> ::serde::Deserialize<'de> for BillingSubscriptionItemSnapshotItemId {
 #[doc = "          \"const\": 1,"]
 #[doc = "          \"x-revturbine-data-classification\": \"operational\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"recurrence\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingRecurrence\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
 #[doc = "        },"]
 #[doc = "        \"source\": {"]
 #[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
@@ -42717,6 +50479,10 @@ impl<'de> ::serde::Deserialize<'de> for BillingSubscriptionItemSnapshotItemId {
 #[doc = "          \"const\": 1,"]
 #[doc = "          \"x-revturbine-data-classification\": \"operational\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"recurrence\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingRecurrence\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
 #[doc = "        },"]
 #[doc = "        \"source\": {"]
 #[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
@@ -43149,6 +50915,10 @@ impl<'de> ::serde::Deserialize<'de> for BillingSubscriptionItemSnapshotItemId {
 #[doc = "          \"x-revturbine-data-classification\": \"operational\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "        },"]
+#[doc = "        \"recurrence\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingRecurrence\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
 #[doc = "        \"source\": {"]
 #[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
 #[doc = "          \"x-revturbine-data-classification\": \"operational\""]
@@ -43299,6 +51069,10 @@ impl<'de> ::serde::Deserialize<'de> for BillingSubscriptionItemSnapshotItemId {
 #[doc = "          \"const\": 1,"]
 #[doc = "          \"x-revturbine-data-classification\": \"operational\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"recurrence\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingRecurrence\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
 #[doc = "        },"]
 #[doc = "        \"source\": {"]
 #[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
@@ -43637,6 +51411,10 @@ impl<'de> ::serde::Deserialize<'de> for BillingSubscriptionItemSnapshotItemId {
 #[doc = "          \"x-revturbine-data-classification\": \"operational\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "        },"]
+#[doc = "        \"recurrence\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingRecurrence\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
 #[doc = "        \"source\": {"]
 #[doc = "          \"$ref\": \"#/$defs/BillingSourceScope\","]
 #[doc = "          \"x-revturbine-data-classification\": \"operational\""]
@@ -43691,6 +51469,8 @@ pub enum BillingSubscriptionProfile {
         occurrence: BillingRepeatableOccurrence,
         profile: ::std::string::String,
         profile_version: f64,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        recurrence: ::std::option::Option<BillingRecurrence>,
         source: BillingSourceScope,
         source_recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
         status_after: StripeSubscriptionStatus,
@@ -43709,6 +51489,8 @@ pub enum BillingSubscriptionProfile {
         occurrence: BillingRepeatableOccurrence,
         profile: ::std::string::String,
         profile_version: f64,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        recurrence: ::std::option::Option<BillingRecurrence>,
         source: BillingSourceScope,
         source_recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
         status_after: StripeSubscriptionStatus,
@@ -43729,6 +51511,8 @@ pub enum BillingSubscriptionProfile {
         occurrence: BillingRepeatableOccurrence,
         profile: ::std::string::String,
         profile_version: f64,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        recurrence: ::std::option::Option<BillingRecurrence>,
         source: BillingSourceScope,
         source_recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
         status_after: StripeSubscriptionStatus,
@@ -43790,6 +51574,8 @@ pub enum BillingSubscriptionProfile {
         occurrence: BillingRepeatableOccurrence,
         profile: ::std::string::String,
         profile_version: f64,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        recurrence: ::std::option::Option<BillingRecurrence>,
         source: BillingSourceScope,
         source_recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
         status_after: StripeSubscriptionStatus,
@@ -43810,6 +51596,8 @@ pub enum BillingSubscriptionProfile {
         occurrence: BillingRepeatableOccurrence,
         profile: ::std::string::String,
         profile_version: f64,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        recurrence: ::std::option::Option<BillingRecurrence>,
         source: BillingSourceScope,
         source_recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
         status_after: StripeSubscriptionStatus,
@@ -43858,6 +51646,8 @@ pub enum BillingSubscriptionProfile {
         occurrence: BillingRepeatableOccurrence,
         profile: ::std::string::String,
         profile_version: f64,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        recurrence: ::std::option::Option<BillingRecurrence>,
         source: BillingSourceScope,
         source_recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
         status_after: StripeSubscriptionStatus,
@@ -44486,6 +52276,15 @@ impl<'de> ::serde::Deserialize<'de> for BillingSubscriptionProfileTargetOccurren
 #[doc = "        \"source_recorded_at\""]
 #[doc = "      ],"]
 #[doc = "      \"properties\": {"]
+#[doc = "        \"allocations_coverage\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"complete\","]
+#[doc = "            \"partial\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
 #[doc = "        \"amount_captured_minor\": {"]
 #[doc = "          \"type\": \"string\","]
 #[doc = "          \"maxLength\": 40,"]
@@ -44519,6 +52318,10 @@ impl<'de> ::serde::Deserialize<'de> for BillingSubscriptionProfileTargetOccurren
 #[doc = "          \"minLength\": 1,"]
 #[doc = "          \"x-revturbine-data-classification\": \"financial\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"economic_owner\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingEconomicOwner\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\""]
 #[doc = "        },"]
 #[doc = "        \"effective_at\": {"]
 #[doc = "          \"type\": \"string\","]
@@ -44643,6 +52446,10 @@ impl<'de> ::serde::Deserialize<'de> for BillingSubscriptionProfileTargetOccurren
 #[doc = "          \"minLength\": 1,"]
 #[doc = "          \"x-revturbine-data-classification\": \"financial\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"economic_owner\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingEconomicOwner\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\""]
 #[doc = "        },"]
 #[doc = "        \"effective_at\": {"]
 #[doc = "          \"type\": \"string\","]
@@ -44774,6 +52581,10 @@ impl<'de> ::serde::Deserialize<'de> for BillingSubscriptionProfileTargetOccurren
 #[doc = "          \"x-revturbine-data-classification\": \"financial\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "        },"]
+#[doc = "        \"economic_owner\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingEconomicOwner\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "        },"]
 #[doc = "        \"effective_at\": {"]
 #[doc = "          \"type\": \"string\","]
 #[doc = "          \"format\": \"date-time\","]
@@ -44897,6 +52708,10 @@ impl<'de> ::serde::Deserialize<'de> for BillingSubscriptionProfileTargetOccurren
 #[doc = "          \"x-revturbine-data-classification\": \"financial\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "        },"]
+#[doc = "        \"economic_owner\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingEconomicOwner\","]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "        },"]
 #[doc = "        \"effective_at\": {"]
 #[doc = "          \"type\": \"string\","]
 #[doc = "          \"format\": \"date-time\","]
@@ -44984,6 +52799,8 @@ impl<'de> ::serde::Deserialize<'de> for BillingSubscriptionProfileTargetOccurren
 pub enum BillingTransactionProfile {
     #[serde(rename = "payment_captured")]
     PaymentCaptured {
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        allocations_coverage: ::std::option::Option<BillingTransactionProfileAllocationsCoverage>,
         amount_captured_minor: BillingTransactionProfileAmountCapturedMinor,
         #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
         amount_requested_minor:
@@ -44991,6 +52808,8 @@ pub enum BillingTransactionProfile {
         currency: BillingTransactionProfileCurrency,
         currency_exponent: i64,
         customer_ref: BillingTransactionProfileCustomerRef,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        economic_owner: ::std::option::Option<BillingEconomicOwner>,
         effective_at: ::chrono::DateTime<::chrono::offset::Utc>,
         observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
         observed_object_id: BillingTransactionProfileObservedObjectId,
@@ -45008,6 +52827,8 @@ pub enum BillingTransactionProfile {
         currency: BillingTransactionProfileCurrency,
         currency_exponent: i64,
         customer_ref: BillingTransactionProfileCustomerRef,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        economic_owner: ::std::option::Option<BillingEconomicOwner>,
         effective_at: ::chrono::DateTime<::chrono::offset::Utc>,
         failure_code: BillingTransactionProfileFailureCode,
         observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
@@ -45026,6 +52847,8 @@ pub enum BillingTransactionProfile {
         currency: BillingTransactionProfileCurrency,
         currency_exponent: i64,
         customer_ref: BillingTransactionProfileCustomerRef,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        economic_owner: ::std::option::Option<BillingEconomicOwner>,
         effective_at: ::chrono::DateTime<::chrono::offset::Utc>,
         observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
         observed_object_id: BillingTransactionProfileObservedObjectId,
@@ -45043,6 +52866,8 @@ pub enum BillingTransactionProfile {
         currency: BillingTransactionProfileCurrency,
         currency_exponent: i64,
         customer_ref: BillingTransactionProfileCustomerRef,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        economic_owner: ::std::option::Option<BillingEconomicOwner>,
         effective_at: ::chrono::DateTime<::chrono::offset::Utc>,
         observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
         observed_object_id: BillingTransactionProfileObservedObjectId,
@@ -45054,6 +52879,84 @@ pub enum BillingTransactionProfile {
         source: BillingSourceScope,
         source_recorded_at: ::chrono::DateTime<::chrono::offset::Utc>,
     },
+}
+#[doc = "`BillingTransactionProfileAllocationsCoverage`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"complete\","]
+#[doc = "    \"partial\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingTransactionProfileAllocationsCoverage {
+    #[serde(rename = "complete")]
+    Complete,
+    #[serde(rename = "partial")]
+    Partial,
+}
+impl ::std::fmt::Display for BillingTransactionProfileAllocationsCoverage {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Complete => f.write_str("complete"),
+            Self::Partial => f.write_str("partial"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingTransactionProfileAllocationsCoverage {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "complete" => Ok(Self::Complete),
+            "partial" => Ok(Self::Partial),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingTransactionProfileAllocationsCoverage {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingTransactionProfileAllocationsCoverage
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for BillingTransactionProfileAllocationsCoverage
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
 }
 #[doc = "`BillingTransactionProfileAmountCapturedMinor`"]
 #[doc = r""]
@@ -51910,6 +59813,20 @@ impl ::std::convert::TryFrom<::std::string::String> for ClientContextBillingIssu
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
 #[doc = "    },"]
+#[doc = "    \"billing_health\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"no_billing\","]
+#[doc = "        \"good_standing\","]
+#[doc = "        \"trial_payment_method_attached\","]
+#[doc = "        \"payment_method_missing\","]
+#[doc = "        \"payment_failed\","]
+#[doc = "        \"payment_overdue\","]
+#[doc = "        \"cancelled\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "    },"]
 #[doc = "    \"buyer_role\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"enum\": ["]
@@ -51990,6 +59907,8 @@ pub struct ClientContextBuiltinDimensions {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub activity_level: ::std::option::Option<ClientContextBuiltinDimensionsActivityLevel>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub billing_health: ::std::option::Option<ClientContextBuiltinDimensionsBillingHealth>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub buyer_role: ::std::option::Option<ClientContextBuiltinDimensionsBuyerRole>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub device_type: ::std::option::Option<ClientContextBuiltinDimensionsDeviceType>,
@@ -52008,6 +59927,7 @@ impl ::std::default::Default for ClientContextBuiltinDimensions {
     fn default() -> Self {
         Self {
             activity_level: Default::default(),
+            billing_health: Default::default(),
             buyer_role: Default::default(),
             device_type: Default::default(),
             email_type: Default::default(),
@@ -52103,6 +60023,109 @@ impl ::std::convert::TryFrom<&::std::string::String>
 }
 impl ::std::convert::TryFrom<::std::string::String>
     for ClientContextBuiltinDimensionsActivityLevel
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ClientContextBuiltinDimensionsBillingHealth`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"no_billing\","]
+#[doc = "    \"good_standing\","]
+#[doc = "    \"trial_payment_method_attached\","]
+#[doc = "    \"payment_method_missing\","]
+#[doc = "    \"payment_failed\","]
+#[doc = "    \"payment_overdue\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ClientContextBuiltinDimensionsBillingHealth {
+    #[serde(rename = "no_billing")]
+    NoBilling,
+    #[serde(rename = "good_standing")]
+    GoodStanding,
+    #[serde(rename = "trial_payment_method_attached")]
+    TrialPaymentMethodAttached,
+    #[serde(rename = "payment_method_missing")]
+    PaymentMethodMissing,
+    #[serde(rename = "payment_failed")]
+    PaymentFailed,
+    #[serde(rename = "payment_overdue")]
+    PaymentOverdue,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for ClientContextBuiltinDimensionsBillingHealth {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::NoBilling => f.write_str("no_billing"),
+            Self::GoodStanding => f.write_str("good_standing"),
+            Self::TrialPaymentMethodAttached => f.write_str("trial_payment_method_attached"),
+            Self::PaymentMethodMissing => f.write_str("payment_method_missing"),
+            Self::PaymentFailed => f.write_str("payment_failed"),
+            Self::PaymentOverdue => f.write_str("payment_overdue"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for ClientContextBuiltinDimensionsBillingHealth {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "no_billing" => Ok(Self::NoBilling),
+            "good_standing" => Ok(Self::GoodStanding),
+            "trial_payment_method_attached" => Ok(Self::TrialPaymentMethodAttached),
+            "payment_method_missing" => Ok(Self::PaymentMethodMissing),
+            "payment_failed" => Ok(Self::PaymentFailed),
+            "payment_overdue" => Ok(Self::PaymentOverdue),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClientContextBuiltinDimensionsBillingHealth {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ClientContextBuiltinDimensionsBillingHealth
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ClientContextBuiltinDimensionsBillingHealth
 {
     type Error = self::error::ConversionError;
     fn try_from(
@@ -56079,6 +64102,1298 @@ impl ::std::convert::TryFrom<&::std::string::String> for CustomerBillingHealthIs
     }
 }
 impl ::std::convert::TryFrom<::std::string::String> for CustomerBillingHealthIssuesItem {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`CustomerBuiltinDimensions`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"activity_level\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"override\","]
+#[doc = "        \"set_at\","]
+#[doc = "        \"value\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"override\": {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        \"set_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        \"value\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"new\","]
+#[doc = "            \"high\","]
+#[doc = "            \"medium\","]
+#[doc = "            \"low\","]
+#[doc = "            \"inactive\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"billing_health\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"override\","]
+#[doc = "        \"set_at\","]
+#[doc = "        \"value\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"override\": {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        \"set_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        \"value\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"no_billing\","]
+#[doc = "            \"good_standing\","]
+#[doc = "            \"trial_payment_method_attached\","]
+#[doc = "            \"payment_method_missing\","]
+#[doc = "            \"payment_failed\","]
+#[doc = "            \"payment_overdue\","]
+#[doc = "            \"cancelled\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"buyer_role\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"override\","]
+#[doc = "        \"set_at\","]
+#[doc = "        \"value\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"override\": {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        \"set_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        \"value\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"buyer\","]
+#[doc = "            \"non_buyer\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"device_type\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"override\","]
+#[doc = "        \"set_at\","]
+#[doc = "        \"value\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"override\": {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        \"set_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        \"value\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"desktop\","]
+#[doc = "            \"mobile\","]
+#[doc = "            \"tablet\","]
+#[doc = "            \"unknown\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"email_type\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"override\","]
+#[doc = "        \"set_at\","]
+#[doc = "        \"value\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"override\": {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        \"set_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        \"value\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"business\","]
+#[doc = "            \"personal\","]
+#[doc = "            \"unknown\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"region\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"override\","]
+#[doc = "        \"set_at\","]
+#[doc = "        \"value\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"override\": {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        \"set_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        \"value\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"us_canada\","]
+#[doc = "            \"europe\","]
+#[doc = "            \"rest_of_world\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_state\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"override\","]
+#[doc = "        \"set_at\","]
+#[doc = "        \"value\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"override\": {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        \"set_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        \"value\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"none\","]
+#[doc = "            \"trial\","]
+#[doc = "            \"paid\","]
+#[doc = "            \"cancelled\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"trial_type\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"override\","]
+#[doc = "        \"set_at\","]
+#[doc = "        \"value\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"override\": {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        \"set_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        \"value\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"none\","]
+#[doc = "            \"free_trial\","]
+#[doc = "            \"reverse_trial\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CustomerBuiltinDimensions {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub activity_level: ::std::option::Option<CustomerBuiltinDimensionsActivityLevel>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub billing_health: ::std::option::Option<CustomerBuiltinDimensionsBillingHealth>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub buyer_role: ::std::option::Option<CustomerBuiltinDimensionsBuyerRole>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub device_type: ::std::option::Option<CustomerBuiltinDimensionsDeviceType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub email_type: ::std::option::Option<CustomerBuiltinDimensionsEmailType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub region: ::std::option::Option<CustomerBuiltinDimensionsRegion>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub subscription_state: ::std::option::Option<CustomerBuiltinDimensionsSubscriptionState>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub trial_type: ::std::option::Option<CustomerBuiltinDimensionsTrialType>,
+}
+impl ::std::default::Default for CustomerBuiltinDimensions {
+    fn default() -> Self {
+        Self {
+            activity_level: Default::default(),
+            billing_health: Default::default(),
+            buyer_role: Default::default(),
+            device_type: Default::default(),
+            email_type: Default::default(),
+            region: Default::default(),
+            subscription_state: Default::default(),
+            trial_type: Default::default(),
+        }
+    }
+}
+#[doc = "`CustomerBuiltinDimensionsActivityLevel`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"override\","]
+#[doc = "    \"set_at\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"set_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"new\","]
+#[doc = "        \"high\","]
+#[doc = "        \"medium\","]
+#[doc = "        \"low\","]
+#[doc = "        \"inactive\""]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CustomerBuiltinDimensionsActivityLevel {
+    #[serde(rename = "override")]
+    pub override_: bool,
+    pub set_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub value: CustomerBuiltinDimensionsActivityLevelValue,
+}
+#[doc = "`CustomerBuiltinDimensionsActivityLevelValue`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"new\","]
+#[doc = "    \"high\","]
+#[doc = "    \"medium\","]
+#[doc = "    \"low\","]
+#[doc = "    \"inactive\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum CustomerBuiltinDimensionsActivityLevelValue {
+    #[serde(rename = "new")]
+    New,
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "inactive")]
+    Inactive,
+}
+impl ::std::fmt::Display for CustomerBuiltinDimensionsActivityLevelValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::New => f.write_str("new"),
+            Self::High => f.write_str("high"),
+            Self::Medium => f.write_str("medium"),
+            Self::Low => f.write_str("low"),
+            Self::Inactive => f.write_str("inactive"),
+        }
+    }
+}
+impl ::std::str::FromStr for CustomerBuiltinDimensionsActivityLevelValue {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "new" => Ok(Self::New),
+            "high" => Ok(Self::High),
+            "medium" => Ok(Self::Medium),
+            "low" => Ok(Self::Low),
+            "inactive" => Ok(Self::Inactive),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for CustomerBuiltinDimensionsActivityLevelValue {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for CustomerBuiltinDimensionsActivityLevelValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for CustomerBuiltinDimensionsActivityLevelValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`CustomerBuiltinDimensionsBillingHealth`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"override\","]
+#[doc = "    \"set_at\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"set_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"no_billing\","]
+#[doc = "        \"good_standing\","]
+#[doc = "        \"trial_payment_method_attached\","]
+#[doc = "        \"payment_method_missing\","]
+#[doc = "        \"payment_failed\","]
+#[doc = "        \"payment_overdue\","]
+#[doc = "        \"cancelled\""]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CustomerBuiltinDimensionsBillingHealth {
+    #[serde(rename = "override")]
+    pub override_: bool,
+    pub set_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub value: CustomerBuiltinDimensionsBillingHealthValue,
+}
+#[doc = "`CustomerBuiltinDimensionsBillingHealthValue`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"no_billing\","]
+#[doc = "    \"good_standing\","]
+#[doc = "    \"trial_payment_method_attached\","]
+#[doc = "    \"payment_method_missing\","]
+#[doc = "    \"payment_failed\","]
+#[doc = "    \"payment_overdue\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum CustomerBuiltinDimensionsBillingHealthValue {
+    #[serde(rename = "no_billing")]
+    NoBilling,
+    #[serde(rename = "good_standing")]
+    GoodStanding,
+    #[serde(rename = "trial_payment_method_attached")]
+    TrialPaymentMethodAttached,
+    #[serde(rename = "payment_method_missing")]
+    PaymentMethodMissing,
+    #[serde(rename = "payment_failed")]
+    PaymentFailed,
+    #[serde(rename = "payment_overdue")]
+    PaymentOverdue,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for CustomerBuiltinDimensionsBillingHealthValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::NoBilling => f.write_str("no_billing"),
+            Self::GoodStanding => f.write_str("good_standing"),
+            Self::TrialPaymentMethodAttached => f.write_str("trial_payment_method_attached"),
+            Self::PaymentMethodMissing => f.write_str("payment_method_missing"),
+            Self::PaymentFailed => f.write_str("payment_failed"),
+            Self::PaymentOverdue => f.write_str("payment_overdue"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for CustomerBuiltinDimensionsBillingHealthValue {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "no_billing" => Ok(Self::NoBilling),
+            "good_standing" => Ok(Self::GoodStanding),
+            "trial_payment_method_attached" => Ok(Self::TrialPaymentMethodAttached),
+            "payment_method_missing" => Ok(Self::PaymentMethodMissing),
+            "payment_failed" => Ok(Self::PaymentFailed),
+            "payment_overdue" => Ok(Self::PaymentOverdue),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for CustomerBuiltinDimensionsBillingHealthValue {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for CustomerBuiltinDimensionsBillingHealthValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for CustomerBuiltinDimensionsBillingHealthValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`CustomerBuiltinDimensionsBuyerRole`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"override\","]
+#[doc = "    \"set_at\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"set_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"buyer\","]
+#[doc = "        \"non_buyer\""]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CustomerBuiltinDimensionsBuyerRole {
+    #[serde(rename = "override")]
+    pub override_: bool,
+    pub set_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub value: CustomerBuiltinDimensionsBuyerRoleValue,
+}
+#[doc = "`CustomerBuiltinDimensionsBuyerRoleValue`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"buyer\","]
+#[doc = "    \"non_buyer\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum CustomerBuiltinDimensionsBuyerRoleValue {
+    #[serde(rename = "buyer")]
+    Buyer,
+    #[serde(rename = "non_buyer")]
+    NonBuyer,
+}
+impl ::std::fmt::Display for CustomerBuiltinDimensionsBuyerRoleValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Buyer => f.write_str("buyer"),
+            Self::NonBuyer => f.write_str("non_buyer"),
+        }
+    }
+}
+impl ::std::str::FromStr for CustomerBuiltinDimensionsBuyerRoleValue {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "buyer" => Ok(Self::Buyer),
+            "non_buyer" => Ok(Self::NonBuyer),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for CustomerBuiltinDimensionsBuyerRoleValue {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CustomerBuiltinDimensionsBuyerRoleValue {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CustomerBuiltinDimensionsBuyerRoleValue {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`CustomerBuiltinDimensionsDeviceType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"override\","]
+#[doc = "    \"set_at\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"set_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"desktop\","]
+#[doc = "        \"mobile\","]
+#[doc = "        \"tablet\","]
+#[doc = "        \"unknown\""]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CustomerBuiltinDimensionsDeviceType {
+    #[serde(rename = "override")]
+    pub override_: bool,
+    pub set_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub value: CustomerBuiltinDimensionsDeviceTypeValue,
+}
+#[doc = "`CustomerBuiltinDimensionsDeviceTypeValue`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"desktop\","]
+#[doc = "    \"mobile\","]
+#[doc = "    \"tablet\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum CustomerBuiltinDimensionsDeviceTypeValue {
+    #[serde(rename = "desktop")]
+    Desktop,
+    #[serde(rename = "mobile")]
+    Mobile,
+    #[serde(rename = "tablet")]
+    Tablet,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for CustomerBuiltinDimensionsDeviceTypeValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Desktop => f.write_str("desktop"),
+            Self::Mobile => f.write_str("mobile"),
+            Self::Tablet => f.write_str("tablet"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for CustomerBuiltinDimensionsDeviceTypeValue {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "desktop" => Ok(Self::Desktop),
+            "mobile" => Ok(Self::Mobile),
+            "tablet" => Ok(Self::Tablet),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for CustomerBuiltinDimensionsDeviceTypeValue {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CustomerBuiltinDimensionsDeviceTypeValue {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CustomerBuiltinDimensionsDeviceTypeValue {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`CustomerBuiltinDimensionsEmailType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"override\","]
+#[doc = "    \"set_at\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"set_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"business\","]
+#[doc = "        \"personal\","]
+#[doc = "        \"unknown\""]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CustomerBuiltinDimensionsEmailType {
+    #[serde(rename = "override")]
+    pub override_: bool,
+    pub set_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub value: CustomerBuiltinDimensionsEmailTypeValue,
+}
+#[doc = "`CustomerBuiltinDimensionsEmailTypeValue`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"business\","]
+#[doc = "    \"personal\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum CustomerBuiltinDimensionsEmailTypeValue {
+    #[serde(rename = "business")]
+    Business,
+    #[serde(rename = "personal")]
+    Personal,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for CustomerBuiltinDimensionsEmailTypeValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Business => f.write_str("business"),
+            Self::Personal => f.write_str("personal"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for CustomerBuiltinDimensionsEmailTypeValue {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "business" => Ok(Self::Business),
+            "personal" => Ok(Self::Personal),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for CustomerBuiltinDimensionsEmailTypeValue {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CustomerBuiltinDimensionsEmailTypeValue {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CustomerBuiltinDimensionsEmailTypeValue {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`CustomerBuiltinDimensionsRegion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"override\","]
+#[doc = "    \"set_at\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"set_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"us_canada\","]
+#[doc = "        \"europe\","]
+#[doc = "        \"rest_of_world\""]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CustomerBuiltinDimensionsRegion {
+    #[serde(rename = "override")]
+    pub override_: bool,
+    pub set_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub value: CustomerBuiltinDimensionsRegionValue,
+}
+#[doc = "`CustomerBuiltinDimensionsRegionValue`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"us_canada\","]
+#[doc = "    \"europe\","]
+#[doc = "    \"rest_of_world\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum CustomerBuiltinDimensionsRegionValue {
+    #[serde(rename = "us_canada")]
+    UsCanada,
+    #[serde(rename = "europe")]
+    Europe,
+    #[serde(rename = "rest_of_world")]
+    RestOfWorld,
+}
+impl ::std::fmt::Display for CustomerBuiltinDimensionsRegionValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::UsCanada => f.write_str("us_canada"),
+            Self::Europe => f.write_str("europe"),
+            Self::RestOfWorld => f.write_str("rest_of_world"),
+        }
+    }
+}
+impl ::std::str::FromStr for CustomerBuiltinDimensionsRegionValue {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "us_canada" => Ok(Self::UsCanada),
+            "europe" => Ok(Self::Europe),
+            "rest_of_world" => Ok(Self::RestOfWorld),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for CustomerBuiltinDimensionsRegionValue {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CustomerBuiltinDimensionsRegionValue {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CustomerBuiltinDimensionsRegionValue {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`CustomerBuiltinDimensionsSubscriptionState`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"override\","]
+#[doc = "    \"set_at\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"set_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"none\","]
+#[doc = "        \"trial\","]
+#[doc = "        \"paid\","]
+#[doc = "        \"cancelled\""]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CustomerBuiltinDimensionsSubscriptionState {
+    #[serde(rename = "override")]
+    pub override_: bool,
+    pub set_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub value: CustomerBuiltinDimensionsSubscriptionStateValue,
+}
+#[doc = "`CustomerBuiltinDimensionsSubscriptionStateValue`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"trial\","]
+#[doc = "    \"paid\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum CustomerBuiltinDimensionsSubscriptionStateValue {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "trial")]
+    Trial,
+    #[serde(rename = "paid")]
+    Paid,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for CustomerBuiltinDimensionsSubscriptionStateValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::Trial => f.write_str("trial"),
+            Self::Paid => f.write_str("paid"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for CustomerBuiltinDimensionsSubscriptionStateValue {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "trial" => Ok(Self::Trial),
+            "paid" => Ok(Self::Paid),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for CustomerBuiltinDimensionsSubscriptionStateValue {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for CustomerBuiltinDimensionsSubscriptionStateValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for CustomerBuiltinDimensionsSubscriptionStateValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`CustomerBuiltinDimensionsTrialType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"override\","]
+#[doc = "    \"set_at\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"set_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"none\","]
+#[doc = "        \"free_trial\","]
+#[doc = "        \"reverse_trial\""]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CustomerBuiltinDimensionsTrialType {
+    #[serde(rename = "override")]
+    pub override_: bool,
+    pub set_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub value: CustomerBuiltinDimensionsTrialTypeValue,
+}
+#[doc = "`CustomerBuiltinDimensionsTrialTypeValue`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"free_trial\","]
+#[doc = "    \"reverse_trial\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum CustomerBuiltinDimensionsTrialTypeValue {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "free_trial")]
+    FreeTrial,
+    #[serde(rename = "reverse_trial")]
+    ReverseTrial,
+}
+impl ::std::fmt::Display for CustomerBuiltinDimensionsTrialTypeValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::FreeTrial => f.write_str("free_trial"),
+            Self::ReverseTrial => f.write_str("reverse_trial"),
+        }
+    }
+}
+impl ::std::str::FromStr for CustomerBuiltinDimensionsTrialTypeValue {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "free_trial" => Ok(Self::FreeTrial),
+            "reverse_trial" => Ok(Self::ReverseTrial),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for CustomerBuiltinDimensionsTrialTypeValue {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CustomerBuiltinDimensionsTrialTypeValue {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CustomerBuiltinDimensionsTrialTypeValue {
     type Error = self::error::ConversionError;
     fn try_from(
         value: ::std::string::String,
@@ -81627,6 +90942,273 @@ impl ::std::convert::TryFrom<&::std::string::String> for InvitationStatus {
     }
 }
 impl ::std::convert::TryFrom<::std::string::String> for InvitationStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`InvoicePaymentStatus`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"open\","]
+#[doc = "    \"paid\","]
+#[doc = "    \"canceled\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum InvoicePaymentStatus {
+    #[serde(rename = "open")]
+    Open,
+    #[serde(rename = "paid")]
+    Paid,
+    #[serde(rename = "canceled")]
+    Canceled,
+}
+impl ::std::fmt::Display for InvoicePaymentStatus {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Open => f.write_str("open"),
+            Self::Paid => f.write_str("paid"),
+            Self::Canceled => f.write_str("canceled"),
+        }
+    }
+}
+impl ::std::str::FromStr for InvoicePaymentStatus {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "open" => Ok(Self::Open),
+            "paid" => Ok(Self::Paid),
+            "canceled" => Ok(Self::Canceled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for InvoicePaymentStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for InvoicePaymentStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for InvoicePaymentStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`InvoiceSettlementBasis`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"payments\","]
+#[doc = "    \"zero_total\","]
+#[doc = "    \"customer_balance\","]
+#[doc = "    \"credit_note\","]
+#[doc = "    \"rollover\","]
+#[doc = "    \"out_of_band\","]
+#[doc = "    \"mixed\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum InvoiceSettlementBasis {
+    #[serde(rename = "payments")]
+    Payments,
+    #[serde(rename = "zero_total")]
+    ZeroTotal,
+    #[serde(rename = "customer_balance")]
+    CustomerBalance,
+    #[serde(rename = "credit_note")]
+    CreditNote,
+    #[serde(rename = "rollover")]
+    Rollover,
+    #[serde(rename = "out_of_band")]
+    OutOfBand,
+    #[serde(rename = "mixed")]
+    Mixed,
+}
+impl ::std::fmt::Display for InvoiceSettlementBasis {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Payments => f.write_str("payments"),
+            Self::ZeroTotal => f.write_str("zero_total"),
+            Self::CustomerBalance => f.write_str("customer_balance"),
+            Self::CreditNote => f.write_str("credit_note"),
+            Self::Rollover => f.write_str("rollover"),
+            Self::OutOfBand => f.write_str("out_of_band"),
+            Self::Mixed => f.write_str("mixed"),
+        }
+    }
+}
+impl ::std::str::FromStr for InvoiceSettlementBasis {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "payments" => Ok(Self::Payments),
+            "zero_total" => Ok(Self::ZeroTotal),
+            "customer_balance" => Ok(Self::CustomerBalance),
+            "credit_note" => Ok(Self::CreditNote),
+            "rollover" => Ok(Self::Rollover),
+            "out_of_band" => Ok(Self::OutOfBand),
+            "mixed" => Ok(Self::Mixed),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for InvoiceSettlementBasis {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for InvoiceSettlementBasis {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for InvoiceSettlementBasis {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`InvoiceStatus`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"draft\","]
+#[doc = "    \"open\","]
+#[doc = "    \"paid\","]
+#[doc = "    \"uncollectible\","]
+#[doc = "    \"void\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum InvoiceStatus {
+    #[serde(rename = "draft")]
+    Draft,
+    #[serde(rename = "open")]
+    Open,
+    #[serde(rename = "paid")]
+    Paid,
+    #[serde(rename = "uncollectible")]
+    Uncollectible,
+    #[serde(rename = "void")]
+    Void,
+}
+impl ::std::fmt::Display for InvoiceStatus {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Draft => f.write_str("draft"),
+            Self::Open => f.write_str("open"),
+            Self::Paid => f.write_str("paid"),
+            Self::Uncollectible => f.write_str("uncollectible"),
+            Self::Void => f.write_str("void"),
+        }
+    }
+}
+impl ::std::str::FromStr for InvoiceStatus {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "draft" => Ok(Self::Draft),
+            "open" => Ok(Self::Open),
+            "paid" => Ok(Self::Paid),
+            "uncollectible" => Ok(Self::Uncollectible),
+            "void" => Ok(Self::Void),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for InvoiceStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for InvoiceStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for InvoiceStatus {
     type Error = self::error::ConversionError;
     fn try_from(
         value: ::std::string::String,
@@ -113798,6 +123380,11 @@ impl<'de> ::serde::Deserialize<'de> for RevTurbineConfigSchemaVersion {
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"is_buyer\": {"]
+#[doc = "      \"default\": false,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"is_default\": {"]
 #[doc = "      \"default\": false,"]
 #[doc = "      \"type\": \"boolean\","]
@@ -113827,6 +123414,8 @@ pub struct RevTurbineConfigSeatTypesItem {
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
     pub entitlement_handles: ::std::vec::Vec<::std::string::String>,
     pub handle: RevTurbineConfigSeatTypesItemHandle,
+    #[serde(default)]
+    pub is_buyer: bool,
     #[serde(default)]
     pub is_default: bool,
     pub name: RevTurbineConfigSeatTypesItemName,
@@ -138692,6 +148281,11 @@ pub struct SdkMetaIngestBatch {
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"is_buyer\": {"]
+#[doc = "      \"default\": false,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"is_current\": {"]
 #[doc = "      \"default\": true,"]
 #[doc = "      \"readOnly\": true,"]
@@ -138789,6 +148383,8 @@ pub struct SeatType {
     pub environment_id: SeatTypeEnvironmentId,
     pub handle: SeatTypeHandle,
     pub id: SeatTypeId,
+    #[serde(default)]
+    pub is_buyer: bool,
     #[serde(default = "defaults::default_bool::<true>")]
     pub is_current: bool,
     #[serde(default)]
@@ -157792,6 +167388,843 @@ impl<'de> ::serde::Deserialize<'de> for SemanticEventEventType {
             })
     }
 }
+#[doc = "`ServerBuiltinDimensionsWrite`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"activity_level\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"new\","]
+#[doc = "            \"high\","]
+#[doc = "            \"medium\","]
+#[doc = "            \"low\","]
+#[doc = "            \"inactive\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"billing_health\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"no_billing\","]
+#[doc = "            \"good_standing\","]
+#[doc = "            \"trial_payment_method_attached\","]
+#[doc = "            \"payment_method_missing\","]
+#[doc = "            \"payment_failed\","]
+#[doc = "            \"payment_overdue\","]
+#[doc = "            \"cancelled\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"buyer_role\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"buyer\","]
+#[doc = "            \"non_buyer\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"device_type\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"desktop\","]
+#[doc = "            \"mobile\","]
+#[doc = "            \"tablet\","]
+#[doc = "            \"unknown\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"email_type\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"business\","]
+#[doc = "            \"personal\","]
+#[doc = "            \"unknown\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"region\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"us_canada\","]
+#[doc = "            \"europe\","]
+#[doc = "            \"rest_of_world\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_state\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"none\","]
+#[doc = "            \"trial\","]
+#[doc = "            \"paid\","]
+#[doc = "            \"cancelled\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"trial_type\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"none\","]
+#[doc = "            \"free_trial\","]
+#[doc = "            \"reverse_trial\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct ServerBuiltinDimensionsWrite {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub activity_level: ::std::option::Option<ServerBuiltinDimensionsWriteActivityLevel>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub billing_health: ::std::option::Option<ServerBuiltinDimensionsWriteBillingHealth>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub buyer_role: ::std::option::Option<ServerBuiltinDimensionsWriteBuyerRole>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub device_type: ::std::option::Option<ServerBuiltinDimensionsWriteDeviceType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub email_type: ::std::option::Option<ServerBuiltinDimensionsWriteEmailType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub region: ::std::option::Option<ServerBuiltinDimensionsWriteRegion>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub subscription_state: ::std::option::Option<ServerBuiltinDimensionsWriteSubscriptionState>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub trial_type: ::std::option::Option<ServerBuiltinDimensionsWriteTrialType>,
+}
+impl ::std::default::Default for ServerBuiltinDimensionsWrite {
+    fn default() -> Self {
+        Self {
+            activity_level: Default::default(),
+            billing_health: Default::default(),
+            buyer_role: Default::default(),
+            device_type: Default::default(),
+            email_type: Default::default(),
+            region: Default::default(),
+            subscription_state: Default::default(),
+            trial_type: Default::default(),
+        }
+    }
+}
+#[doc = "`ServerBuiltinDimensionsWriteActivityLevel`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"new\","]
+#[doc = "    \"high\","]
+#[doc = "    \"medium\","]
+#[doc = "    \"low\","]
+#[doc = "    \"inactive\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerBuiltinDimensionsWriteActivityLevel {
+    #[serde(rename = "new")]
+    New,
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "inactive")]
+    Inactive,
+}
+impl ::std::fmt::Display for ServerBuiltinDimensionsWriteActivityLevel {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::New => f.write_str("new"),
+            Self::High => f.write_str("high"),
+            Self::Medium => f.write_str("medium"),
+            Self::Low => f.write_str("low"),
+            Self::Inactive => f.write_str("inactive"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerBuiltinDimensionsWriteActivityLevel {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "new" => Ok(Self::New),
+            "high" => Ok(Self::High),
+            "medium" => Ok(Self::Medium),
+            "low" => Ok(Self::Low),
+            "inactive" => Ok(Self::Inactive),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerBuiltinDimensionsWriteActivityLevel {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ServerBuiltinDimensionsWriteActivityLevel {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ServerBuiltinDimensionsWriteActivityLevel {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerBuiltinDimensionsWriteBillingHealth`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"no_billing\","]
+#[doc = "    \"good_standing\","]
+#[doc = "    \"trial_payment_method_attached\","]
+#[doc = "    \"payment_method_missing\","]
+#[doc = "    \"payment_failed\","]
+#[doc = "    \"payment_overdue\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerBuiltinDimensionsWriteBillingHealth {
+    #[serde(rename = "no_billing")]
+    NoBilling,
+    #[serde(rename = "good_standing")]
+    GoodStanding,
+    #[serde(rename = "trial_payment_method_attached")]
+    TrialPaymentMethodAttached,
+    #[serde(rename = "payment_method_missing")]
+    PaymentMethodMissing,
+    #[serde(rename = "payment_failed")]
+    PaymentFailed,
+    #[serde(rename = "payment_overdue")]
+    PaymentOverdue,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for ServerBuiltinDimensionsWriteBillingHealth {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::NoBilling => f.write_str("no_billing"),
+            Self::GoodStanding => f.write_str("good_standing"),
+            Self::TrialPaymentMethodAttached => f.write_str("trial_payment_method_attached"),
+            Self::PaymentMethodMissing => f.write_str("payment_method_missing"),
+            Self::PaymentFailed => f.write_str("payment_failed"),
+            Self::PaymentOverdue => f.write_str("payment_overdue"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerBuiltinDimensionsWriteBillingHealth {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "no_billing" => Ok(Self::NoBilling),
+            "good_standing" => Ok(Self::GoodStanding),
+            "trial_payment_method_attached" => Ok(Self::TrialPaymentMethodAttached),
+            "payment_method_missing" => Ok(Self::PaymentMethodMissing),
+            "payment_failed" => Ok(Self::PaymentFailed),
+            "payment_overdue" => Ok(Self::PaymentOverdue),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerBuiltinDimensionsWriteBillingHealth {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ServerBuiltinDimensionsWriteBillingHealth {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ServerBuiltinDimensionsWriteBillingHealth {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerBuiltinDimensionsWriteBuyerRole`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"buyer\","]
+#[doc = "    \"non_buyer\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerBuiltinDimensionsWriteBuyerRole {
+    #[serde(rename = "buyer")]
+    Buyer,
+    #[serde(rename = "non_buyer")]
+    NonBuyer,
+}
+impl ::std::fmt::Display for ServerBuiltinDimensionsWriteBuyerRole {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Buyer => f.write_str("buyer"),
+            Self::NonBuyer => f.write_str("non_buyer"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerBuiltinDimensionsWriteBuyerRole {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "buyer" => Ok(Self::Buyer),
+            "non_buyer" => Ok(Self::NonBuyer),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerBuiltinDimensionsWriteBuyerRole {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ServerBuiltinDimensionsWriteBuyerRole {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ServerBuiltinDimensionsWriteBuyerRole {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerBuiltinDimensionsWriteDeviceType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"desktop\","]
+#[doc = "    \"mobile\","]
+#[doc = "    \"tablet\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerBuiltinDimensionsWriteDeviceType {
+    #[serde(rename = "desktop")]
+    Desktop,
+    #[serde(rename = "mobile")]
+    Mobile,
+    #[serde(rename = "tablet")]
+    Tablet,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for ServerBuiltinDimensionsWriteDeviceType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Desktop => f.write_str("desktop"),
+            Self::Mobile => f.write_str("mobile"),
+            Self::Tablet => f.write_str("tablet"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerBuiltinDimensionsWriteDeviceType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "desktop" => Ok(Self::Desktop),
+            "mobile" => Ok(Self::Mobile),
+            "tablet" => Ok(Self::Tablet),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerBuiltinDimensionsWriteDeviceType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ServerBuiltinDimensionsWriteDeviceType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ServerBuiltinDimensionsWriteDeviceType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerBuiltinDimensionsWriteEmailType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"business\","]
+#[doc = "    \"personal\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerBuiltinDimensionsWriteEmailType {
+    #[serde(rename = "business")]
+    Business,
+    #[serde(rename = "personal")]
+    Personal,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for ServerBuiltinDimensionsWriteEmailType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Business => f.write_str("business"),
+            Self::Personal => f.write_str("personal"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerBuiltinDimensionsWriteEmailType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "business" => Ok(Self::Business),
+            "personal" => Ok(Self::Personal),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerBuiltinDimensionsWriteEmailType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ServerBuiltinDimensionsWriteEmailType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ServerBuiltinDimensionsWriteEmailType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerBuiltinDimensionsWriteRegion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"us_canada\","]
+#[doc = "    \"europe\","]
+#[doc = "    \"rest_of_world\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerBuiltinDimensionsWriteRegion {
+    #[serde(rename = "us_canada")]
+    UsCanada,
+    #[serde(rename = "europe")]
+    Europe,
+    #[serde(rename = "rest_of_world")]
+    RestOfWorld,
+}
+impl ::std::fmt::Display for ServerBuiltinDimensionsWriteRegion {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::UsCanada => f.write_str("us_canada"),
+            Self::Europe => f.write_str("europe"),
+            Self::RestOfWorld => f.write_str("rest_of_world"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerBuiltinDimensionsWriteRegion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "us_canada" => Ok(Self::UsCanada),
+            "europe" => Ok(Self::Europe),
+            "rest_of_world" => Ok(Self::RestOfWorld),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerBuiltinDimensionsWriteRegion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ServerBuiltinDimensionsWriteRegion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ServerBuiltinDimensionsWriteRegion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerBuiltinDimensionsWriteSubscriptionState`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"trial\","]
+#[doc = "    \"paid\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerBuiltinDimensionsWriteSubscriptionState {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "trial")]
+    Trial,
+    #[serde(rename = "paid")]
+    Paid,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for ServerBuiltinDimensionsWriteSubscriptionState {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::Trial => f.write_str("trial"),
+            Self::Paid => f.write_str("paid"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerBuiltinDimensionsWriteSubscriptionState {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "trial" => Ok(Self::Trial),
+            "paid" => Ok(Self::Paid),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerBuiltinDimensionsWriteSubscriptionState {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerBuiltinDimensionsWriteSubscriptionState
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerBuiltinDimensionsWriteSubscriptionState
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerBuiltinDimensionsWriteTrialType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"free_trial\","]
+#[doc = "    \"reverse_trial\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerBuiltinDimensionsWriteTrialType {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "free_trial")]
+    FreeTrial,
+    #[serde(rename = "reverse_trial")]
+    ReverseTrial,
+}
+impl ::std::fmt::Display for ServerBuiltinDimensionsWriteTrialType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::FreeTrial => f.write_str("free_trial"),
+            Self::ReverseTrial => f.write_str("reverse_trial"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerBuiltinDimensionsWriteTrialType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "free_trial" => Ok(Self::FreeTrial),
+            "reverse_trial" => Ok(Self::ReverseTrial),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerBuiltinDimensionsWriteTrialType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ServerBuiltinDimensionsWriteTrialType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ServerBuiltinDimensionsWriteTrialType {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 #[doc = "`ServerEvaluationPayload`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -158173,6 +168606,3694 @@ impl ::std::default::Default for ServerEvaluationPayloadUserContext {
             traits: Default::default(),
             usage_balances: Default::default(),
         }
+    }
+}
+#[doc = "`ServerUserBuiltinDimensions`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"builtin_dimensions\","]
+#[doc = "    \"resolved_at\","]
+#[doc = "    \"tenant_id\","]
+#[doc = "    \"user_id\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"builtin_dimensions\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"activity_level\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"new\","]
+#[doc = "            \"high\","]
+#[doc = "            \"medium\","]
+#[doc = "            \"low\","]
+#[doc = "            \"inactive\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"billing_health\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"no_billing\","]
+#[doc = "            \"good_standing\","]
+#[doc = "            \"trial_payment_method_attached\","]
+#[doc = "            \"payment_method_missing\","]
+#[doc = "            \"payment_failed\","]
+#[doc = "            \"payment_overdue\","]
+#[doc = "            \"cancelled\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"buyer_role\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"buyer\","]
+#[doc = "            \"non_buyer\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"device_type\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"desktop\","]
+#[doc = "            \"mobile\","]
+#[doc = "            \"tablet\","]
+#[doc = "            \"unknown\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"email_type\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"business\","]
+#[doc = "            \"personal\","]
+#[doc = "            \"unknown\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"region\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"us_canada\","]
+#[doc = "            \"europe\","]
+#[doc = "            \"rest_of_world\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"seat_type\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"pattern\": \"^[a-z0-9._]{1,87}$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"subscription_state\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"none\","]
+#[doc = "            \"trial\","]
+#[doc = "            \"paid\","]
+#[doc = "            \"cancelled\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"trial_type\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"none\","]
+#[doc = "            \"free_trial\","]
+#[doc = "            \"reverse_trial\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"resolved_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"tenant_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"user_id\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"pii\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct ServerUserBuiltinDimensions {
+    pub builtin_dimensions: ServerUserBuiltinDimensionsBuiltinDimensions,
+    pub resolved_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub tenant_id: ServerUserBuiltinDimensionsTenantId,
+    pub user_id: ServerUserBuiltinDimensionsUserId,
+}
+#[doc = "`ServerUserBuiltinDimensionsBuiltinDimensions`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"activity_level\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"new\","]
+#[doc = "        \"high\","]
+#[doc = "        \"medium\","]
+#[doc = "        \"low\","]
+#[doc = "        \"inactive\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"billing_health\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"no_billing\","]
+#[doc = "        \"good_standing\","]
+#[doc = "        \"trial_payment_method_attached\","]
+#[doc = "        \"payment_method_missing\","]
+#[doc = "        \"payment_failed\","]
+#[doc = "        \"payment_overdue\","]
+#[doc = "        \"cancelled\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"buyer_role\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"buyer\","]
+#[doc = "        \"non_buyer\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"device_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"desktop\","]
+#[doc = "        \"mobile\","]
+#[doc = "        \"tablet\","]
+#[doc = "        \"unknown\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"email_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"business\","]
+#[doc = "        \"personal\","]
+#[doc = "        \"unknown\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"region\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"us_canada\","]
+#[doc = "        \"europe\","]
+#[doc = "        \"rest_of_world\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"seat_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^[a-z0-9._]{1,87}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_state\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"none\","]
+#[doc = "        \"trial\","]
+#[doc = "        \"paid\","]
+#[doc = "        \"cancelled\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"trial_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"none\","]
+#[doc = "        \"free_trial\","]
+#[doc = "        \"reverse_trial\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct ServerUserBuiltinDimensionsBuiltinDimensions {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub activity_level:
+        ::std::option::Option<ServerUserBuiltinDimensionsBuiltinDimensionsActivityLevel>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub billing_health:
+        ::std::option::Option<ServerUserBuiltinDimensionsBuiltinDimensionsBillingHealth>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub buyer_role: ::std::option::Option<ServerUserBuiltinDimensionsBuiltinDimensionsBuyerRole>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub device_type: ::std::option::Option<ServerUserBuiltinDimensionsBuiltinDimensionsDeviceType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub email_type: ::std::option::Option<ServerUserBuiltinDimensionsBuiltinDimensionsEmailType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub region: ::std::option::Option<ServerUserBuiltinDimensionsBuiltinDimensionsRegion>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub seat_type: ::std::option::Option<ServerUserBuiltinDimensionsBuiltinDimensionsSeatType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub subscription_state:
+        ::std::option::Option<ServerUserBuiltinDimensionsBuiltinDimensionsSubscriptionState>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub trial_type: ::std::option::Option<ServerUserBuiltinDimensionsBuiltinDimensionsTrialType>,
+}
+impl ::std::default::Default for ServerUserBuiltinDimensionsBuiltinDimensions {
+    fn default() -> Self {
+        Self {
+            activity_level: Default::default(),
+            billing_health: Default::default(),
+            buyer_role: Default::default(),
+            device_type: Default::default(),
+            email_type: Default::default(),
+            region: Default::default(),
+            seat_type: Default::default(),
+            subscription_state: Default::default(),
+            trial_type: Default::default(),
+        }
+    }
+}
+#[doc = "`ServerUserBuiltinDimensionsBuiltinDimensionsActivityLevel`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"new\","]
+#[doc = "    \"high\","]
+#[doc = "    \"medium\","]
+#[doc = "    \"low\","]
+#[doc = "    \"inactive\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserBuiltinDimensionsBuiltinDimensionsActivityLevel {
+    #[serde(rename = "new")]
+    New,
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "inactive")]
+    Inactive,
+}
+impl ::std::fmt::Display for ServerUserBuiltinDimensionsBuiltinDimensionsActivityLevel {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::New => f.write_str("new"),
+            Self::High => f.write_str("high"),
+            Self::Medium => f.write_str("medium"),
+            Self::Low => f.write_str("low"),
+            Self::Inactive => f.write_str("inactive"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserBuiltinDimensionsBuiltinDimensionsActivityLevel {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "new" => Ok(Self::New),
+            "high" => Ok(Self::High),
+            "medium" => Ok(Self::Medium),
+            "low" => Ok(Self::Low),
+            "inactive" => Ok(Self::Inactive),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserBuiltinDimensionsBuiltinDimensionsActivityLevel {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsActivityLevel
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsActivityLevel
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserBuiltinDimensionsBuiltinDimensionsBillingHealth`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"no_billing\","]
+#[doc = "    \"good_standing\","]
+#[doc = "    \"trial_payment_method_attached\","]
+#[doc = "    \"payment_method_missing\","]
+#[doc = "    \"payment_failed\","]
+#[doc = "    \"payment_overdue\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserBuiltinDimensionsBuiltinDimensionsBillingHealth {
+    #[serde(rename = "no_billing")]
+    NoBilling,
+    #[serde(rename = "good_standing")]
+    GoodStanding,
+    #[serde(rename = "trial_payment_method_attached")]
+    TrialPaymentMethodAttached,
+    #[serde(rename = "payment_method_missing")]
+    PaymentMethodMissing,
+    #[serde(rename = "payment_failed")]
+    PaymentFailed,
+    #[serde(rename = "payment_overdue")]
+    PaymentOverdue,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for ServerUserBuiltinDimensionsBuiltinDimensionsBillingHealth {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::NoBilling => f.write_str("no_billing"),
+            Self::GoodStanding => f.write_str("good_standing"),
+            Self::TrialPaymentMethodAttached => f.write_str("trial_payment_method_attached"),
+            Self::PaymentMethodMissing => f.write_str("payment_method_missing"),
+            Self::PaymentFailed => f.write_str("payment_failed"),
+            Self::PaymentOverdue => f.write_str("payment_overdue"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserBuiltinDimensionsBuiltinDimensionsBillingHealth {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "no_billing" => Ok(Self::NoBilling),
+            "good_standing" => Ok(Self::GoodStanding),
+            "trial_payment_method_attached" => Ok(Self::TrialPaymentMethodAttached),
+            "payment_method_missing" => Ok(Self::PaymentMethodMissing),
+            "payment_failed" => Ok(Self::PaymentFailed),
+            "payment_overdue" => Ok(Self::PaymentOverdue),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserBuiltinDimensionsBuiltinDimensionsBillingHealth {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsBillingHealth
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsBillingHealth
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserBuiltinDimensionsBuiltinDimensionsBuyerRole`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"buyer\","]
+#[doc = "    \"non_buyer\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserBuiltinDimensionsBuiltinDimensionsBuyerRole {
+    #[serde(rename = "buyer")]
+    Buyer,
+    #[serde(rename = "non_buyer")]
+    NonBuyer,
+}
+impl ::std::fmt::Display for ServerUserBuiltinDimensionsBuiltinDimensionsBuyerRole {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Buyer => f.write_str("buyer"),
+            Self::NonBuyer => f.write_str("non_buyer"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserBuiltinDimensionsBuiltinDimensionsBuyerRole {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "buyer" => Ok(Self::Buyer),
+            "non_buyer" => Ok(Self::NonBuyer),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserBuiltinDimensionsBuiltinDimensionsBuyerRole {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsBuyerRole
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsBuyerRole
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserBuiltinDimensionsBuiltinDimensionsDeviceType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"desktop\","]
+#[doc = "    \"mobile\","]
+#[doc = "    \"tablet\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserBuiltinDimensionsBuiltinDimensionsDeviceType {
+    #[serde(rename = "desktop")]
+    Desktop,
+    #[serde(rename = "mobile")]
+    Mobile,
+    #[serde(rename = "tablet")]
+    Tablet,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for ServerUserBuiltinDimensionsBuiltinDimensionsDeviceType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Desktop => f.write_str("desktop"),
+            Self::Mobile => f.write_str("mobile"),
+            Self::Tablet => f.write_str("tablet"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserBuiltinDimensionsBuiltinDimensionsDeviceType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "desktop" => Ok(Self::Desktop),
+            "mobile" => Ok(Self::Mobile),
+            "tablet" => Ok(Self::Tablet),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserBuiltinDimensionsBuiltinDimensionsDeviceType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsDeviceType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsDeviceType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserBuiltinDimensionsBuiltinDimensionsEmailType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"business\","]
+#[doc = "    \"personal\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserBuiltinDimensionsBuiltinDimensionsEmailType {
+    #[serde(rename = "business")]
+    Business,
+    #[serde(rename = "personal")]
+    Personal,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for ServerUserBuiltinDimensionsBuiltinDimensionsEmailType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Business => f.write_str("business"),
+            Self::Personal => f.write_str("personal"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserBuiltinDimensionsBuiltinDimensionsEmailType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "business" => Ok(Self::Business),
+            "personal" => Ok(Self::Personal),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserBuiltinDimensionsBuiltinDimensionsEmailType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsEmailType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsEmailType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserBuiltinDimensionsBuiltinDimensionsRegion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"us_canada\","]
+#[doc = "    \"europe\","]
+#[doc = "    \"rest_of_world\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserBuiltinDimensionsBuiltinDimensionsRegion {
+    #[serde(rename = "us_canada")]
+    UsCanada,
+    #[serde(rename = "europe")]
+    Europe,
+    #[serde(rename = "rest_of_world")]
+    RestOfWorld,
+}
+impl ::std::fmt::Display for ServerUserBuiltinDimensionsBuiltinDimensionsRegion {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::UsCanada => f.write_str("us_canada"),
+            Self::Europe => f.write_str("europe"),
+            Self::RestOfWorld => f.write_str("rest_of_world"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserBuiltinDimensionsBuiltinDimensionsRegion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "us_canada" => Ok(Self::UsCanada),
+            "europe" => Ok(Self::Europe),
+            "rest_of_world" => Ok(Self::RestOfWorld),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserBuiltinDimensionsBuiltinDimensionsRegion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsRegion
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsRegion
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserBuiltinDimensionsBuiltinDimensionsSeatType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[a-z0-9._]{1,87}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ServerUserBuiltinDimensionsBuiltinDimensionsSeatType(::std::string::String);
+impl ::std::ops::Deref for ServerUserBuiltinDimensionsBuiltinDimensionsSeatType {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ServerUserBuiltinDimensionsBuiltinDimensionsSeatType>
+    for ::std::string::String
+{
+    fn from(value: ServerUserBuiltinDimensionsBuiltinDimensionsSeatType) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ServerUserBuiltinDimensionsBuiltinDimensionsSeatType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z0-9._]{1,87}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z0-9._]{1,87}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserBuiltinDimensionsBuiltinDimensionsSeatType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsSeatType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsSeatType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ServerUserBuiltinDimensionsBuiltinDimensionsSeatType {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ServerUserBuiltinDimensionsBuiltinDimensionsSubscriptionState`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"trial\","]
+#[doc = "    \"paid\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserBuiltinDimensionsBuiltinDimensionsSubscriptionState {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "trial")]
+    Trial,
+    #[serde(rename = "paid")]
+    Paid,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for ServerUserBuiltinDimensionsBuiltinDimensionsSubscriptionState {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::Trial => f.write_str("trial"),
+            Self::Paid => f.write_str("paid"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserBuiltinDimensionsBuiltinDimensionsSubscriptionState {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "trial" => Ok(Self::Trial),
+            "paid" => Ok(Self::Paid),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsSubscriptionState
+{
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsSubscriptionState
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsSubscriptionState
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserBuiltinDimensionsBuiltinDimensionsTrialType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"free_trial\","]
+#[doc = "    \"reverse_trial\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserBuiltinDimensionsBuiltinDimensionsTrialType {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "free_trial")]
+    FreeTrial,
+    #[serde(rename = "reverse_trial")]
+    ReverseTrial,
+}
+impl ::std::fmt::Display for ServerUserBuiltinDimensionsBuiltinDimensionsTrialType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::FreeTrial => f.write_str("free_trial"),
+            Self::ReverseTrial => f.write_str("reverse_trial"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserBuiltinDimensionsBuiltinDimensionsTrialType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "free_trial" => Ok(Self::FreeTrial),
+            "reverse_trial" => Ok(Self::ReverseTrial),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserBuiltinDimensionsBuiltinDimensionsTrialType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsTrialType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserBuiltinDimensionsBuiltinDimensionsTrialType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserBuiltinDimensionsTenantId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ServerUserBuiltinDimensionsTenantId(::std::string::String);
+impl ::std::ops::Deref for ServerUserBuiltinDimensionsTenantId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ServerUserBuiltinDimensionsTenantId> for ::std::string::String {
+    fn from(value: ServerUserBuiltinDimensionsTenantId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ServerUserBuiltinDimensionsTenantId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserBuiltinDimensionsTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ServerUserBuiltinDimensionsTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ServerUserBuiltinDimensionsTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ServerUserBuiltinDimensionsTenantId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ServerUserBuiltinDimensionsUserId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"pii\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ServerUserBuiltinDimensionsUserId(::std::string::String);
+impl ::std::ops::Deref for ServerUserBuiltinDimensionsUserId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ServerUserBuiltinDimensionsUserId> for ::std::string::String {
+    fn from(value: ServerUserBuiltinDimensionsUserId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ServerUserBuiltinDimensionsUserId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserBuiltinDimensionsUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ServerUserBuiltinDimensionsUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ServerUserBuiltinDimensionsUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ServerUserBuiltinDimensionsUserId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ServerUserContextAssignment`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"builtin_dimensions\","]
+#[doc = "    \"overrides\","]
+#[doc = "    \"seat_type_handle\","]
+#[doc = "    \"tenant_id\","]
+#[doc = "    \"updated_at\","]
+#[doc = "    \"user_id\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"builtin_dimensions\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"activity_level\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"new\","]
+#[doc = "            \"high\","]
+#[doc = "            \"medium\","]
+#[doc = "            \"low\","]
+#[doc = "            \"inactive\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"billing_health\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"no_billing\","]
+#[doc = "            \"good_standing\","]
+#[doc = "            \"trial_payment_method_attached\","]
+#[doc = "            \"payment_method_missing\","]
+#[doc = "            \"payment_failed\","]
+#[doc = "            \"payment_overdue\","]
+#[doc = "            \"cancelled\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"buyer_role\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"buyer\","]
+#[doc = "            \"non_buyer\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"device_type\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"desktop\","]
+#[doc = "            \"mobile\","]
+#[doc = "            \"tablet\","]
+#[doc = "            \"unknown\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"email_type\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"business\","]
+#[doc = "            \"personal\","]
+#[doc = "            \"unknown\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"region\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"us_canada\","]
+#[doc = "            \"europe\","]
+#[doc = "            \"rest_of_world\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"subscription_state\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"none\","]
+#[doc = "            \"trial\","]
+#[doc = "            \"paid\","]
+#[doc = "            \"cancelled\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"trial_type\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"none\","]
+#[doc = "            \"free_trial\","]
+#[doc = "            \"reverse_trial\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"overrides\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"string\","]
+#[doc = "        \"enum\": ["]
+#[doc = "          \"activity_level\","]
+#[doc = "          \"subscription_state\","]
+#[doc = "          \"trial_type\","]
+#[doc = "          \"buyer_role\","]
+#[doc = "          \"email_type\","]
+#[doc = "          \"billing_health\","]
+#[doc = "          \"region\","]
+#[doc = "          \"device_type\""]
+#[doc = "        ]"]
+#[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"seat_type_handle\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"pattern\": \"^[a-z0-9._]{1,100}$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"tenant_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"updated_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"user_id\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"pii\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct ServerUserContextAssignment {
+    pub builtin_dimensions: ServerUserContextAssignmentBuiltinDimensions,
+    pub overrides: ::std::vec::Vec<ServerUserContextAssignmentOverridesItem>,
+    pub seat_type_handle: ::std::option::Option<ServerUserContextAssignmentSeatTypeHandle>,
+    pub tenant_id: ServerUserContextAssignmentTenantId,
+    pub updated_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub user_id: ServerUserContextAssignmentUserId,
+}
+#[doc = "`ServerUserContextAssignmentBuiltinDimensions`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"activity_level\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"new\","]
+#[doc = "        \"high\","]
+#[doc = "        \"medium\","]
+#[doc = "        \"low\","]
+#[doc = "        \"inactive\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"billing_health\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"no_billing\","]
+#[doc = "        \"good_standing\","]
+#[doc = "        \"trial_payment_method_attached\","]
+#[doc = "        \"payment_method_missing\","]
+#[doc = "        \"payment_failed\","]
+#[doc = "        \"payment_overdue\","]
+#[doc = "        \"cancelled\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"buyer_role\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"buyer\","]
+#[doc = "        \"non_buyer\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"device_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"desktop\","]
+#[doc = "        \"mobile\","]
+#[doc = "        \"tablet\","]
+#[doc = "        \"unknown\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"email_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"business\","]
+#[doc = "        \"personal\","]
+#[doc = "        \"unknown\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"region\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"us_canada\","]
+#[doc = "        \"europe\","]
+#[doc = "        \"rest_of_world\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_state\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"none\","]
+#[doc = "        \"trial\","]
+#[doc = "        \"paid\","]
+#[doc = "        \"cancelled\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"trial_type\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"none\","]
+#[doc = "        \"free_trial\","]
+#[doc = "        \"reverse_trial\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct ServerUserContextAssignmentBuiltinDimensions {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub activity_level:
+        ::std::option::Option<ServerUserContextAssignmentBuiltinDimensionsActivityLevel>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub billing_health:
+        ::std::option::Option<ServerUserContextAssignmentBuiltinDimensionsBillingHealth>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub buyer_role: ::std::option::Option<ServerUserContextAssignmentBuiltinDimensionsBuyerRole>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub device_type: ::std::option::Option<ServerUserContextAssignmentBuiltinDimensionsDeviceType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub email_type: ::std::option::Option<ServerUserContextAssignmentBuiltinDimensionsEmailType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub region: ::std::option::Option<ServerUserContextAssignmentBuiltinDimensionsRegion>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub subscription_state:
+        ::std::option::Option<ServerUserContextAssignmentBuiltinDimensionsSubscriptionState>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub trial_type: ::std::option::Option<ServerUserContextAssignmentBuiltinDimensionsTrialType>,
+}
+impl ::std::default::Default for ServerUserContextAssignmentBuiltinDimensions {
+    fn default() -> Self {
+        Self {
+            activity_level: Default::default(),
+            billing_health: Default::default(),
+            buyer_role: Default::default(),
+            device_type: Default::default(),
+            email_type: Default::default(),
+            region: Default::default(),
+            subscription_state: Default::default(),
+            trial_type: Default::default(),
+        }
+    }
+}
+#[doc = "`ServerUserContextAssignmentBuiltinDimensionsActivityLevel`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"new\","]
+#[doc = "    \"high\","]
+#[doc = "    \"medium\","]
+#[doc = "    \"low\","]
+#[doc = "    \"inactive\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextAssignmentBuiltinDimensionsActivityLevel {
+    #[serde(rename = "new")]
+    New,
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "inactive")]
+    Inactive,
+}
+impl ::std::fmt::Display for ServerUserContextAssignmentBuiltinDimensionsActivityLevel {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::New => f.write_str("new"),
+            Self::High => f.write_str("high"),
+            Self::Medium => f.write_str("medium"),
+            Self::Low => f.write_str("low"),
+            Self::Inactive => f.write_str("inactive"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextAssignmentBuiltinDimensionsActivityLevel {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "new" => Ok(Self::New),
+            "high" => Ok(Self::High),
+            "medium" => Ok(Self::Medium),
+            "low" => Ok(Self::Low),
+            "inactive" => Ok(Self::Inactive),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextAssignmentBuiltinDimensionsActivityLevel {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserContextAssignmentBuiltinDimensionsActivityLevel
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserContextAssignmentBuiltinDimensionsActivityLevel
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextAssignmentBuiltinDimensionsBillingHealth`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"no_billing\","]
+#[doc = "    \"good_standing\","]
+#[doc = "    \"trial_payment_method_attached\","]
+#[doc = "    \"payment_method_missing\","]
+#[doc = "    \"payment_failed\","]
+#[doc = "    \"payment_overdue\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextAssignmentBuiltinDimensionsBillingHealth {
+    #[serde(rename = "no_billing")]
+    NoBilling,
+    #[serde(rename = "good_standing")]
+    GoodStanding,
+    #[serde(rename = "trial_payment_method_attached")]
+    TrialPaymentMethodAttached,
+    #[serde(rename = "payment_method_missing")]
+    PaymentMethodMissing,
+    #[serde(rename = "payment_failed")]
+    PaymentFailed,
+    #[serde(rename = "payment_overdue")]
+    PaymentOverdue,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for ServerUserContextAssignmentBuiltinDimensionsBillingHealth {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::NoBilling => f.write_str("no_billing"),
+            Self::GoodStanding => f.write_str("good_standing"),
+            Self::TrialPaymentMethodAttached => f.write_str("trial_payment_method_attached"),
+            Self::PaymentMethodMissing => f.write_str("payment_method_missing"),
+            Self::PaymentFailed => f.write_str("payment_failed"),
+            Self::PaymentOverdue => f.write_str("payment_overdue"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextAssignmentBuiltinDimensionsBillingHealth {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "no_billing" => Ok(Self::NoBilling),
+            "good_standing" => Ok(Self::GoodStanding),
+            "trial_payment_method_attached" => Ok(Self::TrialPaymentMethodAttached),
+            "payment_method_missing" => Ok(Self::PaymentMethodMissing),
+            "payment_failed" => Ok(Self::PaymentFailed),
+            "payment_overdue" => Ok(Self::PaymentOverdue),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextAssignmentBuiltinDimensionsBillingHealth {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserContextAssignmentBuiltinDimensionsBillingHealth
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserContextAssignmentBuiltinDimensionsBillingHealth
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextAssignmentBuiltinDimensionsBuyerRole`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"buyer\","]
+#[doc = "    \"non_buyer\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextAssignmentBuiltinDimensionsBuyerRole {
+    #[serde(rename = "buyer")]
+    Buyer,
+    #[serde(rename = "non_buyer")]
+    NonBuyer,
+}
+impl ::std::fmt::Display for ServerUserContextAssignmentBuiltinDimensionsBuyerRole {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Buyer => f.write_str("buyer"),
+            Self::NonBuyer => f.write_str("non_buyer"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextAssignmentBuiltinDimensionsBuyerRole {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "buyer" => Ok(Self::Buyer),
+            "non_buyer" => Ok(Self::NonBuyer),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextAssignmentBuiltinDimensionsBuyerRole {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserContextAssignmentBuiltinDimensionsBuyerRole
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserContextAssignmentBuiltinDimensionsBuyerRole
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextAssignmentBuiltinDimensionsDeviceType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"desktop\","]
+#[doc = "    \"mobile\","]
+#[doc = "    \"tablet\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextAssignmentBuiltinDimensionsDeviceType {
+    #[serde(rename = "desktop")]
+    Desktop,
+    #[serde(rename = "mobile")]
+    Mobile,
+    #[serde(rename = "tablet")]
+    Tablet,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for ServerUserContextAssignmentBuiltinDimensionsDeviceType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Desktop => f.write_str("desktop"),
+            Self::Mobile => f.write_str("mobile"),
+            Self::Tablet => f.write_str("tablet"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextAssignmentBuiltinDimensionsDeviceType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "desktop" => Ok(Self::Desktop),
+            "mobile" => Ok(Self::Mobile),
+            "tablet" => Ok(Self::Tablet),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextAssignmentBuiltinDimensionsDeviceType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserContextAssignmentBuiltinDimensionsDeviceType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserContextAssignmentBuiltinDimensionsDeviceType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextAssignmentBuiltinDimensionsEmailType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"business\","]
+#[doc = "    \"personal\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextAssignmentBuiltinDimensionsEmailType {
+    #[serde(rename = "business")]
+    Business,
+    #[serde(rename = "personal")]
+    Personal,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for ServerUserContextAssignmentBuiltinDimensionsEmailType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Business => f.write_str("business"),
+            Self::Personal => f.write_str("personal"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextAssignmentBuiltinDimensionsEmailType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "business" => Ok(Self::Business),
+            "personal" => Ok(Self::Personal),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextAssignmentBuiltinDimensionsEmailType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserContextAssignmentBuiltinDimensionsEmailType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserContextAssignmentBuiltinDimensionsEmailType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextAssignmentBuiltinDimensionsRegion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"us_canada\","]
+#[doc = "    \"europe\","]
+#[doc = "    \"rest_of_world\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextAssignmentBuiltinDimensionsRegion {
+    #[serde(rename = "us_canada")]
+    UsCanada,
+    #[serde(rename = "europe")]
+    Europe,
+    #[serde(rename = "rest_of_world")]
+    RestOfWorld,
+}
+impl ::std::fmt::Display for ServerUserContextAssignmentBuiltinDimensionsRegion {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::UsCanada => f.write_str("us_canada"),
+            Self::Europe => f.write_str("europe"),
+            Self::RestOfWorld => f.write_str("rest_of_world"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextAssignmentBuiltinDimensionsRegion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "us_canada" => Ok(Self::UsCanada),
+            "europe" => Ok(Self::Europe),
+            "rest_of_world" => Ok(Self::RestOfWorld),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextAssignmentBuiltinDimensionsRegion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserContextAssignmentBuiltinDimensionsRegion
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserContextAssignmentBuiltinDimensionsRegion
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextAssignmentBuiltinDimensionsSubscriptionState`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"trial\","]
+#[doc = "    \"paid\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextAssignmentBuiltinDimensionsSubscriptionState {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "trial")]
+    Trial,
+    #[serde(rename = "paid")]
+    Paid,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for ServerUserContextAssignmentBuiltinDimensionsSubscriptionState {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::Trial => f.write_str("trial"),
+            Self::Paid => f.write_str("paid"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextAssignmentBuiltinDimensionsSubscriptionState {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "trial" => Ok(Self::Trial),
+            "paid" => Ok(Self::Paid),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str>
+    for ServerUserContextAssignmentBuiltinDimensionsSubscriptionState
+{
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserContextAssignmentBuiltinDimensionsSubscriptionState
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserContextAssignmentBuiltinDimensionsSubscriptionState
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextAssignmentBuiltinDimensionsTrialType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"free_trial\","]
+#[doc = "    \"reverse_trial\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextAssignmentBuiltinDimensionsTrialType {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "free_trial")]
+    FreeTrial,
+    #[serde(rename = "reverse_trial")]
+    ReverseTrial,
+}
+impl ::std::fmt::Display for ServerUserContextAssignmentBuiltinDimensionsTrialType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::FreeTrial => f.write_str("free_trial"),
+            Self::ReverseTrial => f.write_str("reverse_trial"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextAssignmentBuiltinDimensionsTrialType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "free_trial" => Ok(Self::FreeTrial),
+            "reverse_trial" => Ok(Self::ReverseTrial),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextAssignmentBuiltinDimensionsTrialType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserContextAssignmentBuiltinDimensionsTrialType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserContextAssignmentBuiltinDimensionsTrialType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextAssignmentOverridesItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"activity_level\","]
+#[doc = "    \"subscription_state\","]
+#[doc = "    \"trial_type\","]
+#[doc = "    \"buyer_role\","]
+#[doc = "    \"email_type\","]
+#[doc = "    \"billing_health\","]
+#[doc = "    \"region\","]
+#[doc = "    \"device_type\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextAssignmentOverridesItem {
+    #[serde(rename = "activity_level")]
+    ActivityLevel,
+    #[serde(rename = "subscription_state")]
+    SubscriptionState,
+    #[serde(rename = "trial_type")]
+    TrialType,
+    #[serde(rename = "buyer_role")]
+    BuyerRole,
+    #[serde(rename = "email_type")]
+    EmailType,
+    #[serde(rename = "billing_health")]
+    BillingHealth,
+    #[serde(rename = "region")]
+    Region,
+    #[serde(rename = "device_type")]
+    DeviceType,
+}
+impl ::std::fmt::Display for ServerUserContextAssignmentOverridesItem {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::ActivityLevel => f.write_str("activity_level"),
+            Self::SubscriptionState => f.write_str("subscription_state"),
+            Self::TrialType => f.write_str("trial_type"),
+            Self::BuyerRole => f.write_str("buyer_role"),
+            Self::EmailType => f.write_str("email_type"),
+            Self::BillingHealth => f.write_str("billing_health"),
+            Self::Region => f.write_str("region"),
+            Self::DeviceType => f.write_str("device_type"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextAssignmentOverridesItem {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "activity_level" => Ok(Self::ActivityLevel),
+            "subscription_state" => Ok(Self::SubscriptionState),
+            "trial_type" => Ok(Self::TrialType),
+            "buyer_role" => Ok(Self::BuyerRole),
+            "email_type" => Ok(Self::EmailType),
+            "billing_health" => Ok(Self::BillingHealth),
+            "region" => Ok(Self::Region),
+            "device_type" => Ok(Self::DeviceType),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextAssignmentOverridesItem {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ServerUserContextAssignmentOverridesItem {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ServerUserContextAssignmentOverridesItem {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextAssignmentSeatTypeHandle`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[a-z0-9._]{1,100}$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ServerUserContextAssignmentSeatTypeHandle(::std::string::String);
+impl ::std::ops::Deref for ServerUserContextAssignmentSeatTypeHandle {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ServerUserContextAssignmentSeatTypeHandle> for ::std::string::String {
+    fn from(value: ServerUserContextAssignmentSeatTypeHandle) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ServerUserContextAssignmentSeatTypeHandle {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z0-9._]{1,100}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z0-9._]{1,100}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextAssignmentSeatTypeHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ServerUserContextAssignmentSeatTypeHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ServerUserContextAssignmentSeatTypeHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ServerUserContextAssignmentSeatTypeHandle {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ServerUserContextAssignmentTenantId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ServerUserContextAssignmentTenantId(::std::string::String);
+impl ::std::ops::Deref for ServerUserContextAssignmentTenantId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ServerUserContextAssignmentTenantId> for ::std::string::String {
+    fn from(value: ServerUserContextAssignmentTenantId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ServerUserContextAssignmentTenantId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextAssignmentTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ServerUserContextAssignmentTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ServerUserContextAssignmentTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ServerUserContextAssignmentTenantId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ServerUserContextAssignmentUserId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"pii\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ServerUserContextAssignmentUserId(::std::string::String);
+impl ::std::ops::Deref for ServerUserContextAssignmentUserId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ServerUserContextAssignmentUserId> for ::std::string::String {
+    fn from(value: ServerUserContextAssignmentUserId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ServerUserContextAssignmentUserId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextAssignmentUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ServerUserContextAssignmentUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ServerUserContextAssignmentUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ServerUserContextAssignmentUserId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ServerUserContextUpsert`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"user_id\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"builtin_dimensions\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"activity_level\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"enum\": ["]
+#[doc = "                \"new\","]
+#[doc = "                \"high\","]
+#[doc = "                \"medium\","]
+#[doc = "                \"low\","]
+#[doc = "                \"inactive\""]
+#[doc = "              ]"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"billing_health\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"enum\": ["]
+#[doc = "                \"no_billing\","]
+#[doc = "                \"good_standing\","]
+#[doc = "                \"trial_payment_method_attached\","]
+#[doc = "                \"payment_method_missing\","]
+#[doc = "                \"payment_failed\","]
+#[doc = "                \"payment_overdue\","]
+#[doc = "                \"cancelled\""]
+#[doc = "              ]"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"buyer_role\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"enum\": ["]
+#[doc = "                \"buyer\","]
+#[doc = "                \"non_buyer\""]
+#[doc = "              ]"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"device_type\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"enum\": ["]
+#[doc = "                \"desktop\","]
+#[doc = "                \"mobile\","]
+#[doc = "                \"tablet\","]
+#[doc = "                \"unknown\""]
+#[doc = "              ]"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"email_type\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"enum\": ["]
+#[doc = "                \"business\","]
+#[doc = "                \"personal\","]
+#[doc = "                \"unknown\""]
+#[doc = "              ]"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"region\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"enum\": ["]
+#[doc = "                \"us_canada\","]
+#[doc = "                \"europe\","]
+#[doc = "                \"rest_of_world\""]
+#[doc = "              ]"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"subscription_state\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"enum\": ["]
+#[doc = "                \"none\","]
+#[doc = "                \"trial\","]
+#[doc = "                \"paid\","]
+#[doc = "                \"cancelled\""]
+#[doc = "              ]"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        },"]
+#[doc = "        \"trial_type\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"enum\": ["]
+#[doc = "                \"none\","]
+#[doc = "                \"free_trial\","]
+#[doc = "                \"reverse_trial\""]
+#[doc = "              ]"]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"seat_type_handle\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"pattern\": \"^[a-z0-9._]{1,100}$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"user_id\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"pii\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct ServerUserContextUpsert {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub builtin_dimensions: ::std::option::Option<ServerUserContextUpsertBuiltinDimensions>,
+    #[serde(
+        rename = "override",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub override_: ::std::option::Option<bool>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub seat_type_handle: ::std::option::Option<ServerUserContextUpsertSeatTypeHandle>,
+    pub user_id: ServerUserContextUpsertUserId,
+}
+#[doc = "`ServerUserContextUpsertBuiltinDimensions`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"activity_level\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"new\","]
+#[doc = "            \"high\","]
+#[doc = "            \"medium\","]
+#[doc = "            \"low\","]
+#[doc = "            \"inactive\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"billing_health\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"no_billing\","]
+#[doc = "            \"good_standing\","]
+#[doc = "            \"trial_payment_method_attached\","]
+#[doc = "            \"payment_method_missing\","]
+#[doc = "            \"payment_failed\","]
+#[doc = "            \"payment_overdue\","]
+#[doc = "            \"cancelled\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"buyer_role\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"buyer\","]
+#[doc = "            \"non_buyer\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"device_type\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"desktop\","]
+#[doc = "            \"mobile\","]
+#[doc = "            \"tablet\","]
+#[doc = "            \"unknown\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"email_type\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"business\","]
+#[doc = "            \"personal\","]
+#[doc = "            \"unknown\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"region\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"us_canada\","]
+#[doc = "            \"europe\","]
+#[doc = "            \"rest_of_world\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_state\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"none\","]
+#[doc = "            \"trial\","]
+#[doc = "            \"paid\","]
+#[doc = "            \"cancelled\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"trial_type\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"none\","]
+#[doc = "            \"free_trial\","]
+#[doc = "            \"reverse_trial\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct ServerUserContextUpsertBuiltinDimensions {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub activity_level:
+        ::std::option::Option<ServerUserContextUpsertBuiltinDimensionsActivityLevel>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub billing_health:
+        ::std::option::Option<ServerUserContextUpsertBuiltinDimensionsBillingHealth>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub buyer_role: ::std::option::Option<ServerUserContextUpsertBuiltinDimensionsBuyerRole>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub device_type: ::std::option::Option<ServerUserContextUpsertBuiltinDimensionsDeviceType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub email_type: ::std::option::Option<ServerUserContextUpsertBuiltinDimensionsEmailType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub region: ::std::option::Option<ServerUserContextUpsertBuiltinDimensionsRegion>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub subscription_state:
+        ::std::option::Option<ServerUserContextUpsertBuiltinDimensionsSubscriptionState>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub trial_type: ::std::option::Option<ServerUserContextUpsertBuiltinDimensionsTrialType>,
+}
+impl ::std::default::Default for ServerUserContextUpsertBuiltinDimensions {
+    fn default() -> Self {
+        Self {
+            activity_level: Default::default(),
+            billing_health: Default::default(),
+            buyer_role: Default::default(),
+            device_type: Default::default(),
+            email_type: Default::default(),
+            region: Default::default(),
+            subscription_state: Default::default(),
+            trial_type: Default::default(),
+        }
+    }
+}
+#[doc = "`ServerUserContextUpsertBuiltinDimensionsActivityLevel`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"new\","]
+#[doc = "    \"high\","]
+#[doc = "    \"medium\","]
+#[doc = "    \"low\","]
+#[doc = "    \"inactive\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextUpsertBuiltinDimensionsActivityLevel {
+    #[serde(rename = "new")]
+    New,
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "inactive")]
+    Inactive,
+}
+impl ::std::fmt::Display for ServerUserContextUpsertBuiltinDimensionsActivityLevel {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::New => f.write_str("new"),
+            Self::High => f.write_str("high"),
+            Self::Medium => f.write_str("medium"),
+            Self::Low => f.write_str("low"),
+            Self::Inactive => f.write_str("inactive"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextUpsertBuiltinDimensionsActivityLevel {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "new" => Ok(Self::New),
+            "high" => Ok(Self::High),
+            "medium" => Ok(Self::Medium),
+            "low" => Ok(Self::Low),
+            "inactive" => Ok(Self::Inactive),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextUpsertBuiltinDimensionsActivityLevel {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserContextUpsertBuiltinDimensionsActivityLevel
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserContextUpsertBuiltinDimensionsActivityLevel
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextUpsertBuiltinDimensionsBillingHealth`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"no_billing\","]
+#[doc = "    \"good_standing\","]
+#[doc = "    \"trial_payment_method_attached\","]
+#[doc = "    \"payment_method_missing\","]
+#[doc = "    \"payment_failed\","]
+#[doc = "    \"payment_overdue\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextUpsertBuiltinDimensionsBillingHealth {
+    #[serde(rename = "no_billing")]
+    NoBilling,
+    #[serde(rename = "good_standing")]
+    GoodStanding,
+    #[serde(rename = "trial_payment_method_attached")]
+    TrialPaymentMethodAttached,
+    #[serde(rename = "payment_method_missing")]
+    PaymentMethodMissing,
+    #[serde(rename = "payment_failed")]
+    PaymentFailed,
+    #[serde(rename = "payment_overdue")]
+    PaymentOverdue,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for ServerUserContextUpsertBuiltinDimensionsBillingHealth {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::NoBilling => f.write_str("no_billing"),
+            Self::GoodStanding => f.write_str("good_standing"),
+            Self::TrialPaymentMethodAttached => f.write_str("trial_payment_method_attached"),
+            Self::PaymentMethodMissing => f.write_str("payment_method_missing"),
+            Self::PaymentFailed => f.write_str("payment_failed"),
+            Self::PaymentOverdue => f.write_str("payment_overdue"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextUpsertBuiltinDimensionsBillingHealth {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "no_billing" => Ok(Self::NoBilling),
+            "good_standing" => Ok(Self::GoodStanding),
+            "trial_payment_method_attached" => Ok(Self::TrialPaymentMethodAttached),
+            "payment_method_missing" => Ok(Self::PaymentMethodMissing),
+            "payment_failed" => Ok(Self::PaymentFailed),
+            "payment_overdue" => Ok(Self::PaymentOverdue),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextUpsertBuiltinDimensionsBillingHealth {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserContextUpsertBuiltinDimensionsBillingHealth
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserContextUpsertBuiltinDimensionsBillingHealth
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextUpsertBuiltinDimensionsBuyerRole`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"buyer\","]
+#[doc = "    \"non_buyer\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextUpsertBuiltinDimensionsBuyerRole {
+    #[serde(rename = "buyer")]
+    Buyer,
+    #[serde(rename = "non_buyer")]
+    NonBuyer,
+}
+impl ::std::fmt::Display for ServerUserContextUpsertBuiltinDimensionsBuyerRole {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Buyer => f.write_str("buyer"),
+            Self::NonBuyer => f.write_str("non_buyer"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextUpsertBuiltinDimensionsBuyerRole {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "buyer" => Ok(Self::Buyer),
+            "non_buyer" => Ok(Self::NonBuyer),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextUpsertBuiltinDimensionsBuyerRole {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserContextUpsertBuiltinDimensionsBuyerRole
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserContextUpsertBuiltinDimensionsBuyerRole
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextUpsertBuiltinDimensionsDeviceType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"desktop\","]
+#[doc = "    \"mobile\","]
+#[doc = "    \"tablet\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextUpsertBuiltinDimensionsDeviceType {
+    #[serde(rename = "desktop")]
+    Desktop,
+    #[serde(rename = "mobile")]
+    Mobile,
+    #[serde(rename = "tablet")]
+    Tablet,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for ServerUserContextUpsertBuiltinDimensionsDeviceType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Desktop => f.write_str("desktop"),
+            Self::Mobile => f.write_str("mobile"),
+            Self::Tablet => f.write_str("tablet"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextUpsertBuiltinDimensionsDeviceType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "desktop" => Ok(Self::Desktop),
+            "mobile" => Ok(Self::Mobile),
+            "tablet" => Ok(Self::Tablet),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextUpsertBuiltinDimensionsDeviceType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserContextUpsertBuiltinDimensionsDeviceType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserContextUpsertBuiltinDimensionsDeviceType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextUpsertBuiltinDimensionsEmailType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"business\","]
+#[doc = "    \"personal\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextUpsertBuiltinDimensionsEmailType {
+    #[serde(rename = "business")]
+    Business,
+    #[serde(rename = "personal")]
+    Personal,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for ServerUserContextUpsertBuiltinDimensionsEmailType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Business => f.write_str("business"),
+            Self::Personal => f.write_str("personal"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextUpsertBuiltinDimensionsEmailType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "business" => Ok(Self::Business),
+            "personal" => Ok(Self::Personal),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextUpsertBuiltinDimensionsEmailType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserContextUpsertBuiltinDimensionsEmailType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserContextUpsertBuiltinDimensionsEmailType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextUpsertBuiltinDimensionsRegion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"us_canada\","]
+#[doc = "    \"europe\","]
+#[doc = "    \"rest_of_world\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextUpsertBuiltinDimensionsRegion {
+    #[serde(rename = "us_canada")]
+    UsCanada,
+    #[serde(rename = "europe")]
+    Europe,
+    #[serde(rename = "rest_of_world")]
+    RestOfWorld,
+}
+impl ::std::fmt::Display for ServerUserContextUpsertBuiltinDimensionsRegion {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::UsCanada => f.write_str("us_canada"),
+            Self::Europe => f.write_str("europe"),
+            Self::RestOfWorld => f.write_str("rest_of_world"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextUpsertBuiltinDimensionsRegion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "us_canada" => Ok(Self::UsCanada),
+            "europe" => Ok(Self::Europe),
+            "rest_of_world" => Ok(Self::RestOfWorld),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextUpsertBuiltinDimensionsRegion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserContextUpsertBuiltinDimensionsRegion
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserContextUpsertBuiltinDimensionsRegion
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextUpsertBuiltinDimensionsSubscriptionState`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"trial\","]
+#[doc = "    \"paid\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextUpsertBuiltinDimensionsSubscriptionState {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "trial")]
+    Trial,
+    #[serde(rename = "paid")]
+    Paid,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for ServerUserContextUpsertBuiltinDimensionsSubscriptionState {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::Trial => f.write_str("trial"),
+            Self::Paid => f.write_str("paid"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextUpsertBuiltinDimensionsSubscriptionState {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "trial" => Ok(Self::Trial),
+            "paid" => Ok(Self::Paid),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextUpsertBuiltinDimensionsSubscriptionState {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserContextUpsertBuiltinDimensionsSubscriptionState
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserContextUpsertBuiltinDimensionsSubscriptionState
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextUpsertBuiltinDimensionsTrialType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"free_trial\","]
+#[doc = "    \"reverse_trial\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ServerUserContextUpsertBuiltinDimensionsTrialType {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "free_trial")]
+    FreeTrial,
+    #[serde(rename = "reverse_trial")]
+    ReverseTrial,
+}
+impl ::std::fmt::Display for ServerUserContextUpsertBuiltinDimensionsTrialType {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::FreeTrial => f.write_str("free_trial"),
+            Self::ReverseTrial => f.write_str("reverse_trial"),
+        }
+    }
+}
+impl ::std::str::FromStr for ServerUserContextUpsertBuiltinDimensionsTrialType {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "free_trial" => Ok(Self::FreeTrial),
+            "reverse_trial" => Ok(Self::ReverseTrial),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextUpsertBuiltinDimensionsTrialType {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for ServerUserContextUpsertBuiltinDimensionsTrialType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for ServerUserContextUpsertBuiltinDimensionsTrialType
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`ServerUserContextUpsertSeatTypeHandle`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[a-z0-9._]{1,100}$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ServerUserContextUpsertSeatTypeHandle(::std::string::String);
+impl ::std::ops::Deref for ServerUserContextUpsertSeatTypeHandle {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ServerUserContextUpsertSeatTypeHandle> for ::std::string::String {
+    fn from(value: ServerUserContextUpsertSeatTypeHandle) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ServerUserContextUpsertSeatTypeHandle {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z0-9._]{1,100}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z0-9._]{1,100}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextUpsertSeatTypeHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ServerUserContextUpsertSeatTypeHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ServerUserContextUpsertSeatTypeHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ServerUserContextUpsertSeatTypeHandle {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`ServerUserContextUpsertUserId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"pii\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ServerUserContextUpsertUserId(::std::string::String);
+impl ::std::ops::Deref for ServerUserContextUpsertUserId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ServerUserContextUpsertUserId> for ::std::string::String {
+    fn from(value: ServerUserContextUpsertUserId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ServerUserContextUpsertUserId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ServerUserContextUpsertUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ServerUserContextUpsertUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ServerUserContextUpsertUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ServerUserContextUpsertUserId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
     }
 }
 #[doc = "`Severity`"]
@@ -163687,6 +177808,20 @@ impl<'de> ::serde::Deserialize<'de> for SupersessionRecordSupersededOutputId {
 #[doc = "      \"minimum\": 1.0,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"slot_name\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 200,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"status\": {"]
 #[doc = "      \"default\": \"idle\","]
 #[doc = "      \"$ref\": \"#/$defs/SurfaceSlotStatus\","]
@@ -163773,6 +177908,8 @@ pub struct SurfaceSlot {
     pub route: ::std::option::Option<SurfaceSlotRoute>,
     #[serde(default = "defaults::default_nzu64::<::std::num::NonZeroU64, 1>")]
     pub sequence: ::std::num::NonZeroU64,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub slot_name: ::std::option::Option<SurfaceSlotSlotName>,
     #[serde(default = "defaults::surface_slot_status")]
     pub status: SurfaceSlotStatus,
     #[serde(default = "defaults::surface_slot_surface_slot_category")]
@@ -163991,6 +178128,78 @@ impl ::std::convert::TryFrom<::std::string::String> for SurfaceSlotRoute {
     }
 }
 impl<'de> ::serde::Deserialize<'de> for SurfaceSlotRoute {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`SurfaceSlotSlotName`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 200,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct SurfaceSlotSlotName(::std::string::String);
+impl ::std::ops::Deref for SurfaceSlotSlotName {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<SurfaceSlotSlotName> for ::std::string::String {
+    fn from(value: SurfaceSlotSlotName) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for SurfaceSlotSlotName {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 200usize {
+            return Err("longer than 200 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for SurfaceSlotSlotName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for SurfaceSlotSlotName {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for SurfaceSlotSlotName {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for SurfaceSlotSlotName {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -172211,6 +186420,251 @@ impl ::std::convert::TryFrom<::std::string::String> for UserBuiltinDimensionsTri
 #[doc = "      },"]
 #[doc = "      \"x-revturbine-data-classification\": \"pii\""]
 #[doc = "    },"]
+#[doc = "    \"customer_builtin_dimensions\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"object\","]
+#[doc = "          \"properties\": {"]
+#[doc = "            \"activity_level\": {"]
+#[doc = "              \"type\": \"object\","]
+#[doc = "              \"required\": ["]
+#[doc = "                \"override\","]
+#[doc = "                \"set_at\","]
+#[doc = "                \"value\""]
+#[doc = "              ],"]
+#[doc = "              \"properties\": {"]
+#[doc = "                \"override\": {"]
+#[doc = "                  \"type\": \"boolean\""]
+#[doc = "                },"]
+#[doc = "                \"set_at\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"format\": \"date-time\","]
+#[doc = "                  \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "                },"]
+#[doc = "                \"value\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"enum\": ["]
+#[doc = "                    \"new\","]
+#[doc = "                    \"high\","]
+#[doc = "                    \"medium\","]
+#[doc = "                    \"low\","]
+#[doc = "                    \"inactive\""]
+#[doc = "                  ]"]
+#[doc = "                }"]
+#[doc = "              },"]
+#[doc = "              \"additionalProperties\": false,"]
+#[doc = "              \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "            },"]
+#[doc = "            \"billing_health\": {"]
+#[doc = "              \"type\": \"object\","]
+#[doc = "              \"required\": ["]
+#[doc = "                \"override\","]
+#[doc = "                \"set_at\","]
+#[doc = "                \"value\""]
+#[doc = "              ],"]
+#[doc = "              \"properties\": {"]
+#[doc = "                \"override\": {"]
+#[doc = "                  \"type\": \"boolean\""]
+#[doc = "                },"]
+#[doc = "                \"set_at\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"format\": \"date-time\","]
+#[doc = "                  \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "                },"]
+#[doc = "                \"value\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"enum\": ["]
+#[doc = "                    \"no_billing\","]
+#[doc = "                    \"good_standing\","]
+#[doc = "                    \"trial_payment_method_attached\","]
+#[doc = "                    \"payment_method_missing\","]
+#[doc = "                    \"payment_failed\","]
+#[doc = "                    \"payment_overdue\","]
+#[doc = "                    \"cancelled\""]
+#[doc = "                  ]"]
+#[doc = "                }"]
+#[doc = "              },"]
+#[doc = "              \"additionalProperties\": false,"]
+#[doc = "              \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "            },"]
+#[doc = "            \"buyer_role\": {"]
+#[doc = "              \"type\": \"object\","]
+#[doc = "              \"required\": ["]
+#[doc = "                \"override\","]
+#[doc = "                \"set_at\","]
+#[doc = "                \"value\""]
+#[doc = "              ],"]
+#[doc = "              \"properties\": {"]
+#[doc = "                \"override\": {"]
+#[doc = "                  \"type\": \"boolean\""]
+#[doc = "                },"]
+#[doc = "                \"set_at\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"format\": \"date-time\","]
+#[doc = "                  \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "                },"]
+#[doc = "                \"value\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"enum\": ["]
+#[doc = "                    \"buyer\","]
+#[doc = "                    \"non_buyer\""]
+#[doc = "                  ]"]
+#[doc = "                }"]
+#[doc = "              },"]
+#[doc = "              \"additionalProperties\": false,"]
+#[doc = "              \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "            },"]
+#[doc = "            \"device_type\": {"]
+#[doc = "              \"type\": \"object\","]
+#[doc = "              \"required\": ["]
+#[doc = "                \"override\","]
+#[doc = "                \"set_at\","]
+#[doc = "                \"value\""]
+#[doc = "              ],"]
+#[doc = "              \"properties\": {"]
+#[doc = "                \"override\": {"]
+#[doc = "                  \"type\": \"boolean\""]
+#[doc = "                },"]
+#[doc = "                \"set_at\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"format\": \"date-time\","]
+#[doc = "                  \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "                },"]
+#[doc = "                \"value\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"enum\": ["]
+#[doc = "                    \"desktop\","]
+#[doc = "                    \"mobile\","]
+#[doc = "                    \"tablet\","]
+#[doc = "                    \"unknown\""]
+#[doc = "                  ]"]
+#[doc = "                }"]
+#[doc = "              },"]
+#[doc = "              \"additionalProperties\": false,"]
+#[doc = "              \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "            },"]
+#[doc = "            \"email_type\": {"]
+#[doc = "              \"type\": \"object\","]
+#[doc = "              \"required\": ["]
+#[doc = "                \"override\","]
+#[doc = "                \"set_at\","]
+#[doc = "                \"value\""]
+#[doc = "              ],"]
+#[doc = "              \"properties\": {"]
+#[doc = "                \"override\": {"]
+#[doc = "                  \"type\": \"boolean\""]
+#[doc = "                },"]
+#[doc = "                \"set_at\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"format\": \"date-time\","]
+#[doc = "                  \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "                },"]
+#[doc = "                \"value\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"enum\": ["]
+#[doc = "                    \"business\","]
+#[doc = "                    \"personal\","]
+#[doc = "                    \"unknown\""]
+#[doc = "                  ]"]
+#[doc = "                }"]
+#[doc = "              },"]
+#[doc = "              \"additionalProperties\": false,"]
+#[doc = "              \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "            },"]
+#[doc = "            \"region\": {"]
+#[doc = "              \"type\": \"object\","]
+#[doc = "              \"required\": ["]
+#[doc = "                \"override\","]
+#[doc = "                \"set_at\","]
+#[doc = "                \"value\""]
+#[doc = "              ],"]
+#[doc = "              \"properties\": {"]
+#[doc = "                \"override\": {"]
+#[doc = "                  \"type\": \"boolean\""]
+#[doc = "                },"]
+#[doc = "                \"set_at\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"format\": \"date-time\","]
+#[doc = "                  \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "                },"]
+#[doc = "                \"value\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"enum\": ["]
+#[doc = "                    \"us_canada\","]
+#[doc = "                    \"europe\","]
+#[doc = "                    \"rest_of_world\""]
+#[doc = "                  ]"]
+#[doc = "                }"]
+#[doc = "              },"]
+#[doc = "              \"additionalProperties\": false,"]
+#[doc = "              \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "            },"]
+#[doc = "            \"subscription_state\": {"]
+#[doc = "              \"type\": \"object\","]
+#[doc = "              \"required\": ["]
+#[doc = "                \"override\","]
+#[doc = "                \"set_at\","]
+#[doc = "                \"value\""]
+#[doc = "              ],"]
+#[doc = "              \"properties\": {"]
+#[doc = "                \"override\": {"]
+#[doc = "                  \"type\": \"boolean\""]
+#[doc = "                },"]
+#[doc = "                \"set_at\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"format\": \"date-time\","]
+#[doc = "                  \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "                },"]
+#[doc = "                \"value\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"enum\": ["]
+#[doc = "                    \"none\","]
+#[doc = "                    \"trial\","]
+#[doc = "                    \"paid\","]
+#[doc = "                    \"cancelled\""]
+#[doc = "                  ]"]
+#[doc = "                }"]
+#[doc = "              },"]
+#[doc = "              \"additionalProperties\": false,"]
+#[doc = "              \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "            },"]
+#[doc = "            \"trial_type\": {"]
+#[doc = "              \"type\": \"object\","]
+#[doc = "              \"required\": ["]
+#[doc = "                \"override\","]
+#[doc = "                \"set_at\","]
+#[doc = "                \"value\""]
+#[doc = "              ],"]
+#[doc = "              \"properties\": {"]
+#[doc = "                \"override\": {"]
+#[doc = "                  \"type\": \"boolean\""]
+#[doc = "                },"]
+#[doc = "                \"set_at\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"format\": \"date-time\","]
+#[doc = "                  \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "                },"]
+#[doc = "                \"value\": {"]
+#[doc = "                  \"type\": \"string\","]
+#[doc = "                  \"enum\": ["]
+#[doc = "                    \"none\","]
+#[doc = "                    \"free_trial\","]
+#[doc = "                    \"reverse_trial\""]
+#[doc = "                  ]"]
+#[doc = "                }"]
+#[doc = "              },"]
+#[doc = "              \"additionalProperties\": false,"]
+#[doc = "              \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "            }"]
+#[doc = "          },"]
+#[doc = "          \"additionalProperties\": false"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"derived_computed_at\": {"]
 #[doc = "      \"default\": null,"]
 #[doc = "      \"anyOf\": ["]
@@ -172329,6 +186783,18 @@ impl ::std::convert::TryFrom<::std::string::String> for UserBuiltinDimensionsTri
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"seat_type_handle\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"pattern\": \"^[a-z0-9._]{1,100}$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"tenant_id\": {"]
 #[doc = "      \"readOnly\": true,"]
 #[doc = "      \"type\": \"string\","]
@@ -172400,6 +186866,8 @@ pub struct UserContext {
     )]
     pub custom: ::std::collections::HashMap<::std::string::String, UserContextCustomValue>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub customer_builtin_dimensions: ::std::option::Option<UserContextCustomerBuiltinDimensions>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub derived_computed_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub derived_config_version: ::std::option::Option<::std::string::String>,
@@ -172435,6 +186903,8 @@ pub struct UserContext {
     pub plan: ::std::option::Option<UserPlanContext>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub plan_handle: ::std::option::Option<UserContextPlanHandle>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub seat_type_handle: ::std::option::Option<UserContextSeatTypeHandle>,
     pub tenant_id: UserContextTenantId,
     #[serde(
         default,
@@ -173430,6 +187900,1319 @@ impl ::std::convert::From<bool> for UserContextCustomValue {
         Self::Boolean(value)
     }
 }
+#[doc = "`UserContextCustomerBuiltinDimensions`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"activity_level\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"override\","]
+#[doc = "        \"set_at\","]
+#[doc = "        \"value\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"override\": {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        \"set_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        \"value\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"new\","]
+#[doc = "            \"high\","]
+#[doc = "            \"medium\","]
+#[doc = "            \"low\","]
+#[doc = "            \"inactive\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"billing_health\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"override\","]
+#[doc = "        \"set_at\","]
+#[doc = "        \"value\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"override\": {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        \"set_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        \"value\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"no_billing\","]
+#[doc = "            \"good_standing\","]
+#[doc = "            \"trial_payment_method_attached\","]
+#[doc = "            \"payment_method_missing\","]
+#[doc = "            \"payment_failed\","]
+#[doc = "            \"payment_overdue\","]
+#[doc = "            \"cancelled\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"buyer_role\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"override\","]
+#[doc = "        \"set_at\","]
+#[doc = "        \"value\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"override\": {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        \"set_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        \"value\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"buyer\","]
+#[doc = "            \"non_buyer\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"device_type\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"override\","]
+#[doc = "        \"set_at\","]
+#[doc = "        \"value\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"override\": {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        \"set_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        \"value\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"desktop\","]
+#[doc = "            \"mobile\","]
+#[doc = "            \"tablet\","]
+#[doc = "            \"unknown\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"email_type\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"override\","]
+#[doc = "        \"set_at\","]
+#[doc = "        \"value\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"override\": {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        \"set_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        \"value\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"business\","]
+#[doc = "            \"personal\","]
+#[doc = "            \"unknown\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"region\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"override\","]
+#[doc = "        \"set_at\","]
+#[doc = "        \"value\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"override\": {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        \"set_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        \"value\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"us_canada\","]
+#[doc = "            \"europe\","]
+#[doc = "            \"rest_of_world\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_state\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"override\","]
+#[doc = "        \"set_at\","]
+#[doc = "        \"value\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"override\": {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        \"set_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        \"value\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"none\","]
+#[doc = "            \"trial\","]
+#[doc = "            \"paid\","]
+#[doc = "            \"cancelled\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"trial_type\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"override\","]
+#[doc = "        \"set_at\","]
+#[doc = "        \"value\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"override\": {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        \"set_at\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        \"value\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"none\","]
+#[doc = "            \"free_trial\","]
+#[doc = "            \"reverse_trial\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct UserContextCustomerBuiltinDimensions {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub activity_level: ::std::option::Option<UserContextCustomerBuiltinDimensionsActivityLevel>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub billing_health: ::std::option::Option<UserContextCustomerBuiltinDimensionsBillingHealth>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub buyer_role: ::std::option::Option<UserContextCustomerBuiltinDimensionsBuyerRole>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub device_type: ::std::option::Option<UserContextCustomerBuiltinDimensionsDeviceType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub email_type: ::std::option::Option<UserContextCustomerBuiltinDimensionsEmailType>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub region: ::std::option::Option<UserContextCustomerBuiltinDimensionsRegion>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub subscription_state:
+        ::std::option::Option<UserContextCustomerBuiltinDimensionsSubscriptionState>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub trial_type: ::std::option::Option<UserContextCustomerBuiltinDimensionsTrialType>,
+}
+impl ::std::default::Default for UserContextCustomerBuiltinDimensions {
+    fn default() -> Self {
+        Self {
+            activity_level: Default::default(),
+            billing_health: Default::default(),
+            buyer_role: Default::default(),
+            device_type: Default::default(),
+            email_type: Default::default(),
+            region: Default::default(),
+            subscription_state: Default::default(),
+            trial_type: Default::default(),
+        }
+    }
+}
+#[doc = "`UserContextCustomerBuiltinDimensionsActivityLevel`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"override\","]
+#[doc = "    \"set_at\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"set_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"new\","]
+#[doc = "        \"high\","]
+#[doc = "        \"medium\","]
+#[doc = "        \"low\","]
+#[doc = "        \"inactive\""]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct UserContextCustomerBuiltinDimensionsActivityLevel {
+    #[serde(rename = "override")]
+    pub override_: bool,
+    pub set_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub value: UserContextCustomerBuiltinDimensionsActivityLevelValue,
+}
+#[doc = "`UserContextCustomerBuiltinDimensionsActivityLevelValue`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"new\","]
+#[doc = "    \"high\","]
+#[doc = "    \"medium\","]
+#[doc = "    \"low\","]
+#[doc = "    \"inactive\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserContextCustomerBuiltinDimensionsActivityLevelValue {
+    #[serde(rename = "new")]
+    New,
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "inactive")]
+    Inactive,
+}
+impl ::std::fmt::Display for UserContextCustomerBuiltinDimensionsActivityLevelValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::New => f.write_str("new"),
+            Self::High => f.write_str("high"),
+            Self::Medium => f.write_str("medium"),
+            Self::Low => f.write_str("low"),
+            Self::Inactive => f.write_str("inactive"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserContextCustomerBuiltinDimensionsActivityLevelValue {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "new" => Ok(Self::New),
+            "high" => Ok(Self::High),
+            "medium" => Ok(Self::Medium),
+            "low" => Ok(Self::Low),
+            "inactive" => Ok(Self::Inactive),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextCustomerBuiltinDimensionsActivityLevelValue {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for UserContextCustomerBuiltinDimensionsActivityLevelValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for UserContextCustomerBuiltinDimensionsActivityLevelValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserContextCustomerBuiltinDimensionsBillingHealth`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"override\","]
+#[doc = "    \"set_at\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"set_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"no_billing\","]
+#[doc = "        \"good_standing\","]
+#[doc = "        \"trial_payment_method_attached\","]
+#[doc = "        \"payment_method_missing\","]
+#[doc = "        \"payment_failed\","]
+#[doc = "        \"payment_overdue\","]
+#[doc = "        \"cancelled\""]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct UserContextCustomerBuiltinDimensionsBillingHealth {
+    #[serde(rename = "override")]
+    pub override_: bool,
+    pub set_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub value: UserContextCustomerBuiltinDimensionsBillingHealthValue,
+}
+#[doc = "`UserContextCustomerBuiltinDimensionsBillingHealthValue`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"no_billing\","]
+#[doc = "    \"good_standing\","]
+#[doc = "    \"trial_payment_method_attached\","]
+#[doc = "    \"payment_method_missing\","]
+#[doc = "    \"payment_failed\","]
+#[doc = "    \"payment_overdue\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserContextCustomerBuiltinDimensionsBillingHealthValue {
+    #[serde(rename = "no_billing")]
+    NoBilling,
+    #[serde(rename = "good_standing")]
+    GoodStanding,
+    #[serde(rename = "trial_payment_method_attached")]
+    TrialPaymentMethodAttached,
+    #[serde(rename = "payment_method_missing")]
+    PaymentMethodMissing,
+    #[serde(rename = "payment_failed")]
+    PaymentFailed,
+    #[serde(rename = "payment_overdue")]
+    PaymentOverdue,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for UserContextCustomerBuiltinDimensionsBillingHealthValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::NoBilling => f.write_str("no_billing"),
+            Self::GoodStanding => f.write_str("good_standing"),
+            Self::TrialPaymentMethodAttached => f.write_str("trial_payment_method_attached"),
+            Self::PaymentMethodMissing => f.write_str("payment_method_missing"),
+            Self::PaymentFailed => f.write_str("payment_failed"),
+            Self::PaymentOverdue => f.write_str("payment_overdue"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserContextCustomerBuiltinDimensionsBillingHealthValue {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "no_billing" => Ok(Self::NoBilling),
+            "good_standing" => Ok(Self::GoodStanding),
+            "trial_payment_method_attached" => Ok(Self::TrialPaymentMethodAttached),
+            "payment_method_missing" => Ok(Self::PaymentMethodMissing),
+            "payment_failed" => Ok(Self::PaymentFailed),
+            "payment_overdue" => Ok(Self::PaymentOverdue),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextCustomerBuiltinDimensionsBillingHealthValue {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for UserContextCustomerBuiltinDimensionsBillingHealthValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for UserContextCustomerBuiltinDimensionsBillingHealthValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserContextCustomerBuiltinDimensionsBuyerRole`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"override\","]
+#[doc = "    \"set_at\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"set_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"buyer\","]
+#[doc = "        \"non_buyer\""]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct UserContextCustomerBuiltinDimensionsBuyerRole {
+    #[serde(rename = "override")]
+    pub override_: bool,
+    pub set_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub value: UserContextCustomerBuiltinDimensionsBuyerRoleValue,
+}
+#[doc = "`UserContextCustomerBuiltinDimensionsBuyerRoleValue`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"buyer\","]
+#[doc = "    \"non_buyer\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserContextCustomerBuiltinDimensionsBuyerRoleValue {
+    #[serde(rename = "buyer")]
+    Buyer,
+    #[serde(rename = "non_buyer")]
+    NonBuyer,
+}
+impl ::std::fmt::Display for UserContextCustomerBuiltinDimensionsBuyerRoleValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Buyer => f.write_str("buyer"),
+            Self::NonBuyer => f.write_str("non_buyer"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserContextCustomerBuiltinDimensionsBuyerRoleValue {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "buyer" => Ok(Self::Buyer),
+            "non_buyer" => Ok(Self::NonBuyer),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextCustomerBuiltinDimensionsBuyerRoleValue {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for UserContextCustomerBuiltinDimensionsBuyerRoleValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for UserContextCustomerBuiltinDimensionsBuyerRoleValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserContextCustomerBuiltinDimensionsDeviceType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"override\","]
+#[doc = "    \"set_at\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"set_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"desktop\","]
+#[doc = "        \"mobile\","]
+#[doc = "        \"tablet\","]
+#[doc = "        \"unknown\""]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct UserContextCustomerBuiltinDimensionsDeviceType {
+    #[serde(rename = "override")]
+    pub override_: bool,
+    pub set_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub value: UserContextCustomerBuiltinDimensionsDeviceTypeValue,
+}
+#[doc = "`UserContextCustomerBuiltinDimensionsDeviceTypeValue`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"desktop\","]
+#[doc = "    \"mobile\","]
+#[doc = "    \"tablet\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserContextCustomerBuiltinDimensionsDeviceTypeValue {
+    #[serde(rename = "desktop")]
+    Desktop,
+    #[serde(rename = "mobile")]
+    Mobile,
+    #[serde(rename = "tablet")]
+    Tablet,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for UserContextCustomerBuiltinDimensionsDeviceTypeValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Desktop => f.write_str("desktop"),
+            Self::Mobile => f.write_str("mobile"),
+            Self::Tablet => f.write_str("tablet"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserContextCustomerBuiltinDimensionsDeviceTypeValue {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "desktop" => Ok(Self::Desktop),
+            "mobile" => Ok(Self::Mobile),
+            "tablet" => Ok(Self::Tablet),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextCustomerBuiltinDimensionsDeviceTypeValue {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for UserContextCustomerBuiltinDimensionsDeviceTypeValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for UserContextCustomerBuiltinDimensionsDeviceTypeValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserContextCustomerBuiltinDimensionsEmailType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"override\","]
+#[doc = "    \"set_at\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"set_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"business\","]
+#[doc = "        \"personal\","]
+#[doc = "        \"unknown\""]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct UserContextCustomerBuiltinDimensionsEmailType {
+    #[serde(rename = "override")]
+    pub override_: bool,
+    pub set_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub value: UserContextCustomerBuiltinDimensionsEmailTypeValue,
+}
+#[doc = "`UserContextCustomerBuiltinDimensionsEmailTypeValue`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"business\","]
+#[doc = "    \"personal\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserContextCustomerBuiltinDimensionsEmailTypeValue {
+    #[serde(rename = "business")]
+    Business,
+    #[serde(rename = "personal")]
+    Personal,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for UserContextCustomerBuiltinDimensionsEmailTypeValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Business => f.write_str("business"),
+            Self::Personal => f.write_str("personal"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserContextCustomerBuiltinDimensionsEmailTypeValue {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "business" => Ok(Self::Business),
+            "personal" => Ok(Self::Personal),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextCustomerBuiltinDimensionsEmailTypeValue {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for UserContextCustomerBuiltinDimensionsEmailTypeValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for UserContextCustomerBuiltinDimensionsEmailTypeValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserContextCustomerBuiltinDimensionsRegion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"override\","]
+#[doc = "    \"set_at\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"set_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"us_canada\","]
+#[doc = "        \"europe\","]
+#[doc = "        \"rest_of_world\""]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct UserContextCustomerBuiltinDimensionsRegion {
+    #[serde(rename = "override")]
+    pub override_: bool,
+    pub set_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub value: UserContextCustomerBuiltinDimensionsRegionValue,
+}
+#[doc = "`UserContextCustomerBuiltinDimensionsRegionValue`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"us_canada\","]
+#[doc = "    \"europe\","]
+#[doc = "    \"rest_of_world\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserContextCustomerBuiltinDimensionsRegionValue {
+    #[serde(rename = "us_canada")]
+    UsCanada,
+    #[serde(rename = "europe")]
+    Europe,
+    #[serde(rename = "rest_of_world")]
+    RestOfWorld,
+}
+impl ::std::fmt::Display for UserContextCustomerBuiltinDimensionsRegionValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::UsCanada => f.write_str("us_canada"),
+            Self::Europe => f.write_str("europe"),
+            Self::RestOfWorld => f.write_str("rest_of_world"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserContextCustomerBuiltinDimensionsRegionValue {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "us_canada" => Ok(Self::UsCanada),
+            "europe" => Ok(Self::Europe),
+            "rest_of_world" => Ok(Self::RestOfWorld),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextCustomerBuiltinDimensionsRegionValue {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for UserContextCustomerBuiltinDimensionsRegionValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for UserContextCustomerBuiltinDimensionsRegionValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserContextCustomerBuiltinDimensionsSubscriptionState`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"override\","]
+#[doc = "    \"set_at\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"set_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"none\","]
+#[doc = "        \"trial\","]
+#[doc = "        \"paid\","]
+#[doc = "        \"cancelled\""]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct UserContextCustomerBuiltinDimensionsSubscriptionState {
+    #[serde(rename = "override")]
+    pub override_: bool,
+    pub set_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub value: UserContextCustomerBuiltinDimensionsSubscriptionStateValue,
+}
+#[doc = "`UserContextCustomerBuiltinDimensionsSubscriptionStateValue`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"trial\","]
+#[doc = "    \"paid\","]
+#[doc = "    \"cancelled\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserContextCustomerBuiltinDimensionsSubscriptionStateValue {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "trial")]
+    Trial,
+    #[serde(rename = "paid")]
+    Paid,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
+impl ::std::fmt::Display for UserContextCustomerBuiltinDimensionsSubscriptionStateValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::Trial => f.write_str("trial"),
+            Self::Paid => f.write_str("paid"),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserContextCustomerBuiltinDimensionsSubscriptionStateValue {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "trial" => Ok(Self::Trial),
+            "paid" => Ok(Self::Paid),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextCustomerBuiltinDimensionsSubscriptionStateValue {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for UserContextCustomerBuiltinDimensionsSubscriptionStateValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for UserContextCustomerBuiltinDimensionsSubscriptionStateValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`UserContextCustomerBuiltinDimensionsTrialType`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"override\","]
+#[doc = "    \"set_at\","]
+#[doc = "    \"value\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"override\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"set_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "    },"]
+#[doc = "    \"value\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"none\","]
+#[doc = "        \"free_trial\","]
+#[doc = "        \"reverse_trial\""]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct UserContextCustomerBuiltinDimensionsTrialType {
+    #[serde(rename = "override")]
+    pub override_: bool,
+    pub set_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub value: UserContextCustomerBuiltinDimensionsTrialTypeValue,
+}
+#[doc = "`UserContextCustomerBuiltinDimensionsTrialTypeValue`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"none\","]
+#[doc = "    \"free_trial\","]
+#[doc = "    \"reverse_trial\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum UserContextCustomerBuiltinDimensionsTrialTypeValue {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "free_trial")]
+    FreeTrial,
+    #[serde(rename = "reverse_trial")]
+    ReverseTrial,
+}
+impl ::std::fmt::Display for UserContextCustomerBuiltinDimensionsTrialTypeValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::None => f.write_str("none"),
+            Self::FreeTrial => f.write_str("free_trial"),
+            Self::ReverseTrial => f.write_str("reverse_trial"),
+        }
+    }
+}
+impl ::std::str::FromStr for UserContextCustomerBuiltinDimensionsTrialTypeValue {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "none" => Ok(Self::None),
+            "free_trial" => Ok(Self::FreeTrial),
+            "reverse_trial" => Ok(Self::ReverseTrial),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextCustomerBuiltinDimensionsTrialTypeValue {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for UserContextCustomerBuiltinDimensionsTrialTypeValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for UserContextCustomerBuiltinDimensionsTrialTypeValue
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 #[doc = "`UserContextEmail`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -173701,6 +189484,76 @@ impl ::std::convert::TryFrom<::std::string::String> for UserContextPlanHandle {
     }
 }
 impl<'de> ::serde::Deserialize<'de> for UserContextPlanHandle {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`UserContextSeatTypeHandle`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[a-z0-9._]{1,100}$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct UserContextSeatTypeHandle(::std::string::String);
+impl ::std::ops::Deref for UserContextSeatTypeHandle {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<UserContextSeatTypeHandle> for ::std::string::String {
+    fn from(value: UserContextSeatTypeHandle) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for UserContextSeatTypeHandle {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z0-9._]{1,100}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z0-9._]{1,100}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextSeatTypeHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserContextSeatTypeHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserContextSeatTypeHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for UserContextSeatTypeHandle {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,

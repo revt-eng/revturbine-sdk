@@ -19,6 +19,9 @@ import type {
   ServerEvaluationPayloadTrialStatus,
   ServerEvaluationPayloadUser,
   ServerEvaluationPayloadUserContext,
+  ServerUserContextAssignment,
+  ServerUserBuiltinDimensions,
+  ServerBuiltinDimensionsWrite,
 } from '@revt-eng/schema';
 
 export type {
@@ -29,6 +32,9 @@ export type {
   ServerEvaluationPayloadTrialStatus,
   ServerEvaluationPayloadUser,
   ServerEvaluationPayloadUserContext,
+  ServerUserContextAssignment,
+  ServerUserBuiltinDimensions,
+  ServerBuiltinDimensionsWrite,
 };
 
 // ---------------------------------------------------------------------------
@@ -124,6 +130,103 @@ export interface ClientSessionResult {
   /** ISO-8601 timestamp at which the token expires. */
   expires_at: string;
 }
+
+// ---------------------------------------------------------------------------
+// Seat-type assignment (plan 279 TASK-16a, D-36) — server-only capability
+// ---------------------------------------------------------------------------
+
+/**
+ * Why a seat-type assignment was refused, derived from the HTTP status of
+ * `POST /api/sdk/user-contexts`:
+ *
+ * - `invalid_request` (400) — malformed body, e.g. an empty user id.
+ * - `unauthorized` (401) — missing or invalid credential.
+ * - `forbidden` (403) — the credential is not a **server** key. Only a server
+ *   key may write a seat assignment (D-36).
+ * - `unknown_seat_type` (422) — the handle is not one of the tenant's current
+ *   seat types.
+ * - `unknown_dimension_value` (422, code `UNKNOWN_DIMENSION_VALUE`) — a
+ *   `builtinDimensions` value passed alongside the seat is outside its
+ *   dimension's vocabulary (BL-0382).
+ * - `request_failed` — any other non-2xx status.
+ */
+export type SeatAssignmentErrorReason =
+  | 'invalid_request'
+  | 'unauthorized'
+  | 'forbidden'
+  | 'unknown_seat_type'
+  | 'unknown_dimension_value'
+  | 'request_failed';
+
+/**
+ * Options for {@link RevTurbineServer.assignSeatType}: built-in dimension
+ * values to write in the SAME server-key upsert as the seat (BL-0382). See
+ * {@link SetBuiltinDimensionsOptions} for `override`.
+ */
+export interface AssignSeatTypeOptions {
+  /** Built-in dimension values to set (or clear with `null`) with the seat. */
+  builtinDimensions?: ServerBuiltinDimensionsWrite;
+  /** Pin the `builtinDimensions` written in this call (D-47). Default `false`. */
+  override?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Customer-set built-in dimensions (BL-0382, D-46/D-47) — server-only capability
+// ---------------------------------------------------------------------------
+
+/** Options for {@link RevTurbineServer.setBuiltinDimensions}. */
+export interface SetBuiltinDimensionsOptions {
+  /**
+   * `false` (default) — an UPDATE: the value is delivered until a newer
+   * RevTurbine enrichment change (Stripe subscription / trial / billing, the
+   * activity job, request signals) supersedes it — last writer wins,
+   * enrichment included. Writing a pinned dimension without the flag UNPINS it.
+   *
+   * `true` — an OVERRIDE: the values written in this call are pinned, and
+   * RevTurbine enrichment never replaces them until you write that dimension
+   * again without the flag, or clear it with `null` (ruling D-47).
+   */
+  override?: boolean;
+}
+
+/**
+ * Why a built-in dimension write ({@link RevTurbineServer.setBuiltinDimensions})
+ * was refused, derived from the HTTP status of `POST /api/sdk/user-contexts`:
+ *
+ * - `invalid_request` (400) — malformed body: an empty user id, an empty
+ *   dimensions map, `seat_type` (use `assignSeatType`) or an unknown key.
+ * - `unauthorized` (401) — missing or invalid credential.
+ * - `forbidden` (403) — the credential is not a **server** key.
+ * - `unknown_dimension_value` (422) — a value is outside its dimension's
+ *   vocabulary.
+ * - `request_failed` — any other non-2xx status.
+ */
+export type DimensionWriteErrorReason =
+  | 'invalid_request'
+  | 'unauthorized'
+  | 'forbidden'
+  | 'unknown_dimension_value'
+  | 'request_failed';
+
+// ---------------------------------------------------------------------------
+// Server-resolved built-in dimensions (BL-0366) — server-only capability
+// ---------------------------------------------------------------------------
+
+/**
+ * Why a built-in dimension read was refused, derived from the HTTP status of
+ * `GET /api/sdk/user-contexts/{userId}/builtin-dimensions`:
+ *
+ * - `invalid_request` (400) — e.g. a blank user id.
+ * - `unauthorized` (401) — missing or invalid credential.
+ * - `forbidden` (403) — the credential is not a **server** key, the request
+ *   looked browser-originated, or a tenant header named another tenant.
+ * - `request_failed` — any other non-2xx status.
+ */
+export type BuiltinDimensionsErrorReason =
+  | 'invalid_request'
+  | 'unauthorized'
+  | 'forbidden'
+  | 'request_failed';
 
 // ---------------------------------------------------------------------------
 // Server SDK configuration

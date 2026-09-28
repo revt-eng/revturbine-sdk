@@ -31,6 +31,7 @@ export {
   isFallbackAccountId,
 } from './account-identity';
 import { evaluateSegments } from './segments';
+import { withLocalBuiltinSegments } from './local-builtin-segments';
 import { buildControlPlaneEvent } from './control-plane-events';
 import type { ControlPlaneEventType } from './control-plane-events';
 import type { RevTurbineStorage } from './storage';
@@ -84,7 +85,12 @@ import type {
   JsonObject,
   PredicateEvaluationResult,
 } from '@revt-eng/core';
-import { evaluateSegmentEligibility, resolvePlacementComponentType } from '@revt-eng/core';
+import {
+  evaluateSegmentEligibility,
+  isReservedSegmentHandle,
+  isReservedTraitKey,
+  resolvePlacementComponentType,
+} from '@revt-eng/core';
 import {
   getEligibleAddons as coreGetEligibleAddons,
   getEligiblePlans as coreGetEligiblePlans,
@@ -256,9 +262,11 @@ export type SdkTraits = Record<string, JsonValue>;
 
 /**
  * Top-level keys {@link RevTurbineCustomerSdk.identify} recognizes on a
- * canonical user-context input. Anything else is either ignored (canonical
- * input) or routed to legacy `custom` traits — both with a dev-only warning
- * (plan 168 REQ-3).
+ * canonical user-context input. Anything else is dropped and reported
+ * (plan 168 REQ-3, plan 191 REQ-3). `satisfies` guards each entry against
+ * typos; `update-keys-exhaustiveness.test-d.ts` derives the reverse
+ * direction, so an {@link IdentifyContextInput} field identify() does not
+ * merge has to be acknowledged there (BL-0352).
  */
 const RECOGNIZED_IDENTIFY_KEYS = [
   'account_id',
@@ -269,8 +277,16 @@ const RECOGNIZED_IDENTIFY_KEYS = [
   'entitlements',
   'custom',
   'personalization',
-] as const;
+] as const satisfies readonly (keyof IdentifyContextInput)[];
 const RECOGNIZED_IDENTIFY_KEY_SET: ReadonlySet<string> = new Set(RECOGNIZED_IDENTIFY_KEYS);
+
+/**
+ * The top-level {@link IdentifyContextInput} keys
+ * {@link RevTurbineCustomerSdk.identify} merges into the held context (the
+ * entries of its recognized-key list). Exported for type-level
+ * exhaustiveness checks; it has no runtime value.
+ */
+export type RecognizedIdentifyKey = (typeof RECOGNIZED_IDENTIFY_KEYS)[number];
 
 /**
  * The pre-plan-191 plan shape a plain-JS caller may still send: the current
@@ -526,12 +542,77 @@ const VALID_COMPONENT_TYPES: ReadonlySet<RevTurbineComponentType> = new Set<RevT
 export type UserContextInput = Omit<UserContext, 'id' | 'tenant_id' | 'user_id' | 'created_at' | 'updated_at'>;
 
 /**
+ * User-context fields only the server may write, so the browser input types
+ * ({@link IdentifyContextInput}, {@link RevTurbineUserContext} and, through it,
+ * {@link RevTurbineUpdateInput}) omit them, and every browser entry point
+ * (`identify()`, `update()`, `setUserContext()`, the `user` init option)
+ * drops them at runtime for plain-JS callers (BL-0351, BL-0352, BL-0381).
+ *
+ * Trust is by party (D-46): the browser client never asserts these values;
+ * the customer's server may (a server-key user-context write, or a server
+ * SDK's overlay inputs), and RevTurbine's server may enrich them.
+ *
+ * - `seat_type_handle` — the user's seat-type assignment (plan 279, D-36).
+ *   It has exactly two writers: the tenant's backend, through a server-key
+ *   user-context upsert, and RevTurbine's own server-side enrichment in
+ *   hosted mode. It is never accepted from `identify()`, `update()` or any
+ *   credential the browser holds; the control plane resolves the delivered
+ *   `seat_type` / `buyer_role` built-in dimensions from it.
+ * - `activity_score` / `activity_score_computed_at` — computed by the
+ *   control plane's hourly activity-score refresh from the event stream and
+ *   persisted on `user_contexts` (plan 180; targeting-studio-ui.md §4.1,
+ *   Activity State). The browser receives the derived level through the
+ *   `activity_level` built-in dimension, never the score, and never writes
+ *   either field (D-36's principle).
+ * - `builtin_dimensions` — the resolved built-in segment dimensions that
+ *   stamp the reserved `rt_<dimension>` traits (plan 279 PD-3, as amended by
+ *   D-46; BL-0381). The only browser source is the authenticated
+ *   `GET /api/sdk/client-context` delivery, which the SDK merges into its
+ *   held context itself; an app-supplied value would let the browser claim
+ *   any built-in segment (e.g. `rt.subscription_state.paid`).
+ * - `customer_builtin_dimensions` — the customer-set built-in dimension
+ *   values and their per-key `override` pins (D-47; BL-0382). Written only by
+ *   the customer's server through the server-key `POST /api/sdk/user-contexts`
+ *   upsert (server-node `setBuiltinDimensions`); the control plane folds them
+ *   into `builtin_dimensions` before delivery.
+ */
+const SERVER_ASSIGNED_USER_CONTEXT_KEYS = [
+  'seat_type_handle',
+  'activity_score',
+  'activity_score_computed_at',
+  'builtin_dimensions',
+  'customer_builtin_dimensions',
+] as const satisfies readonly (keyof UserContextInput)[];
+type ServerAssignedUserContextKey = (typeof SERVER_ASSIGNED_USER_CONTEXT_KEYS)[number];
+const SERVER_ASSIGNED_USER_CONTEXT_KEY_SET: ReadonlySet<string> = new Set(SERVER_ASSIGNED_USER_CONTEXT_KEYS);
+
+/**
+ * Copy `context` without its server-assigned keys (see
+ * {@link ServerAssignedUserContextKey}), returning the copy and the names of
+ * the keys removed. A non-record, or one carrying none of them, passes
+ * through unchanged.
+ */
+function withoutServerAssignedKeys<T>(context: T): { accepted: T; dropped: string[] } {
+  if (!isRecord(context)) return { accepted: context, dropped: [] };
+  const dropped = Object.keys(context).filter((key) => SERVER_ASSIGNED_USER_CONTEXT_KEY_SET.has(key));
+  if (dropped.length === 0) return { accepted: context, dropped };
+  const accepted = { ...context };
+  for (const key of dropped) Reflect.deleteProperty(accepted, key);
+  return { accepted, dropped };
+}
+
+/**
  * Input accepted by {@link RevTurbineCustomerSdk.identify} for the canonical
  * user-context shape (plan 191). `plan_handle` is THE plan matching
  * identity — the plan's `unique_handle`; the `plan` object is display
  * metadata (name/price/period) and never participates in matching.
+ *
+ * Server-assigned fields (`seat_type_handle`, `activity_score`,
+ * `activity_score_computed_at`, `builtin_dimensions`) are not accepted here
+ * (plan 279, D-36, D-46; BL-0352, BL-0381); the tenant's backend or
+ * RevTurbine's enrichment writes them.
  */
-export type IdentifyContextInput = Partial<UserContextInput> & {
+export type IdentifyContextInput = Partial<Omit<UserContextInput, ServerAssignedUserContextKey>> & {
   /** THE plan matching identity — the plan's `unique_handle` (e.g. `'pro'`). */
   plan_handle?: string;
 };
@@ -684,7 +765,11 @@ export type RevTurbineGateResult<T> =
  * `{ plan }`) never clobbers other context. Patchable fields include `plan`,
  * `email`, `account_id`, `entitlements`, `custom`, `personalization`, `trial`,
  * the billing-recovery signals (`payment_failed` / `payment_at_risk`), `tiers`,
- * and `usage`.
+ * app-known experiment assignments (`experiments`, plan 183), and `usage`.
+ * Server-assigned fields (`seat_type_handle`, `activity_score`,
+ * `activity_score_computed_at`, `builtin_dimensions`) are not patchable
+ * (D-36, D-46; BL-0352, BL-0381): built-in dimension values reach the browser
+ * only from the authenticated client-context delivery.
  *
  * `usage` keeps its friendly `Record<string, number>` shape (absolute balances),
  * distinct from the richer per-entry `usage` on {@link RevTurbineUserContext}.
@@ -697,10 +782,12 @@ export type RevTurbineUpdateInput = Omit<RevTurbineUserContext, 'id' | 'usage'> 
 /**
  * Runtime mirror of {@link RevTurbineUpdateInput}'s keys — the fields
  * `update()` patches. `satisfies` guards each entry against typos/renames;
- * the aliases test asserts exhaustiveness against the type, so a
- * schema-added context field fails the build until acknowledged here.
- * JS callers' keys outside this set are dropped with a dev warning rather
- * than merged into the context.
+ * `update-keys-exhaustiveness.test-d.ts` (compiled by
+ * `pnpm check:types:exact`) derives the reverse direction, so a
+ * schema-added context field fails the build until it is acknowledged here
+ * or omitted from the browser input types (BL-0352). JS callers' keys
+ * outside this set are dropped with a warning rather than merged into the
+ * context.
  */
 export const RECOGNIZED_UPDATE_KEYS = [
   'usage',
@@ -717,11 +804,20 @@ export const RECOGNIZED_UPDATE_KEYS = [
   'instances',
   'custom',
   'personalization',
+  'experiments',
   'derived_config_version',
   'context_hash',
   'derived_computed_at',
 ] as const satisfies readonly (keyof RevTurbineUpdateInput)[];
 const RECOGNIZED_UPDATE_KEY_SET: ReadonlySet<string> = new Set(RECOGNIZED_UPDATE_KEYS);
+
+/**
+ * The top-level {@link RevTurbineUpdateInput} keys
+ * {@link RevTurbineCustomerSdk.update} patches (the entries of
+ * {@link RECOGNIZED_UPDATE_KEYS}). Exported for type-level exhaustiveness
+ * checks; it has no runtime value.
+ */
+export type RecognizedUpdateKey = (typeof RECOGNIZED_UPDATE_KEYS)[number];
 
 /** Usage snapshot entry for a usage unit. */
 export interface RevTurbineUsageSnapshotEntry {
@@ -781,11 +877,36 @@ export type ServerEvaluationHydrationPayload = GeneratedServerEvaluationPayload;
  * `custom` is widened to `Record<string, unknown>` at the SDK boundary
  * for customer convenience; values are narrowed to `TraitValue` when
  * persisted via the API.
+ *
+ * `seat_type_handle` is omitted on purpose (plan 279, D-36). A user's seat
+ * type is assigned only server-side: by the tenant's backend through a
+ * server-key user-context upsert, or by RevTurbine's enrichment in hosted
+ * mode. The browser never writes it, so neither `identify()`, `update()`,
+ * `setUserContext()` nor the `user` init option accepts it. The browser
+ * receives the resolved `seat_type` / `buyer_role` as built-in dimensions
+ * delivered by `GET /api/sdk/client-context` instead. The server-computed
+ * `activity_score` / `activity_score_computed_at` are omitted on the same
+ * principle (BL-0352); the browser receives the derived `activity_level`
+ * dimension.
+ *
+ * `builtin_dimensions` is omitted too (D-46, BL-0381): the browser never
+ * asserts a built-in dimension value. The SDK holds the values
+ * `fetchClientContext` delivers and stamps the reserved `rt_<dimension>`
+ * segment traits from them; read them back through
+ * {@link RevTurbineCustomerSdk.getUserContext getUserContext()}. A plain-JS
+ * caller that passes any of these keys has them dropped and reported at
+ * runtime.
  */
 export interface RevTurbineUserContext
   extends Omit<
     UserContextInput,
-    'custom' | 'entitlements' | 'usage' | 'personalization' | 'derived_computed_at' | 'context_hash'
+    | 'custom'
+    | 'entitlements'
+    | 'usage'
+    | 'personalization'
+    | 'derived_computed_at'
+    | 'context_hash'
+    | ServerAssignedUserContextKey
   > {
   /** Authenticated user identifier. When undefined, the SDK uses an anonymous ID. */
   id?: string;
@@ -815,26 +936,24 @@ export interface RevTurbineUserContext
    * `string | number` when serialized.
    */
   personalization?: SdkTraits;
-  /**
-   * Server-evaluated built-in segment dimensions (plan 279 PD-3), one leaf
-   * per resolved dimension keyed by its dimension key (e.g.
-   * `subscription_state`, `region`) — see the built-in segment resolution
-   * contract in `targeting-studio-ui.md` §4.1 for the full vocabulary.
-   *
-   * `fetchClientContext` delivers this from `GET /api/sdk/client-context`
-   * and merges it the way it merges `plan_handle`: **server values overlay
-   * app-set values**, per leaf. A dimension the server did not evaluate on a
-   * given fetch leaves whatever the app (or a prior fetch) had set for that
-   * leaf untouched; a dimension is simply absent when neither side has ever
-   * set it (unknown is trait absence — plan 255).
-   *
-   * Feeds the reserved `rt_<dimension>` segment traits that built-in
-   * Playbook segments match on — never read or write those trait keys
-   * directly. Set this yourself only to seed `local_only` mode or a
-   * server-side port, which has no client-context fetch of its own.
-   */
-  builtin_dimensions?: UserContextInput['builtin_dimensions'];
 }
+
+/**
+ * The context the browser SDK holds: the app-writable
+ * {@link RevTurbineUserContext} plus the built-in dimensions only
+ * `fetchClientContext` may write (plan 279 PD-3, D-46; BL-0381).
+ *
+ * `builtin_dimensions` has one leaf per resolved dimension keyed by its
+ * dimension key (e.g. `subscription_state`, `region`; vocabulary in
+ * `targeting-studio-ui.md` §4.1). Each delivery overlays the held value per
+ * leaf; a dimension never delivered is absent (unknown is trait absence —
+ * plan 255), so its built-in segments fail closed (PD-4). Every app-facing
+ * entry point drops this key, so nothing but that authenticated response
+ * reaches it.
+ */
+type HeldUserContext = RevTurbineUserContext & {
+  builtin_dimensions?: UserContextInput['builtin_dimensions'];
+};
 
 /**
  * The client-safe shape returned by `GET /api/sdk/client-context` (plan 157).
@@ -1138,8 +1257,26 @@ export interface RevTurbineTelemetryOptions {
 }
 
 export interface RevTurbineInitOptions {
-  /** Your RevTurbine tenant identifier. */
-  tenantId: string;
+  /**
+   * Your RevTurbine tenant identifier — **optional whenever a
+   * {@link publicKey} is supplied** (BL-0335, `0.11.14`).
+   *
+   * The public key is bound to exactly one tenant, so the control plane
+   * resolves the tenant from the key alone and the SDK reads it back from the
+   * launched Playbook it fetches (the signed manifest's and the Playbook's
+   * `tenant_id`). Passing a tenant id as well is still accepted, but the key
+   * is the sole arbiter of the tenant (D-49): when the key-authenticated
+   * delivery names a different tenant, the SDK warns once per init
+   * (`tenantId <x> does not match the key's tenant <y>; using <y>`) and adopts
+   * the key's tenant. The control plane likewise ignores a mismatching tenant
+   * id (with a server-side warning); it never refuses the request.
+   *
+   * Still required when there is no public key to identify the tenant — a
+   * `local_only` init without `localRuntime.playbook` (with one, the SDK
+   * defaults it to `'local'`), or a server-key (`apiKey`) headless init. The
+   * SDK throws a descriptive error at init when neither is present.
+   */
+  tenantId?: string;
   /**
    // @revturbine-graph configuration:revturbine-sdk-internal:web-sdk/customer-side.ts#RevTurbineInitOptions
    * Your **public key** — the browser credential.
@@ -1618,6 +1755,17 @@ export interface RevTurbineLocalRuntimeOptions {
    * './revturbine.playbook.json'` passes `tsc --strict` directly, no cast
    * needed; the SDK validates the shape at init and fails fast on a malformed
    * artifact.
+   *
+   * Built-in segments (`rt.<dimension>.<value>`) need no definitions in the
+   * file: the SDK adds them at load from RevTurbine's catalogue, with Seat Type
+   * values taken from the Playbook's own `seat_types`. An authored segment
+   * under the reserved `rt.` prefix is ignored.
+   *
+   * The definitions exist, but the values do not come from the app: the
+   * browser never sets built-in dimensions (D-46, BL-0381). They reach the
+   * SDK only from `GET /api/sdk/client-context` (a `clientSession` minter
+   * backed by your server), so without that delivery every built-in segment
+   * fails closed — a chip or rule naming one matches nobody.
    */
   playbook?: ConfigArtifact | UnvalidatedConfigArtifact;
   /**
@@ -2613,6 +2761,12 @@ function matchesEntitlementRuleSegmentsForDiagnostics(
 interface RuntimePlaybookProvider {
   getPlaybook(): RevTurbineConfig | undefined;
   refresh?(): Promise<RevTurbineConfig | undefined>;
+  /**
+   * The key's tenant, when a key-authenticated delivery named one that differs
+   * from the configured `tenantId` (D-49): the SDK adopts it. Undefined when
+   * they agree, when none was configured, or before the first delivery.
+   */
+  adoptedTenantId?(): string | undefined;
 }
 
 class StaticPlaybookProvider implements RuntimePlaybookProvider {
@@ -2644,7 +2798,12 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
 
   constructor(
     private readonly endpoint: string,
-    private readonly tenantId: string,
+    // The integration's configured tenant, if any (BL-0335). The public key
+    // is the sole arbiter of the tenant (D-49): the delivery is authenticated
+    // with the key, so the manifest's / Playbook's `tenant_id` IS the key's
+    // tenant. A configured tenant that differs is warned about once and the
+    // delivered tenant is adopted — never a refusal.
+    private readonly tenantId: string | undefined,
     private readonly token: string,
     private readonly targetDefaults: ConfigTargetDefaults,
     private readonly trustedManifestKeys: readonly TrustedKey[],
@@ -2652,6 +2811,39 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
 
   getPlaybook(): RevTurbineConfig | undefined {
     return this.cached;
+  }
+
+  adoptedTenantId(): string | undefined {
+    return this.adopted;
+  }
+
+  /** The key's tenant, adopted when it differs from the configured one (D-49). */
+  private adopted?: string;
+  private tenantMismatchWarned = false;
+
+  /**
+   * Record the tenant a key-authenticated delivery named. When the integration
+   * configured a different one, warn ONCE for this SDK instance and adopt the
+   * key's tenant (D-49: "the key is the sole arbiter of resolving the tenant").
+   * Returns the tenant to normalize the Playbook against.
+   */
+  private observeDeliveredTenant(delivered: string | undefined): string | undefined {
+    if (!delivered) return this.adopted ?? this.tenantId;
+    if (this.tenantId !== undefined && delivered !== this.tenantId) {
+      if (!this.tenantMismatchWarned) {
+        this.tenantMismatchWarned = true;
+        console.warn(
+          `[RevTurbine] tenantId ${this.tenantId} does not match the key's tenant ${delivered}; using ${delivered}`,
+        );
+      }
+      this.adopted = delivered;
+    }
+    return delivered;
+  }
+
+  /** Target defaults for a key-delivered Playbook: the key's tenant wins. */
+  private deliveredTargetDefaults(tenantId: string | undefined): ConfigTargetDefaults {
+    return { ...this.targetDefaults, tenantId };
   }
 
   async refresh(): Promise<RevTurbineConfig | undefined> {
@@ -2731,7 +2923,13 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
       const text = new TextDecoder().decode(bytes);
       const raw: unknown = JSON.parse(text); // sdk-ok: boundary-parse
       assertPlaybookPayloadReadable(raw);
-      return configArtifactForRuntime(raw, 'signed Playbook bundle', this.targetDefaults);
+      // The signed manifest names the key's tenant; it wins over a configured
+      // one (D-49) — `acceptManifest` already warned and adopted it.
+      return configArtifactForRuntime(
+        raw,
+        'signed Playbook bundle',
+        this.deliveredTargetDefaults(this.observeDeliveredTenant(manifest.tenant_id)),
+      );
     } catch {
       return undefined;
     }
@@ -2742,12 +2940,16 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
     nowMs: number,
   ): Promise<BundleManifest | undefined> {
     const parsed = BundleManifestSchema.safeParse(raw);
-    if (!parsed.success || parsed.data.tenant_id !== this.tenantId) return undefined;
+    if (!parsed.success) return undefined;
     if (!this.manifestWindowIsValid(parsed.data, nowMs)) return undefined;
     if (this.trustedManifestKeys.length > 0) {
       const verified = await verifyManifest(parsed.data, this.trustedManifestKeys);
       if (!verified.ok) return undefined;
     }
+    // D-49: the manifest came from a key-authenticated bootstrap, so its
+    // tenant IS the key's. A configured tenant that differs is warned about
+    // and the manifest's tenant adopted — the manifest is never refused.
+    this.observeDeliveredTenant(parsed.data.tenant_id);
     return parsed.data;
   }
 
@@ -2781,7 +2983,10 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
         headers: {
           accept: 'application/json',
           authorization: `Bearer ${this.token}`,
-          'x-tenant-id': this.tenantId,
+          // Only a CONFIGURED tenant is sent — the key's tenant once one was
+          // adopted (D-49). The control plane ignores a mismatching value with
+          // a warning; absent, the key names the tenant.
+          ...(this.tenantId !== undefined ? { 'x-tenant-id': this.adopted ?? this.tenantId } : {}),
           ...(this.etag ? { 'if-none-match': this.etag } : {}),
         },
       });
@@ -2806,7 +3011,16 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
       // runtime cannot fully understand is never partially applied — the
       // throw lands in the fail-soft catch below, keeping last-known-good.
       assertPlaybookPayloadReadable(raw);
-      const next = configArtifactForRuntime(raw, 'GET /api/sdk/config', this.targetDefaults);
+      // The config response is key-authenticated, so its `tenant_id` is the
+      // key's tenant and wins over a configured one (D-49).
+      const delivered = isRecord(raw) && typeof raw.tenant_id === 'string' && raw.tenant_id.length > 0
+        ? raw.tenant_id
+        : undefined;
+      const next = configArtifactForRuntime(
+        raw,
+        'GET /api/sdk/config',
+        this.deliveredTargetDefaults(this.observeDeliveredTenant(delivered)),
+      );
       if (next) {
         this.cached = next;
         this.etag = response.headers.get('etag') ?? undefined;
@@ -2838,11 +3052,11 @@ class ResolverBackedPlaybookProvider implements RuntimePlaybookProvider {
   }
 
   async refresh(): Promise<RevTurbineConfig | undefined> {
-    const next = configArtifactForRuntime(
+    const next = withLocalBuiltinSegments(configArtifactForRuntime(
       await this.resolver(),
       'localRuntime.resolvers.resolvePlaybook()',
       this.targetDefaults,
-    );
+    ));
     if (next) {
       this.cached = next;
     }
@@ -2910,7 +3124,21 @@ class ExternalRuntimePlaybookProvider implements RuntimePlaybookProvider {
  * ```
  */
 export class RevTurbineCustomerSdk {
-  private readonly tenantId: string;
+  /**
+   * The tenant the integration passed at init, if any. Optional since BL-0335:
+   * with a public key the tenant is read from the launched Playbook instead —
+   * see the `tenantId` getter.
+   */
+  private readonly configuredTenantId?: string;
+  /**
+   * Stable namespace for everything the SDK keys LOCALLY — storage keys,
+   * cache/cap keys, generated placement ids. It is the configured tenant id
+   * when one was passed (so existing integrations keep every persisted key
+   * byte-for-byte), else a hash of the public key. It never changes during a
+   * session, unlike `tenantId`, which a key-only integration learns only once
+   * the Playbook loads.
+   */
+  private readonly tenantNamespace: string;
   /** The browser credential — `publicKey`, the only name it arrives under. */
   private readonly publicKey: string;
   /**
@@ -2995,7 +3223,7 @@ export class RevTurbineCustomerSdk {
   private readonly events: RevTurbineEventEnvelope[] = [];
   private readonly placements = new Map<string, RevTurbinePlacementRecord>();
   private readonly syncedSurfaceSlotIds = new Set<string>();
-  private userContext: RevTurbineUserContext;
+  private userContext: HeldUserContext;
   private contextRevision = 0;
   // Assignment-fact state (plan 224 TASK-8): declarations gate emission; the
   // key set dedupes per context revision — cleared on every revision change.
@@ -3004,7 +3232,7 @@ export class RevTurbineCustomerSdk {
   private emittedAssignmentFactRevision?: string;
   private providerResolutionController = new AbortController();
   private lastEffectiveContext?: EffectiveUserContextResolution & {
-    readonly userContext: Readonly<RevTurbineUserContext>;
+    readonly userContext: Readonly<HeldUserContext>;
   };
   /**
    * The effective segment memberships from the most recent provider
@@ -3093,9 +3321,21 @@ export class RevTurbineCustomerSdk {
   readonly impressionHistory: ImpressionHistory;
 
   constructor(options: RevTurbineInitOptions) {
-    this.tenantId = options.tenantId;
+    this.configuredTenantId = hasValue(options.tenantId) ? options.tenantId : undefined;
+    // BL-0335: `tenantId` is optional only because the public key names the
+    // tenant through the control plane. `local_only` makes no such round trip,
+    // so there it stays required (`initRevTurbine` defaults it to 'local' when
+    // a `localRuntime.playbook` is supplied, before this runs).
+    if (this.configuredTenantId === undefined && options.runtimeMode === RuntimeMode.LocalOnly) {
+      throw new Error(
+        '[RevTurbine] `tenantId` is required in `local_only` mode: there is no control-plane round trip '
+          + 'for the public key to identify the tenant. Pass `tenantId`, or supply `localRuntime.playbook` '
+          + '(the SDK then defaults it).',
+      );
+    }
     this.publicKey = resolveBrowserPublicKey(options) ?? '';
     this.ingestKeyConfigured = hasValue(options.publicKey);
+    this.tenantNamespace = resolveTenantNamespace(this.configuredTenantId, this.publicKey);
     this.environmentId = normalizeEnvironmentId(options.environmentId);
     this.locale = options.locale?.trim() || undefined;
     this.testTraffic = options.test === true;
@@ -3116,7 +3356,7 @@ export class RevTurbineCustomerSdk {
     this.apiBranding = options.apiBranding;
     this.configProvider = this.resolveConfigProvider(options);
     this.localStorageKey =
-      options.localRuntime?.storageKey ?? `revturbine:${this.tenantId}:local-runtime`;
+      options.localRuntime?.storageKey ?? `revturbine:${this.tenantNamespace}:local-runtime`;
     this.mode = options.mode ?? DEFAULT_SDK_MODE;
     this.policy = {
       inferUser: options.contextPolicy?.inferUser ?? true,
@@ -3132,10 +3372,14 @@ export class RevTurbineCustomerSdk {
     this.serverActions = sanitizeServerActionMap(options.serverActions);
     this.persistentStore = resolvePersistentStorage(options.persistentStorage);
     this.sessionStore = resolveSessionStorage(options.sessionStorage);
+    // BL-0352: the `user` option is a browser entry point like identify(), so
+    // a plain-JS caller's server-assigned keys are dropped here too (reported
+    // once the SDK can emit warnings, below).
+    const initUser = withoutServerAssignedKeys(options.user || {});
     this.userContext = {
       usage: {},
       ...(this.policy.inferUser ? inferUserContext() : {}),
-      ...(options.user || {}),
+      ...initUser.accepted,
     };
     this.pageContext = {
       ...(this.policy.inferPage ? inferPageContext() : {}),
@@ -3166,6 +3410,7 @@ export class RevTurbineCustomerSdk {
       );
       this.emitSdkWarning('init received a blank user id');
     }
+    this.reportServerAssignedContextKeys('init', initUser.dropped);
     this.sessionId = requestId();
     this.providerRegistry = new DomainProviderRegistry();
     const configuredDomainProviders = [...(options.domainProviders ?? [])];
@@ -3173,7 +3418,7 @@ export class RevTurbineCustomerSdk {
     this.impressionHistory = new ImpressionHistory({
       store: new StorageImpressionStore({
         storage: this.persistentStore,
-        tenantId: this.tenantId,
+        tenantId: this.tenantNamespace,
       }),
       userId: this.userContext.id ?? this.anonymousId,
     });
@@ -3208,8 +3453,13 @@ export class RevTurbineCustomerSdk {
     // customer uiPathResolvers and built-ins so those existing registrations
     // keep precedence. A successful response merges server-authoritative
     // context and notifies mounted decisions through setUserContext().
+    // BL-0352 / BL-0381: the handler's `UserContextInput` may echo
+    // server-assigned fields (seat_type_handle, activity_score,
+    // builtin_dimensions) back from the backend. The handler is app code, so
+    // the echo is still browser-asserted; they are dropped silently here — a
+    // backend echo is not a caller mistake worth a warning.
     this.unregisterServerActionResolvers = registerServerActionResolvers(this.serverActions, {
-      applyUserContext: (context) => this.setUserContext(context as RevTurbineUserContext), // sdk-ok: boundary-parse — generated UserContextInput is the public handler contract
+      applyUserContext: (context) => this.setUserContext(withoutServerAssignedKeys(context).accepted as RevTurbineUserContext), // sdk-ok: boundary-parse — generated UserContextInput is the public handler contract
       // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#uiPathResolver.trackResult
       trackResult: (context, success, error) => this.emitPlatformEvent('placement_interaction', {
         interaction_type: 'cta_clicked',
@@ -3272,9 +3522,34 @@ export class RevTurbineCustomerSdk {
     return this.runtimeMode === RuntimeMode.LocalOnly;
   }
 
+  /**
+   * The tenant this SDK operates in: the key's tenant once a key-authenticated
+   * delivery named one that differs from the configured `tenantId` (D-49),
+   * else the configured `tenantId`, else the one the Playbook delivery named
+   * (BL-0335). `undefined` only between init and the first Playbook load of a
+   * key-only integration.
+   */
+  private get tenantId(): string | undefined {
+    return this.configProvider?.adoptedTenantId?.()
+      ?? this.configuredTenantId
+      ?? (this.getConfiguredPlaybook()?.tenant_id || undefined);
+  }
+
+  /**
+   * The tenant header for the SDK's direct control-plane calls: sent only when
+   * the integration CONFIGURED a tenant id — and then the key's tenant once it
+   * was adopted (D-49). The control plane ignores a mismatching value with a
+   * warning. A key-only integration sends none — the key names the tenant.
+   */
+  private tenantHeader(): { 'x-tenant-id'?: string } {
+    return this.configuredTenantId !== undefined ? { 'x-tenant-id': this.tenantId ?? this.configuredTenantId } : {};
+  }
+
   private resolveConfigProvider(options: RevTurbineInitOptions): RuntimePlaybookProvider | undefined {
     const targetDefaults: ConfigTargetDefaults = {
-      tenantId: options.tenantId,
+      // Undefined for a key-only integration: the Playbook's own `tenant_id`
+      // (stamped by the control plane for the key's tenant) is then used.
+      tenantId: hasValue(options.tenantId) ? options.tenantId : undefined,
       environmentId: normalizeEnvironmentId(options.environmentId),
     };
 
@@ -3282,11 +3557,13 @@ export class RevTurbineCustomerSdk {
       return new ExternalRuntimePlaybookProvider(options.configProvider, targetDefaults);
     }
 
-    const initialConfig = configArtifactForRuntime(
+    // BL-0365: a Playbook the app supplies was never exported, so it carries
+    // no built-in `rt.*` definitions; synthesize them from the catalogue here.
+    const initialConfig = withLocalBuiltinSegments(configArtifactForRuntime(
       resolveLocalPlaybook(options.localRuntime),
       'localRuntime.playbook',
       targetDefaults,
-    );
+    ));
     const configResolver = resolvePlaybookResolver(options.localRuntime?.resolvers);
 
     if (configResolver) {
@@ -3308,7 +3585,7 @@ export class RevTurbineCustomerSdk {
     if (runtimeMode !== RuntimeMode.LocalOnly && configToken) {
       return new ServerLaunchedPlaybookProvider(
         this.endpoint,
-        options.tenantId,
+        targetDefaults.tenantId,
         configToken,
         targetDefaults,
         options.trustedManifestKeys ?? [],
@@ -3660,7 +3937,7 @@ export class RevTurbineCustomerSdk {
     };
   }
 
-  private immutableProviderUserContext(): Readonly<RevTurbineUserContext> {
+  private immutableProviderUserContext(): Readonly<HeldUserContext> {
     const snapshot = {
       ...this.userContext,
       ...(this.userContext.custom
@@ -3695,7 +3972,7 @@ export class RevTurbineCustomerSdk {
   private async resolveEffectiveProviderContext(): Promise<{
     providers: ResolvedProviderContext | undefined;
     effective: EffectiveUserContextResolution & {
-      readonly userContext: Readonly<RevTurbineUserContext>;
+      readonly userContext: Readonly<HeldUserContext>;
     };
   }> {
     const revision = String(this.contextRevision);
@@ -3866,7 +4143,9 @@ export class RevTurbineCustomerSdk {
       // tuple unambiguous regardless of the characters ids contain, so
       // re-resolution of the same subject collapses in storage.
       const assignmentId = await sha256Hex(new TextEncoder().encode(JSON.stringify([
-        this.tenantId,
+        // The real tenant (a decision runs on a loaded Playbook, which names
+        // it); the namespace only as a never-expected fallback.
+        this.tenantId ?? this.tenantNamespace,
         selection.experimentHandle,
         declaration.experimentVersion,
         assignmentUnit,
@@ -3919,7 +4198,7 @@ export class RevTurbineCustomerSdk {
     return coreToSegmentEvaluationTraits(traits, effectivePlan, usage);
   }
 
-  private buildTargetingState(context: RevTurbineUserContext): {
+  private buildTargetingState(context: HeldUserContext): {
     effectivePlan: string | undefined;
     traits: SdkTraits;
     usage: Record<string, number>;
@@ -3929,8 +4208,8 @@ export class RevTurbineCustomerSdk {
   }
 
   private markSegmentsDirtyFromContextChange(
-    previousContext: RevTurbineUserContext,
-    nextContext: RevTurbineUserContext,
+    previousContext: HeldUserContext,
+    nextContext: HeldUserContext,
   ): void {
     if (this.configuredSegmentsById.size === 0) return;
 
@@ -4274,7 +4553,14 @@ export class RevTurbineCustomerSdk {
         trialStatus?: RevTurbineTrialContext;
       };
 
-      if (parsed.userContext) this.userContext = this.mergeUserContext(parsed.userContext);
+      // BL-0352 / BL-0381: a state blob persisted before server-assigned keys
+      // were dropped at the entry points may still carry them (including an
+      // app-set `builtin_dimensions`); purge on restore. Browser storage is
+      // app-writable, so a persisted built-in value is never trusted — the
+      // next client-context delivery re-supplies the server's values.
+      if (parsed.userContext) {
+        this.userContext = this.mergeUserContext(withoutServerAssignedKeys(parsed.userContext).accepted);
+      }
       if (parsed.pageContext) this.pageContext = this.mergePageContext(parsed.pageContext);
       if (parsed.usageBalances) this.usageBalances = { ...this.usageBalances, ...parsed.usageBalances };
       for (const placement of parsed.placements || []) {
@@ -4322,19 +4608,19 @@ export class RevTurbineCustomerSdk {
   }
 
   private decisionCacheStorageKey(): string {
-    return `${DECISION_CACHE_STORAGE_PREFIX}:${this.tenantId}:${this.anonymousId}`;
+    return `${DECISION_CACHE_STORAGE_PREFIX}:${this.tenantNamespace}:${this.anonymousId}`;
   }
 
   private interactionStateStorageKey(): string {
-    return `${INTERACTION_STATE_STORAGE_PREFIX}:${this.tenantId}:${this.anonymousId}`;
+    return `${INTERACTION_STATE_STORAGE_PREFIX}:${this.tenantNamespace}:${this.anonymousId}`;
   }
 
   private presentationCapsStorageKey(): string {
-    return `${PRESENTATION_CAPS_STORAGE_PREFIX}:${this.tenantId}:${this.anonymousId}`;
+    return `${PRESENTATION_CAPS_STORAGE_PREFIX}:${this.tenantNamespace}:${this.anonymousId}`;
   }
 
   private outputPlacementIndexStorageKey(): string {
-    return `${OUTPUT_PLACEMENT_INDEX_STORAGE_PREFIX}:${this.tenantId}:${this.anonymousId}`;
+    return `${OUTPUT_PLACEMENT_INDEX_STORAGE_PREFIX}:${this.tenantNamespace}:${this.anonymousId}`;
   }
 
   /**
@@ -5119,6 +5405,17 @@ export class RevTurbineCustomerSdk {
       }
     }
 
+    // The reserved `rt_*` built-in traits (plan 279 PD-1) come only from the
+    // first-class fields, exactly as the decision path's `buildTargetingState`
+    // stamps them — so this view's segment membership agrees with the decision
+    // for a built-in segment, and a `custom.rt_*` key cannot shadow one (BL-0365).
+    for (const key of Object.keys(traits)) {
+      if (isReservedTraitKey(key)) delete traits[key];
+    }
+    for (const [key, value] of Object.entries(this.buildTargetingState(this.userContext).traits)) {
+      if (isReservedTraitKey(key)) traits[key] = value;
+    }
+
     const segmentEvaluationTraits: Record<string, string | number | boolean> = {};
     for (const [key, value] of Object.entries(traits)) {
       if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
@@ -5585,7 +5882,7 @@ export class RevTurbineCustomerSdk {
   }
 
   private resolveAnonymousId(): string {
-    const storageKey = `revturbine:${this.tenantId}:anon`; 
+    const storageKey = `revturbine:${this.tenantNamespace}:anon`; 
     try {
       const existing = this.persistentStore.getItem(storageKey);
       if (existing) return existing;
@@ -5602,7 +5899,7 @@ export class RevTurbineCustomerSdk {
   private installBridge(): void {
     const bridge: RevTurbineBridge = {
       getSnapshot: () => ({
-        tenantId: this.tenantId,
+        tenantId: this.tenantId ?? '',
         user: this.userContext,
         page: this.pageContext,
         placements: Array.from(this.placements.values()),
@@ -5670,13 +5967,13 @@ export class RevTurbineCustomerSdk {
    * @param verb Which entry point supplied it, for the rejection diagnostic.
    */
   private mergeUserContext(
-    next: Partial<RevTurbineUserContext>,
+    next: Partial<HeldUserContext>,
     verb: 'identify' | 'setUserContext' | 'update' = 'setUserContext',
-  ): RevTurbineUserContext {
+  ): HeldUserContext {
     const guarded = 'plan' in next
       ? { ...next, plan: this.rejectLegacyPlanId(verb, next.plan) as RevTurbineUserContext['plan'] }
       : next;
-    return coreMergeUserContext(this.userContext, guarded) as RevTurbineUserContext;
+    return coreMergeUserContext(this.userContext, guarded) as HeldUserContext;
   }
 
   private mergePageContext(next: RevTurbinePageContext): RevTurbinePageContext {
@@ -5789,7 +6086,9 @@ export class RevTurbineCustomerSdk {
       : withAssignments;
 
     return {
-      tenant_id: this.tenantId,
+      // Empty until a key-only integration's Playbook loads (BL-0335); the
+      // wire row omits it then and the control plane stamps the key's tenant.
+      tenant_id: this.tenantId ?? '',
       type,
       level: 'INFO',
       message: `${type} captured by ${this.mode} runtime`,
@@ -5802,7 +6101,7 @@ export class RevTurbineCustomerSdk {
       session_id: this.sessionId,
       tags: ensureArray(resolvedPage.tags),
       identity: {
-        tenant_id: this.tenantId,
+        tenant_id: this.tenantId ?? '',
         user_id: this.userContext.id || null,
         anonymous_id: this.anonymousId,
         // The field-names signal (plan 114 TASK-4) is names-only: it must never
@@ -5986,7 +6285,10 @@ export class RevTurbineCustomerSdk {
       plans: cfg.plans?.length ?? 0,
       entitlements: cfg.entitlements?.length ?? 0,
       entitlement_rules: cfg.entitlement_rules?.length ?? 0,
-      segments: cfg.segments?.length ?? 0,
+      // Tenant-authored segments only: the built-in `rt.*` definitions are
+      // RevTurbine's catalogue (appended at export, or at load for a local
+      // Playbook — BL-0365), not a property of this config's shape.
+      segments: (cfg.segments ?? []).filter((segment) => !isReservedSegmentHandle(segment.handle)).length,
       placements: placements.length,
       placement_payloads: placementPayloads,
       content_ui_paths: cfg.content_ui_paths?.length ?? 0,
@@ -6040,7 +6342,8 @@ export class RevTurbineCustomerSdk {
       // One-way, non-reversible attribution so distinct deployments can be
       // counted without exposing the real id (REQ-7). The tenant handle is an
       // explicitly-sanctioned, non-secret input; hashing it is the point.
-      const hashInput = bundleVersion ? `${this.tenantId}:${bundleVersion}` : this.tenantId;
+      const tenantForHash = this.tenantId ?? this.tenantNamespace;
+      const hashInput = bundleVersion ? `${tenantForHash}:${bundleVersion}` : tenantForHash;
       const configHashId = (await sha256Base64Url(hashInput)).slice(0, 64);
 
       const event: SdkMetaEventBody = {
@@ -6214,7 +6517,10 @@ export class RevTurbineCustomerSdk {
         // captured inside the built row below, so a retry resends the same id.
         event_id: eventIds.next(),
         request_id: requestId(),
-        tenant_id: event.tenant_id,
+        // Omitted until a key-only integration's Playbook names the tenant
+        // (BL-0335) — the control plane stamps the key's tenant regardless,
+        // and ignores (with a warning) a tenant_id that differs from it.
+        ...(event.tenant_id || this.tenantId ? { tenant_id: event.tenant_id || this.tenantId } : {}),
         // Caller-declared test traffic (plan 164): stamped only when the
         // integration passed `test: true` at init — omitted otherwise, so a
         // production instance's wire shape is unchanged.
@@ -6637,9 +6943,24 @@ export class RevTurbineCustomerSdk {
    * upsert; an omitted field never clobbers a previously-set value. See the
    * advertised {@link update} alias for the full recognized-field contract.
    *
+   * Server-assigned fields (`seat_type_handle`, `activity_score`,
+   * `activity_score_computed_at`) are dropped and reported, never merged:
+   * they are written only by the tenant's backend or RevTurbine's
+   * enrichment (D-36, BL-0352). The parameter type does not yet reject other
+   * undeclared keys the way {@link identify} and {@link update} do; that
+   * `Exact<>` narrowing is deferred to `0.12.0` because it can break callers
+   * that pass a wider object today.
+   *
    * @public
    */
   setUserContext(userContext: RevTurbineUserContext): void {
+    const { accepted, dropped } = withoutServerAssignedKeys(userContext);
+    this.reportServerAssignedContextKeys('setUserContext', dropped);
+    this.mergeAcceptedUserContext(accepted);
+  }
+
+  /** {@link setUserContext}'s merge, on a patch already cleared of server-assigned keys. */
+  private mergeAcceptedUserContext(userContext: RevTurbineUserContext): void {
     // BL-0131 (D-19): the same email-shaped-identity warning as `identify()`.
     // This is the other way an app sets identity, so guarding only `identify()`
     // would leave the diagnostic trivially avoidable — and `update()` routes
@@ -6745,7 +7066,7 @@ export class RevTurbineCustomerSdk {
     for (const decision of payload.decisions ?? []) {
       if (!decision.output) continue;
       const cacheKey = [
-        this.tenantId,
+        this.tenantNamespace,
         decision.slot_id ?? decision.entitlement_handle ?? decision.placement_handle ?? 'unknown',
         payload.user?.id ?? this.anonymousId,
       ].join(':');
@@ -6813,7 +7134,7 @@ export class RevTurbineCustomerSdk {
   }): Promise<string> {
     return coreGeneratePlacementId(
       {
-        tenantId: this.tenantId,
+        tenantId: this.tenantNamespace,
         placementName: input.placementName,
         placementScopeKey: input.placementScopeKey,
         pageRoute: input.normalizedPageRoute || this.currentPathname(),
@@ -6995,7 +7316,7 @@ export class RevTurbineCustomerSdk {
     const headers = {
       'content-type': 'application/json',
       authorization: `Bearer ${this.publicKey}`,
-      'x-tenant-id': this.tenantId,
+      ...this.tenantHeader(),
       'x-request-id': requestIdValue,
     };
 
@@ -7189,7 +7510,7 @@ export class RevTurbineCustomerSdk {
       headers: {
         'content-type': 'application/json',
         authorization: `Bearer ${this.publicKey}`,
-        'x-tenant-id': this.tenantId,
+        ...this.tenantHeader(),
         'x-request-id': rid,
       },
       body: JSON.stringify({
@@ -7213,7 +7534,7 @@ export class RevTurbineCustomerSdk {
     runtimeContextFingerprint?: string,
   ): string {
     return coreDecisionCacheKey({
-      tenantId: this.tenantId,
+      tenantId: this.tenantNamespace,
       placementId: input.placementId,
       userId: input.userId,
       contextMode: input.contextMode ?? 'auto',
@@ -7225,7 +7546,7 @@ export class RevTurbineCustomerSdk {
   }
 
   private interactionStateKey(input: { placementId: string; userId: string; treatmentId?: string }): string {
-    return coreInteractionStateKey({ tenantId: this.tenantId, ...input });
+    return coreInteractionStateKey({ tenantId: this.tenantNamespace, ...input });
   }
 
   private readDecisionCache(key: string): RevTurbinePlacementDecision | null {
@@ -7267,7 +7588,7 @@ export class RevTurbineCustomerSdk {
 
   private placementCapKey(output: PlacementOutput): string {
     return [
-      this.tenantId,
+      this.tenantNamespace,
       this.userContext.id || this.anonymousId,
       output.surface.type,
       output.output_id,
@@ -7745,6 +8066,7 @@ export class RevTurbineCustomerSdk {
       // both — so it sends neither rather than asserting one.
       ...(item.ruleHandle ? { rule_handle: item.ruleHandle } : {}),
       metadata: item.metadata ?? {},
+      // Omitted (undefined) until a key-only integration's Playbook loads.
       tenant_id: this.tenantId,
       // Caller-declared test traffic (plan 164): stamped only when the
       // integration passed `test: true` at init — omitted otherwise.
@@ -7757,7 +8079,7 @@ export class RevTurbineCustomerSdk {
         headers: {
           'content-type': 'application/json',
           authorization: `Bearer ${this.publicKey}`,
-          'x-tenant-id': this.tenantId,
+          ...this.tenantHeader(),
           'x-request-id': requestId(),
         },
         body: JSON.stringify(transitionPayload.length === 1 ? transitionPayload[0] : transitionPayload),
@@ -8108,6 +8430,36 @@ export class RevTurbineCustomerSdk {
     });
   }
 
+  /**
+   * Report server-assigned keys a browser entry point dropped (D-36,
+   * BL-0351, BL-0352). Same once-per-session dedupe and anonymous
+   * `sdk_validation_warning` lane as {@link reportUnrecognizedContextKeys},
+   * with guidance that names the actual writer instead of pointing the caller
+   * at `custom` — moving a server-assigned value under `custom` would not make
+   * it any less browser-supplied.
+   */
+  private reportServerAssignedContextKeys(
+    verb: 'identify' | 'update' | 'setUserContext' | 'init',
+    dropped: string[],
+  ): void {
+    if (dropped.length === 0) return;
+    const dedupeKey = `${verb}:server-assigned:${[...dropped].sort().join(',')}`;
+    if (this.reportedUnrecognizedContextKeys.has(dedupeKey)) return;
+    this.reportedUnrecognizedContextKeys.add(dedupeKey);
+
+    console.warn(
+      `[RevTurbine] ${verb}() dropped server-assigned user-context key(s): ${dropped.join(', ')}. ` +
+        'These are written only by your backend (server-key user-context upsert) or by ' +
+        "RevTurbine's server-side enrichment, never from the browser; the SDK receives " +
+        'their resolved built-in dimension values from the client-context fetch ' +
+        '(a clientSession minter backed by your server).',
+    );
+    // Key NAMES only — never their values, which are customer data.
+    this.emitSdkWarning(`${verb} received server-assigned user-context key(s)`, {
+      unrecognized_keys: dropped.join(','),
+    });
+  }
+
   private normalizePlacementOutput(data: unknown): PlacementOutput | null { // sdk-ok: boundary-parse
     const result = coreNormalizePlacementOutput(data, requestId);
     if (result && isRecord(data) && typeof data.decision_id !== 'string') {
@@ -8413,7 +8765,8 @@ export class RevTurbineCustomerSdk {
     const now = new Date().toISOString();
     return {
       id: userId,
-      tenant_id: this.tenantId,
+      // Empty only before a key-only integration's first Playbook load.
+      tenant_id: this.tenantId ?? '',
       user_id: userId,
       created_at: now,
       updated_at: now,
@@ -8471,7 +8824,7 @@ export class RevTurbineCustomerSdk {
         headers: {
           'content-type': 'application/json',
           authorization: `Bearer ${this.publicKey}`,
-          'x-tenant-id': this.tenantId,
+          ...this.tenantHeader(),
           'x-request-id': rid,
         },
         body: JSON.stringify({
@@ -8663,8 +9016,8 @@ export class RevTurbineCustomerSdk {
   }
 
   /** Map the client-safe context response into a UserContext patch (plan 157). */
-  private mapClientSafeContext(data: ClientSafeContextResponse): Partial<RevTurbineUserContext> {
-    const patch: Partial<RevTurbineUserContext> = {};
+  private mapClientSafeContext(data: ClientSafeContextResponse): Partial<HeldUserContext> {
+    const patch: Partial<HeldUserContext> = {};
 
     const states = ['active', 'running_out', 'expired', 'converted', 'none'] as const;
     const state = states.find((s) => s === data.trial?.status);
@@ -8702,11 +9055,12 @@ export class RevTurbineCustomerSdk {
       };
     }
 
-    // Server-evaluated built-in segment dimensions (plan 279 PD-3). Passed
-    // through as-is — `coreMergeUserContext` already overlays this field
-    // per key (server leaf wins when present; an app-set leaf the server
-    // did not evaluate for this fetch survives), so this function does not
-    // need to merge against the held context itself. Skipped entirely when
+    // Server-evaluated built-in segment dimensions (plan 279 PD-3). This is
+    // the ONLY browser source of `builtin_dimensions` (D-46, BL-0381): every
+    // app-facing entry point drops the key. Passed through as-is —
+    // `coreMergeUserContext` overlays this field per key (a leaf a prior
+    // delivery set and this fetch did not evaluate survives), so this
+    // function does not merge against the held context. Skipped entirely when
     // the server evaluated nothing, so a context that never carried
     // `builtin_dimensions` keeps its exact shape.
     if (data.builtin_dimensions && Object.keys(data.builtin_dimensions).length > 0) {
@@ -8726,7 +9080,7 @@ export class RevTurbineCustomerSdk {
    * post-conversion plan move (BL-0004). Both notify subscribers, which is what
    * makes mounted slots and gates re-resolve.
    */
-  private applyUserContextPatch(patch: Partial<RevTurbineUserContext>): void {
+  private applyUserContextPatch(patch: Partial<HeldUserContext>): void {
     const previousContext = this.userContext;
     this.userContext = this.mergeUserContext(patch, 'update');
     this.recalculateDerivedUsageTraits();
@@ -8908,7 +9262,7 @@ export class RevTurbineCustomerSdk {
         headers: {
           'content-type': 'application/json',
           authorization: `Bearer ${this.publicKey}`,
-          'x-tenant-id': this.tenantId,
+          ...this.tenantHeader(),
           'x-request-id': rid,
         },
         body: JSON.stringify({
@@ -9419,8 +9773,8 @@ export class RevTurbineCustomerSdk {
    * and cannot outlive the lag it exists to cover.
    */
   private dropStalePostConversionPlan(
-    patch: Partial<RevTurbineUserContext>,
-  ): Partial<RevTurbineUserContext> {
+    patch: Partial<HeldUserContext>,
+  ): Partial<HeldUserContext> {
     const pending = this.pendingConversionPlan;
     if (!pending) return patch;
     if (patch.plan_handle === undefined) return patch;
@@ -9552,9 +9906,14 @@ export class RevTurbineCustomerSdk {
     // {@link Exact}, but plain-JS callers get no such guard.
     const ctx = (isRecord(context) ? context : {}) as IdentifyContextInput;
     if (isRecord(context)) {
+      const unmerged = Object.keys(context).filter((key) => !RECOGNIZED_IDENTIFY_KEY_SET.has(key));
+      this.reportServerAssignedContextKeys(
+        'identify',
+        unmerged.filter((key) => SERVER_ASSIGNED_USER_CONTEXT_KEY_SET.has(key)),
+      );
       this.reportUnrecognizedContextKeys(
         'identify',
-        Object.keys(context).filter((key) => !RECOGNIZED_IDENTIFY_KEY_SET.has(key)),
+        unmerged.filter((key) => !SERVER_ASSIGNED_USER_CONTEXT_KEY_SET.has(key)),
         RECOGNIZED_IDENTIFY_KEYS,
       );
     }
@@ -9795,9 +10154,16 @@ export class RevTurbineCustomerSdk {
     // of polluting the context. Skip the merge (and its segment re-evaluation)
     // when the patch carries no recognized context fields.
     const recognized = Object.entries(context).filter(([key]) => RECOGNIZED_UPDATE_KEY_SET.has(key));
+    const unmerged = Object.keys(context).filter((key) => !RECOGNIZED_UPDATE_KEY_SET.has(key));
+    // Server-assigned keys (D-36, BL-0352) are never in the recognized set;
+    // they get their own diagnostic naming the backend as the writer.
+    this.reportServerAssignedContextKeys(
+      'update',
+      unmerged.filter((key) => SERVER_ASSIGNED_USER_CONTEXT_KEY_SET.has(key)),
+    );
     this.reportUnrecognizedContextKeys(
       'update',
-      Object.keys(context).filter((key) => !RECOGNIZED_UPDATE_KEY_SET.has(key)),
+      unmerged.filter((key) => !SERVER_ASSIGNED_USER_CONTEXT_KEY_SET.has(key)),
       RECOGNIZED_UPDATE_KEYS,
       'A bare entitlement handle is not a usage report — use update({ usage: { <unit>: n } }); ' +
         'to (re)establish identity use identify().',
@@ -9983,6 +10349,36 @@ const LOCAL_ONLY_INIT_DEFAULTS: Pick<RevTurbineInitOptions, 'tenantId' | 'public
 
 function hasValue(input: unknown): input is string { // sdk-ok: boundary-parse
   return typeof input === 'string' && input.trim().length > 0;
+}
+
+/**
+ * The local key namespace (BL-0335). The configured tenant id when there is
+ * one — every persisted key an existing integration wrote stays byte-for-byte
+ * the same — else a short FNV-1a hash of the public key, so a key-only
+ * integration gets a namespace that is stable across page loads without
+ * writing the key itself into storage keys. Rotating the key starts a fresh
+ * local namespace (anonymous id, caps, decision cache), exactly as changing
+ * `tenantId` always did.
+ *
+ * Throws when neither exists: without a public key nothing can identify the
+ * tenant, which is the one case `tenantId` is still required.
+ *
+ * @internal
+ */
+function resolveTenantNamespace(configuredTenantId: string | undefined, publicKey: string): string {
+  if (configuredTenantId !== undefined) return configuredTenantId;
+  if (!hasValue(publicKey)) {
+    throw new Error(
+      '[RevTurbine] init needs either a `publicKey` (it identifies your tenant) or a `tenantId`. '
+        + 'In `local_only` mode, pass `tenantId` or supply `localRuntime.playbook` (the SDK then defaults it).',
+    );
+  }
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < publicKey.length; i += 1) {
+    hash ^= publicKey.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return `pk-${hash.toString(36)}`;
 }
 
 /** The one name the browser credential arrives under (BL-0113). */

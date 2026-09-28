@@ -84,3 +84,24 @@ update({ id: 'u_2' });
 
 // @ts-expect-error — same wrapper trap, on the patch verb
 update({ context: { plan_handle: 'pro' } });
+
+// ── Server-assigned fields (plan 279 TASK-16a, D-36) ────────────────────────
+// A user's seat type is assigned only server-side (the tenant's backend via a
+// server-key upsert, or RevTurbine enrichment in hosted mode). The schema's
+// `UserContextSchema.seat_type_handle` must never become a browser input.
+
+// @ts-expect-error — seat_type_handle is server-assigned; identify() rejects it
+identify('u_1', { seat_type_handle: 'admin' });
+
+// @ts-expect-error — seat_type_handle is server-assigned; update() rejects it
+update({ seat_type_handle: 'admin' });
+
+// @ts-expect-error — clearing it is a server write too; null is rejected as well
+update({ seat_type_handle: null });
+
+// @ts-expect-error — nor can the init `user` option carry it
+init({ user: { id: 'u_1', seat_type_handle: 'admin' } });
+
+const seatViaVariable = { plan_handle: 'pro', seat_type_handle: 'admin' };
+// @ts-expect-error — still rejected through a variable
+identify('u_1', seatViaVariable);

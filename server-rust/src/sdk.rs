@@ -26,7 +26,8 @@
 //! 185 REQ-2): `identify`, dismiss/snooze/convert, treatment-interaction
 //! tracking, `capture`, `bootstrap_placement_decisions`, decision-cache and
 //! interaction-state hydration, HTTP-backed dual-mode dispatch, and
-//! segment/personalization-token derivation from raw traits.
+//! personalization-token derivation. (Segment membership IS derived here
+//! since BL-0369 — see [`UserContext`].)
 //!
 //! Source: `server-python/src/revturbine/sdk.py`
 
@@ -46,9 +47,16 @@ const PRODUCTION_ENVIRONMENT_ID: &str = "production";
 /// The server-supplied user context.
 ///
 /// Plan and usage are supplied at construction and never fetched — that is the
-/// headless model. Segment-targeted rules are matched against **pre-resolved**
-/// segment ids inside the evaluator; this SDK does not derive segments from
-/// raw traits (a REQ-14 non-goal).
+/// headless model.
+///
+/// Segment membership (BL-0369) — what segment-chipped payloads and
+/// segment-targeted entitlement rules match against — is `segment_ids`
+/// (tenant segments the app resolved), then every configured segment whose
+/// predicates match the user's targeting traits: `custom`, the plan, and the
+/// reserved `rt_<dimension>` traits the generated built-in segments match on,
+/// which come ONLY from `builtin_dimensions` (plan 279 PD-3). An unset
+/// dimension, a trait the user does not carry, or an unknown segment fails
+/// closed. Before BL-0369 every configured segment was reported as matched.
 #[derive(Debug, Clone, Default)]
 pub struct UserContext {
     /// Required. The tenant this decision belongs to.
@@ -70,13 +78,55 @@ pub struct UserContext {
     pub payment_at_risk: Option<bool>,
     /// Current tier per `capability_tier` entitlement, for the tier gate.
     pub tiers: Option<Value>,
-    /// Pre-resolved segment ids for catalog eligibility. Entitlement rules take
-    /// their segment ids from the provider context; the catalog surfaces
+    /// Tenant segment handles the app already resolved. They are segment
+    /// membership for chipped payloads and segment-targeted entitlement rules
+    /// (through the provider context, BL-0369), and the catalog surfaces
     /// ([`RevTurbineCustomerSdk::get_eligible_plans`] /
     /// [`get_eligible_addons`](RevTurbineCustomerSdk::get_eligible_addons))
     /// read them from here, mirroring `UserContext["segment_ids"]` on the
     /// Python port.
     pub segment_ids: Option<Vec<String>>,
+    /// Customer-defined traits segment predicates evaluate over (BL-0369).
+    pub custom: Option<Value>,
+    /// Built-in segment dimension values, app-set on a server port (plan 279
+    /// PD-3) — the only source of the reserved `rt_<dimension>` traits.
+    pub builtin_dimensions: Option<Value>,
+    /// The control plane's server-resolved built-in dimensions (BL-0366) —
+    /// the `builtin_dimensions` of
+    /// `GET /api/sdk/user-contexts/{userId}/builtin-dimensions`, read by the
+    /// app's backend with its server key (this crate has no HTTP transport).
+    /// Overlaid per key on [`builtin_dimensions`](Self::builtin_dimensions):
+    /// a delivered leaf wins over the app-set value (plan 279 PD-3).
+    pub server_builtin_dimensions: Option<Value>,
+    /// Experiment-handle → variant-handle assignments (experiment segments).
+    pub experiments: Option<Value>,
+}
+
+impl UserContext {
+    /// The user-context snapshot segment membership is evaluated from — the
+    /// same fields the parity TS side hands `createStaticProviders`
+    /// (BL-0369). Absent fields are omitted: an unset dimension is absence
+    /// (plan 279 PD-4).
+    ///
+    /// Source: server-python/src/revturbine/sdk.py (`_targeting_context`)
+    #[must_use]
+    pub fn targeting_context(&self) -> Value {
+        let mut context = Map::new();
+        context.insert("id".into(), json!(self.user_id));
+        if let Some(plan) = self.plan_handle.as_deref().filter(|p| !p.is_empty()) {
+            context.insert("plan_handle".into(), json!(plan));
+        }
+        for (key, value) in [
+            ("custom", &self.custom),
+            ("builtin_dimensions", &self.builtin_dimensions),
+            ("experiments", &self.experiments),
+        ] {
+            if let Some(v) = value.as_ref().filter(|v| v.is_object()) {
+                context.insert(key.into(), v.clone());
+            }
+        }
+        Value::Object(context)
+    }
 }
 
 /// The public, stateless, in-memory headless server SDK.
@@ -212,6 +262,9 @@ impl RevTurbineCustomerSdk {
             payment_failed: user_context.payment_failed,
             payment_at_risk: user_context.payment_at_risk,
             tiers: user_context.tiers.clone(),
+            segment_ids: user_context.segment_ids.clone(),
+            user_context: Some(user_context.targeting_context()),
+            server_builtin_dimensions: user_context.server_builtin_dimensions.clone(),
             ..Default::default()
         };
         let mut providers = create_static_providers(&config, &opts);

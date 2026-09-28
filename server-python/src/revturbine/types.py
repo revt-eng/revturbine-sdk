@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.366/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.374/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -840,6 +840,31 @@ class B2BSegmentEventName(Enum):
     Trial_Ended = "Trial Ended"
 
 
+class RestatementReason(Enum):
+    merge = "merge"
+    split = "split"
+    provider_migration = "provider_migration"
+    reassignment = "reassignment"
+    error_correction = "error_correction"
+
+
+class Profile(Enum):
+    subscription = "subscription"
+    schedule = "schedule"
+    invoice = "invoice"
+    transaction = "transaction"
+    refund = "refund"
+    credit = "credit"
+    balance = "balance"
+    loss = "loss"
+
+
+class EconomicOwnership(Enum):
+    owner = "owner"
+    non_owner = "non_owner"
+    unknown = "unknown"
+
+
 class BillingAllocation(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -855,6 +880,17 @@ class BalanceType(Enum):
     invoice_credit_balance = "invoice_credit_balance"
 
 
+class AdjustmentSource(Enum):
+    invoice_applied = "invoice_applied"
+    invoice_unapplied = "invoice_unapplied"
+    credit_note = "credit_note"
+    overpayment = "overpayment"
+    rollover = "rollover"
+    manual_adjustment = "manual_adjustment"
+    migration = "migration"
+    other = "other"
+
+
 class Category(Enum):
     paid = "paid"
     promotional = "promotional"
@@ -866,6 +902,51 @@ class BillingCadence(Enum):
     quarterly = "quarterly"
     one_time = "one_time"
     usage_based = "usage_based"
+
+
+class BillingCompletedGenerationCheckpoint(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    cursor_revision_key: constr(min_length=1, max_length=800) | None
+    processed_through: AwareDatetime | None
+    processed_revisions: conint(ge=0, le=9007199254740991)
+    completed: Literal[True]
+
+
+class Family1(Enum):
+    subscription_stock = "subscription_stock"
+    movement_history = "movement_history"
+    schedule_phases = "schedule_phases"
+    invoices = "invoices"
+    invoice_payments = "invoice_payments"
+    payments = "payments"
+    adjustments = "adjustments"
+    balances = "balances"
+    losses = "losses"
+    receivables = "receivables"
+    account_mappings = "account_mappings"
+    cohort_membership = "cohort_membership"
+
+
+class BillingCoverageGapReason(Enum):
+    partial_hydration = "partial_hydration"
+    missing_history = "missing_history"
+    ambiguous_revision = "ambiguous_revision"
+    missing_price_terms = "missing_price_terms"
+    unmapped_customer = "unmapped_customer"
+    missing_linkage = "missing_linkage"
+    missing_ownership = "missing_ownership"
+    provider_error = "provider_error"
+    retention_window = "retention_window"
+
+
+class BillingCoverageUnavailableReason(Enum):
+    uninitialized = "uninitialized"
+    not_connected = "not_connected"
+    hydration_in_progress = "hydration_in_progress"
+    history_unavailable = "history_unavailable"
+    provider_error = "provider_error"
 
 
 class BillingCreditNoteLine(BaseModel):
@@ -922,9 +1003,90 @@ class BillingCreditSettlement(
     root: BillingCreditSettlement1 | BillingCreditSettlement2 | BillingCreditSettlement3
 
 
+class ChargeType(Enum):
+    platform = "platform"
+    direct = "direct"
+    destination = "destination"
+    separate_charges_and_transfers = "separate_charges_and_transfers"
+
+
+class BillingEconomicOwner(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    owner_account_id: constr(min_length=1, max_length=255)
+    charge_type: ChargeType
+    on_behalf_of_account_id: constr(min_length=1, max_length=255) | None = None
+    transfer_id: constr(min_length=1, max_length=255) | None = None
+
+
+class BillingGenerationCheckpoint(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    cursor_revision_key: constr(min_length=1, max_length=800) | None
+    processed_through: AwareDatetime | None
+    processed_revisions: conint(ge=0, le=9007199254740991)
+    completed: bool
+
+
+class Reconciliation(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    state: Literal["passed"]
+    checked_at: AwareDatetime
+    compared_with_generation_id: (
+        constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128) | None
+    )
+    unresolved_residuals: conint(ge=0, le=9007199254740991)
+
+
 class BillingHealthStatus(Enum):
     payment_failed = "payment_failed"
     payment_method_missing = "payment_method_missing"
+
+
+class BillingInvoicePaymentSource1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["payment_intent"]
+    payment_id: constr(min_length=1, max_length=255)
+
+
+class BillingInvoicePaymentSource2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["charge"]
+    payment_id: constr(min_length=1, max_length=255)
+
+
+class BillingInvoicePaymentSource3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["out_of_band"]
+
+
+class BillingInvoicePaymentSource(
+    RootModel[
+        BillingInvoicePaymentSource1
+        | BillingInvoicePaymentSource2
+        | BillingInvoicePaymentSource3
+    ]
+):
+    root: (
+        BillingInvoicePaymentSource1
+        | BillingInvoicePaymentSource2
+        | BillingInvoicePaymentSource3
+    )
+
+
+class PaymentsCoverage(Enum):
+    complete = "complete"
+    partial = "partial"
 
 
 class Status(Enum):
@@ -950,6 +1112,152 @@ class BillingOccurrence(BaseModel):
     legacy_billing_ref: constr(min_length=1, max_length=512) | None = None
 
 
+class Basis(Enum):
+    imported_opening_balance = "imported_opening_balance"
+    verified_snapshot = "verified_snapshot"
+
+
+class BillingOpeningSeed(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    as_of: AwareDatetime
+    basis: Basis
+
+
+class OutputKind(Enum):
+    stock_snapshot = "stock_snapshot"
+    committed_snapshot = "committed_snapshot"
+    receivable_snapshot = "receivable_snapshot"
+    movement = "movement"
+    collection = "collection"
+    allocation = "allocation"
+
+
+class BillingOutputRowKey(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1)
+    policy_version: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
+    generation_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
+    output_kind: OutputKind
+    output_key: constr(pattern=r"^bout1\|.*", min_length=1, max_length=1500)
+
+
+class Round(Enum):
+    up = "up"
+    down = "down"
+
+
+class TransformQuantity(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    divide_by: conint(ge=1, le=9007199254740991)
+    round: Round
+
+
+class BillingPriceTerms1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    billing_scheme: Literal["per_unit"]
+    unit_amount_decimal: constr(
+        pattern=r"^(0|[1-9][0-9]*)(\.[0-9]{1,12})?$", max_length=64
+    )
+    transform_quantity: TransformQuantity | None
+
+
+class TiersMode(Enum):
+    graduated = "graduated"
+    volume = "volume"
+
+
+class BillingPriceTier(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    up_to: conint(ge=1, le=9007199254740991) | None
+    unit_amount_decimal: (
+        constr(pattern=r"^(0|[1-9][0-9]*)(\.[0-9]{1,12})?$", max_length=64) | None
+    )
+    flat_amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40) | None
+
+
+class BillingReconciliation1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    state: Literal["pending"]
+
+
+class BillingReconciliation2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    state: Literal["passed"]
+    checked_at: AwareDatetime
+    compared_with_generation_id: (
+        constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128) | None
+    )
+    unresolved_residuals: conint(ge=0, le=9007199254740991)
+
+
+class FailureCode(Enum):
+    stock_equation = "stock_equation"
+    collection_conservation = "collection_conservation"
+    allocation_conservation = "allocation_conservation"
+    receivable_conservation = "receivable_conservation"
+    source_totals = "source_totals"
+    shadow_divergence = "shadow_divergence"
+
+
+class BillingReconciliation3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    state: Literal["failed"]
+    checked_at: AwareDatetime
+    compared_with_generation_id: (
+        constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128) | None
+    )
+    failure_codes: list[FailureCode] = Field(..., max_length=250, min_length=1)
+
+
+class BillingReconciliation(
+    RootModel[BillingReconciliation1 | BillingReconciliation2 | BillingReconciliation3]
+):
+    root: BillingReconciliation1 | BillingReconciliation2 | BillingReconciliation3
+
+
+class ProrationBehavior(Enum):
+    create_prorations = "create_prorations"
+    always_invoice = "always_invoice"
+    none = "none"
+
+
+class BillingMode(Enum):
+    classic = "classic"
+    flexible = "flexible"
+
+
+class CollectionMethod(Enum):
+    charge_automatically = "charge_automatically"
+    send_invoice = "send_invoice"
+
+
+class BillingRecurrence(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    billing_cycle_anchor_at: AwareDatetime
+    proration_behavior: ProrationBehavior
+    billing_mode: BillingMode | None = None
+    collection_method: CollectionMethod
+    days_until_due: conint(ge=0, le=9007199254740991) | None = None
+
+
 class Interval(Enum):
     day = "day"
     week = "week"
@@ -960,18 +1268,6 @@ class Interval(Enum):
 class UsageType(Enum):
     licensed = "licensed"
     metered = "metered"
-
-
-class BillingRecurringPrice(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    price_id: constr(min_length=1, max_length=255)
-    product_id: constr(min_length=1, max_length=255) | None = None
-    interval: Interval
-    interval_count: conint(ge=1, le=9007199254740991)
-    usage_type: UsageType
-    unit_amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40) | None
 
 
 class Status1(Enum):
@@ -1009,6 +1305,15 @@ class PhasesCoverage(Enum):
     partial = "partial"
 
 
+class BillingSettlementAmount(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+
+
 class Provider(Enum):
     stripe = "stripe"
 
@@ -1024,16 +1329,6 @@ class BillingSourceScope(BaseModel):
     livemode: bool = Field(..., description="Stripe live (true) or test (false) mode.")
     provider: Provider
     simulation_id: constr(min_length=1, max_length=255) | None = None
-
-
-class BillingSubscriptionItemSnapshot(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    item_id: constr(min_length=1, max_length=255)
-    price: BillingRecurringPrice
-    quantity: conint(ge=0, le=9007199254740991)
-    trial_end_at: AwareDatetime | None = None
 
 
 class ItemsCoverage(Enum):
@@ -1111,6 +1406,11 @@ class ObservedObjectType(Enum):
     checkout_session = "checkout_session"
 
 
+class AllocationsCoverage(Enum):
+    complete = "complete"
+    partial = "partial"
+
+
 class BillingTransactionProfile1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -1129,10 +1429,12 @@ class BillingTransactionProfile1(BaseModel):
     observed_object_id: constr(min_length=1, max_length=255)
     currency: constr(pattern=r"^[A-Z]{3}$")
     currency_exponent: conint(ge=0, le=4)
+    economic_owner: BillingEconomicOwner | None = None
     amount_captured_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
     amount_requested_minor: (
         constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40) | None
     ) = None
+    allocations_coverage: AllocationsCoverage | None = None
 
 
 class BillingTransactionProfile2(BaseModel):
@@ -1153,6 +1455,7 @@ class BillingTransactionProfile2(BaseModel):
     observed_object_id: constr(min_length=1, max_length=255)
     currency: constr(pattern=r"^[A-Z]{3}$")
     currency_exponent: conint(ge=0, le=4)
+    economic_owner: BillingEconomicOwner | None = None
     amount_requested_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
     failure_code: constr(min_length=1, max_length=128)
 
@@ -1175,6 +1478,7 @@ class BillingTransactionProfile3(BaseModel):
     observed_object_id: constr(min_length=1, max_length=255)
     currency: constr(pattern=r"^[A-Z]{3}$")
     currency_exponent: conint(ge=0, le=4)
+    economic_owner: BillingEconomicOwner | None = None
     amount_requested_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
 
 
@@ -1196,6 +1500,7 @@ class BillingTransactionProfile4(BaseModel):
     observed_object_id: constr(min_length=1, max_length=255)
     currency: constr(pattern=r"^[A-Z]{3}$")
     currency_exponent: conint(ge=0, le=4)
+    economic_owner: BillingEconomicOwner | None = None
     amount_requested_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
 
 
@@ -1455,6 +1760,147 @@ class CtaPathType(Enum):
 
 class Currency(RootModel[constr(pattern=r"^[a-z]{3}$")]):
     root: constr(pattern=r"^[a-z]{3}$") = "usd"
+
+
+class Value(Enum):
+    new = "new"
+    high = "high"
+    medium = "medium"
+    low = "low"
+    inactive = "inactive"
+
+
+class ActivityLevel1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: Value
+    set_at: AwareDatetime
+    override: bool
+
+
+class Value1(Enum):
+    none = "none"
+    trial = "trial"
+    paid = "paid"
+    cancelled = "cancelled"
+
+
+class SubscriptionState(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: Value1
+    set_at: AwareDatetime
+    override: bool
+
+
+class Value2(Enum):
+    none = "none"
+    free_trial = "free_trial"
+    reverse_trial = "reverse_trial"
+
+
+class TrialType(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: Value2
+    set_at: AwareDatetime
+    override: bool
+
+
+class Value3(Enum):
+    buyer = "buyer"
+    non_buyer = "non_buyer"
+
+
+class BuyerRole(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: Value3
+    set_at: AwareDatetime
+    override: bool
+
+
+class Value4(Enum):
+    business = "business"
+    personal = "personal"
+    unknown = "unknown"
+
+
+class EmailType(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: Value4
+    set_at: AwareDatetime
+    override: bool
+
+
+class Value5(Enum):
+    no_billing = "no_billing"
+    good_standing = "good_standing"
+    trial_payment_method_attached = "trial_payment_method_attached"
+    payment_method_missing = "payment_method_missing"
+    payment_failed = "payment_failed"
+    payment_overdue = "payment_overdue"
+    cancelled = "cancelled"
+
+
+class BillingHealth(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: Value5
+    set_at: AwareDatetime
+    override: bool
+
+
+class Value6(Enum):
+    us_canada = "us_canada"
+    europe = "europe"
+    rest_of_world = "rest_of_world"
+
+
+class Region(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: Value6
+    set_at: AwareDatetime
+    override: bool
+
+
+class Value7(Enum):
+    desktop = "desktop"
+    mobile = "mobile"
+    tablet = "tablet"
+    unknown = "unknown"
+
+
+class DeviceType(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: Value7
+    set_at: AwareDatetime
+    override: bool
+
+
+class CustomerBuiltinDimensions(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    activity_level: ActivityLevel1 | None = None
+    subscription_state: SubscriptionState | None = None
+    trial_type: TrialType | None = None
+    buyer_role: BuyerRole | None = None
+    email_type: EmailType | None = None
+    billing_health: BillingHealth | None = None
+    region: Region | None = None
+    device_type: DeviceType | None = None
 
 
 class CustomerOverrideDuration(Enum):
@@ -2156,6 +2602,30 @@ class InvitationStatus(Enum):
     expired = "expired"
 
 
+class InvoicePaymentStatus(Enum):
+    open = "open"
+    paid = "paid"
+    canceled = "canceled"
+
+
+class InvoiceSettlementBasis(Enum):
+    payments = "payments"
+    zero_total = "zero_total"
+    customer_balance = "customer_balance"
+    credit_note = "credit_note"
+    rollover = "rollover"
+    out_of_band = "out_of_band"
+    mixed = "mixed"
+
+
+class InvoiceStatus(Enum):
+    draft = "draft"
+    open = "open"
+    paid = "paid"
+    uncollectible = "uncollectible"
+    void = "void"
+
+
 class Unit(Enum):
     count = "count"
     cents = "cents"
@@ -2712,7 +3182,7 @@ class PlacementPerformanceRow(BaseModel):
     revenue_cents: conint(ge=0, le=9007199254740991)
 
 
-class TrialType(Enum):
+class TrialType1(Enum):
     free = "free"
     reverse = "reverse"
 
@@ -2751,7 +3221,7 @@ class Placement(BaseModel):
     entitlement_id: str | None = None
     tier_threshold: str | None = None
     threshold_percent: conint(ge=10, le=100, multiple_of=10) | None = None
-    trial_type: TrialType | None = None
+    trial_type: TrialType1 | None = None
     trigger_type: str | None = None
     trial_progress_percent: confloat(ge=0.0, le=100.0) | None = None
     days_before_end: conint(ge=0, le=9007199254740991) | None = None
@@ -3241,7 +3711,7 @@ class RevTurbineConfigPlacementTrigger6(BaseModel):
         extra="forbid",
     )
     type: Literal["trial_started"]
-    trial_type: TrialType | None = None
+    trial_type: TrialType1 | None = None
 
 
 class RevTurbineConfigPlacementTrigger7(BaseModel):
@@ -3347,6 +3817,7 @@ class RevTurbineConfigSeatTypesItem(BaseModel):
     name: constr(min_length=1)
     description: str | None = None
     is_default: bool | None = False
+    is_buyer: bool | None = False
     entitlement_handles: list[str] | None = []
 
 
@@ -3884,6 +4355,7 @@ class SeatType(BaseModel):
     handle: constr(min_length=1, max_length=100)
     description: constr(max_length=500) | None = None
     is_default: bool | None = False
+    is_buyer: bool | None = False
     entitlement_ids: list[str] | None = []
     metadata: dict[str, Any] | None = {}
 
@@ -4304,6 +4776,75 @@ class SemanticEvent(BaseModel):
     payload: dict[str, Any] | None = {}
 
 
+class ActivityLevel2(Enum):
+    new = "new"
+    high = "high"
+    medium = "medium"
+    low = "low"
+    inactive = "inactive"
+
+
+class SubscriptionState1(Enum):
+    none = "none"
+    trial = "trial"
+    paid = "paid"
+    cancelled = "cancelled"
+
+
+class TrialType3(Enum):
+    none = "none"
+    free_trial = "free_trial"
+    reverse_trial = "reverse_trial"
+
+
+class BuyerRole1(Enum):
+    buyer = "buyer"
+    non_buyer = "non_buyer"
+
+
+class EmailType1(Enum):
+    business = "business"
+    personal = "personal"
+    unknown = "unknown"
+
+
+class BillingHealth1(Enum):
+    no_billing = "no_billing"
+    good_standing = "good_standing"
+    trial_payment_method_attached = "trial_payment_method_attached"
+    payment_method_missing = "payment_method_missing"
+    payment_failed = "payment_failed"
+    payment_overdue = "payment_overdue"
+    cancelled = "cancelled"
+
+
+class Region1(Enum):
+    us_canada = "us_canada"
+    europe = "europe"
+    rest_of_world = "rest_of_world"
+
+
+class DeviceType1(Enum):
+    desktop = "desktop"
+    mobile = "mobile"
+    tablet = "tablet"
+    unknown = "unknown"
+
+
+class ServerBuiltinDimensionsWrite(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    activity_level: ActivityLevel2 | None = None
+    subscription_state: SubscriptionState1 | None = None
+    trial_type: TrialType3 | None = None
+    buyer_role: BuyerRole1 | None = None
+    email_type: EmailType1 | None = None
+    billing_health: BillingHealth1 | None = None
+    region: Region1 | None = None
+    device_type: DeviceType1 | None = None
+
+
 class ServerEvaluationPayloadDecisionsItem(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -4348,6 +4889,92 @@ class ServerEvaluationPayloadUser(BaseModel):
     id: str
     anonymous_id: str | None = None
     traits: dict[str, Any] | None = None
+
+
+class BuiltinDimensions(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    activity_level: ActivityLevel2 | None = None
+    subscription_state: SubscriptionState1 | None = None
+    trial_type: TrialType3 | None = None
+    seat_type: constr(pattern=r"^[a-z0-9._]{1,87}$") | None = None
+    buyer_role: BuyerRole1 | None = None
+    email_type: EmailType1 | None = None
+    billing_health: BillingHealth1 | None = None
+    region: Region1 | None = None
+    device_type: DeviceType1 | None = None
+
+
+class ServerUserBuiltinDimensions(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1)
+    user_id: constr(min_length=1)
+    builtin_dimensions: BuiltinDimensions
+    resolved_at: AwareDatetime
+
+
+class BuiltinDimensions1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    activity_level: ActivityLevel2 | None = None
+    subscription_state: SubscriptionState1 | None = None
+    trial_type: TrialType3 | None = None
+    buyer_role: BuyerRole1 | None = None
+    email_type: EmailType1 | None = None
+    billing_health: BillingHealth1 | None = None
+    region: Region1 | None = None
+    device_type: DeviceType1 | None = None
+
+
+class Override(Enum):
+    activity_level = "activity_level"
+    subscription_state = "subscription_state"
+    trial_type = "trial_type"
+    buyer_role = "buyer_role"
+    email_type = "email_type"
+    billing_health = "billing_health"
+    region = "region"
+    device_type = "device_type"
+
+
+class ServerUserContextAssignment(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1)
+    user_id: constr(min_length=1)
+    updated_at: AwareDatetime
+    seat_type_handle: constr(pattern=r"^[a-z0-9._]{1,100}$") | None
+    builtin_dimensions: BuiltinDimensions1
+    overrides: list[Override]
+
+
+class BuiltinDimensions2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    activity_level: ActivityLevel2 | None = None
+    subscription_state: SubscriptionState1 | None = None
+    trial_type: TrialType3 | None = None
+    buyer_role: BuyerRole1 | None = None
+    email_type: EmailType1 | None = None
+    billing_health: BillingHealth1 | None = None
+    region: Region1 | None = None
+    device_type: DeviceType1 | None = None
+
+
+class ServerUserContextUpsert(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    user_id: constr(min_length=1)
+    seat_type_handle: constr(pattern=r"^[a-z0-9._]{1,100}$") | None = None
+    builtin_dimensions: BuiltinDimensions2 | None = None
+    override: bool | None = None
 
 
 class Severity(Enum):
@@ -4883,31 +5510,114 @@ class UsageTriggerPayload(BaseModel):
     seats_allowed: conint(ge=0, le=9007199254740991) | None = None
 
 
-class SubscriptionState(Enum):
+class UserBuiltinDimensions(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    activity_level: ActivityLevel2 | None = None
+    subscription_state: SubscriptionState1 | None = None
+    trial_type: TrialType3 | None = None
+    seat_type: constr(pattern=r"^[a-z0-9._]{1,87}$") | None = None
+    buyer_role: BuyerRole1 | None = None
+    email_type: EmailType1 | None = None
+    billing_health: BillingHealth1 | None = None
+    region: Region1 | None = None
+    device_type: DeviceType1 | None = None
+
+
+class BuiltinDimensions3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    activity_level: ActivityLevel2 | None = None
+    subscription_state: SubscriptionState1 | None = None
+    trial_type: TrialType3 | None = None
+    seat_type: constr(pattern=r"^[a-z0-9._]{1,87}$") | None = None
+    buyer_role: BuyerRole1 | None = None
+    email_type: EmailType1 | None = None
+    billing_health: BillingHealth1 | None = None
+    region: Region1 | None = None
+    device_type: DeviceType1 | None = None
+
+
+class Value8(Enum):
+    new = "new"
+    high = "high"
+    medium = "medium"
+    low = "low"
+    inactive = "inactive"
+
+
+class ActivityLevel8(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: Value8
+    set_at: AwareDatetime
+    override: bool
+
+
+class Value9(Enum):
     none = "none"
     trial = "trial"
     paid = "paid"
     cancelled = "cancelled"
 
 
-class TrialType2(Enum):
+class SubscriptionState7(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: Value9
+    set_at: AwareDatetime
+    override: bool
+
+
+class Value10(Enum):
     none = "none"
     free_trial = "free_trial"
     reverse_trial = "reverse_trial"
 
 
-class BuyerRole(Enum):
+class TrialType9(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: Value10
+    set_at: AwareDatetime
+    override: bool
+
+
+class Value11(Enum):
     buyer = "buyer"
     non_buyer = "non_buyer"
 
 
-class EmailType(Enum):
+class BuyerRole7(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: Value11
+    set_at: AwareDatetime
+    override: bool
+
+
+class Value12(Enum):
     business = "business"
     personal = "personal"
     unknown = "unknown"
 
 
-class BillingHealth(Enum):
+class EmailType7(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: Value12
+    set_at: AwareDatetime
+    override: bool
+
+
+class Value13(Enum):
     no_billing = "no_billing"
     good_standing = "good_standing"
     trial_payment_method_attached = "trial_payment_method_attached"
@@ -4917,47 +5627,58 @@ class BillingHealth(Enum):
     cancelled = "cancelled"
 
 
-class Region(Enum):
+class BillingHealth7(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: Value13
+    set_at: AwareDatetime
+    override: bool
+
+
+class Value14(Enum):
     us_canada = "us_canada"
     europe = "europe"
     rest_of_world = "rest_of_world"
 
 
-class DeviceType(Enum):
+class Region7(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    value: Value14
+    set_at: AwareDatetime
+    override: bool
+
+
+class Value15(Enum):
     desktop = "desktop"
     mobile = "mobile"
     tablet = "tablet"
     unknown = "unknown"
 
 
-class UserBuiltinDimensions(BaseModel):
+class DeviceType7(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    activity_level: ActivityLevel | None = None
-    subscription_state: SubscriptionState | None = None
-    trial_type: TrialType2 | None = None
-    seat_type: constr(pattern=r"^[a-z0-9._]{1,87}$") | None = None
-    buyer_role: BuyerRole | None = None
-    email_type: EmailType | None = None
-    billing_health: BillingHealth | None = None
-    region: Region | None = None
-    device_type: DeviceType | None = None
+    value: Value15
+    set_at: AwareDatetime
+    override: bool
 
 
-class BuiltinDimensions(BaseModel):
+class CustomerBuiltinDimensions1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    activity_level: ActivityLevel | None = None
-    subscription_state: SubscriptionState | None = None
-    trial_type: TrialType2 | None = None
-    seat_type: constr(pattern=r"^[a-z0-9._]{1,87}$") | None = None
-    buyer_role: BuyerRole | None = None
-    email_type: EmailType | None = None
-    billing_health: BillingHealth | None = None
-    region: Region | None = None
-    device_type: DeviceType | None = None
+    activity_level: ActivityLevel8 | None = None
+    subscription_state: SubscriptionState7 | None = None
+    trial_type: TrialType9 | None = None
+    buyer_role: BuyerRole7 | None = None
+    email_type: EmailType7 | None = None
+    billing_health: BillingHealth7 | None = None
+    region: Region7 | None = None
+    device_type: DeviceType7 | None = None
 
 
 class BillingPeriod4(Enum):
@@ -5906,6 +6627,93 @@ class AuthUser(BaseModel):
     two_factor_enabled: bool | None = False
 
 
+class BillingAccountMappingRevision1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    mapping_version: Literal[1]
+    source: BillingSourceScope
+    customer_ref: constr(min_length=1, max_length=255)
+    rt_account_id: constr(min_length=1, max_length=255) | None
+    mapping_revision: conint(ge=1, le=9007199254740991)
+    effective_from: AwareDatetime
+    effective_to: AwareDatetime | None
+    observed_at: AwareDatetime
+    supersedes_mapping_revision: conint(ge=1, le=9007199254740991) | None
+    basis: Literal["explicit_binding"]
+
+
+class BillingAccountMappingRevision2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    mapping_version: Literal[1]
+    source: BillingSourceScope
+    customer_ref: constr(min_length=1, max_length=255)
+    rt_account_id: constr(min_length=1, max_length=255) | None
+    mapping_revision: conint(ge=1, le=9007199254740991)
+    effective_from: AwareDatetime
+    effective_to: AwareDatetime | None
+    observed_at: AwareDatetime
+    supersedes_mapping_revision: conint(ge=1, le=9007199254740991) | None
+    basis: Literal["integration_sync"]
+
+
+class BillingAccountMappingRevision3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    mapping_version: Literal[1]
+    source: BillingSourceScope
+    customer_ref: constr(min_length=1, max_length=255)
+    rt_account_id: constr(min_length=1, max_length=255) | None
+    mapping_revision: conint(ge=1, le=9007199254740991)
+    effective_from: AwareDatetime
+    effective_to: AwareDatetime | None
+    observed_at: AwareDatetime
+    supersedes_mapping_revision: conint(ge=1, le=9007199254740991) | None
+    basis: Literal["approved_correction"]
+    correction_generation_id: constr(
+        pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128
+    )
+    restatement_reason: RestatementReason
+
+
+class BillingAccountMappingRevision(
+    RootModel[
+        BillingAccountMappingRevision1
+        | BillingAccountMappingRevision2
+        | BillingAccountMappingRevision3
+    ]
+):
+    root: (
+        BillingAccountMappingRevision1
+        | BillingAccountMappingRevision2
+        | BillingAccountMappingRevision3
+    )
+
+
+class BillingAccountingRevision(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    revision_version: Literal[1]
+    source: BillingSourceScope
+    profile: Profile
+    kind: constr(min_length=1, max_length=64)
+    occurrence_key: constr(min_length=1, max_length=512)
+    source_revision: constr(min_length=1, max_length=255)
+    revision_key: constr(min_length=1, max_length=800)
+    source_order: conint(ge=0, le=9007199254740991) | None
+    supersedes_revision: constr(min_length=1, max_length=255) | None
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    economic_ownership: EconomicOwnership
+    legacy_billing_ref: constr(min_length=1, max_length=512) | None
+    fact_digest: constr(pattern=r"^sha256:[0-9a-f]{64}$")
+
+
 class BillingBalanceProfile1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -5925,6 +6733,8 @@ class BillingBalanceProfile1(BaseModel):
     amount_minor: constr(pattern=r"^-?(0|[1-9][0-9]*)$", max_length=40)
     balance_type: BalanceType
     invoice_id: constr(min_length=1, max_length=255) | None
+    adjustment_source: AdjustmentSource | None = None
+    credit_note_id: constr(min_length=1, max_length=255) | None = None
 
 
 class BillingBalanceProfile2(BaseModel):
@@ -5967,6 +6777,7 @@ class BillingBalanceProfile3(BaseModel):
     currency_exponent: conint(ge=0, le=4)
     invoice_id: constr(min_length=1, max_length=255)
     amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    funding_occurrence_key: constr(min_length=1, max_length=512) | None = None
 
 
 class BillingBalanceProfile4(BaseModel):
@@ -6003,6 +6814,44 @@ class BillingBalanceProfile(
         | BillingBalanceProfile3
         | BillingBalanceProfile4
     )
+
+
+class BillingCoverageCheckpoint1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    checkpoint_version: Literal[1]
+    source: BillingSourceScope
+    rt_account_id: constr(min_length=1, max_length=255) | None
+    family: Family1
+    recorded_at: AwareDatetime
+    state: Literal["complete"]
+    earliest_complete_at: AwareDatetime
+    covered_through: AwareDatetime
+    opening_seed: BillingOpeningSeed | None
+
+
+class BillingCoverageCheckpoint3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    checkpoint_version: Literal[1]
+    source: BillingSourceScope
+    rt_account_id: constr(min_length=1, max_length=255) | None
+    family: Family1
+    recorded_at: AwareDatetime
+    state: Literal["unavailable"]
+    reason: BillingCoverageUnavailableReason
+    last_observed_at: AwareDatetime | None
+
+
+class BillingCoverageGapRange(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    from_: AwareDatetime = Field(..., alias="from")
+    to: AwareDatetime | None
+    reason: BillingCoverageGapReason
 
 
 class BillingCreditProfile1(BaseModel):
@@ -6077,6 +6926,126 @@ class BillingCreditProfile(
     root: BillingCreditProfile1 | BillingCreditProfile2 | BillingCreditProfile3
 
 
+class BillingGeneration1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    generation_version: Literal[1]
+    tenant_id: constr(min_length=1)
+    generation_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
+    source: BillingSourceScope
+    policy_version: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
+    policy_pins: dict[
+        constr(pattern=r"^[a-z][a-z0-9_]{0,63}$"), conint(ge=1, le=9007199254740991)
+    ]
+    input_watermark: AwareDatetime
+    created_at: AwareDatetime
+    checkpoint: BillingGenerationCheckpoint
+    status: Literal["building"]
+    reconciliation: BillingReconciliation
+
+
+class BillingGeneration2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    generation_version: Literal[1]
+    tenant_id: constr(min_length=1)
+    generation_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
+    source: BillingSourceScope
+    policy_version: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
+    policy_pins: dict[
+        constr(pattern=r"^[a-z][a-z0-9_]{0,63}$"), conint(ge=1, le=9007199254740991)
+    ]
+    input_watermark: AwareDatetime
+    created_at: AwareDatetime
+    checkpoint: BillingGenerationCheckpoint
+    status: Literal["shadow"]
+    reconciliation: BillingReconciliation
+
+
+class BillingGeneration3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    generation_version: Literal[1]
+    tenant_id: constr(min_length=1)
+    generation_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
+    source: BillingSourceScope
+    policy_version: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
+    policy_pins: dict[
+        constr(pattern=r"^[a-z][a-z0-9_]{0,63}$"), conint(ge=1, le=9007199254740991)
+    ]
+    input_watermark: AwareDatetime
+    created_at: AwareDatetime
+    checkpoint: BillingCompletedGenerationCheckpoint
+    status: Literal["active"]
+    reconciliation: Reconciliation
+    activated_at: AwareDatetime
+
+
+class BillingGeneration4(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    generation_version: Literal[1]
+    tenant_id: constr(min_length=1)
+    generation_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
+    source: BillingSourceScope
+    policy_version: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
+    policy_pins: dict[
+        constr(pattern=r"^[a-z][a-z0-9_]{0,63}$"), conint(ge=1, le=9007199254740991)
+    ]
+    input_watermark: AwareDatetime
+    created_at: AwareDatetime
+    checkpoint: BillingCompletedGenerationCheckpoint
+    status: Literal["superseded"]
+    reconciliation: Reconciliation
+    activated_at: AwareDatetime
+    superseded_at: AwareDatetime
+    superseded_by_generation_id: constr(
+        pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128
+    )
+
+
+class BillingGeneration5(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    generation_version: Literal[1]
+    tenant_id: constr(min_length=1)
+    generation_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
+    source: BillingSourceScope
+    policy_version: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
+    policy_pins: dict[
+        constr(pattern=r"^[a-z][a-z0-9_]{0,63}$"), conint(ge=1, le=9007199254740991)
+    ]
+    input_watermark: AwareDatetime
+    created_at: AwareDatetime
+    checkpoint: BillingGenerationCheckpoint
+    status: Literal["failed"]
+    reconciliation: BillingReconciliation
+    failure_code: constr(min_length=1, max_length=128)
+
+
+class BillingGeneration(
+    RootModel[
+        BillingGeneration1
+        | BillingGeneration2
+        | BillingGeneration3
+        | BillingGeneration4
+        | BillingGeneration5
+    ]
+):
+    root: (
+        BillingGeneration1
+        | BillingGeneration2
+        | BillingGeneration3
+        | BillingGeneration4
+        | BillingGeneration5
+    )
+
+
 class BillingInvoiceProfile1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -6099,36 +7068,8 @@ class BillingInvoiceProfile1(BaseModel):
     due_at: AwareDatetime | None
     line_count: conint(ge=0, le=9007199254740991)
     lines_coverage: LinesCoverage
-
-
-class BillingInvoiceProfile2(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    profile: Literal["invoice"]
-    kind: Literal["recurring_line"]
-    profile_version: Literal[1]
-    source: BillingSourceScope
-    occurrence: BillingOccurrence
-    customer_ref: constr(min_length=1, max_length=255)
-    effective_at: AwareDatetime
-    source_recorded_at: AwareDatetime
-    observed_at: AwareDatetime
-    invoice_id: constr(min_length=1, max_length=255)
-    line_id: constr(min_length=1, max_length=255)
-    subscription_id: constr(min_length=1, max_length=255)
-    subscription_item_id: constr(min_length=1, max_length=255)
-    price: BillingRecurringPrice
-    quantity: conint(ge=0, le=9007199254740991)
-    service_period_start_at: AwareDatetime
-    service_period_end_at: AwareDatetime
-    proration: bool
-    currency: constr(pattern=r"^[A-Z]{3}$")
-    currency_exponent: conint(ge=0, le=4)
-    subtotal_minor: constr(pattern=r"^-?(0|[1-9][0-9]*)$", max_length=40)
-    discount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
-    tax_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
-    total_minor: constr(pattern=r"^-?(0|[1-9][0-9]*)$", max_length=40)
+    payment_count: conint(ge=0, le=9007199254740991) | None = None
+    payments_coverage: PaymentsCoverage | None = None
 
 
 class BillingInvoiceProfile3(BaseModel):
@@ -6183,20 +7124,57 @@ class BillingInvoiceProfile4(BaseModel):
     total_minor: constr(pattern=r"^-?(0|[1-9][0-9]*)$", max_length=40)
 
 
-class BillingInvoiceProfile(
-    RootModel[
-        BillingInvoiceProfile1
-        | BillingInvoiceProfile2
-        | BillingInvoiceProfile3
-        | BillingInvoiceProfile4
-    ]
-):
-    root: (
-        BillingInvoiceProfile1
-        | BillingInvoiceProfile2
-        | BillingInvoiceProfile3
-        | BillingInvoiceProfile4
+class BillingInvoiceProfile5(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
     )
+    profile: Literal["invoice"]
+    kind: Literal["payment_allocation"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    invoice_payment_id: constr(min_length=1, max_length=255)
+    invoice_id: constr(min_length=1, max_length=255)
+    payment: BillingInvoicePaymentSource
+    status: InvoicePaymentStatus
+    is_default: bool | None = None
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    amount_requested_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    amount_paid_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40) | None
+    paid_at: AwareDatetime | None
+    economic_owner: BillingEconomicOwner | None = None
+
+
+class BillingInvoiceProfile6(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["invoice"]
+    kind: Literal["status_transition"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    invoice_id: constr(min_length=1, max_length=255)
+    subscription_id: constr(min_length=1, max_length=255) | None
+    from_status: InvoiceStatus
+    to_status: InvoiceStatus
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    amount_due_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    amount_paid_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    amount_remaining_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    due_at: AwareDatetime | None
+    paid_out_of_band: bool
+    settlement_basis: InvoiceSettlementBasis | None
 
 
 class BillingLossProfile1(BaseModel):
@@ -6218,6 +7196,8 @@ class BillingLossProfile1(BaseModel):
     currency: constr(pattern=r"^[A-Z]{3}$")
     currency_exponent: conint(ge=0, le=4)
     amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    economic_owner: BillingEconomicOwner | None = None
+    settlement_amount: BillingSettlementAmount | None = None
 
 
 class BillingLossProfile2(BaseModel):
@@ -6239,6 +7219,9 @@ class BillingLossProfile2(BaseModel):
     currency: constr(pattern=r"^[A-Z]{3}$")
     currency_exponent: conint(ge=0, le=4)
     amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    economic_owner: BillingEconomicOwner | None = None
+    settlement_amount: BillingSettlementAmount | None = None
+    reverses_occurrence_key: constr(min_length=1, max_length=512) | None = None
 
 
 class BillingLossProfile3(BaseModel):
@@ -6277,6 +7260,8 @@ class BillingLossProfile4(BaseModel):
     currency: constr(pattern=r"^[A-Z]{3}$")
     currency_exponent: conint(ge=0, le=4)
     amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    economic_owner: BillingEconomicOwner | None = None
+    settlement_amount: BillingSettlementAmount | None = None
 
 
 class BillingLossProfile(
@@ -6293,6 +7278,32 @@ class BillingLossProfile(
         | BillingLossProfile3
         | BillingLossProfile4
     )
+
+
+class BillingPriceTerms2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    billing_scheme: Literal["tiered"]
+    tiers_mode: TiersMode
+    tiers: list[BillingPriceTier] = Field(..., max_length=100, min_length=1)
+
+
+class BillingPriceTerms(RootModel[BillingPriceTerms1 | BillingPriceTerms2]):
+    root: BillingPriceTerms1 | BillingPriceTerms2
+
+
+class BillingRecurringPrice(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    price_id: constr(min_length=1, max_length=255)
+    product_id: constr(min_length=1, max_length=255) | None = None
+    interval: Interval
+    interval_count: conint(ge=1, le=9007199254740991)
+    usage_type: UsageType
+    unit_amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40) | None
+    terms: BillingPriceTerms | None = None
 
 
 class BillingRefundProfile1(BaseModel):
@@ -6317,6 +7328,7 @@ class BillingRefundProfile1(BaseModel):
     reason: Reason2 | None
     credit_note_id: constr(min_length=1, max_length=255) | None
     allocations: list[BillingAllocation] = Field(..., max_length=250)
+    economic_owner: BillingEconomicOwner | None = None
 
 
 class BillingRefundProfile2(BaseModel):
@@ -6342,33 +7354,6 @@ class BillingRefundProfile2(BaseModel):
 
 class BillingRefundProfile(RootModel[BillingRefundProfile1 | BillingRefundProfile2]):
     root: BillingRefundProfile1 | BillingRefundProfile2
-
-
-class BillingScheduleProfile1(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    profile: Literal["schedule"]
-    kind: Literal["phase_declared"]
-    profile_version: Literal[1]
-    source: BillingSourceScope
-    occurrence: BillingRepeatableOccurrence
-    customer_ref: constr(min_length=1, max_length=255)
-    effective_at: AwareDatetime
-    source_recorded_at: AwareDatetime
-    observed_at: AwareDatetime
-    schedule_id: constr(min_length=1, max_length=255)
-    subscription_id: constr(min_length=1, max_length=255) | None
-    phase_index: conint(ge=0, le=9007199254740991)
-    phase_start_at: AwareDatetime
-    phase_end_at: AwareDatetime | None
-    currency: constr(pattern=r"^[A-Z]{3}$")
-    currency_exponent: conint(ge=0, le=4)
-    items: list[BillingSubscriptionItemSnapshot] = Field(
-        ..., max_length=250, min_length=1
-    )
-    observed_through: AwareDatetime
-    phases_coverage: PhasesCoverage
 
 
 class BillingScheduleProfile2(BaseModel):
@@ -6422,20 +7407,14 @@ class BillingScheduleProfile4(BaseModel):
     target_occurrence_key: constr(min_length=1, max_length=512)
 
 
-class BillingScheduleProfile(
-    RootModel[
-        BillingScheduleProfile1
-        | BillingScheduleProfile2
-        | BillingScheduleProfile3
-        | BillingScheduleProfile4
-    ]
-):
-    root: (
-        BillingScheduleProfile1
-        | BillingScheduleProfile2
-        | BillingScheduleProfile3
-        | BillingScheduleProfile4
+class BillingSubscriptionItemSnapshot(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
     )
+    item_id: constr(min_length=1, max_length=255)
+    price: BillingRecurringPrice
+    quantity: conint(ge=0, le=9007199254740991)
+    trial_end_at: AwareDatetime | None = None
 
 
 class BillingSubscriptionProfile1(BaseModel):
@@ -6460,6 +7439,7 @@ class BillingSubscriptionProfile1(BaseModel):
         ..., max_length=250, min_length=1
     )
     items_coverage: ItemsCoverage
+    recurrence: BillingRecurrence | None = None
 
 
 class BillingSubscriptionProfile2(BaseModel):
@@ -6484,6 +7464,7 @@ class BillingSubscriptionProfile2(BaseModel):
         ..., max_length=250, min_length=1
     )
     items_coverage: ItemsCoverage
+    recurrence: BillingRecurrence | None = None
 
 
 class BillingSubscriptionProfile3(BaseModel):
@@ -6508,6 +7489,7 @@ class BillingSubscriptionProfile3(BaseModel):
         ..., max_length=250, min_length=1
     )
     items_coverage: ItemsCoverage
+    recurrence: BillingRecurrence | None = None
     current_period_start_at: AwareDatetime
     current_period_end_at: AwareDatetime
 
@@ -6553,6 +7535,7 @@ class BillingSubscriptionProfile7(BaseModel):
         ..., max_length=250, min_length=1
     )
     items_coverage: ItemsCoverage
+    recurrence: BillingRecurrence | None = None
     trial_start_at: AwareDatetime
     trial_end_at: AwareDatetime
 
@@ -6579,6 +7562,7 @@ class BillingSubscriptionProfile8(BaseModel):
         ..., max_length=250, min_length=1
     )
     items_coverage: ItemsCoverage
+    recurrence: BillingRecurrence | None = None
     trial_start_at: AwareDatetime
     trial_end_at: AwareDatetime
 
@@ -6624,6 +7608,7 @@ class BillingSubscriptionProfile11(BaseModel):
         ..., max_length=250, min_length=1
     )
     items_coverage: ItemsCoverage
+    recurrence: BillingRecurrence | None = None
     target_occurrence_key: constr(min_length=1, max_length=512)
 
 
@@ -8044,6 +9029,7 @@ class SurfaceSlot(BaseModel):
     first_seen: AwareDatetime
     last_seen: AwareDatetime
     route: constr(min_length=1, max_length=512) | None = None
+    slot_name: constr(min_length=1, max_length=200) | None = None
     status: SurfaceSlotStatus | None = "idle"
     placement_count: conint(ge=0, le=9007199254740991) | None = 0
 
@@ -8461,27 +9447,127 @@ class AnalyticsView(BaseModel):
     customization_policy: AnalyticsCustomizationPolicy
 
 
-class BillingProfile(
+class BillingCoverageCheckpoint2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    checkpoint_version: Literal[1]
+    source: BillingSourceScope
+    rt_account_id: constr(min_length=1, max_length=255) | None
+    family: Family1
+    recorded_at: AwareDatetime
+    state: Literal["partial"]
+    earliest_complete_at: AwareDatetime | None
+    covered_through: AwareDatetime
+    opening_seed: BillingOpeningSeed | None
+    gaps: list[BillingCoverageGapRange] = Field(..., max_length=250, min_length=1)
+
+
+class BillingCoverageCheckpoint(
     RootModel[
-        BillingSubscriptionProfile
-        | BillingScheduleProfile
-        | BillingInvoiceProfile
-        | BillingTransactionProfile
-        | BillingRefundProfile
-        | BillingCreditProfile
-        | BillingBalanceProfile
-        | BillingLossProfile
+        BillingCoverageCheckpoint1
+        | BillingCoverageCheckpoint2
+        | BillingCoverageCheckpoint3
     ]
 ):
     root: (
-        BillingSubscriptionProfile
-        | BillingScheduleProfile
-        | BillingInvoiceProfile
-        | BillingTransactionProfile
-        | BillingRefundProfile
-        | BillingCreditProfile
-        | BillingBalanceProfile
-        | BillingLossProfile
+        BillingCoverageCheckpoint1
+        | BillingCoverageCheckpoint2
+        | BillingCoverageCheckpoint3
+    )
+
+
+class BillingInvoiceProfile2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["invoice"]
+    kind: Literal["recurring_line"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    invoice_id: constr(min_length=1, max_length=255)
+    line_id: constr(min_length=1, max_length=255)
+    subscription_id: constr(min_length=1, max_length=255)
+    subscription_item_id: constr(min_length=1, max_length=255)
+    price: BillingRecurringPrice
+    quantity: conint(ge=0, le=9007199254740991)
+    service_period_start_at: AwareDatetime
+    service_period_end_at: AwareDatetime
+    proration: bool
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    subtotal_minor: constr(pattern=r"^-?(0|[1-9][0-9]*)$", max_length=40)
+    discount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    tax_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    total_minor: constr(pattern=r"^-?(0|[1-9][0-9]*)$", max_length=40)
+
+
+class BillingInvoiceProfile(
+    RootModel[
+        BillingInvoiceProfile1
+        | BillingInvoiceProfile2
+        | BillingInvoiceProfile3
+        | BillingInvoiceProfile4
+        | BillingInvoiceProfile5
+        | BillingInvoiceProfile6
+    ]
+):
+    root: (
+        BillingInvoiceProfile1
+        | BillingInvoiceProfile2
+        | BillingInvoiceProfile3
+        | BillingInvoiceProfile4
+        | BillingInvoiceProfile5
+        | BillingInvoiceProfile6
+    )
+
+
+class BillingScheduleProfile1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    profile: Literal["schedule"]
+    kind: Literal["phase_declared"]
+    profile_version: Literal[1]
+    source: BillingSourceScope
+    occurrence: BillingRepeatableOccurrence
+    customer_ref: constr(min_length=1, max_length=255)
+    effective_at: AwareDatetime
+    source_recorded_at: AwareDatetime
+    observed_at: AwareDatetime
+    schedule_id: constr(min_length=1, max_length=255)
+    subscription_id: constr(min_length=1, max_length=255) | None
+    phase_index: conint(ge=0, le=9007199254740991)
+    phase_start_at: AwareDatetime
+    phase_end_at: AwareDatetime | None
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    items: list[BillingSubscriptionItemSnapshot] = Field(
+        ..., max_length=250, min_length=1
+    )
+    observed_through: AwareDatetime
+    phases_coverage: PhasesCoverage
+    recurrence: BillingRecurrence | None = None
+
+
+class BillingScheduleProfile(
+    RootModel[
+        BillingScheduleProfile1
+        | BillingScheduleProfile2
+        | BillingScheduleProfile3
+        | BillingScheduleProfile4
+    ]
+):
+    root: (
+        BillingScheduleProfile1
+        | BillingScheduleProfile2
+        | BillingScheduleProfile3
+        | BillingScheduleProfile4
     )
 
 
@@ -8982,6 +10068,7 @@ class UserContext(BaseModel):
     email: EmailStr | None = None
     email_type: str | None = None
     plan_handle: constr(min_length=1) | None = None
+    seat_type_handle: constr(pattern=r"^[a-z0-9._]{1,100}$") | None = None
     plan: UserPlanContext | None = None
     usage: dict[str, UserUsageEntry] | None = Field({}, validate_default=True)
     trial: UserTrialStatus | None = None
@@ -8994,7 +10081,8 @@ class UserContext(BaseModel):
     instances: list[UserInstanceContext] | None = None
     custom: dict[str, str | float | bool | None] | None = {}
     personalization: dict[str, str | float] | None = {}
-    builtin_dimensions: BuiltinDimensions | None = None
+    builtin_dimensions: BuiltinDimensions3 | None = None
+    customer_builtin_dimensions: CustomerBuiltinDimensions1 | None = None
     derived_config_version: str | None = None
     context_hash: str | None = None
     derived_computed_at: AwareDatetime | None = None
@@ -9037,6 +10125,30 @@ class AnalyticsViewRevision(BaseModel):
     content_hash: constr(pattern=r"^[a-f0-9]{64}$")
     created_by: constr(min_length=1)
     created_at: AwareDatetime
+
+
+class BillingProfile(
+    RootModel[
+        BillingSubscriptionProfile
+        | BillingScheduleProfile
+        | BillingInvoiceProfile
+        | BillingTransactionProfile
+        | BillingRefundProfile
+        | BillingCreditProfile
+        | BillingBalanceProfile
+        | BillingLossProfile
+    ]
+):
+    root: (
+        BillingSubscriptionProfile
+        | BillingScheduleProfile
+        | BillingInvoiceProfile
+        | BillingTransactionProfile
+        | BillingRefundProfile
+        | BillingCreditProfile
+        | BillingBalanceProfile
+        | BillingLossProfile
+    )
 
 
 class CanonicalAliasEvent1(BaseModel):

@@ -4,7 +4,7 @@
  * the alias *contract* (delegation + return), not the underlying behavior the
  * canonical methods already test elsewhere.
  */
-import { describe, expect, expectTypeOf, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { RevTurbineCustomerSdk, RECOGNIZED_UPDATE_KEYS } from './customer-side';
 import type { EntitlementResult, RevTurbineInitOptions, RevTurbineUpdateInput } from './customer-side';
 import { RTSlot, Slot, Gate, BannerComponent, BannerSlot, ModalComponent, ModalSlot } from './index';
@@ -120,12 +120,11 @@ describe('advertised hero-API aliases (plan 84)', () => {
     warnSpy.mockRestore();
   });
 
-  it('RECOGNIZED_UPDATE_KEYS is exhaustive over RevTurbineUpdateInput', () => {
-    // `satisfies` in-source guards each entry against typos; this guards the
-    // reverse direction — a schema-added context field fails here until the
-    // runtime list acknowledges it.
-    expectTypeOf<Exclude<keyof RevTurbineUpdateInput, (typeof RECOGNIZED_UPDATE_KEYS)[number]>>()
-      .toEqualTypeOf<never>();
+  it('RECOGNIZED_UPDATE_KEYS has no duplicate entries', () => {
+    // Exhaustiveness against RevTurbineUpdateInput is a TYPE assertion and
+    // lives in update-keys-exhaustiveness.test-d.ts, which `tsc` compiles
+    // (`pnpm check:types:exact`). An `expectTypeOf` here never type-checked —
+    // vitest does not typecheck — which is how four keys drifted (BL-0352).
     expect(new Set(RECOGNIZED_UPDATE_KEYS).size).toBe(RECOGNIZED_UPDATE_KEYS.length);
   });
 

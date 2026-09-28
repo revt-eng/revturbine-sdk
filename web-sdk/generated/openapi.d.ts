@@ -546,6 +546,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sdk/user-contexts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set a user's seat type and built-in dimension values — server key only
+         * @description Upserts the server-written state of one user by (token tenant, user_id): the seat assignment and/or built-in segment dimension values (D-46). Accepts ONLY a Bearer API token whose token_type is `server`; a session, `client`, `mcp` or `public` credential is refused with 401/403. The tenant comes from the token, never from the request. The body is strict: `user_id`, `seat_type_handle`, `builtin_dimensions`, `override`. `seat_type_handle` must be one of the tenant's current seat types (422 otherwise); `null` clears it; omitted leaves it unchanged. Each `builtin_dimensions` value must be in its dimension's vocabulary (422 otherwise); `null` clears it. `override: true` pins the written dimensions so RevTurbine enrichment does not replace them; without it the write is an update that a newer enrichment change supersedes (last writer wins), and a pinned dimension written without it is unpinned (D-47).
+         */
+        post: operations["upsertServerUserContext"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sdk/user-contexts/{userId}/builtin-dimensions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a user's server-resolved built-in segment dimensions — server key only
+         * @description Returns the control plane's built-in segment dimensions (subscription state, trial type, activity level, seat type, buyer role, billing health, …) for one user of the token tenant, so a server SDK can overlay them onto the app-supplied context (the server value wins, PD-3). Accepts ONLY a Bearer API token whose token_type is `server`; a session, `client`, `mcp` or `public` credential is refused with 401/403. The tenant comes from the token, never from the request. An unknown user resolves to each dimension's default, not 404. Request-derived dimensions (`region`, `device_type`) are never present.
+         */
+        get: operations["getServerUserBuiltinDimensions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -746,6 +786,12 @@ export interface components {
         /** @enum {string} */
         TreatmentInteractionType: "impression" | "dismiss" | "remind_me_later" | "cta_clicked" | "cta_completed" | "suppress";
         TreatmentInteractionBatch: components["schemas"]["TreatmentInteractionInput"][];
+        ServerUserContextUpsert: {
+            user_id: components["schemas"]["Anon_761f976a1da1_1"];
+            seat_type_handle?: components["schemas"]["Anon_abb9584a79fc_1"];
+            builtin_dimensions?: components["schemas"]["Anon_7720c3584d94"];
+            override?: components["schemas"]["Anon_fb9ddeea992e_6"];
+        };
         /** @default 1 */
         Anon_9370e83b9cfe: number;
         /** @default 25 */
@@ -1105,8 +1151,8 @@ export interface components {
         Anon_f090cb615c84_21: string | null;
         Anon_4fc4bfa2adad_10: components["schemas"]["Anon_f090cb615c84_22"];
         Anon_f090cb615c84_22: string | null;
-        Anon_fb9ddeea992e_2: components["schemas"]["Anon_7cb541e84f22_30"];
-        Anon_7cb541e84f22_30: boolean;
+        Anon_fb9ddeea992e_2: components["schemas"]["Anon_7cb541e84f22_31"];
+        Anon_7cb541e84f22_31: boolean;
         Anon_96967a4faf8d: components["schemas"]["SdkMetaEvent"][];
         Anon_53b83ce9a609: components["schemas"]["SdkMetaEventType"];
         /** Format: date-time */
@@ -1172,12 +1218,52 @@ export interface components {
         Anon_9ac136edb99a_18: string;
         Anon_94b7b4f4c44a: components["schemas"]["Anon_904af497346b"];
         Anon_904af497346b: string | null;
-        Anon_fb9ddeea992e_3: components["schemas"]["Anon_7cb541e84f22_31"];
-        Anon_7cb541e84f22_31: boolean;
+        Anon_fb9ddeea992e_3: components["schemas"]["Anon_7cb541e84f22_32"];
+        Anon_7cb541e84f22_32: boolean;
         Anon_a249e58b3222: components["schemas"]["Anon_c65c1fbd5acf_8"];
         Anon_c65c1fbd5acf_8: {
             [key: string]: unknown;
         };
+        Anon_761f976a1da1_1: string;
+        /** @enum {string} */
+        Anon_d1623b956533: "new" | "high" | "medium" | "low" | "inactive";
+        /** @enum {string} */
+        Anon_a68601fc8ae6: "none" | "trial" | "paid" | "cancelled";
+        /** @enum {string} */
+        Anon_2277a9ff20f2: "none" | "free_trial" | "reverse_trial";
+        /** @enum {string} */
+        Anon_36144f6ff1f7: "buyer" | "non_buyer";
+        /** @enum {string} */
+        Anon_2e475c2b8517: "business" | "personal" | "unknown";
+        /** @enum {string} */
+        Anon_ea3031eacbdb: "no_billing" | "good_standing" | "trial_payment_method_attached" | "payment_method_missing" | "payment_failed" | "payment_overdue" | "cancelled";
+        /** @enum {string} */
+        Anon_4304284c431c: "us_canada" | "europe" | "rest_of_world";
+        /** @enum {string} */
+        Anon_eca965e9cb3d: "desktop" | "mobile" | "tablet" | "unknown";
+        Anon_abb9584a79fc_1: components["schemas"]["Anon_97d5d0070850_1"];
+        Anon_97d5d0070850_1: string | null;
+        Anon_7720c3584d94: components["schemas"]["Anon_4b790ef08790"];
+        Anon_4b790ef08790: {
+            activity_level?: components["schemas"]["Anon_8f515c161b83"];
+            subscription_state?: components["schemas"]["Anon_ed91fb5f5619"];
+            trial_type?: components["schemas"]["Anon_888d7176e40e"];
+            buyer_role?: components["schemas"]["Anon_6bead9fc16d2"];
+            email_type?: components["schemas"]["Anon_e92ea640abba"];
+            billing_health?: components["schemas"]["Anon_59a9cbd75a66"];
+            region?: components["schemas"]["Anon_10d900d3a9e4"];
+            device_type?: components["schemas"]["Anon_01efac8cdc3b"];
+        };
+        Anon_8f515c161b83: components["schemas"]["Anon_d1623b956533"] | null;
+        Anon_ed91fb5f5619: components["schemas"]["Anon_a68601fc8ae6"] | null;
+        Anon_888d7176e40e: components["schemas"]["Anon_2277a9ff20f2"] | null;
+        Anon_6bead9fc16d2: components["schemas"]["Anon_36144f6ff1f7"] | null;
+        Anon_e92ea640abba: components["schemas"]["Anon_2e475c2b8517"] | null;
+        Anon_59a9cbd75a66: components["schemas"]["Anon_ea3031eacbdb"] | null;
+        Anon_10d900d3a9e4: components["schemas"]["Anon_4304284c431c"] | null;
+        Anon_01efac8cdc3b: components["schemas"]["Anon_eca965e9cb3d"] | null;
+        Anon_fb9ddeea992e_6: components["schemas"]["Anon_7cb541e84f22_35"];
+        Anon_7cb541e84f22_35: boolean;
         Plan: {
             id: components["schemas"]["Anon_fb248bf5a9f7_9"];
             created_at: components["schemas"]["Anon_be3e2585472d_2"];
@@ -1277,7 +1363,7 @@ export interface components {
             currency: components["schemas"]["Anon_1788a9a8a0b9_2"];
             pricing_model: components["schemas"]["Anon_1b09b93e2f83_5"];
             nickname: components["schemas"]["Anon_f7fb9744a6e4_14"];
-            is_mock: components["schemas"]["Anon_062d958a93c4_4"];
+            is_mock: components["schemas"]["Anon_062d958a93c4_5"];
             last_updated_from_stripe: components["schemas"]["Anon_711dc9708535_7"];
         };
         Entitlement: {
@@ -1335,13 +1421,13 @@ export interface components {
             rate_value?: components["schemas"]["Anon_9c7f41b09bde_4"];
             initial_grant?: components["schemas"]["Anon_9c7f41b09bde_5"];
             allowance_value?: components["schemas"]["Anon_811366723713_3"];
-            rollover_enabled?: components["schemas"]["Anon_fb9ddeea992e_6"];
+            rollover_enabled?: components["schemas"]["Anon_fb9ddeea992e_7"];
             max_balance: components["schemas"]["Anon_d84a41962ed1_1"];
             seat_type_id?: components["schemas"]["Anon_96f9066c2fdc_38"];
             included_count?: components["schemas"]["Anon_5d154a3d9b9e_1"];
             at_limit_behavior?: components["schemas"]["Anon_28e076aa98f9_1"];
             stripe_metered_price_id?: components["schemas"]["Anon_96f9066c2fdc_39"];
-            enabled?: components["schemas"]["Anon_fb9ddeea992e_7"];
+            enabled?: components["schemas"]["Anon_fb9ddeea992e_8"];
             allocation?: components["schemas"]["Anon_a7c491664ac5_4"];
             max_seats?: components["schemas"]["Anon_0dc47bdde23b_1"];
             amount_cents?: components["schemas"]["Anon_18968514c96d_1"];
@@ -1378,13 +1464,13 @@ export interface components {
             rate_value?: components["schemas"]["Anon_9c7f41b09bde_4"];
             initial_grant?: components["schemas"]["Anon_9c7f41b09bde_5"];
             allowance_value?: components["schemas"]["Anon_811366723713_3"];
-            rollover_enabled?: components["schemas"]["Anon_fb9ddeea992e_6"];
+            rollover_enabled?: components["schemas"]["Anon_fb9ddeea992e_7"];
             max_balance: components["schemas"]["Anon_d84a41962ed1_1"];
             seat_type_id?: components["schemas"]["Anon_96f9066c2fdc_38"];
             included_count?: components["schemas"]["Anon_5d154a3d9b9e_1"];
             at_limit_behavior?: components["schemas"]["Anon_28e076aa98f9_1"];
             stripe_metered_price_id?: components["schemas"]["Anon_96f9066c2fdc_39"];
-            enabled?: components["schemas"]["Anon_fb9ddeea992e_7"];
+            enabled?: components["schemas"]["Anon_fb9ddeea992e_8"];
             allocation?: components["schemas"]["Anon_a7c491664ac5_4"];
             max_seats?: components["schemas"]["Anon_0dc47bdde23b_1"];
             amount_cents?: components["schemas"]["Anon_18968514c96d_1"];
@@ -1414,7 +1500,7 @@ export interface components {
             rule_id: components["schemas"]["Anon_57796118d046_36"];
             experiment_id: components["schemas"]["Anon_57796118d046_37"];
             variant_name: components["schemas"]["Anon_872e58432369_1"];
-            is_control: components["schemas"]["Anon_062d958a93c4_5"];
+            is_control: components["schemas"]["Anon_062d958a93c4_6"];
             override_fields: components["schemas"]["Anon_5142f8473790_6"];
         };
         Placement: {
@@ -1538,6 +1624,7 @@ export interface components {
             first_seen: components["schemas"]["Anon_be3e2585472d_4"];
             last_seen: components["schemas"]["Anon_be3e2585472d_5"];
             route?: components["schemas"]["Anon_babb60294324"];
+            slot_name?: components["schemas"]["Anon_34e621e2f47f"];
             status: components["schemas"]["Anon_4c42c2590496"];
             placement_count: components["schemas"]["Anon_b32f11b2ff5e_2"];
         };
@@ -1545,6 +1632,20 @@ export interface components {
         SurfaceSlotStatus: "live" | "idle";
         null: {
             accepted: components["schemas"]["Anon_274ba4ca49d5_28"];
+        };
+        ServerUserContextAssignment: {
+            tenant_id: components["schemas"]["Anon_fb248bf5a9f7_10"];
+            user_id: components["schemas"]["Anon_761f976a1da1_7"];
+            updated_at: components["schemas"]["Anon_be3e2585472d_3"];
+            seat_type_handle: components["schemas"]["Anon_c5d45818321f"];
+            builtin_dimensions: components["schemas"]["Anon_fc091757ffd3"];
+            overrides: components["schemas"]["Anon_df4ebd6a2dc0"];
+        };
+        ServerUserBuiltinDimensions: {
+            tenant_id: components["schemas"]["Anon_fb248bf5a9f7_10"];
+            user_id: components["schemas"]["Anon_761f976a1da1_7"];
+            builtin_dimensions: components["schemas"]["Anon_ad3c35aa933d"];
+            resolved_at: components["schemas"]["Anon_3c179513a5d9_21"];
         };
         Anon_fb248bf5a9f7_9: string;
         /** Format: date-time */
@@ -1565,11 +1666,11 @@ export interface components {
         Anon_f7fb9744a6e4_11: components["schemas"]["Anon_f090cb615c84_25"];
         Anon_f090cb615c84_25: string | null;
         /** @default true */
-        Anon_d295959bf4db_2: components["schemas"]["Anon_7cb541e84f22_37"];
-        Anon_7cb541e84f22_37: boolean;
+        Anon_d295959bf4db_2: components["schemas"]["Anon_7cb541e84f22_39"];
+        Anon_7cb541e84f22_39: boolean;
         /** @default false */
-        Anon_4dc549443053_1: components["schemas"]["Anon_7cb541e84f22_38"];
-        Anon_7cb541e84f22_38: boolean;
+        Anon_4dc549443053_1: components["schemas"]["Anon_7cb541e84f22_40"];
+        Anon_7cb541e84f22_40: boolean;
         /** @default null */
         Anon_e4ee8e45dcea_1: components["schemas"]["Anon_b0c21ae8f968_14"];
         Anon_b0c21ae8f968_14: string | null;
@@ -1653,8 +1754,8 @@ export interface components {
         Anon_f7fb9744a6e4_14: components["schemas"]["Anon_f090cb615c84_28"];
         Anon_f090cb615c84_28: string | null;
         /** @default false */
-        Anon_062d958a93c4_4: components["schemas"]["Anon_7cb541e84f22_39"];
-        Anon_7cb541e84f22_39: boolean;
+        Anon_062d958a93c4_5: components["schemas"]["Anon_7cb541e84f22_41"];
+        Anon_7cb541e84f22_41: boolean;
         Anon_711dc9708535_7: components["schemas"]["Anon_11c9ad639448_1"];
         Anon_b0c21ae8f968_15: string | null;
         /** @default null */
@@ -1713,8 +1814,8 @@ export interface components {
         Anon_cddf8275afa1_9: number;
         Anon_811366723713_3: components["schemas"]["Anon_4c1d2cc17cf8_3"];
         Anon_4c1d2cc17cf8_3: number | "unlimited";
-        Anon_fb9ddeea992e_6: components["schemas"]["Anon_7cb541e84f22_40"];
-        Anon_7cb541e84f22_40: boolean;
+        Anon_fb9ddeea992e_7: components["schemas"]["Anon_7cb541e84f22_42"];
+        Anon_7cb541e84f22_42: boolean;
         /** @default null */
         Anon_d84a41962ed1_1: components["schemas"]["Anon_853b74b4f5a9_2"];
         Anon_853b74b4f5a9_2: (number | "unlimited") | null;
@@ -1727,8 +1828,8 @@ export interface components {
         Anon_408f15090b22_1: "hard_cap" | "auto_upgrade_at_renewal";
         Anon_96f9066c2fdc_39: components["schemas"]["Anon_00404e686415_43"];
         Anon_00404e686415_43: string;
-        Anon_fb9ddeea992e_7: components["schemas"]["Anon_7cb541e84f22_41"];
-        Anon_7cb541e84f22_41: boolean;
+        Anon_fb9ddeea992e_8: components["schemas"]["Anon_7cb541e84f22_43"];
+        Anon_7cb541e84f22_43: boolean;
         Anon_a7c491664ac5_4: components["schemas"]["UsageAllocation"];
         Anon_0dc47bdde23b_1: components["schemas"]["Anon_853b74b4f5a9_3"];
         Anon_853b74b4f5a9_3: (number | "unlimited") | null;
@@ -1747,8 +1848,8 @@ export interface components {
         Anon_57796118d046_37: string;
         Anon_872e58432369_1: string;
         /** @default false */
-        Anon_062d958a93c4_5: components["schemas"]["Anon_7cb541e84f22_42"];
-        Anon_7cb541e84f22_42: boolean;
+        Anon_062d958a93c4_6: components["schemas"]["Anon_7cb541e84f22_44"];
+        Anon_7cb541e84f22_44: boolean;
         /** @default {} */
         Anon_5142f8473790_6: components["schemas"]["Anon_c65c1fbd5acf_12"];
         Anon_c65c1fbd5acf_12: {
@@ -1863,6 +1964,8 @@ export interface components {
         Anon_be3e2585472d_5: string;
         Anon_babb60294324: components["schemas"]["Anon_2df8ddc2275c"];
         Anon_2df8ddc2275c: string | null;
+        Anon_34e621e2f47f: components["schemas"]["Anon_8c923fd28c9a_1"];
+        Anon_8c923fd28c9a_1: string | null;
         /** @default idle */
         Anon_4c42c2590496: components["schemas"]["SurfaceSlotStatus"];
         /** @default 0 */
@@ -1919,6 +2022,70 @@ export interface components {
         };
         Anon_f27cb44c32f6_19: components["schemas"]["Anon_f2d1b3e449b4_1"];
         Anon_274ba4ca49d5_28: number;
+        Anon_761f976a1da1_7: string;
+        Anon_a328336b75d6: {
+            activity_level?: components["schemas"]["Anon_3b35bf76a160"];
+            subscription_state?: components["schemas"]["Anon_dd3586a1ddbf"];
+            trial_type?: components["schemas"]["Anon_a76d44f71d99"];
+            seat_type?: components["schemas"]["Anon_4d82b9ae113d"];
+            buyer_role?: components["schemas"]["Anon_e49ebf4157ee"];
+            email_type?: components["schemas"]["Anon_04c0f0c7b77f"];
+            billing_health?: components["schemas"]["Anon_0da5f739d027"];
+            region?: components["schemas"]["Anon_56e83e25debd"];
+            device_type?: components["schemas"]["Anon_decf640c9996"];
+        };
+        Anon_3b35bf76a160: components["schemas"]["Anon_d1623b956533_1"];
+        /** @enum {string} */
+        Anon_d1623b956533_1: "new" | "high" | "medium" | "low" | "inactive";
+        Anon_dd3586a1ddbf: components["schemas"]["Anon_a68601fc8ae6_1"];
+        /** @enum {string} */
+        Anon_a68601fc8ae6_1: "none" | "trial" | "paid" | "cancelled";
+        Anon_a76d44f71d99: components["schemas"]["Anon_2277a9ff20f2_1"];
+        /** @enum {string} */
+        Anon_2277a9ff20f2_1: "none" | "free_trial" | "reverse_trial";
+        Anon_4d82b9ae113d: components["schemas"]["Anon_d85e54d83006_1"];
+        Anon_d85e54d83006_1: string;
+        Anon_e49ebf4157ee: components["schemas"]["Anon_36144f6ff1f7_1"];
+        /** @enum {string} */
+        Anon_36144f6ff1f7_1: "buyer" | "non_buyer";
+        Anon_04c0f0c7b77f: components["schemas"]["Anon_2e475c2b8517_1"];
+        /** @enum {string} */
+        Anon_2e475c2b8517_1: "business" | "personal" | "unknown";
+        Anon_0da5f739d027: components["schemas"]["Anon_ea3031eacbdb_1"];
+        /** @enum {string} */
+        Anon_ea3031eacbdb_1: "no_billing" | "good_standing" | "trial_payment_method_attached" | "payment_method_missing" | "payment_failed" | "payment_overdue" | "cancelled";
+        Anon_56e83e25debd: components["schemas"]["Anon_4304284c431c_1"];
+        /** @enum {string} */
+        Anon_4304284c431c_1: "us_canada" | "europe" | "rest_of_world";
+        Anon_decf640c9996: components["schemas"]["Anon_eca965e9cb3d_1"];
+        /** @enum {string} */
+        Anon_eca965e9cb3d_1: "desktop" | "mobile" | "tablet" | "unknown";
+        Anon_c5d45818321f: components["schemas"]["Anon_0083ff3642e4"] | null;
+        Anon_0083ff3642e4: string;
+        Anon_fc091757ffd3: {
+            activity_level?: components["schemas"]["Anon_3b35bf76a160_1"];
+            subscription_state?: components["schemas"]["Anon_dd3586a1ddbf_1"];
+            trial_type?: components["schemas"]["Anon_a76d44f71d99_1"];
+            buyer_role?: components["schemas"]["Anon_e49ebf4157ee_1"];
+            email_type?: components["schemas"]["Anon_04c0f0c7b77f_1"];
+            billing_health?: components["schemas"]["Anon_0da5f739d027_1"];
+            region?: components["schemas"]["Anon_56e83e25debd_1"];
+            device_type?: components["schemas"]["Anon_decf640c9996_1"];
+        };
+        Anon_3b35bf76a160_1: components["schemas"]["Anon_d1623b956533_1"];
+        Anon_dd3586a1ddbf_1: components["schemas"]["Anon_a68601fc8ae6_1"];
+        Anon_a76d44f71d99_1: components["schemas"]["Anon_2277a9ff20f2_1"];
+        Anon_e49ebf4157ee_1: components["schemas"]["Anon_36144f6ff1f7_1"];
+        Anon_04c0f0c7b77f_1: components["schemas"]["Anon_2e475c2b8517_1"];
+        Anon_0da5f739d027_1: components["schemas"]["Anon_ea3031eacbdb_1"];
+        Anon_56e83e25debd_1: components["schemas"]["Anon_4304284c431c_1"];
+        Anon_decf640c9996_1: components["schemas"]["Anon_eca965e9cb3d_1"];
+        Anon_df4ebd6a2dc0: components["schemas"]["Anon_0375edee48c3"][];
+        /** @enum {string} */
+        Anon_0375edee48c3: "activity_level" | "subscription_state" | "trial_type" | "buyer_role" | "email_type" | "billing_health" | "region" | "device_type";
+        Anon_ad3c35aa933d: components["schemas"]["Anon_a328336b75d6"];
+        /** Format: date-time */
+        Anon_3c179513a5d9_21: string;
         /** @default usd */
         CurrencyOutput: components["schemas"]["Anon_063c0cce3710_1"];
         EntitlementRuleTargetOutput: {
@@ -3812,6 +3979,133 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["null"];
+                };
+            };
+            /** @description Error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Anon_ed3fcc71dea7"];
+                };
+            };
+        };
+    };
+    upsertServerUserContext: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServerUserContextUpsert"];
+            };
+        };
+        responses: {
+            /** @description The resulting server-written state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServerUserContextAssignment"];
+                };
+            };
+            /** @description Malformed body, an empty write, or a key outside user_id / seat_type_handle / builtin_dimensions / override */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Anon_ed3fcc71dea7"];
+                };
+            };
+            /** @description Missing or invalid credential */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Anon_ed3fcc71dea7"];
+                };
+            };
+            /** @description Credential is not a server API token */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Anon_ed3fcc71dea7"];
+                };
+            };
+            /** @description seat_type_handle is not one of the tenant's current seat types, or a builtin_dimensions value is outside its vocabulary */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Anon_ed3fcc71dea7"];
+                };
+            };
+            /** @description Error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Anon_ed3fcc71dea7"];
+                };
+            };
+        };
+    };
+    getServerUserBuiltinDimensions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The user's server-resolved built-in dimensions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServerUserBuiltinDimensions"];
+                };
+            };
+            /** @description Malformed user id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Anon_ed3fcc71dea7"];
+                };
+            };
+            /** @description Missing or invalid credential */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Anon_ed3fcc71dea7"];
+                };
+            };
+            /** @description Credential is not a server API token */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Anon_ed3fcc71dea7"];
                 };
             };
             /** @description Error response */

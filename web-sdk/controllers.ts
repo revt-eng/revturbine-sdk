@@ -42,7 +42,7 @@ import type {
   RevTurbineEntitlementContext,
   RevTurbineUserContext,
   Exact,
-  UserContextInput,
+  IdentifyContextInput,
   SdkMetadata,
   EntitlementResult,
   PlacementOutput,
@@ -1608,7 +1608,7 @@ export async function initRevTurbine<TUser extends RevTurbineUserContext = RevTu
   const user = initOptions.user;
   if (user && typeof user === 'object' && user.id) {
     const { id, ...context } = user;
-    sdk.identify(id, context as UserContextInput);
+    sdk.identify(id, context as IdentifyContextInput);
   }
 
   // Resolve theme
@@ -1621,7 +1621,10 @@ export async function initRevTurbine<TUser extends RevTurbineUserContext = RevTu
   } else {
     theme = await loadTheme(
       {
-        tenantId: initOptions.tenantId ?? 'local',
+        // No placeholder tenant on the wire (BL-0335): the control plane
+        // ignores (with a warning) a tenant id that differs from the key's.
+        tenantId: initOptions.tenantId || undefined,
+        storageScope: initOptions.tenantId || 'local',
         endpoint: initOptions.endpoint ?? (playbook ? 'https://api.revturbine.local' : DEFAULT_HOSTED_ENDPOINT),
         apiKey: resolveBrowserPublicKey(initOptions) ?? 'local-only',
       },

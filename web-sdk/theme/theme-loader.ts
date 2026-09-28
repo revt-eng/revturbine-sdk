@@ -42,8 +42,18 @@ export function clearPersistedTheme(tenantId: string, storage?: RevTurbineStorag
 }
 
 export interface ThemeLoaderOptions {
-  /** RevTurbine tenant identifier. */
-  tenantId: string;
+  /**
+   * RevTurbine tenant identifier — optional (BL-0335). Sent as `x-tenant-id`
+   * only when present; the key alone identifies the tenant, and the control
+   * plane ignores (with a warning) a value that differs from it (D-49).
+   */
+  tenantId?: string;
+  /**
+   * Namespace for the locally persisted theme. Defaults to `tenantId`, then
+   * `'local'` — so an integration that passed a tenant id keeps its existing
+   * cache key.
+   */
+  storageScope?: string;
   /** Base URL of the RevTurbine API Edge. */
   endpoint: string;
   /** API key for authentication. */
@@ -83,12 +93,13 @@ export async function loadTheme(
   onUpdate?: (theme: RevTurbineTheme) => void,
 ): Promise<RevTurbineTheme> {
   const { tenantId, endpoint, apiKey, base } = opts;
+  const scope = opts.storageScope ?? tenantId ?? 'local';
   const storage = opts.storage ?? resolvePersistentStorage();
 
   // Fast path: use persisted theme while we fetch. Layered over the Playbook's
   // theme so an override that sets only a few tokens refines the base rather
   // than replacing it (plan 184).
-  const persisted = readPersistedTheme(tenantId, storage);
+  const persisted = readPersistedTheme(scope, storage);
   const localTheme = mergeTheme({ ...base, ...persisted });
   opts.onOverride?.(persisted);
 
@@ -98,7 +109,7 @@ export async function loadTheme(
     // Skip update if versions match.
     if (persisted?.version && remote.version === persisted.version) return;
 
-    persistTheme(tenantId, remote, storage);
+    persistTheme(scope, remote, storage);
     opts.onOverride?.(remote);
     onUpdate?.(mergeTheme({ ...base, ...remote }));
   }).catch(() => {
@@ -114,7 +125,7 @@ export async function loadTheme(
  */
 async function fetchRemoteTheme(
   endpoint: string,
-  tenantId: string,
+  tenantId: string | undefined,
   apiKey: string,
 ): Promise<RevTurbineThemeInput | null> {
   const base = endpoint.replace(/\/$/, '');
@@ -126,7 +137,7 @@ async function fetchRemoteTheme(
     method: 'GET',
     headers: {
       authorization: `Bearer ${apiKey}`,
-      'x-tenant-id': tenantId,
+      ...(tenantId ? { 'x-tenant-id': tenantId } : {}),
       'x-request-id': rid,
     },
   });

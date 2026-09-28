@@ -22,6 +22,9 @@ use std::collections::BTreeMap;
 
 use serde_json::{json, Map, Value};
 
+use crate::segments::evaluate_segments;
+use crate::user_context::build_targeting_state;
+
 /// Inputs the caller supplies alongside the Playbook.
 #[derive(Debug, Clone, Default)]
 pub struct StaticProviderOptions {
@@ -39,6 +42,23 @@ pub struct StaticProviderOptions {
     pub tiers: Option<Value>,
     /// `allow` (default) or `deny` — the status every entitlement starts at.
     pub default_entitlement_policy: EntitlementPolicy,
+    /// Tenant segment handles the app already resolved for this user, reported
+    /// as members verbatim (BL-0369).
+    pub segment_ids: Option<Vec<String>>,
+    /// The user-context snapshot segment membership is evaluated from
+    /// (BL-0369). `None` evaluates nothing: membership is `segment_ids` alone
+    /// (fail closed).
+    pub user_context: Option<Value>,
+    /// The control plane's server-resolved built-in dimensions for this user
+    /// (BL-0366) — the `builtin_dimensions` of
+    /// `GET /api/sdk/user-contexts/{userId}/builtin-dimensions`, which the
+    /// app's backend reads with its server key (this crate has no HTTP
+    /// transport and never fetches it). Overlaid per key on
+    /// `user_context.builtin_dimensions` before membership is evaluated: a
+    /// delivered leaf wins over the app-set value (plan 279 PD-3), an app-set
+    /// leaf the server did not deliver is kept. Ignored without a
+    /// `user_context` (fail closed). See [`apply_server_builtin_dimensions`].
+    pub server_builtin_dimensions: Option<Value>,
 }
 
 /// What a static entitlement resolves to before rules are applied.
@@ -72,6 +92,103 @@ fn arr<'a>(config: &'a Value, key: &str) -> &'a [Value] {
 
 fn s(v: &Value, k: &str) -> Option<String> {
     v.get(k).and_then(Value::as_str).map(str::to_string)
+}
+
+/// The Playbook's version identifier: canonical `format_version`, else the
+/// legacy `version`, else `""`.
+///
+/// Source: helpers.ts (playbookVersion)
+fn playbook_version(config: &Value) -> String {
+    s(config, "format_version")
+        .or_else(|| s(config, "version"))
+        .unwrap_or_default()
+}
+
+/// Overlay server-resolved built-in dimensions onto an app-supplied user
+/// context (BL-0366; plan 279 PD-3: the server value wins).
+///
+/// Per key: every leaf of `server_builtin_dimensions` replaces the app's value
+/// for that dimension; an app-set leaf the server did not deliver is kept —
+/// the overlay `mergeUserContext` applies to a client-context delivery in the
+/// browser. Returns the context unchanged when either side is absent (a
+/// non-object overlay counts as absent). Pure: the input is never mutated.
+///
+/// Source: static.ts (applyServerBuiltinDimensions)
+#[must_use]
+pub fn apply_server_builtin_dimensions(
+    user_context: Option<&Value>,
+    server_builtin_dimensions: Option<&Value>,
+) -> Option<Value> {
+    let context = user_context?;
+    let (Some(overlay), Some(fields)) = (
+        server_builtin_dimensions.and_then(Value::as_object),
+        context.as_object(),
+    ) else {
+        return Some(context.clone());
+    };
+    let mut dimensions = fields
+        .get("builtin_dimensions")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    for (key, value) in overlay {
+        dimensions.insert(key.clone(), value.clone());
+    }
+    let mut merged = fields.clone();
+    merged.insert("builtin_dimensions".into(), Value::Object(dimensions));
+    Some(Value::Object(merged))
+}
+
+/// The segment handles a static snapshot's user belongs to (BL-0369).
+///
+/// The browser SDK's rule (`resolveEffectiveProviderContext`): the
+/// caller-resolved `segment_ids`, then every configured segment whose
+/// predicates match `build_targeting_state(user_context).segment_traits` (the
+/// reserved `rt_*` traits come only from `builtin_dimensions`, plan 279 PD-3),
+/// with `user_context.experiments` as the enrollment map — deduplicated in
+/// first-seen order. No user context evaluates nothing (fail closed, PD-4).
+/// This used to report EVERY configured segment, so a payload or rule chipped
+/// to any segment was served to every user.
+///
+/// Source: static.ts (resolveStaticSegmentMembership)
+#[must_use]
+pub fn resolve_static_segment_membership(
+    config: &Value,
+    segment_ids: Option<&[String]>,
+    user_context: Option<&Value>,
+) -> Vec<String> {
+    let mut members: Vec<String> = segment_ids.map(<[String]>::to_vec).unwrap_or_default();
+    if let Some(context) = user_context {
+        let state = build_targeting_state(context, Some(config), None);
+        let assignments: BTreeMap<String, String> = context
+            .get("experiments")
+            .and_then(Value::as_object)
+            .map(|m| {
+                m.iter()
+                    // Enrollment is key presence (as `in` on the TS side),
+                    // so a non-string variant still enrolls.
+                    .map(|(k, v)| {
+                        (
+                            k.clone(),
+                            v.as_str().map_or_else(|| v.to_string(), str::to_string),
+                        )
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        let traits = state
+            .get("segment_traits")
+            .cloned()
+            .unwrap_or_else(|| json!({}));
+        members.extend(evaluate_segments(
+            arr(config, "segments"),
+            &traits,
+            &assignments,
+        ));
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    members.retain(|m| seen.insert(m.clone()));
+    members
 }
 
 /// Build the resolved provider context from a Playbook snapshot.
@@ -155,21 +272,23 @@ pub fn create_static_providers(config: &Value, opts: &StaticProviderOptions) -> 
         ctx.insert("entitlements".into(), Value::Object(state));
     }
 
-    let segments = arr(config, "segments");
-    if !segments.is_empty() {
-        // Resolve by handle: the canonical Playbook is handle-only (plan 120).
-        // `id` is the legacy fallback, so both shapes resolve.
-        let ids: Vec<Value> = segments
-            .iter()
-            .filter_map(|seg| s(seg, "id").or_else(|| s(seg, "handle")).map(Value::String))
-            .collect();
-        let slugs: Vec<Value> = segments
-            .iter()
-            .filter_map(|seg| s(seg, "handle").map(Value::String))
-            .collect();
+    // The user's segment MEMBERSHIP, never the configured catalogue (BL-0369).
+    // Segment identity is the handle (plan 120), so both views carry the same
+    // handles.
+    let supplied_segment_ids = opts.segment_ids.as_deref().filter(|ids| !ids.is_empty());
+    if !arr(config, "segments").is_empty() || supplied_segment_ids.is_some() {
+        let context = apply_server_builtin_dimensions(
+            opts.user_context.as_ref(),
+            opts.server_builtin_dimensions.as_ref(),
+        );
+        let members = resolve_static_segment_membership(
+            config,
+            opts.segment_ids.as_deref(),
+            context.as_ref(),
+        );
         ctx.insert(
             "segments".into(),
-            json!({ "segment_ids": ids, "segment_slugs": slugs }),
+            json!({ "segment_ids": members, "segment_slugs": members }),
         );
     }
 
@@ -247,11 +366,22 @@ pub fn create_static_providers(config: &Value, opts: &StaticProviderOptions) -> 
                 .push(snapshot);
         }
 
+        // Plan #39 REQ-28: the segment → dimension lookup the rule evaluator
+        // needs for intra-dimension OR / cross-dimension AND, keyed by handle
+        // (plan 120). Omitting it collapsed every segment into one OR bucket on
+        // the provider-backed path — invisible while every configured segment
+        // matched, a grant once membership is real (BL-0369).
+        let segment_dimensions: Map<String, Value> = arr(config, "segments")
+            .iter()
+            .filter_map(|seg| Some((s(seg, "handle")?, json!(s(seg, "dimension_id")?))))
+            .collect();
+
         ctx.insert(
             "rules".into(),
             json!({
                 "entitlement_rules": Value::Object(by_ent),
-                "config_version": config.get("version").cloned().unwrap_or(Value::Null),
+                "segment_dimensions": Value::Object(segment_dimensions),
+                "config_version": playbook_version(config),
             }),
         );
     }

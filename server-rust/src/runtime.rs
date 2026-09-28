@@ -418,6 +418,17 @@ impl LocalRuntime {
                     .and_then(|p| p.get("billing_period"))
                     .and_then(Value::as_str)
                     .map(str::to_string),
+                // TS passes `ruleState.segmentDimensions` to the matcher; without
+                // it every segment falls into one OR bucket (BL-0369).
+                segment_dimensions: rules
+                    .get("segment_dimensions")
+                    .and_then(Value::as_object)
+                    .map(|m| {
+                        m.iter()
+                            .filter_map(|(k, v)| Some((k.clone(), v.as_str()?.to_string())))
+                            .collect()
+                    })
+                    .unwrap_or_default(),
                 ..Default::default()
             };
 

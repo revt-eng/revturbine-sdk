@@ -14,6 +14,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RevTurbineCustomerSdk } from './customer-side';
 import type { RevTurbineInitOptions, RevTurbineUpdateInput } from './customer-side';
+import { InMemoryStorage } from './storage';
 
 // A local Playbook granting `generations` (usage_limit, under limit) only to
 // the `starter` plan — mirrors the known-good usage-limit fixture shape. A
@@ -245,5 +246,195 @@ describe('update() unknown-key warning (plan 170 TASK-1 rider)', () => {
     const sdk = makeLocalSdk();
     sdk.update({ usage: { generations: 5 } });
     expect(warnings().join('\n')).not.toContain('update()');
+  });
+});
+
+describe('seat_type_handle never enters the browser context (plan 279 TASK-16a, D-36)', () => {
+  // A user's seat type is assigned only server-side — the tenant's backend
+  // through a server-key upsert, or RevTurbine enrichment in hosted mode.
+  // TypeScript rejects the key on identify()/update() (see
+  // user-context-exactness.test-d.ts); these pin the runtime half for
+  // plain-JS callers: the key is dropped at the boundary and reported, never
+  // merged into the held context (which local mode persists to storage).
+  const heldContext = (sdk: RevTurbineCustomerSdk): Record<string, unknown> =>
+    Reflect.get(sdk, 'userContext') as Record<string, unknown>;
+
+  it('identify() drops a JS caller\'s seat_type_handle and reports the key', () => {
+    const sdk = makeLocalSdk();
+    sdk.identify('user_1', { plan_handle: 'starter', seat_type_handle: 'admin' } as never);
+    expect(heldContext(sdk)).not.toHaveProperty('seat_type_handle');
+    expect(heldContext(sdk).plan_handle).toBe('starter'); // the rest still lands
+    expect(warnings().join('\n')).toContain('seat_type_handle');
+  });
+
+  it('update() drops a JS caller\'s seat_type_handle and reports the key', () => {
+    const sdk = makeLocalSdk();
+    sdk.identify('user_1', { plan_handle: 'starter' });
+    sdk.update({ email: 'jane@acme.com', seat_type_handle: 'admin' } as unknown as RevTurbineUpdateInput);
+    expect(heldContext(sdk)).not.toHaveProperty('seat_type_handle');
+    expect(heldContext(sdk).email).toBe('jane@acme.com');
+    expect(warnings().join('\n')).toContain('seat_type_handle');
+  });
+
+  it('update() with only seat_type_handle (including a null clear) merges nothing', () => {
+    const sdk = makeLocalSdk();
+    const ctxSpy = vi.spyOn(sdk, 'setUserContext');
+    sdk.update({ seat_type_handle: null } as unknown as RevTurbineUpdateInput);
+    expect(ctxSpy).not.toHaveBeenCalled();
+    expect(heldContext(sdk)).not.toHaveProperty('seat_type_handle');
+  });
+});
+
+describe('server-computed keys never enter the browser context (BL-0352, D-36)', () => {
+  // activity_score / activity_score_computed_at are computed by the control
+  // plane's hourly refresh (plan 180) and reach the browser only as the
+  // derived `activity_level` built-in dimension. The types omit them (see
+  // update-keys-exhaustiveness.test-d.ts); these pin the runtime half.
+  const heldContext = (sdk: RevTurbineCustomerSdk): Record<string, unknown> =>
+    Reflect.get(sdk, 'userContext') as Record<string, unknown>;
+  const SERVER_KEYS = { activity_score: 42, activity_score_computed_at: '2026-09-28T00:00:00Z' };
+
+  it('identify() drops them with the server-assigned diagnostic, not the custom hint', () => {
+    const sdk = makeLocalSdk();
+    sdk.identify('user_1', { plan_handle: 'starter', ...SERVER_KEYS } as never);
+    expect(heldContext(sdk)).not.toHaveProperty('activity_score');
+    expect(heldContext(sdk)).not.toHaveProperty('activity_score_computed_at');
+    expect(heldContext(sdk).plan_handle).toBe('starter');
+    const text = warnings().join('\n');
+    expect(text).toContain('dropped server-assigned user-context key(s): activity_score, activity_score_computed_at');
+    expect(text).not.toContain('unrecognized user-context key(s): activity_score');
+  });
+
+  it('update() drops them and still applies the rest of the patch', () => {
+    const sdk = makeLocalSdk();
+    sdk.identify('user_1', { plan_handle: 'starter' });
+    sdk.update({ email: 'jane@acme.com', ...SERVER_KEYS } as unknown as RevTurbineUpdateInput);
+    expect(heldContext(sdk)).not.toHaveProperty('activity_score');
+    expect(heldContext(sdk).email).toBe('jane@acme.com');
+    expect(warnings().join('\n')).toContain('dropped server-assigned user-context key(s)');
+  });
+});
+
+describe('setUserContext() drops server-assigned keys at its runtime boundary (BL-0352)', () => {
+  const heldContext = (sdk: RevTurbineCustomerSdk): Record<string, unknown> =>
+    Reflect.get(sdk, 'userContext') as Record<string, unknown>;
+
+  it('drops seat_type_handle / activity_score from a plain-JS caller and reports them', () => {
+    const sdk = makeLocalSdk();
+    sdk.setUserContext({
+      id: 'user_1',
+      plan_handle: 'starter',
+      seat_type_handle: 'admin',
+      activity_score: 7,
+    } as never);
+    const held = heldContext(sdk);
+    expect(held).not.toHaveProperty('seat_type_handle');
+    expect(held).not.toHaveProperty('activity_score');
+    expect(held.plan_handle).toBe('starter');
+    expect(warnings().join('\n')).toContain(
+      'setUserContext() dropped server-assigned user-context key(s): seat_type_handle, activity_score',
+    );
+  });
+
+  it('local mode never persists them', () => {
+    const store = new InMemoryStorage();
+    const sdk = makeLocalSdk({ persistentStorage: store });
+    sdk.setUserContext({ id: 'user_1', plan_handle: 'starter', seat_type_handle: 'admin' } as never);
+    const raw = store.getItem('revturbine:tenant_identity:local-runtime');
+    expect(raw).toContain('"plan_handle":"starter"');
+    expect(raw).not.toContain('seat_type_handle');
+  });
+
+  it('purges them from a state blob persisted before this fix', () => {
+    const store = new InMemoryStorage();
+    store.setItem(
+      'revturbine:tenant_identity:local-runtime',
+      JSON.stringify({ userContext: { id: 'user_1', plan_handle: 'starter', seat_type_handle: 'admin', activity_score: 3 } }),
+    );
+    const sdk = makeLocalSdk({ persistentStorage: store });
+    const held = heldContext(sdk);
+    expect(held.plan_handle).toBe('starter');
+    expect(held).not.toHaveProperty('seat_type_handle');
+    expect(held).not.toHaveProperty('activity_score');
+  });
+
+  it('the `user` init option drops them too', () => {
+    const sdk = makeLocalSdk({ user: { id: 'user_1', plan_handle: 'starter', seat_type_handle: 'admin' } as never });
+    expect(heldContext(sdk)).not.toHaveProperty('seat_type_handle');
+    expect(heldContext(sdk).plan_handle).toBe('starter');
+    expect(warnings().join('\n')).toContain('init() dropped server-assigned user-context key(s): seat_type_handle');
+  });
+
+  it('a context without server-assigned keys emits no server-assigned warning', () => {
+    const sdk = makeLocalSdk();
+    sdk.setUserContext({ id: 'user_1', plan_handle: 'starter' });
+    expect(warnings().join('\n')).not.toContain('server-assigned');
+  });
+});
+
+describe('update() carries app-owned experiments (BL-0352)', () => {
+  // experiments: the app may supply assignments it already knows
+  // (runtime/experiment-assignment.md §3, plan 183).
+  const heldContext = (sdk: RevTurbineCustomerSdk): Record<string, unknown> =>
+    Reflect.get(sdk, 'userContext') as Record<string, unknown>;
+
+  it('merges experiments instead of silently dropping them', () => {
+    const sdk = makeLocalSdk();
+    sdk.identify('user_1', { plan_handle: 'starter' });
+    sdk.update({ experiments: { pricing_test: 'variant_b' } });
+    expect(heldContext(sdk).experiments).toEqual({ pricing_test: 'variant_b' });
+    expect(heldContext(sdk).plan_handle).toBe('starter');
+    expect(warnings().join('\n')).not.toContain('experiments');
+  });
+
+});
+
+describe('builtin_dimensions never enters the browser context from the app (BL-0381, D-46)', () => {
+  // Trust is by party: the browser client never asserts a built-in dimension
+  // value. The only browser source is the client-context delivery
+  // (customer-side-client-context.test.ts); every app entry point drops it.
+  const heldContext = (sdk: RevTurbineCustomerSdk): Record<string, unknown> =>
+    Reflect.get(sdk, 'userContext') as Record<string, unknown>;
+  const SPOOF = { subscription_state: 'paid', region: 'europe' };
+
+  it('update() drops it with the server-assigned diagnostic and merges the rest', () => {
+    const sdk = makeLocalSdk();
+    sdk.identify('user_1', { plan_handle: 'starter' });
+    sdk.update({ email: 'jane@acme.com', builtin_dimensions: SPOOF } as unknown as RevTurbineUpdateInput);
+    expect(heldContext(sdk)).not.toHaveProperty('builtin_dimensions');
+    expect(heldContext(sdk).email).toBe('jane@acme.com');
+    expect(warnings().join('\n')).toContain('update() dropped server-assigned user-context key(s): builtin_dimensions');
+  });
+
+  it('identify() drops it with the server-assigned diagnostic', () => {
+    const sdk = makeLocalSdk();
+    sdk.identify('user_1', { plan_handle: 'starter', builtin_dimensions: SPOOF } as never);
+    expect(heldContext(sdk)).not.toHaveProperty('builtin_dimensions');
+    expect(heldContext(sdk).plan_handle).toBe('starter');
+    expect(warnings().join('\n')).toContain('identify() dropped server-assigned user-context key(s): builtin_dimensions');
+  });
+
+  it('setUserContext() drops it with the server-assigned diagnostic', () => {
+    const sdk = makeLocalSdk();
+    sdk.setUserContext({ id: 'user_1', plan_handle: 'starter', builtin_dimensions: SPOOF } as never);
+    expect(heldContext(sdk)).not.toHaveProperty('builtin_dimensions');
+    expect(warnings().join('\n')).toContain('setUserContext() dropped server-assigned user-context key(s): builtin_dimensions');
+  });
+
+  it('the `user` init option drops it with the server-assigned diagnostic', () => {
+    const sdk = makeLocalSdk({ user: { id: 'user_1', builtin_dimensions: SPOOF } as never });
+    expect(heldContext(sdk)).not.toHaveProperty('builtin_dimensions');
+    expect(warnings().join('\n')).toContain('init() dropped server-assigned user-context key(s): builtin_dimensions');
+  });
+
+  it('a persisted local-state blob carrying it is purged on restore', () => {
+    const store = new InMemoryStorage();
+    store.setItem(
+      'revturbine:tenant_identity:local-runtime',
+      JSON.stringify({ userContext: { id: 'user_1', plan_handle: 'starter', builtin_dimensions: SPOOF } }),
+    );
+    const sdk = makeLocalSdk({ persistentStorage: store });
+    expect(heldContext(sdk).plan_handle).toBe('starter');
+    expect(heldContext(sdk)).not.toHaveProperty('builtin_dimensions');
   });
 });

@@ -11,7 +11,7 @@ import {
   type RevTurbineUserContext,
   type Exact,
   type ExactInitOptions,
-  type UserContextInput,
+  type IdentifyContextInput,
 } from '../customer-side';
 import type { RevTurbineTheme, RevTurbineThemeInput } from '../theme/types';
 import {
@@ -92,6 +92,25 @@ export type RevTurbineProviderProps<
 const EMPTY_BOOTSTRAP: BootstrapPlacementInput[] = [];
 
 /**
+ * Cheap, one-level-deep equality check over an options object's own keys
+ * (BL-0375). Used only to decide whether a *dev-mode* warning fires when
+ * `options` is recreated with the same content — never to change init
+ * behavior. Deliberately shallow rather than a deep/JSON comparison: it must
+ * be safe to run on every options change without throwing on functions or
+ * circular references a host might pass in an option value.
+ */
+function isShallowEqualOptions(
+  a: RevTurbineInitInputOptions,
+  b: RevTurbineInitInputOptions,
+): boolean {
+  if (a === b) return true;
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  return aKeys.every((key) => Object.is(a[key as keyof RevTurbineInitInputOptions], b[key as keyof RevTurbineInitInputOptions]));
+}
+
+/**
  * React context provider for the RevTurbine SDK.
  *
  * Wraps your application to provide SDK access to all child components.
@@ -139,6 +158,12 @@ export function RevTurbineProvider<
   // default). Read here, at our own level, so it reflects ancestors only.
   const appOwnsTheme = useRevTurbineThemeProviderPresent();
   const warnedThemeOverrideRef = useRef(false);
+  // One-time-ever warning (BL-0375) for the specific case that most often
+  // indicates an accidental re-init: a *new* options object whose content is
+  // identical to the previous one. Separate from the identity-change warning
+  // above, which fires on every such render — this one fires once, is louder
+  // about the fix (memoize), and is a strict superset condition of it.
+  const warnedEquivalentOptionsRef = useRef(false);
 
   useEffect(() => {
     if (isProductionBuild()) {
@@ -149,6 +174,16 @@ export function RevTurbineProvider<
 
     if (previousOptionsRef.current && previousOptionsRef.current !== options) {
       console.warn('[RevTurbine] RevTurbineProvider options prop identity changed. Memoize options to avoid unnecessary SDK re-initialization.');
+
+      if (!warnedEquivalentOptionsRef.current && isShallowEqualOptions(previousOptionsRef.current, options)) {
+        warnedEquivalentOptionsRef.current = true;
+        console.warn(
+          '[RevTurbine] RevTurbineProvider `options` was recreated with structurally equivalent content. '
+            + 'A new object identity still re-initializes the SDK (disposing the previous instance) even '
+            + 'when nothing meaningful changed. Memoize `options` (useMemo/useState, hoisting it out of '
+            + 'render, etc.) to avoid repeated bootstraps.',
+        );
+      }
     }
 
     if (previousBootstrapRef.current && previousBootstrapRef.current !== stableBootstrap) {
@@ -197,6 +232,12 @@ export function RevTurbineProvider<
 
   useEffect(() => {
     let mounted = true;
+    // Hoisted out of `initialize` (BL-0375) so the cleanup below can reach the
+    // instance this run created, even though `initialize` is async and may
+    // still be in flight — or may have thrown before assigning it — when a
+    // later render tears this effect down. Effect cleanups run
+    // synchronously, so this cannot race the assignment inside `initialize`.
+    let instanceToDispose: ReturnType<typeof initRevTurbine> | undefined;
 
     async function initialize() {
       // Declared outside the try so the catch can report through it (plan 182
@@ -217,6 +258,10 @@ export function RevTurbineProvider<
         // such unless the app says otherwise. `mode` changes no behavior.
         const initOptions: RevTurbineInitInputOptions = { ...options, mode: options.mode ?? 'react' };
         nextSdk = initRevTurbine(initOptions);
+        // Recorded immediately so an unmount/dep-change that fires before
+        // `initialize` finishes still disposes this instance (BL-0375) rather
+        // than only ever disposing instances that reached `setSdk`.
+        instanceToDispose = nextSdk;
 
         // The SDK constructor already merges options.user into userContext.
         // If options.user has structured fields, call identify() to ensure
@@ -233,8 +278,8 @@ export function RevTurbineProvider<
         phase = 'identify';
         const user = options.user;
         if (user && typeof user === 'object' && (user as { id?: string }).id) {
-          const { id, ...context } = user as { id: string } & UserContextInput;
-          nextSdk.identify(id, context as UserContextInput);
+          const { id, ...context } = user as { id: string } & IdentifyContextInput;
+          nextSdk.identify(id, context as IdentifyContextInput);
         }
 
         // Theme — the branding ladder is the BASE, always resolved without a
@@ -280,7 +325,10 @@ export function RevTurbineProvider<
           const initializedSdk = nextSdk;
           const initialTheme = await loadTheme(
             {
-              tenantId: options.tenantId ?? 'local',
+              // No placeholder tenant on the wire (BL-0335): the control plane
+              // ignores (with a warning) a tenant id that differs from the key's.
+              tenantId: options.tenantId || undefined,
+              storageScope: options.tenantId || 'local',
               endpoint: options.endpoint ?? 'https://api.revturbine.local',
               apiKey: resolveBrowserPublicKey(options) ?? 'local-only',
               base: baseTheme,
@@ -358,6 +406,28 @@ export function RevTurbineProvider<
 
     return () => {
       mounted = false;
+      // BL-0375: this effect's cleanup previously only flipped `mounted`,
+      // leaving the SDK instance this run created (its flush interval,
+      // page-unload listeners, and any buffered telemetry) running forever
+      // once a new `options`/`stableBootstrap` identity replaced it — a
+      // rebuild that happens on every render for a host that doesn't memoize
+      // `options` (the exact shape web's dogfood provider had until BL-0358).
+      // `dispose()` flushes pending telemetry and detaches those listeners
+      // before the next run's `initRevTurbine` constructs the replacement.
+      // `instanceToDispose` is set synchronously inside `initialize` (there is
+      // no `await` before the assignment), so it is populated here even when
+      // this cleanup fires while `initialize` is still awaiting later work —
+      // covering the case that matters most, an options change that fires
+      // before the previous init settled.
+      if (instanceToDispose) {
+        try {
+          instanceToDispose.dispose();
+        } catch (disposeError) {
+          // Best-effort, matching every other teardown path in this provider —
+          // a disposal failure must never surface to host UI.
+          console.error('[RevTurbine] Failed to dispose previous SDK instance:', disposeError);
+        }
+      }
     };
   }, [options, stableBootstrap]);
 

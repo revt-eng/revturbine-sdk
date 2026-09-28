@@ -26,7 +26,8 @@ Out of scope — the browser ``customer-side.ts`` bespoke decision engine
 ``convert``, ``track_treatment_interaction``, ``get_trial_status``,
 ``capture``, ``bootstrap_placement_decisions``, ``get_user_context``,
 decision-cache / interaction-state hydration, the HTTP-backed dual-mode
-dispatch, and segment / targeting / personalization-token derivation.
+dispatch, and personalization-token derivation. (Segment membership IS
+derived here since BL-0369 - see :class:`UserContext`.)
 The legacy thin-RPC HTTP client at ``revturbine_server`` stays
 independently importable and unchanged — it is composable with this
 class, not folded into it (the original plan's ``runtime_mode``
@@ -92,11 +93,32 @@ class UserContext(_UserContextRequired, total=False):
       / ``trial_ended`` / ``trial_converted``) and milestone
       supersession evaluate correctly.
 
-    Segment-targeted entitlement rules are matched against pre-resolved
-    segment ids *inside* the parity-locked evaluator; the headless
-    server SDK does not derive segments from raw traits (that is the
-    browser/segments machinery — a REQ-14 non-goal; see the module
-    docstring).
+    Segment membership (BL-0369) — what segment-chipped payloads and
+    segment-targeted entitlement rules match against — is, in order:
+
+    - ``segment_ids`` — tenant segment handles the app already resolved
+      for this user, taken verbatim;
+    - every configured segment whose predicates match the user's
+      targeting traits, derived exactly as the browser SDK derives them:
+      ``custom`` traits, the plan, and the reserved ``rt_<dimension>``
+      traits the generated built-in segments (``rt.<dimension>.<value>``)
+      match on, which come ONLY from ``builtin_dimensions`` (plan 279
+      PD-3 — the app sets them on a server port); ``experiments`` is the
+      enrollment map for experiment segments.
+
+    ``server_builtin_dimensions`` (BL-0366) is the control plane's
+    server-resolved ``builtin_dimensions`` for this user - the
+    ``builtin_dimensions`` of ``GET /api/sdk/user-contexts/{userId}/builtin-dimensions``,
+    which the app's backend reads with its server key (this port has no
+    HTTP transport and never fetches it itself). It overlays
+    ``builtin_dimensions`` per key: a delivered leaf wins over the app-set
+    value (plan 279 PD-3), an app-set leaf the server did not deliver is
+    kept.
+
+    Anything else is not a member: an unset dimension, a trait the user
+    does not carry, or a chip naming an unknown segment fails closed.
+    Before BL-0369 every configured segment was reported as matched, so
+    chipped payloads were served to every user.
     """
 
     plan_handle: str | None
@@ -110,6 +132,16 @@ class UserContext(_UserContextRequired, total=False):
     # entitlement_gate.tier_threshold gate (plan 138 TASK-4).
     tiers: dict[str, str] | None
     segment_ids: list[str] | None
+    # Customer-defined traits segment predicates evaluate over (BL-0369).
+    custom: dict[str, Any] | None
+    # Built-in segment dimension values, app-set on a server port (plan 279
+    # PD-3): the only source of the reserved ``rt_<dimension>`` traits.
+    builtin_dimensions: dict[str, str] | None
+    # The control plane's server-resolved built-in dimensions (BL-0366),
+    # overlaid per key on ``builtin_dimensions`` - the server value wins.
+    server_builtin_dimensions: dict[str, str] | None
+    # Experiment-handle -> variant-handle assignments (experiment segments).
+    experiments: dict[str, str] | None
 
 
 class RevTurbineCustomerSdk:
@@ -184,6 +216,9 @@ class RevTurbineCustomerSdk:
             payment_failed=user_context.get("payment_failed"),
             payment_at_risk=user_context.get("payment_at_risk"),
             tiers=user_context.get("tiers"),
+            segment_ids=self._segment_ids,
+            user_context=_targeting_context(user_id, user_context),
+            server_builtin_dimensions=user_context.get("server_builtin_dimensions"),
         )
 
         # Plan 43 TASK-12 — overlay PlanProvider trial fields when
@@ -356,6 +391,26 @@ _TRIAL_OVERLAY_FIELD_MAP: tuple[tuple[str, str], ...] = (
     ("usage_consumed", "trial_usage_consumed"),
     ("usage_limit", "trial_usage_limit"),
 )
+
+
+def _targeting_context(user_id: str, user_context: UserContext) -> dict[str, Any]:
+    """The user-context snapshot segment membership is evaluated from.
+
+    The same fields the parity TS side hands ``createStaticProviders``
+    (BL-0369): identity (``id`` drives ``rt_registration_state``), plan,
+    ``custom`` traits, ``builtin_dimensions`` and ``experiments``. Absent
+    fields are omitted, never ``None`` - an unset dimension is absence
+    (plan 279 PD-4).
+    """
+    context: dict[str, Any] = {"id": user_id}
+    plan_handle = user_context.get("plan_handle")
+    if plan_handle:
+        context["plan_handle"] = plan_handle
+    for key in ("custom", "builtin_dimensions", "experiments"):
+        value = user_context.get(key)
+        if isinstance(value, dict):
+            context[key] = value
+    return context
 
 
 def _numeric_or_none(value: Any) -> int | float | None:

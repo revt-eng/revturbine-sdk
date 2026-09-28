@@ -116,15 +116,19 @@ const withStaleOption = { tenantId: 't_1', localRuntime: { playbook }, exportedC
 // top level. A plausible mistake, and previously a silent one.
 initRevTurbine(withStaleOption);
 
-/* ── Rejected: a missing required key ─────────────────────────────────── */
+/* ── Accepted by the type, refused at init: no tenant identity ─────────── */
 
-// @ts-expect-error - neither branch is satisfiable: no `localRuntime`, so the
-// local-only branch does not apply, and the transport branch needs `tenantId`.
+// BL-0335 (0.11.14) made `tenantId` optional because the public key names the
+// tenant. Requiring "publicKey OR tenantId" in the TYPE would break every
+// integration that annotates its options as `RevTurbineInitOptions` (both
+// fields optional there), so the guard moved to init: these two compile, and
+// `initRevTurbine` throws a descriptive error for them — pinned at runtime in
+// `customer-side-tenant-optional.test.ts`.
 initRevTurbine({});
-
-// @ts-expect-error - `localRuntime` without a playbook (or the deprecated
-// `exportedConfig` alias) satisfies neither arm of its inner union.
 initRevTurbine({ localRuntime: {} });
+
+// A key-only browser init — the BL-0335 shape — compiles with no tenant id.
+initRevTurbine({ publicKey: 'rtk_public', endpoint: 'https://revturbine.com/app' });
 
 /* ── The React provider enforces the same contract ────────────────────── */
 

@@ -61,8 +61,13 @@ export type UnvalidatedConfigArtifact =
  * @public
  */
 export interface ConfigTargetDefaults {
-  /** Tenant the SDK was initialized with. Wins over the artifact's `tenant_id`. */
-  tenantId: string;
+  /**
+   * Tenant the SDK was initialized with. Wins over the artifact's `tenant_id`.
+   * Optional since `0.11.14` (BL-0335): a key-only browser init passes none, and
+   * the artifact's own `tenant_id` — stamped by the control plane for the
+   * public key's tenant — is used.
+   */
+  tenantId?: string;
   /** Environment the SDK was initialized with. Wins over the artifact's `environment_id`. */
   environmentId: string;
 }

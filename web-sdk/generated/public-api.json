@@ -30,7 +30,7 @@
       "name": "ConfigTargetDefaults",
       "kind": "interface",
       "file": "web-sdk/config-artifact.ts",
-      "signature": "export interface ConfigTargetDefaults { tenantId: string; environmentId: string; }"
+      "signature": "export interface ConfigTargetDefaults { tenantId?: string; environmentId: string; }"
     },
     {
       "name": "DARK_THEME",

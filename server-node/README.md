@@ -40,6 +40,11 @@ engine the client SDKs run, so it decides identically.
 
 - `createClientSession(input)` — Mint a browser-safe `rt_client_` session token.
 - `clientSessions.create(input)` — Namespaced alias of the same call.
+- `assignSeatType(userId, seatTypeHandle)` — Assign a user's seat type, or clear
+  it with `null`, via `POST /api/sdk/user-contexts`. Server key only; the tenant
+  comes from the key. Seat assignment is server-written only — never from the
+  browser. Throws `RevTurbineSeatAssignmentError` (`reason`:
+  `unknown_seat_type` on 422, `forbidden` on 403, …).
 
 ### `LocalEvaluationServer`
 

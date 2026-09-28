@@ -22,7 +22,7 @@ Do you want RevTurbine-hosted APIs as your runtime source of truth?
 
 | Mode | Best for | Network dependency | Storage behavior | Required config |
 |---|---|---|---|---|
-| `revturbine_server` | Standard production integration | RevTurbine edge endpoints | SDK cache and interaction state | `tenantId`, `publicKey`, `endpoint`, `mode` |
+| `revturbine_server` | Standard production integration | RevTurbine edge endpoints | SDK cache and interaction state | `publicKey`, `endpoint`, `mode` (`tenantId` optional since 0.11.14: the public key identifies the tenant; a passed id that differs is warned about and the key's tenant is used) |
 | `custom_endpoints` | Customer proxy/service boundaries | Customer endpoints | SDK cache and interaction state | Base config + `endpointOverrides` |
 | `local_only` | Demo/offline/local simulation | None | SDK local runtime state in localStorage | Base config + `localRuntime` |
 

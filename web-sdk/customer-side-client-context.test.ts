@@ -46,7 +46,7 @@ const CLIENT_CTX = {
 
 function priv(sdk: RevTurbineCustomerSdk) {
   return sdk as unknown as {
-    userContext: RevTurbineUserContext;
+    userContext: RevTurbineUserContext & { builtin_dimensions?: Record<string, string> };
     clientContextToken?: string;
     synthesizeProviderContext(): { plan?: { paymentAtRisk?: boolean } } | undefined;
   };
@@ -173,10 +173,12 @@ describe('web-SDK fetchClientContext (plan 157 T5)', () => {
     expect(priv(sdk).userContext.plan).toMatchObject({ handle: 'free', name: 'Free' });
   });
 
-  // Plan 279 TASK-5 / AC-4: `builtin_dimensions` maps onto the user context
-  // the way `plan_handle` does — server overlays app, per leaf.
-  describe('builtin_dimensions (plan 279 AC-4)', () => {
-    it('overlays a server-evaluated leaf onto an app-set value', async () => {
+  // Plan 279 TASK-5 / AC-4, amended by D-46 (BL-0381): the client-context
+  // delivery is the ONLY browser source of `builtin_dimensions`. An app-set
+  // value is dropped at the entry point, so the held value is exactly what
+  // the server delivered; later deliveries overlay it per leaf.
+  describe('builtin_dimensions (plan 279 AC-4, D-46)', () => {
+    it('holds exactly the delivered value; an app-set value never reaches the context', async () => {
       stubFetch({
         ok: true,
         status: 200,
@@ -186,33 +188,39 @@ describe('web-SDK fetchClientContext (plan 157 T5)', () => {
       const sdk = makeSdk();
       sdk.setUserContext({
         id: 'u1',
-        builtin_dimensions: { region: 'us_canada' },
-      } as RevTurbineUserContext);
+        builtin_dimensions: { region: 'us_canada', subscription_state: 'paid' },
+      } as unknown as RevTurbineUserContext);
+      expect(priv(sdk).userContext).not.toHaveProperty('builtin_dimensions');
 
       await sdk.fetchClientContext('rt_client_abc');
 
-      expect(priv(sdk).userContext.builtin_dimensions).toMatchObject({ region: 'europe' });
+      expect(priv(sdk).userContext.builtin_dimensions).toEqual({ region: 'europe' });
     });
 
-    it('leaves an app-set leaf untouched when the server response omits it', async () => {
-      stubFetch({
-        ok: true,
-        status: 200,
-        json: async () => ({ ...CLIENT_CTX, builtin_dimensions: { region: 'europe' } }),
-        text: async () => '',
-      });
+    it('keeps a leaf a prior delivery set when a later delivery omits it', async () => {
+      let clientContextCalls = 0;
+      vi.stubGlobal('fetch', vi.fn(async (url: unknown) => {
+        if (String(url).endsWith('/api/sdk/client-context')) clientContextCalls += 1;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            ...CLIENT_CTX,
+            builtin_dimensions: clientContextCalls === 1
+              ? { region: 'europe', device_type: 'mobile' }
+              : { region: 'rest_of_world' },
+          }),
+          text: async () => '',
+        } as unknown as Response;
+      }));
       const sdk = makeSdk();
-      sdk.setUserContext({
-        id: 'u1',
-        // `device_type` is app-set (e.g. local_only); the server response
-        // below evaluates only `region`, so `device_type` must survive.
-        builtin_dimensions: { device_type: 'mobile' },
-      } as RevTurbineUserContext);
+      sdk.setUserContext({ id: 'u1' } as RevTurbineUserContext);
 
       await sdk.fetchClientContext('rt_client_abc');
+      await sdk.fetchClientContext('rt_client_abc');
 
-      expect(priv(sdk).userContext.builtin_dimensions).toMatchObject({
-        region: 'europe',
+      expect(priv(sdk).userContext.builtin_dimensions).toEqual({
+        region: 'rest_of_world',
         device_type: 'mobile',
       });
     });

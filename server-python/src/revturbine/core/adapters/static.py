@@ -27,12 +27,98 @@ from revturbine.core.providers.types import (
     DomainProvider,
     EntitlementResult,
 )
+from revturbine.core.segments import evaluate_segments
+from revturbine.core.user_context import build_targeting_state
 
-__all__ = ["create_static_providers"]
+__all__ = [
+    "apply_server_builtin_dimensions",
+    "create_static_providers",
+    "resolve_static_segment_membership",
+]
 
 Playbook = dict[str, Any]
 #: Deprecated spelling of :data:`Playbook` (BL-0156). Removed in ``0.12.0``.
 ExportedConfig = Playbook
+
+
+def resolve_static_segment_membership(
+    config: Playbook,
+    segment_ids: list[str] | None,
+    user_context: dict[str, Any] | None,
+) -> list[str]:
+    """The segment handles a static snapshot's user belongs to (BL-0369).
+
+    The browser SDK's rule (``resolveEffectiveProviderContext``): the
+    caller-resolved ``segment_ids`` then every configured segment whose
+    predicates match ``build_targeting_state(user_context)["segment_traits"]``
+    (the reserved ``rt_*`` traits come only from ``builtin_dimensions``, plan
+    279 PD-3), with ``user_context["experiments"]`` as the enrollment map,
+    deduplicated in first-seen order. No user context means nothing is
+    evaluated - membership is ``segment_ids`` alone (fail closed, PD-4). This
+    used to report EVERY configured segment, so a payload or rule chipped to
+    any segment was served to every user.
+
+    Source: static.ts (resolveStaticSegmentMembership)
+    """
+    members: list[str] = [s for s in (segment_ids or []) if isinstance(s, str)]
+    if user_context is not None:
+        state = build_targeting_state(user_context, config)
+        experiments = user_context.get("experiments")
+        members.extend(
+            evaluate_segments(
+                config.get("segments") or [],
+                state["segment_traits"],
+                experiments if isinstance(experiments, dict) else {},
+            )
+        )
+    return list(dict.fromkeys(members))
+
+
+def apply_server_builtin_dimensions(
+    user_context: dict[str, Any] | None,
+    server_builtin_dimensions: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    """Overlay server-resolved built-in dimensions onto an app-supplied user
+    context (BL-0366; plan 279 PD-3: the server value wins).
+
+    Per key: every leaf of ``server_builtin_dimensions`` replaces the app's
+    value for that dimension; an app-set leaf the server did not deliver is
+    kept - the overlay ``mergeUserContext`` applies to a client-context
+    delivery in the browser. Returns ``user_context`` unchanged when either
+    side is absent (a non-dict overlay counts as absent). Pure: the input is
+    never mutated.
+
+    This port has no HTTP transport, so it never fetches anything itself:
+    the app's backend reads ``GET /api/sdk/user-contexts/{userId}/builtin-dimensions``
+    with its server key (or through the Node server SDK's
+    ``getBuiltinDimensions``) and hands the response's ``builtin_dimensions``
+    in here.
+
+    Source: static.ts (applyServerBuiltinDimensions)
+    """
+    if user_context is None or not isinstance(server_builtin_dimensions, dict):
+        return user_context
+    app_set = user_context.get("builtin_dimensions")
+    return {
+        **user_context,
+        "builtin_dimensions": {
+            **(app_set if isinstance(app_set, dict) else {}),
+            **server_builtin_dimensions,
+        },
+    }
+
+
+def _playbook_version(config: Playbook) -> str:
+    """The Playbook's version identifier: canonical ``format_version``, else
+    the legacy ``version``, else ``""``.
+
+    Source: helpers.ts (playbookVersion)
+    """
+    for key in ("format_version", "version"):
+        value = config.get(key)
+        if isinstance(value, str):
+            return value
+    return ""
 
 
 class _StaticProvider:
@@ -67,6 +153,9 @@ def create_static_providers(
     payment_failed: bool | None = None,
     payment_at_risk: bool | None = None,
     tiers: dict[str, str] | None = None,
+    segment_ids: list[str] | None = None,
+    user_context: dict[str, Any] | None = None,
+    server_builtin_dimensions: dict[str, Any] | None = None,
     default_entitlement_policy: Literal["allow", "deny"] = "allow",
     cache_ttl_ms: int | None = None,
 ) -> list[DomainProvider]:
@@ -75,6 +164,19 @@ def create_static_providers(
     Returns providers for (when the config carries the data): plan,
     entitlements, segments, rules, content, theme — mirroring
     ``createStaticProviders`` 1:1.
+
+    ``segment_ids`` (tenant segment handles the app resolved) and
+    ``user_context`` (what built-in and trait segments are evaluated from)
+    decide segment MEMBERSHIP - see
+    :func:`resolve_static_segment_membership` (BL-0369).
+
+    ``server_builtin_dimensions`` is the control plane's server-resolved
+    ``builtin_dimensions`` for this user (BL-0366), fetched by the app's
+    backend with its server key. It is overlaid per key on
+    ``user_context["builtin_dimensions"]`` before membership is evaluated -
+    a delivered leaf wins over the app-set value (plan 279 PD-3) - see
+    :func:`apply_server_builtin_dimensions`. Ignored without a
+    ``user_context`` (nothing is evaluated then; fail closed).
 
     Source: static.ts:42-182 (createStaticProviders)
     """
@@ -140,19 +242,18 @@ def create_static_providers(
 
     segments: list[dict[str, Any]] = config.get("segments") or []
 
-    # Segments provider — static.ts:92-103
-    if segments:
+    # Segments provider - the user's MEMBERSHIP, never the configured
+    # catalogue (BL-0369). Segment identity is the handle (plan 120), so both
+    # views carry the same handles.
+    if segments or segment_ids:
 
         def _segments() -> dict[str, Any]:
-            segs = config.get("segments") or []
-            # Resolve by handle: the canonical Playbook (post plan-120 identity
-            # collapse, and every `bundle_to_playbook` output) carries `handle`
-            # only — no separate `id`. Fall back to `id` for legacy id-bearing
-            # configs, so both shapes resolve. `segment_ids` == the handles.
-            return {
-                "segment_ids": [s.get("id") or s.get("handle") for s in segs],
-                "segment_slugs": [s["handle"] for s in segs],
-            }
+            members = resolve_static_segment_membership(
+                config,
+                segment_ids,
+                apply_server_builtin_dimensions(user_context, server_builtin_dimensions),
+            )
+            return {"segment_ids": members, "segment_slugs": list(members)}
 
         providers.append(_StaticProvider("segments", _segments, cache_ttl_ms))
 
@@ -211,9 +312,21 @@ def create_static_providers(
                 else:
                     snapshot["segment_ids"] = []
                 by_ent[ent_id].append(snapshot)
+            # Plan #39 REQ-28: the segment -> dimension lookup the rule
+            # evaluator needs for intra-dimension OR / cross-dimension AND,
+            # keyed by handle (plan 120). Omitting it collapsed every segment
+            # into one OR bucket on the provider-backed path - invisible while
+            # every configured segment matched, a grant once membership is
+            # real (BL-0369).
+            segment_dimensions: dict[str, str] = {
+                seg["handle"]: seg["dimension_id"]
+                for seg in config.get("segments") or []
+                if isinstance(seg.get("handle"), str) and isinstance(seg.get("dimension_id"), str)
+            }
             return {
                 "entitlement_rules": by_ent,
-                "config_version": config.get("version"),
+                "segment_dimensions": segment_dimensions,
+                "config_version": _playbook_version(config),
             }
 
         providers.append(_StaticProvider("rules", _rules, cache_ttl_ms))

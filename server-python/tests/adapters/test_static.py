@@ -13,7 +13,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from revturbine.core.adapters.static import create_static_providers
+from revturbine.core.adapters.static import (
+    apply_server_builtin_dimensions,
+    create_static_providers,
+)
 
 
 def _by_domain(providers: list[Any]) -> dict[str, Any]:
@@ -67,10 +70,138 @@ def test_entitlements_deny_policy() -> None:
     }
 
 
-def test_segments_provider() -> None:
-    config = {"segments": [{"id": "s1", "handle": "free"}, {"id": "s2", "handle": "pro"}]}
-    state = _by_domain(create_static_providers(config=config))["segments"].resolve()
-    assert state == {"segment_ids": ["s1", "s2"], "segment_slugs": ["free", "pro"]}
+# -- Segment membership (BL-0369) --------------------------------------------
+#
+# The segments provider reports the user's MEMBERSHIP. It used to report every
+# configured segment, so a payload or rule chipped to any segment was served to
+# every user. Mirrors static.test.ts (scaffold) and server-rust's
+# tests/static_providers.rs.
+
+_MEMBERSHIP_CONFIG: dict[str, Any] = {
+    "segments": [
+        {
+            "id": "seg_paid",
+            "handle": "rt.subscription_state.paid",
+            "dimension_id": "rt.subscription_state",
+            "predicates": [{"field": "rt_subscription_state", "operator": "eq", "value": "paid"}],
+        },
+        {
+            "handle": "power_users",
+            "predicates": [{"field": "sessions", "operator": "gte", "value": "10"}],
+        },
+        {"handle": "vip_accounts"},
+    ]
+}
+
+
+def _membership(**kwargs: Any) -> Any:
+    providers = create_static_providers(config=_MEMBERSHIP_CONFIG, **kwargs)
+    return _by_domain(providers)["segments"].resolve()
+
+
+def test_segments_provider_reports_no_membership_without_inputs() -> None:
+    assert _membership() == {"segment_ids": [], "segment_slugs": []}
+
+
+def test_segments_provider_matches_builtin_only_from_builtin_dimensions() -> None:
+    # Handles, never the legacy `id` - segment identity is the handle (plan 120).
+    assert _membership(
+        user_context={"id": "u1", "builtin_dimensions": {"subscription_state": "paid"}}
+    ) == {
+        "segment_ids": ["rt.subscription_state.paid"],
+        "segment_slugs": ["rt.subscription_state.paid"],
+    }
+    assert _membership(user_context={"id": "u1"})["segment_ids"] == []
+    # A reserved rt_* key arriving through custom is deleted (plan 279 PD-1).
+    shadow = {"id": "u1", "custom": {"rt_subscription_state": "paid"}}
+    assert _membership(user_context=shadow)["segment_ids"] == []
+
+
+def test_segments_provider_evaluates_trait_predicates() -> None:
+    power = {"id": "u1", "custom": {"sessions": 12}}
+    casual = {"id": "u1", "custom": {"sessions": 3}}
+    assert _membership(user_context=power)["segment_ids"] == ["power_users"]
+    assert _membership(user_context=casual)["segment_ids"] == []
+
+
+def test_segments_provider_reports_supplied_ids_first_deduplicated() -> None:
+    assert _membership(
+        segment_ids=["vip_accounts", "power_users"],
+        user_context={"id": "u1", "custom": {"sessions": 12}},
+    )["segment_ids"] == ["vip_accounts", "power_users"]
+
+
+def test_segments_provider_present_for_supplied_ids_without_configured_segments() -> None:
+    providers = create_static_providers(config={"segments": []}, segment_ids=["vip_accounts"])
+    assert _by_domain(providers)["segments"].resolve() == {
+        "segment_ids": ["vip_accounts"],
+        "segment_slugs": ["vip_accounts"],
+    }
+
+
+# -- Server built-in dimension overlay (BL-0366, plan 279 PD-3) --------------
+#
+# Mirrors static.test.ts (scaffold) and server-rust's tests/static_providers.rs.
+
+
+def test_server_builtin_dimensions_win_over_the_app_set_value() -> None:
+    assert _membership(
+        user_context={"id": "u1", "builtin_dimensions": {"subscription_state": "free"}},
+        server_builtin_dimensions={"subscription_state": "paid"},
+    )["segment_ids"] == ["rt.subscription_state.paid"]
+    # And the reverse: a server value demotes an app-set paid.
+    assert (
+        _membership(
+            user_context={"id": "u1", "builtin_dimensions": {"subscription_state": "paid"}},
+            server_builtin_dimensions={"subscription_state": "trial"},
+        )["segment_ids"]
+        == []
+    )
+
+
+def test_server_overlay_keeps_app_leaves_the_server_did_not_deliver() -> None:
+    overlaid = apply_server_builtin_dimensions(
+        {"id": "u1", "builtin_dimensions": {"subscription_state": "trial", "seat_type": "admin"}},
+        {"activity_level": "high"},
+    )
+    assert overlaid is not None
+    assert overlaid["builtin_dimensions"] == {
+        "subscription_state": "trial",
+        "seat_type": "admin",
+        "activity_level": "high",
+    }
+
+
+def test_server_overlay_applies_onto_a_context_with_no_dimensions() -> None:
+    assert _membership(
+        user_context={"id": "u1"},
+        server_builtin_dimensions={"subscription_state": "paid"},
+    )["segment_ids"] == ["rt.subscription_state.paid"]
+
+
+def test_server_overlay_is_ignored_without_a_user_context() -> None:
+    assert (
+        _membership(server_builtin_dimensions={"subscription_state": "paid"})["segment_ids"] == []
+    )
+
+
+def test_server_overlay_never_mutates_and_passes_through_when_absent() -> None:
+    context = {"id": "u1", "builtin_dimensions": {"subscription_state": "trial"}}
+    apply_server_builtin_dimensions(context, {"subscription_state": "paid"})
+    assert context["builtin_dimensions"] == {"subscription_state": "trial"}
+    assert apply_server_builtin_dimensions(context, None) is context
+    assert apply_server_builtin_dimensions(None, {"subscription_state": "paid"}) is None
+
+
+def test_rules_provider_carries_segment_dimensions_and_playbook_version() -> None:
+    config = {
+        **_MEMBERSHIP_CONFIG,
+        "format_version": "1.0.0",
+        "entitlement_rules": [{"id": "r1", "entitlement_id": "x", "segment_ids": []}],
+    }
+    state = _by_domain(create_static_providers(config=config))["rules"].resolve()
+    assert state["segment_dimensions"] == {"rt.subscription_state.paid": "rt.subscription_state"}
+    assert state["config_version"] == "1.0.0"
 
 
 def test_rules_provider_flat_wire() -> None:
