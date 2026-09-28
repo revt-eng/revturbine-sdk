@@ -47,6 +47,32 @@ also require a changelog entry.
 
 ---
 
+## 0.11.15
+
+### Build fix: the npm package publishes again (no API change)
+
+**What changed.** 0.11.14 was published to GitHub Packages, PyPI and
+crates.io, but the public npm publish of `@revturbine/sdk` failed at the bundle
+step: `Could not resolve "openapi-fetch"` from `server-node/client.ts`, which
+the `headless` entry re-exports. `openapi-fetch` has been bundled since BL-0354
+(0.11.14 was the first release to carry it). A bare import resolves by walking
+up from the importing file, so from `server-node/` it never reached
+`web-sdk/node_modules`, which is the only place the public repo installs it.
+`web-sdk/tsup.config.ts` now gives esbuild `web-sdk/node_modules` as a fallback
+`nodePaths` entry, so every file the SDK bundles resolves the SDK's own
+dependencies.
+
+**npm users:** everything listed under 0.11.14 below first reaches npm in
+0.11.15. There is no behavior change between 0.11.14 and 0.11.15. PyPI and
+crates.io get 0.11.15 in lockstep, with no change.
+
+**Landed in:** 0.11.15.
+**Fail-closed in:** n/a (build only).
+**Proving test:** the public repo's `release-npm.yml` bundle step (tsup +
+declarations) for `v0.11.15`. Locally, `web-sdk/tsup.config.ts` builds the
+bundle, and an esbuild probe confirms `nodePaths` resolves a bare import from a
+sibling directory that has no `node_modules` of its own.
+
 ## 0.11.14
 
 This release carries the BL-0335 change below plus every entry that main held
