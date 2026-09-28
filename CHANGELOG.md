@@ -47,6 +47,48 @@ also require a changelog entry.
 
 ---
 
+## Unreleased (ships with the next release; no version bump in this PR)
+
+### `seat_type_handle` is server-assigned and never a browser input (BL-0351, plan 279 TASK-16a, ruling D-36)
+
+**What changed.** Scaffold `0.1.368` adds `UserContextSchema.seat_type_handle`,
+the user's persisted seat-type assignment. Per D-36 it has exactly two writers:
+the tenant's backend (a server-key user-context upsert) and RevTurbine's own
+server-side enrichment in hosted mode. The browser never writes it. Without a
+change here the new field would have flowed into the browser input types
+through `UserContextInput`. Instead:
+
+- `RevTurbineUserContext` omits `seat_type_handle`. So do
+  `RevTurbineUpdateInput`, which derives from it, and `IdentifyContextInput`.
+  `identify()`, `update()` and the `user` init option reject the key at compile
+  time, including when it arrives through a variable (`Exact<…>`).
+  `setUserContext()` rejects it in an object literal.
+- The key stays out of the runtime recognized-key lists, so a plain-JS caller's
+  `seat_type_handle` is dropped at the `identify()`/`update()` boundary and
+  reported by the existing unrecognized-key warning. It is never merged into the
+  held context.
+- The browser receives the **resolved** seat type as
+  `builtin_dimensions.seat_type` / `builtin_dimensions.buyer_role` from the
+  client-context fetch (plan 279 TASK-16, web), unchanged here.
+
+No released SDK type ever carried `seat_type_handle`, so nothing an
+integration compiles today stops compiling. The `@revt-eng/*` pins move to
+`0.1.368`. That version also adds `SeatTypeSchema.is_buyer` (default `false`),
+which now appears in the vendored Python and Rust port types.
+
+A server-node `assignSeatType(userId, handle | null)` helper is **not** in this
+change. The server-key operation it would wrap (`upsertServerUserContext`,
+`POST /api/sdk/user-contexts`, plan 279 TASK-15a) is not yet in the published
+external contract.
+
+**Landed in:** the next release after `0.11.13`. This PR bumps pins only.
+**Fail-closed in:** the same release (compile-time rejection; runtime drop).
+**Proving test:**
+- `web-sdk/user-context-exactness.test-d.ts`: the `@ts-expect-error` block
+  "Server-assigned fields" (`pnpm check:types:exact`).
+- `web-sdk/identify-guardrails.test.ts`: describe block
+  `seat_type_handle never enters the browser context`.
+
 ## 0.11.13
 
 ### Slot lifecycle events carry the slot's `route` (BL-0207, ruling D-30)
