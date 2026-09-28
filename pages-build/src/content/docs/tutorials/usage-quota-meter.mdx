@@ -32,19 +32,23 @@ A usage tracking flow that:
      "artifact_type": "playbook",
      "format_version": "1.0.0",
      "plans": [
-       { "id": "plan_starter", "unique_handle": "starter", "name": "Starter", "tier_position": 0, "sort_order": 0 },
-       { "id": "plan_pro", "unique_handle": "professional", "name": "Professional", "tier_position": 1, "sort_order": 1 }
+       { "unique_handle": "starter", "name": "Starter", "tier_position": 0, "sort_order": 0 },
+       { "unique_handle": "professional", "name": "Professional", "tier_position": 1, "sort_order": 1 }
      ],
      "entitlements": [
-       { "id": "ent_api_calls", "unique_handle": "api_calls", "name": "API Calls", "type": "usage_limit", "unit": "calls" }
+       { "unique_handle": "api_calls", "name": "API Calls", "type": "usage_limit", "unit": "calls" }
      ],
      "entitlement_rules": [
        {
          "id": "er_api_calls_starter",
-         "entitlement_id": "ent_api_calls",
-         "targets": [{ "kind": "plan", "id": "plan_starter" }],
+         "entitlement_id": "api_calls",
+         "targets": [{ "kind": "plan", "id": "starter" }],
          "segment_ids": [],
-         "type_fields": { "kind": "usage_limit", "limit_value": 1000, "unit": "calls", "period": "per_month", "enforcement": "hard_block" }
+         "kind": "usage_limit",
+         "limit_value": 1000,
+         "unit": "calls",
+         "period_scope": "per_month",
+         "enforcement": "hard_block"
        }
      ],
      "segments": [],
@@ -84,7 +88,7 @@ A usage tracking flow that:
          "payloads": [
            {
              "id": "pl_usage_warning_p0",
-             "target": { "plan_ids": ["plan_starter"], "segment_chips": [] },
+             "target": { "plan_ids": ["starter"], "segment_chips": [] },
              "surfaces": [
                {
                  "template_id": "banner_warning",
@@ -217,8 +221,8 @@ A usage tracking flow that:
    |---|---|---|
    | 500 / 1000 (50%) | Green bar, "500 / 1000" | Hidden |
    | 800 / 1000 (80%) | Yellow bar, "800 / 1000" | Shows "Usage limit approaching" |
-   | 950 / 1000 (95%) | Red bar, "950 / 1000" | Shows with urgency styling |
-   | 1000 / 1000 (100%) | Full red bar | Shows upgrade modal |
+   | 950 / 1000 (95%) | Red bar, "950 / 1000" | Shows "Usage limit approaching" |
+   | 1000 / 1000 (100%) | Full red bar | Still shows; `can('api_calls')` now denies (`hard_block`) |
 
 </Steps>
 

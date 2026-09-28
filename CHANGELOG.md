@@ -47,6 +47,54 @@ also require a changelog entry.
 
 ---
 
+## Unreleased
+
+### `update({ usage })` now reaches usage and credit threshold placements and their usage tokens (BL-0402, BL-0409)
+
+**What changed.** A behaviour fix in the browser SDK (`@revturbine/sdk`); no
+signature changes. `update({ usage })` / `updateUsage()` wrote only the SDK's
+private usage balances. `can()` and `getUsage()` read those balances, but the
+placement resolver built its usage state from the user context's `usage`
+entries alone, and took each entry's `limit` only from a per-entry field
+(default `0`). The shared threshold gate fails closed on a missing or zero
+limit. So `usage_threshold` and `credit_threshold` placements (the 80% usage
+banner, the low-credits warning) never fired for app-reported usage, and
+`{{usage_current}}` / `{{usage_limit}}` / `{{usage_remaining}}` /
+`{{usage_percent}}` stayed stale or unresolved, while the gate and the meter
+moved.
+
+Placements now read one usage view, the same one `getUsage()` reports:
+
+- **Used**: the balance the app reported through `update({ usage })` /
+  `updateUsage()` / `identify(…, { usage })` wins (the most recent write),
+  else the context entry's `amount`.
+- **Limit**: the context entry's own `limit` wins, else the Playbook
+  allowance for the user's **current plan** (the plan-scoped `usage_limit`
+  rule's `limit_value` or `credits` rule's `allowance_value`, which is the
+  `limit` `getUsage()` already returned). An `unlimited` or absent allowance
+  means no threshold: the placement does not fire.
+- **Tokens**: the SDK now fills the usage token family in decision content
+  from the same view. It fills `{{usage_current}}` whenever usage is known.
+  It fills `{{usage_limit}}`, `{{usage_remaining}}` and `{{usage_percent}}`
+  only when a positive limit is known, so an unlimited allowance leaves
+  those tokens untouched instead of rendering `0`. The `<unit>_usage_*`
+  forms and the aliases (`current_usage`, `current_limit`,
+  `remaining_usage`) are filled too. A registered entitlements provider
+  still supplies its own usage state, as before.
+
+`can()` and `getUsage()` are unchanged. The headless server ports (Python,
+Rust, `server-node`) take usage counters from the caller and are unaffected;
+the cross-language parity corpus is untouched.
+
+**Docs.** `tutorials/usage-quota-meter.mdx` and
+`tutorials/low-credits-warning.mdx` now use the canonical flat Playbook rule
+shape (`kind` + `limit_value` / `allowance_value`, handle-valued ids). The
+old nested `type_fields` shape resolved no allowance, so neither tutorial's
+banner could fire. The expected-behaviour table now matches what the SDK
+does: the banner shows from 80%, and at 100% `can('api_calls')` denies.
+
+**Proving test.** `web-sdk/usage-reaches-placements.test.ts`.
+
 ## 0.11.16
 
 ### Build fix, part two: the npm declaration build resolves `openapi-fetch` too (no API change)

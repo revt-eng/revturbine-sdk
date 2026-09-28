@@ -33,19 +33,22 @@ A credits flow that:
      "artifact_type": "playbook",
      "format_version": "1.0.0",
      "plans": [
-       { "id": "plan_free", "unique_handle": "free", "name": "Free", "tier_position": 0, "sort_order": 0 },
-       { "id": "plan_pro", "unique_handle": "pro", "name": "Pro", "tier_position": 1, "sort_order": 1 }
+       { "unique_handle": "free", "name": "Free", "tier_position": 0, "sort_order": 0 },
+       { "unique_handle": "pro", "name": "Pro", "tier_position": 1, "sort_order": 1 }
      ],
      "entitlements": [
-       { "id": "ent_credits", "unique_handle": "credits", "name": "Render Credits", "type": "credits", "unit": "credits" }
+       { "unique_handle": "credits", "name": "Render Credits", "type": "credits", "unit": "credits" }
      ],
      "entitlement_rules": [
        {
          "id": "er_credits_free",
-         "entitlement_id": "ent_credits",
-         "targets": [{ "kind": "plan", "id": "plan_free" }],
+         "entitlement_id": "credits",
+         "targets": [{ "kind": "plan", "id": "free" }],
          "segment_ids": [],
-         "type_fields": { "kind": "credits", "allowance": 20, "rollover": false, "max_balance": null }
+         "kind": "credits",
+         "allowance_value": 20,
+         "rollover_enabled": false,
+         "max_balance": null
        }
      ],
      "segments": [],
@@ -62,7 +65,7 @@ A credits flow that:
          "payloads": [
            {
              "id": "pl_credits_low_p0",
-             "target": { "plan_ids": ["plan_free"], "segment_chips": [] },
+             "target": { "plan_ids": ["free"], "segment_chips": [] },
              "surfaces": [
                {
                  "template_id": "banner_placement",
