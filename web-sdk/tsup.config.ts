@@ -1,6 +1,7 @@
 import { defineConfig } from 'tsup';
 import { copyFile, readFile } from 'node:fs/promises';
 import type { Plugin } from 'esbuild';
+import path from 'node:path';
 
 // `@revt-eng/core`, `@revt-eng/schema`, and `@revt-eng/schema-external` are all
 // built from the same upstream source tree (revturbine-scaffold/src/core/), and
@@ -85,6 +86,17 @@ export default defineConfig({
   esbuildPlugins: [stripBundledDepSourceMaps],
   esbuildOptions(options) {
     options.jsx = 'automatic';
+    // The headless entry re-exports `../server-node`, whose `client.ts` imports
+    // the bundled `openapi-fetch`. A bare import resolves by walking up from the
+    // IMPORTING file, so from `server-node/` it never looks in
+    // `web-sdk/node_modules`. Internally the workspace root has it, but the
+    // public repo installs openapi-fetch only under `web-sdk/` (its root
+    // manifest carries just the @revt-eng/* pins), so the public npm publish of
+    // 0.11.14 failed with `Could not resolve "openapi-fetch"`. `nodePaths` is
+    // esbuild's fallback search path after the node_modules walk, so web-sdk's
+    // own dependencies resolve for every file it bundles. Both publish paths
+    // run the build with web-sdk as the working directory.
+    options.nodePaths = [...(options.nodePaths ?? []), path.resolve(process.cwd(), 'node_modules')];
     // This is a library build: the consumer chooses development/production.
     // An identity define prevents browser minification from baking in production
     // while retaining the token consumer bundlers replace (and raw ESM reads).
