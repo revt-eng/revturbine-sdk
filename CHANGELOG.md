@@ -47,7 +47,80 @@ also require a changelog entry.
 
 ---
 
-## Unreleased (ships with the next release; no version bump in this PR)
+## 0.11.14
+
+This release carries the BL-0335 change below plus every entry that main held
+under "Unreleased" since 0.11.13 (BL-0381, BL-0382, BL-0366, BL-0375, BL-0369,
+BL-0352, BL-0354 and BL-0351).
+
+### `tenantId` is optional on a browser init with a `publicKey`; the key is the sole arbiter of the tenant (BL-0335, D-49)
+
+**What changed.** Before, a browser init needed both a `tenantId` and a
+`publicKey`. The public key is bound to exactly one tenant, and the control
+plane already resolved the tenant from the key alone, so the id was redundant
+configuration, and a wrong one was silently ignored. Now:
+
+- `RevTurbineInitOptions.tenantId` is **optional**. The minimal hosted init is
+  `{ publicKey, endpoint }`.
+- A key-only integration sends **no** `x-tenant-id`. It reads the tenant from
+  the key-authenticated Playbook delivery: the signed manifest's `tenant_id`
+  and the Playbook's own `tenant_id`. Until the first Playbook loads, the
+  tenant is unknown, so `getUserContext().tenant_id` and the event envelope's
+  `tenant_id` read `''` and the `/api/track` row omits `tenant_id`. The
+  control plane stamps the key's tenant regardless.
+- A **configured** `tenantId` that matches the key's tenant behaves exactly as
+  before: it is still sent, and every locally persisted key (anonymous id,
+  decision cache, caps, interaction state) is unchanged.
+- A **configured** `tenantId` that does **not** match the key's tenant is no
+  longer silently ignored, and it is not refused either (D-49). When the
+  key-authenticated delivery names another tenant, the SDK logs one warning
+  per init and adopts the key's tenant:
+
+  ```
+  [RevTurbine] tenantId <configured> does not match the key's tenant <key tenant>; using <key tenant>
+  ```
+
+  The signed manifest is activated (before, a manifest whose tenant differed
+  from the configured one was refused and the SDK fell back to the legacy
+  config fetch). After adoption, `getUserContext().tenant_id`, event envelopes
+  and the `x-tenant-id` the SDK still sends all carry the key's tenant. Local
+  storage keys stay namespaced by the configured id, so nothing persisted is
+  lost.
+- A key-only integration keys local state by a short hash of the public key
+  (`revturbine:pk-…:`), so rotating the key starts a fresh local namespace,
+  just as changing `tenantId` always did.
+- The theme loader (`fetchThemeOverride`) no longer sends the `'local'`
+  placeholder as a tenant header. `ThemeLoaderOptions.tenantId` is optional,
+  and the new `storageScope` option keeps the persisted-theme key.
+- `ConfigTargetDefaults.tenantId` is optional. Without it, the artifact's own
+  `tenant_id` is used.
+- Init now fails loudly when no tenant can be identified. It throws when
+  neither `publicKey` nor `tenantId` is present, and when a `local_only` init
+  has no `tenantId` and no `localRuntime.playbook`. With a local Playbook,
+  `local_only` still defaults the tenant to `'local'`, and a local Playbook's
+  `tenant_id` stays a guard behind the init option (plan 233 REQ-2): there is
+  no key there to arbitrate.
+
+**Server side (web #927).** The control plane uses the key's tenant
+unconditionally on every public-key lane. A tenant id that IS sent, whether as
+a header or as `tenant_id` in an event or interaction body, is diagnostic only:
+a mismatch is logged server-side and ignored. No request is refused for it.
+
+**Landed in:** 0.11.14 (`web-sdk` only; `server-python`/`server-rust` bumped
+in lockstep with no behavior change: the server ports authenticate with the
+server key and build a per-request context with a `tenant_id`, and they have
+no browser `publicKey` init option to relax).
+**Fail-closed in:** 0.11.14. An init with no identifiable tenant throws;
+before, it was a type error only, and JS callers got `undefined`. A mismatching
+configured tenant warns from 0.11.14; before, it was silent.
+**Proving test:**
+- `web-sdk/customer-side-tenant-optional.test.ts`: key-only init on both
+  delivery lanes (no tenant header; tenant adopted from the manifest and
+  Playbook), configured matching tenant unchanged (header sent, storage keys
+  byte-identical), a mismatching configured tenant warned once and the key's
+  tenant adopted on both lanes, the key-hash namespace, the init guards, and
+  the theme loader.
+- `web-sdk/init-options-exactness.test-d.ts`: a key-only init compiles.
 
 ### server-node `setBuiltinDimensions()` — your backend sets built-in dimension values, with an `override` flag (BL-0382, rulings D-46 / D-47)
 
@@ -88,7 +161,7 @@ segment dimension values for a user, not just read the control plane's
 The `@revt-eng/*` pins move to `0.1.374`, which widens the operation
 (scaffold #431).
 
-**Landed in:** the next release after `0.11.13`.
+**Landed in:** 0.11.14.
 **Fail-closed in:** n/a (additive).
 **Proving test:** `tests/server-node-set-builtin-dimensions.test.ts`,
 `tests/server-node-assign-seat-type.test.ts`.
@@ -135,7 +208,7 @@ as a server-assigned key in the browser SDK.
 This supersedes the part of BL-0352 (below) that made `update()` apply
 `builtin_dimensions`. That change never shipped.
 
-**Landed in:** the next release after `0.11.13`.
+**Landed in:** 0.11.14.
 **Fail-closed in:** the same release. The compile-time omission and the
 runtime drop ship together.
 **Proving test:**
@@ -192,7 +265,7 @@ full struct literal without `..Default::default()` must add the new field.
 The `@revt-eng/*` pins move to `0.1.373`, which adds the operation and the
 core overlay (scaffold #430).
 
-**Landed in:** the next release after `0.11.13`.
+**Landed in:** 0.11.14.
 **Fail-closed in:** n/a (additive).
 **Proving test:** `tests/server-node-get-builtin-dimensions.test.ts`,
 `server-python/tests/adapters/test_static.py`,
@@ -280,7 +353,7 @@ required-nullable on `ServerUserContextUpsert`, BL-0367). The vendored port
 types follow: in Python, `ServerUserContextUpsert.seat_type_handle` loses its
 default; in Rust, `ClientContextBuiltinDimensionsBillingHealth` is added.
 
-**Landed in:** the next release after `0.11.13` (`@revt-eng/core` 0.1.372 carries
+**Landed in:** 0.11.14 (`@revt-eng/core` 0.1.372 carries
 the scaffold BL-0369 fix).
 **Fail-closed in:** the same release.
 **Proving test:**
@@ -339,7 +412,7 @@ The `@revt-eng/*` pins move to `0.1.370` (scaffold #427: discovery-owned
 `SurfaceSlotSchema.slot_name`). That field now appears in the generated client
 types and the vendored Python and Rust port types. The SDK does not write it.
 
-**Landed in:** the next release after `0.11.13`.
+**Landed in:** 0.11.14.
 **Fail-closed in:** the same release. The compile-time omission and the
 runtime drop at all four entry points both ship in it.
 **Proving test:**
@@ -377,7 +450,7 @@ models, so they gain no helper.
 The `@revt-eng/*` pins move to `0.1.369`, which adds that operation to the
 external contract (scaffold #425).
 
-**Landed in:** the next release after `0.11.13`.
+**Landed in:** 0.11.14.
 **Fail-closed in:** n/a (additive).
 **Proving test:** `tests/server-node-assign-seat-type.test.ts`.
 
@@ -414,7 +487,7 @@ change, because the server-key operation it wraps (`upsertServerUserContext`,
 external contract. It shipped with scaffold `0.1.369` (see the BL-0354 entry
 above).
 
-**Landed in:** the next release after `0.11.13`. This PR bumps pins only.
+**Landed in:** 0.11.14. This PR bumps pins only.
 **Fail-closed in:** the same release (compile-time rejection; runtime drop).
 **Proving test:**
 - `web-sdk/user-context-exactness.test-d.ts`: the `@ts-expect-error` block
