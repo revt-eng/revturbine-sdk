@@ -49,6 +49,35 @@ also require a changelog entry.
 
 ## Unreleased (ships with the next release; no version bump in this PR)
 
+### `RevTurbineProvider` disposes the previous SDK instance on an `options` change (BL-0375)
+
+**What changed.** `RevTurbineProvider`'s init effect creates a new SDK instance
+whenever the `options` prop (or `bootstrapPlacements`) changes identity, but its
+cleanup previously only flipped an internal `mounted` flag — it never called
+`dispose()` on the instance it was replacing. A host that rebuilds `options` on
+every render (an unmemoized `options={{ ... }}` literal, or an object built in
+an un-annotated `useMemo` with an unstable dependency — the shape web's dogfood
+provider had until web #944) therefore re-initialized on every render and
+leaked every earlier instance's flush-interval timer, `pagehide` /
+`visibilitychange` listeners, and any buffered telemetry.
+
+The cleanup now calls the previous instance's existing `dispose()` (flushes
+pending telemetry, detaches its listeners and timer) before the next render's
+instance is constructed. The re-init contract is unchanged: a new `options`
+object identity — even one with identical content — still creates a new SDK
+instance; that documented behavior was never the bug, the leak was. When a new
+`options` object is recreated with the same content as the previous one, the
+provider now also logs a one-time (per mounted provider lifetime) development
+warning pointing integrators at memoizing `options`, in addition to the
+existing every-time identity-change warning.
+
+**Landed in:** no release — no signature changed; `dispose()` on
+`RevTurbineCustomerSdk` already existed (documented for manual SPA-unmount
+teardown) and is now also called automatically by the provider.
+**Fail-closed in:** n/a — purely a leak fix; no customer-visible API changed.
+**Proving test:**
+`web-sdk/react/RevTurbineProvider.dispose-on-options-change.test.tsx`.
+
 ### Behaviour fix: server SDKs stop serving segment-chipped payloads to every user (BL-0369)
 
 **What changed.** On the server lanes, every configured Playbook segment
