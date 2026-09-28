@@ -49,6 +49,63 @@ also require a changelog entry.
 
 ## Unreleased (ships with the next release; no version bump in this PR)
 
+### Behaviour change: the browser SDK ignores app-set `builtin_dimensions` (BL-0381, ruling D-46)
+
+**What changed.** Trust in a built-in dimension value is decided by *party*
+(Kent, D-46): the browser client never asserts one, the customer's server may,
+and RevTurbine's own enrichment is optional. `builtin_dimensions` therefore
+joins `seat_type_handle`, `activity_score` and `activity_score_computed_at`
+as a server-assigned key in the browser SDK.
+
+- **Types.** `builtin_dimensions` is omitted from `RevTurbineUserContext`,
+  `RevTurbineUpdateInput` and `IdentifyContextInput`, so
+  `update({ builtin_dimensions })`, `setUserContext({ builtin_dimensions })`,
+  `identify(id, { builtin_dimensions })` and `user: { builtin_dimensions }`
+  no longer compile.
+- **Runtime.** Every browser entry point drops the key and warns with the
+  server-assigned diagnostic (`update()`, `identify()`, `setUserContext()`,
+  the `user` init option). A persisted `local_only` state blob that carries it
+  is purged on restore, and a server-action result that echoes it is stripped
+  silently. Before this change, 0.11.12 and 0.11.13 merged an app-set value
+  through `setUserContext()` and the `user` option. An app could then claim
+  any built-in segment (for example `rt.subscription_state.paid`) from the
+  browser.
+- **The one browser source** is the authenticated
+  `GET /api/sdk/client-context` delivery (`fetchClientContext`, or a
+  `clientSession` minter). Its values overlay per leaf exactly as before.
+  `getUserContext()` still returns the held value.
+- **`local_only`.** Built-in segment *definitions* are still synthesized for
+  a local Playbook (BL-0365), so chips and rules naming `rt.*` segments stay
+  valid. Their *values* no longer come from the app: **a browser `local_only`
+  app can no longer target built-ins unless a server-provided context
+  delivers them.** With no delivery every `rt_*` trait is absent and the
+  built-in segments fail closed (PD-4). `rt.registration_state.*` still
+  resolves from the identified id alone.
+- **Unchanged: server SDKs.** They are the customer's server. Their overlay
+  inputs stay: server-node's `createStaticProviders({ userContext:
+  { builtin_dimensions }, serverBuiltinDimensions })`, Python's
+  `builtin_dimensions` / `server_builtin_dimensions` and Rust's
+  `builtin_dimensions` / `server_builtin_dimensions`. Parity goldens are
+  unchanged.
+
+This supersedes the part of BL-0352 (below) that made `update()` apply
+`builtin_dimensions`. That change never shipped.
+
+**Landed in:** the next release after `0.11.13`.
+**Fail-closed in:** the same release. The compile-time omission and the
+runtime drop ship together.
+**Proving test:**
+- `web-sdk/update-keys-exhaustiveness.test-d.ts` (`pnpm check:types:exact`):
+  `builtin_dimensions` is in the server-assigned set.
+- `web-sdk/identify-guardrails.test.ts`: describe block
+  `builtin_dimensions never enters the browser context from the app`.
+- `web-sdk/local-builtin-segments.test.ts`: `chip … with app-set … fails
+  closed` (and the delivered cases still match).
+- `web-sdk/customer-side-rt-entitlement-gate.test.ts`: `denies when the app
+  sets builtin_dimensions itself via update()`.
+- `web-sdk/customer-side-client-context.test.ts`: `holds exactly the
+  delivered value; an app-set value never reaches the context`.
+
 ### Server SDKs get the control plane's built-in dimensions: `getBuiltinDimensions()` + a server overlay (BL-0366, plan 279 PD-3)
 
 **What changed.** Additive. Before this, a server-side decision never saw the
@@ -197,7 +254,9 @@ fields had reached `RevTurbineUpdateInput` without reaching
 `RECOGNIZED_UPDATE_KEYS`, so `update()` accepted them at compile time and
 silently dropped them at runtime. Each one now has an explicit disposition:
 
-- `experiments` and `builtin_dimensions` are **now applied** by `update()`.
+- *(`builtin_dimensions` superseded by BL-0381 above: it is server-assigned
+  and dropped.)* `experiments` and `builtin_dimensions` are **now applied**
+  by `update()`.
   The app may supply experiment assignments it already knows
   (`runtime/experiment-assignment.md` §3, plan 183), and it may seed built-in
   dimensions, for example in `local_only` mode. The client-context overlay
@@ -244,7 +303,7 @@ runtime drop at all four entry points both ship in it.
 - `web-sdk/identify-guardrails.test.ts`: describe blocks
   `server-computed keys never enter the browser context`,
   `setUserContext() drops server-assigned keys at its runtime boundary` and
-  `update() carries app-owned experiments and builtin_dimensions`.
+  `update() carries app-owned experiments` (renamed by BL-0381).
 
 ### server-node `assignSeatType()` writes a user's seat type (BL-0354, plan 279 TASK-16a, ruling D-36)
 
