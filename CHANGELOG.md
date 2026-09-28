@@ -49,6 +49,38 @@ also require a changelog entry.
 
 ## Unreleased (ships with the next release; no version bump in this PR)
 
+### server-node `assignSeatType()` writes a user's seat type (BL-0354, plan 279 TASK-16a, ruling D-36)
+
+**What changed.** Additive. `RevTurbineServer` (server-node) gains
+`assignSeatType(userId: string, seatTypeHandle: string | null)`. It calls
+`upsertServerUserContext` (`POST /api/sdk/user-contexts`) through the generated
+typed client with the server key the client already holds. The request body is
+exactly `{ user_id, seat_type_handle }`. `null` clears the assignment. The
+tenant comes from the key: it is not a parameter, and no tenant header is sent.
+It resolves to the stored assignment
+`{ tenant_id, user_id, updated_at, seat_type_handle }` (re-exported as
+`ServerUserContextAssignment`).
+
+A refusal throws the new `RevTurbineSeatAssignmentError`. It carries `status`,
+`requestId`, the control plane's machine `code` when present, and a typed
+`reason`: `unknown_seat_type` (422: the handle is not one of the tenant's seat
+types), `forbidden` (403: the credential is not a server key), `unauthorized`
+(401), `invalid_request` (400) or `request_failed`. Like
+`RevTurbineClientSessionError`, it never carries the key or the free-text
+response message.
+
+Per D-36 the seat assignment is server-written only, so there is no browser SDK
+surface for this. The Python and Rust ports have no HTTP client or server-key
+client, only the vendored `ServerUserContextUpsert` / `ServerUserContextAssignment`
+models, so they gain no helper.
+
+The `@revt-eng/*` pins move to `0.1.369`, which adds that operation to the
+external contract (scaffold #425).
+
+**Landed in:** the next release after `0.11.13`.
+**Fail-closed in:** n/a (additive).
+**Proving test:** `tests/server-node-assign-seat-type.test.ts`.
+
 ### `seat_type_handle` is server-assigned and never a browser input (BL-0351, plan 279 TASK-16a, ruling D-36)
 
 **What changed.** Scaffold `0.1.368` adds `UserContextSchema.seat_type_handle`,
@@ -76,10 +108,11 @@ integration compiles today stops compiling. The `@revt-eng/*` pins move to
 `0.1.368`. That version also adds `SeatTypeSchema.is_buyer` (default `false`),
 which now appears in the vendored Python and Rust port types.
 
-A server-node `assignSeatType(userId, handle | null)` helper is **not** in this
-change. The server-key operation it would wrap (`upsertServerUserContext`,
-`POST /api/sdk/user-contexts`, plan 279 TASK-15a) is not yet in the published
-external contract.
+A server-node `assignSeatType(userId, handle | null)` helper was **not** in this
+change, because the server-key operation it wraps (`upsertServerUserContext`,
+`POST /api/sdk/user-contexts`, plan 279 TASK-15a) was not yet in the published
+external contract. It shipped with scaffold `0.1.369` (see the BL-0354 entry
+above).
 
 **Landed in:** the next release after `0.11.13`. This PR bumps pins only.
 **Fail-closed in:** the same release (compile-time rejection; runtime drop).
