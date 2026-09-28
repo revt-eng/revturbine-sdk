@@ -295,6 +295,15 @@ One scenario runs here; the full gallery — every built-in slot type, editable,
 
 More on the Playground: [Plans & Pricing Card](/playground/#fixed-in-page) · [Quota Meter](/playground/#fixed-usage-counter) · [Annual Nudge Banner](/playground/#fixed-banner) · [Usage Warning Banner](/playground/#msg-banner) · [Usage Exhausted Modal](/playground/#msg-modal) · [Trial Welcome Toast](/playground/#msg-toast).
 
+## Route surface
+
+Every slot stamps the app route it rendered on onto its lifecycle events, so
+discovery groups the same slot across `/projects/42` and `/projects/43`
+instead of treating each URL as a separate surface. See
+[Route surface](/guides/placement-cookbook/#route-surface) in the Placement
+Cookbook for the `<RevTurbineRoute>` boundary, the Next.js recipe, and the
+pathname fallback.
+
 ## Next Steps
 
 - [Component Gallery](/components/) — interactive demos of every built-in slot component

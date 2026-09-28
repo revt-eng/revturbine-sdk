@@ -158,3 +158,120 @@ const chainedRequest = createChainedPlacementRequest('upgrade_follow_up', {
   componentType: 'in_page',
 });
 ```
+
+## Route surface
+
+Every slot lifecycle event (`slot_evaluated`, `slot_filled`, `slot_suppressed`,
+`slot_empty`) is stamped with the app **route** it was evaluated on
+(`slotContextBase.route`, BL-0207 / ruling D-30). Ingestion-driven surface-slot
+discovery persists that route on the discovered slot, so the same slot
+rendered at `/projects/42` and `/projects/43` is recognized as one recurring
+surface instead of two — that's what lets discovery, the placement dashboard,
+and needs-attention surfacing group slots by *where* they live in your app
+rather than by every distinct URL a user happened to visit.
+
+A route is always a **path**, never a URL — no origin, no query string, no
+fragment. Query strings are where tokens, emails and search terms live, so
+they never reach the wire.
+
+### `<RevTurbineRoute>` boundary
+
+`<RevTurbineRoute route="...">` declares the route pattern for every slot
+rendered beneath it. It's renderless (no DOM node), and the innermost boundary
+wins if you nest them:
+
+```tsx
+import { RevTurbineRoute } from '@revturbine/sdk';
+
+function ProjectLayout({ projectId, children }: { projectId: string; children: React.ReactNode }) {
+  return (
+    <RevTurbineRoute route={`/projects/[projectId]`}>
+      {children}
+    </RevTurbineRoute>
+  );
+}
+```
+
+Mounting it is **optional**. Without it, slots fall back to
+`window.location.pathname` (see below). Mount it once your router knows the
+route *pattern*, so `/projects/42` and `/projects/43` collapse to one route
+instead of being reported as two.
+
+### Next.js recipe
+
+Pair it with `routePatternFromParams(pathname, params)`, which rebuilds the
+framework route pattern from `usePathname()` + `useParams()` without the SDK
+importing `next/navigation`:
+
+```tsx
+'use client';
+
+import { usePathname, useParams } from 'next/navigation';
+import { RevTurbineRoute, routePatternFromParams } from '@revturbine/sdk';
+
+export function RouteBoundary({ children }: { children: React.ReactNode }) {
+  const route = routePatternFromParams(usePathname(), useParams());
+  return <RevTurbineRoute route={route}>{children}</RevTurbineRoute>;
+}
+```
+
+`/projects/p_42/settings` with `useParams()` returning `{ projectId: 'p_42' }`
+becomes `/projects/[projectId]/settings`; a catch-all param
+(`{ slug: ['a', 'b'] }`) becomes `[...slug]`. Mount `<RouteBoundary>` once,
+near the root layout — every slot beneath it inherits the pattern.
+
+### The pathname fallback and `:id` normalization
+
+When no `<RevTurbineRoute>` is mounted (or none of its ancestors declared a
+route), a slot reports the browser's `window.location.pathname`, with
+identifier-like segments templated to `:id` so neither PII nor per-entity
+cardinality reaches discovery. A segment is templated when it looks like a
+number, a UUID, a long hex string, a prefixed id (`cus_Q1w2E3r4`,
+`tn_4bcd07d7-…`), an opaque token, or contains an `@` (email-shaped):
+
+```ts
+import { normalizeSlotRoute } from '@revturbine/sdk';
+
+normalizeSlotRoute('/accounts/4821/billing?tab=x');
+// → '/accounts/:id/billing'   (numeric id templated, query string dropped)
+
+normalizeSlotRoute('/projects/9b1f2e3a-4c5d-4e6f-8a9b-0c1d2e3f4a5b');
+// → '/projects/:id'           (UUID templated)
+```
+
+A route pattern segment the host already templated (`[id]`, `[...slug]`,
+`:id`, `*`) is left verbatim rather than re-templated.
+
+### The 512-character cap
+
+A normalized route is truncated to **512 characters** if it exceeds that
+length (`SLOT_ROUTE_MAX_LENGTH`, matching scaffold's
+`SURFACE_SLOT_ROUTE_MAX_LENGTH`) before it's stamped on an event — an
+unbounded pathname (deep-linked search state, long catch-all segments) never
+grows the event payload without limit.
+
+### The headless route option
+
+Outside React, pass `route` directly to a headless `PlacementController` — a
+string, or a getter read at emission time so a long-lived controller reports
+the route it was evaluated on after a client-side navigation:
+
+```ts
+import { initRevTurbine } from '@revturbine/sdk/headless';
+
+const session = await initRevTurbine({
+  tenantId: 'tenant_abc',
+  publicKey: 'rtk_…',
+  endpoint: 'https://edge.example.com',
+  mode: 'snippet',
+});
+const ctrl = session.placement({
+  surfaceSlot: { id: 'pricing_banner' },
+  route: () => window.location.pathname,
+});
+```
+
+Both forms are normalized the same way as the React path. If `route` is
+omitted, a headless controller emits `route: null` — there's no browser
+`window.location` fallback outside React, so headless callers that want route
+attribution supply it explicitly.

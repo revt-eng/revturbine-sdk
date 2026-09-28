@@ -177,6 +177,7 @@ if (ctrl.visible) {
 | `traits` | `Record<string, string \| number \| boolean>` | — | Custom traits for decision request |
 | `ttlMs` | `number` | — | Decision cache TTL |
 | `autoTrackImpression` | `boolean` | `true` | Auto-record impression on visible decision |
+| `route` | `string \| (() => string \| null \| undefined)` | — | App route this slot renders on, stamped onto slot lifecycle events (a string or a getter read at emission time). Normalized like the React path; omitted, headless emits `route: null`. See [Route surface](/guides/placement-cookbook/#route-surface) |
 
 ### State & Getters
 
