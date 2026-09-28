@@ -118,10 +118,18 @@ decisions = sdk.get_placement_decisions(
 | `payment_failed` | — | Hard-failure billing-recovery signal. |
 | `payment_at_risk` | — | Soft billing-attention signal. |
 | `tiers` | — | Current tier handle per `capability_tier` entitlement handle. |
-| `segment_ids` | — | Pre-resolved segment memberships used by eligible plan and add-on helpers. |
+| `segment_ids` | — | Tenant segment handles your app already resolved for this user. They count as segment membership for chipped payloads, segment-targeted entitlement rules, and the eligible plan and add-on helpers. |
+| `custom` | — | Customer traits that segment predicates evaluate over, e.g. `{"sessions": 12}`. |
+| `builtin_dimensions` | — | Built-in segment dimension values your server sets, e.g. `{"subscription_state": "paid"}`. This is the only way a built-in `rt.<dimension>.<value>` segment can match on a server port. |
+| `experiments` | — | Experiment-handle to variant-handle assignments, for experiment segments. |
 
 `tenant_id` and `user_id` are the only required fields; an empty/missing one
 raises `ValueError` at construction.
+
+A user is in a segment only if `segment_ids` names it or its predicates match
+`custom`, the plan or `builtin_dimensions`. Anything else fails closed: a
+payload or rule chipped to a segment the SDK can't confirm is not served. Since
+BL-0369 the SDK no longer treats every configured segment as matched.
 
 `plan_handle` must equal the plan's `unique_handle` in the Playbook. Usage keys
 must equal entitlement handles, and `used` is the current absolute balance,

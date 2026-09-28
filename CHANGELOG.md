@@ -49,6 +49,68 @@ also require a changelog entry.
 
 ## Unreleased (ships with the next release; no version bump in this PR)
 
+### Behaviour fix: server SDKs stop serving segment-chipped payloads to every user (BL-0369)
+
+**What changed.** On the server lanes, every configured Playbook segment
+counted as a segment the user was in. That covered the Python and Rust
+`RevTurbineCustomerSdk`, `LocalRuntime`, and server-node's
+`LocalEvaluationServer` fed by `createStaticProviders`. So a payload chipped
+to any segment was shown to every user, and an entitlement rule targeted at
+any segment granted to every user on the plan. This included the generated
+built-in segments (`rt.<dimension>.<value>`, e.g.
+`rt.subscription_state.paid`) that hosted Playbooks now export. The browser
+SDK was not affected.
+
+A user is now in a segment only when one of these is true, the same rule the
+browser SDK applies:
+
+- your app passed its handle in `segment_ids` (Python / Rust) or
+  `segmentIds` (`createStaticProviders`), or
+- its predicates match the user's targeting traits. Those traits are built
+  from `custom`, the plan, and the reserved `rt_<dimension>` traits.
+  `rt_<dimension>` traits come **only** from `builtin_dimensions`, which the
+  server sets (plan 279 PD-3). For experiment segments, the user's
+  `experiments` assignments decide enrollment.
+
+Anything else fails closed. An unset dimension, a trait the user doesn't
+carry, or a chip that names an unknown segment serves nothing (PD-4).
+
+New inputs (all additive): `custom`, `builtin_dimensions` and `experiments`
+on the Python `UserContext` and the Rust `UserContext` struct. `segment_ids`
+now also drives chips and rules, not just the catalog helpers.
+`createStaticProviders` gets `segmentIds` and `userContext` from
+`@revt-eng/core`. A side fix: the Python and Rust rules providers now carry
+`segment_dimensions` and the Playbook's `format_version`, like TypeScript.
+Without `segment_dimensions`, a rule targeted at segments in two dimensions
+would have matched on either one once membership became real.
+
+**Impact on existing integrations.** This is a correctness fix, but you may
+notice it. If a server-side integration shows segment-chipped payloads or
+grants segment-targeted entitlements, and it passes none of the inputs
+above, those payloads now **stop showing** and those rules **stop
+granting**. They were being over-served before. To keep serving users who
+really are in the segment, pass `segment_ids` for segments your app
+resolves, and `builtin_dimensions` / `custom` for predicate and built-in
+segments. The Rust `UserContext` struct gains three fields. A struct literal
+that does not end in `..Default::default()` needs them added.
+
+The `@revt-eng/*` pins move to `0.1.372`: scaffold #429 is the BL-0369 core
+fix, and it carries scaffold #428 (0.1.371: the `billing_health`
+built-in dimension leaf, BL-0317, and `seat_type_handle` becoming
+required-nullable on `ServerUserContextUpsert`, BL-0367). The vendored port
+types follow: in Python, `ServerUserContextUpsert.seat_type_handle` loses its
+default; in Rust, `ClientContextBuiltinDimensionsBillingHealth` is added.
+
+**Landed in:** the next release after `0.11.13` (`@revt-eng/core` 0.1.372 carries
+the scaffold BL-0369 fix).
+**Fail-closed in:** the same release.
+**Proving test:**
+- `tests/parity/fixtures/segment_membership_{no_inputs,builtin_and_traits,explicit_ids}.json`
+  (TS == Python == Rust).
+- `server-python/tests/adapters/test_static.py` and
+  `server-rust/tests/static_providers.rs` (segment membership tests).
+- `tests/server-node-local-segment-membership.test.ts`.
+
 ### `update()` carries `experiments` and `builtin_dimensions`; server-computed keys are dropped at every browser entry point (BL-0352, ruling D-36)
 
 **What changed.** `update()`'s exhaustiveness check never ran. It was an
