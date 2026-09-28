@@ -49,6 +49,63 @@ also require a changelog entry.
 
 ## Unreleased (ships with the next release; no version bump in this PR)
 
+### `update()` carries `experiments` and `builtin_dimensions`; server-computed keys are dropped at every browser entry point (BL-0352, ruling D-36)
+
+**What changed.** `update()`'s exhaustiveness check never ran. It was an
+`expectTypeOf` inside a vitest `.test.ts`, and vitest does not typecheck. Four
+fields had reached `RevTurbineUpdateInput` without reaching
+`RECOGNIZED_UPDATE_KEYS`, so `update()` accepted them at compile time and
+silently dropped them at runtime. Each one now has an explicit disposition:
+
+- `experiments` and `builtin_dimensions` are **now applied** by `update()`.
+  The app may supply experiment assignments it already knows
+  (`runtime/experiment-assignment.md` §3, plan 183), and it may seed built-in
+  dimensions, for example in `local_only` mode. The client-context overlay
+  still wins when it is present (`targeting-studio-ui.md` §4.1). Before this
+  change, `update({ experiments })` compiled and did nothing.
+- `activity_score` and `activity_score_computed_at` are **server-computed**.
+  The control plane's hourly activity-score refresh writes them (plan 180),
+  and the browser receives only the derived `activity_level` dimension. Like
+  `seat_type_handle` (BL-0351), they are now omitted from
+  `RevTurbineUserContext`, `RevTurbineUpdateInput` and `IdentifyContextInput`.
+- `setUserContext()` and the `user` init option now **drop server-assigned
+  keys at runtime** (`seat_type_handle`, `activity_score`,
+  `activity_score_computed_at`) and report them. `identify()` and `update()`
+  already dropped them, and now report them with a server-assigned warning
+  that names the backend as the writer, not the "pass it under `custom`"
+  hint. Before this change, a plain-JS `setUserContext({ seat_type_handle })`
+  merged the key into the held context, and local mode persisted it. A state
+  blob persisted before this change is purged of those keys when it is
+  restored. A server-action result that echoes them back is stripped without
+  a warning.
+- New exported types `RecognizedUpdateKey` and `RecognizedIdentifyKey`
+  (additive) back a real compile-time derivation in
+  `web-sdk/update-keys-exhaustiveness.test-d.ts`, which
+  `pnpm check:types:exact` compiles. A future `UserContext` field fails the
+  build until it is added to the runtime list or omitted as server-assigned.
+
+**Deferred to `0.12.0`:** `setUserContext()` still takes
+`RevTurbineUserContext` without `Exact<>`, so other undeclared keys that
+arrive through a variable are not rejected at compile time. Adding `Exact<>`
+would break callers that pass a wider object today. `IdentifyContextInput`
+also still declares 11 keys that `identify()` drops with a warning (`trial`,
+`tiers`, `experiments`, …). The type-test pins that list, so it cannot grow
+silently. Narrowing the type is a breaking change and waits for the minor.
+
+The `@revt-eng/*` pins move to `0.1.370` (scaffold #427: discovery-owned
+`SurfaceSlotSchema.slot_name`). That field now appears in the generated client
+types and the vendored Python and Rust port types. The SDK does not write it.
+
+**Landed in:** the next release after `0.11.13`.
+**Fail-closed in:** the same release. The compile-time omission and the
+runtime drop at all four entry points both ship in it.
+**Proving test:**
+- `web-sdk/update-keys-exhaustiveness.test-d.ts` (`pnpm check:types:exact`).
+- `web-sdk/identify-guardrails.test.ts`: describe blocks
+  `server-computed keys never enter the browser context`,
+  `setUserContext() drops server-assigned keys at its runtime boundary` and
+  `update() carries app-owned experiments and builtin_dimensions`.
+
 ### server-node `assignSeatType()` writes a user's seat type (BL-0354, plan 279 TASK-16a, ruling D-36)
 
 **What changed.** Additive. `RevTurbineServer` (server-node) gains
