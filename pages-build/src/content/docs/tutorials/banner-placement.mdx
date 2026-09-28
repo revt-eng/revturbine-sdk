@@ -51,7 +51,7 @@ A header banner that:
          "payloads": [
            {
              "id": "pl_annual_upsell_p0",
-             "target": { "plan_ids": ["plan_pro"], "segment_chips": [] },
+             "target": { "plan_ids": ["pro"], "segment_chips": [] },
              "surfaces": [
                {
                  "template_id": "banner_placement",
@@ -95,7 +95,7 @@ A header banner that:
 
 3. **Provide the user context that targeting reads**
 
-   The placement targets `plan_ids: ["plan_pro"]`, so the banner only renders for Pro users. Pass the user's plan in the provider; the banner's CTA dispatches through the UI path resolvers you registered at init.
+   The placement targets `plan_ids: ["pro"]`, so the banner only renders for Pro users. Pass the user's plan in the provider; the banner's CTA dispatches through the UI path resolvers you registered at init.
 
    ```tsx title="src/App.tsx"
    <RevTurbineProvider

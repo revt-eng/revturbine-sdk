@@ -42,8 +42,8 @@ A video export button that:
      "entitlement_rules": [
        {
          "id": "er_data_export_pro",
-         "entitlement_id": "ent_data_export",
-         "targets": [{ "kind": "plan", "id": "plan_pro" }],
+         "entitlement_id": "data_export",
+         "targets": [{ "kind": "plan", "id": "professional" }],
          "segment_ids": [],
          "type_fields": { "kind": "feature", "enabled": true }
        }
@@ -62,7 +62,7 @@ A video export button that:
          "payloads": [
            {
              "id": "pl_export_gate_p0",
-             "target": { "plan_ids": ["plan_free"], "segment_chips": [] },
+             "target": { "plan_ids": ["free"], "segment_chips": [] },
              "surfaces": [
                {
                  "template_id": "modal_overlay",

@@ -43,6 +43,7 @@
   "devDependencies": {
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "esbuild": "0.27.7",
     "markdownlint-cli2": "^0.22.1",
     "typedoc": "^0.28.19",
     "typescript": "^6.0.3"

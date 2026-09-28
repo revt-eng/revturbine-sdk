@@ -59,7 +59,7 @@ An upgrade button in your navigation bar that:
          "payloads": [
            {
              "id": "pl_nav_upgrade_p0",
-             "target": { "plan_ids": ["plan_starter"], "segment_chips": [] },
+             "target": { "plan_ids": ["starter"], "segment_chips": [] },
              "surfaces": [
                {
                  "template_id": "button",
@@ -155,7 +155,7 @@ An upgrade button in your navigation bar that:
 
 1. The `RevTurbineProvider` initialized the SDK in `local_only` mode with your Playbook
 2. The `<Slot>` asked the decision engine for a placement at slot `nav_upgrade`
-3. The engine evaluated the payload target (`plan_ids: ['plan_starter']`) against the user context
+3. The engine evaluated the payload target (`plan_ids: ['starter']`) against the user context
 4. For Starter users, it resolved the `button` template with the "Upgrade to Pro" CTA
 5. For Pro users, no payload matched — the slot rendered nothing
 
