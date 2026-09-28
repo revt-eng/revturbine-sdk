@@ -47,6 +47,31 @@ also require a changelog entry.
 
 ---
 
+## 0.11.16
+
+### Build fix, part two: the npm declaration build resolves `openapi-fetch` too (no API change)
+
+**What changed.** 0.11.15 fixed the bundle step, but the public npm publish
+then failed one command later, in the declaration emit
+(`tsc -p tsconfig.build.json`). It reported
+`../server-node/client.ts(29,43): error TS2307: Cannot find module 'openapi-fetch'`,
+for the same reason as before: TypeScript resolves the bare import by walking
+up from `server-node/`, and the public repo installs the package only under
+`web-sdk/`. `web-sdk/tsconfig.build.json` now maps `openapi-fetch` to
+`./node_modules/openapi-fetch`.
+
+**npm users:** the 0.11.14 changes first reach npm in 0.11.16. Neither 0.11.14
+nor 0.11.15 was published to npm (both are on GitHub Packages, PyPI and
+crates.io). There is no behavior change across 0.11.14 through 0.11.16.
+
+**Landed in:** 0.11.16.
+**Fail-closed in:** n/a (build only).
+**Proving test:** the public repo's `release-npm.yml` build step for
+`v0.11.16`. It was reproduced locally by hiding the root `openapi-fetch` link
+to match the public layout: the declaration emit failed with the same TS2307
+before this change, and tsup, the declaration emit and rollup dts all pass
+after it.
+
 ## 0.11.15
 
 ### Build fix: the npm package publishes again (no API change)
