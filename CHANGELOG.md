@@ -144,6 +144,46 @@ corpus is untouched.
 **Proving tests.** `web-sdk/trial-reaches-placements.test.ts`,
 `web-sdk/react/RevTurbineProvider.identify-context.test.tsx`.
 
+### Trial state no longer leaks across users; app-supplied trials fire lifecycle triggers; `getUserContext()` reports trial and billing fields (BL-0417)
+
+**What changed.** Behaviour fixes in the browser SDK (`@revturbine/sdk`)
+that follow up BL-0403. No signature changes.
+
+- **Reset and user switch.** `resetIdentity()` / `resetUserContext()`
+  cleared the user context but kept the SDK trial status (from
+  `initialData.trialStatus`, `hydrate()`, `getTrialStatus()` or
+  `setTrialInstances()`). They also kept which trial source was newest and
+  the last lifecycle stage. So the next user saw the previous user's trial
+  placements, reverse-trial grants and `{{trial_days_*}}` tokens, and a
+  trial-less next user could emit `trial_expired`. A reset now clears all of
+  that, and the next user starts with no trial. Identifying a **different**
+  user without a reset (`identify()`, `setUserContext({ id })`, or a
+  `hydrate()` payload for another user) now drops the previous user's trial
+  (both sources) and usage (reported balances and context `usage`) before
+  merging the new user's values. The new user's own values still apply. Going
+  from anonymous to identified, or re-identifying the same user, keeps what
+  is held. Reported usage was already cleared on reset; only the
+  switch-without-reset path leaked it.
+- **Lifecycle triggers.** `trial_midpoint`, `trial_expiring` and
+  `trial_expired` fired only from `getTrialStatus()` and
+  `setTrialInstances()`. The SDK now also runs the lifecycle evaluation
+  against the resolved trial view after every change that can move it:
+  `user.trial` at init, `update({ trial })`, `setUserContext`, a server
+  action's context, the client-context delivery, `hydrate()`, a reset, and a
+  Playbook load that turns the triggers on. The dedupe has not changed: a
+  stage fires only when it differs from the last stage seen. So an unchanged
+  trial, or both sources reporting the same threshold, fires once.
+  `enableTrialAutoTriggers: false` still silences them.
+- **`getUserContext()`** now includes `trial` (the resolved trial view, the
+  one placements and grants decide with), `tiers`, `payment_failed`,
+  `payment_at_risk` and `instances` when they are held. The snapshot is a
+  copy, so changing it does not change SDK state.
+
+The headless server ports are unaffected, and the cross-language parity
+corpus is untouched.
+
+**Proving test.** `web-sdk/trial-reset-lifecycle.test.ts`.
+
 ## 0.11.16
 
 ### Build fix, part two: the npm declaration build resolves `openapi-fetch` too (no API change)
