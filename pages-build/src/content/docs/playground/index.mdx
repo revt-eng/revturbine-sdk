@@ -120,7 +120,8 @@ Each scenario runs the SDK in an isolated Sandpack environment:
 
 1. **`revturbine.playbook.json`** provides plans, entitlements, placements, surface templates, and targeting rules.
 2. **`RevTurbineProvider`** initializes the SDK in `local_only` mode — no network calls.
-3. **Demo users** (Alice, Bob, Carol, Dan, Eve, Frank) have different plans, usage, and entitlements.
-4. **Targeting rules** evaluate against the user context to decide which placements to show.
+3. **Demo users** have different plans, usage, and roles: Alice and Bob are on **Professional**, Carol and Dan on **Starter**, and Eve and Frank on **Enterprise**.
+4. **Entitlement rules** bind each entitlement to plans by handle — `data_export`, `branding`, and `brand_kit` are granted on Professional and Enterprise and disabled on Starter. So every Access Gate shows its content for Alice, Bob, Eve, and Frank, and its configured upgrade placement for Carol and Dan.
+5. **Targeting rules** evaluate against the user context to decide which placements to show.
 
 Switch demo users in a scenario's code to see how the SDK renders different placements for different segments.

@@ -18,6 +18,7 @@ import demoAppRaw from '../sandpack/DemoApp.tsx?raw';
 import playbookRaw from '../sandpack/example-playbook.json?raw';
 import demoUsersRaw from '../sandpack/demoUsers.ts?raw';
 import sharedRaw from '../sandpack/shared.ts?raw';
+import demoBrandingRaw from '../sandpack/demoBranding.ts?raw';
 
 // Published `@revturbine/sdk` version to install in the sandbox. Injected at build
 // time from ../web-sdk/package.json via astro.config.mjs, so examples always run
@@ -107,6 +108,7 @@ export default function CodeExample({
     '/playbook.json': { code: playbookRaw as string, hidden: true },
     '/demoUsers.ts': { code: demoUsersRaw as string, hidden: true },
     '/shared.ts': { code: sharedRaw as string, hidden: true },
+    '/demoBranding.ts': { code: demoBrandingRaw as string, hidden: true },
     ...(files
       ? Object.fromEntries(Object.entries(files).map(([path, contents]) => [path, { code: contents }]))
       : {}),

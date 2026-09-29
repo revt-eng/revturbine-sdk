@@ -1,136 +1,156 @@
 {
-  "version": "1.0.0",
+  "artifact_type": "playbook",
+  "format_version": "1.0.0",
   "exported_at": "2026-04-02T00:00:00Z",
   "plans": [
     {
-      "id": "starter",
       "unique_handle": "starter",
-      "name": "Starter"
+      "name": "Starter",
+      "tier_position": 0,
+      "sort_order": 0
     },
     {
-      "id": "professional",
       "unique_handle": "professional",
-      "name": "Professional"
+      "name": "Professional",
+      "tier_position": 1,
+      "sort_order": 1
     },
     {
-      "id": "enterprise",
       "unique_handle": "enterprise",
-      "name": "Enterprise"
+      "name": "Enterprise",
+      "tier_position": 2,
+      "sort_order": 2
+    }
+  ],
+  "addons": [
+    {
+      "unique_handle": "extra_seat",
+      "name": "Extra Editor Seat",
+      "sort_order": 0
+    },
+    {
+      "unique_handle": "premium_expansion_pack_1",
+      "name": "Premium Expansion Pack 1",
+      "sort_order": 1
+    },
+    {
+      "unique_handle": "premium_expansion_pack_2",
+      "name": "Premium Expansion Pack 2",
+      "sort_order": 2
     }
   ],
   "entitlements": [
     {
-      "id": "ent_core_credits",
       "unique_handle": "core_credits",
       "name": "Core Credits",
       "type": "credits",
       "unit": "minutes"
     },
     {
-      "id": "ent_premium_credits",
       "unique_handle": "premium_credits",
       "name": "Premium Credits",
       "type": "credits",
       "unit": "minutes"
     },
     {
-      "id": "ent_active_projects",
       "unique_handle": "active_projects",
       "name": "Active Projects",
       "type": "usage_limit",
       "unit": "projects"
     },
     {
-      "id": "ent_attachment_size",
       "unique_handle": "attachment_size_mb",
       "name": "Attachment Size Limit",
       "type": "usage_limit",
       "unit": "minutes"
     },
     {
-      "id": "ent_items_per_project",
       "unique_handle": "items_per_project",
       "name": "Items per Project",
       "type": "usage_limit",
       "unit": "items"
     },
     {
-      "id": "ent_seats",
       "unique_handle": "seats",
       "name": "Editor Seats",
       "type": "seat",
       "unit": "seats"
     },
     {
-      "id": "ent_custom_workflows",
       "unique_handle": "custom_workflows",
       "name": "Custom Workflows",
       "type": "usage_limit",
       "unit": "workflows"
     },
     {
-      "id": "ent_automations",
       "unique_handle": "automations",
       "name": "Automations",
       "type": "usage_limit",
       "unit": "automations"
     },
     {
-      "id": "ent_branding",
       "unique_handle": "branding",
-      "name": "Branding",
-      "type": "capability_tier"
+      "name": "Custom Branding",
+      "type": "feature"
     },
     {
-      "id": "ent_data_export",
       "unique_handle": "data_export",
       "name": "Data Export",
       "type": "feature"
     },
     {
-      "id": "ent_bulk_export",
       "unique_handle": "bulk_export",
       "name": "Bulk Export",
       "type": "feature"
     },
     {
-      "id": "ent_brand_kit",
       "unique_handle": "brand_kit",
       "name": "Brand Kit",
       "type": "feature"
     },
     {
-      "id": "ent_analytics",
       "unique_handle": "analytics",
       "name": "Analytics",
       "type": "feature"
     },
     {
-      "id": "ent_collaboration",
       "unique_handle": "collaboration",
       "name": "Collaboration",
       "type": "feature"
     },
     {
-      "id": "ent_support",
       "unique_handle": "support",
       "name": "Support Level",
-      "type": "capability_tier"
+      "type": "capability_tier",
+      "tier_definitions": [
+        {
+          "name": "Community",
+          "handle": "community",
+          "description": "Self-serve support via help center and community forum"
+        },
+        {
+          "name": "Standard",
+          "handle": "standard",
+          "description": "Email and chat support with priority response during business hours"
+        },
+        {
+          "name": "Dedicated Priority",
+          "handle": "dedicated_priority",
+          "description": "Dedicated support team with priority escalation and direct Slack channel"
+        }
+      ]
     },
     {
-      "id": "ent_sso_saml",
       "unique_handle": "sso_saml",
       "name": "SSO / SAML",
       "type": "feature"
     },
     {
-      "id": "ent_custom_data_residency",
       "unique_handle": "custom_data_residency",
       "name": "Data Residency",
       "type": "feature"
     },
     {
-      "id": "ent_dedicated_csm",
       "unique_handle": "dedicated_csm",
       "name": "Dedicated CSM",
       "type": "feature"
@@ -139,642 +159,599 @@
   "entitlement_rules": [
     {
       "id": "ev_core_credits_free",
-      "entitlement_id": "ent_core_credits",
-      "plan_ids": [
-        "starter"
+      "entitlement_id": "core_credits",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "starter"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "credits",
-        "initial_grant": 30,
-        "allowance": 5,
-        "period": "per_month",
-        "rollover": true,
-        "max_balance": 90,
-        "top_up_available": false,
-        "unit": "minutes"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "initial_grant": 30,
+      "allowance_value": 5,
+      "reset_period": "month",
+      "rollover_enabled": true,
+      "max_balance": 90,
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_core_credits_pro_monthly",
-      "entitlement_id": "ent_core_credits",
-      "plan_ids": [
-        "professional"
+      "entitlement_id": "core_credits",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "professional"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "credits",
-        "allowance": 30,
-        "period": "per_month",
-        "rollover": true,
-        "max_balance": 360,
-        "top_up_available": false,
-        "unit": "minutes"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "allowance_value": 30,
+      "reset_period": "month",
+      "rollover_enabled": true,
+      "max_balance": 360,
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_core_credits_enterprise",
-      "entitlement_id": "ent_core_credits",
-      "plan_ids": [
-        "enterprise"
+      "entitlement_id": "core_credits",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "credits",
-        "allowance": 999999,
-        "period": "per_month",
-        "rollover": false,
-        "top_up_available": false,
-        "unit": "minutes"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "allowance_value": "unlimited",
+      "reset_period": "month",
+      "rollover_enabled": false,
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_premium_credits_free",
-      "entitlement_id": "ent_premium_credits",
-      "plan_ids": [
-        "starter"
+      "entitlement_id": "premium_credits",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "starter"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "credits",
-        "initial_grant": 5,
-        "allowance": 0,
-        "period": "per_month",
-        "rollover": false,
-        "top_up_available": false,
-        "unit": "minutes"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "initial_grant": 5,
+      "allowance_value": 0,
+      "reset_period": "month",
+      "rollover_enabled": false,
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_premium_credits_pro_monthly",
-      "entitlement_id": "ent_premium_credits",
-      "plan_ids": [
-        "professional"
+      "entitlement_id": "premium_credits",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "professional"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "credits",
-        "allowance": 10,
-        "period": "per_month",
-        "rollover": true,
-        "max_balance": 120,
-        "top_up_available": false,
-        "unit": "minutes"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "allowance_value": 10,
+      "reset_period": "month",
+      "rollover_enabled": true,
+      "max_balance": 120,
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_premium_credits_enterprise",
-      "entitlement_id": "ent_premium_credits",
-      "plan_ids": [
-        "enterprise"
+      "entitlement_id": "premium_credits",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "credits",
-        "allowance": 125,
-        "period": "per_month",
-        "rollover": true,
-        "max_balance": 1500,
-        "top_up_available": false,
-        "unit": "minutes"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "allowance_value": 125,
+      "reset_period": "month",
+      "rollover_enabled": true,
+      "max_balance": 1500,
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_projects_free",
-      "entitlement_id": "ent_active_projects",
-      "plan_ids": [
-        "starter"
+      "entitlement_id": "active_projects",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "starter"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 6,
-        "unit": "projects",
-        "period": "concurrent",
-        "enforcement": "hard_block"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "limit_value": 6,
+      "period_scope": "concurrent",
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_projects_paid",
-      "entitlement_id": "ent_active_projects",
-      "plan_ids": [
-        "professional",
-        "enterprise"
+      "entitlement_id": "active_projects",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "professional"
+        },
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 999999,
-        "unit": "projects",
-        "period": "concurrent",
-        "enforcement": "allow_overage"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "limit_value": "unlimited",
+      "period_scope": "concurrent",
+      "enforcement": "allow_overage"
     },
     {
       "id": "ev_attachment_size_free",
-      "entitlement_id": "ent_attachment_size",
-      "plan_ids": [
-        "starter"
+      "entitlement_id": "attachment_size_mb",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "starter"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 5,
-        "unit": "minutes",
-        "period": "per_instance",
-        "enforcement": "hard_block"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "limit_value": 5,
+      "period_scope": "per_instance",
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_attachment_size_pro",
-      "entitlement_id": "ent_attachment_size",
-      "plan_ids": [
-        "professional"
+      "entitlement_id": "attachment_size_mb",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "professional"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 30,
-        "unit": "minutes",
-        "period": "per_instance",
-        "enforcement": "hard_block"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "limit_value": 30,
+      "period_scope": "per_instance",
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_attachment_size_enterprise",
-      "entitlement_id": "ent_attachment_size",
-      "plan_ids": [
-        "enterprise"
+      "entitlement_id": "attachment_size_mb",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 999999,
-        "unit": "minutes",
-        "period": "per_instance",
-        "enforcement": "allow_overage"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "limit_value": "unlimited",
+      "period_scope": "per_instance",
+      "enforcement": "allow_overage"
     },
     {
       "id": "ev_items_free",
-      "entitlement_id": "ent_items_per_project",
-      "plan_ids": [
-        "starter"
+      "entitlement_id": "items_per_project",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "starter"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 15,
-        "unit": "items",
-        "period": "per_instance",
-        "enforcement": "hard_block"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "limit_value": 15,
+      "period_scope": "per_instance",
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_items_pro",
-      "entitlement_id": "ent_items_per_project",
-      "plan_ids": [
-        "professional"
+      "entitlement_id": "items_per_project",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "professional"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 25,
-        "unit": "items",
-        "period": "per_instance",
-        "enforcement": "hard_block"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "limit_value": 25,
+      "period_scope": "per_instance",
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_items_enterprise",
-      "entitlement_id": "ent_items_per_project",
-      "plan_ids": [
-        "enterprise"
+      "entitlement_id": "items_per_project",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 999999,
-        "unit": "items",
-        "period": "per_instance",
-        "enforcement": "allow_overage"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "limit_value": "unlimited",
+      "period_scope": "per_instance",
+      "enforcement": "allow_overage"
     },
     {
       "id": "ev_seats_free",
-      "entitlement_id": "ent_seats",
-      "plan_ids": [
-        "starter"
+      "entitlement_id": "seats",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "starter"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "seat",
-        "included_seats": 1,
-        "max_seats": 1,
-        "seat_type": "editor"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "included_count": 1,
+      "max_seats": 1,
+      "seat_type_id": "editor",
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_seats_pro",
-      "entitlement_id": "ent_seats",
-      "plan_ids": [
-        "professional"
+      "entitlement_id": "seats",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "professional"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "seat",
-        "included_seats": 1,
-        "max_seats": null,
-        "seat_type": "editor"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "included_count": 1,
+      "max_seats": null,
+      "seat_type_id": "editor",
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_seats_enterprise",
-      "entitlement_id": "ent_seats",
-      "plan_ids": [
-        "enterprise"
+      "entitlement_id": "seats",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "seat",
-        "included_seats": 10,
-        "max_seats": 999999,
-        "seat_type": "editor"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "included_count": 10,
+      "max_seats": null,
+      "seat_type_id": "editor",
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_custom_workflows_free",
-      "entitlement_id": "ent_custom_workflows",
-      "plan_ids": [
-        "starter"
+      "entitlement_id": "custom_workflows",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "starter"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 1,
-        "unit": "workflows",
-        "period": "concurrent",
-        "enforcement": "hard_block"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "limit_value": 1,
+      "period_scope": "concurrent",
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_custom_workflows_pro",
-      "entitlement_id": "ent_custom_workflows",
-      "plan_ids": [
-        "professional"
+      "entitlement_id": "custom_workflows",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "professional"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 10,
-        "unit": "workflows",
-        "period": "concurrent",
-        "enforcement": "hard_block"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "limit_value": 10,
+      "period_scope": "concurrent",
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_custom_workflows_enterprise",
-      "entitlement_id": "ent_custom_workflows",
-      "plan_ids": [
-        "enterprise"
+      "entitlement_id": "custom_workflows",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 999999,
-        "unit": "workflows",
-        "period": "concurrent",
-        "enforcement": "allow_overage"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "limit_value": "unlimited",
+      "period_scope": "concurrent",
+      "enforcement": "allow_overage"
     },
     {
       "id": "ev_automations_free",
-      "entitlement_id": "ent_automations",
-      "plan_ids": [
-        "starter"
+      "entitlement_id": "automations",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "starter"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 1,
-        "unit": "automations",
-        "period": "concurrent",
-        "enforcement": "hard_block"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "limit_value": 1,
+      "period_scope": "concurrent",
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_automations_pro",
-      "entitlement_id": "ent_automations",
-      "plan_ids": [
-        "professional"
+      "entitlement_id": "automations",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "professional"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 10,
-        "unit": "automations",
-        "period": "concurrent",
-        "enforcement": "hard_block"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "limit_value": 10,
+      "period_scope": "concurrent",
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_automations_enterprise",
-      "entitlement_id": "ent_automations",
-      "plan_ids": [
-        "enterprise"
+      "entitlement_id": "automations",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "usage_limit",
-        "limit_value": 999999,
-        "unit": "automations",
-        "period": "concurrent",
-        "enforcement": "allow_overage"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "limit_value": "unlimited",
+      "period_scope": "concurrent",
+      "enforcement": "allow_overage"
     },
     {
       "id": "ev_branding_free",
-      "entitlement_id": "ent_branding",
-      "plan_ids": [
-        "starter"
+      "entitlement_id": "branding",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "starter"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "feature",
-        "enabled": false
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "enabled": false
     },
     {
       "id": "ev_branding_paid",
-      "entitlement_id": "ent_branding",
-      "plan_ids": [
-        "professional",
-        "enterprise"
+      "entitlement_id": "branding",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "professional"
+        },
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "capability_tier",
-        "tier_name": "White Label",
-        "tier_description": "White-label experience with custom branding across all customer surfaces"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "enabled": true
     },
     {
       "id": "ev_support_free",
-      "entitlement_id": "ent_support",
-      "plan_ids": [
-        "starter"
+      "entitlement_id": "support",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "starter"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "capability_tier",
-        "tier_name": "Community",
-        "tier_description": "Self-serve support via help center and community forum"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "tier_value": "community"
     },
     {
       "id": "ev_support_pro",
-      "entitlement_id": "ent_support",
-      "plan_ids": [
-        "professional"
+      "entitlement_id": "support",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "professional"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "capability_tier",
-        "tier_name": "Standard",
-        "tier_description": "Email and chat support with priority response during business hours"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "tier_value": "standard"
     },
     {
       "id": "ev_support_enterprise",
-      "entitlement_id": "ent_support",
-      "plan_ids": [
-        "enterprise"
+      "entitlement_id": "support",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "capability_tier",
-        "tier_name": "Dedicated Priority",
-        "tier_description": "Dedicated support team with priority escalation and direct Slack channel"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "tier_value": "dedicated_priority"
     },
     {
       "id": "ev_data_export_starter_denied",
-      "entitlement_id": "ent_data_export",
-      "plan_ids": [
-        "starter"
+      "entitlement_id": "data_export",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "starter"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "feature",
-        "enabled": false
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "enabled": false
     },
     {
       "id": "ev_data_export_enabled",
-      "entitlement_id": "ent_data_export",
-      "plan_ids": [
-        "professional",
-        "enterprise"
+      "entitlement_id": "data_export",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "professional"
+        },
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "feature",
-        "enabled": true
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "enabled": true
     },
     {
       "id": "ev_bulk_export_enabled",
-      "entitlement_id": "ent_bulk_export",
-      "plan_ids": [
-        "professional",
-        "enterprise"
+      "entitlement_id": "bulk_export",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "professional"
+        },
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "feature",
-        "enabled": true
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "enabled": true
     },
     {
       "id": "ev_brand_kit_starter_denied",
-      "entitlement_id": "ent_brand_kit",
-      "plan_ids": [
-        "starter"
+      "entitlement_id": "brand_kit",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "starter"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "feature",
-        "enabled": false
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "enabled": false
     },
     {
       "id": "ev_brand_kit_enabled",
-      "entitlement_id": "ent_brand_kit",
-      "plan_ids": [
-        "professional",
-        "enterprise"
+      "entitlement_id": "brand_kit",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "professional"
+        },
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "feature",
-        "enabled": true
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "enabled": true
     },
     {
       "id": "ev_analytics_enabled",
-      "entitlement_id": "ent_analytics",
-      "plan_ids": [
-        "professional",
-        "enterprise"
+      "entitlement_id": "analytics",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "professional"
+        },
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "feature",
-        "enabled": true
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "enabled": true
     },
     {
       "id": "ev_collaboration_enabled",
-      "entitlement_id": "ent_collaboration",
-      "plan_ids": [
-        "professional",
-        "enterprise"
+      "entitlement_id": "collaboration",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "professional"
+        },
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "feature",
-        "enabled": true
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "enabled": true
     },
     {
       "id": "ev_sso_enabled",
-      "entitlement_id": "ent_sso_saml",
-      "plan_ids": [
-        "enterprise"
+      "entitlement_id": "sso_saml",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "feature",
-        "enabled": true
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "enabled": true
     },
     {
       "id": "ev_data_residency_enabled",
-      "entitlement_id": "ent_custom_data_residency",
-      "plan_ids": [
-        "enterprise"
+      "entitlement_id": "custom_data_residency",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "feature",
-        "enabled": true
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "enabled": true
     },
     {
       "id": "ev_csm_enabled",
-      "entitlement_id": "ent_dedicated_csm",
-      "plan_ids": [
-        "enterprise"
+      "entitlement_id": "dedicated_csm",
+      "targets": [
+        {
+          "kind": "plan",
+          "id": "enterprise"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "feature",
-        "enabled": true
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "enabled": true
     },
     {
       "id": "ev_seats_extra_seat",
-      "entitlement_id": "ent_seats",
-      "plan_ids": [
-        "addon_sandbox_extra_seat"
+      "entitlement_id": "seats",
+      "targets": [
+        {
+          "kind": "addon",
+          "id": "extra_seat"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "seat",
-        "included_seats": 1,
-        "max_seats": 1,
-        "seat_type": "editor"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "included_count": 1,
+      "max_seats": 1,
+      "seat_type_id": "editor",
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_premium_credits_ep1",
-      "entitlement_id": "ent_premium_credits",
-      "plan_ids": [
-        "addon_sandbox_premium_ep1"
+      "entitlement_id": "premium_credits",
+      "targets": [
+        {
+          "kind": "addon",
+          "id": "premium_expansion_pack_1"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "credits",
-        "allowance": 20,
-        "period": "per_month",
-        "rollover": false,
-        "top_up_available": false,
-        "unit": "minutes"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "allowance_value": 20,
+      "reset_period": "month",
+      "rollover_enabled": false,
+      "enforcement": "hard_block"
     },
     {
       "id": "ev_premium_credits_ep2",
-      "entitlement_id": "ent_premium_credits",
-      "plan_ids": [
-        "addon_sandbox_premium_ep2"
+      "entitlement_id": "premium_credits",
+      "targets": [
+        {
+          "kind": "addon",
+          "id": "premium_expansion_pack_2"
+        }
       ],
-      "segment_id": null,
-      "type_fields": {
-        "kind": "credits",
-        "allowance": 40,
-        "period": "per_month",
-        "rollover": false,
-        "top_up_available": false,
-        "unit": "minutes"
-      },
-      "current_usage": 0
+      "segment_ids": [],
+      "allowance_value": 40,
+      "reset_period": "month",
+      "rollover_enabled": false,
+      "enforcement": "hard_block"
     }
   ],
   "segments": [
     {
-      "id": "plan_starter",
+      "handle": "plan_starter",
       "name": "Starter Plan",
-      "slug": "plan_starter",
       "predicates": [
         {
           "field": "plan",
@@ -784,9 +761,8 @@
       ]
     },
     {
-      "id": "plan_professional",
+      "handle": "plan_professional",
       "name": "Professional Plan",
-      "slug": "plan_professional",
       "predicates": [
         {
           "field": "plan",
@@ -796,9 +772,8 @@
       ]
     },
     {
-      "id": "plan_enterprise",
+      "handle": "plan_enterprise",
       "name": "Enterprise Plan",
-      "slug": "plan_enterprise",
       "predicates": [
         {
           "field": "plan",
@@ -808,9 +783,8 @@
       ]
     },
     {
-      "id": "role_owner",
+      "handle": "role_owner",
       "name": "Owner Role",
-      "slug": "role_owner",
       "predicates": [
         {
           "field": "role",
@@ -820,9 +794,8 @@
       ]
     },
     {
-      "id": "role_admin",
+      "handle": "role_admin",
       "name": "Admin Role",
-      "slug": "role_admin",
       "predicates": [
         {
           "field": "role",
@@ -832,9 +805,8 @@
       ]
     },
     {
-      "id": "role_editor",
+      "handle": "role_editor",
       "name": "Editor Role",
-      "slug": "role_editor",
       "predicates": [
         {
           "field": "role",
@@ -844,9 +816,8 @@
       ]
     },
     {
-      "id": "role_viewer",
+      "handle": "role_viewer",
       "name": "Viewer Role",
-      "slug": "role_viewer",
       "predicates": [
         {
           "field": "role",
@@ -856,9 +827,8 @@
       ]
     },
     {
-      "id": "perm_use_core",
+      "handle": "perm_use_core",
       "name": "Can Use Core",
-      "slug": "perm_use_core",
       "predicates": [
         {
           "field": "perm_use_core",
@@ -868,9 +838,8 @@
       ]
     },
     {
-      "id": "perm_use_premium",
+      "handle": "perm_use_premium",
       "name": "Can Use Premium",
-      "slug": "perm_use_premium",
       "predicates": [
         {
           "field": "perm_use_premium",
@@ -880,9 +849,8 @@
       ]
     },
     {
-      "id": "perm_manage_brand_kit",
+      "handle": "perm_manage_brand_kit",
       "name": "Can Manage Brand Kit",
-      "slug": "perm_manage_brand_kit",
       "predicates": [
         {
           "field": "perm_manage_brand_kit",
@@ -892,9 +860,8 @@
       ]
     },
     {
-      "id": "perm_view_analytics",
+      "handle": "perm_view_analytics",
       "name": "Can View Analytics",
-      "slug": "perm_view_analytics",
       "predicates": [
         {
           "field": "perm_view_analytics",
@@ -904,9 +871,8 @@
       ]
     },
     {
-      "id": "perm_export_bulk",
+      "handle": "perm_export_bulk",
       "name": "Can Export Bulk Data",
-      "slug": "perm_export_bulk",
       "predicates": [
         {
           "field": "perm_export_bulk",
@@ -916,9 +882,8 @@
       ]
     },
     {
-      "id": "perm_export_data",
+      "handle": "perm_export_data",
       "name": "Can Export Data",
-      "slug": "perm_export_data",
       "predicates": [
         {
           "field": "perm_export_data",
@@ -928,9 +893,8 @@
       ]
     },
     {
-      "id": "perm_manage_billing",
+      "handle": "perm_manage_billing",
       "name": "Can Manage Billing",
-      "slug": "perm_manage_billing",
       "predicates": [
         {
           "field": "perm_manage_billing",
@@ -940,9 +904,8 @@
       ]
     },
     {
-      "id": "perm_manage_seats",
+      "handle": "perm_manage_seats",
       "name": "Can Manage Seats",
-      "slug": "perm_manage_seats",
       "predicates": [
         {
           "field": "perm_manage_seats",
@@ -952,9 +915,8 @@
       ]
     },
     {
-      "id": "can_purchase_credits",
+      "handle": "can_purchase_credits",
       "name": "Can Purchase Credits",
-      "slug": "can_purchase_credits",
       "predicates": [
         {
           "field": "canOrgPurchaseCredits",
@@ -969,32 +931,14 @@
       ]
     }
   ],
-  "theme": {
-    "id": "0b0a4b5e-27bb-4d67-8bd3-e2f1df9640df",
-    "name": "Sandbox Default",
-    "version": "1",
-    "colors": {
-      "primary": "#6C5CE7",
-      "primaryText": "#FFFFFF",
-      "accent": "#00B894",
-      "accentText": "#FFFFFF",
-      "surface": "#FFFFFF",
-      "surfaceBorder": "#E6E8EC",
-      "text": "#212121",
-      "textSecondary": "#616161"
-    },
-    "typography": {
-      "fontFamily": "Inter, sans-serif",
-      "fontSize": "14px",
-      "fontSizeSmall": "12px",
-      "fontSizeHeader": "20px"
-    },
-    "shape": {
-      "borderRadius": "8px",
-      "borderRadiusSmall": "6px",
-      "borderRadiusLarge": "12px"
+  "seat_types": [
+    {
+      "handle": "editor",
+      "name": "Editor",
+      "is_default": true,
+      "entitlement_handles": []
     }
-  },
+  ],
   "content_ui_paths": [
     {
       "name": "Checkout: Professional",
@@ -1223,7 +1167,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -1263,7 +1206,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -1304,7 +1246,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -1333,7 +1274,7 @@
               "fields": {
                 "modal_type": "Optional",
                 "header": "Export your data",
-                "body": "Get your data as files to share anywhere \u2014 email, Slack, presentations, social media. Professional plan starts at $55/mo.",
+                "body": "Get your data as files to share anywhere — email, Slack, presentations, social media. Professional plan starts at $55/mo.",
                 "secondary_body": ""
               },
               "ctas": [
@@ -1352,7 +1293,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -1402,7 +1342,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -1414,8 +1353,7 @@
       "order": 2,
       "trigger": {
         "type": "entitlement_gate",
-        "entitlement_handle": "branding",
-        "tier_threshold": "white_label"
+        "entitlement_handle": "branding"
       },
       "payloads": [
         {
@@ -1444,7 +1382,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -1486,7 +1423,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -1528,7 +1464,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -1575,7 +1510,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -1625,7 +1559,6 @@
             },
             "cooldown_days": 3
           },
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -1670,7 +1603,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -1715,7 +1647,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -1759,7 +1690,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -1802,7 +1732,6 @@
               "period": "lifetime"
             }
           },
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -1814,7 +1743,6 @@
       "order": 1,
       "trigger": {
         "type": "trial_progress",
-        "trial_type": "reverse",
         "progress_percent": 50
       },
       "payloads": [
@@ -1830,7 +1758,7 @@
             {
               "template_id": "banner_placement",
               "fields": {
-                "header": "7 days left \u2014 you've used {{usage_current}} credits",
+                "header": "7 days left — you've used {{usage_current}} credits",
                 "body": "Keep access to data export, bulk export, and brand kit.",
                 "dismissible": "Yes"
               },
@@ -1851,7 +1779,6 @@
               "period": "lifetime"
             }
           },
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -1863,7 +1790,6 @@
       "order": 2,
       "trigger": {
         "type": "trial_ending",
-        "trial_type": "reverse",
         "days_before_end": 2
       },
       "payloads": [
@@ -1902,7 +1828,6 @@
               "period": "lifetime"
             }
           },
-          "status": "active",
           "created_at": "2026-02-15"
         },
         {
@@ -1916,7 +1841,7 @@
               "template_id": "email",
               "fields": {
                 "subject": "Your Professional trial ends in 2 days",
-                "preheader": "Here's what you created \u2014 and what you'll lose",
+                "preheader": "Here's what you created — and what you'll lose",
                 "header": "Your trial ends {{trial_days_remaining}} days",
                 "body": "During your trial, you used {{usage_current}} Core credits. On expiry, you'll lose access to data export, bulk export, brand kit, and analytics.",
                 "send_delay": "0"
@@ -1938,7 +1863,6 @@
               "period": "lifetime"
             }
           },
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -1949,8 +1873,7 @@
       "category": "trials",
       "order": 3,
       "trigger": {
-        "type": "trial_ended",
-        "trial_type": "reverse"
+        "type": "trial_ended"
       },
       "payloads": [
         {
@@ -1965,7 +1888,7 @@
               "fields": {
                 "modal_type": "Blocking",
                 "header": "Your Professional access has ended",
-                "body": "Your data is safe \u2014 upgrade anytime to unlock data export, bulk export, brand kit, and analytics again.",
+                "body": "Your data is safe — upgrade anytime to unlock data export, bulk export, brand kit, and analytics again.",
                 "secondary_body": ""
               },
               "ctas": [
@@ -1980,14 +1903,13 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
     },
     {
       "id": "pl_premium_expansion",
-      "name": "E1: Advanced Monthly Cap \u2014 Expansion Pack",
+      "name": "E1: Advanced Monthly Cap — Expansion Pack",
       "category": "other_conversion",
       "order": 0,
       "trigger": {
@@ -2033,14 +1955,13 @@
             },
             "cooldown_days": 7
           },
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
     },
     {
       "id": "pl_4th_seat",
-      "name": "E4: 4th Seat \u2014 Enterprise Nudge",
+      "name": "E4: 4th Seat — Enterprise Nudge",
       "category": "other_conversion",
       "order": 1,
       "trigger": {
@@ -2083,7 +2004,6 @@
             },
             "cooldown_days": 14
           },
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -2125,14 +2045,7 @@
               ]
             }
           ],
-          "caps": {
-            "max_per_period": {
-              "count": 1,
-              "period": "week"
-            },
-            "cooldown_days": 7
-          },
-          "status": "active",
+          "caps": {},
           "created_at": "2026-02-15"
         }
       ]
@@ -2181,7 +2094,6 @@
             },
             "cooldown_days": 1
           },
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -2209,7 +2121,7 @@
               "template_id": "modal_overlay",
               "fields": {
                 "modal_type": "Blocking",
-                "header": "Payment failed \u2014 update your method",
+                "header": "Payment failed — update your method",
                 "body": "We couldn't process your last payment. Update your payment method to keep your Professional access."
               },
               "ctas": [
@@ -2221,7 +2133,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -2268,7 +2179,6 @@
               "period": "lifetime"
             }
           },
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -2309,7 +2219,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-02-15"
         }
       ]
@@ -2326,7 +2235,6 @@
         "segment_chips": []
       },
       "caps": {},
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2354,7 +2262,6 @@
         "segment_chips": []
       },
       "caps": {},
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2385,7 +2292,6 @@
         "segment_chips": []
       },
       "caps": {},
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2419,7 +2325,6 @@
         "segment_chips": []
       },
       "caps": {},
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2429,7 +2334,7 @@
           "fields": {
             "modal_type": "Optional",
             "header": "Export your data",
-            "body": "Get your data as files to share anywhere \u2014 email, Slack, presentations, social media. Professional plan starts at $55/mo.",
+            "body": "Get your data as files to share anywhere — email, Slack, presentations, social media. Professional plan starts at $55/mo.",
             "secondary_body": ""
           },
           "ctas": [
@@ -2458,7 +2363,6 @@
         "segment_chips": []
       },
       "caps": {},
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2499,7 +2403,6 @@
         "segment_chips": []
       },
       "caps": {},
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2531,7 +2434,6 @@
         "segment_chips": []
       },
       "caps": {},
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2564,7 +2466,6 @@
         "segment_chips": []
       },
       "caps": {},
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2597,7 +2498,6 @@
         "segment_chips": []
       },
       "caps": {},
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2641,7 +2541,6 @@
         },
         "cooldown_days": 3
       },
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2675,7 +2574,6 @@
         "segment_chips": []
       },
       "caps": {},
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2710,7 +2608,6 @@
         "segment_chips": []
       },
       "caps": {},
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2745,7 +2642,6 @@
         "segment_chips": []
       },
       "caps": {},
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2782,7 +2678,6 @@
           "period": "lifetime"
         }
       },
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2818,7 +2713,6 @@
           "period": "lifetime"
         }
       },
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2826,7 +2720,7 @@
         {
           "template_id": "banner_placement",
           "fields": {
-            "header": "7 days left \u2014 you've used {{usage_current}} credits",
+            "header": "7 days left — you've used {{usage_current}} credits",
             "body": "Keep access to data export, bulk export, and brand kit.",
             "dismissible": "Yes"
           },
@@ -2855,7 +2749,6 @@
           "period": "lifetime"
         }
       },
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2896,7 +2789,6 @@
           "period": "lifetime"
         }
       },
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2905,7 +2797,7 @@
           "template_id": "email",
           "fields": {
             "subject": "Your Professional trial ends in 2 days",
-            "preheader": "Here's what you created \u2014 and what you'll lose",
+            "preheader": "Here's what you created — and what you'll lose",
             "header": "Your trial ends {{trial_days_remaining}} days",
             "body": "During your trial, you used {{usage_current}} Core credits. On expiry, you'll lose access to data export, bulk export, brand kit, and analytics.",
             "send_delay": "0"
@@ -2930,7 +2822,6 @@
         "segment_chips": []
       },
       "caps": {},
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -2940,7 +2831,7 @@
           "fields": {
             "modal_type": "Blocking",
             "header": "Your Professional access has ended",
-            "body": "Your data is safe \u2014 upgrade anytime to unlock data export, bulk export, brand kit, and analytics again.",
+            "body": "Your data is safe — upgrade anytime to unlock data export, bulk export, brand kit, and analytics again.",
             "secondary_body": ""
           },
           "ctas": [
@@ -2971,7 +2862,6 @@
         },
         "cooldown_days": 7
       },
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -3015,7 +2905,6 @@
         },
         "cooldown_days": 14
       },
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -3049,14 +2938,7 @@
         ],
         "segment_chips": []
       },
-      "caps": {
-        "max_per_period": {
-          "count": 1,
-          "period": "week"
-        },
-        "cooldown_days": 7
-      },
-      "status": "active",
+      "caps": {},
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -3096,7 +2978,6 @@
         },
         "cooldown_days": 1
       },
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -3130,7 +3011,6 @@
         "segment_chips": []
       },
       "caps": {},
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -3139,7 +3019,7 @@
           "template_id": "modal_overlay",
           "fields": {
             "modal_type": "Blocking",
-            "header": "Payment failed \u2014 update your method",
+            "header": "Payment failed — update your method",
             "body": "We couldn't process your last payment. Update your payment method to keep your Professional access."
           },
           "ctas": [
@@ -3166,7 +3046,6 @@
           "period": "lifetime"
         }
       },
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",
@@ -3197,7 +3076,6 @@
         "segment_chips": []
       },
       "caps": {},
-      "status": "active",
       "created_at": "2026-02-15",
       "updated_at": "2026-04-03T00:00:00Z",
       "source_mode": "inline",

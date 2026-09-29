@@ -33,6 +33,6 @@
     "types": ["astro/client"],
     "skipLibCheck": true
   },
-  "include": ["src/sandpack/**/*.ts", "src/components/**/*.ts", "src/components/**/*.tsx"],
+  "include": ["src/sandpack/**/*.ts", "src/components/**/*.ts", "src/components/**/*.tsx", "tests/**/*.ts"],
   "exclude": ["src/components/galleries/**"]
 }

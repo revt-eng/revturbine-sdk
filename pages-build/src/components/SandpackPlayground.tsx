@@ -14,6 +14,8 @@ import { DEMO_USER_IDS, type DemoUserId } from '../sandpack/shared';
 import playbookRaw from '../sandpack/example-playbook.json?raw';
 import demoUsersRaw from '../sandpack/demoUsers.ts?raw';
 import sharedRaw from '../sandpack/shared.ts?raw';
+import demoBrandingRaw from '../sandpack/demoBranding.ts?raw';
+import { demoBranding } from '../sandpack/demoBranding';
 
 // Typed import for host-side inspector usage
 import playbookJson from '../sandpack/example-playbook.json';
@@ -31,13 +33,14 @@ import {
   DEFAULT_THEME,
   Slot,
   Gate,
+  RuntimeMode,
 } from '@revturbine/sdk';
 
 /**
  * The inspector's palette, matched to the playground chrome.
  *
  * Scoped deliberately to the inspector: the rendered-output panel keeps the demo
- * config's own theme, because that panel is showing what a customer's placement
+ * app's own branding (`demoBranding`), because that panel is showing what a customer's placement
  * looks like with their branding — recolouring it would misrepresent the demo.
  * The playground chrome is dark in both site themes, so this is unconditional
  * rather than tied to Starlight's light/dark toggle.
@@ -73,6 +76,7 @@ const APP_TSX = `import React, { useMemo } from "react";
 import { RevTurbineProvider, RuntimeMode } from "@revturbine/sdk";
 import playbook from "./playbook.json";
 import { demoUsers } from "./demoUsers";
+import { demoBranding } from "./demoBranding";
 import { selectedUserId } from "./demoUser";
 import { Example } from "./Example";
 
@@ -87,6 +91,8 @@ export default function App() {
       runtimeMode: RuntimeMode.LocalOnly,
       previewMode: true,
       localRuntime: { playbook },
+      // Branding is the app's, not the Playbook's — pass it to the SDK.
+      branding: demoBranding,
       user: activeUser.context,
       uiPathResolvers: {
         navigate_to_plans: async (ctx) => { console.log("[uiPath] navigate_to_plans", ctx); },
@@ -148,6 +154,7 @@ function buildSandpackFiles(
     // Fixtures — importable, but not worth a tab.
     '/demoUsers.ts': { code: demoUsersRaw as string, hidden: true },
     '/shared.ts': { code: sharedRaw as string, hidden: true },
+    '/demoBranding.ts': { code: demoBrandingRaw as string, hidden: true },
     '/playbook.json': { code: playbookRaw as string, hidden: true },
   };
 }
@@ -618,7 +625,9 @@ function PlaygroundRuntime(props: {
 }) {
   const options = useMemo(
     () => ({
+      runtimeMode: RuntimeMode.LocalOnly,
       localRuntime: { playbook: playbookJson },
+      branding: demoBranding,
       // Live docs playground render — keep it out of SDK adoption telemetry.
       previewMode: true,
       uiPathResolvers: {

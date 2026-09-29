@@ -16,9 +16,10 @@
     "lint:reason-codes": "node scripts/check-reason-codes.mjs",
     "gen:reason-codes": "node scripts/gen-reason-codes.mjs",
     "lint:no-internal-pkg": "node scripts/check-no-internal-pkg.mjs",
-    "check": "pnpm lint:no-internal-pkg && pnpm typecheck && pnpm lint:md && pnpm lint:config && pnpm lint:reason-codes && pnpm build && pnpm lint:links",
+    "check": "pnpm lint:no-internal-pkg && pnpm typecheck && pnpm test && pnpm lint:md && pnpm lint:config && pnpm lint:reason-codes && pnpm build && pnpm lint:links",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
-    "lint:deps": "node scripts/check-deps.mjs"
+    "lint:deps": "node scripts/check-deps.mjs",
+    "test": "vitest --run"
   },
   "packageManager": "pnpm@11.12.0",
   "engines": {
@@ -31,7 +32,7 @@
     "@revt-eng/core": "0.1.374",
     "@revt-eng/schema": "0.1.374",
     "@revt-eng/schema-external": "0.1.374",
-    "@revturbine/sdk": "0.6.0",
+    "@revturbine/sdk": "0.11.16",
     "astro": "^6.1.9",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -46,6 +47,7 @@
     "esbuild": "0.27.7",
     "markdownlint-cli2": "^0.22.1",
     "typedoc": "^0.28.19",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "4.1.10"
   }
 }

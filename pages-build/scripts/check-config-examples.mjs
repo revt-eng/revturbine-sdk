@@ -99,6 +99,23 @@ const BLOCK = /```json[^\n]*\btitle="revturbine\.playbook\.json"[^\n]*\n([\s\S]*
 let total = 0;
 const failures = [];
 
+/** Run one Playbook through both tiers; record blocking findings as a failure. */
+function checkPlaybook(where, raw) {
+  // Same shape as the CLI: semantic rules only ever see a structurally
+  // parsed graph; a parse failure passes just the Zod errors through.
+  const parsed = PlaybookSchema.safeParse(raw);
+  const findings = evaluate(parsed.success ? parsed.data : {}, {
+    structuralErrors: parsed.success ? undefined : parsed.error,
+  });
+  const blocking = findings.filter((f) => BLOCKING.has(f.severity));
+  if (blocking.length > 0) {
+    failures.push(
+      `${where}: ${blocking.length} blocking finding(s) from revturbine validate's catalog\n` +
+        blocking.map(formatFinding).join('\n'),
+    );
+  }
+}
+
 for (const file of walk(DOCS)) {
   const src = readFileSync(file, 'utf8');
   const rel = relative(ROOT, file).replaceAll('\\', '/');
@@ -115,20 +132,24 @@ for (const file of walk(DOCS)) {
       failures.push(`${where}: JSON parse error — ${e.message}`);
       continue;
     }
-    // Same shape as the CLI: semantic rules only ever see a structurally
-    // parsed graph; a parse failure passes just the Zod errors through.
-    const parsed = PlaybookSchema.safeParse(raw);
-    const findings = evaluate(parsed.success ? parsed.data : {}, {
-      structuralErrors: parsed.success ? undefined : parsed.error,
-    });
-    const blocking = findings.filter((f) => BLOCKING.has(f.severity));
-    if (blocking.length > 0) {
-      failures.push(
-        `${where}: ${blocking.length} blocking finding(s) from revturbine validate's catalog\n` +
-          blocking.map(formatFinding).join('\n'),
-      );
-    }
+    checkPlaybook(where, raw);
   }
+}
+
+// The demo Playbook every playground scenario and "Run this example" sandbox
+// mounts (BL-0401). It is not a fenced block, so the scan above never saw it —
+// and it sat in the retired config shape, denying every entitlement, until a
+// reader noticed. Same two tiers, same blocking severities.
+{
+  total += 1;
+  const rel = 'src/sandpack/example-playbook.json';
+  let raw;
+  try {
+    raw = JSON.parse(readFileSync(join(ROOT, rel), 'utf8'));
+  } catch (e) {
+    failures.push(`${rel}: JSON parse error — ${e.message}`);
+  }
+  if (raw !== undefined) checkPlaybook(rel, raw);
 }
 
 if (failures.length > 0) {

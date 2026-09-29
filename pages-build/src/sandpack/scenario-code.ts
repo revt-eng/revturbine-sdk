@@ -98,12 +98,17 @@ export function Example() {
       });
 
       const ctrl = session.placement({
-        slotId: "${scenario.slotId}",
-        surfaceTemplateIds: ${templateIdsLiteral},
+        surfaceSlot: {
+          id: "${scenario.slotId}",
+          name: "${scenario.slotId}",
+          surfaceTemplateIds: ${templateIdsLiteral},
+        },
       });
       ctrlRef.current = ctrl;
 
-      ctrl.subscribe((next) => setState(next));
+      // The controller notifies on every state change; read its snapshot.
+      ctrl.onChange(() => setState(ctrl.state));
+      await ctrl.load();
     })();
 
     return () => { ctrlRef.current?.dispose?.(); };
@@ -126,7 +131,7 @@ export function Example() {
 
     case 'HeadlessEntitlementGate':
       return `import React, { useEffect, useState } from "react";
-import { initRevTurbine, EntitlementGate, RuntimeMode } from "@revturbine/sdk/headless";
+import { initRevTurbine, RuntimeMode } from "@revturbine/sdk/headless";
 import playbook from "./playbook.json";
 import { demoUsers } from "./demoUsers";
 import { selectedUserId } from "./demoUser";
@@ -150,14 +155,29 @@ export function Example() {
         uiPathResolvers: {},
       });
 
-      const gate = new EntitlementGate(session, {
-        entitlementHandle: "${scenario.entitlementHandle}",
-        slotId: "${scenario.slotId}",
-        surfaceTemplateIds: ${templateIdsLiteral},
-      });
-      gate.check()
-        .then(setResult).catch((e) => setError(e.message));
-    })();
+      // The check: bound to this session, evaluated against the local playbook.
+      const gate = session.entitlement({ handle: "${scenario.entitlementHandle}" });
+      const entitlement = await gate.check();
+      gate.dispose();
+
+      // On denial, resolve the upgrade placement configured for this gate —
+      // the same lookup <Gate> makes before rendering it.
+      let upsell = null;
+      if (gate.denied) {
+        const ctrl = session.placement({
+          surfaceSlot: {
+            id: "${scenario.slotId}",
+            name: "${scenario.slotId}",
+            surfaceTemplateIds: ${templateIdsLiteral},
+            metadata: { surface_slot_category: "gated", entitlement_handle: "${scenario.entitlementHandle}" },
+          },
+        });
+        const decision = await ctrl.load();
+        ctrl.dispose();
+        upsell = decision?.visible ? decision.content : null;
+      }
+      setResult({ entitlement, upsell });
+    })().catch((e) => setError(e.message));
   }, []);
 
   return (
@@ -174,7 +194,7 @@ export function Example() {
 
     case 'HeadlessSession':
       return `import React, { useEffect, useState } from "react";
-import { initRevTurbine, SdkSession } from "@revturbine/sdk/headless";
+import { initRevTurbine, RuntimeMode } from "@revturbine/sdk/headless";
 import playbook from "./playbook.json";
 import { demoUsers } from "./demoUsers";
 import { selectedUserId } from "./demoUser";
@@ -198,13 +218,21 @@ export function Example() {
         uiPathResolvers: {},
       });
 
-      const sdk = new SdkSession(session, {});
-      sdk.getPlacement({
-        slotId: "${scenario.slotId}",
-        surfaceTemplateIds: ${templateIdsLiteral},
-      })
-        .then(setResult).catch((e) => setError(e.message));
-    })();
+      // initRevTurbine already returns the SdkSession. One-shot: build a
+      // controller, resolve one decision, and dispose it straight away.
+      const ctrl = session.placement({
+        surfaceSlot: {
+          id: "${scenario.slotId}",
+          name: "${scenario.slotId}",
+          surfaceTemplateIds: ${templateIdsLiteral},
+        },
+      });
+      try {
+        setResult(await ctrl.load());
+      } finally {
+        ctrl.dispose();
+      }
+    })().catch((e) => setError(e.message));
   }, []);
 
   return (

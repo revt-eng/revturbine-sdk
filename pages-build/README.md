@@ -8,7 +8,7 @@ This app is intentionally scoped to `revturbine-sdk-internal` and does not modif
 - The public `@revturbine/sdk` package installed into each Sandpack from npm
 - The full sandbox scenario set from the Next app showcase tracker
 - One page file per scenario (no in-preview scenario/user selectors)
-- Next-app `playbook.json` loaded through `localRuntime.exportedConfig`
+- The demo Playbook (`src/sandpack/example-playbook.json`) loaded through `localRuntime.playbook`
 - Easy copy/paste scenario wiring examples for `Slot` / `Gate` + user context
 
 ## SDK in Sandpack
@@ -80,8 +80,13 @@ Required one-time repo setting:
 
 - Scenario catalog file: `src/sandpack/scenarios.ts`
 - User presets: `src/sandpack/demoUsers.ts`
-- Exported config source copied from:
-	- `revturbine-sdk-internal/pages-build/src/sandpack/example-playbook.json`
+- Demo Playbook: `src/sandpack/example-playbook.json` — a canonical Playbook
+  (`artifact_type: "playbook"`, handle-keyed entitlement rules with `targets`).
+  `pnpm lint:config` runs it through `PlaybookSchema` + the `revturbine validate`
+  catalog, and `pnpm test` (`tests/example-playbook.test.ts`) parses it with
+  `PlaybookStrictSchema` and asserts every gate scenario's per-user grant/deny
+  through the published SDK. Branding lives in `src/sandpack/demoBranding.ts` and
+  is passed as the SDK `branding` option, not embedded in the Playbook.
 
 ## SDK Docs Integration
 

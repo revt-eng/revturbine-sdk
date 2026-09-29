@@ -10,13 +10,14 @@
  * usage, and entitlements.
  *
  * NOTE: this file is mounted into the Sandpack sandbox by `CodeExample.tsx` and is
- * only ever `?raw`-imported. Its imports (`@revturbine/sdk`, `./playbook.json`)
+ * only ever `?raw`-imported. Its imports (`@revturbine/sdk`, `./playbook.json`, `./demoBranding`)
  * resolve inside the sandbox, not in this repo.
  */
 import React, { useMemo } from 'react';
 import { RevTurbineProvider, RuntimeMode } from '@revturbine/sdk';
 import playbook from './playbook.json';
 import { demoUsers } from './demoUsers';
+import { demoBranding } from './demoBranding';
 
 export type DemoUserKey = keyof typeof demoUsers;
 
@@ -38,6 +39,8 @@ export function DemoApp({
       runtimeMode: RuntimeMode.LocalOnly,
       previewMode: true,
       localRuntime: { playbook },
+      // Branding is the app's, not the Playbook's — pass it to the SDK.
+      branding: demoBranding,
       user: demoUsers[user].context,
       // Placement CTAs call back into your app's navigation. Here we just log.
       uiPathResolvers: {
