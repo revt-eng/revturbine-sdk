@@ -2563,40 +2563,21 @@ export interface RevTurbineCheckoutMetadata {
 }
 
 /**
- * The decision context a treatment interaction joins on (plan 282 TASK-9),
- * accepted alongside {@link RevTurbineTreatmentInteractionInput} by
- * {@link RevTurbineCustomerSdk.trackTreatmentInteraction}. Both optional: a
- * caller that supplies neither sends exactly the interaction it sent before,
- * and the SDK fills them from its own output index when `payloadId` names an
- * output this SDK decided.
+ * The full input {@link RevTurbineCustomerSdk.trackTreatmentInteraction}
+ * accepts — a plain alias of core's {@link RevTurbineTreatmentInteractionInput}
+ * (plan 282 TASK-9 follow-up, BL-0463).
+ *
+ * Through scaffold 0.1.382 this file defined its own
+ * `RevTurbineTreatmentInteractionDecisionContext` (`decisionId`,
+ * `segmentHandles`, `segmentIds`) and intersected it onto core's input type,
+ * because core did not carry those fields yet. Scaffold 0.1.383 (#439) moved
+ * that same shape — TSDoc included — onto
+ * {@link RevTurbineTreatmentInteractionInput} itself, so the intersection had
+ * nothing left to add. This alias exists only so the exported name stays
+ * `RevTurbineTreatmentInteractionRequest` for callers; the type it names is
+ * now exactly core's.
  */
-export interface RevTurbineTreatmentInteractionDecisionContext {
-  /**
-   * `PlacementOutput.decision_id` → wire `decision_id`, the key the
-   * presentation row, the clickstream and the Checkout metadata bag
-   * (`revturbine_decision_id`) share. Wins over the plan-144
-   * `metadata.decision_id` convention when both are given.
-   */
-  decisionId?: string;
-  /**
-   * The segment handles the user was in when the treatment was presented →
-   * wire `segment_handles`, the analytics join key. Handles, never minted
-   * ids: the SDK's effective set comes from scaffold's `evaluateSegments`
-   * plus any hosted-resolved slugs. `[]` is a real observation (segments
-   * resolved, none matched); omit it when no decision was in scope.
-   */
-  segmentHandles?: readonly string[];
-  /**
-   * Minted segment ids a hosted context supplied → wire `segment_ids`.
-   * Telemetry only, never the join key, and never the evaluated handles;
-   * omit it in local mode.
-   */
-  segmentIds?: readonly string[];
-}
-
-/** The full input {@link RevTurbineCustomerSdk.trackTreatmentInteraction} accepts. */
-export type RevTurbineTreatmentInteractionRequest =
-  RevTurbineTreatmentInteractionInput & RevTurbineTreatmentInteractionDecisionContext;
+export type RevTurbineTreatmentInteractionRequest = RevTurbineTreatmentInteractionInput;
 
 /**
  * A queued interaction plus the account identity resolved at the moment the
@@ -2608,8 +2589,7 @@ export type RevTurbineTreatmentInteractionRequest =
  * time because a queued batch can outlive an `identify()` that swapped the
  * acting account underneath it.
  */
-interface QueuedTreatmentInteraction
-  extends RevTurbineTreatmentInteractionInput, RevTurbineTreatmentInteractionDecisionContext {
+interface QueuedTreatmentInteraction extends RevTurbineTreatmentInteractionInput {
   /**
    * The account the user acted on behalf of, already PII-redacted the same way
    * `/api/track` redacts it, so the two land byte-identical and join. When the

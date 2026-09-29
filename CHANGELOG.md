@@ -47,6 +47,42 @@ also require a changelog entry.
 
 ---
 
+## 0.11.18
+
+### Scaffold pin 0.1.383: interaction decision context moves onto core's input type; `growth_signal_observed` retired (plan 282 TASK-9 follow-up, BL-0463)
+
+**What changed.** Three related changes; none of them changes
+`trackTreatmentInteraction`'s accepted shape.
+
+- **`@revt-eng/core` / `@revt-eng/schema` / `@revt-eng/schema-external`**
+  pinned 0.1.381 → 0.1.383 (scaffold #438, #439, #440). Re-vendored
+  `server-python/src/revturbine/types.py` and `server-rust/src/types.rs`;
+  regenerated `web-sdk/generated/openapi.d.ts` (byte-identical — no
+  external-tagged operation changed) and `web-sdk/generated/public-api.json`.
+- **`RevTurbineTreatmentInteractionRequest`** is now a plain alias of core's
+  `RevTurbineTreatmentInteractionInput`. 0.11.17 defined this SDK's own
+  `RevTurbineTreatmentInteractionDecisionContext` (`decisionId`,
+  `segmentHandles`, `segmentIds`) and intersected it onto the input type
+  because core did not carry those fields yet. Scaffold 0.1.383 moved that
+  same shape — TSDoc included — onto `RevTurbineTreatmentInteractionInput`
+  itself (#439), so the local interface and the intersection are gone. The
+  shape `trackTreatmentInteraction` accepts is byte-identical to 0.11.17; this
+  is a refactor of where the type is declared, not a signature change.
+- **`growth_signal_observed`** is retired from the platform event taxonomy
+  (v6 → v7, scaffold #440): it and `GrowthSignalObservedPayload` no longer
+  exist. `EmittablePlatformEventName` no longer accepts the literal, so code
+  naming it in `emitPlatformEvent('growth_signal_observed', …)` now fails to
+  compile. No SDK code emitted this event internally.
+
+**Landed in** 0.11.18. **Fail-closed in** 0.11.18 — the taxonomy removal is a
+type-level break with no silent-tolerate window: a caller passing the retired
+literal gets a compile error immediately, not a runtime no-op.
+
+**Proving tests.** `web-sdk/interaction-decision-context.test.ts` (unchanged,
+still green against the aliased type), `web-sdk/interaction-wire-contract.test.ts`,
+`web-sdk/platform-emit-exclusion.test-d.ts` (`check:types:exact`),
+`check:public-api`.
+
 ## 0.11.17
 
 ### Checkout metadata helper, `checkout_started`, and decision context on interactions (plan 282 TASK-9, BL-0432)

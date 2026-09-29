@@ -30,7 +30,9 @@ const cp3: EmittablePlatformEventName = 'entity_created';
 
 // The non-CP bands ARE emittable: client, server, meta, webhook-derived.
 const ok1: EmittablePlatformEventName = 'gate_evaluated';
-const ok2: EmittablePlatformEventName = 'growth_signal_observed';
+// growth_signal_observed retired under platform event taxonomy v7 (scaffold
+// #440 / BL-0463) — it and GrowthSignalObservedPayload no longer exist, so an
+// `ok2` fixture asserting it was emittable no longer type-checks.
 const ok3: EmittablePlatformEventName = 'sdk_validation_warning';
 const ok4: EmittablePlatformEventName = 'subscription_started';
 const ok5: EmittablePlatformEventName = 'account_created';
@@ -67,4 +69,4 @@ void (async () => {
   });
 })();
 
-void [cp1, cp2, cp3, ok1, ok2, ok3, ok4, ok5];
+void [cp1, cp2, cp3, ok1, ok3, ok4, ok5];
