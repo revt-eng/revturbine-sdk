@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.374/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.381/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -9119,6 +9119,9 @@ class TreatmentInteractionInput(BaseModel):
     experiment_id: constr(min_length=1) | None = None
     variant_key: constr(min_length=1) | None = None
     rule_handle: constr(min_length=1) | None = None
+    decision_id: constr(min_length=1) | None = None
+    segment_handles: list[constr(min_length=1)] | None = None
+    segment_ids: list[constr(min_length=1)] | None = None
     test: bool | None = None
     metadata: dict[str, Any] | None = None
 

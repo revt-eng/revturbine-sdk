@@ -82,3 +82,74 @@ describe('RevTurbineProvider identify context (options.user.id)', () => {
     expect(unrecognized).toEqual([]);
   });
 });
+
+describe('RevTurbineProvider identify context — session fields (BL-0403)', () => {
+  const base = {
+    tenantId: 'tenant_identify_ctx',
+    apiKey: 'sk_test',
+    publicKey: 'pub_test',
+    environmentId: 'staging',
+    endpoint: 'https://edge.example.com',
+    mode: 'react',
+    runtimeMode: 'local_only',
+    contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
+  } as const;
+
+  it('does not report trial / tiers / billing / instances / experiments as dropped, and keeps them', async () => {
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let sdkRef: ReturnType<typeof useRevTurbine>['sdk'] = null;
+    function SdkProbe(): null {
+      sdkRef = useRevTurbine().sdk;
+      return null;
+    }
+    const trial = { in_trial: true, trial_limit_type: 'time' as const, day_number: 12, days_remaining: 2 };
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    await act(async () => {
+      root!.render(
+        <RevTurbineProvider
+          options={{
+            ...base,
+            user: {
+              id: 'user_123',
+              plan_handle: 'free',
+              email_type: 'business',
+              trial,
+              tiers: { storage: 'tier_2' },
+              payment_failed: false,
+              payment_at_risk: true,
+              instances: [],
+              experiments: { exp_pricing: 'variant_b' },
+            },
+          } as RevTurbineInitOptions}
+        >
+          <SdkProbe />
+        </RevTurbineProvider>,
+      );
+    });
+
+    const dropped = consoleWarn.mock.calls
+      .map((args) => String(args[0]))
+      .filter((line) => line.includes('unrecognized user-context key'));
+    expect(dropped).toEqual([]);
+    const held = await sdkRef!.getEffectiveUserContext();
+    expect(held.trial).toEqual(trial);
+    expect(await sdkRef!.getTrialStatus()).toEqual(trial);
+    expect(held.tiers).toEqual({ storage: 'tier_2' });
+    expect(held.payment_at_risk).toBe(true);
+    expect(held.experiments).toEqual({ exp_pricing: 'variant_b' });
+  });
+
+  it('still reports a genuinely unknown key', async () => {
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await mount({
+      ...base,
+      user: { id: 'user_123', plan_handle: 'free', not_a_context_key: 1 },
+    } as unknown as RevTurbineInitOptions);
+    const dropped = consoleWarn.mock.calls
+      .map((args) => String(args[0]))
+      .filter((line) => line.includes('unrecognized user-context key'));
+    expect(dropped.join(' ')).toContain('not_a_context_key');
+  });
+});

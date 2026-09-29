@@ -51,7 +51,6 @@ import type {
   UserContext,
   UserTrialStatus,
   TrialInstance,
-  UserUsageEntry,
   UserPlanContext,
   TriggerEventType,
   TrackEvent,
@@ -300,6 +299,37 @@ type PlanContextWithLegacyId = NonNullable<RevTurbineUserContext['plan']> & { id
  * the declaration a slot-id lookup resolves against (BL-0119).
  */
 type AuthoredSurfaceSlot = NonNullable<RevTurbineConfig['placement_slots']>[number];
+
+/**
+ * One entitlement's counters in the synthesized provider context — the
+ * `EntitlementProviderState.usage` entry shape the shared threshold gate and
+ * placement token derivation read (BL-0402).
+ */
+interface SynthesizedUsageEntry {
+  used: number;
+  limit: number;
+  remaining: number;
+  unit?: string;
+  reset_date?: string;
+}
+
+/**
+ * Whether a trial status carries data an integration actually supplied, as
+ * opposed to the SDK's untouched `{ in_trial: false }` default (BL-0120).
+ * The non-`in_trial` fields count too, so a non-time-mode or edge-state trial
+ * (only `state` or usage-mode fields set) is still recognised.
+ */
+function carriesTrialData(trial: RevTurbineTrialContext): boolean {
+  return trial.in_trial === true
+    || trial.trial_limit_type !== undefined
+    || trial.progress_percent !== undefined
+    || trial.days_remaining !== undefined
+    || trial.day_number !== undefined
+    || trial.state !== undefined
+    || trial.usage_entitlement_handle !== undefined
+    || trial.usage_consumed !== undefined
+    || trial.usage_limit !== undefined;
+}
 
 /** Heuristic for an email-shaped `identify()` id — ids should be opaque; emails belong in `{ email }`. */
 const EMAIL_SHAPED_ID = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -2460,19 +2490,126 @@ interface OutputPlacementRef {
    * conversion's plan effect is left entirely to the server refresh.
    */
   targetPlanHandle?: string;
+  /**
+   * The action the output's primary CTA dispatches (`cta_path.type`), so a
+   * later `cta_clicked` on this output can tell a plan-picker / pricing-page
+   * CTA — which emits `checkout_started` — from one that opens checkout
+   * directly (plan 282 TASK-9).
+   */
+  ctaActionType?: string;
+  /**
+   * The segment HANDLES the user was in when this output was decided — the
+   * provider context's `segmentSlugs` at decision time: scaffold's
+   * `evaluateSegments` output (which returns `segment.handle`) plus any
+   * hosted-resolved slugs. Remembered here so an interaction on the output
+   * reports presentation-time segments rather than whatever the SDK resolves
+   * later (plan 282 TASK-9).
+   */
+  segmentHandles?: readonly string[];
+  /**
+   * The minted segment ids a hosted context supplied at decision time, and
+   * only those — never the evaluated handles. Absent in local mode.
+   */
+  segmentIds?: readonly string[];
 }
+
+/**
+ * The Stripe Checkout `revturbine_*` metadata bag for a rendered output
+ * (plan 282 REQ-5; research §6.2). String-valued and Stripe-shaped: spread it
+ * into a Checkout Session's `metadata` and `subscription_data.metadata` as-is.
+ *
+ * A key the SDK does not hold is ABSENT, never empty or a placeholder — Stripe
+ * reads an empty metadata value as an unset, and an invented id would be worse
+ * than a gap on the attribution side.
+ */
+export interface RevTurbineCheckoutMetadataBag {
+  /** `PlacementOutput.output_id` — the rendered payload / treatment. */
+  revturbine_output_id: string;
+  /** The placement whose CTA led to checkout — what confirms credit to it. */
+  revturbine_placement_id: string;
+  /**
+   * The id `identify()` set, as this SDK's own telemetry carries it: an
+   * email-shaped id is hashed the same way on every lane, so the purchase
+   * joins the presentation and click rows. Absent for an unidentified user.
+   */
+  revturbine_user_id?: string;
+  /**
+   * The identified account, redacted like the wire lanes. Absent when none was
+   * identified — never the user-derived fallback the interaction lane labels.
+   */
+  revturbine_account_id?: string;
+  /** `PlacementOutput.decision_id`. */
+  revturbine_decision_id?: string;
+  /** `PlacementOutput.rule_id` — the rule handle the interaction lanes stamp as `rule_handle`. */
+  revturbine_rule_id?: string;
+  /** The plan the CTA converts onto (`cta_path.plan_handle`), when it names one. */
+  revturbine_plan_handle?: string;
+}
+
+/**
+ * What {@link RevTurbineCustomerSdk.checkoutMetadata} returns: the bag to put
+ * on the Checkout Session and its subscription, plus Stripe's own caller-side
+ * session key.
+ */
+export interface RevTurbineCheckoutMetadata {
+  /**
+   * The user id, for the session's `client_reference_id` — Stripe's native
+   * caller-side key, which RevTurbine's identity bridge also reads. The same
+   * value as `metadata.revturbine_user_id`; absent for an unidentified user.
+   */
+  client_reference_id?: string;
+  /** Pass as BOTH `metadata` and `subscription_data.metadata`. */
+  metadata: RevTurbineCheckoutMetadataBag;
+}
+
+/**
+ * The decision context a treatment interaction joins on (plan 282 TASK-9),
+ * accepted alongside {@link RevTurbineTreatmentInteractionInput} by
+ * {@link RevTurbineCustomerSdk.trackTreatmentInteraction}. Both optional: a
+ * caller that supplies neither sends exactly the interaction it sent before,
+ * and the SDK fills them from its own output index when `payloadId` names an
+ * output this SDK decided.
+ */
+export interface RevTurbineTreatmentInteractionDecisionContext {
+  /**
+   * `PlacementOutput.decision_id` → wire `decision_id`, the key the
+   * presentation row, the clickstream and the Checkout metadata bag
+   * (`revturbine_decision_id`) share. Wins over the plan-144
+   * `metadata.decision_id` convention when both are given.
+   */
+  decisionId?: string;
+  /**
+   * The segment handles the user was in when the treatment was presented →
+   * wire `segment_handles`, the analytics join key. Handles, never minted
+   * ids: the SDK's effective set comes from scaffold's `evaluateSegments`
+   * plus any hosted-resolved slugs. `[]` is a real observation (segments
+   * resolved, none matched); omit it when no decision was in scope.
+   */
+  segmentHandles?: readonly string[];
+  /**
+   * Minted segment ids a hosted context supplied → wire `segment_ids`.
+   * Telemetry only, never the join key, and never the evaluated handles;
+   * omit it in local mode.
+   */
+  segmentIds?: readonly string[];
+}
+
+/** The full input {@link RevTurbineCustomerSdk.trackTreatmentInteraction} accepts. */
+export type RevTurbineTreatmentInteractionRequest =
+  RevTurbineTreatmentInteractionInput & RevTurbineTreatmentInteractionDecisionContext;
 
 /**
  * A queued interaction plus the account identity resolved at the moment the
  * interaction happened (plan 232 REQ-4 / BL-0011).
  *
- * Internal only — {@link RevTurbineTreatmentInteractionInput} stays the public
+ * Internal only — {@link RevTurbineTreatmentInteractionRequest} stays the public
  * input shape. The account is read from the SDK's own user context rather than
  * asked of the caller, and it is captured at `track` time rather than at flush
  * time because a queued batch can outlive an `identify()` that swapped the
  * acting account underneath it.
  */
-interface QueuedTreatmentInteraction extends RevTurbineTreatmentInteractionInput {
+interface QueuedTreatmentInteraction
+  extends RevTurbineTreatmentInteractionInput, RevTurbineTreatmentInteractionDecisionContext {
   /**
    * The account the user acted on behalf of, already PII-redacted the same way
    * `/api/track` redacts it, so the two land byte-identical and join. When the
@@ -2506,6 +2643,42 @@ function outputCtaPlanHandle(output: PlacementOutput | undefined): string | unde
     if (typeof handle === 'string' && handle.trim().length > 0) return handle.trim();
   }
   return undefined;
+}
+
+/**
+ * The action an output's primary CTA dispatches — `type` on a normalized
+ * `cta_path`, `action_type` on a hand-built one that kept the authored
+ * `content_ui_paths` spelling — read the way {@link outputCtaPlanHandle} reads
+ * the plan.
+ */
+function outputCtaActionType(output: PlacementOutput | undefined): string | undefined {
+  for (const path of [output?.cta_path, output?.ui_path]) {
+    for (const key of ['type', 'action_type']) {
+      const value = path?.[key];
+      if (typeof value === 'string' && value.trim().length > 0) return value.trim();
+    }
+  }
+  return undefined;
+}
+
+/**
+ * CTA actions that open a plan picker or pricing page rather than checkout
+ * itself. A `cta_clicked` on an output whose CTA is one of these emits
+ * `checkout_started` (plan 282 TASK-8/9) — the step between the click and
+ * checkout, so the placement chain can hold
+ * `success ≤ checkout_started ≤ clicked ≤ presented`.
+ *
+ * `open_checkout_modal` opens checkout directly ("on click") and is
+ * deliberately NOT listed: that placement has no separate step, so its started
+ * count equals its clicked count. `open_upgrade_modal` opens another placement
+ * whose own CTA then decides which of the two it is, so it is not listed
+ * either. `view_plans` is the authored alias the local resolver normalizes to
+ * `navigate_to_plans`; it is kept for an output built by hand.
+ */
+export const CHECKOUT_STARTED_CTA_ACTION_TYPES: readonly string[] = ['navigate_to_plans', 'view_plans'];
+
+function isCheckoutStartedCtaAction(actionType: string | undefined): boolean {
+  return typeof actionType === 'string' && CHECKOUT_STARTED_CTA_ACTION_TYPES.includes(actionType);
 }
 
 /**
@@ -3242,6 +3415,23 @@ export class RevTurbineCustomerSdk {
    * segment cuts read as-of-event truth instead of requiring a config join.
    */
   private lastEffectiveSegmentIds: readonly string[] = [];
+  /**
+   * The effective segment HANDLES at the last resolution — the provider
+   * context's `segmentSlugs`: scaffold's `evaluateSegments` output plus any
+   * hosted-resolved slugs. The analytics join key the interaction lane sends
+   * as `segment_handles` (plan 282 TASK-9; Kent, 2026-09-29). Kept apart from
+   * `lastEffectiveSegmentIds`, which mixes minted ids into those handles and
+   * stamps the envelope's legacy `segment_ids` (BL-0462 owns that name).
+   */
+  private lastEffectiveSegmentHandles: readonly string[] = [];
+  /**
+   * The minted segment ids a hosted context supplied at the last resolution
+   * (`resolved.segments.segmentIds`) and nothing else — never the evaluated
+   * handles. Telemetry only, sent as the interaction lane's `segment_ids`;
+   * `undefined` when no hosted context supplied any, so local mode omits the
+   * key entirely.
+   */
+  private lastHostedSegmentIds?: readonly string[];
   private pageContext: RevTurbinePageContext;
   /**
    * Secure per-user client token (`rt_client_`, plan 157). Minted by the
@@ -3282,7 +3472,25 @@ export class RevTurbineCustomerSdk {
   private localPlacementsByLookupKey = new Map<string, PlacementOutput | null>();
   private localEntitlementsByHandle = new Map<string, EntitlementResult>();
   private localUserContextsByUserId = new Map<string, UserTargetingContext>();
+  /**
+   * The SDK-held trial status — written ONLY by the server-delivered /
+   * SDK-derived sources (`localRuntime.initialData.trialStatus`, `hydrate()`,
+   * `getTrialStatus()`, `setTrialInstances()`), always through
+   * {@link writeTrialStatus}. Readers never read it directly: they read
+   * {@link resolveTrialView}, which weighs it against the app-supplied
+   * `userContext.trial` (BL-0403).
+   */
   private localTrialStatus: RevTurbineTrialContext = { in_trial: false };
+  /**
+   * Trial write clock (BL-0403). Each source of trial state stamps the next
+   * tick when it changes the trial; {@link resolveTrialView} picks the
+   * source with the later stamp. `0` = that source has never written.
+   */
+  private trialWriteClock = 0;
+  /** Tick of the last {@link localTrialStatus} write; `0` = never supplied. */
+  private trialStatusWrittenAt = 0;
+  /** Tick of the last change to `userContext.trial`; `0` = never supplied. */
+  private contextTrialWrittenAt = 0;
   private readonly presentationCapsByKey = new Map<string, PresentationCapState>();
   private readonly usageLimitByEntitlement = new Map<string, { limit: number; warningPercent: number }>();
   private readonly usageTokenPrefixByEntitlement = new Map<string, string>();
@@ -3381,6 +3589,13 @@ export class RevTurbineCustomerSdk {
       ...(this.policy.inferUser ? inferUserContext() : {}),
       ...initUser.accepted,
     };
+    // BL-0403: an init `user.trial` is app-supplied trial state. Stamped here,
+    // BEFORE `hydrateLocalRuntimeState()` below, so an
+    // `initialData.trialStatus` supplied alongside it is the newer write and
+    // wins (see {@link resolveTrialView}).
+    if (isRecord(this.userContext.trial)) {
+      this.contextTrialWrittenAt = ++this.trialWriteClock;
+    }
     this.pageContext = {
       ...(this.policy.inferPage ? inferPageContext() : {}),
       ...(options.page || {}),
@@ -3506,6 +3721,10 @@ export class RevTurbineCustomerSdk {
       placement_behavior_flags: this.placementBehavior as unknown as JsonValue, // sdk-ok: boundary-parse
     });
 
+    // BL-0417: an init `user.trial` / `initialData.trialStatus` / restored
+    // trial runs the lifecycle evaluation once the SDK can emit.
+    this.syncTrialLifecycleWithView();
+
     // Plan 95 TASK-6: time-interval + page-unload flushing so buffered
     // clickstream events reach /api/track even in low-volume sessions.
     this.startEventBatchFlushing();
@@ -3609,6 +3828,9 @@ export class RevTurbineCustomerSdk {
         this.rebuildSegmentPredicateFieldIndex();
         if (previousConfig !== this.getConfiguredPlaybook()) {
           this.invalidateEffectiveContext();
+          // BL-0417: a Playbook that authors `trials` placements turns the
+          // lifecycle triggers on — evaluate a trial supplied before it loaded.
+          this.syncTrialLifecycleWithView();
         }
       } catch {
         // Config refresh is best-effort; keep SDK operational without throwing.
@@ -3826,6 +4048,171 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
+   * The single usage view placements read (BL-0402): one entry per
+   * entitlement handle the SDK holds usage for, in the
+   * `EntitlementProviderState.usage` shape the shared threshold gate
+   * (`matchesThresholdTrigger`) and the placement token derivation consume.
+   *
+   * - **Which handles** — every object entry on `userContext.usage` (in
+   *   context order, so the first-entry shorthand tokens are unchanged), then
+   *   every handle reported only through `update({ usage })` /
+   *   `updateUsage()` / `identify(…, { usage })`.
+   * - **`used`** — the app-reported balance (`usageBalances`, the most recent
+   *   write) wins; else the context entry's `amount`; else `0`. This is the
+   *   precedence `getUsage()` and `can()` already apply, so the meter, the
+   *   gate, and the placement agree.
+   * - **`limit`** — the context entry's own `limit` wins; else the limit
+   *   `getUsage()` reports for the handle (the Playbook allowance for the
+   *   user's CURRENT plan: the plan-scoped `usage_limit` rule's `limit_value`
+   *   or `credits` rule's `allowance_value`); else `0`. `0` means "no
+   *   usable limit" (an `unlimited` or absent allowance): the threshold gate
+   *   fails closed on it, so no threshold placement fires.
+   * - **`remaining`** — `max(0, limit − used)` when a limit is known, else `0`.
+   */
+  private resolveUsageView(): Record<string, SynthesizedUsageEntry> {
+    const view: Record<string, SynthesizedUsageEntry> = {};
+    const contextUsage: Record<string, unknown> = isRecord(this.userContext.usage) ? this.userContext.usage : {}; // sdk-ok: boundary-parse
+    const handles: string[] = [];
+    for (const [handle, entry] of Object.entries(contextUsage)) {
+      if (isRecord(entry)) handles.push(handle);
+    }
+    for (const [handle, balance] of Object.entries(this.usageBalances)) {
+      if (Number.isFinite(balance) && !handles.includes(handle)) handles.push(handle);
+    }
+
+    for (const handle of handles) {
+      const rawEntry = contextUsage[handle];
+      const entry = isRecord(rawEntry) ? rawEntry : undefined;
+      const reported = this.usageBalances[handle];
+      const used = typeof reported === 'number' && Number.isFinite(reported)
+        ? reported
+        : (typeof entry?.amount === 'number' ? entry.amount : 0);
+      const limit = typeof entry?.limit === 'number'
+        ? entry.limit
+        : (this.usageThresholdForEntitlement(handle)?.limit ?? 0);
+      view[handle] = {
+        used,
+        limit,
+        remaining: limit > 0 ? Math.max(0, limit - used) : 0,
+        unit: typeof entry?.unit === 'string' ? entry.unit : undefined,
+        reset_date: typeof entry?.reset_date === 'string' ? entry.reset_date : undefined,
+      };
+    }
+    return view;
+  }
+
+  /**
+   * The single trial view every trial reader shares (BL-0403): the placement
+   * resolver's `__providers.plan.trial*` fields (and so `trial_started` /
+   * `trial_progress` / `trial_ending` / `trial_ended` / `trial_converted`
+   * gating and the `{{trial_days_*}}` tokens), reverse-trial entitlement
+   * grants, and a `local_only` `getTrialStatus()` with no resolver.
+   *
+   * Two sources hold trial state:
+   *
+   * - **the user context's `trial`** — what the app supplies (`user.trial` at
+   *   init, `update({ trial })`, `setUserContext`, a server action's
+   *   `userContext` result) plus the authenticated client-context delivery,
+   *   which merges its trial into the same field;
+   * - **the SDK trial status** — `localRuntime.initialData.trialStatus`,
+   *   `hydrate()`'s `trial_status`, `getTrialStatus()`, `setTrialInstances()`.
+   *
+   * **Precedence: the most recent change wins** — the same rule the usage view
+   * applies to reported balances ({@link resolveUsageView}). A server-delivered
+   * or hydrated status therefore wins when it was supplied after the app's
+   * trial; an app `update({ trial })` made after it wins over it. A write that
+   * leaves the context trial unchanged is not a newer write, so re-sending the
+   * same trial every render never displaces a fresher server status. A source
+   * never supplied does not compete: with no SDK status, the context trial is
+   * used; with no context trial (or after it is cleared), the SDK status is.
+   */
+  private resolveTrialView(): RevTurbineTrialContext {
+    const contextTrial = this.userContext.trial;
+    if (isRecord(contextTrial)
+      && (this.trialStatusWrittenAt === 0 || this.contextTrialWrittenAt > this.trialStatusWrittenAt)) {
+      return contextTrial;
+    }
+    return this.localTrialStatus;
+  }
+
+  /**
+   * Write the SDK trial status (server-delivered / SDK-derived — see
+   * {@link resolveTrialView}) and stamp it as the newest trial write.
+   */
+  private writeTrialStatus(status: RevTurbineTrialContext): void {
+    this.localTrialStatus = status;
+    this.trialStatusWrittenAt = ++this.trialWriteClock;
+  }
+
+  /**
+   * Forget the SDK-held trial state of the current user (BL-0417): the SDK
+   * trial status, both {@link resolveTrialView} source markers, and the
+   * lifecycle stage {@link evaluateTrialLifecycleTriggers} dedupes on — so the
+   * next user starts with no trial, and a trial-less next user is not read as
+   * "the trial just ended" (`trial_expired`). The context `trial` is cleared by
+   * the caller along with the rest of the user context.
+   */
+  private clearTrialState(): void {
+    this.localTrialStatus = { in_trial: false };
+    this.trialStatusWrittenAt = 0;
+    this.contextTrialWrittenAt = 0;
+    this.lastTrialTriggerStage = 'none';
+  }
+
+  /**
+   * Whether `nextUserId` names a DIFFERENT identified user than the one the
+   * SDK currently holds (BL-0417). Anonymous → identified is not a switch: the
+   * anonymous visitor becomes that user, so what they accumulated is kept.
+   */
+  private isIdentifiedUserSwitch(nextUserId: unknown): boolean { // sdk-ok: boundary-parse
+    const currentUserId = this.userContext.id;
+    return typeof currentUserId === 'string' && currentUserId !== ''
+      && typeof nextUserId === 'string' && nextUserId.trim() !== ''
+      && nextUserId !== currentUserId;
+  }
+
+  /**
+   * Drop the previous user's trial and usage state on a switch to a different
+   * identified user without an intervening reset (BL-0417): the SDK trial
+   * status and markers, the context `trial`, the reported usage balances and
+   * the context `usage`. Both feed decisions directly — the trial view and
+   * the usage view — so carrying them across the merge would decide the new
+   * user's trial placements, reverse-trial grants, `{{trial_days_*}}` /
+   * `{{usage_*}}` tokens and usage thresholds from the old user's state.
+   * The new identity's own values are merged in afterwards by the caller.
+   */
+  private dropPreviousUserTrialAndUsage(): void {
+    this.clearTrialState();
+    this.usageBalances = {};
+    const next: HeldUserContext = { ...this.userContext, usage: {} };
+    delete next.trial;
+    this.userContext = next;
+  }
+
+  /**
+   * Run the trial lifecycle evaluation against the resolved trial view
+   * (BL-0417). Called after every change that can move the view — the app's
+   * context trial (`user.trial` at init, `update({ trial })`,
+   * `setUserContext`, a server action's context, the client-context
+   * delivery), `hydrate()`, a reset or user switch, and a Playbook load that
+   * enables the triggers — so `trial_midpoint` / `trial_expiring` /
+   * `trial_expired` fire whichever source supplied the trial.
+   *
+   * The dedupe is the evaluator's own: a stage fires only when it differs
+   * from the last stage seen, so re-evaluating an unchanged view — or both
+   * sources reporting the same threshold — never fires twice. While the
+   * triggers are off (no Playbook loaded yet, or none authoring a `trials`
+   * placement) nothing is evaluated or recorded, so a trial supplied before
+   * the Playbook loads still fires once it does.
+   */
+  private syncTrialLifecycleWithView(): void {
+    if (!this.placementBehavior.enableTrialAutoTriggers) return;
+    this.evaluateTrialLifecycleTriggers(this.resolveTrialView()).catch(() => {
+      // Lifecycle emission is best-effort; it must never break the verb.
+    });
+  }
+
+  /**
    * Build a minimal provider context from the SDK's user state when no
    * explicit domain providers are registered.  This allows the local
    * placement resolver to access plan and usage data for token
@@ -3837,7 +4224,9 @@ export class RevTurbineCustomerSdk {
     // carrying only `plan_handle` (no display object) still yields plan state.
     const planHandle = this.resolveContextPlanRaw();
     const usage = this.userContext.usage;
-    const trial = this.localTrialStatus;
+    // BL-0403: the ONE trial view — app-supplied `userContext.trial` or the
+    // SDK-held status, whichever was written last. See {@link resolveTrialView}.
+    const trial = this.resolveTrialView();
     // Billing-recovery signals (plan 138) → PlanProviderState for the Retention
     // `qualifier` triggers; the user's current tiers (plan 138 TASK-4) →
     // EntitlementProviderState for the `entitlement_gate.tier_threshold` gate.
@@ -3854,43 +4243,19 @@ export class RevTurbineCustomerSdk {
     // BL-0120: an integration supplying ONLY `initialData.trialStatus` (no
     // `plan` / `plan_handle`) must still get provider context — otherwise
     // `trial_ending` / `trial_progress` gating and `{{trial_days_remaining}}`
-    // token derivation silently see no plan state at all. `localTrialStatus`
-    // defaults to `{ in_trial: false }`, so `trial.in_trial === true` is the
+    // token derivation silently see no plan state at all. The trial view
+    // defaults to `{ in_trial: false }` when nothing was supplied, so `trial.in_trial === true` is the
     // signal an integration actually supplied trial data; the other fields
     // are checked too so a non-time-mode or edge-state trial (e.g. only
     // `state` or usage-mode fields set, `in_trial` omitted) still counts.
-    const hasTrial = trial.in_trial === true
-      || trial.trial_limit_type !== undefined
-      || trial.progress_percent !== undefined
-      || trial.days_remaining !== undefined
-      || trial.day_number !== undefined
-      || trial.state !== undefined
-      || trial.usage_entitlement_handle !== undefined
-      || trial.usage_consumed !== undefined
-      || trial.usage_limit !== undefined;
-    if (!plan && !planHandle && !usage && !hasTiers && !hasExperiments && !hasTrial) return undefined;
-
-    const usageEntries: Record<string, { used: number; limit: number; remaining: number; unit?: string; reset_date?: string }> = {};
-    if (usage && typeof usage === 'object') {
-      const mergedAmounts = usageAmountsFromEntries(usage);
-      for (const [handle, entry] of Object.entries(usage)) {
-        if (!entry || typeof entry !== 'object') continue;
-        const amount = typeof (entry as UserUsageEntry).amount === 'number'
-          ? (entry as UserUsageEntry).amount
-          : (mergedAmounts[handle] ?? 0);
-        const limit = typeof (entry as UserUsageEntry).limit === 'number'
-          ? (entry as UserUsageEntry).limit!
-          : 0;
-        const remaining = limit > 0 ? Math.max(0, limit - amount) : 0;
-        usageEntries[handle] = {
-          used: amount,
-          limit,
-          remaining,
-          unit: typeof (entry as UserUsageEntry).unit === 'string' ? (entry as UserUsageEntry).unit : undefined,
-          reset_date: typeof (entry as UserUsageEntry).reset_date === 'string' ? (entry as UserUsageEntry).reset_date : undefined,
-        };
-      }
-    }
+    const hasTrial = carriesTrialData(trial);
+    // BL-0402: the ONE usage view every usage reader shares — see
+    // {@link resolveUsageView}. Built before the early return so an app that
+    // reports usage only through `update({ usage })` still gets provider
+    // context (and therefore threshold gating + usage tokens).
+    const usageEntries = this.resolveUsageView();
+    const hasUsageView = Object.keys(usageEntries).length > 0;
+    if (!plan && !planHandle && !usage && !hasUsageView && !hasTiers && !hasExperiments && !hasTrial) return undefined;
 
     // PlanProvider trial fields — pass through every UserTrialStatus
     // field the @revt-eng/core types declare (plan 43 TASK-8). Both
@@ -3926,7 +4291,7 @@ export class RevTurbineCustomerSdk {
           ...(paymentAtRisk !== undefined ? { paymentAtRisk } : {}),
         },
       } : {}),
-      ...(Object.keys(usageEntries).length > 0 || hasTiers ? {
+      ...(hasUsageView || hasTiers ? {
         entitlements: {
           entries: {},
           usage: usageEntries,
@@ -3965,6 +4330,8 @@ export class RevTurbineCustomerSdk {
     this.contextRevision += 1;
     this.lastEffectiveContext = undefined;
     this.lastEffectiveSegmentIds = [];
+    this.lastEffectiveSegmentHandles = [];
+    this.lastHostedSegmentIds = undefined;
     this.providerRegistry.invalidateAll();
     this.decisionCache.clear();
   }
@@ -4047,6 +4414,14 @@ export class RevTurbineCustomerSdk {
       this.markAllSegmentsDirty();
       this.lastEffectiveContext = effective;
       this.lastEffectiveSegmentIds = segmentIds;
+      // Plan 282 TASK-9: the handle set and the hosted-only minted ids, held
+      // separately so the interaction lane never mixes the two the way the
+      // legacy `segment_ids` union above does.
+      this.lastEffectiveSegmentHandles = segmentSlugs;
+      const hostedSegmentIds = resolved?.segments?.segmentIds;
+      this.lastHostedSegmentIds = hostedSegmentIds && hostedSegmentIds.length > 0
+        ? [...hostedSegmentIds]
+        : undefined;
       this.emitExperimentAssignmentFacts(effective);
       return { providers, effective };
     })();
@@ -4531,7 +4906,7 @@ export class RevTurbineCustomerSdk {
       }
     }
     if (fromInit?.trialStatus) {
-      this.localTrialStatus = fromInit.trialStatus;
+      this.writeTrialStatus(fromInit.trialStatus);
     }
 
     const raw = this.persistentStore.getItem(this.localStorageKey);
@@ -4551,6 +4926,8 @@ export class RevTurbineCustomerSdk {
         entitlements?: Record<string, EntitlementResult>;
         userContexts?: Record<string, UserTargetingContext>;
         trialStatus?: RevTurbineTrialContext;
+        trialStatusSupplied?: boolean;
+        trialViewSource?: 'context' | 'status';
       };
 
       // BL-0352 / BL-0381: a state blob persisted before server-assigned keys
@@ -4578,8 +4955,19 @@ export class RevTurbineCustomerSdk {
       for (const [key, value] of Object.entries(parsed.userContexts || {})) {
         this.localUserContextsByUserId.set(key, value);
       }
-      if (parsed.trialStatus) {
-        this.localTrialStatus = parsed.trialStatus;
+      // BL-0403: restore the SDK trial status only when one was actually
+      // supplied (a blob written before `trialStatusSupplied` existed counts
+      // when it carries trial data) — the persisted `{ in_trial: false }`
+      // default must not displace an `initialData.trialStatus` or mask the
+      // app's context trial. Then re-establish which source was the newer one
+      // when the blob was written, so a reload resolves the same trial view.
+      const statusSupplied = parsed.trialStatusSupplied
+        ?? (parsed.trialStatus !== undefined && carriesTrialData(parsed.trialStatus));
+      if (parsed.trialStatus && statusSupplied) {
+        this.writeTrialStatus(parsed.trialStatus);
+      }
+      if (parsed.trialViewSource === 'context' && isRecord(this.userContext.trial)) {
+        this.contextTrialWrittenAt = ++this.trialWriteClock;
       }
     } catch {
       this.persistentStore.removeItem(this.localStorageKey);
@@ -4600,6 +4988,10 @@ export class RevTurbineCustomerSdk {
         entitlements: Object.fromEntries(this.localEntitlementsByHandle.entries()),
         userContexts: Object.fromEntries(this.localUserContextsByUserId.entries()),
         trialStatus: this.localTrialStatus,
+        // BL-0403: which trial source was supplied / newest, so a reload
+        // resolves the same trial view (see hydrateLocalRuntimeState).
+        trialStatusSupplied: this.trialStatusWrittenAt > 0,
+        trialViewSource: this.resolveTrialView() === this.localTrialStatus ? 'status' : 'context',
       };
       this.persistentStore.setItem(this.localStorageKey, JSON.stringify(payload));
     } catch {
@@ -4654,6 +5046,15 @@ export class RevTurbineCustomerSdk {
       // BL-0004: the plan this output's CTA converts onto, for the optimistic
       // half of the post-conversion context refresh.
       targetPlanHandle: outputCtaPlanHandle(decision.output),
+      // Plan 282 TASK-9: what a later click on this output needs to emit
+      // `checkout_started` honestly, and the segments the interaction row
+      // reports. Every decision path resolves the effective context before it
+      // reaches here, so these are the sets the decision was made under: the
+      // handles (scaffold's `evaluateSegments` plus hosted slugs) and, apart
+      // from them, the minted ids a hosted context supplied — absent locally.
+      ctaActionType: outputCtaActionType(decision.output),
+      segmentHandles: [...this.lastEffectiveSegmentHandles],
+      ...(this.lastHostedSegmentIds ? { segmentIds: [...this.lastHostedSegmentIds] } : {}),
     });
 
     while (this.outputPlacementIndex.size > this.outputPlacementIndexLimit) {
@@ -5145,14 +5546,24 @@ export class RevTurbineCustomerSdk {
    *
    * These five are exactly the tokens whose values come from the Playbook's
    * plan catalogue plus the recommendation strategy, so the SDK — not the
-   * host app — is the only thing that can fill them in. Every other token in
-   * the studio table (usage, trial, seats, credits) is resolved on the React
-   * render lane by `derivePlacementPersonalizationTokens`, which unknown
-   * tokens pass through untouched.
+   * host app — is the only thing that can fill them in.
+   *
+   * The usage family (`{{usage_current}}` / `{{usage_limit}}` /
+   * `{{usage_remaining}}` / `{{usage_percent}}` and their `<unit>_usage_*`
+   * forms) is filled here too, from the SAME provider usage view the
+   * threshold gate decided the placement with (BL-0402) — see
+   * {@link usageContentTokens}. So are `{{trial_days_remaining}}` and
+   * `{{trial_days_total}}`, from the same provider trial state the trial
+   * trigger gate read (BL-0403) — see {@link trialContentTokens}. Every other
+   * token in the studio table (seats) is resolved on the React render lane by
+   * `derivePlacementPersonalizationTokens`, which unknown tokens pass through
+   * untouched.
    */
   private derivedContentTokens(
     providers?: Awaited<ReturnType<DomainProviderRegistry['resolveAll']>>,
   ): Record<string, string> {
+    const usageTokens = this.usageContentTokens(providers);
+    const trialTokens = this.trialContentTokens(providers);
     const prices = this.priceTokensForProviders(providers);
     const playbook = this.getConfiguredPlaybook();
     const recommendation = this.deriveRecommendedPlanTokens(playbook);
@@ -5169,6 +5580,8 @@ export class RevTurbineCustomerSdk {
       : undefined;
 
     return {
+      ...usageTokens,
+      ...trialTokens,
       plan_name: configuredPlanName
         ?? providers?.plan?.currentPlanName
         ?? contextPlanName
@@ -5178,6 +5591,91 @@ export class RevTurbineCustomerSdk {
       recommended_plan_handle: recommendation.recommended_plan_handle,
       recommended_plan_name: recommendation.recommended_plan_name,
     };
+  }
+
+  /**
+   * Trial personalization tokens for decision content (BL-0403), read from the
+   * provider plan state the placement was decided against — the synthesized
+   * {@link resolveTrialView} projection unless a registered plan provider
+   * supplies its own. Mirrors `derivePlacementPersonalizationTokens`: each
+   * token is filled only when its value is a finite number, so an unknown
+   * trial length leaves the token untouched rather than rendering `0`.
+   */
+  private trialContentTokens(
+    providers?: Awaited<ReturnType<DomainProviderRegistry['resolveAll']>>,
+  ): Record<string, string> {
+    const plan = providers?.plan;
+    const tokens: Record<string, string> = {};
+    if (typeof plan?.trialDaysRemaining === 'number' && Number.isFinite(plan.trialDaysRemaining)) {
+      tokens.trial_days_remaining = String(plan.trialDaysRemaining);
+    }
+    if (typeof plan?.trialDaysTotal === 'number' && Number.isFinite(plan.trialDaysTotal)) {
+      tokens.trial_days_total = String(plan.trialDaysTotal);
+    }
+    return tokens;
+  }
+
+  /**
+   * Usage personalization tokens for decision content, read from the provider
+   * usage view the placement was decided against (BL-0402) — the synthesized
+   * {@link resolveUsageView} unless a registered entitlements provider
+   * supplies its own.
+   *
+   * Per entitlement: `<unit>_usage_current` always; `<unit>_usage_limit`,
+   * `<unit>_usage_remaining` and `<unit>_usage_percent` only when a positive
+   * limit is known (an unknown or unlimited allowance leaves those tokens
+   * untouched rather than rendering a misleading `0`). The unit prefix and the
+   * choice of entitlement for the unprefixed `usage_*` shorthand (and its
+   * `current_usage` / `current_limit` / `remaining_usage` aliases) follow
+   * `getPersonalizationTokens()`: handles in sorted order, the `core` unit
+   * first, else the first with a limit, else the first. Percent is rounded and
+   * capped at 100, as it is there.
+   */
+  private usageContentTokens(
+    providers?: Awaited<ReturnType<DomainProviderRegistry['resolveAll']>>,
+  ): Record<string, string> {
+    const usage = providers?.entitlements?.usage;
+    if (!usage) return {};
+    const tokens: Record<string, string> = {};
+    const candidates: Array<{ current: number; limit?: number; remaining?: number; percent?: number; prefix: string }> = [];
+
+    for (const handle of Object.keys(usage).sort()) {
+      const entry = usage[handle];
+      if (!entry || !Number.isFinite(entry.used)) continue;
+      const prefix = this.usageTokenPrefixByEntitlement.get(handle)
+        ?? usageTokenPrefixFromEntitlementId(handle);
+      if (!prefix) continue;
+      const current = entry.used;
+      const limit = Number.isFinite(entry.limit) && entry.limit > 0 ? entry.limit : undefined;
+      const remaining = limit === undefined
+        ? undefined
+        : (Number.isFinite(entry.remaining) ? entry.remaining : Math.max(0, limit - current));
+      const percent = limit === undefined ? undefined : Math.min(100, Math.round((current / limit) * 100));
+
+      tokens[`${prefix}_usage_current`] = String(current);
+      if (limit !== undefined) tokens[`${prefix}_usage_limit`] = String(limit);
+      if (remaining !== undefined) tokens[`${prefix}_usage_remaining`] = String(remaining);
+      if (percent !== undefined) tokens[`${prefix}_usage_percent`] = String(percent);
+      candidates.push({ prefix, current, limit, remaining, percent });
+    }
+
+    const preferred = candidates.find((candidate) => candidate.prefix === 'core')
+      ?? candidates.find((candidate) => candidate.limit !== undefined)
+      ?? candidates[0];
+    if (preferred) {
+      tokens.usage_current = String(preferred.current);
+      tokens.current_usage = tokens.usage_current;
+      if (preferred.limit !== undefined) {
+        tokens.usage_limit = String(preferred.limit);
+        tokens.current_limit = tokens.usage_limit;
+      }
+      if (preferred.remaining !== undefined) {
+        tokens.usage_remaining = String(preferred.remaining);
+        tokens.remaining_usage = tokens.usage_remaining;
+      }
+      if (preferred.percent !== undefined) tokens.usage_percent = String(preferred.percent);
+    }
+    return tokens;
   }
 
   /**
@@ -5340,7 +5838,8 @@ export class RevTurbineCustomerSdk {
   private resolveReverseTrialGrants(
     playbook: RevTurbineConfig,
   ): { trialGrantedEntitlementHandles?: ReadonlySet<string>; effectivePlanHandle?: string } {
-    const trial = this.localTrialStatus;
+    // BL-0403: the shared trial view, so an app-supplied reverse trial grants too.
+    const trial = this.resolveTrialView();
     if (!trial.in_trial || trial.trial_type !== 'reverse') return {};
     const basePlanHandle = trial.plan_handle;
     if (!basePlanHandle) return {};
@@ -5973,6 +6472,12 @@ export class RevTurbineCustomerSdk {
     const guarded = 'plan' in next
       ? { ...next, plan: this.rejectLegacyPlanId(verb, next.plan) as RevTurbineUserContext['plan'] }
       : next;
+    // BL-0403: a patch that CHANGES the context trial is the newest trial
+    // write (see resolveTrialView). Re-sending an identical trial is not.
+    if (next.trial !== undefined
+      && this.stableStringify(next.trial) !== this.stableStringify(this.userContext.trial ?? null)) {
+      this.contextTrialWrittenAt = ++this.trialWriteClock;
+    }
     return coreMergeUserContext(this.userContext, guarded) as HeldUserContext;
   }
 
@@ -6972,6 +7477,9 @@ export class RevTurbineCustomerSdk {
       warnOnEmailShapedIdentity('account_id', userContext.account_id);
     }
     const previousContext = this.userContext;
+    // BL-0417: a `setUserContext({ id })` naming a different user is a user
+    // switch too — see identify().
+    if (this.isIdentifiedUserSwitch(userContext.id)) this.dropPreviousUserTrialAndUsage();
     this.userContext = this.mergeUserContext(userContext);
     this.recalculateDerivedUsageTraits();
     this.markSegmentsDirtyFromContextChange(previousContext, this.userContext);
@@ -7009,6 +7517,8 @@ export class RevTurbineCustomerSdk {
    */
   private notifyUserContextChanged(): void {
     this.invalidateEffectiveContext();
+    // BL-0417: every user-context change can move the resolved trial view.
+    this.syncTrialLifecycleWithView();
     for (const listener of [...this.userContextListeners]) {
       try {
         listener();
@@ -7052,6 +7562,10 @@ export class RevTurbineCustomerSdk {
 
     // Merge user context
     if (payload.user) {
+      // BL-0417: a payload for a different user replaces, not extends, the
+      // previous user's trial and usage (its own `trial_status` /
+      // `usage_balances` are applied below).
+      if (this.isIdentifiedUserSwitch(payload.user.id)) this.dropPreviousUserTrialAndUsage();
       this.userContext = this.mergeUserContext({
         id: payload.user.id,
         custom: payload.user.traits as SdkTraits | undefined,
@@ -7108,13 +7622,13 @@ export class RevTurbineCustomerSdk {
 
     // Pre-populate trial status
     if (payload.trial_status) {
-      this.localTrialStatus = {
+      this.writeTrialStatus({
         in_trial: payload.trial_status.in_trial,
         trial_type: payload.trial_status.trial_type,
         plan_handle: payload.trial_status.plan_handle,
         day_number: payload.trial_status.day_number,
         days_remaining: payload.trial_status.days_remaining,
-      };
+      });
     }
 
     // Pre-populate usage balances from user context
@@ -7125,6 +7639,8 @@ export class RevTurbineCustomerSdk {
 
     this.markSegmentsDirtyFromContextChange(previousContext, this.userContext);
     this.invalidateEffectiveContext();
+    // BL-0417: a hydrated trial status moves the trial view like any other write.
+    this.syncTrialLifecycleWithView();
   }
 
   async generatePlacementId(input: {
@@ -8065,6 +8581,18 @@ export class RevTurbineCustomerSdk {
       // "no decision in scope" — `PlacementOutput.rule_id` is simply missing in
       // both — so it sends neither rather than asserting one.
       ...(item.ruleHandle ? { rule_handle: item.ruleHandle } : {}),
+      // Plan 282 TASK-9: the decision the presented treatment came from and
+      // the segment HANDLES the user was in — the keys `placement_presentations`
+      // joins to the clickstream and to the Checkout metadata bag on. Spread
+      // like the fields above: absent when no decision was in scope (a
+      // pre-282 caller's row is byte-identical to before); `[]` only when a
+      // decision resolved segments and found none. `segment_handles` is the
+      // join key (Kent, 2026-09-29: the value was always a handle); the
+      // legacy `segment_ids` name carries ONLY the minted ids a hosted context
+      // supplied — telemetry, present only when there were any.
+      ...(item.decisionId ? { decision_id: item.decisionId } : {}),
+      ...(item.segmentHandles ? { segment_handles: [...item.segmentHandles] } : {}),
+      ...(item.segmentIds ? { segment_ids: [...item.segmentIds] } : {}),
       metadata: item.metadata ?? {},
       // Omitted (undefined) until a key-only integration's Playbook loads.
       tenant_id: this.tenantId,
@@ -8188,14 +8716,46 @@ export class RevTurbineCustomerSdk {
    * lower-level counterpart to {@link dismiss}/{@link snooze}/{@link convert},
    * which key off a decision's `output_id` instead.
    *
+   * `decisionId`, `segmentHandles` and `segmentIds` (plan 282 TASK-9) ride
+   * the interaction onto the wire as `decision_id` / `segment_handles` /
+   * `segment_ids`. All optional: given, they win; otherwise the SDK fills
+   * them from the output it indexed for `payloadId` (`segment_ids` only when
+   * a hosted context supplied minted ids — never in local mode); a caller
+   * that supplies none and names no indexed output sends exactly what it
+   * sent before.
+   *
+   * A `cta_clicked` on an indexed output whose CTA opens a plan picker or
+   * pricing page ({@link CHECKOUT_STARTED_CTA_ACTION_TYPES}) also emits
+   * `checkout_started` — never for a CTA that opens checkout directly.
+   *
    * @public
    */
-  async trackTreatmentInteraction(input: RevTurbineTreatmentInteractionInput): Promise<void> {
+  async trackTreatmentInteraction(input: RevTurbineTreatmentInteractionRequest): Promise<void> {
+    // Plan 282 TASK-9: the decision context the presentation row joins on.
+    // Explicit input wins, then the plan-144 `metadata.decision_id`
+    // convention, then what this SDK indexed for the output — `payloadId` is
+    // the output id on every SDK-originated interaction. Left absent, never
+    // nulled, when none of those holds a value: absence means no decision was
+    // in scope, and the wire reads `[]` as "segments resolved, none matched",
+    // a claim only a decision this SDK made can back.
+    const indexed = typeof input.payloadId === 'string'
+      ? this.outputPlacementIndex.get(input.payloadId)
+      : undefined;
+    const metadataDecisionId = input.metadata?.decision_id;
+    const decisionId = input.decisionId
+      ?? (typeof metadataDecisionId === 'string' && metadataDecisionId.length > 0 ? metadataDecisionId : undefined)
+      ?? indexed?.decisionId;
+    const segmentHandles = input.segmentHandles ?? indexed?.segmentHandles;
+    const segmentIds = input.segmentIds ?? indexed?.segmentIds;
+
     // Resolved HERE, not at flush: a queued batch can outlive an `identify()`
     // that switched the acting account. Always defined — the prefixed
     // user-derived fallback when the integration identified no account.
     const normalized: QueuedTreatmentInteraction = {
       ...input,
+      ...(decisionId ? { decisionId } : {}),
+      ...(segmentHandles ? { segmentHandles: [...segmentHandles] } : {}),
+      ...(segmentIds ? { segmentIds: [...segmentIds] } : {}),
       interactionAt: input.interactionAt ?? new Date().toISOString(),
       accountId: this.interactionAccountId(),
     };
@@ -8236,16 +8796,16 @@ export class RevTurbineCustomerSdk {
     }
 
     const interactionMeta = (normalized.metadata ?? {}) as Record<string, JsonValue>;
-    // Hoist `decision_id` from the caller's metadata to the top level so it
-    // lifts to the wire `decision_id` column (plan 144 TASK-10 / REQ-8).
-    const decisionId = typeof interactionMeta.decision_id === 'string' ? interactionMeta.decision_id : null;
     await this.emitPlatformEvent('placement_interaction', {
       user_id: normalized.userId,
       placement_id: normalized.placementId,
       treatment_id: normalized.treatmentId ?? null,
       interaction_type: normalized.interactionType,
       interaction_at: normalized.interactionAt ?? null,
-      ...(decisionId ? { decision_id: decisionId } : {}),
+      // Top level so it lifts to the wire `decision_id` column (plan 144
+      // TASK-10 / REQ-8); resolved above from the input, the metadata
+      // convention or the output index.
+      ...(normalized.decisionId ? { decision_id: normalized.decisionId } : {}),
       // Siblings of `placement_id`, NOT inside `metadata` — CLICKSTREAM_LIFTED_FIELDS
       // lifts from the payload's top level, so anything buried in the metadata bag
       // never reaches the `experiment_id` / `variant_key` columns (plan 183).
@@ -8261,6 +8821,23 @@ export class RevTurbineCustomerSdk {
       ...(normalized.ruleHandle ? { rule_handle: normalized.ruleHandle } : {}),
       metadata: interactionMeta,
     }, { immediate: false });
+
+    // Plan 282 TASK-8/9: the step between a CTA click and checkout. Only for
+    // an output this SDK decided, and only when its CTA opens a plan picker
+    // or pricing page — a CTA that opens checkout directly ("on click") has
+    // no separate step, so it emits nothing here and its started count is its
+    // clicked count. `placement_id` is the one required key; the rest are
+    // `null` when the decision held no value, per the contract.
+    // @revturbine-graph event:platform:checkout_started
+    if (normalized.interactionType === 'cta_clicked' && indexed && isCheckoutStartedCtaAction(indexed.ctaActionType)) {
+      await this.emitPlatformEvent('checkout_started', {
+        placement_id: normalized.placementId,
+        payload_id: input.payloadId ?? null,
+        decision_id: indexed.decisionId ?? null,
+        plan_handle: indexed.targetPlanHandle ?? null,
+        rule_handle: indexed.ruleHandle ?? null,
+      }, { immediate: false });
+    }
   }
 
   async getPlacementContent(placementId: string, request?: JsonObject): Promise<RevTurbinePlacementContent> {
@@ -8755,8 +9332,23 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
+   * `getUserContext()`'s `trial` (BL-0417): the resolved trial view, copied,
+   * or nothing when neither trial source was ever supplied (the SDK's
+   * `{ in_trial: false }` default is not a fact about the user).
+   */
+  private userContextTrialProjection(): { trial?: RevTurbineTrialContext } {
+    if (this.trialStatusWrittenAt === 0 && !isRecord(this.userContext.trial)) return {};
+    return { trial: { ...this.resolveTrialView() } };
+  }
+
+  /**
    * Build the full persistence-ready {@link UserContext} from the current
    * SDK state. Includes `tenant_id` and `user_id` required for API storage.
+   *
+   * Also projects the decision-driving fields — `trial` (the resolved trial
+   * view), `tiers`, `payment_failed`, `payment_at_risk` and `instances` —
+   * when held. The snapshot is a copy: changing it changes nothing in the SDK;
+   * write through `update()` / `setUserContext()`.
    *
    * @public
    */
@@ -8788,6 +9380,17 @@ export class RevTurbineCustomerSdk {
           ([, v]) => typeof v === 'string' || typeof v === 'number',
         ),
       ) as Record<string, string | number>,
+      // BL-0417: the decision-driving UserContextSchema fields, as a read-only
+      // projection (copies — mutating the snapshot never changes SDK state).
+      // `trial` is the resolved trial view placements and grants decide with
+      // (see resolveTrialView), present only once a trial source was supplied.
+      ...this.userContextTrialProjection(),
+      ...(this.userContext.tiers !== undefined ? { tiers: { ...this.userContext.tiers } } : {}),
+      ...(this.userContext.payment_failed !== undefined ? { payment_failed: this.userContext.payment_failed } : {}),
+      ...(this.userContext.payment_at_risk !== undefined ? { payment_at_risk: this.userContext.payment_at_risk } : {}),
+      ...(this.userContext.instances !== undefined
+        ? { instances: this.userContext.instances.map((instance) => ({ ...instance })) }
+        : {}),
       // Server-computed cache stamp (plan 74); the SDK does not compute it
       // locally, so the persisted snapshot carries null until the control
       // plane populates it.
@@ -9247,13 +9850,16 @@ export class RevTurbineCustomerSdk {
       const resolver = this.localRuntime?.resolvers?.getTrialStatus;
       if (resolver) {
         const status = await resolver();
-        this.localTrialStatus = status;
+        this.writeTrialStatus(status);
         await this.evaluateTrialLifecycleTriggers(status);
         this.persistLocalRuntimeState();
         return status;
       }
-      await this.evaluateTrialLifecycleTriggers(this.localTrialStatus);
-      return this.localTrialStatus;
+      // BL-0403: with no resolver, report the trial view placements decide
+      // with — an app-supplied `user.trial` / `update({ trial })` included.
+      const view = this.resolveTrialView();
+      await this.evaluateTrialLifecycleTriggers(view);
+      return view;
     }
 
     try {
@@ -9274,7 +9880,7 @@ export class RevTurbineCustomerSdk {
       if (!response.ok) return { in_trial: false };
       const data = await response.json();
       const validated = this.validateTrialStatusShape(data);
-      this.localTrialStatus = validated;
+      this.writeTrialStatus(validated);
       await this.evaluateTrialLifecycleTriggers(validated);
       this.persistLocalRuntimeState();
       return validated;
@@ -9326,7 +9932,7 @@ export class RevTurbineCustomerSdk {
       ...(options?.basePlanHandle !== undefined ? { basePlanHandle: options.basePlanHandle } : {}),
     });
     const status: RevTurbineTrialContext = trial ?? { in_trial: false };
-    this.localTrialStatus = status;
+    this.writeTrialStatus(status);
     await this.evaluateTrialLifecycleTriggers(status);
     this.persistLocalRuntimeState();
     // Ruling D-21: the app just told the SDK about its trials, and without a
@@ -9663,8 +10269,66 @@ export class RevTurbineCustomerSdk {
       // no decision from this SDK produced that output, so there is no rule to
       // name and guessing one would be worse than the gap.
       ruleHandle: ref.ruleHandle,
+      // Plan 282 TASK-9: the decision and the presentation-time segments the
+      // index remembered for this output.
+      decisionId: ref.decisionId,
+      segmentHandles: ref.segmentHandles,
+      segmentIds: ref.segmentIds,
       metadata: ref.decisionId ? { ...metadata, decision_id: ref.decisionId } : metadata,
     });
+  }
+
+  /**
+   * The Stripe Checkout `revturbine_*` metadata bag for a rendered output
+   * (plan 282 REQ-5; research §6.2), keyed by the `output_id` of a decision
+   * this SDK produced — what the customer's server passes when it creates the
+   * Checkout Session the output's CTA leads to.
+   *
+   * Pass `metadata` as the session's `metadata` AND as
+   * `subscription_data.metadata`. The session copy is what
+   * `checkout.session.completed` carries; the subscription copy is what every
+   * later `customer.subscription.*` event carries and what each invoice
+   * snapshots under `parent.subscription_details.metadata`, so renewals,
+   * failures and recoveries stay attributable without a `customers` row. Pass
+   * `client_reference_id` as the session's `client_reference_id`, Stripe's own
+   * caller-side key, which the identity bridge also reads as the user id.
+   *
+   * Checkout cannot set Customer metadata inline: if you let Checkout create
+   * the Customer, follow up with `customers.update({ metadata })` — see the
+   * billing guide.
+   *
+   * Every value is one this SDK holds; nothing is minted. The user id is the
+   * one `identify()` set, as this SDK's own telemetry carries it (an
+   * email-shaped id is hashed the same way on every lane, so the purchase
+   * joins the click). The account id is present only when an account was
+   * identified — never the user-derived fallback. A key the SDK does not hold
+   * is absent, not empty.
+   *
+   * @returns `null` when no decision from this SDK produced `outputId`.
+   * @public
+   */
+  checkoutMetadata(outputId: string): RevTurbineCheckoutMetadata | null {
+    const ref = this.outputPlacementIndex.get(outputId);
+    if (!ref) return null;
+
+    const identifiedUserId = typeof this.userContext.id === 'string' ? this.userContext.id.trim() : '';
+    const userId = identifiedUserId.length > 0 ? redactIdentityField(identifiedUserId).value : undefined;
+    const account = this.resolveAccountIdentity();
+
+    const metadata: RevTurbineCheckoutMetadataBag = {
+      revturbine_output_id: outputId,
+      revturbine_placement_id: ref.placementId,
+      ...(userId ? { revturbine_user_id: userId } : {}),
+      ...(account.fallback ? {} : { revturbine_account_id: account.value }),
+      ...(ref.decisionId ? { revturbine_decision_id: ref.decisionId } : {}),
+      ...(ref.ruleHandle ? { revturbine_rule_id: ref.ruleHandle } : {}),
+      ...(ref.targetPlanHandle ? { revturbine_plan_handle: ref.targetPlanHandle } : {}),
+    };
+
+    return {
+      ...(userId ? { client_reference_id: userId } : {}),
+      metadata,
+    };
   }
 
   /**
@@ -9898,6 +10562,9 @@ export class RevTurbineCustomerSdk {
       warnOnEmailShapedIdentity('account_id', accountIdInput);
     }
     const previousContext = this.userContext;
+    // BL-0417: identifying a DIFFERENT user without a reset must not carry the
+    // previous user's trial or usage into this one's decisions.
+    if (this.isIdentifiedUserSwitch(userId)) this.dropPreviousUserTrialAndUsage();
     // Plan 191 REQ-3 (Q-2 ruling): there is no legacy traits overload — a
     // plain traits object no longer routes into `custom` silently. Free-form
     // values are passed explicitly under `custom`. Unrecognized keys are
@@ -10012,6 +10679,9 @@ export class RevTurbineCustomerSdk {
       personalization: {},
     };
     this.usageBalances = {};
+    // BL-0417: so is the SDK-held trial status (server-derived / hydrated) and
+    // which trial source was newest — the next user starts with no trial.
+    this.clearTrialState();
     // BL-0004: the pending optimistic conversion is this user's, not the next one's.
     this.pendingConversionPlan = undefined;
     this.recalculateDerivedUsageTraits();

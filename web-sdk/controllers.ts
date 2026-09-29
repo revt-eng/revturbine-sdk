@@ -873,6 +873,11 @@ export class PlacementController {
       // the rule slice. Undefined when the controller holds no decision —
       // absent, not empty.
       ruleHandle: this._decision?.output?.rule_id,
+      // Plan 282 TASK-9: the decision as a first-class field → wire
+      // `decision_id`. The SDK fills `segment_handles` from the output it
+      // indexed for `payloadId`; the controller holds no segment state of its
+      // own.
+      decisionId: decisionId ?? undefined,
       metadata: decisionId ? { ...metadata, decision_id: decisionId } : metadata,
     });
 

@@ -124,3 +124,58 @@ with the `open_checkout` action resolves to `open_checkout_modal` carrying the
 plan handle — your resolver opens Stripe Checkout (or your own flow) for the
 matching price. After payment, the subscription webhook updates the customer's
 plan, and access follows without further app code.
+
+### Tell Stripe which placement led here
+
+Your server creates the Checkout Session, and Stripe only knows what you put
+on it. `checkoutMetadata(outputId)` returns the `revturbine_*` bag for the
+output the user clicked — the user, account, placement, decision, output, rule
+and target plan the SDK holds for it — so the purchase joins the presentation
+and click it came from with **confirmed** credit instead of a time-window
+inference. Send it to your server with the price the user chose:
+
+```ts
+// Browser: `output` is the decision the slot rendered (`decision.output`).
+const checkout = rt.checkoutMetadata(output.output_id);
+// `checkout` is null for an output this SDK did not decide.
+```
+
+Then put the bag on the session **and** on the subscription, and the user id on
+`client_reference_id`:
+
+```ts docs-check=false reason="server-side Stripe SDK call; the stripe package is not part of the SDK toolchain"
+// Server: `checkout` is what the browser sent.
+const session = await stripe.checkout.sessions.create({
+  mode: 'subscription',
+  line_items: [{ price: stripePriceId, quantity: 1 }],
+  customer: stripeCustomerId,
+  client_reference_id: checkout.client_reference_id,
+  metadata: checkout.metadata,
+  subscription_data: { metadata: checkout.metadata },
+});
+```
+
+- `metadata` on the session is what `checkout.session.completed` carries.
+- `subscription_data.metadata` mirrors the bag onto the Subscription, so every
+  `customer.subscription.*` event carries it and every invoice snapshots it
+  under `parent.subscription_details.metadata` — renewals, failed payments and
+  recoveries stay attributed to the placement without a customer mapping.
+- `client_reference_id` is Stripe's own caller-side key for the session;
+  RevTurbine reads it as the user id when the metadata is absent.
+
+The bag's keys are `revturbine_user_id`, `revturbine_account_id`,
+`revturbine_placement_id`, `revturbine_decision_id`, `revturbine_output_id`,
+`revturbine_rule_id` and `revturbine_plan_handle`. A key the SDK does not hold
+is absent rather than empty — no id is ever invented — so an unidentified user
+yields no `revturbine_user_id` and no `client_reference_id`, and a CTA that
+names no plan yields no `revturbine_plan_handle`.
+
+<Aside type="caution" title="Customer metadata cannot be set from Checkout">
+  Checkout cannot set metadata on the Stripe Customer inline. Create the
+  Customer yourself with `metadata.revturbine_user_id` before opening Checkout
+  (see above), or, if you let Checkout create it, follow up with
+  `customers.update({ metadata })` from your `checkout.session.completed`
+  handler. The session and subscription copies of the bag identify the purchase
+  either way; the Customer copy is what makes later, checkout-less billing
+  events resolvable without a customer mapping.
+</Aside>

@@ -780,6 +780,9 @@ export interface components {
             experiment_id?: components["schemas"]["Anon_4e04ec5cc4e6_12"];
             variant_key?: components["schemas"]["Anon_4e04ec5cc4e6_13"];
             rule_handle?: components["schemas"]["Anon_94b7b4f4c44a"];
+            decision_id?: components["schemas"]["Anon_4e04ec5cc4e6_14"];
+            segment_handles?: components["schemas"]["Anon_1071d7e3c379"];
+            segment_ids?: components["schemas"]["Anon_1071d7e3c379_1"];
             test?: components["schemas"]["Anon_fb9ddeea992e_3"];
             metadata?: components["schemas"]["Anon_a249e58b3222"];
         };
@@ -1218,6 +1221,12 @@ export interface components {
         Anon_9ac136edb99a_18: string;
         Anon_94b7b4f4c44a: components["schemas"]["Anon_904af497346b"];
         Anon_904af497346b: string | null;
+        Anon_4e04ec5cc4e6_14: components["schemas"]["Anon_9ac136edb99a_19"];
+        Anon_9ac136edb99a_19: string;
+        Anon_1071d7e3c379: components["schemas"]["Anon_c72f37d06352"];
+        Anon_c72f37d06352: string[];
+        Anon_1071d7e3c379_1: components["schemas"]["Anon_c72f37d06352_1"];
+        Anon_c72f37d06352_1: string[];
         Anon_fb9ddeea992e_3: components["schemas"]["Anon_7cb541e84f22_32"];
         Anon_7cb541e84f22_32: boolean;
         Anon_a249e58b3222: components["schemas"]["Anon_c65c1fbd5acf_8"];
@@ -1654,8 +1663,8 @@ export interface components {
         Anon_be3e2585472d_3: string;
         Anon_fb248bf5a9f7_10: string;
         /** @default production */
-        Anon_51cbbf69cb41_1: components["schemas"]["Anon_9ac136edb99a_20"];
-        Anon_9ac136edb99a_20: string;
+        Anon_51cbbf69cb41_1: components["schemas"]["Anon_9ac136edb99a_21"];
+        Anon_9ac136edb99a_21: string;
         Anon_0eb2e3b6e08c_3: string;
         Anon_ed3fcc71dea7: {
             error: string;
@@ -1978,7 +1987,7 @@ export interface components {
         /** @default [] */
         Anon_3b6346b139c2: components["schemas"]["Anon_f836473839d1"];
         Anon_f836473839d1: components["schemas"]["FieldDefinitionOutput"][];
-        Anon_9ac136edb99a_21: string;
+        Anon_9ac136edb99a_22: string;
         /** @default false */
         Anon_f56777819c8b_3: boolean;
         Anon_44136fa355b3_2: unknown;
@@ -2117,7 +2126,7 @@ export interface components {
             description?: components["schemas"]["Anon_ee9224780226_7"];
         };
         FieldDefinitionOutput: {
-            name: components["schemas"]["Anon_9ac136edb99a_21"];
+            name: components["schemas"]["Anon_9ac136edb99a_22"];
             field_type: components["schemas"]["TemplateFieldType"];
             required: components["schemas"]["Anon_f56777819c8b_3"];
             default_value?: components["schemas"]["Anon_44136fa355b3_2"];

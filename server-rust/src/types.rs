@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.374/rust/revturbine_types.rs
+//   published/v0.1.381/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -15082,6 +15082,8 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsMetricStatistic
 #[doc = "    \"event_count\","]
 #[doc = "    \"cohort\","]
 #[doc = "    \"funnel\","]
+#[doc = "    \"lifecycle\","]
+#[doc = "    \"recurring\","]
 #[doc = "    \"read_through\","]
 #[doc = "    \"none\""]
 #[doc = "  ],"]
@@ -15117,6 +15119,10 @@ pub enum AnalyticsOracleFamily {
     Cohort,
     #[serde(rename = "funnel")]
     Funnel,
+    #[serde(rename = "lifecycle")]
+    Lifecycle,
+    #[serde(rename = "recurring")]
+    Recurring,
     #[serde(rename = "read_through")]
     ReadThrough,
     #[serde(rename = "none")]
@@ -15132,6 +15138,8 @@ impl ::std::fmt::Display for AnalyticsOracleFamily {
             Self::EventCount => f.write_str("event_count"),
             Self::Cohort => f.write_str("cohort"),
             Self::Funnel => f.write_str("funnel"),
+            Self::Lifecycle => f.write_str("lifecycle"),
+            Self::Recurring => f.write_str("recurring"),
             Self::ReadThrough => f.write_str("read_through"),
             Self::None => f.write_str("none"),
         }
@@ -15148,6 +15156,8 @@ impl ::std::str::FromStr for AnalyticsOracleFamily {
             "event_count" => Ok(Self::EventCount),
             "cohort" => Ok(Self::Cohort),
             "funnel" => Ok(Self::Funnel),
+            "lifecycle" => Ok(Self::Lifecycle),
+            "recurring" => Ok(Self::Recurring),
             "read_through" => Ok(Self::ReadThrough),
             "none" => Ok(Self::None),
             _ => Err("invalid value".into()),
@@ -181493,6 +181503,11 @@ impl ::std::convert::From<::std::vec::Vec<TreatmentInteractionInput>>
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"decision_id\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"experiment_id\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"minLength\": 1,"]
@@ -181548,6 +181563,22 @@ impl ::std::convert::From<::std::vec::Vec<TreatmentInteractionInput>>
 #[doc = "      ],"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"segment_handles\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"string\","]
+#[doc = "        \"minLength\": 1"]
+#[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"segment_ids\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"string\","]
+#[doc = "        \"minLength\": 1"]
+#[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"surface_slot_id\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"minLength\": 1,"]
@@ -181590,6 +181621,8 @@ pub struct TreatmentInteractionInput {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub account_id: ::std::option::Option<TreatmentInteractionInputAccountId>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub decision_id: ::std::option::Option<TreatmentInteractionInputDecisionId>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub experiment_id: ::std::option::Option<TreatmentInteractionInputExperimentId>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub interaction_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
@@ -181605,6 +181638,10 @@ pub struct TreatmentInteractionInput {
     pub placement_id: TreatmentInteractionInputPlacementId,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub rule_handle: ::std::option::Option<TreatmentInteractionInputRuleHandle>,
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub segment_handles: ::std::vec::Vec<TreatmentInteractionInputSegmentHandlesItem>,
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub segment_ids: ::std::vec::Vec<TreatmentInteractionInputSegmentIdsItem>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub surface_slot_id: ::std::option::Option<TreatmentInteractionInputSurfaceSlotId>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -181675,6 +181712,75 @@ impl ::std::convert::TryFrom<::std::string::String> for TreatmentInteractionInpu
     }
 }
 impl<'de> ::serde::Deserialize<'de> for TreatmentInteractionInputAccountId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`TreatmentInteractionInputDecisionId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct TreatmentInteractionInputDecisionId(::std::string::String);
+impl ::std::ops::Deref for TreatmentInteractionInputDecisionId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<TreatmentInteractionInputDecisionId> for ::std::string::String {
+    fn from(value: TreatmentInteractionInputDecisionId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for TreatmentInteractionInputDecisionId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for TreatmentInteractionInputDecisionId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for TreatmentInteractionInputDecisionId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for TreatmentInteractionInputDecisionId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for TreatmentInteractionInputDecisionId {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -182092,6 +182198,146 @@ impl ::std::convert::TryFrom<::std::string::String> for TreatmentInteractionInpu
     }
 }
 impl<'de> ::serde::Deserialize<'de> for TreatmentInteractionInputRuleHandle {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`TreatmentInteractionInputSegmentHandlesItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct TreatmentInteractionInputSegmentHandlesItem(::std::string::String);
+impl ::std::ops::Deref for TreatmentInteractionInputSegmentHandlesItem {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<TreatmentInteractionInputSegmentHandlesItem> for ::std::string::String {
+    fn from(value: TreatmentInteractionInputSegmentHandlesItem) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for TreatmentInteractionInputSegmentHandlesItem {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for TreatmentInteractionInputSegmentHandlesItem {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for TreatmentInteractionInputSegmentHandlesItem
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for TreatmentInteractionInputSegmentHandlesItem
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for TreatmentInteractionInputSegmentHandlesItem {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`TreatmentInteractionInputSegmentIdsItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct TreatmentInteractionInputSegmentIdsItem(::std::string::String);
+impl ::std::ops::Deref for TreatmentInteractionInputSegmentIdsItem {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<TreatmentInteractionInputSegmentIdsItem> for ::std::string::String {
+    fn from(value: TreatmentInteractionInputSegmentIdsItem) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for TreatmentInteractionInputSegmentIdsItem {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for TreatmentInteractionInputSegmentIdsItem {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for TreatmentInteractionInputSegmentIdsItem {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for TreatmentInteractionInputSegmentIdsItem {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for TreatmentInteractionInputSegmentIdsItem {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,

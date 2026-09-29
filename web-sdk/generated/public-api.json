@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "count": 76,
+  "count": 77,
   "exports": [
     {
       "name": "AccountCreatedPayload",
@@ -145,6 +145,12 @@
       "kind": "method",
       "file": "web-sdk/customer-side.ts",
       "signature": "async checkEntitlement(handle: string, context?: RevTurbineEntitlementContext): Promise<EntitlementResult>"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.checkoutMetadata",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "checkoutMetadata(outputId: string): RevTurbineCheckoutMetadata | null"
     },
     {
       "name": "RevTurbineCustomerSdk.convert",
@@ -342,7 +348,7 @@
       "name": "RevTurbineCustomerSdk.trackTreatmentInteraction",
       "kind": "method",
       "file": "web-sdk/customer-side.ts",
-      "signature": "async trackTreatmentInteraction(input: RevTurbineTreatmentInteractionInput): Promise<void>"
+      "signature": "async trackTreatmentInteraction(input: RevTurbineTreatmentInteractionRequest): Promise<void>"
     },
     {
       "name": "RevTurbineCustomerSdk.update",

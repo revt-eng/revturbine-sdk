@@ -47,7 +47,52 @@ also require a changelog entry.
 
 ---
 
-## Unreleased
+## 0.11.17
+
+### Checkout metadata helper, `checkout_started`, and decision context on interactions (plan 282 TASK-9, BL-0432)
+
+**What changed.** Three additive changes to the browser SDK (`@revturbine/sdk`);
+no existing signature narrows.
+
+- **`checkoutMetadata(outputId)`** (new, `@public`) returns the Stripe Checkout
+  `revturbine_*` metadata bag for an output this SDK decided — user, account,
+  placement, decision, output, rule and target plan — plus
+  `client_reference_id` (the user id). Pass `metadata` as both the session's
+  `metadata` and `subscription_data.metadata`; the mirror is what reaches each
+  invoice's `parent.subscription_details.metadata`. A key the SDK does not hold
+  is absent, never empty; `null` for an output this SDK did not decide. New
+  types `RevTurbineCheckoutMetadata` and `RevTurbineCheckoutMetadataBag`.
+- **`checkout_started`** (taxonomy v6, `@revt-eng/schema` 0.1.381) is emitted on
+  a `cta_clicked` whose CTA opens a plan picker or pricing page
+  (`CHECKOUT_STARTED_CTA_ACTION_TYPES`: `navigate_to_plans`, `view_plans`) with
+  `{ placement_id, payload_id, decision_id, plan_handle, rule_handle }`. Never
+  for `open_checkout_modal` — that CTA opens checkout directly ("on click"), so
+  its started count is its clicked count.
+- **`trackTreatmentInteraction`** accepts optional `decisionId`,
+  `segmentHandles` and `segmentIds` (`RevTurbineTreatmentInteractionDecisionContext`;
+  the parameter type is now `RevTurbineTreatmentInteractionRequest`, a
+  superset of the previous `RevTurbineTreatmentInteractionInput`) and sends
+  them as `decision_id` / `segment_handles` / `segment_ids`. Segments are
+  handles: `segment_handles` is the effective set scaffold's `evaluateSegments`
+  built plus any hosted-resolved slugs — the analytics join key — and
+  `segment_ids` carries only the minted ids a hosted context supplied
+  (telemetry; omitted entirely in local mode). When not given, they are filled
+  from the output this SDK indexed for `payloadId`; a caller that gives none
+  and names no indexed output sends exactly the row it sent before. The React
+  controller's clicks and the output-addressed `convert()` / `dismiss()` /
+  `snooze()` carry them.
+
+**Landed in** 0.11.17. **Fail-closed in** n/a — additive. The headless ports
+(Python, Rust, `server-node`) carry only the re-vendored generated types for
+the 0.1.381 pin; the cross-language parity corpus is untouched.
+
+**Docs.** `guides/billing.mdx` "Where checkout fits" now documents the bag, the
+`subscription_data.metadata` mirror, `client_reference_id`, and that Customer
+metadata cannot be set from Checkout.
+
+**Proving tests.** `web-sdk/checkout-metadata.test.ts`,
+`web-sdk/checkout-started-emit.test.ts`,
+`web-sdk/interaction-decision-context.test.ts`.
 
 ### `update({ usage })` now reaches usage and credit threshold placements and their usage tokens (BL-0402, BL-0409)
 

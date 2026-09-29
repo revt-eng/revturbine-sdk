@@ -37,7 +37,43 @@ import {
 import { InitFailureDiagnostic } from './InitFailureDiagnostic';
 import { isProductionBuild } from '../build-mode';
 
-type BootstrapPlacementInput = Omit<RevTurbinePlacementDecisionInput, 'placementId'> & {
+/**
+ * The part of `options.user` (minus `id`) the provider forwards to
+ * `identify()` on mount (BL-0403).
+ *
+ * `identify()` is the identity verb and merges a deliberately narrow key set
+ * (`account_id`, `email`, `plan`, `plan_handle`, `usage`, `entitlements`,
+ * `custom`, `personalization`); any other key it reports as "dropped
+ * unrecognized user-context key(s)". The session fields below are legitimate
+ * `options.user` input — `update()` accepts every one of them — and the SDK
+ * constructor has ALREADY merged them into the held context from
+ * `options.user`, so forwarding them only produced a false warning on every
+ * mount (and a spurious `sdk_validation_warning` event). They are stripped
+ * here; re-applying them through `update()` instead would be a redundant
+ * second write, and one that could make a stale init `trial` look newer
+ * than an `initialData.trialStatus`.
+ *
+ * Keys the SDK does not recognise at all, and server-assigned keys, are NOT
+ * stripped: identify() still reports those, exactly as a direct call would.
+ */
+function identifyContextOf(context: IdentifyContextInput): IdentifyContextInput {
+  const {
+    email_type: _emailType,
+    trial: _trial,
+    payment_failed: _paymentFailed,
+    payment_at_risk: _paymentAtRisk,
+    tiers: _tiers,
+    instances: _instances,
+    experiments: _experiments,
+    derived_config_version: _derivedConfigVersion,
+    context_hash: _contextHash,
+    derived_computed_at: _derivedComputedAt,
+    ...identity
+  } = context;
+  return identity;
+}
+
+type BootstrapPlacementInput =Omit<RevTurbinePlacementDecisionInput, 'placementId'> & {
   placement: RevTurbinePlacementConfig;
 };
 
@@ -275,11 +311,15 @@ export function RevTurbineProvider<
         // code. Strip it here rather than teaching the guardrail to ignore
         // `id`, which would also hide it from direct identify() callers who
         // really did put the id in the wrong place.
+        //
+        // BL-0403: the same applies to the session fields identify() does not
+        // merge (`trial`, `tiers`, `payment_failed`, …) — see
+        // {@link identifyContextOf}. The constructor already merged them.
         phase = 'identify';
         const user = options.user;
         if (user && typeof user === 'object' && (user as { id?: string }).id) {
           const { id, ...context } = user as { id: string } & IdentifyContextInput;
-          nextSdk.identify(id, context as IdentifyContextInput);
+          nextSdk.identify(id, identifyContextOf(context));
         }
 
         // Theme — the branding ladder is the BASE, always resolved without a
