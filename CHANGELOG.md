@@ -47,6 +47,36 @@ also require a changelog entry.
 
 ---
 
+## 0.11.21
+
+### `getPlacement` is a pure function of (user context, Playbook) (D-39, BL-0379)
+
+**What changed.** Behaviour change in the browser SDK; no signature changes.
+
+- **One decision path.** `getPlacement(config)` resolves the Playbook's
+  authored slot through the same decision path as `getPlacementDecision` and
+  the server SDKs' `get_placement` / `LocalRuntime.getPlacement`. 0.11.20 first
+  consulted a lane of previously decided or seeded outputs and ranked them with
+  a separate selection layer (category bucket, urgency, score), so it could
+  return a different placement than the decision path for the same user.
+- **Always current.** Each call reflects the current user context; the only
+  caching is the decision path's own memo keyed by the request and context.
+- **`getPlacementContent`** in local-only mode now decides through the same
+  path instead of reading seeded outputs.
+- **Deprecated, ignored:** `localRuntime.initialData.placementsByLookupKey`
+  (warns once when supplied). Author placements in `localRuntime.playbook`, or
+  implement the `getPlacement` resolver for a custom source. The field, and
+  core's `resolveLocalPlacementFromCandidates` selection helper, are removed in
+  0.12.0 (BL-0167).
+- **Live design partner:** an integration that seeded placement outputs, or
+  relied on the old cached ranking, now sees the Playbook's decision.
+
+**Landed in** 0.11.21. **Fail-closed in** 0.11.21.
+
+**Proving tests.** `web-sdk/pure-getplacement.test.ts` (browser `getPlacement`
+equals the server runtime for the same inputs; reflects a changed user
+context; ignores seeded outputs); `web-sdk/customer-side-fixed-only.test.ts`.
+
 ## 0.11.20
 
 ### One entitlement answer for browser and server, with Entitlement Mirroring; Access Gates only fire while denied (D-60, D-61)
