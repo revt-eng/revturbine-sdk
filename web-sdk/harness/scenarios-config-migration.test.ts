@@ -22,6 +22,7 @@ import {
   loadHarnessLocalState,
   saveHarnessLocalState,
   type HarnessSlotDescriptor,
+  HARNESS_GATE_ENTITLEMENT,
 } from './scenarios';
 
 const BODY = {
@@ -235,7 +236,7 @@ describe('harness Playbook projection migration', () => {
 
     for (const slot of HARNESS_SLOTS) {
       const placement = runtimeConfig.placements?.find(
-        (candidate) => candidate.trigger.type === 'surface_render' && candidate.trigger.slot_id === slot.id,
+        (candidate) => candidate.payloads.some((payload) => payload.surface_slot_ids?.includes(slot.id)),
       );
       if (!placement) throw new Error(`Expected a canonical placement fixture for ${slot.id}`);
 
@@ -246,7 +247,10 @@ describe('harness Playbook projection migration', () => {
         metadata: {
           surface_template_ids: [slot.template ?? ''],
           surface_slot_id: slot.id,
-          surface_slot_category: 'fixed',
+          // D-60: a gate resolves only in a gate slot while denied.
+          ...(placement.category === 'gated'
+            ? { surface_slot_category: 'gated', entitlement_handle: HARNESS_GATE_ENTITLEMENT, entitlement_status: 'denied' }
+            : { surface_slot_category: 'fixed' }),
         },
       };
       const input = { placementId: placement.id, userId: 'user_harness_01' };

@@ -101,6 +101,22 @@ def derive_builtin_dimension_traits(context: JsonObject) -> dict[str, str]:
     return traits
 
 
+def mirrored_entitlement_trait(value: Any) -> bool:
+    """A mirrored entitlement as a segment trait: a grant counts unless it is
+    denied (D-61). ``UserContext.entitlements`` values are a boolean or a
+    grant record; segment traits stay scalar.
+
+    Source: user-context.ts (mirroredEntitlementTrait)
+    """
+    if isinstance(value, bool):
+        return value
+    if not isinstance(value, dict):
+        # `value?.status` / `value?.allowed` read `undefined` off any
+        # non-object, so both checks pass.
+        return True
+    return value.get("status") != "denied" and value.get("allowed") is not False
+
+
 def _strip_reserved_trait_keys(bag: dict[str, Any]) -> None:
     for key in [k for k in bag if is_reserved_trait_key(k)]:
         del bag[key]
@@ -160,7 +176,7 @@ def build_targeting_state(
     if is_record(entitlements):
         for key, value in entitlements.items():
             if key not in traits:
-                traits[key] = value
+                traits[key] = mirrored_entitlement_trait(value)
 
     # ``rt_*`` is a reserved trait-key PREFIX (plan 279 PD-1 - plan 191
     # REQ-2's ``plan_handle`` rule extended to a namespace): a custom or

@@ -85,7 +85,7 @@ fn an_unknown_placement_reports_not_found() {
 fn a_non_seed_modal_template_resolves_to_the_modal_component_type() {
     let mut c = config();
     c["surface_templates"] = json!([{ "id": "customer_modal", "surface_type": "modal_optional" }]);
-    let mut e = entry("pl_modal", "gated", 0, "Upgrade");
+    let mut e = entry("pl_modal", "fixed", 0, "Upgrade");
     e["payloads"][0]["surfaces"][0]["template_id"] = json!("customer_modal");
 
     let r = StaticPlacementResolver::new(&[e], &c);
@@ -308,6 +308,106 @@ fn d59_a_gate_slot_with_no_placement_for_its_entitlement_is_an_explicit_miss() {
     );
     assert_eq!(d["visible"], json!(false));
     assert_eq!(d["reason_codes"], json!(["no_gate_for_entitlement"]));
+}
+
+// ── D-60 (Kent, 2026-10-06): Access Gate placements ──────────────────────
+// A gate appears only in an Access Gate slot, and only while its
+// entitlement is denied or limited. Mirrors the TS "D-60 Access Gate
+// placements" block and the py TestAccessGatePlacements class.
+
+fn d60_gate() -> Value {
+    let mut gate = entry("pl_gate", "gated", 0, "Gate");
+    gate["trigger"] = json!({ "type": "entitlement_gate", "entitlement_handle": "exports_pro" });
+    gate
+}
+
+fn d60_status(status: &str) -> Value {
+    json!({ "__providers": { "entitlements": { "entries": {
+        "exports_pro": { "status": status, "allowed": status == "allowed" },
+    } } } })
+}
+
+fn d60_gate_slot() -> Value {
+    json!({
+        "surface_template_ids": ["banner_placement"],
+        "surface_slot_category": "gated",
+        "entitlement_handle": "exports_pro",
+    })
+}
+
+fn d60_resolve(entries: &[Value], slot: &Value, context: Option<&Value>) -> Value {
+    StaticPlacementResolver::new(entries, &config()).resolve("test", Some(slot), context, None)
+}
+
+#[test]
+fn d60_a_gate_never_appears_outside_an_access_gate_slot_even_while_denied() {
+    let d = d60_resolve(
+        &[d60_gate(), entry("pl_fixed", "fixed", 5, "Fixed")],
+        &slot(&["banner_placement"]),
+        Some(&d60_status("denied")),
+    );
+    assert_eq!(d["content"]["header"], json!("Fixed"));
+}
+
+#[test]
+fn d60_a_gate_fires_in_its_gate_slot_when_denied_or_limited() {
+    for status in ["denied", "limited"] {
+        let d = d60_resolve(&[d60_gate()], &d60_gate_slot(), Some(&d60_status(status)));
+        assert_eq!(d["content"]["header"], json!("Gate"), "{status}");
+    }
+}
+
+#[test]
+fn d60_a_gate_does_not_fire_while_allowed_or_when_no_status_is_known() {
+    let allowed = d60_resolve(
+        &[d60_gate()],
+        &d60_gate_slot(),
+        Some(&d60_status("allowed")),
+    );
+    assert_eq!(allowed["visible"], json!(false));
+    let unknown = d60_resolve(&[d60_gate()], &d60_gate_slot(), None);
+    assert_eq!(unknown["visible"], json!(false));
+}
+
+#[test]
+fn d60_the_gate_slots_own_check_result_wins_over_the_provider_entry() {
+    let mut slot_with_status = d60_gate_slot();
+    slot_with_status["entitlement_status"] = json!("denied");
+    let d = d60_resolve(
+        &[d60_gate()],
+        &slot_with_status,
+        Some(&d60_status("allowed")),
+    );
+    assert_eq!(d["content"]["header"], json!("Gate"));
+}
+
+#[test]
+fn d60_direct_lookup_refuses_an_allowed_entitlement_and_a_registered_non_gate_slot() {
+    let resolver = StaticPlacementResolver::new(&[d60_gate()], &config());
+    let allowed = resolver.resolve(
+        "pl_gate",
+        Some(&json!({})),
+        Some(&d60_status("allowed")),
+        None,
+    );
+    assert_eq!(allowed["reason_codes"], json!(["entitlement_not_denied"]));
+    let in_fixed = resolver.resolve(
+        "pl_gate",
+        Some(&json!({ "surface_slot_category": "fixed" })),
+        Some(&d60_status("denied")),
+        None,
+    );
+    assert_eq!(
+        in_fixed["reason_codes"],
+        json!(["gate_outside_access_gate"])
+    );
+    let denied = resolver.resolve(
+        "pl_gate",
+        Some(&json!({})),
+        Some(&d60_status("denied")),
+        None,
+    );
+    assert_eq!(denied["visible"], json!(true));
 }
 
 #[test]

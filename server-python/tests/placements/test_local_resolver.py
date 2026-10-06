@@ -55,7 +55,7 @@ def _rec(**fields: Any) -> PlacementRecord:
 def _entry(
     *,
     entry_id: str = "pl_foo",
-    category: str = "gated",
+    category: str = "fixed",
     order: int = 0,
     trigger: dict[str, Any] | None = None,
     payloads: list[dict[str, Any]] | None = None,
@@ -132,6 +132,20 @@ def _ctx(
     if usage is not None:
         providers["entitlements"] = {"usage": usage}
     return {"__providers": providers}
+
+
+# D-60: an Access Gate fires only in a gate slot while its entitlement is
+# denied, so gate tests carry a real gate trigger and a denial.
+_GATE_TRIGGER: dict[str, Any] = {"type": "entitlement_gate", "entitlement_handle": "exports_pro"}
+
+
+def _entitlement_ctx(handle: str, status: str) -> dict[str, Any]:
+    entry = {"status": status, "allowed": status == "allowed"}
+    return {"__providers": {"entitlements": {"entries": {handle: entry}}}}
+
+
+def _denied_ctx() -> dict[str, Any]:
+    return _entitlement_ctx("exports_pro", "denied")
 
 
 def _impression_history() -> ImpressionHistory:
@@ -414,11 +428,11 @@ class TestResolverCandidatePath:
     def test_candidate_selected_and_sorted_by_order(self) -> None:
         resolver = self._resolver(
             [
-                _entry(entry_id="pl_low", order=5, category="gated"),
+                _entry(entry_id="pl_low", order=5, category="fixed"),
                 _entry(
                     entry_id="pl_high",
                     order=1,
-                    category="gated",
+                    category="fixed",
                     payloads=[_payload(payload_id="phigh")],
                 ),
             ]
@@ -510,17 +524,26 @@ class TestResolverCandidatePath:
 
     def test_fixed_category_skips_category_narrowing(self) -> None:
         # slot_category 'fixed' must NOT apply category narrowing; both
-        # candidates remain and the first (by order) eligible wins.
+        # candidates remain and the first eligible wins. The Fixed candidate
+        # is targeted at a plan this user is not on, so narrowing to it would
+        # leave nothing; skipping narrowing serves the non-Fixed pl_x. (D-60:
+        # pl_x is not an Access Gate, which a fixed slot would refuse.)
         resolver = self._resolver(
             [
-                _entry(entry_id="pl_x", order=0, category="gated"),
+                _entry(entry_id="pl_x", order=0, category="upsell"),
                 _entry(
                     entry_id="pl_y",
                     order=1,
                     category="fixed",
-                    payloads=[_payload(payload_id="py")],
+                    payloads=[
+                        _payload(payload_id="py", target={"plan_ids": ["plan_pro"]}),
+                    ],
                 ),
-            ]
+            ],
+            plans=[
+                {"unique_handle": "pro", "id": "plan_pro"},
+                {"unique_handle": "free", "id": "plan_free"},
+            ],
         )
         decision = resolver(
             {"placement_id": "p1", "user_id": "u"},
@@ -530,7 +553,7 @@ class TestResolverCandidatePath:
                     "surface_slot_category": "fixed",
                 }
             },
-            _ctx(),
+            _ctx(plan_handle="free"),
         )
         assert decision["output"]["output_id"] == "pay1"  # pl_x, order 0
 
@@ -545,6 +568,7 @@ class TestResolverCandidatePath:
                     entry_id="pl_gate",
                     order=0,
                     category="gated",
+                    trigger=_GATE_TRIGGER,
                     payloads=[_payload(payload_id="pg")],
                 ),
                 _entry(
@@ -557,8 +581,14 @@ class TestResolverCandidatePath:
         )
         decision = resolver(
             {"placement_id": "p1", "user_id": "u"},
-            {"metadata": {"surface_template_ids": ["modal_overlay"], "fixed_only": True}},
-            _ctx(),
+            {
+                "metadata": {
+                    "surface_template_ids": ["modal_overlay"],
+                    "surface_slot_category": "gated",
+                    "fixed_only": True,
+                }
+            },
+            _denied_ctx(),
         )
         assert decision["output"]["output_id"] == "pf"
 
@@ -586,6 +616,7 @@ class TestResolverCandidatePath:
                     entry_id="pl_gate",
                     order=0,
                     category="gated",
+                    trigger=_GATE_TRIGGER,
                     payloads=[_payload(payload_id="pg")],
                 ),
                 _entry(
@@ -598,8 +629,13 @@ class TestResolverCandidatePath:
         )
         decision = resolver(
             {"placement_id": "p1", "user_id": "u"},
-            {"metadata": {"surface_template_ids": ["modal_overlay"]}},
-            _ctx(),
+            {
+                "metadata": {
+                    "surface_template_ids": ["modal_overlay"],
+                    "surface_slot_category": "gated",
+                }
+            },
+            _denied_ctx(),
         )
         assert decision["output"]["output_id"] == "pg"
 
@@ -1241,3 +1277,96 @@ class TestCategoryFirstIsTheDecisionContract:
         decision = self._decide([other_gate], self._usage_ctx({}), gate_slot)
         assert decision["visible"] is False
         assert decision["reason_codes"] == ["no_gate_for_entitlement"]
+
+
+# ── D-60 Access Gate placements ─────────────────────────────────────────────
+
+
+class TestAccessGatePlacements:
+    """D-60 (Kent, 2026-10-06): an Access Gate placement appears only in an
+    Access Gate slot, and only while its entitlement is denied or limited.
+    Mirrors local-resolver.test.ts "D-60 Access Gate placements".
+    """
+
+    _GATE = _entry(
+        entry_id="pl_gate",
+        order=0,
+        category="gated",
+        trigger=_GATE_TRIGGER,
+        payloads=[_payload(payload_id="p_gate", surfaces=[_surface(fields={"header": "Gate"})])],
+    )
+    _FIXED = _entry(
+        entry_id="pl_fixed",
+        order=5,
+        category="fixed",
+        trigger={},
+        payloads=[_payload(payload_id="p_fixed", surfaces=[_surface(fields={"header": "Fixed"})])],
+    )
+    _GATE_SLOT: dict[str, Any] = {
+        "surface_template_ids": ["modal_overlay"],
+        "surface_slot_category": "gated",
+        "entitlement_handle": "exports_pro",
+    }
+
+    @staticmethod
+    def _status(value: str) -> dict[str, Any]:
+        return _entitlement_ctx("exports_pro", value)
+
+    @staticmethod
+    def _resolve(
+        entries: list[dict[str, Any]],
+        metadata: dict[str, Any],
+        context: dict[str, Any] | None = None,
+    ) -> PlacementDecision:
+        resolver = create_static_placement_resolver({"placements": entries}, _config())
+        return resolver(
+            {"placement_id": "pl_test", "user_id": "user_1"},
+            _rec(placement_id="test", name="test", route="/app", metadata=metadata),
+            context if context is not None else {},
+        )
+
+    def test_never_appears_outside_an_access_gate_slot_even_while_denied(self) -> None:
+        decision = self._resolve(
+            [self._GATE, self._FIXED],
+            {"surface_template_ids": ["modal_overlay"]},
+            self._status("denied"),
+        )
+        assert decision["content"]["header"] == "Fixed"
+
+    def test_fires_in_its_gate_slot_when_denied_or_limited(self) -> None:
+        denied = self._resolve([self._GATE], self._GATE_SLOT, self._status("denied"))
+        assert denied["content"]["header"] == "Gate"
+        limited = self._resolve([self._GATE], self._GATE_SLOT, self._status("limited"))
+        assert limited["content"]["header"] == "Gate"
+
+    def test_does_not_fire_while_allowed_or_when_no_status_is_known(self) -> None:
+        allowed = self._resolve([self._GATE], self._GATE_SLOT, self._status("allowed"))
+        assert allowed["visible"] is False
+        assert self._resolve([self._GATE], self._GATE_SLOT)["visible"] is False
+
+    def test_gate_slot_check_result_wins_over_the_provider_entry(self) -> None:
+        decision = self._resolve(
+            [self._GATE],
+            {**self._GATE_SLOT, "entitlement_status": "denied"},
+            self._status("allowed"),
+        )
+        assert decision["content"]["header"] == "Gate"
+
+    def test_direct_lookup_refuses_allowed_entitlement_and_registered_non_gate_slot(
+        self,
+    ) -> None:
+        def direct(
+            metadata: dict[str, Any], context: dict[str, Any] | None = None
+        ) -> PlacementDecision:
+            resolver = create_static_placement_resolver({"placements": [self._GATE]}, _config())
+            return resolver(
+                {"placement_id": "pl_gate", "user_id": "user_1"},
+                _rec(placement_id="pl_gate", name="pl_gate", route="/app", metadata=metadata),
+                context if context is not None else {},
+            )
+
+        assert direct({}, self._status("allowed"))["reason_codes"] == ["entitlement_not_denied"]
+        assert direct({"surface_slot_category": "fixed"}, self._status("denied"))[
+            "reason_codes"
+        ] == ["gate_outside_access_gate"]
+        assert direct({}, self._status("denied"))["visible"] is True

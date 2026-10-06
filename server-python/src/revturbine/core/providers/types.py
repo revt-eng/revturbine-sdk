@@ -181,6 +181,11 @@ class _EntitlementProviderStateRequired(TypedDict):
 class EntitlementProviderState(_EntitlementProviderStateRequired, total=False):
     """Source: types.ts:159-173"""
 
+    #: D-61: ``'playbook_default'`` marks entries the static adapter fills
+    #: with a blanket default policy. Those are NOT app data and never
+    #: override the Playbook evaluation; entries from any other provider are
+    #: app-mirrored data and merge with it per the runtime's precedence.
+    origin: Literal["playbook_default"]
     usage: dict[str, EntitlementUsageEntry]
     grants: EntitlementGrantSet
 

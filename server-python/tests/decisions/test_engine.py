@@ -320,10 +320,23 @@ class TestCheckEntitlement:
         result = engine.check_entitlement("feat")
         assert result == {"status": "denied", "allowed": False, "reason": "plan_too_low"}
 
-    def test_no_provider_default_allow(self) -> None:
+    def test_no_provider_fails_closed_by_default(self) -> None:
+        # D-61 (Kent, 2026-10-06): the default policy is 'deny'. Mirrors the
+        # e2e.test.ts "no entitlement provider is registered" case.
         engine = DecisionEngine(registry=DomainProviderRegistry())
         result = engine.check_entitlement("feat")
         assert result == {
+            "status": "denied",
+            "allowed": False,
+            "reason": "no_entitlement_provider_default_deny",
+        }
+
+    def test_no_provider_allow_is_an_explicit_opt_in(self) -> None:
+        engine = DecisionEngine(
+            registry=DomainProviderRegistry(),
+            options={"default_entitlement_policy": "allow"},
+        )
+        assert engine.check_entitlement("feat") == {
             "status": "allowed",
             "allowed": True,
             "reason": "no_entitlement_provider",
@@ -341,12 +354,18 @@ class TestCheckEntitlement:
             "reason": "no_entitlement_provider_default_deny",
         }
 
-    def test_handle_not_found_default_allow(self) -> None:
+    def test_handle_not_found_fails_closed_by_default(self) -> None:
+        # D-61: an unknown handle follows the default policy, now 'deny'.
         reg = _registry_with_entitlements(entries={})
         engine = DecisionEngine(registry=reg)
         result = engine.check_entitlement("missing")
-        assert result["allowed"] is True
-        assert result["reason"] == "entitlement_not_found_default_allow"
+        assert result["allowed"] is False
+        assert result["reason"] == "entitlement_not_found_default_deny"
+
+        opted_in = DecisionEngine(registry=reg, options={"default_entitlement_policy": "allow"})
+        assert opted_in.check_entitlement("missing")["reason"] == (
+            "entitlement_not_found_default_allow"
+        )
 
     def test_handle_not_found_default_deny(self) -> None:
         reg = _registry_with_entitlements(entries={})
@@ -498,9 +517,11 @@ class TestEntitlementRuleSurfacing:
             "reason": "no_matching_entitlement_rule",
         }
 
-    def test_unknown_handle_keeps_default_policy_despite_rules_provider(self) -> None:
-        # Fail-closed judges rule assignments for configured entitlements; a
-        # handle with no entry at all keeps default-policy behavior.
+    def test_unknown_handle_follows_default_policy_which_fails_closed(self) -> None:
+        # A handle with no entry at all follows the engine's default policy,
+        # which is 'deny' since D-61; 'allow' is an explicit opt-in. Mirrors
+        # e2e.test.ts "an UNKNOWN handle follows the default policy, which
+        # fails closed (D-61)".
         reg = _registry_with_entitlements(
             entries={"api_calls": {"status": "allowed", "allowed": True}},
         )
@@ -508,8 +529,13 @@ class TestEntitlementRuleSurfacing:
         reg.register(_rules_provider({"api_calls": []}))
         engine = DecisionEngine(registry=reg)
         result = engine.check_entitlement("never_configured")
-        assert result["allowed"] is True
-        assert result["reason"] == "entitlement_not_found_default_allow"
+        assert result["allowed"] is False
+        assert result["reason"] == "entitlement_not_found_default_deny"
+
+        opted_in = DecisionEngine(registry=reg, options={"default_entitlement_policy": "allow"})
+        assert opted_in.check_entitlement("never_configured")["reason"] == (
+            "entitlement_not_found_default_allow"
+        )
 
     def test_matched_unshaped_kind_falls_through_to_usage_logic(self) -> None:
         # Legacy kinds (e.g. 'metered') prove the plan assignment without the

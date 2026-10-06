@@ -85,17 +85,18 @@ _FIXTURES: list[
         None,
         {"status": "limited", "allowed": False},
     ),
-    # 4 — No entitlement provider + default policy 'allow' (the default).
+    # 4 — No entitlement provider + the default policy, which fails closed
+    # since D-61 (Kent, 2026-10-06; engine.ts `?? 'deny'`).
     (
-        "no_provider_default_allow",
+        "no_provider_default_fails_closed",
         None,
         None,
         "feat",
         None,
         {
-            "status": "allowed",
-            "allowed": True,
-            "reason": "no_entitlement_provider",
+            "status": "denied",
+            "allowed": False,
+            "reason": "no_entitlement_provider_default_deny",
         },
     ),
     # 5 — No entitlement provider + explicit deny policy.
@@ -111,11 +112,12 @@ _FIXTURES: list[
             "reason": "no_entitlement_provider_default_deny",
         },
     ),
-    # 6 — Provider exists but handle missing + default 'allow'.
+    # 6 — Provider exists but handle missing + 'allow', an explicit opt-in
+    # since D-61 (the default is 'deny' — see #4).
     (
-        "handle_not_found_default_allow",
+        "handle_not_found_allow_opt_in",
         {"entries": {}},
-        None,
+        {"default_entitlement_policy": "allow"},
         "missing",
         None,
         {

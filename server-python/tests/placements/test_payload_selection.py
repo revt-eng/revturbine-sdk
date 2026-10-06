@@ -45,7 +45,7 @@ def _resolver(payloads: list[dict[str, Any]]) -> Any:
             "placements": [
                 {
                     "id": "pl_foo",
-                    "category": "gated",
+                    "category": "fixed",
                     "order": 0,
                     "trigger": None,
                     "payloads": payloads,

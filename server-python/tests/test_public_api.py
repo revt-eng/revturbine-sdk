@@ -122,12 +122,20 @@ class TestPublicSurface:
     def test_no_storage_injection_point(self) -> None:
         # The stateless / in-memory contract is enforced by the absence
         # of any persistence parameter: the constructor takes exactly
-        # the two server-supplied inputs, keyword-only. `playbook` and
+        # the two server-supplied inputs, keyword-only, plus the D-61
+        # Entitlement Mirroring knobs (merge precedence + unknown-handle
+        # callback), neither of which persists anything. `playbook` and
         # `exported_config` are the SAME input under two spellings
         # (BL-0156) — `exported_config` is deprecated and removed in
-        # 0.12.0, at which point this set shrinks back to two names.
+        # 0.12.0, at which point that name drops out of this set.
         params = inspect.signature(RevTurbineCustomerSdk).parameters
-        assert set(params) == {"user_context", "playbook", "exported_config"}
+        assert set(params) == {
+            "user_context",
+            "playbook",
+            "exported_config",
+            "entitlement_merge",
+            "on_unknown_entitlement",
+        }
         for p in params.values():
             assert p.kind is inspect.Parameter.KEYWORD_ONLY
         assert "storage" not in params and "impression_store" not in params

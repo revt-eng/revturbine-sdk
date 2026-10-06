@@ -300,19 +300,29 @@ class TestDeferredLeafContract:
     """
 
     def test_check_entitlement_no_provider_runs_config_fallback(self) -> None:
-        # No entitlements provider → engine returns no_entitlement_provider
-        # → LocalRuntime fallback runs the ported reconciled evaluator.
-        #
-        # Plan 194 REQ-1 changed the reason, not the verdict. The fallback
-        # hardcodes `current_plan_handle=""` (there is no plan context in a
-        # no-provider runtime), so it cannot evaluate a plan-targeted rule at
-        # all — and the evaluator now says so instead of proceeding without an
-        # identity. Mirrors local-runtime.test.ts.
-        runtime = _make_runtime()
+        # No providers → no plan context, so the shared evaluator cannot
+        # evaluate a plan-targeted rule at all and says so (plan 194 REQ-1).
+        # D-61: the handle must be one the Playbook declares — an undeclared
+        # one is denied as unknown instead (below). Mirrors
+        # local-runtime.test.ts, whose config declares the entitlement.
+        runtime = _make_runtime(
+            playbook={"placements": [], "entitlements": [{"unique_handle": "feature_x"}]},
+        )
         assert runtime.check_entitlement("feature_x") == {
             "status": "denied",
             "allowed": False,
             "reason": "no_plan_identity",
+        }
+
+    def test_check_entitlement_undeclared_handle_is_denied_as_unknown(self) -> None:
+        # D-61: neither the Playbook nor the app knows it → fail closed.
+        runtime = _make_runtime()
+        with pytest.warns(RuntimeWarning, match="feature_x"):
+            result = runtime.check_entitlement("feature_x")
+        assert result == {
+            "status": "denied",
+            "allowed": False,
+            "reason": "entitlement_not_in_playbook",
         }
 
     def test_build_targeting_state_is_ported(self) -> None:

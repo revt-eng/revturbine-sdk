@@ -62,6 +62,11 @@ pub struct StaticProviderOptions {
 }
 
 /// What a static entitlement resolves to before rules are applied.
+///
+/// `Default` (`Allow`) is the STATIC ADAPTER's blanket default, which TS
+/// keeps at `'allow'` — those entries carry `origin: "playbook_default"` and
+/// never decide a `LocalRuntime::check_entitlement` (D-61). The runtime's own
+/// engine default is `Deny`; see `LocalRuntime::with_entitlement_policy`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum EntitlementPolicy {
     /// Everything allowed unless a rule says otherwise.
@@ -265,6 +270,10 @@ pub fn create_static_providers(config: &Value, opts: &StaticProviderOptions) -> 
 
         let mut state = Map::new();
         state.insert("entries".into(), Value::Object(entries));
+        // D-61: blanket defaults, not app-mirrored data. An entitlements state
+        // WITHOUT this marker is app data and merges with the Playbook
+        // evaluation per the runtime's precedence.
+        state.insert("origin".into(), json!("playbook_default"));
         state.insert("usage".into(), Value::Object(usage_out));
         if let Some(tiers) = opts.tiers.as_ref() {
             state.insert("tiers".into(), tiers.clone());

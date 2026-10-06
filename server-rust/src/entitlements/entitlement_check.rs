@@ -222,6 +222,17 @@ pub struct LocalEntitlementInput<'a> {
     pub usage_balances: HashMap<String, f64>,
     /// Per-entitlement `{amount}` records.
     pub user_usage: Option<&'a Value>,
+    /// Entitlement handles the user holds through an active reverse trial
+    /// (plan 43 TASK-2 — `ReverseTrialRule.entitlements_during_trial[]`). A
+    /// requested handle in this set is matched against the GRANTED plan's
+    /// rules (see [`effective_plan_handle`](Self::effective_plan_handle)).
+    /// `None` or empty keeps the pre-trial behaviour. Build it with
+    /// [`super::reverse_trial_grants`].
+    pub trial_granted_entitlement_handles: Option<HashSet<String>>,
+    /// The GRANTED (higher-tier) plan a trial-granted handle is matched
+    /// against, so that plan's limits apply. Unset (or empty) with a
+    /// trial-granted handle short-circuits to `granted_by_reverse_trial`.
+    pub effective_plan_handle: Option<String>,
 }
 
 /// Derive an entitlement result locally from Playbook rules.
@@ -256,10 +267,46 @@ pub fn derive_local_entitlement_from_configured_rules(
         .unwrap_or(input.handle)
         .to_string();
 
+    // Reverse-trial grant resolution (plan 43 TASK-2 + gap-1 follow-up). A
+    // handle in `trial_granted_entitlement_handles` is held mid-trial: with an
+    // `effective_plan_handle` the GRANTED plan's rules apply (so its limits
+    // enforce); without one the v1 backstop grants outright. Mirrors
+    // entitlement-check.ts.
+    let unique_handle = entitlement
+        .and_then(|e| e.get("unique_handle"))
+        .and_then(Value::as_str);
+    let handle_is_trial_granted = input
+        .trial_granted_entitlement_handles
+        .as_ref()
+        .is_some_and(|granted| {
+            !granted.is_empty()
+                && (granted.contains(input.handle)
+                    || granted.contains(&entitlement_id)
+                    || unique_handle.is_some_and(|u| granted.contains(u)))
+        });
+    let effective_plan_handle = input
+        .effective_plan_handle
+        .as_deref()
+        .filter(|p| !p.is_empty());
+    if handle_is_trial_granted && effective_plan_handle.is_none() {
+        return Some(EntitlementCheckResult::with_reason(
+            "allowed",
+            true,
+            "granted_by_reverse_trial",
+        ));
+    }
+
+    // Plan-matching key: trial-granted entitlements use the GRANTED plan
+    // (limits apply); everything else uses the user's base plan.
+    let plan_handle_for_matching = match (handle_is_trial_granted, effective_plan_handle) {
+        (true, Some(granted_plan)) => granted_plan,
+        _ => input.current_plan_handle,
+    };
+
     // Trimmed, so a whitespace-only handle collapses to "no identity" rather
     // than becoming an identity that matches no plan. Both fail closed, but
     // only the collapsed form reports the actual cause (plan 194 REQ-1).
-    let normalized_plan_handle = input.current_plan_handle.trim().to_lowercase();
+    let normalized_plan_handle = plan_handle_for_matching.trim().to_lowercase();
 
     let plans = playbook
         .get("plans")

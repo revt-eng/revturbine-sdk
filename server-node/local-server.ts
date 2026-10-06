@@ -37,6 +37,7 @@ import {
 } from '@revt-eng/core';
 import type {
   AnyDomainProvider,
+  LocalRuntimeOptions,
   RevTurbineStorage,
 } from '@revt-eng/core';
 import {
@@ -83,6 +84,18 @@ export interface LocalEvaluationServerOptions {
   storage?: RevTurbineStorage;
   /** Default TTL for evaluation payloads (seconds). Default: 60. */
   defaultTtlSeconds?: number;
+  /**
+   * D-61 Entitlement Mirroring: the user's own entitlement data
+   * (`UserContext.entitlements`), merged with the Playbook evaluation. Pass
+   * the same data the browser received so verification matches.
+   */
+  userEntitlements?: LocalRuntimeOptions['userEntitlements'];
+  /** D-61: the user's trial status, so reverse-trial grants match the browser. */
+  trialStatus?: LocalRuntimeOptions['trialStatus'];
+  /** D-61: merge precedence for app-supplied entitlement data. Default: app wins. */
+  entitlementMerge?: LocalRuntimeOptions['entitlementMerge'];
+  /** D-61: called once per unknown entitlement handle (it is denied). Wire telemetry here. */
+  onUnknownEntitlement?: LocalRuntimeOptions['onUnknownEntitlement'];
 }
 
 export interface LocalEvaluationRequest {
@@ -131,6 +144,10 @@ export class LocalEvaluationServer {
       playbook,
       providers: options.providers,
       storage: options.storage,
+      ...(options.userEntitlements ? { userEntitlements: options.userEntitlements } : {}),
+      ...(options.trialStatus ? { trialStatus: options.trialStatus } : {}),
+      ...(options.entitlementMerge ? { entitlementMerge: options.entitlementMerge } : {}),
+      ...(options.onUnknownEntitlement ? { onUnknownEntitlement: options.onUnknownEntitlement } : {}),
     });
   }
 

@@ -204,6 +204,12 @@ export function AccessGateSurfaceSlot({
     }
   }, [denied, entitlementResult]);
 
+  // D-60: a gate placement fires only while access is denied or limited.
+  // The slot reports its own check result so the resolver never has to guess.
+  const entitlementStatus: 'denied' | 'limited' | 'allowed' | undefined = denied
+    ? (entitlementResult?.status === 'limited' && !usageDenied && entitlementError === null ? 'limited' : 'denied')
+    : entitlementResult?.status;
+
   // Load gated placement from the decision engine when denied.
   const surfaceSlot = useMemo<RevTurbineSurfaceSlotConfig>(
     () => ({
@@ -214,9 +220,10 @@ export function AccessGateSurfaceSlot({
         ...metadata,
         surface_slot_category: 'gated',
         entitlement_handle: entitlementHandle ?? null,
+        ...(entitlementStatus ? { entitlement_status: entitlementStatus } : {}),
       },
     }),
-    [id, name, surfaceTemplateIds, metadata, entitlementHandle],
+    [id, name, surfaceTemplateIds, metadata, entitlementHandle, entitlementStatus],
   );
 
   const {

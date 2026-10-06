@@ -16,18 +16,27 @@
 //! → providers → resolver → caps — is preserved exactly, because each stage
 //! can veto and the order is what decides which reason a caller sees.
 //!
+//! [`LocalRuntime::check_entitlement`] is the ONE effective entitlement
+//! answer (D-61, Kent 2026-10-06): the shared Playbook + user-context
+//! evaluator merged with app-mirrored data — see
+//! [`crate::entitlements::effective_entitlement`]. The placement resolver reads
+//! the same effective map. The engine's provider-snapshot check stays reachable
+//! as [`LocalRuntime::engine_check_entitlement`] (TS `runtime.engine.checkEntitlement`).
+//!
 //! Source: revturbine-scaffold/src/core/decisions/engine.ts and
 //! src/core/runtime/local-runtime.ts
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
+use std::sync::{Mutex, PoisonError};
 
 use serde_json::{json, Map, Value};
 
 use crate::decisions::EntitlementCheckResult;
 use crate::entitlements::{
-    derive_local_entitlement_from_configured_rules, derive_result_from_rule_type_fields,
-    find_matching_entitlement_rule, is_rule_shaped_kind, with_rule_handle, LocalEntitlementInput,
-    RuleEvaluationContext,
+    derive_effective_entitlement, derive_effective_entitlements,
+    derive_result_from_rule_type_fields, find_matching_entitlement_rule, is_rule_shaped_kind,
+    reverse_trial_grants, with_rule_handle, AppEntitlementInputs, EffectiveEntitlementBase,
+    EntitlementMergeOptions, RuleEvaluationContext,
 };
 use crate::placements::StaticPlacementResolver;
 use crate::state::{
@@ -37,6 +46,10 @@ use crate::state::{
 
 /// What an entitlement resolves to when nothing more specific applies.
 pub use crate::adapters::EntitlementPolicy;
+
+/// Called once per entitlement handle that neither the Playbook nor the app
+/// knows (D-61) — wire telemetry here.
+pub type UnknownEntitlementHook = Box<dyn Fn(&str) + Send + Sync>;
 
 /// One placement decision request.
 #[derive(Debug, Clone)]
@@ -59,6 +72,11 @@ pub struct LocalRuntime {
     default_entitlement_policy: EntitlementPolicy,
     enable_caps_enforcement: bool,
     user_id: String,
+    user_entitlements: Map<String, Value>,
+    trial_status: Option<Value>,
+    entitlement_merge: EntitlementMergeOptions,
+    on_unknown_entitlement: Option<UnknownEntitlementHook>,
+    reported_unknown_entitlements: Mutex<HashSet<String>>,
 }
 
 fn str_at<'a>(v: &'a Value, path: &[&str]) -> Option<&'a str> {
@@ -96,16 +114,65 @@ impl LocalRuntime {
             ),
             impression_history: ImpressionHistory::new(InMemoryImpressionStore::new(), user_id),
             cap_enforcer: CapEnforcer::new(InMemoryStorage::new(), tenant_id, user_id),
-            default_entitlement_policy: EntitlementPolicy::default(),
+            // D-61 (Kent, 2026-10-06): unknown handles and a missing
+            // entitlement provider fail CLOSED by default; `Allow` remains an
+            // explicit opt-in.
+            default_entitlement_policy: EntitlementPolicy::Deny,
             enable_caps_enforcement: true,
             user_id: user_id.to_string(),
+            user_entitlements: Map::new(),
+            trial_status: None,
+            entitlement_merge: EntitlementMergeOptions::default(),
+            on_unknown_entitlement: None,
+            reported_unknown_entitlements: Mutex::new(HashSet::new()),
         }
     }
 
-    /// Override the default entitlement policy (`allow` unless set).
+    /// Override the engine's default entitlement policy — `deny` unless set
+    /// (fail closed, D-61). It governs
+    /// [`engine_check_entitlement`](Self::engine_check_entitlement) (TS
+    /// `engineOptions.defaultEntitlementPolicy`), not the effective
+    /// [`check_entitlement`](Self::check_entitlement) answer.
     #[must_use]
     pub fn with_entitlement_policy(mut self, policy: EntitlementPolicy) -> Self {
         self.default_entitlement_policy = policy;
+        self
+    }
+
+    /// D-61 Entitlement Mirroring: the user context's own entitlement data
+    /// (`UserContext.entitlements`) — per handle a boolean or a grant-shaped
+    /// record — merged with the Playbook evaluation.
+    #[must_use]
+    pub fn with_user_entitlements(mut self, entitlements: Map<String, Value>) -> Self {
+        self.user_entitlements = entitlements;
+        self
+    }
+
+    /// D-61: the user's trial status (`UserTrialStatus`; `in_trial`,
+    /// `trial_type` and `plan_handle` are read), so reverse-trial grants
+    /// evaluate exactly as in the browser.
+    #[must_use]
+    pub fn with_trial_status(mut self, trial_status: Value) -> Self {
+        self.trial_status = Some(trial_status);
+        self
+    }
+
+    /// D-61: how app-supplied entitlement data merges with the Playbook
+    /// result. Default: app wins.
+    #[must_use]
+    pub fn with_entitlement_merge(mut self, merge: EntitlementMergeOptions) -> Self {
+        self.entitlement_merge = merge;
+        self
+    }
+
+    /// Called once per entitlement handle that neither the Playbook nor the
+    /// app knows (it is denied). The runtime also prints a warning to stderr.
+    #[must_use]
+    pub fn with_on_unknown_entitlement<F>(mut self, hook: F) -> Self
+    where
+        F: Fn(&str) + Send + Sync + 'static,
+    {
+        self.on_unknown_entitlement = Some(Box::new(hook));
         self
     }
 
@@ -140,8 +207,10 @@ impl LocalRuntime {
     ///
     /// Source: engine.ts:79-147
     pub fn get_placement_decision(&mut self, input: &PlacementDecisionInput) -> Value {
-        // 2-4. Providers → resolver.
-        let context = json!({ "__providers": self.providers });
+        // 2-4. Providers → resolver. D-61: the resolver's gates read the SAME
+        // effective entitlements `check_entitlement` returns, not the
+        // providers' raw entries.
+        let context = json!({ "__providers": self.resolver_providers() });
         let placement = self.registered.get(&input.placement_id).cloned();
         let mut decision = self.resolver.resolve(
             &input.placement_id,
@@ -329,27 +398,44 @@ impl LocalRuntime {
 
     // ── Entitlements ───────────────────────────────────────────────────────
 
-    /// Check entitlement access.
+    /// Check entitlement access (D-61): the shared evaluator decides from the
+    /// Playbook + user context, then app-mirrored data (user-context grants
+    /// and any app entitlement provider) merges per the runtime's precedence
+    /// (default: app wins). The browser SDK runs the same function on the
+    /// same inputs, so the server verifies exactly what the browser showed.
+    /// An entitlement nobody knows is denied, warned and reported.
     ///
-    /// Provider-backed first; the Playbook-rule evaluator is the
-    /// fallback, used **only** when no entitlements provider is registered.
-    ///
-    /// Source: local-runtime.ts:198-214
+    /// Source: local-runtime.ts (checkEntitlement)
     #[must_use]
     pub fn check_entitlement(
         &self,
         handle: &str,
         context: Option<&Value>,
     ) -> EntitlementCheckResult {
-        let result = self.derive_entitlement_result(handle, context);
-        if result.reason.as_deref() == Some("no_entitlement_provider") {
-            return self.derive_entitlement_from_config(handle, context, result);
+        let app_by_handle = self.app_inputs_by_handle(&self.providers);
+        let effective = derive_effective_entitlement(
+            handle,
+            &self.effective_base(&self.providers, context),
+            app_by_handle.get(handle),
+        );
+        if effective.unknown_handle {
+            self.report_unknown_entitlement(handle);
         }
-        result
+        effective.result
     }
 
+    /// The engine's provider-snapshot entitlement check — TS
+    /// `runtime.engine.checkEntitlement`. It reads the provider entries and
+    /// rule snapshots and falls back to the default policy (`deny` unless
+    /// [`with_entitlement_policy`](Self::with_entitlement_policy) says
+    /// otherwise, D-61) for a missing provider or entry.
+    ///
+    /// Decisions go through [`check_entitlement`](Self::check_entitlement);
+    /// this stays reachable for callers that want the raw engine view.
+    ///
     /// Source: engine.ts:186-229
-    fn derive_entitlement_result(
+    #[must_use]
+    pub fn engine_check_entitlement(
         &self,
         handle: &str,
         context: Option<&Value>,
@@ -518,55 +604,138 @@ impl LocalRuntime {
         result
     }
 
-    /// The Playbook-rule fallback, used only when no entitlements
-    /// provider exists.
+    /// Evaluator inputs from the resolved providers — the same facts the
+    /// browser SDK uses.
     ///
-    /// # Deliberately plan- and segment-agnostic
-    ///
-    /// The plan handle is passed as `""` and the segment set empty — **not**
-    /// the user's real values — because that is what the canonical TS does
-    /// (`local-runtime.ts` `deriveEntitlementFromConfig`). An empty handle
-    /// normalizes to "no plan reference", which makes the matcher SKIP plan
-    /// targeting entirely, so on this path a rule targeting any plan matches
-    /// every user.
-    ///
-    /// Passing the real plan handle here looks more correct and is what this
-    /// port did first — it made `feat_pro_only` (a rule targeting `pro`, user
-    /// on `starter`) come back denied where TS returns allowed. The corpus
-    /// caught it. TS is canonical, so the port matches TS; if the
-    /// plan-agnostic fallback is wrong, it is wrong in the shared contract and
-    /// must change in all three ports together.
-    ///
-    /// Source: local-runtime.ts:431-445 (deriveEntitlementFromConfig)
-    fn derive_entitlement_from_config(
+    /// Source: local-runtime.ts (effectiveBase)
+    fn effective_base(
         &self,
-        handle: &str,
+        providers: &Value,
         context: Option<&Value>,
-        provider_result: EntitlementCheckResult,
-    ) -> EntitlementCheckResult {
-        // Plan 194 REQ-1: evaluate against the runtime's ACTUAL plan. This
-        // used to hardcode `""`, so the fallback evaluated plan-targeted rules
-        // against no plan — and the evaluator papered over that by skipping
-        // the plan filter, matching every rule and granting. The plan provider
-        // is present even when the entitlements one is not, which is the only
-        // reason this branch runs at all.
-        let current_plan_handle = self
-            .providers
+    ) -> EffectiveEntitlementBase<'_> {
+        // `Number.isFinite(entry.used)` — a JSON number is always finite.
+        let usage_balances: HashMap<String, f64> = providers
+            .get("entitlements")
+            .and_then(|e| e.get("usage"))
+            .and_then(Value::as_object)
+            .map(|usage| {
+                usage
+                    .iter()
+                    .filter_map(|(h, entry)| Some((h.clone(), entry.get("used")?.as_f64()?)))
+                    .collect()
+            })
+            .unwrap_or_default();
+        let segments = providers.get("segments");
+        let segment_ids: HashSet<String> = ["segment_slugs", "segment_ids"]
+            .iter()
+            .filter_map(|key| segments.and_then(|s| s.get(*key)).and_then(Value::as_array))
+            .flatten()
+            .filter_map(Value::as_str)
+            .map(str::to_string)
+            .collect();
+        // `String(providers.plan?.currentPlanHandle ?? '').toLowerCase()`
+        let current_plan_handle = match providers
             .get("plan")
             .and_then(|p| p.get("current_plan_handle"))
-            .and_then(Value::as_str)
-            .unwrap_or("");
-
-        let input = LocalEntitlementInput {
-            handle,
+        {
+            None | Some(Value::Null) => String::new(),
+            Some(Value::String(h)) => h.clone(),
+            Some(other) => other.to_string(),
+        }
+        .to_lowercase();
+        EffectiveEntitlementBase {
+            playbook: Some(&self.config),
             context_used: context.and_then(|c| c.get("used")).and_then(Value::as_f64),
             current_plan_handle,
-            segment_ids: HashSet::new(),
-            usage_balances: HashMap::new(),
-            user_usage: None,
-        };
-        derive_local_entitlement_from_configured_rules(&input, &self.config)
-            .unwrap_or(provider_result)
+            segment_ids,
+            usage_balances,
+            merge: self.entitlement_merge,
+            ..EffectiveEntitlementBase::default()
+        }
+        .with_reverse_trial_grants(reverse_trial_grants(
+            &self.config,
+            self.trial_status.as_ref(),
+        ))
+    }
+
+    /// App-mirrored data per handle: user-context grants plus non-default
+    /// provider entries.
+    ///
+    /// Source: local-runtime.ts (appInputsByHandle)
+    fn app_inputs_by_handle(&self, providers: &Value) -> BTreeMap<String, AppEntitlementInputs> {
+        let mut out: BTreeMap<String, AppEntitlementInputs> = self
+            .user_entitlements
+            .iter()
+            .map(|(handle, grant)| {
+                (
+                    handle.clone(),
+                    AppEntitlementInputs {
+                        user_context: Some(grant.clone()),
+                        provider: None,
+                    },
+                )
+            })
+            .collect();
+        if let Some(state) = providers
+            .get("entitlements")
+            .filter(|s| s.get("origin").and_then(Value::as_str) != Some("playbook_default"))
+        {
+            for (handle, entry) in state
+                .get("entries")
+                .and_then(Value::as_object)
+                .into_iter()
+                .flatten()
+            {
+                out.entry(handle.clone()).or_default().provider = Some(entry.clone());
+            }
+        }
+        out
+    }
+
+    /// The provider context the built-in resolver sees: the effective
+    /// entitlement map in place of the raw entries, origin cleared.
+    ///
+    /// Source: local-runtime.ts (buildPlacementResolver wrapper)
+    fn resolver_providers(&self) -> Value {
+        let entries: Map<String, Value> = derive_effective_entitlements(
+            &self.effective_base(&self.providers, None),
+            &self.app_inputs_by_handle(&self.providers),
+        )
+        .into_iter()
+        .map(|(handle, result)| (handle, serde_json::to_value(result).unwrap_or(Value::Null)))
+        .collect();
+        let mut providers = self.providers.as_object().cloned().unwrap_or_default();
+        let mut entitlements = providers
+            .get("entitlements")
+            .and_then(Value::as_object)
+            .cloned()
+            .unwrap_or_default();
+        entitlements.insert("entries".into(), Value::Object(entries));
+        // TS writes `origin: undefined`: the effective map is no longer a
+        // blanket default, so the marker does not travel with it.
+        entitlements.remove("origin");
+        providers.insert("entitlements".into(), Value::Object(entitlements));
+        Value::Object(providers)
+    }
+
+    /// Warn once per handle and hand it to the unknown-entitlement hook.
+    ///
+    /// Source: local-runtime.ts (reportUnknownEntitlement)
+    fn report_unknown_entitlement(&self, handle: &str) {
+        let first = self
+            .reported_unknown_entitlements
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .insert(handle.to_string());
+        if !first {
+            return;
+        }
+        eprintln!(
+            "[revturbine] entitlement \"{handle}\" is not in the Playbook and no app data was supplied for it; denying (entitlement_not_in_playbook)."
+        );
+        if let Some(hook) = &self.on_unknown_entitlement {
+            hook(handle);
+        }
     }
 }
 

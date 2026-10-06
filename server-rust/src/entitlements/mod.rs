@@ -5,11 +5,18 @@
 //! itself a port of `revturbine-scaffold/src/entitlements/controllers/`. The
 //! TypeScript remains canonical; a divergence here is a Rust-port bug.
 
+pub mod effective_entitlement;
 pub mod entitlement_check;
 pub mod rules;
 pub mod segment_matching;
 pub mod unlimited;
 
+pub use effective_entitlement::{
+    app_entitlement, derive_effective_entitlement, derive_effective_entitlements,
+    merge_entitlement_results, reverse_trial_grants, AppEntitlementInputs, EffectiveEntitlement,
+    EffectiveEntitlementBase, EntitlementMergeFields, EntitlementMergeOptions, EntitlementSource,
+    PartialEntitlement, ReverseTrialGrants,
+};
 pub use entitlement_check::{
     derive_local_entitlement_from_configured_rules, derive_result_from_rule_type_fields,
     is_rule_shaped_kind, with_rule_handle, LocalEntitlementInput,

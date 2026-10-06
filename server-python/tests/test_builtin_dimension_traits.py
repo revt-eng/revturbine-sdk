@@ -15,6 +15,7 @@ from revturbine.core.user_context import (
     BUILTIN_DIMENSION_VOCABULARIES,
     build_targeting_state,
     derive_builtin_dimension_traits,
+    mirrored_entitlement_trait,
 )
 
 
@@ -87,3 +88,31 @@ def test_reserved_keys_from_custom_entitlements_and_usage_are_deleted() -> None:
     assert state["traits"]["role"] == "admin"
     assert state["traits"]["beta"] is True
     assert state["usage"] == {"api_calls": 3, "seats": 2}
+
+
+def test_mirrored_entitlement_grants_flatten_to_boolean_traits() -> None:
+    # D-61: UserContext.entitlements takes the same mirrored input as the
+    # effective-entitlement core (a boolean or a grant); segment traits stay
+    # scalar — a grant counts unless it is denied. Mirrors user-context.ts
+    # mirroredEntitlementTrait.
+    state = build_targeting_state(
+        {
+            "entitlements": {
+                "flag_on": True,
+                "flag_off": False,
+                "seats": {"status": "limited", "limit": 5},
+                "held": {"status": "denied"},
+                "revoked": {"status": "allowed", "allowed": False},
+                "usage_only": {"used": 3},
+            }
+        }
+    )
+    assert {k: state["traits"][k] for k in ("flag_on", "flag_off", "seats", "held")} == {
+        "flag_on": True,
+        "flag_off": False,
+        "seats": True,
+        "held": False,
+    }
+    assert state["traits"]["revoked"] is False
+    assert state["traits"]["usage_only"] is True
+    assert mirrored_entitlement_trait({"status": "allowed"}) is True

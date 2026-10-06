@@ -33,7 +33,7 @@ def _resolver_chipped_to(chips: list[str]) -> Any:
             "placements": [
                 {
                     "id": "pl_foo",
-                    "category": "gated",
+                    "category": "fixed",
                     "order": 0,
                     "trigger": None,
                     "payloads": [

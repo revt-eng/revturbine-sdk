@@ -35,6 +35,10 @@ __all__ = [
 class DecisionEngineOptions(TypedDict, total=False):
     """Behavior flags tuning ``DecisionEngine``.
 
+    ``default_entitlement_policy`` applies when no provider or entry is
+    found. Default: ``'deny'`` (fail closed, D-61); ``'allow'`` is an
+    explicit opt-in.
+
     Source: types.ts:20-27
     """
 

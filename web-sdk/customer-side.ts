@@ -75,6 +75,8 @@ import type {
   PresentationCapState,
   PresentationCapHistory,
   PresentationCapSettings,
+  EntitlementMergeOptions,
+  MirroredEntitlement,
   PlacementCapPolicy,
   PlacementCapRule,
   CapPeriod,
@@ -163,7 +165,9 @@ import {
   emptyPresentationCapHistory as coreEmptyPresentationCapHistory,
   interactionStateKey as coreInteractionStateKey,
   suppressionForState as coreSuppression,
-  deriveLocalEntitlementFromConfiguredRules as coreDeriveLocalEntitlement,
+  deriveEffectiveEntitlement as coreDeriveEffectiveEntitlement,
+  reverseTrialGrants as coreReverseTrialGrants,
+  mirroredEntitlementTrait as coreMirroredEntitlementTrait,
   usageThresholdForEntitlement as coreUsageThreshold,
   evaluateUsageThresholdCrossings as coreEvaluateUsageCrossings,
   deriveTrialTriggerStage as coreDeriveTrialStage,
@@ -959,8 +963,14 @@ export interface RevTurbineUserContext
   context_hash?: UserContextInput['context_hash'];
   /** Customer-defined fields for segmentation and personalization. */
   custom?: SdkTraits;
-  /** Feature entitlements granted by plan + entitlement rules. */
-  entitlements?: Record<string, boolean>;
+  /**
+   * App-supplied entitlement data, keyed by handle — a boolean or a grant
+   * (`status`, `limit`, `used`). This is Entitlement Mirroring (D-61): it
+   * merges with the Playbook evaluation, and by default the app's data wins.
+   * Browser-supplied data shapes the UI only; the server re-check on the
+   * same inputs stays authoritative for paid actions.
+   */
+  entitlements?: UserContextInput['entitlements'];
   /** Usage entries derived from credits / usage_limit entitlements, keyed by handle. */
   usage?: UserContextInput['usage'];
   /**
@@ -1570,6 +1580,14 @@ export interface RevTurbineInitOptions {
    * Playbook.
    */
   placementBehavior?: Partial<RevTurbinePlacementBehaviorFlags>;
+  /**
+   * How app-supplied entitlement data (`userContext.entitlements`, an app
+   * entitlement provider) merges with the Playbook evaluation (D-61).
+   * Provider-level `precedence` defaults to `'app'`; `fields` overrides it
+   * per field (`status`, `limit`, `used`, `remaining`). Use the same value
+   * on your server SDK so verification matches.
+   */
+  entitlementMerge?: EntitlementMergeOptions;
   extension?: {
     enabled?: boolean;
   };
@@ -3338,6 +3356,16 @@ export class RevTurbineCustomerSdk {
   private readonly policy: Required<RevTurbineContextPolicy>;
   private readonly extensionEnabled: boolean;
   private readonly placementBehaviorOverrides: Partial<RevTurbinePlacementBehaviorFlags>;
+  private readonly entitlementMerge: EntitlementMergeOptions | undefined;
+  /** Entries from an app-registered entitlement provider (D-61 mirroring), from the last provider resolution. */
+  private appProviderEntitlements: Record<string, EntitlementResult> = {};
+  /** Plan from an app-registered plan provider (D-61) — wins over the user-context plan, as on the server. */
+  private appProviderPlanHandle: string | undefined;
+  /** Usage from an app entitlement provider (D-61), fed into the evaluation as on the server. */
+  private appProviderUsage: Record<string, number> = {};
+  /** Segment membership from an app segment provider (D-61), as a server runtime sees it. */
+  private appProviderSegments: string[] = [];
+  private readonly reportedUnknownEntitlements = new Set<string>();
   private derivedPlacementBehaviorMemo: {
     config: RevTurbineConfig | undefined;
     flags: RevTurbinePlacementBehaviorFlags;
@@ -3568,6 +3596,7 @@ export class RevTurbineCustomerSdk {
     // Plan 174 TASK-2 (F-72): flags derive from the loaded Playbook at read
     // time (see the placementBehavior getter); only explicit options pin them.
     this.placementBehaviorOverrides = { ...options.placementBehavior };
+    this.entitlementMerge = options.entitlementMerge;
     this.providerFailureSlotBehavior = options.providerFailureSlotBehavior ?? 'invisible';
     this.uiPathResolvers = sanitizeUiPathResolverMap(options.uiPathResolvers, 'RevTurbineInitOptions.uiPathResolvers');
     this.serverActions = sanitizeServerActionMap(options.serverActions);
@@ -4353,6 +4382,7 @@ export class RevTurbineCustomerSdk {
       const resolved = this.providerRegistry.size > 0
         ? await this.providerRegistry.resolveAll(input)
         : undefined;
+      this.captureAppProviderState(resolved);
       if (signal.aborted || revision !== String(this.contextRevision)) {
         return this.resolveEffectiveProviderContext();
       }
@@ -5263,6 +5293,38 @@ export class RevTurbineCustomerSdk {
     }
   }
 
+  /**
+   * D-60 + D-61: the resolver's gates read the SAME effective entitlements
+   * `checkEntitlement` returns — the shared evaluation merged with
+   * app-mirrored data — for every handle the Playbook, the user context or an
+   * app provider knows. A gate slot's reported `entitlement_status` still
+   * wins inside the resolver.
+   */
+  private withSlotEntitlementStatus(
+    providers: ResolvedProviderContext | undefined,
+    placement: RevTurbinePlacementRecord,
+  ): ResolvedProviderContext | undefined {
+    void placement;
+    const playbook = this.getConfiguredPlaybook();
+    if (!playbook) return providers;
+    const handles = new Set<string>([
+      ...(playbook.entitlements ?? []).map((entitlement) => entitlement.unique_handle),
+      ...Object.keys(this.userContext.entitlements ?? {}),
+      ...Object.keys(this.appProviderEntitlements),
+    ]);
+    const customResolver = this.isLocalOnlyMode() && this.localRuntime?.resolvers?.checkEntitlement;
+    const entries: Record<string, EntitlementResult> = {};
+    for (const handle of handles) {
+      const result = (customResolver ? this.localEntitlementsByHandle.get(handle) : undefined)
+        ?? this.deriveLocalEntitlementFromConfiguredRules(handle);
+      if (result) entries[handle] = result;
+    }
+    return {
+      ...providers,
+      entitlements: { ...(providers?.entitlements ?? {}), entries, origin: undefined },
+    };
+  }
+
   private slotIdForRecord(record: RevTurbinePlacementRecord): string | undefined {
     const metadata = isRecord(record.metadata) ? record.metadata : {};
     return record.placementScopeKey ?? firstStringValue(metadata.surface_slot_id) ?? undefined;
@@ -5905,6 +5967,13 @@ export class RevTurbineCustomerSdk {
     this.apiBranding = branding;
   }
 
+  /**
+   * The effective entitlement (D-61): the shared core evaluator decides from
+   * the Playbook + user context, then app-mirrored data merges per
+   * `entitlementMerge` (default: app wins). The server SDKs run the same
+   * function on the same inputs, so a server re-check verifies exactly this.
+   * An entitlement nobody knows is denied, warned once and reported.
+   */
   private deriveLocalEntitlementFromConfiguredRules(
     handle: string,
     context?: RevTurbineEntitlementContext,
@@ -5912,67 +5981,87 @@ export class RevTurbineCustomerSdk {
     const playbook = this.getConfiguredPlaybook();
     if (!playbook) return null;
 
-    const currentPlanHandleRaw = this.resolveContextPlanRaw();
-    const currentPlanHandle = String(currentPlanHandleRaw || '').toLowerCase();
-
+    // D-61: an app plan provider wins over the user-context plan, exactly as
+    // a server runtime whose plan comes from the same provider.
+    const currentPlanHandle = String(this.appProviderPlanHandle || this.resolveContextPlanRaw() || '').toLowerCase();
     const targeting = this.getTargeting();
-    const segmentIds = new Set(targeting.segmentIds ?? []);
+    const segmentIds = new Set([...(targeting.segmentIds ?? []), ...this.appProviderSegments]);
+    // BL-0403: the shared trial view, so an app-supplied reverse trial grants
+    // too; the grant derivation itself is the shared core helper.
+    const grants = coreReverseTrialGrants(playbook, this.resolveTrialView());
+    const mirrored = this.userContext.entitlements?.[handle] as MirroredEntitlement | undefined;
+    const provider = this.appProviderEntitlements[handle];
 
-    // Reverse-trial grant resolution (plan 43 TASK-8b). When the user
-    // is mid-reverse-trial, look up the matching ReverseTrialRule by
-    // matching `fallback_plan_id` against the user's base plan
-    // (UserTrialStatus.plan_handle is the base plan for reverse
-    // trials per scaffold's deriveLocalTrialStatusFromInstance).
-    // The rule's `entitlements_during_trial[]` becomes the granted
-    // set; `premium_plan_id` becomes effectivePlanHandle (the plan
-    // whose limits should apply during the trial).
-    const { trialGrantedEntitlementHandles, effectivePlanHandle } =
-      this.resolveReverseTrialGrants(playbook);
-
-    return coreDeriveLocalEntitlement({
+    const effective = coreDeriveEffectiveEntitlement({
       handle,
       context,
       currentPlanHandle,
       segmentIds,
-      usageBalances: this.usageBalances,
+      usageBalances: { ...this.usageBalances, ...this.appProviderUsage },
       userUsage: this.userContext.usage as Record<string, unknown> | undefined, // sdk-ok: boundary-parse
       playbook,
-      ...(trialGrantedEntitlementHandles !== undefined ? { trialGrantedEntitlementHandles } : {}),
-      ...(effectivePlanHandle !== undefined ? { effectivePlanHandle } : {}),
+      ...grants,
+      ...(mirrored !== undefined || provider ? { app: { ...(mirrored !== undefined ? { userContext: mirrored } : {}), ...(provider ? { provider } : {}) } } : {}),
+      ...(this.entitlementMerge ? { merge: this.entitlementMerge } : {}),
     });
+    if (effective.unknownHandle) this.reportUnknownEntitlement(handle);
+    return effective.result;
   }
 
   /**
-   * Inline adapter — given a UserTrialStatus + the tenant's
-   * reverse_trial_rules from RevTurbineConfig, derive the inputs that
-   * close plan 43 TASK-2. Returns undefined fields when the user
-   * isn't on an active reverse trial, when no rule matches, or when
-   * the rule has no entitlements_during_trial[].
-   *
-   * Why inline (not calling scaffold's deriveReverseTrialGrants):
-   * the scaffold helper takes a `TrialInstance` (DB-side state) and
-   * matches by `rule_id`. The SDK only holds `UserTrialStatus` (the
-   * transient runtime shape) and doesn't see the rule_id. We match
-   * by `fallback_plan_id === plan_handle` instead — that's the
-   * single configured rule the user can be on per spec §2.4.2.
+   * D-61: snapshot what the app's own providers say — plan, entitlement
+   * entries, usage — so the browser evaluates on exactly the inputs a server
+   * runtime with the same providers would. A static adapter's blanket
+   * defaults are not app data.
    */
-  private resolveReverseTrialGrants(
-    playbook: RevTurbineConfig,
-  ): { trialGrantedEntitlementHandles?: ReadonlySet<string>; effectivePlanHandle?: string } {
-    // BL-0403: the shared trial view, so an app-supplied reverse trial grants too.
-    const trial = this.resolveTrialView();
-    if (!trial.in_trial || trial.trial_type !== 'reverse') return {};
-    const basePlanHandle = trial.plan_handle;
-    if (!basePlanHandle) return {};
-    const rules = playbook.reverse_trial_rules ?? [];
-    const rule = rules.find(
-      (r) => r.fallback_plan_id === basePlanHandle && r.is_active !== false,
+  private captureAppProviderState(resolved: ResolvedProviderContext | undefined): void {
+    const ents = resolved?.entitlements;
+    const fromApp = !!ents && ents.origin !== 'playbook_default';
+    this.appProviderEntitlements = fromApp ? { ...ents!.entries } : {};
+    const usage: Record<string, number> = {};
+    if (fromApp) {
+      for (const [handle, entry] of Object.entries(ents!.usage ?? {})) {
+        if (Number.isFinite(entry.used)) usage[handle] = entry.used;
+      }
+    }
+    this.appProviderUsage = usage;
+    const segments = resolved?.segments;
+    this.appProviderSegments = [...(segments?.segmentSlugs ?? []), ...(segments?.segmentIds ?? [])];
+    const plan = resolved?.plan?.currentPlanHandle;
+    this.appProviderPlanHandle = typeof plan === 'string' && plan.trim() ? plan.trim() : undefined;
+  }
+
+  /** D-61: resolve the app's providers before an entitlement check (cached per provider TTL). */
+  private async refreshAppProviderState(): Promise<void> {
+    if (this.providerRegistry.size === 0) {
+      this.captureAppProviderState(undefined);
+      return;
+    }
+    try {
+      const resolved = await this.providerRegistry.resolveAll({
+        userContext: this.immutableProviderUserContext(),
+        contextRevision: String(this.contextRevision),
+        signal: this.providerResolutionController.signal,
+      });
+      this.captureAppProviderState(resolved);
+    } catch {
+      // Keep the last snapshot; provider-chain failures are handled on the
+      // decision path, which fails closed.
+    }
+  }
+
+  /** D-61: an unknown entitlement handle is denied; say so once, locally and in telemetry. */
+  private reportUnknownEntitlement(handle: string): void {
+    if (this.reportedUnknownEntitlements.has(handle)) return;
+    this.reportedUnknownEntitlements.add(handle);
+    console.warn(
+      `[revturbine] entitlement "${handle}" is not in the Playbook and no app data was supplied for it; denying (entitlement_not_in_playbook).`,
     );
-    if (!rule || rule.entitlements_during_trial.length === 0) return {};
-    return {
-      trialGrantedEntitlementHandles: new Set(rule.entitlements_during_trial),
-      effectivePlanHandle: rule.premium_plan_id,
-    };
+    this.emitResolutionFailure({
+      reason: 'entitlement_not_in_playbook',
+      entitlement_handle: handle,
+      plan_handle: this.resolveContextPlanRaw() || undefined,
+    });
   }
 
   /**
@@ -5999,10 +6088,11 @@ export class RevTurbineCustomerSdk {
       ...(this.userContext.custom ?? {}),
     } as SdkTraits;
 
-    // Flatten entitlements into traits for segment evaluation
+    // Flatten entitlements into traits for segment evaluation. A mirrored
+    // grant counts unless denied (D-61) — the same rule the core applies.
     for (const [key, value] of Object.entries(this.userContext.entitlements ?? {})) {
       if (traits[key] === undefined) {
-        traits[key] = value;
+        traits[key] = coreMirroredEntitlementTrait(value as MirroredEntitlement);
       }
     }
 
@@ -8381,11 +8471,16 @@ export class RevTurbineCustomerSdk {
     // localRuntime or the Server-mode fetch. `getContext` stays localRuntime-
     // specific.
     const legacyCtx = await this.localRuntime?.getContext?.();
-    const { providers: providerCtx } = await this.resolveEffectiveProviderContext();
-    if (legacyCtx || providerCtx) {
+    const { providers: resolvedProviderCtx } = await this.resolveEffectiveProviderContext();
+    // D-60: a gate slot's entitlement status decides whether its gate fires,
+    // so it is part of the resolver input and of the decision-cache key.
+    const providerCtx = this.withSlotEntitlementStatus(resolvedProviderCtx, placement);
+    const slotEntitlementStatus = isRecord(placement.metadata) ? placement.metadata.entitlement_status : undefined;
+    if (legacyCtx || providerCtx || slotEntitlementStatus !== undefined) {
       runtimeContextFingerprint = this.stableStringify({
         legacyCtx: legacyCtx ?? {},
         providerCtx: providerCtx ?? {},
+        ...(slotEntitlementStatus !== undefined ? { slotEntitlementStatus } : {}),
       });
     }
 
@@ -9304,7 +9399,10 @@ export class RevTurbineCustomerSdk {
       await this.refreshPlaybookSnapshot();
     }
 
-    // Proven local evaluation against the configured Playbook (both modes).
+    // Proven local evaluation against the configured Playbook (both modes),
+    // on the same inputs a server runtime would see (D-61): resolve the app's
+    // own providers first.
+    await this.refreshAppProviderState();
     const derived = this.resolveEntitlementLocally(handle, context);
     if (derived) return derived;
 

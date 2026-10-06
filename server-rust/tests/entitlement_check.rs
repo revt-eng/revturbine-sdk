@@ -40,6 +40,7 @@ fn input<'a>(handle: &'a str, plan: &'a str) -> LocalEntitlementInput<'a> {
         usage_balances: HashMap::new(),
         context_used: None,
         user_usage: None,
+        ..Default::default()
     }
 }
 

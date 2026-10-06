@@ -45,7 +45,7 @@ as tests/parity/{ts_runner.ts,py_runner.py} compose it.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any, TypedDict
 
 from revturbine.config import ConfigArtifact, parse_playbook_or_throw
@@ -54,6 +54,10 @@ from revturbine.core.decisions import (
     EntitlementCheckResult,
     PlacementDecision,
     PlacementDecisionInput,
+)
+from revturbine.core.entitlements.effective_entitlement import (
+    EntitlementMergeOptions,
+    MirroredEntitlement,
 )
 from revturbine.core.plans import get_eligible_addons, get_eligible_plans
 from revturbine.core.providers.types import DomainProvider, DomainProviderName
@@ -91,7 +95,15 @@ class UserContext(_UserContextRequired, total=False):
       the SDK overlays the corresponding PlanProvider trial fields so
       trial-trigger placements (``trial_progress`` / ``trial_ending``
       / ``trial_ended`` / ``trial_converted``) and milestone
-      supersession evaluate correctly.
+      supersession evaluate correctly. It also feeds reverse-trial
+      entitlement grants (``in_trial`` / ``trial_type`` /
+      ``plan_handle``), so the server verifies exactly what the browser
+      granted (D-61).
+    - ``entitlements`` — Entitlement Mirroring (D-61): the app's own
+      entitlement data per handle, a boolean or a grant-shaped record
+      (``status`` / ``allowed`` / ``limit`` / ``used`` / ``remaining`` /
+      ``reason``). Merged with the Playbook evaluation — app wins by
+      default; see ``entitlement_merge`` on :class:`RevTurbineCustomerSdk`.
 
     Segment membership (BL-0369) — what segment-chipped payloads and
     segment-targeted entitlement rules match against — is, in order:
@@ -125,6 +137,8 @@ class UserContext(_UserContextRequired, total=False):
     plan_name: str | None
     usage: dict[str, dict[str, float]] | None
     trial_status: dict[str, Any] | None
+    # Entitlement Mirroring (D-61): the app's own grants, per handle.
+    entitlements: dict[str, MirroredEntitlement] | None
     # Billing-recovery signals for the Retention qualifier triggers (§3.7).
     payment_failed: bool | None
     payment_at_risk: bool | None
@@ -165,6 +179,8 @@ class RevTurbineCustomerSdk:
         user_context: UserContext,
         playbook: ConfigArtifact | None = None,
         exported_config: ConfigArtifact | None = None,
+        entitlement_merge: EntitlementMergeOptions | None = None,
+        on_unknown_entitlement: Callable[[str], None] | None = None,
     ) -> None:
         """Compose the parity-locked substrate for one user context.
 
@@ -172,6 +188,13 @@ class RevTurbineCustomerSdk:
         (deprecated, removed in ``0.12.0``) is required; supplying
         neither raises ``ValueError``. ``exported_config`` emits a
         one-time :class:`DeprecationWarning` naming ``playbook``.
+
+        ``entitlement_merge`` (D-61) sets how ``user_context["entitlements"]``
+        merges with the Playbook evaluation — provider-level
+        ``precedence`` (default ``'app'``) with optional per-field
+        overrides. ``on_unknown_entitlement`` is called once per handle
+        neither the Playbook nor the app knows (it is denied and a
+        :class:`RuntimeWarning` is emitted); wire telemetry there.
 
         Raises ``ValueError`` if ``tenant_id`` / ``user_id`` are absent
         or empty (the only required identity). Storage defaults to
@@ -243,6 +266,12 @@ class RevTurbineCustomerSdk:
             # would then never be warned.
             playbook=playbook,
             providers=providers,
+            # D-61: the same user-context entitlement data and trial status
+            # the browser SDK evaluates, so the server verifies what it showed.
+            user_entitlements=user_context.get("entitlements") or None,
+            trial_status=trial_status if isinstance(trial_status, dict) else None,
+            entitlement_merge=entitlement_merge,
+            on_unknown_entitlement=on_unknown_entitlement,
         )
 
     def _segment_dimensions(self) -> dict[str, str]:
@@ -278,8 +307,9 @@ class RevTurbineCustomerSdk:
         """Resolve an entitlement for the constructed user.
 
         Pure delegation to the parity-locked
-        ``LocalRuntime.check_entitlement`` — engine/provider path first,
-        then the §2.6.5 most-permissive Playbook-rule fallback.
+        ``LocalRuntime.check_entitlement`` — the one effective answer
+        (D-61): the §2.6.5 most-permissive Playbook-rule evaluation,
+        merged with ``user_context["entitlements"]``.
 
         Source: local-runtime.ts checkEntitlement (parity-locked).
         """

@@ -38,8 +38,9 @@ use serde_json::{json, Map, Value};
 use crate::adapters::{create_static_providers, StaticProviderOptions};
 use crate::config::{parse_playbook_or_throw, LegacyConfigTargetDefaults};
 use crate::decisions::EntitlementCheckResult;
+use crate::entitlements::EntitlementMergeOptions;
 use crate::plans::{get_eligible_addons, get_eligible_plans, EligibleAddon, EligiblePlan};
-use crate::runtime::{LocalRuntime, PlacementDecisionInput};
+use crate::runtime::{LocalRuntime, PlacementDecisionInput, UnknownEntitlementHook};
 use crate::trials::{evaluate_trial_status, TrialEvaluation};
 
 const PRODUCTION_ENVIRONMENT_ID: &str = "production";
@@ -70,8 +71,17 @@ pub struct UserContext {
     /// Per-entitlement `{used, limit}` overrides.
     pub usage: Option<Value>,
     /// Already-derived trial state (the runtime `UserTrialStatus` shape).
-    /// Overlaid onto the plan provider so trial-trigger placements evaluate.
+    /// Overlaid onto the plan provider so trial-trigger placements evaluate,
+    /// and read for reverse-trial entitlement grants (`in_trial` /
+    /// `trial_type` / `plan_handle`), so the server verifies exactly what the
+    /// browser granted (D-61).
     pub trial_status: Option<Value>,
+    /// Entitlement Mirroring (D-61): the app's own entitlement data, an object
+    /// keyed by handle whose values are a boolean or a grant-shaped record
+    /// (`status` / `allowed` / `limit` / `used` / `remaining` / `reason`).
+    /// Merged with the Playbook evaluation — app wins by default; see
+    /// [`SdkOptions::entitlement_merge`].
+    pub entitlements: Option<Value>,
     /// Billing-recovery signal for the retention qualifiers.
     pub payment_failed: Option<bool>,
     /// Billing-recovery signal for the retention qualifiers.
@@ -127,6 +137,18 @@ impl UserContext {
         }
         Value::Object(context)
     }
+}
+
+/// Optional construction knobs for [`RevTurbineCustomerSdk::with_options`].
+#[derive(Default)]
+pub struct SdkOptions {
+    /// How [`UserContext::entitlements`] merges with the Playbook evaluation —
+    /// provider-level precedence (default: app wins) with optional per-field
+    /// overrides (D-61).
+    pub entitlement_merge: EntitlementMergeOptions,
+    /// Called once per entitlement handle neither the Playbook nor the app
+    /// knows (it is denied and a warning is printed). Wire telemetry here.
+    pub on_unknown_entitlement: Option<UnknownEntitlementHook>,
 }
 
 /// The public, stateless, in-memory headless server SDK.
@@ -234,6 +256,17 @@ impl RevTurbineCustomerSdk {
     /// degraded decision** — a partially-understood Playbook can silently
     /// over-grant.
     pub fn new(user_context: &UserContext, playbook: &Value) -> Result<Self, String> {
+        Self::with_options(user_context, playbook, SdkOptions::default())
+    }
+
+    /// [`new`](Self::new) plus the D-61 Entitlement Mirroring knobs: the merge
+    /// precedence for [`UserContext::entitlements`] and the unknown-entitlement
+    /// hook.
+    pub fn with_options(
+        user_context: &UserContext,
+        playbook: &Value,
+        options: SdkOptions,
+    ) -> Result<Self, String> {
         // Identity is the one thing the caller MUST supply; an empty tenant or
         // user silently decides as "some other user" rather than failing.
         if user_context.tenant_id.is_empty() || user_context.user_id.is_empty() {
@@ -284,15 +317,33 @@ impl RevTurbineCustomerSdk {
             }
         }
 
+        // D-61: the same user-context entitlement data and trial status the
+        // browser SDK evaluates, so the server verifies what it showed.
+        let mut runtime = LocalRuntime::new(
+            config.clone(),
+            providers,
+            &user_context.tenant_id,
+            &user_context.user_id,
+        )
+        .with_entitlement_merge(options.entitlement_merge);
+        if let Some(grants) = user_context
+            .entitlements
+            .as_ref()
+            .and_then(Value::as_object)
+        {
+            runtime = runtime.with_user_entitlements(grants.clone());
+        }
+        if let Some(trial) = user_context.trial_status.as_ref().filter(|t| t.is_object()) {
+            runtime = runtime.with_trial_status(trial.clone());
+        }
+        if let Some(hook) = options.on_unknown_entitlement {
+            runtime = runtime.with_on_unknown_entitlement(hook);
+        }
+
         Ok(Self {
-            playbook: config.clone(),
+            playbook: config,
             segment_ids: user_context.segment_ids.clone().unwrap_or_default(),
-            runtime: LocalRuntime::new(
-                config,
-                providers,
-                &user_context.tenant_id,
-                &user_context.user_id,
-            ),
+            runtime,
         })
     }
 
@@ -322,7 +373,9 @@ impl RevTurbineCustomerSdk {
             .unwrap_or_default()
     }
 
-    /// Is a feature or limit allowed for this user?
+    /// Is a feature or limit allowed for this user? The one effective answer
+    /// (D-61): the Playbook evaluation merged with
+    /// [`UserContext::entitlements`].
     #[must_use]
     pub fn check_entitlement(
         &self,

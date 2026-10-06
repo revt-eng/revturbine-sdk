@@ -175,7 +175,9 @@ function RefreshableSlot() {
   return <>{result.element}<output>{result.isLoading || !result.decision ? 'loading' : result.hiddenReason ?? 'visible'}</output><button onClick={() => void result.refresh()}>Refresh</button></>;
 }
 
-describe.each(['fixed', 'gated', 'upsell'])('TASK-3 actual %s placement category', (category) => {
+// D-60: an Access Gate placement never renders in a Fixed slot, so 'gated' is
+// covered by the AccessGateSurfaceSlot case below, not here.
+describe.each(['fixed', 'upsell'])('TASK-3 actual %s placement category', (category) => {
   const options: RevTurbineInitInputOptions = {
     ...OPTIONS,
     localRuntime: { playbook: { ...PLAYBOOK, placements: PLAYBOOK.placements.map(placement => ({

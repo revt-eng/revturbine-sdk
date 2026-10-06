@@ -638,6 +638,9 @@ export function resolveEntitlementPayloads(
  * Derived from placement categories in the requirements:
  * (roadmap/docs/requirements — placement categories & SDK integration points).
  */
+/** The entitlement the harness's Access Gate slot (slot_inline) gates. */
+export const HARNESS_GATE_ENTITLEMENT = 'automations';
+
 export const DEFAULT_SLOT_TRIGGERS: Record<HarnessSlotId, string[]> = {
   slot_banner: ['usage_limit_approaching', 'usage_limit_reached', 'plan_upgrade_nudge'],
   slot_modal: ['trial_expiring', 'trial_expired', 'cancel_intent'],
@@ -1111,7 +1114,12 @@ export function buildExportedConfig(params: {
       id: harnessPlacementId(slot),
       name: slot.label,
       category: canonicalPlacementCategory(slot),
-      trigger: { type: 'surface_render', slot_id: slot.id },
+      // D-60: an Access Gate fires only while its entitlement is denied, so
+      // the gated slot's placement is a real entitlement gate; its slot is
+      // carried by the payload's surface_slot_ids.
+      trigger: canonicalPlacementCategory(slot) === 'gated'
+        ? { type: 'entitlement_gate' as const, entitlement_handle: HARNESS_GATE_ENTITLEMENT }
+        : { type: 'surface_render' as const, slot_id: slot.id },
       order,
       payloads: [{
         id: `harness_inline_${slot.id}`,

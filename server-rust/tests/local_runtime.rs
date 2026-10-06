@@ -253,35 +253,43 @@ fn an_invisible_decision_does_not_consume_the_cap_budget() {
 }
 
 // ── Entitlements ────────────────────────────────────────────────────────────
+//
+// D-61 (Kent, 2026-10-06): `check_entitlement` is the effective answer (see
+// tests/effective_entitlement.rs). The four tests below pin the ENGINE's
+// provider-snapshot semantics — TS `runtime.engine.checkEntitlement`, Python's
+// `DecisionEngine.check_entitlement` — so they call `engine_check_entitlement`.
 
 #[test]
 fn a_provider_backed_entitlement_reports_its_default_policy() {
     let rt = runtime(plan_opts());
-    let r = rt.check_entitlement("exports", None);
+    let r = rt.engine_check_entitlement("exports", None);
     assert!(r.allowed);
     assert_eq!(r.status, "allowed");
     assert_eq!(r.reason.as_deref(), Some("static_config_default_allow"));
 }
 
 #[test]
-fn an_unknown_handle_falls_to_the_default_policy() {
-    let allow = runtime(plan_opts());
-    let r = allow.check_entitlement("not_configured", None);
-    assert!(r.allowed);
+fn an_unknown_handle_falls_to_the_default_policy_which_fails_closed() {
+    // D-61: the engine's default policy is `deny`; `allow` is an explicit
+    // opt-in. Mirrors e2e.test.ts "an UNKNOWN handle follows the default
+    // policy, which fails closed (D-61)".
+    let deny = runtime(plan_opts());
+    let r = deny.engine_check_entitlement("not_configured", None);
+    assert!(!r.allowed);
     assert_eq!(
         r.reason.as_deref(),
-        Some("entitlement_not_found_default_allow")
+        Some("entitlement_not_found_default_deny")
     );
 
     let cfg = config();
     let providers = create_static_providers(&cfg, &plan_opts());
-    let deny = LocalRuntime::new(cfg, providers, "tenant_1", "user_1")
-        .with_entitlement_policy(EntitlementPolicy::Deny);
-    let r2 = deny.check_entitlement("not_configured", None);
-    assert!(!r2.allowed);
+    let allow = LocalRuntime::new(cfg, providers, "tenant_1", "user_1")
+        .with_entitlement_policy(EntitlementPolicy::Allow);
+    let r2 = allow.engine_check_entitlement("not_configured", None);
+    assert!(r2.allowed);
     assert_eq!(
         r2.reason.as_deref(),
-        Some("entitlement_not_found_default_deny")
+        Some("entitlement_not_found_default_allow")
     );
 }
 
@@ -291,7 +299,7 @@ fn usage_counters_ride_along_on_the_result() {
         usage: Some(json!({ "exports": { "used": 3, "limit": 10 } })),
         ..plan_opts()
     });
-    let r = rt.check_entitlement("exports", None);
+    let r = rt.engine_check_entitlement("exports", None);
     assert!(r.allowed);
     assert_eq!(
         r.limit.as_ref().and_then(serde_json::Number::as_f64),
@@ -314,10 +322,10 @@ fn caller_supplied_usage_enforces_the_limit() {
         ..plan_opts()
     });
 
-    let under = rt.check_entitlement("exports", Some(&json!({ "used": 9 })));
+    let under = rt.engine_check_entitlement("exports", Some(&json!({ "used": 9 })));
     assert!(under.allowed, "under the limit");
 
-    let at = rt.check_entitlement("exports", Some(&json!({ "used": 10 })));
+    let at = rt.engine_check_entitlement("exports", Some(&json!({ "used": 10 })));
     assert!(!at.allowed, "AT the limit is exceeded — the check is >=");
     assert_eq!(at.reason.as_deref(), Some("usage_limit_exceeded"));
     assert_eq!(

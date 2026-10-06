@@ -33,21 +33,22 @@ mis-deciding:
   ``derivePlacementPersonalizationTokens``
   (``placements/controllers/token-derivation``) — REQ-14 non-goal.
 
-``_derive_entitlement_from_config`` is now wired (plan 33 TASK-13) —
-the faithful port of ``deriveLocalEntitlementFromConfiguredRules``.
-
-These are exactly the non-placement paths the plan defers to a later
-phase (Risks §"placement decisioning second"); TASK-6's acceptance is a
-placement decision served locally with no network call, which the fully
-wired engine/resolver path below satisfies. ``check_entitlement`` still
-works for provider-backed entitlements via the ported engine path — the
-deferred leaf is only the no-provider config fallback.
+``check_entitlement`` (D-61, Kent 2026-10-06) is the ONE effective
+entitlement answer: the shared Playbook + user-context evaluator merged
+with app-mirrored data (``user_entitlements`` grants and any app
+entitlement provider) — see
+:mod:`revturbine.core.entitlements.effective_entitlement`. The built-in
+placement resolver reads the same effective map, so a server-side Access
+Gate fires for a rule-denied user.
 
 Source: revturbine-scaffold/src/core/runtime/local-runtime.ts
 """
 
 from __future__ import annotations
 
+import math
+import warnings
+from collections.abc import Callable, Mapping
 from typing import Any, TypedDict
 
 from revturbine.core.decisions import (
@@ -59,8 +60,14 @@ from revturbine.core.decisions import (
     PlacementRecord,
     PlacementResolver,
 )
-from revturbine.core.entitlements import (
-    derive_local_entitlement_from_configured_rules,
+from revturbine.core.entitlements.effective_entitlement import (
+    AppEntitlementInputs,
+    EffectiveEntitlementBase,
+    EntitlementMergeOptions,
+    MirroredEntitlement,
+    derive_effective_entitlement,
+    derive_effective_entitlements,
+    reverse_trial_grants,
 )
 from revturbine.core.placements import (
     LocalPlacementDataset,
@@ -129,8 +136,25 @@ class LocalRuntime:
         impression_store: ImpressionHistoryStore | None = None,
         engine_options: DecisionEngineOptions | None = None,
         interaction_options: LocalRuntimeInteractionOptions | None = None,
+        user_entitlements: Mapping[str, MirroredEntitlement] | None = None,
+        trial_status: Mapping[str, Any] | None = None,
+        entitlement_merge: EntitlementMergeOptions | None = None,
+        on_unknown_entitlement: Callable[[str], None] | None = None,
     ) -> None:
         """Compose the runtime.
+
+        D-61 Entitlement Mirroring options:
+
+        - ``user_entitlements`` — the user context's own entitlement data
+          (``UserContext.entitlements``), merged with the Playbook evaluation.
+        - ``trial_status`` — the user's trial status (``UserTrialStatus``;
+          ``in_trial`` / ``trial_type`` / ``plan_handle`` are read), so
+          reverse-trial grants evaluate exactly as in the browser.
+        - ``entitlement_merge`` — how app-supplied entitlement data merges
+          with the Playbook result. Default: app wins.
+        - ``on_unknown_entitlement`` — called once per entitlement handle that
+          neither the Playbook nor the app knows (it is denied). The runtime
+          also emits a :class:`RuntimeWarning`. Wire telemetry here.
 
         Source: local-runtime.ts:112-158
         """
@@ -139,6 +163,11 @@ class LocalRuntime:
         # One resolver, so `playbook` vs the deprecated `exported_config`
         # cannot be decided differently here than anywhere else (BL-0156).
         self._playbook = require_playbook_option(playbook, exported_config, "LocalRuntime")
+        self._user_entitlements: dict[str, MirroredEntitlement] = dict(user_entitlements or {})
+        self._trial_status = trial_status
+        self._entitlement_merge = entitlement_merge
+        self._on_unknown_entitlement = on_unknown_entitlement
+        self._reported_unknown_entitlements: set[str] = set()
 
         resolved_storage: RevTurbineStorage = storage if storage is not None else InMemoryStorage()
 
@@ -260,28 +289,26 @@ class LocalRuntime:
         handle: str,
         context: dict[str, Any] | None = None,
     ) -> EntitlementCheckResult:
-        """Check entitlement access locally.
+        """Check entitlement access locally (D-61): the shared evaluator
+        decides from the Playbook + user context, then app-mirrored data
+        (user-context grants and any app entitlement provider) merges per
+        the runtime's precedence (default: app wins). The browser SDK runs
+        the same function on the same inputs, so the server verifies
+        exactly what the browser showed. An entitlement nobody knows is
+        denied, warned and reported.
 
-        Tries the engine (provider context) first; only falls back to
-        the Playbook-rule evaluator when no entitlement provider
-        is registered. The fallback is the single deferred leaf
-        (TASK-13); provider-backed entitlements work today.
-
-        Source: local-runtime.ts:198-214
+        Source: local-runtime.ts (checkEntitlement)
         """
-        engine_result = self.engine.check_entitlement(handle, context)
-        if engine_result.get("reason") == "no_entitlement_provider":
-            # Plan 194 REQ-1: the plan provider is present even when the
-            # entitlements one is not — which is the only reason this branch
-            # runs — so source the real handle instead of discarding it.
-            plan = self.engine.resolve_providers().get("plan")
-            plan_handle = plan.get("current_plan_handle") if plan is not None else None
-            return self._derive_entitlement_from_config(
-                handle,
-                context,
-                plan_handle if isinstance(plan_handle, str) else "",
-            )
-        return engine_result
+        providers = self.engine.resolve_providers()
+        app = self._app_inputs_by_handle(providers).get(handle)
+        effective = derive_effective_entitlement(
+            **self._effective_base(providers, context),
+            handle=handle,
+            app=app,
+        )
+        if effective["unknown_handle"]:
+            self._report_unknown_entitlement(handle)
+        return effective["result"]
 
     # ── Interaction tracking ──────────────────────────────────────────────
 
@@ -505,67 +532,129 @@ class LocalRuntime:
         """Build the static placement resolver from the dataset, falling
         back to ``playbook.placements``.
 
-        Source: local-runtime.ts:342-353
+        D-61: the resolver's gates read the SAME effective entitlements that
+        :meth:`check_entitlement` returns, not the providers' raw entries.
+
+        Source: local-runtime.ts (buildPlacementResolver)
         """
         dataset: LocalPlacementDataset = (
             placements
             if placements is not None
             else {"placements": playbook.get("placements") or []}
         )
-        return create_static_placement_resolver(
+        resolve = create_static_placement_resolver(
             placements=dataset,
             playbook=playbook,
             impression_history=self.impression_history,
         )
 
-    def _derive_entitlement_from_config(
+        def _resolve_with_effective_entitlements(
+            input_data: PlacementDecisionInput,
+            placement: PlacementRecord | None,
+            context: dict[str, Any],
+        ) -> PlacementDecision:
+            raw_providers = context.get("__providers")
+            providers: ResolvedProviderContext = (
+                raw_providers if isinstance(raw_providers, dict) else {}  # type: ignore[assignment]
+            )
+            entries = derive_effective_entitlements(
+                self._effective_base(providers, None),
+                self._app_inputs_by_handle(providers),
+            )
+            entitlements: dict[str, Any] = {
+                **(providers.get("entitlements") or {}),
+                "entries": entries,
+            }
+            # TS writes `origin: undefined`: the effective map is no longer a
+            # blanket default, so the marker does not travel with it.
+            entitlements.pop("origin", None)
+            return resolve(
+                input_data,
+                placement,
+                {**context, "__providers": {**providers, "entitlements": entitlements}},
+            )
+
+        return _resolve_with_effective_entitlements
+
+    def _effective_base(
         self,
-        handle: str,
+        providers: ResolvedProviderContext,
         context: dict[str, Any] | None,
-        current_plan_handle: str,
-    ) -> EntitlementCheckResult:
-        """Playbook-rule entitlement fallback.
+    ) -> EffectiveEntitlementBase:
+        """Evaluator inputs from the resolved providers — the same facts the
+        browser SDK uses.
 
-        Plan 33 TASK-13: faithful port of the plan-32/34-reconciled
-        ``deriveLocalEntitlementFromConfiguredRules``.
-
-        Plan 194 REQ-1: the caller passes the runtime's ACTUAL plan.
-        This used to hardcode ``""``, so the fallback evaluated
-        plan-targeted rules against no plan — and the evaluator papered
-        over that by skipping the plan filter, matching every rule and
-        granting. With the evaluator now failing closed on a missing
-        identity, sourcing the real handle is what keeps a
-        correctly-planned user deciding correctly here.
-
-        Plan 191 REQ-6 (Q-4): the terminal fallback DENIES with
-        ``entitlement_not_in_playbook``. It used to grant with
-        ``local_runtime_default_allow`` — a name that stated a verdict
-        rather than a cause, and one the browser SDK emitted on a
-        *denied* result, so a single reason code meant opposite things
-        on two surfaces. An entitlement the Playbook does not describe
-        is one we have no basis to grant.
-
-        The branch is presently unreachable — the evaluator always
-        returns a result (an unmatched entitlement already denies with
-        ``no_matching_entitlement_rule``) despite its ``| None``
-        signature. It is kept, and kept closed, so that a reintroduced
-        ``None`` path fails safe rather than opening a hole. Mirrors
-        local-runtime.ts.
-
-        Source: local-runtime.ts:355-369
+        Source: local-runtime.ts (effectiveBase)
         """
-        result = derive_local_entitlement_from_configured_rules(
-            handle=handle,
-            context=context,
-            current_plan_handle=current_plan_handle,
-            segment_ids=set(),
-            usage_balances={},
-            playbook=self._playbook,
+        usage_balances: dict[str, float] = {}
+        entitlements_state = providers.get("entitlements")
+        raw_usage: Mapping[str, Any] = (
+            (entitlements_state.get("usage") or {}) if entitlements_state is not None else {}
         )
-        if result is not None:
-            return result
-        return {
-            "status": "denied",
-            "allowed": False,
-            "reason": "entitlement_not_in_playbook",
+        for usage_handle, entry in raw_usage.items():
+            used = entry.get("used") if isinstance(entry, dict) else None
+            # `Number.isFinite(entry.used)`: a real, finite number — never a bool.
+            if isinstance(used, bool) or not isinstance(used, (int, float)):
+                continue
+            if math.isfinite(used):
+                usage_balances[usage_handle] = used
+        segments = providers.get("segments")
+        segment_ids: set[str] = set()
+        if segments is not None:
+            segment_ids.update(segments.get("segment_slugs") or [])
+            segment_ids.update(segments.get("segment_ids") or [])
+        plan = providers.get("plan")
+        raw_plan_handle = plan.get("current_plan_handle") if plan is not None else None
+        # `String(providers.plan?.currentPlanHandle ?? '').toLowerCase()`
+        plan_handle = "" if raw_plan_handle is None else str(raw_plan_handle)
+        base: EffectiveEntitlementBase = {
+            "context": context,
+            "current_plan_handle": plan_handle.lower(),
+            "segment_ids": segment_ids,
+            "usage_balances": usage_balances,
+            "playbook": self._playbook,
         }
+        grants = reverse_trial_grants(self._playbook, self._trial_status)
+        if "trial_granted_entitlement_handles" in grants:
+            base["trial_granted_entitlement_handles"] = grants["trial_granted_entitlement_handles"]
+        if "effective_plan_handle" in grants:
+            base["effective_plan_handle"] = grants["effective_plan_handle"]
+        if self._entitlement_merge:
+            base["merge"] = self._entitlement_merge
+        return base
+
+    def _app_inputs_by_handle(
+        self,
+        providers: ResolvedProviderContext,
+    ) -> dict[str, AppEntitlementInputs]:
+        """App-mirrored data per handle: user-context grants plus
+        non-default provider entries.
+
+        Source: local-runtime.ts (appInputsByHandle)
+        """
+        out: dict[str, AppEntitlementInputs] = {}
+        for grant_handle, grant in self._user_entitlements.items():
+            out[grant_handle] = {"user_context": grant}
+        state = providers.get("entitlements")
+        if state is not None and state.get("origin") != "playbook_default":
+            for entry_handle, entry in (state.get("entries") or {}).items():
+                merged: AppEntitlementInputs = {**out.get(entry_handle, {}), "provider": entry}
+                out[entry_handle] = merged
+        return out
+
+    def _report_unknown_entitlement(self, handle: str) -> None:
+        """Warn once per handle and hand it to ``on_unknown_entitlement``.
+
+        Source: local-runtime.ts (reportUnknownEntitlement)
+        """
+        if handle in self._reported_unknown_entitlements:
+            return
+        self._reported_unknown_entitlements.add(handle)
+        warnings.warn(
+            f'[revturbine] entitlement "{handle}" is not in the Playbook and no app data '
+            "was supplied for it; denying (entitlement_not_in_playbook).",
+            RuntimeWarning,
+            stacklevel=3,
+        )
+        if self._on_unknown_entitlement is not None:
+            self._on_unknown_entitlement(handle)

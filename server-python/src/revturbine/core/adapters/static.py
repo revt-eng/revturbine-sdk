@@ -230,7 +230,12 @@ def create_static_providers(
                     if ent.get("unit") is not None:
                         entry["unit"] = ent["unit"]
                     usage_out[handle] = entry
-            state: dict[str, Any] = {"entries": entries, "usage": usage_out}
+            state: dict[str, Any] = {
+                "entries": entries,
+                # D-61: blanket defaults, not app-mirrored data.
+                "origin": "playbook_default",
+                "usage": usage_out,
+            }
             # The user's current tier per capability_tier entitlement, for the
             # entitlement_gate.tier_threshold gate (plan 138 TASK-4). Omitted
             # when not supplied, matching static.ts.

@@ -858,6 +858,44 @@ def create_static_placement_resolver(
         stids = meta.get("surface_template_ids")
         allowed_template_ids = stids if isinstance(stids, list) else None
 
+        # D-60 (Kent, 2026-10-06): an Access Gate placement appears only in
+        # an Access Gate slot, and only while its entitlement is denied or
+        # limited. The slot's own check result (``entitlement_status``, set by
+        # the gate slot) wins; otherwise the entitlement provider's entry
+        # decides. No known status means the gate does not fire.
+        # Source: local-resolver.ts gateRefusal
+        slot_category_of = meta.get("surface_slot_category")
+
+        def _gate_refusal(candidate: _CandidateOutput, require_gate_slot: bool) -> str | None:
+            if category_bucket(_candidate_category(candidate)) != 0:
+                return None
+            if require_gate_slot:
+                outside = slot_category_of != "gated"
+            else:
+                outside = slot_category_of is not None and slot_category_of != "gated"
+            if outside:
+                return "gate_outside_access_gate"
+            # A tier-scoped gate below its tier is the limited circumstance;
+            # the tier check (matches_entitlement_gate_trigger) decides it.
+            gate_trigger = candidate.get("entitlement_gate_trigger")
+            if is_record(gate_trigger) and gate_trigger.get("tier_threshold"):
+                return None
+            handle = candidate.get("trigger_entitlement_handle")
+            status: Any = None
+            if (
+                handle
+                and meta.get("entitlement_handle") == handle
+                and isinstance(meta.get("entitlement_status"), str)
+            ):
+                status = meta.get("entitlement_status")
+            elif handle:
+                entries = (
+                    entitlements_state.get("entries") if is_record(entitlements_state) else None
+                )
+                entry = entries.get(handle) if is_record(entries) else None
+                status = entry.get("status") if is_record(entry) else None
+            return None if status in ("denied", "limited") else "entitlement_not_denied"
+
         selected_output: PlacementOutput | None = None
         reason_codes: list[str] = []
 
@@ -926,6 +964,8 @@ def create_static_placement_resolver(
                 slot_filtered = [c for c in filtered if c["trigger_slot_id"] == slot_id]
                 if slot_filtered:
                     filtered = slot_filtered
+
+            filtered = [c for c in filtered if _gate_refusal(c, True) is None]
 
             # §4 ``fixed_only``: a slot reserved for PM-wired content renders
             # only Fixed-category candidates — RT-initiated placements (Usage /
@@ -1122,7 +1162,9 @@ def create_static_placement_resolver(
                 # unguarded back door, as plan 138 found for entitlement gates.
                 if not _is_eligible_for_segments(output, providers):
                     return "segment_target_mismatch"
-                return None
+                # D-60: a gate fetched by id still needs a denied/limited
+                # entitlement, and never renders in a registered non-gate slot.
+                return _gate_refusal(candidate, False)
 
             if not direct_candidates:
                 reason_codes = ["placement_not_found"]

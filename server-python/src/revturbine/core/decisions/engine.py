@@ -222,7 +222,9 @@ class DecisionEngine:
         context: dict[str, Any] | None,
     ) -> EntitlementCheckResult:
         """Source: engine.ts:186-229"""
-        policy = self._options.get("default_entitlement_policy", "allow")
+        # D-61 (Kent, 2026-10-06): unknown handles and a missing entitlement
+        # provider fail CLOSED by default; 'allow' remains an explicit opt-in.
+        policy = self._options.get("default_entitlement_policy", "deny")
 
         entitlements = providers.get("entitlements")
         if entitlements is None:

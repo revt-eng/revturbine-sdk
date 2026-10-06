@@ -41,7 +41,7 @@ fn payload(id: &str, header: &str, chips: Value) -> Value {
 }
 
 fn entry(payloads: Vec<Value>) -> Value {
-    json!({ "id": "pl_foo", "category": "gated", "order": 0, "payloads": payloads })
+    json!({ "id": "pl_foo", "category": "fixed", "order": 0, "payloads": payloads })
 }
 
 fn two_chipped() -> Value {

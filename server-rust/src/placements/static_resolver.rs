@@ -815,6 +815,62 @@ impl StaticPlacementResolver {
             .map(|a| a.iter().filter_map(Value::as_str).collect())
             .filter(|v: &Vec<&str>| !v.is_empty());
 
+        // D-60 (Kent, 2026-10-06): an Access Gate placement appears only in
+        // an Access Gate slot, and only while its entitlement is denied or
+        // limited. The slot's own check result (`entitlement_status`, set by
+        // the gate slot) wins; otherwise the entitlement provider's entry
+        // decides. No known status means the gate does not fire.
+        // Source: local-resolver.ts gateRefusal
+        let slot_category_of = meta
+            .and_then(|m| m.get("surface_slot_category"))
+            .filter(|v| !v.is_null());
+        let gate_refusal = |c: &CandidateOutput, require_gate_slot: bool| -> Option<&'static str> {
+            if category_bucket(&c.ranking_category()) != 0 {
+                return None;
+            }
+            let in_gate_slot = slot_category_of.and_then(Value::as_str) == Some("gated");
+            let outside = if require_gate_slot {
+                !in_gate_slot
+            } else {
+                slot_category_of.is_some() && !in_gate_slot
+            };
+            if outside {
+                return Some("gate_outside_access_gate");
+            }
+            // A tier-scoped gate below its tier is the limited circumstance;
+            // the tier check (matches_entitlement_gate_trigger) decides it.
+            if c.entitlement_gate_trigger
+                .as_ref()
+                .is_some_and(|t| t.tier_threshold.as_deref().is_some_and(|s| !s.is_empty()))
+            {
+                return None;
+            }
+            let handle = c
+                .trigger_entitlement_handle
+                .as_deref()
+                .filter(|h| !h.is_empty());
+            let slot_status = meta
+                .filter(|m| {
+                    handle.is_some()
+                        && m.get("entitlement_handle").and_then(Value::as_str) == handle
+                })
+                .and_then(|m| m.get("entitlement_status"))
+                .and_then(Value::as_str);
+            let status = match (slot_status, handle) {
+                (Some(st), _) => Some(st),
+                (None, Some(h)) => entitlements_state
+                    .and_then(|e| e.get("entries"))
+                    .and_then(|e| e.get(h))
+                    .and_then(|e| e.get("status"))
+                    .and_then(Value::as_str),
+                (None, None) => None,
+            };
+            match status {
+                Some("denied" | "limited") => None,
+                _ => Some("entitlement_not_denied"),
+            }
+        };
+
         let mut selected: Option<Value> = None;
         let mut reason_codes: Vec<String> = Vec::new();
 
@@ -878,6 +934,8 @@ impl StaticPlacementResolver {
                     idxs = narrowed;
                 }
             }
+
+            idxs.retain(|i| gate_refusal(&self.candidates[*i], true).is_none());
 
             // `fixed_only` is a HARD filter — a slot reserved for PM-wired
             // content must never render an RT-initiated nudge, even if that
@@ -1104,7 +1162,10 @@ impl StaticPlacementResolver {
                         // an unguarded back door, as plan 138 found for gates.
                         Some("segment_target_mismatch")
                     } else {
-                        None
+                        // D-60: a gate fetched by id still needs a denied/
+                        // limited entitlement, and never renders in a
+                        // registered non-gate slot.
+                        gate_refusal(c, false)
                     };
 
                     match refusal {

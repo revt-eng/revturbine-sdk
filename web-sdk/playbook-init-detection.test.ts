@@ -15,7 +15,10 @@ import type { ConfigArtifact } from './customer-side';
 const MINIMAL_PLAYBOOK = {
   version: '1.0.0',
   plans: [],
-  entitlements: [],
+  // D-61: an entitlement the Playbook does not define is denied as unknown
+  // (entitlement_not_in_playbook), so the checked handle is defined here and a
+  // rule (none for this plan) decides.
+  entitlements: [{ unique_handle: 'anything', name: 'Anything', type: 'feature' }],
   entitlement_rules: [],
   segments: [],
   content_ui_paths: [],

@@ -20,6 +20,7 @@ Source: revturbine-scaffold/src/entitlements/controllers/entitlement-check.ts
 from __future__ import annotations
 
 import math
+from collections.abc import Set as AbstractSet
 from typing import Any
 
 from revturbine.core.decisions.types import EntitlementCheckResult
@@ -114,11 +115,21 @@ def derive_local_entitlement_from_configured_rules(
     user_usage: dict[str, Any] | None = None,
     playbook: Playbook | None = None,
     exported_config: Playbook | None = None,
+    trial_granted_entitlement_handles: AbstractSet[str] | None = None,
+    effective_plan_handle: str | None = None,
 ) -> EntitlementCheckResult | None:
     """Derive an entitlement result locally from Playbook rules.
 
     ``playbook`` is canonical; ``exported_config`` is the deprecated spelling
     kept for one minor (BL-0156) and removed in ``0.12.0``.
+
+    ``trial_granted_entitlement_handles`` / ``effective_plan_handle`` are the
+    reverse-trial inputs (plan 43 TASK-2): a handle the user holds through an
+    active reverse trial is matched against the GRANTED plan's rules, or —
+    when no effective plan is supplied — short-circuits to
+    ``granted_by_reverse_trial``. Absent or empty, the pre-trial behaviour
+    applies. Build them with
+    :func:`revturbine.core.entitlements.effective_entitlement.reverse_trial_grants`.
 
     Returns ``None`` when no config is available; an explicit result
     otherwise (including ``no_matching_entitlement_rule`` ⇒ denied,
@@ -152,10 +163,40 @@ def derive_local_entitlement_from_configured_rules(
         if entitlement is not None and isinstance(entitlement.get("unique_handle"), str)
         else handle
     )
+
+    # Reverse-trial grant resolution (plan 43 TASK-2 + gap-1 follow-up). A
+    # handle in ``trial_granted_entitlement_handles`` is held mid-trial: with
+    # an ``effective_plan_handle`` the GRANTED plan's rules apply (so its
+    # limits enforce); without one the v1 backstop grants outright.
+    # Mirrors entitlement-check.ts.
+    unique_handle = (
+        entitlement["unique_handle"]
+        if entitlement is not None and isinstance(entitlement.get("unique_handle"), str)
+        else None
+    )
+    handle_is_trial_granted = bool(
+        trial_granted_entitlement_handles
+        and len(trial_granted_entitlement_handles) > 0
+        and (
+            handle in trial_granted_entitlement_handles
+            or entitlement_id in trial_granted_entitlement_handles
+            or (unique_handle is not None and unique_handle in trial_granted_entitlement_handles)
+        )
+    )
+    if handle_is_trial_granted and (effective_plan_handle is None or effective_plan_handle == ""):
+        return {"status": "allowed", "allowed": True, "reason": "granted_by_reverse_trial"}
+
+    # Plan-matching key: trial-granted entitlements use the GRANTED plan
+    # (limits apply); everything else uses the user's base plan.
+    plan_handle_for_matching = (
+        effective_plan_handle
+        if handle_is_trial_granted and effective_plan_handle
+        else current_plan_handle
+    )
     # Trimmed, so a whitespace-only handle collapses to "no identity" rather
     # than becoming an identity that matches no plan. Both fail closed, but
     # only the collapsed form reports the actual cause (plan 194 REQ-1).
-    normalized_plan_handle = str(current_plan_handle or "").strip().lower()
+    normalized_plan_handle = str(plan_handle_for_matching or "").strip().lower()
 
     plans: list[dict[str, Any]] = playbook.get("plans") or []
     # Plan 191 REQ-1: plan identity IS the handle. `plans[].id` is DB-internal

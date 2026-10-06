@@ -193,6 +193,25 @@ pub fn derive_builtin_dimension_traits(context: &Value) -> Map<String, Value> {
     traits
 }
 
+/// A mirrored entitlement as a segment trait: a grant counts unless it is
+/// denied (D-61). `UserContext.entitlements` values are a boolean or a grant
+/// record; segment traits stay scalar.
+///
+/// Source: user-context.ts (mirroredEntitlementTrait)
+#[must_use]
+pub fn mirrored_entitlement_trait(value: &Value) -> bool {
+    match value {
+        Value::Bool(b) => *b,
+        // `value?.status` / `value?.allowed` read `undefined` off any
+        // non-object, so both checks pass.
+        Value::Object(grant) => {
+            grant.get("status").and_then(Value::as_str) != Some("denied")
+                && grant.get("allowed") != Some(&Value::Bool(false))
+        }
+        _ => true,
+    }
+}
+
 fn strip_reserved_trait_keys(bag: &mut Map<String, Value>) {
     bag.retain(|key, _| !is_reserved_trait_key(key));
 }
@@ -283,7 +302,7 @@ pub fn build_targeting_state(
     if let Some(entitlements) = context.get("entitlements").and_then(Value::as_object) {
         for (key, value) in entitlements {
             if !traits.contains_key(key) {
-                traits.insert(key.clone(), value.clone());
+                traits.insert(key.clone(), Value::Bool(mirrored_entitlement_trait(value)));
             }
         }
     }
@@ -475,6 +494,31 @@ mod builtin_dimension_tests {
             derive_builtin_dimension_traits(&json!({ "builtin_dimensions": ["paid"] })),
             unregistered_only()
         );
+    }
+
+    #[test]
+    fn mirrored_entitlement_grants_flatten_to_boolean_traits() {
+        // D-61: a grant counts unless it is denied (user-context.ts
+        // mirroredEntitlementTrait); segment traits stay scalar.
+        let state = build_targeting_state(
+            &json!({ "entitlements": {
+                "flag_on": true,
+                "flag_off": false,
+                "seats": { "status": "limited", "limit": 5 },
+                "held": { "status": "denied" },
+                "revoked": { "status": "allowed", "allowed": false },
+                "usage_only": { "used": 3 }
+            } }),
+            None,
+            None,
+        );
+        let traits = &state["traits"];
+        assert_eq!(traits["flag_on"], json!(true));
+        assert_eq!(traits["flag_off"], json!(false));
+        assert_eq!(traits["seats"], json!(true));
+        assert_eq!(traits["held"], json!(false));
+        assert_eq!(traits["revoked"], json!(false));
+        assert_eq!(traits["usage_only"], json!(true));
     }
 
     #[test]
