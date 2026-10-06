@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.383/rust/revturbine_types.rs
+//   published/v0.1.402/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -15281,7 +15281,8 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsPeriodCompareMo
 #[doc = "    \"mrr\","]
 #[doc = "    \"attribution\","]
 #[doc = "    \"lifecycle\","]
-#[doc = "    \"engagement\""]
+#[doc = "    \"engagement\","]
+#[doc = "    \"reporting_currency\""]
 #[doc = "  ],"]
 #[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
 #[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
@@ -15309,6 +15310,8 @@ pub enum AnalyticsPolicyKind {
     Lifecycle,
     #[serde(rename = "engagement")]
     Engagement,
+    #[serde(rename = "reporting_currency")]
+    ReportingCurrency,
 }
 impl ::std::fmt::Display for AnalyticsPolicyKind {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -15317,6 +15320,7 @@ impl ::std::fmt::Display for AnalyticsPolicyKind {
             Self::Attribution => f.write_str("attribution"),
             Self::Lifecycle => f.write_str("lifecycle"),
             Self::Engagement => f.write_str("engagement"),
+            Self::ReportingCurrency => f.write_str("reporting_currency"),
         }
     }
 }
@@ -15328,6 +15332,7 @@ impl ::std::str::FromStr for AnalyticsPolicyKind {
             "attribution" => Ok(Self::Attribution),
             "lifecycle" => Ok(Self::Lifecycle),
             "engagement" => Ok(Self::Engagement),
+            "reporting_currency" => Ok(Self::ReportingCurrency),
             _ => Err("invalid value".into()),
         }
     }
@@ -18518,6 +18523,352 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsRenderTimelineTimestamp {
             })
     }
 }
+#[doc = "`AnalyticsReportingCurrencyMeta`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"currency\","]
+#[doc = "    \"date_basis\","]
+#[doc = "    \"policy_version\","]
+#[doc = "    \"rate_source\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"currency\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^[a-z]{3}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"date_basis\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 120,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"policy_version\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 120,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"rate_source\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 120,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticsReportingCurrencyMeta {
+    pub currency: AnalyticsReportingCurrencyMetaCurrency,
+    pub date_basis: AnalyticsReportingCurrencyMetaDateBasis,
+    pub policy_version: AnalyticsReportingCurrencyMetaPolicyVersion,
+    pub rate_source: AnalyticsReportingCurrencyMetaRateSource,
+}
+#[doc = "`AnalyticsReportingCurrencyMetaCurrency`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[a-z]{3}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsReportingCurrencyMetaCurrency(::std::string::String);
+impl ::std::ops::Deref for AnalyticsReportingCurrencyMetaCurrency {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsReportingCurrencyMetaCurrency> for ::std::string::String {
+    fn from(value: AnalyticsReportingCurrencyMetaCurrency) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsReportingCurrencyMetaCurrency {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z]{3}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z]{3}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsReportingCurrencyMetaCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsReportingCurrencyMetaCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsReportingCurrencyMetaCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsReportingCurrencyMetaCurrency {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsReportingCurrencyMetaDateBasis`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsReportingCurrencyMetaDateBasis(::std::string::String);
+impl ::std::ops::Deref for AnalyticsReportingCurrencyMetaDateBasis {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsReportingCurrencyMetaDateBasis> for ::std::string::String {
+    fn from(value: AnalyticsReportingCurrencyMetaDateBasis) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsReportingCurrencyMetaDateBasis {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsReportingCurrencyMetaDateBasis {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsReportingCurrencyMetaDateBasis {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsReportingCurrencyMetaDateBasis {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsReportingCurrencyMetaDateBasis {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsReportingCurrencyMetaPolicyVersion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsReportingCurrencyMetaPolicyVersion(::std::string::String);
+impl ::std::ops::Deref for AnalyticsReportingCurrencyMetaPolicyVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsReportingCurrencyMetaPolicyVersion> for ::std::string::String {
+    fn from(value: AnalyticsReportingCurrencyMetaPolicyVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsReportingCurrencyMetaPolicyVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsReportingCurrencyMetaPolicyVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for AnalyticsReportingCurrencyMetaPolicyVersion
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for AnalyticsReportingCurrencyMetaPolicyVersion
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsReportingCurrencyMetaPolicyVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AnalyticsReportingCurrencyMetaRateSource`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AnalyticsReportingCurrencyMetaRateSource(::std::string::String);
+impl ::std::ops::Deref for AnalyticsReportingCurrencyMetaRateSource {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AnalyticsReportingCurrencyMetaRateSource> for ::std::string::String {
+    fn from(value: AnalyticsReportingCurrencyMetaRateSource) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AnalyticsReportingCurrencyMetaRateSource {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AnalyticsReportingCurrencyMetaRateSource {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AnalyticsReportingCurrencyMetaRateSource {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AnalyticsReportingCurrencyMetaRateSource {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AnalyticsReportingCurrencyMetaRateSource {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`AnalyticsResult`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -18747,6 +19098,10 @@ impl<'de> ::serde::Deserialize<'de> for AnalyticsResultFieldId {
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"reporting_currency\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsReportingCurrencyMeta\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"source_scope\": {"]
 #[doc = "      \"$ref\": \"#/$defs/AnalyticsSourceScope\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
@@ -18780,6 +19135,8 @@ pub struct AnalyticsResultMeta {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub next_cursor: ::std::option::Option<AnalyticsResultMetaNextCursor>,
     pub query_hash: AnalyticsResultMetaQueryHash,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub reporting_currency: ::std::option::Option<AnalyticsReportingCurrencyMeta>,
     pub source_scope: AnalyticsSourceScope,
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
     pub warnings: ::std::vec::Vec<AnalyticsWarning>,

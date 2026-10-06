@@ -230,7 +230,9 @@ describe.each(['fixed', 'gated', 'upsell'])('TASK-3 actual %s placement category
 it.each(['dismiss', 'snooze'])('Access Gate %s closes the offer, preserves denial, and allows the next mount', async (action) => {
   const options: RevTurbineInitInputOptions = { ...OPTIONS, localRuntime: {
     playbook: { ...PLAYBOOK, placements: PLAYBOOK.placements.map(placement => ({
-      ...placement, category: 'gated', payloads: placement.payloads.map(payload => ({ ...payload,
+      // D-59: a gate slot is answered only by a gate for its own entitlement.
+      ...placement, category: 'gated', trigger: { ...(placement.trigger ?? {}), entitlement_handle: 'premium' },
+      payloads: placement.payloads.map(payload => ({ ...payload,
         surfaces: payload.surfaces.map(surface => ({ ...surface, ctas: [{ label: 'Remind me later', path: 'snooze', config: {} }] })),
       })),
     })) },

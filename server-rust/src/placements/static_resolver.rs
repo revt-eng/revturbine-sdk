@@ -22,6 +22,7 @@
 //!
 //! Source: revturbine-scaffold/src/placements/controllers/local-resolver.ts
 
+use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use serde_json::{json, Map, Value};
@@ -34,7 +35,10 @@ use super::local_resolver::{
 };
 use super::payload_resolution::{js_string, next_token, resolve_payload_for_user};
 use super::qualifier_gating::{matches_qualifier_trigger, QualifierTrigger};
-use super::threshold_gating::{matches_threshold_trigger, ThresholdTrigger};
+use super::selection::category_bucket;
+use super::threshold_gating::{
+    compute_consumed_percent, matches_threshold_trigger, ThresholdTrigger,
+};
 use super::trial_gating::{
     apply_milestone_supersession, compute_user_elapsed_percent, matches_trial_trigger,
     normalize_json_trigger, TrialCandidate, TrialTrigger,
@@ -184,6 +188,148 @@ struct CandidateOutput {
     threshold_trigger: Option<ThresholdTrigger>,
     qualifier_trigger: Option<QualifierTrigger>,
     entitlement_gate_trigger: Option<EntitlementGateTrigger>,
+}
+
+// ── Prioritization (D-59, 2026-10-06; placement-prioritization.md §2–§3, §6) ──
+
+impl CandidateOutput {
+    /// The entry category, else the output's (TS `entryCategory ?? output.category`).
+    fn ranking_category(&self) -> String {
+        self.entry_category
+            .clone()
+            .or_else(|| s(&self.output, "category"))
+            .unwrap_or_default()
+    }
+}
+
+/// §6 usage milestones: among fired threshold candidates on the same
+/// entitlement and threshold kind, only the highest threshold survives. Equal
+/// thresholds both survive and fall to drag order. Non-threshold candidates
+/// pass through untouched.
+///
+/// Source: local-resolver.ts applyThresholdMilestoneSupersession
+fn apply_threshold_milestone_supersession(
+    candidates: &[CandidateOutput],
+    idxs: Vec<usize>,
+) -> Vec<usize> {
+    let mut highest: HashMap<(&str, &str), f64> = HashMap::new();
+    for i in &idxs {
+        if let Some(t) = candidates[*i].threshold_trigger.as_ref() {
+            let key = (t.kind.as_str(), t.entitlement_handle.as_str());
+            match highest.get(&key) {
+                Some(h) if t.threshold_percent <= *h => {}
+                _ => {
+                    highest.insert(key, t.threshold_percent);
+                }
+            }
+        }
+    }
+    idxs.into_iter()
+        .filter(|i| {
+            candidates[*i].threshold_trigger.as_ref().is_none_or(|t| {
+                highest
+                    .get(&(t.kind.as_str(), t.entitlement_handle.as_str()))
+                    .is_some_and(|h| t.threshold_percent == *h)
+            })
+        })
+        .collect()
+}
+
+/// §3.2 two-stage urgency for tier 3 (usage/credit/seat + trials): class
+/// first (1 trial transition, 2 limit reached or exceeded, 3 approaching /
+/// trial milestone in progress), then proximity (higher = closer), capped at
+/// 100 so over-limit candidates tie and fall to drag order.
+///
+/// Source: local-resolver.ts tier3Urgency
+fn tier3_urgency(
+    c: &CandidateOutput,
+    entitlements_state: Option<&Value>,
+    user_elapsed_percent: Option<f64>,
+) -> (i64, f64) {
+    if let Some(trial) = c.trial_trigger.as_ref() {
+        return match trial {
+            TrialTrigger::Started | TrialTrigger::Ended | TrialTrigger::Converted => (1, 0.0),
+            _ => (3, user_elapsed_percent.unwrap_or(0.0).min(100.0)),
+        };
+    }
+    if let Some(threshold) = c.threshold_trigger.as_ref() {
+        let consumed = compute_consumed_percent(threshold, entitlements_state);
+        if consumed.is_some_and(|p| p >= 100.0) {
+            return (2, 100.0);
+        }
+        return (3, consumed.unwrap_or(0.0));
+    }
+    (3, 0.0)
+}
+
+/// Tiebreak between the two categories that share a tier. Studio drag order
+/// restarts at 0 per category, so equal `order` across Usage/Credit/Seat and
+/// Trials (tier 3), or Conversion/Expansion and Retention (tier 4), resolves
+/// in the All Placements view's group order — never by database row order.
+///
+/// Source: local-resolver.ts sharedTierCategoryRank
+fn shared_tier_category_rank(category: &str) -> i64 {
+    let normalized = category.to_lowercase();
+    if normalized.contains("trial") {
+        return 1;
+    }
+    if ["retention", "winback", "churn"]
+        .iter()
+        .any(|t| normalized.contains(t))
+    {
+        return 1;
+    }
+    0
+}
+
+/// Category first (§2): Access Gates, Fixed, tier 3, tier 4. Within a tier
+/// (§3): tier 3 by two-stage urgency, then drag order; Access Gates, Fixed
+/// and tier 4 by drag order (tier 4's stopgap until LTV × propensity scoring
+/// ships). Drag order is the placement's `order`, then the shared-tier
+/// category rank, then payload order within the placement. The sort is
+/// stable, so the incoming position is the final key.
+///
+/// Source: local-resolver.ts rankCandidates
+fn rank_candidates(
+    candidates: &[CandidateOutput],
+    idxs: Vec<usize>,
+    entitlements_state: Option<&Value>,
+    user_elapsed_percent: Option<f64>,
+) -> Vec<usize> {
+    let mut keyed: Vec<(i64, i64, f64, i64, usize, usize)> = idxs
+        .into_iter()
+        .map(|i| {
+            let c = &candidates[i];
+            let category = c.ranking_category();
+            let bucket = category_bucket(&category);
+            let (cls, proximity) = if bucket == 2 {
+                tier3_urgency(c, entitlements_state, user_elapsed_percent)
+            } else {
+                (0, 0.0)
+            };
+            (
+                bucket,
+                cls,
+                proximity,
+                shared_tier_category_rank(&category),
+                c.payload_order,
+                i,
+            )
+        })
+        .collect();
+    keyed.sort_by(|a, b| {
+        a.0.cmp(&b.0)
+            .then(a.1.cmp(&b.1))
+            .then(b.2.partial_cmp(&a.2).unwrap_or(Ordering::Equal))
+            .then(
+                candidates[a.5]
+                    .entry_order
+                    .cmp(&candidates[b.5].entry_order),
+            )
+            .then(a.3.cmp(&b.3))
+            .then(a.4.cmp(&b.4))
+    });
+    keyed.into_iter().map(|k| k.5).collect()
 }
 
 /// A placement resolver built once from a Playbook.
@@ -473,6 +619,14 @@ impl StaticPlacementResolver {
                 if let Some(kind) = trial_trigger.as_ref().map(trial_kind) {
                     content.insert("__trigger_kind".into(), json!(kind));
                 }
+                // D-59: the payload's authored caps ride on the output (as in
+                // the TS canonical) so a client cap gate can enforce them.
+                if let Some(caps) = payload
+                    .get("caps")
+                    .filter(|c| c.as_object().is_some_and(|m| !m.is_empty()))
+                {
+                    content.insert("__caps".into(), caps.clone());
+                }
 
                 let output = json!({
                     "output_id": payload.get("id").cloned().unwrap_or(Value::Null),
@@ -696,20 +850,24 @@ impl StaticPlacementResolver {
                 .and_then(|m| m.get("surface_slot_id"))
                 .and_then(Value::as_str);
 
-            // Narrowing filters: each applies ONLY if it leaves something, so
-            // a slot hint never empties the candidate set on its own.
+            // D-59 (2026-10-06): a slot that asks for an entitlement is
+            // answered only by placements for THAT entitlement. With none
+            // authored the decision is an explicit miss the SDK renders as an
+            // access-denied placeholder — never another entitlement's gate.
             if let Some(h) = slot_entitlement_handle {
-                let narrowed: Vec<usize> = idxs
-                    .iter()
-                    .copied()
-                    .filter(|i| {
-                        self.candidates[*i].trigger_entitlement_handle.as_deref() == Some(h)
-                    })
-                    .collect();
-                if !narrowed.is_empty() {
-                    idxs = narrowed;
+                idxs.retain(|i| {
+                    self.candidates[*i].trigger_entitlement_handle.as_deref() == Some(h)
+                });
+                if idxs.is_empty() {
+                    return self.not_visible(
+                        placement_id,
+                        "no_gate_for_entitlement",
+                        "No placement configured for this entitlement",
+                    );
                 }
             }
+            // The remaining narrowing filters apply ONLY if they leave
+            // something, so a slot hint never empties the candidate set.
             if let Some(sid) = slot_id {
                 let narrowed: Vec<usize> = idxs
                     .iter()
@@ -798,7 +956,8 @@ impl StaticPlacementResolver {
             // keep only the winner; non-progress candidates are untouched.
             let mut superseded_ids: Vec<String> = Vec::new();
             let mut winner_rule_id: Option<String> = None;
-            if let Some(pct) = compute_user_elapsed_percent(plan) {
+            let user_elapsed_percent = compute_user_elapsed_percent(plan);
+            if let Some(pct) = user_elapsed_percent {
                 if idxs.len() > 1 {
                     let tcs: Vec<TrialCandidate> = idxs
                         .iter()
@@ -823,34 +982,51 @@ impl StaticPlacementResolver {
                 }
             }
 
+            // The decision contract (D-59, 2026-10-06, supersedes D-34):
+            // category first, then within-category ranking, per
+            // placement-prioritization.md §2–§3. Targeting (plan AND segment)
+            // narrows first, so supersession and ranking only ever see
+            // candidates this user could be shown.
             let mut saw_segment_mismatch = false;
+            let mut eligible: Vec<usize> = Vec::new();
             for i in idxs {
                 let c = &self.candidates[i];
-                if self.is_eligible_for_plan(
+                if !self.is_eligible_for_plan(
                     &c.output,
                     current_plan_id,
                     plan_handle,
                     billing_period,
                 ) {
-                    // Plan 233 TASK-7: segment targeting is ANDed with plan
-                    // targeting, matching the TS resolver.
-                    if !self.is_eligible_for_segments(&c.output, providers) {
-                        saw_segment_mismatch = true;
-                        continue;
-                    }
-                    let mut out = c.output.clone();
-                    // Attach the supersession diagnostic only when the winner
-                    // is the one actually selected.
-                    if !superseded_ids.is_empty() && s(&out, "rule_id") == winner_rule_id {
-                        if let Some(content) = out.get_mut("content").and_then(Value::as_object_mut)
-                        {
-                            content
-                                .insert("__superseded_placement_ids".into(), json!(superseded_ids));
-                        }
-                    }
-                    selected = Some(out);
-                    break;
+                    continue;
                 }
+                // Plan 233 TASK-7: segment targeting is ANDed with plan
+                // targeting, matching the TS resolver.
+                if !self.is_eligible_for_segments(&c.output, providers) {
+                    saw_segment_mismatch = true;
+                    continue;
+                }
+                eligible.push(i);
+            }
+
+            let ranked = rank_candidates(
+                &self.candidates,
+                apply_threshold_milestone_supersession(&self.candidates, eligible),
+                entitlements_state,
+                user_elapsed_percent,
+            );
+            // Server ports carry no presentation (cap) state, so the TS
+            // `candidateGate` hook (§1 stage 4) has no equivalent here: the
+            // first ranked candidate wins.
+            if let Some(&i) = ranked.first() {
+                let mut out = self.candidates[i].output.clone();
+                // Attach the supersession diagnostic only when the winner
+                // is the one actually selected.
+                if !superseded_ids.is_empty() && s(&out, "rule_id") == winner_rule_id {
+                    if let Some(content) = out.get_mut("content").and_then(Value::as_object_mut) {
+                        content.insert("__superseded_placement_ids".into(), json!(superseded_ids));
+                    }
+                }
+                selected = Some(out);
             }
             if selected.is_none() {
                 // Keep the specific reason when there is one: "no eligible

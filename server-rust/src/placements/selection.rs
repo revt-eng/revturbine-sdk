@@ -8,11 +8,11 @@
 //! two-stage tier-3 urgency — had no third side, which is why TASK-15's
 //! competing-categories fixture had to be deferred.
 //!
-//! Not the placement decision. Per Kent's ruling D-34 (2026-09-26) the
-//! decision contract is entry order — the first plan/segment-eligible
-//! candidate wins — and `static_resolver` implements it without calling this
-//! module (BL-0149). It stays 3-way parity-locked because the browser SDK's
-//! cached `getPlacement` lookup uses the TS original.
+//! Not the placement decision. Per Kent's ruling D-59 (2026-10-06,
+//! supersedes D-34) the decision contract is category first, then
+//! within-category ranking — and `static_resolver` implements it with its own
+//! ranking, without calling this module. It stays 3-way parity-locked because
+//! the browser SDK's cached `getPlacement` lookup uses the TS original.
 
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};

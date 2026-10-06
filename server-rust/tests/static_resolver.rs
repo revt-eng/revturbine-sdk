@@ -157,118 +157,157 @@ fn authored_order_decides_among_candidates() {
     assert_eq!(d["content"]["header"], json!("First"), "lower order wins");
 }
 
-#[test]
-fn entry_order_beats_the_category_bucket_and_the_selection_layer_disagrees() {
-    // BL-0001 / plan 234 TASK-8c's close-out hold. The hold reads as though
-    // entry-order selection were a Rust-only gap. It is not: the TS canonical
-    // (`local-resolver.ts` `createLocalPlacementResolver`) and
-    // `local_resolver.py` take the first eligible candidate in `entry_order`
-    // exactly as this resolver does, and NO port's resolver consults
-    // `resolve_local_placement_from_candidates`. This test pins both halves in
-    // one language so the difference cannot be mistaken for a port bug: the
-    // decision path answers by entry order, the selection layer answers by
-    // category bucket, and they disagree on the same two candidates. Routing
-    // this resolver through the selection layer is therefore a cross-port
-    // behaviour change that starts at the TS canonical — not a parity fix — and
-    // doing it here alone would byte-diff `placement_slot_selection_is_entry_order`.
-    let placements = vec![
-        entry("pl_conversion", "other_conversion", 0, "Conversion"),
-        entry("pl_gated", "gated", 1, "Gated"),
-    ];
-    let r = StaticPlacementResolver::new(&placements, &config());
-    let d = r.resolve("slot_1", Some(&slot(&["banner_placement"])), None, None);
-    assert_eq!(
-        d["output"]["rule_id"],
-        json!("pl_conversion"),
-        "the decision path selects by entry order, not by category bucket",
-    );
+// ── D-59 category-first decision contract (supersedes D-34) ────────────────
+//
+// Kent's ruling D-59 (2026-10-06, supersedes D-34): eligible candidates rank
+// by category first (Access Gates, Fixed, usage/trial alerts, nudges), then
+// within tier — two-stage urgency for alerts, drag order otherwise; the
+// highest fired usage milestone per entitlement wins; a slot that asks for an
+// entitlement is answered only by that entitlement's placements. Mirrors
+// `ts:local-resolver.test.ts` "D-59 category-first decision contract" case for
+// case (the two `candidateGate` cases have no server equivalent — server ports
+// carry no presentation state).
 
-    let candidates = vec![
-        selection_candidate("pl_conversion", "other_conversion"),
-        selection_candidate("pl_gated", "gated"),
-    ];
-    let winner = revturbine::placements::resolve_local_placement_from_candidates(
-        &candidates,
-        revturbine::placements::CandidateResolutionOptions::default(),
+fn d59_nudge(id: &str, order: i64, header: &str, category: &str) -> Value {
+    let mut e = entry(id, category, order, header);
+    e["trigger"] = json!({});
+    e
+}
+
+fn d59_usage(id: &str, order: i64, header: &str, handle: &str, threshold: i64) -> Value {
+    let mut e = entry(id, "usage_credit_seat", order, header);
+    e["trigger"] = json!({
+        "type": "usage_threshold",
+        "entitlement_handle": handle,
+        "threshold_percent": threshold,
+    });
+    e
+}
+
+fn d59_ctx(usage_by_handle: &[(&str, i64, i64)]) -> Value {
+    let usage: serde_json::Map<String, Value> = usage_by_handle
+        .iter()
+        .map(|(h, used, limit)| {
+            (
+                (*h).to_string(),
+                json!({ "used": used, "limit": limit, "remaining": limit - used }),
+            )
+        })
+        .collect();
+    json!({ "__providers": { "entitlements": { "usage": usage } } })
+}
+
+fn d59_decide(entries: &[Value], context: &Value) -> Value {
+    StaticPlacementResolver::new(entries, &config()).resolve(
+        "slot_1",
+        Some(&slot(&["banner_placement"])),
+        Some(context),
+        None,
     )
-    .expect("a winner");
+}
+
+#[test]
+fn d59_a_usage_alert_beats_a_conversion_nudge_listed_above_it() {
+    let d = d59_decide(
+        &[
+            d59_nudge("pl_nudge", 0, "Nudge", "other_conversion"),
+            d59_usage("pl_alert", 0, "Alert", "api_calls", 100),
+        ],
+        &d59_ctx(&[("api_calls", 100, 100)]),
+    );
+    assert_eq!(d["content"]["header"], json!("Alert"), "tier 3 over tier 4");
+}
+
+#[test]
+fn d59_limit_reached_beats_an_approaching_warning_listed_above_it() {
+    let d = d59_decide(
+        &[
+            d59_usage(
+                "pl_exports_approaching",
+                0,
+                "Half your exports are used",
+                "exports",
+                50,
+            ),
+            d59_usage(
+                "pl_api_at_limit",
+                1,
+                "You have hit your API limit",
+                "api_calls",
+                100,
+            ),
+        ],
+        &d59_ctx(&[("exports", 50, 100), ("api_calls", 100, 100)]),
+    );
     assert_eq!(
-        winner["output_id"],
-        json!("pl_gated"),
-        "the selection layer ranks gated (bucket 0) over conversion (bucket 4)",
+        d["content"]["header"],
+        json!("You have hit your API limit"),
+        "§3.2 two-stage urgency"
     );
 }
 
-/// D-34 (Kent, 2026-09-26): "The list order does imply priority. The first
-/// eligible should take precedence." (BL-0149.) The later candidate here holds
-/// every selection-layer advantage — bucket 2 vs 4, tier-3 class 2 at 100/100
-/// usage, proximity 100, `score`/`ranking_score`/`priority` 99 — and still
-/// loses the decision; the selection layer fed the same outputs picks it, and
-/// reversing authored order reverses the winner. Mirrors
-/// `ts:local-resolver.test.ts` "D-34 entry order is the decision contract".
 #[test]
-fn d34_first_eligible_wins_even_when_a_later_candidate_is_more_urgent() {
-    let first = entry("pl_first", "other_conversion", 0, "First");
-    let mut urgent = entry("pl_urgent", "usage_credit_seat", 1, "Urgent");
-    urgent["trigger"] = json!({ "entitlement_handle": "api_calls" });
-    let fields = &mut urgent["payloads"][0]["surfaces"][0]["fields"];
-    fields["score"] = json!("99");
-    fields["ranking_score"] = json!("99");
-    fields["priority"] = json!("99");
-    let at_limit = json!({ "__providers": {
-        "entitlements": { "usage": { "api_calls": { "used": 100, "limit": 100, "remaining": 0 } } }
-    }});
-    let decide = |entries: &[Value]| {
-        StaticPlacementResolver::new(entries, &config()).resolve(
-            "slot_1",
-            Some(&slot(&["banner_placement"])),
-            Some(&at_limit),
-            None,
-        )
-    };
-
-    let d = decide(&[first.clone(), urgent.clone()]);
-    assert_eq!(d["visible"], json!(true));
-    assert_eq!(
-        d["content"]["header"],
-        json!("First"),
-        "first eligible wins"
+fn d59_within_a_class_the_candidate_closer_to_its_limit_wins() {
+    let d = d59_decide(
+        &[
+            d59_usage("pl_low", 0, "Low", "exports", 50),
+            d59_usage("pl_high", 1, "High", "api_calls", 50),
+        ],
+        &d59_ctx(&[("exports", 55, 100), ("api_calls", 90, 100)]),
     );
-
-    let first_out = decide(std::slice::from_ref(&first))["output"].clone();
-    let urgent_out = decide(std::slice::from_ref(&urgent))["output"].clone();
-    assert_eq!(urgent_out["content"]["usage_percent"], json!(100));
-    let picked = revturbine::placements::resolve_local_placement_from_candidates(
-        &[first_out, urgent_out.clone()],
-        revturbine::placements::CandidateResolutionOptions::default(),
-    )
-    .expect("a winner");
-    assert_eq!(
-        picked["output_id"], urgent_out["output_id"],
-        "the selection layer would have picked the urgent candidate",
-    );
-
-    let mut urgent_first = urgent;
-    urgent_first["order"] = json!(0);
-    let mut first_second = first;
-    first_second["order"] = json!(1);
-    let d = decide(&[urgent_first, first_second]);
-    assert_eq!(
-        d["content"]["header"],
-        json!("Urgent"),
-        "reversed order, reversed winner"
-    );
+    assert_eq!(d["content"]["header"], json!("High"));
 }
 
-/// The candidate shape the selection layer consumes, built from the same ids
-/// the resolver indexed so both lanes are compared on one candidate set.
-fn selection_candidate(id: &str, category: &str) -> Value {
-    json!({
-        "output_id": id,
-        "category": category,
-        "content": {},
-        "surface": { "template": "banner_placement", "type": "banner", "slot_id": id },
-    })
+#[test]
+fn d59_the_higher_usage_milestone_supersedes_a_lower_one_listed_first() {
+    let d = d59_decide(
+        &[
+            d59_usage("pl_70", 0, "Seventy", "api_calls", 70),
+            d59_usage("pl_100", 1, "Hundred", "api_calls", 100),
+        ],
+        &d59_ctx(&[("api_calls", 100, 100)]),
+    );
+    assert_eq!(d["content"]["header"], json!("Hundred"), "§6 milestones");
+}
+
+#[test]
+fn d59_nudges_rank_by_drag_order_and_tier4_ties_resolve_conversion_first() {
+    let d = d59_decide(
+        &[
+            d59_nudge("pl_retention", 0, "Retention", "retention"),
+            d59_nudge("pl_conversion", 0, "Conversion", "other_conversion"),
+        ],
+        &d59_ctx(&[]),
+    );
+    assert_eq!(d["content"]["header"], json!("Conversion"));
+    let ordered = d59_decide(
+        &[
+            d59_nudge("pl_b", 1, "Second", "other_conversion"),
+            d59_nudge("pl_a", 0, "First", "other_conversion"),
+        ],
+        &d59_ctx(&[]),
+    );
+    assert_eq!(ordered["content"]["header"], json!("First"));
+}
+
+#[test]
+fn d59_a_gate_slot_with_no_placement_for_its_entitlement_is_an_explicit_miss() {
+    let mut other_gate = entry("pl_seats_gate", "gated", 0, "Seats");
+    other_gate["trigger"] =
+        json!({ "type": "entitlement_gate", "entitlement_handle": "seats_pro" });
+    let gate_slot = json!({
+        "surface_template_ids": ["banner_placement"],
+        "surface_slot_category": "gated",
+        "entitlement_handle": "exports_pro",
+    });
+    let d = StaticPlacementResolver::new(&[other_gate], &config()).resolve(
+        "gate",
+        Some(&gate_slot),
+        Some(&d59_ctx(&[])),
+        None,
+    );
+    assert_eq!(d["visible"], json!(false));
+    assert_eq!(d["reason_codes"], json!(["no_gate_for_entitlement"]));
 }
 
 #[test]
@@ -296,10 +335,12 @@ fn fixed_only_is_a_hard_filter_that_may_leave_nothing() {
 #[test]
 fn a_slot_hint_that_matches_nothing_does_not_empty_the_set() {
     // Narrowing filters apply only if they leave something — otherwise a
-    // stale slot hint would silently blank a working surface.
+    // stale slot hint would silently blank a working surface. (The slot's
+    // `entitlement_handle` is no longer such a hint: D-59 makes it a hard
+    // filter — see the `no_gate_for_entitlement` case above.)
     let r = StaticPlacementResolver::new(&[entry("pl_a", "fixed", 0, "A")], &config());
     let mut s = slot(&["banner_placement"]);
-    s["entitlement_handle"] = json!("nothing_matches_this");
+    s["surface_slot_id"] = json!("nothing_matches_this");
     let d = r.resolve("slot_1", Some(&s), None, None);
     assert_eq!(d["visible"], json!(true), "hint ignored rather than fatal");
     assert_eq!(d["content"]["header"], json!("A"));

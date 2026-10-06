@@ -14,6 +14,7 @@ import { useSurfaceSlot } from './useSurfaceSlot';
 import { useEntitlement } from '../react/useEntitlement';
 import { useUsageSnapshot } from '../react/useUsageSnapshot';
 import { GATED_SURFACE_TEMPLATE_IDS } from './surface-slot-constants';
+import { AccessDeniedPlaceholder } from './AccessDeniedPlaceholder';
 
 export { GATED_SURFACE_TEMPLATE_IDS };
 
@@ -50,7 +51,8 @@ export type AccessGateSurfaceSlotProps = {
   /**
    * Placement to display when access is denied.
    * The slot fetches the gated placement from the decision engine.
-   * If no placement matches, `deniedFallback` is shown.
+   * If no placement matches, `deniedFallback` is shown; when it is omitted,
+   * the default {@link AccessDeniedPlaceholder} renders instead (D-59).
    */
   deniedFallback?: React.ReactNode;
 
@@ -138,7 +140,7 @@ export function AccessGateSurfaceSlot({
   can,
   check,
   children,
-  deniedFallback = null,
+  deniedFallback,
   limitedFallback,
   surfaceTemplateIds,
   metadata,
@@ -217,7 +219,13 @@ export function AccessGateSurfaceSlot({
     [id, name, surfaceTemplateIds, metadata, entitlementHandle],
   );
 
-  const { element: gatedElement, visible: gatedVisible } = useSurfaceSlot({
+  const {
+    element: gatedElement,
+    visible: gatedVisible,
+    isLoading: gatedLoading,
+    decision: gatedDecision,
+    hiddenReason: gatedHiddenReason,
+  } = useSurfaceSlot({
     ...options,
     autoLoad: denied,
     surfaceSlot,
@@ -258,7 +266,13 @@ export function AccessGateSurfaceSlot({
 
   // Denied — render gated placement or fallback.
   if (gatedVisible && gatedElement) return <>{gatedElement}</>;
-  return <>{deniedFallback}</>;
+  if (deniedFallback !== undefined) return <>{deniedFallback}</>;
+  // D-59: no Access Gate placement answered for this entitlement — show the
+  // default denied state once the gate decision has settled, never a blank.
+  if (!gatedLoading && gatedDecision && gatedHiddenReason === 'no_match') {
+    return <AccessDeniedPlaceholder entitlementHandle={entitlementHandle} />;
+  }
+  return null;
 }
 
 AccessGateSurfaceSlot.displayName = 'AccessGateSurfaceSlot';

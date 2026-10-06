@@ -321,11 +321,12 @@ def resolve_local_placement_from_candidates(
     ``enable_category_pipeline`` is accepted for TS signature parity but
     is unused by the TS body too (the pipeline is gated upstream).
 
-    Not the placement decision. Per Kent's ruling D-34 (2026-09-26) the
-    decision contract is entry order — the first plan/segment-eligible
-    candidate wins — and ``create_static_placement_resolver`` implements it
-    without calling this function (BL-0149). Kept 3-way parity-locked because
-    the browser SDK's cached ``getPlacement`` lookup uses the TS original.
+    Not the placement decision. Per Kent's ruling D-59 (2026-10-06,
+    supersedes D-34) the decision contract is category first, then
+    within-category ranking — and ``create_static_placement_resolver``
+    implements it with its own ranking, without calling this function. Kept
+    3-way parity-locked because the browser SDK's cached ``getPlacement``
+    lookup uses the TS original.
 
     Source: placement-decision.ts:175-232
     """

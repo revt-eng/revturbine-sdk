@@ -1,7 +1,13 @@
 {
   "schema": 1,
-  "count": 77,
+  "count": 78,
   "exports": [
+    {
+      "name": "AccessDeniedPlaceholder",
+      "kind": "function",
+      "file": "web-sdk/placements/AccessDeniedPlaceholder.tsx",
+      "signature": "export function AccessDeniedPlaceholder("
+    },
     {
       "name": "AccountCreatedPayload",
       "kind": "interface",

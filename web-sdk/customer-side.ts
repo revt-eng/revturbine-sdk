@@ -73,6 +73,8 @@ import { version as SDK_VERSION } from './package.json';
 import type {
   InteractionState,
   PresentationCapState,
+  PresentationCapHistory,
+  PresentationCapSettings,
   PlacementCapPolicy,
   PlacementCapRule,
   CapPeriod,
@@ -155,6 +157,10 @@ import {
   normalizePlacementOutput as coreNormalizePlacementOutput,
   extractPlacementCapPolicies as coreExtractPlacementCapPolicies,
   checkPlacementCaps,
+  evaluatePresentationCapRules as coreEvaluatePresentationCapRules,
+  recordPresentationCapPresentation as coreRecordPresentationCapPresentation,
+  presentationCapSettingsFromPlaybook as corePresentationCapSettingsFromPlaybook,
+  emptyPresentationCapHistory as coreEmptyPresentationCapHistory,
   interactionStateKey as coreInteractionStateKey,
   suppressionForState as coreSuppression,
   deriveLocalEntitlementFromConfiguredRules as coreDeriveLocalEntitlement,
@@ -2424,6 +2430,10 @@ const DECISION_CACHE_STORAGE_PREFIX = 'revturbine:decision-cache';
 const OUTPUT_PLACEMENT_INDEX_STORAGE_PREFIX = 'revturbine:output-placement-index';
 const INTERACTION_STATE_STORAGE_PREFIX = 'revturbine:interaction-state';
 const PRESENTATION_CAPS_STORAGE_PREFIX = 'revturbine:presentation-caps';
+/** Overall presentation cap rule history (D-59), per tenant + user. */
+const PRESENTATION_CAP_RULES_STORAGE_PREFIX = 'revturbine:presentation-cap-rules';
+/** Session start, in session storage, so `session` cap periods survive a reload within a tab. */
+const SESSION_STARTED_STORAGE_PREFIX = 'revturbine:session-started';
 const INGEST_GATEWAY_PATH = '/api/track';
 const SDK_META_GATEWAY_PATH = '/api/sdk/meta';
 // Treatment interactions (impression / dismiss / cta) POST here so the control
@@ -3472,6 +3482,9 @@ export class RevTurbineCustomerSdk {
   /** Tick of the last change to `userContext.trial`; `0` = never supplied. */
   private contextTrialWrittenAt = 0;
   private readonly presentationCapsByKey = new Map<string, PresentationCapState>();
+  private presentationCapHistory: { key: string; history: PresentationCapHistory } | null = null;
+  private presentationCapSettingsMemo: { config: RevTurbineConfig | undefined; settings: PresentationCapSettings | null } | null = null;
+  private sessionStartedAtMs: number | null = null;
   private readonly usageLimitByEntitlement = new Map<string, { limit: number; warningPercent: number }>();
   private readonly usageTokenPrefixByEntitlement = new Map<string, string>();
   private readonly segmentIdsByPredicateField = new Map<string, Set<string>>();
@@ -3962,7 +3975,9 @@ export class RevTurbineCustomerSdk {
         (payload.remind_later_minutes !== undefined && payload.remind_later_minutes !== null),
     );
     const flags: RevTurbinePlacementBehaviorFlags = {
-      enableClientCapsEnforcement: hasAuthoredCaps,
+      // D-59: authored overall presentation cap rules / session cooldown
+      // switch enforcement on too, not only per-payload caps.
+      enableClientCapsEnforcement: hasAuthoredCaps || corePresentationCapSettingsFromPlaybook(config) !== null,
       enableAutoGatedPlacement: placements.some((placement) => placement.category === 'gated'),
       enableTrialAutoTriggers: placements.some((placement) => placement.category === 'trials'),
     };
@@ -4022,6 +4037,8 @@ export class RevTurbineCustomerSdk {
       placements,
       playbook,
       impressionHistory: this.impressionHistory,
+      // D-59: caps run before the pick, so a capped winner yields to the next candidate.
+      candidateGate: (output, { slotId }) => this.candidateCapGate(output, slotId),
     });
     this.cachedPlacementResolverConfig = playbook;
     return this.cachedPlacementResolver;
@@ -5125,6 +5142,130 @@ export class RevTurbineCustomerSdk {
     } catch {
       // Swallow quota/serialization issues and continue with in-memory state.
     }
+  }
+
+  /** The Playbook's overall presentation cap rules, memoised per config object. */
+  private presentationCapSettings(): PresentationCapSettings | null {
+    const config = this.getConfiguredPlaybook();
+    if (!this.presentationCapSettingsMemo || this.presentationCapSettingsMemo.config !== config) {
+      this.presentationCapSettingsMemo = { config, settings: corePresentationCapSettingsFromPlaybook(config) };
+    }
+    return this.presentationCapSettingsMemo.settings;
+  }
+
+  /** Start of this tab's session, persisted in session storage. */
+  private sessionStartedAt(): number {
+    if (this.sessionStartedAtMs !== null) return this.sessionStartedAtMs;
+    const key = `${SESSION_STARTED_STORAGE_PREFIX}:${this.tenantNamespace}`;
+    let started: number | null = null;
+    try {
+      const raw = Number(this.sessionStore.getItem(key));
+      if (Number.isFinite(raw) && raw > 0) started = raw;
+    } catch {
+      // Session storage unavailable — fall back to this instance's lifetime.
+    }
+    if (started === null) {
+      started = Date.now();
+      try {
+        this.sessionStore.setItem(key, String(started));
+      } catch {
+        // Best effort.
+      }
+    }
+    this.sessionStartedAtMs = started;
+    return started;
+  }
+
+  private presentationCapHistoryKey(): string {
+    return `${PRESENTATION_CAP_RULES_STORAGE_PREFIX}:${this.tenantNamespace}:${this.userContext.id || this.anonymousId}`;
+  }
+
+  /** History for the current user, hydrated lazily and re-read when the user changes. */
+  private currentPresentationCapHistory(): PresentationCapHistory {
+    const key = this.presentationCapHistoryKey();
+    const sessionStartedAt = this.sessionStartedAt();
+    if (this.presentationCapHistory?.key === key) {
+      return { ...this.presentationCapHistory.history, sessionStartedAt };
+    }
+    let history = coreEmptyPresentationCapHistory(sessionStartedAt);
+    try {
+      const raw = this.persistentStore.getItem(key);
+      const parsed: unknown = raw ? JSON.parse(raw) : null; // sdk-ok: boundary-parse
+      if (isRecord(parsed) && isRecord(parsed.presentations)) {
+        const presentations: Record<string, number[]> = {};
+        for (const [ruleId, stamps] of Object.entries(parsed.presentations)) {
+          if (Array.isArray(stamps)) {
+            presentations[ruleId] = stamps.filter((ts): ts is number => typeof ts === 'number' && Number.isFinite(ts));
+          }
+        }
+        const last = typeof parsed.lastDiscretionaryAt === 'number' ? parsed.lastDiscretionaryAt : null;
+        history = { presentations, lastDiscretionaryAt: last, sessionStartedAt };
+      }
+    } catch {
+      this.persistentStore.removeItem(key);
+    }
+    this.presentationCapHistory = { key, history };
+    return history;
+  }
+
+  private presentationCapCandidate(output: PlacementOutput, slotId: string | undefined) {
+    return {
+      category: output.category,
+      templateId: output.surface.template ?? undefined,
+      surfaceType: output.surface.type,
+      ...(slotId ? { slotId } : {}),
+    };
+  }
+
+  /**
+   * Pre-pick presentation policy (D-59): per-payload caps, then the
+   * Playbook's overall presentation cap rules and session cooldown. Reads
+   * state only — the presentation is recorded after the decision.
+   */
+  private candidateCapGate(
+    output: PlacementOutput,
+    slotId: string | undefined,
+  ): { allowed: true } | { allowed: false; reason: string } {
+    if (!this.placementBehavior.enableClientCapsEnforcement) return { allowed: true };
+    const perPayload = this.applyPlacementCapsIfNeeded(output, { tick: false });
+    if (!perPayload.allowed) return { allowed: false, reason: perPayload.reason ?? 'cap_exceeded' };
+    const overall = coreEvaluatePresentationCapRules(
+      this.presentationCapSettings(),
+      this.presentationCapCandidate(output, slotId),
+      this.currentPresentationCapHistory(),
+      Date.now(),
+    );
+    if (!overall.allowed) {
+      return {
+        allowed: false,
+        reason: overall.reason === 'session_cooldown' ? 'suppressed_by_system_cooldown' : 'suppressed_by_presentation_cap',
+      };
+    }
+    return { allowed: true };
+  }
+
+  private recordPresentationCapRules(output: PlacementOutput, slotId: string | undefined): void {
+    if (!this.placementBehavior.enableClientCapsEnforcement) return;
+    const settings = this.presentationCapSettings();
+    if (!settings) return;
+    const before = this.currentPresentationCapHistory();
+    const after = coreRecordPresentationCapPresentation(settings, this.presentationCapCandidate(output, slotId), before, Date.now());
+    if (after === before) return;
+    const key = this.presentationCapHistoryKey();
+    this.presentationCapHistory = { key, history: after };
+    try {
+      this.persistentStore.setItem(
+        key,
+        JSON.stringify({ presentations: after.presentations, lastDiscretionaryAt: after.lastDiscretionaryAt }),
+      );
+    } catch {
+      // Best effort persistence.
+    }
+  }
+
+  private slotIdForRecord(record: RevTurbinePlacementRecord): string | undefined {
+    const metadata = isRecord(record.metadata) ? record.metadata : {};
+    return record.placementScopeKey ?? firstStringValue(metadata.surface_slot_id) ?? undefined;
   }
 
   private hydratePresentationCaps(): void {
@@ -8186,6 +8327,9 @@ export class RevTurbineCustomerSdk {
     // result or consume presentation budget for a hidden decision.
     if (resolved.visible && !interacting.visible) return interacting;
     const decision = this.gateDecisionByCaps(interacting);
+    if (decision.visible && decision.output) {
+      this.recordPresentationCapRules(decision.output, this.slotIdForRecord(placement));
+    }
     this.localDecisionsByPlacementId.set(input.placementId, decision);
     this.writeDecisionCache(cacheKey, decision, input.ttlMs);
     this.persistLocalRuntimeState();
@@ -8253,7 +8397,13 @@ export class RevTurbineCustomerSdk {
       // (the resolver pass already ticked). Without this, a placement with
       // `max_per_period: 1 lifetime` would stay visible on every subsequent
       // call because the cache short-circuits the resolver path.
-      return this.gateDecisionByCaps(this.gateDecisionByInteraction(cached, input), { tick: false });
+      const interacted = this.gateDecisionByInteraction(cached, input);
+      // D-59: re-check the cached winner against the same pre-pick gate the
+      // resolver uses (per-payload caps + overall presentation cap rules). A
+      // winner that is now capped must not blank the slot — fall through and
+      // re-resolve, so the next-ranked candidate is considered.
+      if (!interacted.visible || !interacted.output) return interacted;
+      if (this.candidateCapGate(interacted.output, this.slotIdForRecord(placement)).allowed) return interacted;
     }
 
     {

@@ -139,6 +139,8 @@ export { FixedSurfaceSlot, FIXED_SURFACE_TEMPLATE_IDS } from './FixedSurfaceSlot
 export type { FixedSurfaceSlotProps } from './FixedSurfaceSlot';
 
 export { AccessGateSurfaceSlot, GATED_SURFACE_TEMPLATE_IDS } from './AccessGateSurfaceSlot';
+export { AccessDeniedPlaceholder } from './AccessDeniedPlaceholder';
+export type { AccessDeniedPlaceholderProps } from './AccessDeniedPlaceholder';
 export type { AccessGateSurfaceSlotProps, AccessGateCheck } from './AccessGateSurfaceSlot';
 
 export { MessageSurfaceSlot, MESSAGE_SURFACE_TEMPLATE_IDS } from './MessageSurfaceSlot';

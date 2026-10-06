@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.383/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.402/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -5965,6 +5965,10 @@ class AnalyticsRecordContract(RootModel[Any]):
     root: Any
 
 
+class AnalyticsReportingCurrencyMeta(RootModel[Any]):
+    root: Any
+
+
 class BinaryVariantStatisticalSummary(RootModel[Any]):
     root: Any
 
@@ -9369,6 +9373,7 @@ class AnalyticsResultMeta(BaseModel):
     )
     next_cursor: constr(max_length=500) | None = None
     warnings: list[AnalyticsWarning] | None = Field([], validate_default=True)
+    reporting_currency: AnalyticsReportingCurrencyMeta | None = None
 
 
 class AnalyticsResult(BaseModel):

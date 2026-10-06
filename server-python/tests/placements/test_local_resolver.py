@@ -19,7 +19,6 @@ from revturbine.core.placements import (
     BUILT_IN_TEMPLATE_COMPONENT_TYPES,
     DEFAULT_TEMPLATE_COMPONENT_TYPES,
     create_static_placement_resolver,
-    resolve_local_placement_from_candidates,
 )
 from revturbine.core.placements.local_resolver import (
     _header_str,
@@ -537,15 +536,16 @@ class TestResolverCandidatePath:
 
     def test_fixed_only_filters_to_fixed_category(self) -> None:
         # §4 fixedOnly (plan 147 TASK-16): only Fixed-category candidates
-        # survive. A non-Fixed candidate with a *lower* order is suppressed
-        # even though it would otherwise win. Source: local-resolver.ts:767-774.
+        # survive. A non-Fixed candidate that outranks Fixed (an Access Gate,
+        # D-59 category-first) is suppressed even though it would otherwise
+        # win. Source: local-resolver.ts:767-774.
         resolver = self._resolver(
             [
                 _entry(
-                    entry_id="pl_usage",
+                    entry_id="pl_gate",
                     order=0,
-                    category="usage_credit_seat",
-                    payloads=[_payload(payload_id="pu")],
+                    category="gated",
+                    payloads=[_payload(payload_id="pg")],
                 ),
                 _entry(
                     entry_id="pl_fixed",
@@ -577,15 +577,16 @@ class TestResolverCandidatePath:
         assert decision["reason_codes"] == ["no_eligible_candidate"]
 
     def test_fixed_only_absent_keeps_all_categories(self) -> None:
-        # Without the flag the non-Fixed lower-order candidate wins — proving
-        # the filter is gated on ``fixed_only is True``, not always applied.
+        # Without the flag a non-Fixed candidate that outranks Fixed (an
+        # Access Gate, D-59 category-first) wins — proving the filter is gated
+        # on ``fixed_only is True``, not always applied.
         resolver = self._resolver(
             [
                 _entry(
-                    entry_id="pl_usage",
+                    entry_id="pl_gate",
                     order=0,
-                    category="usage_credit_seat",
-                    payloads=[_payload(payload_id="pu")],
+                    category="gated",
+                    payloads=[_payload(payload_id="pg")],
                 ),
                 _entry(
                     entry_id="pl_fixed",
@@ -600,7 +601,7 @@ class TestResolverCandidatePath:
             {"metadata": {"surface_template_ids": ["modal_overlay"]}},
             _ctx(),
         )
-        assert decision["output"]["output_id"] == "pu"
+        assert decision["output"]["output_id"] == "pg"
 
     def test_impression_history_filters_hidden(self) -> None:
         history = _impression_history()
@@ -1094,70 +1095,149 @@ class TestLocalResolverPilotCorpus:
         assert len(self._FIXTURES) == 10
 
 
-# ── D-34 entry-order contract (BL-0149) ────────────────────────────────────
+# ── D-59 category-first decision contract (supersedes D-34) ────────────────
 
 
-class TestEntryOrderIsTheDecisionContract:
-    """Kent's ruling D-34 (2026-09-26): list order implies priority and the
-    first eligible candidate takes precedence. The decision path never
-    consults the selection layer (buckets, two-stage urgency, supersession,
-    conflict suppression). Mirrors ``ts:local-resolver.test.ts`` "D-34 entry
-    order is the decision contract" case for case.
+class TestCategoryFirstIsTheDecisionContract:
+    """Kent's ruling D-59 (2026-10-06, supersedes D-34): eligible candidates
+    rank by category first (Access Gates, Fixed, usage/trial alerts, nudges),
+    then within tier — two-stage urgency for alerts, drag order otherwise;
+    the highest fired usage milestone per entitlement wins; a slot that asks
+    for an entitlement is answered only by that entitlement's placements.
+    Mirrors ``ts:local-resolver.test.ts`` "D-59 category-first decision
+    contract" case for case (the two ``candidateGate`` cases have no server
+    equivalent — server ports carry no presentation state).
     """
 
-    _FIRST = _entry(
-        entry_id="pl_first",
-        order=0,
-        category="other_conversion",
-        trigger={},
-        payloads=[_payload(payload_id="p_first", surfaces=[_surface(fields={"header": "First"})])],
-    )
-    # Every numeric the selection comparator reads, maxed out.
-    _URGENT = _entry(
-        entry_id="pl_urgent",
-        order=1,
-        category="usage_credit_seat",
-        trigger={"entitlement_handle": "api_calls"},
-        payloads=[
-            _payload(
-                payload_id="p_urgent",
-                surfaces=[
-                    _surface(
-                        fields={
-                            "header": "Urgent",
-                            "score": "99",
-                            "ranking_score": "99",
-                            "priority": "99",
-                        }
-                    )
-                ],
-            )
-        ],
-    )
-
-    def _decide(self, entries: list[dict[str, Any]]) -> PlacementDecision:
-        resolver = create_static_placement_resolver({"placements": entries}, _config())
-        # 100/100 → usage_percent 100 → tier-3 class 2 ("limit reached").
-        return resolver(
-            {"placement_id": "p1", "user_id": "u"},
-            _rec(metadata={"surface_template_ids": ["modal_overlay"]}),
-            _ctx(usage={"api_calls": {"used": 100, "limit": 100, "remaining": 0}}),
+    @staticmethod
+    def _nudge(
+        entry_id: str, order: int, header: str, category: str = "other_conversion"
+    ) -> dict[str, Any]:
+        return _entry(
+            entry_id=entry_id,
+            order=order,
+            category=category,
+            trigger={},
+            payloads=[
+                _payload(payload_id=f"p_{entry_id}", surfaces=[_surface(fields={"header": header})])
+            ],
         )
 
-    def test_first_eligible_wins_over_a_more_urgent_later_entry(self) -> None:
-        decision = self._decide([self._FIRST, self._URGENT])
-        assert decision["visible"] is True
-        assert decision["content"]["header"] == "First"
+    @staticmethod
+    def _usage(
+        entry_id: str, order: int, header: str, handle: str, threshold: int
+    ) -> dict[str, Any]:
+        return _entry(
+            entry_id=entry_id,
+            order=order,
+            category="usage_credit_seat",
+            trigger={
+                "type": "usage_threshold",
+                "entitlement_handle": handle,
+                "threshold_percent": threshold,
+            },
+            payloads=[
+                _payload(payload_id=f"p_{entry_id}", surfaces=[_surface(fields={"header": header})])
+            ],
+        )
 
-    def test_selection_layer_would_have_picked_the_urgent_candidate(self) -> None:
-        first = self._decide([self._FIRST]).get("output")
-        urgent = self._decide([self._URGENT]).get("output")
-        assert first is not None and urgent is not None
-        assert urgent["content"]["usage_percent"] == 100
-        picked = resolve_local_placement_from_candidates([first, urgent], True)
-        assert picked is not None
-        assert picked["output_id"] == urgent["output_id"]
+    @staticmethod
+    def _usage_ctx(usage_by_handle: dict[str, tuple[int, int]]) -> dict[str, Any]:
+        return _ctx(
+            usage={
+                h: {"used": used, "limit": limit, "remaining": limit - used}
+                for h, (used, limit) in usage_by_handle.items()
+            }
+        )
 
-    def test_reversing_authored_order_reverses_the_winner(self) -> None:
-        decision = self._decide([{**self._URGENT, "order": 0}, {**self._FIRST, "order": 1}])
-        assert decision["content"]["header"] == "Urgent"
+    def _decide(
+        self,
+        entries: list[dict[str, Any]],
+        context: dict[str, Any] | None = None,
+        slot: PlacementRecord | None = None,
+    ) -> PlacementDecision:
+        resolver = create_static_placement_resolver({"placements": entries}, _config())
+        return resolver(
+            {"placement_id": "p1", "user_id": "u"},
+            slot
+            if slot is not None
+            else _rec(metadata={"surface_template_ids": ["modal_overlay"]}),
+            context if context is not None else self._usage_ctx({}),
+        )
+
+    def test_usage_alert_beats_a_conversion_nudge_listed_above_it(self) -> None:
+        decision = self._decide(
+            [
+                self._nudge("pl_nudge", 0, "Nudge"),
+                self._usage("pl_alert", 0, "Alert", "api_calls", 100),
+            ],
+            self._usage_ctx({"api_calls": (100, 100)}),
+        )
+        assert decision["content"]["header"] == "Alert"
+
+    def test_limit_reached_beats_an_approaching_warning_listed_above_it(self) -> None:
+        decision = self._decide(
+            [
+                self._usage(
+                    "pl_exports_approaching", 0, "Half your exports are used", "exports", 50
+                ),
+                self._usage("pl_api_at_limit", 1, "You have hit your API limit", "api_calls", 100),
+            ],
+            self._usage_ctx({"exports": (50, 100), "api_calls": (100, 100)}),
+        )
+        assert decision["content"]["header"] == "You have hit your API limit"
+
+    def test_within_a_class_the_candidate_closer_to_its_limit_wins(self) -> None:
+        decision = self._decide(
+            [
+                self._usage("pl_low", 0, "Low", "exports", 50),
+                self._usage("pl_high", 1, "High", "api_calls", 50),
+            ],
+            self._usage_ctx({"exports": (55, 100), "api_calls": (90, 100)}),
+        )
+        assert decision["content"]["header"] == "High"
+
+    def test_higher_usage_milestone_supersedes_a_lower_one_listed_first(self) -> None:
+        decision = self._decide(
+            [
+                self._usage("pl_70", 0, "Seventy", "api_calls", 70),
+                self._usage("pl_100", 1, "Hundred", "api_calls", 100),
+            ],
+            self._usage_ctx({"api_calls": (100, 100)}),
+        )
+        assert decision["content"]["header"] == "Hundred"
+
+    def test_nudges_rank_by_drag_order_and_tier4_ties_resolve_conversion_first(self) -> None:
+        decision = self._decide(
+            [
+                self._nudge("pl_retention", 0, "Retention", "retention"),
+                self._nudge("pl_conversion", 0, "Conversion"),
+            ]
+        )
+        assert decision["content"]["header"] == "Conversion"
+        ordered = self._decide([self._nudge("pl_b", 1, "Second"), self._nudge("pl_a", 0, "First")])
+        assert ordered["content"]["header"] == "First"
+
+    def test_gate_slot_without_a_placement_for_its_entitlement_is_an_explicit_miss(
+        self,
+    ) -> None:
+        other_gate = _entry(
+            entry_id="pl_seats_gate",
+            order=0,
+            category="gated",
+            trigger={"type": "entitlement_gate", "entitlement_handle": "seats_pro"},
+            payloads=[
+                _payload(payload_id="p_seats", surfaces=[_surface(fields={"header": "Seats"})])
+            ],
+        )
+        gate_slot = _rec(
+            name="gate",
+            metadata={
+                "surface_template_ids": ["modal_overlay"],
+                "surface_slot_category": "gated",
+                "entitlement_handle": "exports_pro",
+            },
+        )
+        decision = self._decide([other_gate], self._usage_ctx({}), gate_slot)
+        assert decision["visible"] is False
+        assert decision["reason_codes"] == ["no_gate_for_entitlement"]

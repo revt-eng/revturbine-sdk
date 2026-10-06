@@ -34,7 +34,7 @@ from revturbine.core.decisions.types import (
     PlacementRecord,
     PlacementResolver,
 )
-from revturbine.core.helpers import PlacementOutput, is_record
+from revturbine.core.helpers import PlacementOutput, category_bucket, is_record
 from revturbine.core.placements.entitlement_gate_gating import (
     EntitlementGateTriggerShape,
     matches_entitlement_gate_trigger,
@@ -50,6 +50,7 @@ from revturbine.core.placements.qualifier_gating import (
 )
 from revturbine.core.placements.threshold_gating import (
     ThresholdTriggerShape,
+    compute_consumed_percent,
     matches_threshold_trigger,
 )
 from revturbine.core.placements.trial_gating import (
@@ -447,6 +448,130 @@ def _build_json_content_provider(
     )
 
 
+# ── Prioritization (D-59, 2026-10-06; placement-prioritization.md §2–§3, §6) ──
+
+_TRIAL_TRANSITION_KINDS = frozenset({"trial_started", "trial_ended", "trial_converted"})
+
+
+def _candidate_category(candidate: _CandidateOutput) -> str:
+    """The entry category, else the output's (TS ``entryCategory ?? output.category``)."""
+    entry_category = candidate.get("entry_category")
+    if entry_category is not None:
+        return str(entry_category)
+    return str(candidate["output"].get("category") or "")
+
+
+def _apply_threshold_milestone_supersession(
+    candidates: list[_CandidateOutput],
+) -> list[_CandidateOutput]:
+    """§6 usage milestones: among fired threshold candidates on the same
+    entitlement and threshold kind, only the highest threshold survives. Equal
+    thresholds both survive and fall to drag order. Non-threshold candidates
+    pass through untouched.
+
+    Source: local-resolver.ts applyThresholdMilestoneSupersession
+    """
+
+    def _key(c: _CandidateOutput) -> tuple[str, str] | None:
+        trig = c.get("threshold_trigger")
+        if not trig:
+            return None
+        return (trig["kind"], trig["entitlement_handle"])
+
+    highest: dict[tuple[str, str], float] = {}
+    for c in candidates:
+        key = _key(c)
+        if key is None:
+            continue
+        pct = c["threshold_trigger"]["threshold_percent"]
+        if key not in highest or pct > highest[key]:
+            highest[key] = pct
+    return [
+        c
+        for c in candidates
+        if (key := _key(c)) is None or c["threshold_trigger"]["threshold_percent"] == highest[key]
+    ]
+
+
+def _tier3_urgency(
+    candidate: _CandidateOutput,
+    entitlements_state: Any,
+    user_elapsed_percent: float | None,
+) -> tuple[int, float]:
+    """§3.2 two-stage urgency for tier 3 (usage/credit/seat + trials): class
+    first (1 trial transition, 2 limit reached or exceeded, 3 approaching /
+    trial milestone in progress), then proximity (higher = closer), capped at
+    100 so over-limit candidates tie and fall to drag order.
+
+    Source: local-resolver.ts tier3Urgency
+    """
+    trial = candidate.get("trial_trigger")
+    if trial:
+        if trial.get("kind") in _TRIAL_TRANSITION_KINDS:
+            return (1, 0)
+        return (3, min(100, user_elapsed_percent if user_elapsed_percent is not None else 0))
+    threshold = candidate.get("threshold_trigger")
+    if threshold:
+        consumed = compute_consumed_percent(
+            threshold, entitlements_state if is_record(entitlements_state) else None
+        )
+        if consumed is not None and consumed >= 100:
+            return (2, 100)
+        return (3, consumed if consumed is not None else 0)
+    return (3, 0)
+
+
+def _shared_tier_category_rank(category: str) -> int:
+    """Tiebreak between the two categories that share a tier. Studio drag
+    order restarts at 0 per category, so equal ``order`` across
+    Usage/Credit/Seat and Trials (tier 3), or Conversion/Expansion and
+    Retention (tier 4), resolves in the All Placements view's group order —
+    never by database row order.
+
+    Source: local-resolver.ts sharedTierCategoryRank
+    """
+    normalized = category.lower()
+    if "trial" in normalized:
+        return 1
+    if "retention" in normalized or "winback" in normalized or "churn" in normalized:
+        return 1
+    return 0
+
+
+def _rank_candidates(
+    candidates: list[_CandidateOutput],
+    entitlements_state: Any,
+    user_elapsed_percent: float | None,
+) -> list[_CandidateOutput]:
+    """Category first (§2): Access Gates, Fixed, tier 3, tier 4. Within a tier
+    (§3): tier 3 by two-stage urgency, then drag order; Access Gates, Fixed
+    and tier 4 by drag order (tier 4's stopgap until LTV × propensity scoring
+    ships). Drag order is the placement's ``order``, then the shared-tier
+    category rank, then payload order within the placement.
+
+    Source: local-resolver.ts rankCandidates
+    """
+    keyed: list[tuple[tuple[Any, ...], _CandidateOutput]] = []
+    for index, c in enumerate(candidates):
+        category = _candidate_category(c)
+        bucket = category_bucket(category)
+        cls, proximity = (
+            _tier3_urgency(c, entitlements_state, user_elapsed_percent) if bucket == 2 else (0, 0)
+        )
+        key = (
+            bucket,
+            cls,
+            -proximity,
+            c["entry_order"],
+            _shared_tier_category_rank(category),
+            c["payload_order"],
+            index,
+        )
+        keyed.append((key, c))
+    keyed.sort(key=lambda k: k[0])
+    return [c for _, c in keyed]
+
+
 def create_static_placement_resolver(
     placements: LocalPlacementDataset,
     playbook: Playbook | None = None,
@@ -625,6 +750,12 @@ def create_static_placement_resolver(
                         "__trigger_kind": trigger_kind,
                     }
 
+            # D-59: the payload's authored caps ride on the output (as in the
+            # TS canonical) so a client cap gate can enforce them.
+            payload_caps = payload.get("caps") if is_record(payload) else None
+            if is_record(payload_caps) and payload_caps:
+                output["content"] = {**output["content"], "__caps": payload_caps}
+
             entry_order = entry.get("order")
             candidate: _CandidateOutput = {
                 "output": output,
@@ -770,13 +901,25 @@ def create_static_placement_resolver(
 
             filtered = candidates
             if slot_entitlement_handle:
-                ent_filtered = [
+                # D-59 (2026-10-06): a slot that asks for an entitlement is
+                # answered only by placements for THAT entitlement. With none
+                # authored the decision is an explicit miss the SDK renders as
+                # an access-denied placeholder — never another entitlement's gate.
+                filtered = [
                     c
                     for c in candidates
                     if c["trigger_entitlement_handle"] == slot_entitlement_handle
                 ]
-                if ent_filtered:
-                    filtered = ent_filtered
+                if not filtered:
+                    message = "No placement configured for this entitlement"
+                    return PlacementDecision(
+                        placement_id=input_data["placement_id"],
+                        request_id=request_id,
+                        visible=False,
+                        decision_source="fallback",
+                        reason_codes=["no_gate_for_entitlement"],
+                        content=_decision_content(message, "", ""),
+                    )
 
             slot_id = meta.get("surface_slot_id")
             if slot_id:
@@ -871,7 +1014,12 @@ def create_static_placement_resolver(
                         or c["output"].get("rule_id") == winner_rule_id
                     ]
 
-            selected_candidate: _CandidateOutput | None = None
+            # The decision contract (D-59, 2026-10-06, supersedes D-34):
+            # category first, then within-category ranking, per
+            # placement-prioritization.md §2–§3. Targeting (plan AND segment)
+            # narrows first, so supersession and ranking only ever see
+            # candidates this user could be shown.
+            eligible: list[_CandidateOutput] = []
             saw_segment_mismatch = False
             for cand in filtered:
                 if not _is_eligible_for_plan(
@@ -883,9 +1031,19 @@ def create_static_placement_resolver(
                 if not _is_eligible_for_segments(cand["output"], providers):
                     saw_segment_mismatch = True
                     continue
-                selected_output = cand["output"]
-                selected_candidate = cand
-                break
+                eligible.append(cand)
+
+            ranked = _rank_candidates(
+                _apply_threshold_milestone_supersession(eligible),
+                entitlements_state,
+                user_elapsed_percent,
+            )
+            # Server ports carry no presentation (cap) state, so the TS
+            # ``candidateGate`` hook (§1 stage 4) has no equivalent here: the
+            # first ranked candidate wins.
+            selected_candidate: _CandidateOutput | None = ranked[0] if ranked else None
+            if selected_candidate is not None:
+                selected_output = selected_candidate["output"]
 
             if (
                 selected_candidate is not None
