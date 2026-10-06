@@ -6,14 +6,13 @@
  * same slot, the resolver returns the Fixed candidate. When no Fixed
  * candidate matches, returns null even if other categories do match.
  *
- * Also pins the deprecation of the legacy `enableCategoryPipelineLocalMode`
- * flag (Q-3 (c)): the SDK now always runs the category-aware pipeline
- * in local-only mode, with no opt-in flag.
+ * D-39 / BL-0379: `getPlacement` is a pure function of (user context,
+ * Playbook), so the candidates are AUTHORED in a Playbook and resolved
+ * through the decision path — not seeded as pre-decided outputs.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RevTurbineCustomerSdk } from './customer-side';
-import type { RevTurbineInitOptions } from './customer-side';
-import type { PlacementOutput } from '@revt-eng/core';
+import type { ConfigArtifact } from './customer-side';
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(async () =>
@@ -26,33 +25,32 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function makeOutput(
-  outputId: string,
-  category: string,
-  slotId: string,
-): PlacementOutput {
-  return {
-    output_id: outputId,
-    rule_id: `rule_${outputId}`,
-    decision_id: `dec_${outputId}`,
-    config_version: 'v1',
-    category,
-    surface: { type: 'banner', template: 'banner_placement', slot_id: slotId },
-    content: {},
-    cta_path: {},
-    present_upsell: false,
-  } as unknown as PlacementOutput;
-}
+const SLOT_ID = 'header_upgrade';
 
-function lookupKey(slotId: string, surfaceType = 'banner'): string {
-  // Matches localPlacementLookupKey: slotId::surfaceType::ent::plan::placement
-  return [slotId, surfaceType, '', '', ''].join('::');
-}
+const placement = (id: string, category: string, order: number, trigger: Record<string, unknown>) => ({
+  id,
+  name: id,
+  category,
+  order,
+  trigger,
+  payloads: [{
+    id: `${id}_p0`,
+    target: { plan_ids: [], segment_chips: [] },
+    surfaces: [{ template_id: 'banner_placement', fields: { header: id, body: '' }, ctas: [] }],
+  }],
+});
+const fixed = placement('out_fixed', 'fixed', 0, { type: 'surface_render', slot_id: SLOT_ID });
+const conversion = placement('out_conv', 'other_conversion', 0, {});
+const retention = placement('out_ret', 'retention', 1, {});
 
-function makeLocalSdk(
-  candidates: Record<string, PlacementOutput>,
-  over: Partial<RevTurbineInitOptions> = {},
-): RevTurbineCustomerSdk {
+function makeLocalSdk(placements: unknown[]): RevTurbineCustomerSdk {
+  const playbook = {
+    artifact_type: 'playbook', format_version: '1.0.0', playbook_handle: 'default',
+    playbook_version_id: null, tenant_id: 'tenant_fixed_only', environment_id: 'production',
+    plans: [], entitlements: [], entitlement_rules: [], segments: [], content_ui_paths: [],
+    placement_slots: [{ id: SLOT_ID, label: 'Header', surface_type: 'banner', placement_handle: SLOT_ID, template: 'banner_placement' }],
+    placements,
+  } as unknown as ConfigArtifact;
   return new RevTurbineCustomerSdk({
     tenantId: 'tenant_fixed_only',
     apiKey: 'sk_test',
@@ -62,70 +60,36 @@ function makeLocalSdk(
     mode: 'snippet',
     runtimeMode: 'local_only',
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
-    localRuntime: {
-      initialData: {
-        placementsByLookupKey: candidates,
-      },
-    },
-    ...over,
+    localRuntime: { playbook },
   });
 }
 
+const idOf = (output: { rule_id?: string | null } | null) => output?.rule_id ?? null;
+
 describe('rt.getPlacement({ fixedOnly: true })', () => {
-  const slotId = 'header_upgrade';
-
   it('AC-6: returns the Fixed candidate from a mixed (Fixed + Conversion) set', async () => {
-    const fixed = makeOutput('out_fixed', 'fixed', slotId);
-    const conversion = makeOutput('out_conv', 'conversion', slotId);
-    const sdk = makeLocalSdk({
-      [lookupKey(slotId)]: fixed,
-      // Seed under a slightly different key but matching slot via
-      // localOutputMatchesConfig; the candidate-collection loop in
-      // localPlacementForConfig walks every entry and matches by slot.
-      [`${slotId}::banner::ent_conv::::`]: conversion,
-    });
-
-    const result = await sdk.getPlacement({ slotId, componentType: 'banner', fixedOnly: true });
-    expect(result?.output_id).toBe('out_fixed');
+    const sdk = makeLocalSdk([fixed, conversion]);
+    const result = await sdk.getPlacement({ slotId: SLOT_ID, componentType: 'banner', fixedOnly: true });
+    expect(idOf(result)).toBe('out_fixed');
   });
 
   it('AC-6: returns null when no Fixed candidate matches, even with other categories present', async () => {
-    const conversion = makeOutput('out_conv', 'conversion', slotId);
-    const retention = makeOutput('out_ret', 'retention', slotId);
-    const sdk = makeLocalSdk({
-      [lookupKey(slotId)]: conversion,
-      [`${slotId}::banner::ent_ret::::`]: retention,
-    });
-
-    const result = await sdk.getPlacement({ slotId, surfaceType: 'banner', fixedOnly: true });
+    const sdk = makeLocalSdk([conversion, retention]);
+    const result = await sdk.getPlacement({ slotId: SLOT_ID, surfaceType: 'banner', fixedOnly: true });
     expect(result).toBeNull();
   });
 
-  it('without fixedOnly: returns the highest-priority candidate (Fixed beats Conversion)', async () => {
-    const fixed = makeOutput('out_fixed', 'fixed', slotId);
-    const conversion = makeOutput('out_conv', 'conversion', slotId);
-    const sdk = makeLocalSdk({
-      [lookupKey(slotId)]: fixed,
-      [`${slotId}::banner::ent_conv::::`]: conversion,
-    });
-
-    // Pipeline always runs now (Q-3 (c) deprecated the legacy flag);
-    // Fixed (tier 2) outranks Conversion (tier 4).
-    const result = await sdk.getPlacement({ slotId, surfaceType: 'banner' });
-    expect(result?.output_id).toBe('out_fixed');
+  it('without fixedOnly: Fixed beats Conversion (category first, D-59)', async () => {
+    const sdk = makeLocalSdk([conversion, fixed]);
+    const result = await sdk.getPlacement({ slotId: SLOT_ID, surfaceType: 'banner' });
+    expect(idOf(result)).toBe('out_fixed');
   });
 
   it('keeps surfaceType as an alias and gives componentType precedence', async () => {
-    const fixed = makeOutput('out_fixed', 'fixed', slotId);
-    const sdk = makeLocalSdk({ [lookupKey(slotId)]: fixed });
-
-    const alias = await sdk.getPlacement({ slotId, surfaceType: 'banner' });
-    const canonical = await sdk.getPlacement({
-      slotId,
-      componentType: 'banner',
-      surfaceType: 'modal',
-    });
-    expect(alias?.output_id).toBe('out_fixed');
-    expect(canonical?.output_id).toBe('out_fixed');
+    const sdk = makeLocalSdk([fixed]);
+    const alias = await sdk.getPlacement({ slotId: SLOT_ID, surfaceType: 'banner' });
+    const canonical = await sdk.getPlacement({ slotId: SLOT_ID, componentType: 'banner', surfaceType: 'modal' });
+    expect(idOf(alias)).toBe('out_fixed');
+    expect(idOf(canonical)).toBe('out_fixed');
   });
 });

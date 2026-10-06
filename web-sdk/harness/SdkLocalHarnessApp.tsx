@@ -265,9 +265,13 @@ export function SdkLocalHarnessApp() {
     previewMode: true,
     localRuntime: {
       storageKey,
+      // D-39 / BL-0379: placements are decided from the Playbook the harness
+      // authors, through the same decision path as every SDK — not from
+      // pre-decided outputs.
+      playbook: currentExportedConfig,
       initialData: runtimeData,
     },
-  })), [runtimeData, storageKey]);
+  })), [currentExportedConfig, runtimeData, storageKey]);
 
   const applyLoadedConfig = useCallback((loaded: ReturnType<typeof loadExportedConfig>) => {
     setPlans(loaded.plans);

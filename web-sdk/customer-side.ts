@@ -80,7 +80,6 @@ import type {
   PlacementCapPolicy,
   PlacementCapRule,
   CapPeriod,
-  LocalLookupParts,
   CapCheckResult,
   EntitlementCheckInput,
   HelperTrialContext,
@@ -123,10 +122,8 @@ import {
   normalizeEventType,
   parseCapRule,
   periodWindowStart,
-  parseLocalLookupKey,
   planTargetAliases,
   placementTargetPlanIds,
-  placementMatchesPlanTarget,
   usageTokenPrefixFromEntitlementId,
   sanitizeUsageTokenPrefix,
   looksGenericUsageUnit,
@@ -151,10 +148,7 @@ import {
   toSegmentEvaluationTraits as coreToSegmentEvaluationTraits,
   buildTargetingState as coreBuildTargetingState,
   generatePlacementId as coreGeneratePlacementId,
-  localPlacementLookupKey as coreLocalPlacementLookupKey,
   decisionCacheKey as coreDecisionCacheKey,
-  applyCategoryConflictSuppression as coreApplyCategoryConflictSuppression,
-  resolveLocalPlacementFromCandidates as coreResolveLocalPlacementFromCandidates,
   normalizeDecisionFromResponse as coreNormalizeDecisionFromResponse,
   normalizePlacementOutput as coreNormalizePlacementOutput,
   extractPlacementCapPolicies as coreExtractPlacementCapPolicies,
@@ -1718,6 +1712,11 @@ export interface RevTurbineEventBatchingOptions {
 
 export interface RevTurbineLocalRuntimeData {
   placementDecisionsByPlacementId?: Record<string, RevTurbinePlacementDecision>;
+  /**
+   * @deprecated Ignored since 0.11.21 (D-39 / BL-0379): `getPlacement` is a
+   * pure function of the user context and `localRuntime.playbook`, so
+   * pre-decided outputs are never consulted. Removed in 0.12.0.
+   */
   placementsByLookupKey?: Record<string, PlacementOutput | null>;
   entitlementByHandle?: Record<string, EntitlementResult>;
   userContextByUserId?: Record<string, UserTargetingContext>;
@@ -3487,7 +3486,6 @@ export class RevTurbineCustomerSdk {
   private pendingConversionPlan?: { from?: string; to: string };
   private usageBalances: UsageBalances = {};
   private localDecisionsByPlacementId = new Map<string, RevTurbinePlacementDecision>();
-  private localPlacementsByLookupKey = new Map<string, PlacementOutput | null>();
   private localEntitlementsByHandle = new Map<string, EntitlementResult>();
   private localUserContextsByUserId = new Map<string, UserTargetingContext>();
   /**
@@ -4757,70 +4755,6 @@ export class RevTurbineCustomerSdk {
     return `${this.endpoint}${defaultPath}`;
   }
 
-  private localPlacementLookupKey(config: RevTurbinePlacementRequestConfig): string {
-    return coreLocalPlacementLookupKey(config);
-  }
-
-  private localLookupMatchesConfig(parts: LocalLookupParts, config: RevTurbinePlacementRequestConfig): boolean {
-    if (config.slotId && parts.slotId && parts.slotId !== config.slotId) return false;
-    const componentType = resolvePlacementComponentType(config);
-    if (componentType && parts.surfaceType && parts.surfaceType !== componentType) return false;
-
-    const matchesOptional = (requested?: string, candidate?: string) => {
-      if (!requested) return true;
-      if (!candidate) return true;
-      return requested === candidate;
-    };
-
-    return matchesOptional(config.entitlementHandle, parts.entitlementHandle)
-      && matchesOptional(config.planHandle, parts.planHandle)
-      && matchesOptional(config.placementHandle, parts.placementHandle);
-  }
-
-  private localOutputMatchesConfig(output: PlacementOutput, config: RevTurbinePlacementRequestConfig): boolean {
-    return placementMatchesPlanTarget(output, config.planHandle);
-  }
-
-  private applyCategoryConflictSuppression(outputs: PlacementOutput[]): PlacementOutput[] {
-    return coreApplyCategoryConflictSuppression(outputs);
-  }
-
-  private resolveLocalPlacementFromCandidates(
-    candidates: PlacementOutput[],
-    config?: RevTurbinePlacementRequestConfig,
-  ): PlacementOutput | null {
-    return coreResolveLocalPlacementFromCandidates(candidates, true, {
-      fixedOnly: config?.fixedOnly ?? false,
-    });
-  }
-
-  private localPlacementForConfig(config: RevTurbinePlacementRequestConfig): PlacementOutput | null {
-    const exact = this.localPlacementsByLookupKey.get(this.localPlacementLookupKey(config));
-    if (exact && !this.localOutputMatchesConfig(exact, config)) {
-      return null;
-    }
-
-    // Always collect every matching candidate and run the category-aware
-    // pipeline (supersession + per-category conflict suppression + tier-aware
-    // sort). The legacy exact-match shortcut was deprecated per plan #45
-    // TASK-5 / Q-3 (c) — it bypassed every prioritization rule shipped in
-    // TASK-2 through TASK-4.
-    const candidates: PlacementOutput[] = [];
-    for (const [lookupKey, output] of this.localPlacementsByLookupKey.entries()) {
-      if (!output) continue;
-      const parts = parseLocalLookupKey(lookupKey);
-      if (!this.localLookupMatchesConfig(parts, config)) continue;
-      if (!this.localOutputMatchesConfig(output, config)) continue;
-      candidates.push(output);
-    }
-
-    if (exact && !candidates.some((item) => item.output_id === exact.output_id)) {
-      candidates.push(exact);
-    }
-
-    return this.resolveLocalPlacementFromCandidates(candidates, config);
-  }
-
   /**
    * The `placement_slots[]` entry the loaded Playbook authors for a request.
    *
@@ -4917,10 +4851,12 @@ export class RevTurbineCustomerSdk {
         this.localDecisionsByPlacementId.set(key, value);
       }
     }
-    if (fromInit?.placementsByLookupKey) {
-      for (const [key, value] of Object.entries(fromInit.placementsByLookupKey)) {
-        this.localPlacementsByLookupKey.set(key, value);
-      }
+    if (fromInit?.placementsByLookupKey && Object.keys(fromInit.placementsByLookupKey).length > 0) {
+      // D-39 / BL-0379: placements are decided from (user context, Playbook);
+      // seeded outputs are ignored. Removed from the type in 0.12.0.
+      const message = 'localRuntime.initialData.placementsByLookupKey is deprecated and ignored: getPlacement decides from the user context and localRuntime.playbook';
+      console.warn(`[revturbine] ${message}`);
+      this.emitSdkWarning(message, { seeded_keys: Object.keys(fromInit.placementsByLookupKey).length });
     }
     if (fromInit?.entitlementByHandle) {
       for (const [key, value] of Object.entries(fromInit.entitlementByHandle)) {
@@ -4949,7 +4885,6 @@ export class RevTurbineCustomerSdk {
         usageBalances?: UsageBalances;
         placements?: RevTurbinePlacementRecord[];
         decisions?: Record<string, RevTurbinePlacementDecision>;
-        placementLookup?: Record<string, PlacementOutput | null>;
         entitlements?: Record<string, EntitlementResult>;
         userContexts?: Record<string, UserTargetingContext>;
         trialStatus?: RevTurbineTrialContext;
@@ -4972,9 +4907,6 @@ export class RevTurbineCustomerSdk {
       }
       for (const [key, value] of Object.entries(parsed.decisions || {})) {
         this.localDecisionsByPlacementId.set(key, value);
-      }
-      for (const [key, value] of Object.entries(parsed.placementLookup || {})) {
-        this.localPlacementsByLookupKey.set(key, value);
       }
       for (const [key, value] of Object.entries(parsed.entitlements || {})) {
         this.localEntitlementsByHandle.set(key, value);
@@ -5011,7 +4943,6 @@ export class RevTurbineCustomerSdk {
         usageBalances: this.usageBalances,
         placements: Array.from(this.placements.values()),
         decisions: Object.fromEntries(this.localDecisionsByPlacementId.entries()),
-        placementLookup: Object.fromEntries(this.localPlacementsByLookupKey.entries()),
         entitlements: Object.fromEntries(this.localEntitlementsByHandle.entries()),
         userContexts: Object.fromEntries(this.localUserContextsByUserId.entries()),
         trialStatus: this.localTrialStatus,
@@ -9079,28 +9010,6 @@ export class RevTurbineCustomerSdk {
       };
     }
 
-    if (this.isLocalOnlyMode()) {
-      const byPlacement = this.localPlacementsByLookupKey.get(
-        this.localPlacementLookupKey({ placementHandle: placementId }),
-      );
-      return {
-        placementId,
-        requestId: rid,
-        decisionSource: byPlacement ? 'remote' : 'fallback',
-        content: decisionContent(
-          typeof byPlacement?.content?.title === 'string'
-            ? String(byPlacement.content.title)
-            : `${placement?.name ?? placementId} treatment`,
-          typeof byPlacement?.content?.body === 'string'
-            ? String(byPlacement.content.body)
-            : 'Local runtime placement content.',
-          typeof byPlacement?.content?.cta === 'string'
-            ? String(byPlacement.content.cta)
-            : 'Continue',
-        ),
-      };
-    }
-
     if (!placement) {
       return {
         placementId,
@@ -9325,17 +9234,11 @@ export class RevTurbineCustomerSdk {
       void rid; // request id reserved for parity with the decision path
       return null;
     }
-    const local = this.localPlacementForConfig(config);
-    if (local) {
-      const capDecision = this.applyPlacementCapsIfNeeded(local);
-      return capDecision.allowed ? local : null;
-    }
-
-    // BL-0119: the local placement cache only holds slots a decision has
-    // already run through, so a cold lookup by slot id found nothing and
-    // returned null even when the Playbook authored that exact slot. Fall
-    // through to the authored `placement_slots` registry — the same derivation
-    // scaffold's headless `LocalRuntime.getPlacement` performs.
+    // D-39 / BL-0379: getPlacement is a pure function of (user context,
+    // Playbook) — the authored slot resolves through the SAME decision path
+    // getPlacementDecision and the server runtimes use (scaffold
+    // LocalRuntime.getPlacement). No cached lane of previously decided
+    // outputs, and no separate selection layer.
     return this.placementFromAuthoredSlot(config);
   }
 
