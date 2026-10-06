@@ -47,6 +47,26 @@ also require a changelog entry.
 
 ---
 
+## 0.11.22
+
+### Message slots never show Fixed or Access Gate content (D-62)
+
+**What changed.** Behaviour change in every port; no signature changes.
+
+- A message slot (`<MessageSurfaceSlot>`, `surface_slot_category: triggered`)
+  shows only RT-initiated placements: usage/credit/seat and trial alerts,
+  conversion/expansion and retention nudges. 0.11.21 treated this as a
+  preference — Fixed content still rendered when no RT-initiated placement
+  qualified. Now the slot shows nothing in that case. Access Gate content was
+  already excluded (D-60).
+- The filter judges by category tier, so every category spelling agrees.
+- **Scaffold pin 0.1.409 → 0.1.411** (revturbine-scaffold #473; vendored `types.py` / `types.rs` refreshed).
+
+**Landed in** 0.11.22. **Fail-closed in** 0.11.22.
+
+**Proving tests.** D-62 blocks in scaffold `local-resolver.test.ts`, py
+`TestMessageSlotsShowOnlyRtInitiated`, rs `d62_*` in `tests/static_resolver.rs`.
+
 ## 0.11.21
 
 ### `getPlacement` is a pure function of (user context, Playbook) (D-39, BL-0379)
