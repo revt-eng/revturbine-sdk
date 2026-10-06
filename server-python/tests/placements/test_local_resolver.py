@@ -1370,3 +1370,59 @@ class TestAccessGatePlacements:
             "reason_codes"
         ] == ["gate_outside_access_gate"]
         assert direct({}, self._status("denied"))["visible"] is True
+
+
+class TestMessageSlotsShowOnlyRtInitiated:
+    """D-62 (Kent, 2026-10-06): a message slot (surface_slot_category
+    triggered) shows only RT-initiated content — never Fixed or gated.
+    Mirrors local-resolver.test.ts "D-62 message slots".
+    """
+
+    _SLOT: dict[str, Any] = {
+        "surface_template_ids": ["modal_overlay"],
+        "surface_slot_category": "triggered",
+    }
+
+    @staticmethod
+    def _entry_for(entry_id: str, category: str, header: str) -> dict[str, Any]:
+        return _entry(
+            entry_id=entry_id,
+            order=0,
+            category=category,
+            trigger={},
+            payloads=[
+                _payload(payload_id=f"p_{entry_id}", surfaces=[_surface(fields={"header": header})])
+            ],
+        )
+
+    def _resolve(self, entries: list[dict[str, Any]]) -> PlacementDecision:
+        resolver = create_static_placement_resolver({"placements": entries}, _config())
+        return resolver(
+            {"placement_id": "msg", "user_id": "user_1"},
+            _rec(placement_id="msg", name="msg", route="/app", metadata=self._SLOT),
+            {},
+        )
+
+    def test_never_shows_fixed_even_alone(self) -> None:
+        assert self._resolve([self._entry_for("pl_fixed", "fixed", "Fixed")])["visible"] is False
+
+    def test_rt_initiated_wins_over_fixed(self) -> None:
+        decision = self._resolve(
+            [
+                self._entry_for("pl_fixed", "fixed", "Fixed"),
+                self._entry_for("pl_nudge", "other_conversion", "Nudge"),
+            ]
+        )
+        assert decision["content"]["header"] == "Nudge"
+
+    def test_accepts_every_rt_initiated_category_spelling(self) -> None:
+        for category in (
+            "usage_credit_seat",
+            "usage_limit",
+            "trials",
+            "trial",
+            "other_conversion",
+            "retention",
+        ):
+            decision = self._resolve([self._entry_for("pl_rt", category, "RT")])
+            assert decision["content"]["header"] == "RT", category

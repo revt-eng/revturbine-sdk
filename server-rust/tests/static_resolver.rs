@@ -874,3 +874,50 @@ fn a_content_linked_payload_with_no_status_key_is_overlaid() {
         json!("Linked default"),
     );
 }
+
+// ── D-62 (Kent, 2026-10-06): message slots show only RT-initiated content ──
+// Mirrors the TS "D-62 message slots" block and the py
+// TestMessageSlotsShowOnlyRtInitiated class.
+
+fn d62_message_slot() -> Value {
+    json!({ "surface_template_ids": ["banner_placement"], "surface_slot_category": "triggered" })
+}
+
+fn d62_resolve(entries: &[Value]) -> Value {
+    StaticPlacementResolver::new(entries, &config()).resolve(
+        "msg",
+        Some(&d62_message_slot()),
+        None,
+        None,
+    )
+}
+
+#[test]
+fn d62_a_message_slot_never_shows_fixed_content_even_alone() {
+    let d = d62_resolve(&[entry("pl_fixed", "fixed", 0, "Fixed")]);
+    assert_eq!(d["visible"], json!(false));
+}
+
+#[test]
+fn d62_rt_initiated_content_wins_over_fixed_in_a_message_slot() {
+    let d = d62_resolve(&[
+        entry("pl_fixed", "fixed", 0, "Fixed"),
+        entry("pl_nudge", "other_conversion", 0, "Nudge"),
+    ]);
+    assert_eq!(d["content"]["header"], json!("Nudge"));
+}
+
+#[test]
+fn d62_every_rt_initiated_category_spelling_is_accepted() {
+    for category in [
+        "usage_credit_seat",
+        "usage_limit",
+        "trials",
+        "trial",
+        "other_conversion",
+        "retention",
+    ] {
+        let d = d62_resolve(&[entry("pl_rt", category, 0, "RT")]);
+        assert_eq!(d["content"]["header"], json!("RT"), "{category}");
+    }
+}

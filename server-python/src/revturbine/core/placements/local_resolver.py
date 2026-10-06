@@ -978,7 +978,14 @@ def create_static_placement_resolver(
             if meta.get("fixed_only") is True:
                 filtered = [c for c in filtered if c["entry_category"] == "fixed"]
 
-            if preferred_categories and slot_category != "fixed" and len(filtered) > 1:
+            if slot_category == "triggered":
+                # D-62 (Kent, 2026-10-06): a message slot shows ONLY RT-initiated
+                # content (category tiers 3 and 4) — a hard filter, never a
+                # preference. Fixed and Access Gate content never render here.
+                filtered = [
+                    c for c in filtered if category_bucket(_candidate_category(c)) in (2, 4)
+                ]
+            elif preferred_categories and slot_category != "fixed" and len(filtered) > 1:
                 cat_filtered = [c for c in filtered if c["entry_category"] in preferred_categories]
                 if cat_filtered:
                     filtered = cat_filtered

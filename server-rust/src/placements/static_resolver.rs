@@ -948,7 +948,18 @@ impl StaticPlacementResolver {
                 idxs.retain(|i| self.candidates[*i].entry_category.as_deref() == Some("fixed"));
             }
 
-            if let Some(prefs) = slot_category.and_then(preferred_categories) {
+            if slot_category == Some("triggered") {
+                // D-62 (Kent, 2026-10-06): a message slot shows ONLY
+                // RT-initiated content (category tiers 3 and 4) — a hard
+                // filter, never a preference. Fixed and Access Gate content
+                // never render here.
+                idxs.retain(|i| {
+                    matches!(
+                        category_bucket(&self.candidates[*i].ranking_category()),
+                        2 | 4
+                    )
+                });
+            } else if let Some(prefs) = slot_category.and_then(preferred_categories) {
                 if slot_category != Some("fixed") && idxs.len() > 1 {
                     let narrowed: Vec<usize> = idxs
                         .iter()
