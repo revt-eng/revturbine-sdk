@@ -47,6 +47,54 @@ also require a changelog entry.
 
 ---
 
+## 0.11.19
+
+### Placement decisions rank category first; caps run before the pick; overall presentation cap rules enforced (D-59, BL-0536)
+
+**What changed.** Behaviour change in every port; no public signature changes.
+
+- **Ranking (ts/py/rs).** When several placements qualify for one slot, the
+  decision now ranks by category first — Access Gates, then Fixed, then
+  usage/credit/seat + trial alerts, then conversion/retention nudges — and
+  then within the category: two-stage urgency for alerts (trial transition,
+  then limit reached, then approaching; then proximity), drag order
+  otherwise. 0.11.18 took the first eligible placement in list order (D-34),
+  so an "approaching" warning listed above a "limit reached" alert used to
+  win; now the limit-reached alert wins. Equal drag order across the two
+  categories of a shared tier resolves Usage before Trials and Conversion
+  before Retention. Among fired usage thresholds on one entitlement, the
+  highest wins.
+- **Caps before the pick (web).** A placement over its per-payload cap or an
+  overall presentation cap is skipped and the next-ranked placement is shown.
+  0.11.18 picked first, then hid the slot. A cached decision whose winner is
+  now capped re-resolves instead of blanking the slot.
+- **Payload caps are enforced (web).** Playbook-authored `max_per_period` /
+  `cooldown_days` never reached the cap check; they now do. A placement with
+  authored caps may now stop showing where 0.11.18 kept showing it.
+- **Overall presentation cap rules (web).** The Placement Settings cap rules
+  and session cooldown (`placement_settings[].global_frequency_cap`) are
+  enforced for conversion/retention placements, persisted per user;
+  `session` periods count from the tab session's start.
+- **Access Gate slots (all ports + web).** A slot that asks for an
+  entitlement is answered only by that entitlement's placements; with none
+  authored, the decision is `no_gate_for_entitlement` and
+  `<AccessGateSurfaceSlot>` renders the new `<AccessDeniedPlaceholder>`
+  unless the app passes `deniedFallback`. 0.11.18 showed any other gate on
+  the same template.
+- **Reason codes.** New placement reasons `no_gate_for_entitlement`,
+  `suppressed_by_presentation_cap` and `suppressed_by_system_cooldown`
+  (added to the reason-code baseline).
+- **Scaffold pin 0.1.383 → 0.1.402** (`@revt-eng/core` with revturbine-scaffold #460; vendored `types.py` / `types.rs` refreshed).
+
+**Landed in** 0.11.19. **Fail-closed in** 0.11.19.
+
+**Proving tests.** Parity fixtures `placement_slot_selection_is_category_first`,
+`placement_limit_reached_beats_approaching` and
+`placement_shared_tier_tie_resolves_by_category` (they replace
+`placement_slot_selection_is_entry_order` and
+`placement_first_eligible_beats_urgency`); `web-sdk/presentation-cap-rules.test.ts`;
+`web-sdk/placements/AccessGateSurfaceSlot.placeholder.test.tsx`.
+
 ## 0.11.18
 
 ### Scaffold pin 0.1.383: interaction decision context moves onto core's input type; `growth_signal_observed` retired (plan 282 TASK-9 follow-up, BL-0463)

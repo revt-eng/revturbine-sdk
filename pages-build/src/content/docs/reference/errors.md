@@ -16,6 +16,7 @@ Returned in `decision.reasonCodes[]` to explain why a placement was or wasn't sh
 | `config_unavailable` | The Playbook could not be fetched, or a fetch is still in flight — the SDK has no config to decide against yet. |
 | `entitlement_gate_unmet` | The candidate's entitlement-gate trigger did not match the user's current entitlement state. |
 | `no_eligible_candidate` | No candidate placement survived eligibility filtering for this slot. |
+| `no_gate_for_entitlement` | The Access Gate slot asks for an entitlement that no gate placement is authored for, so the slot shows its access-denied placeholder. |
 | `no_resolver_configured` | No placement resolver is configured, so the SDK has nothing to evaluate against. |
 | `placement_not_found` | No candidate output matched the requested placement id or name. |
 | `placement_not_registered` | The payload targets a placement handle the app never registered with the SDK. |
@@ -31,6 +32,8 @@ Returned in `decision.reasonCodes[]` to explain why a placement was or wasn't sh
 | `suppressed_by_payload_cap_session` | The payload's per-session impression cap has been reached. |
 | `suppressed_by_payload_cap_week` | The payload's per-week impression cap has been reached. |
 | `suppressed_by_payload_cooldown` | The payload is still inside its configured cooldown window since it was last shown. |
+| `suppressed_by_presentation_cap` | Every eligible candidate is over an overall presentation cap rule from Placement Settings. |
+| `suppressed_by_system_cooldown` | Every eligible candidate is a discretionary nudge inside the session cooldown since the last one shown. |
 | `suppressed_until_remind_window` | The user chose "remind me later" and that reminder window has not elapsed yet. |
 | `threshold_trigger_unmet` | The candidate's threshold trigger did not match the user's current entitlement usage. |
 | `trial_trigger_unmet` | The candidate's trial trigger did not match the user's trial state. |
