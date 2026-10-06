@@ -15,6 +15,8 @@ Returned in `decision.reasonCodes[]` to explain why a placement was or wasn't sh
 |---|---|
 | `config_unavailable` | The Playbook could not be fetched, or a fetch is still in flight — the SDK has no config to decide against yet. |
 | `entitlement_gate_unmet` | The candidate's entitlement-gate trigger did not match the user's current entitlement state. |
+| `entitlement_not_denied` | The Access Gate placement's entitlement is not denied or limited for this user, so the gate does not fire. |
+| `gate_outside_access_gate` | An Access Gate placement was requested from a slot that is not an Access Gate slot; gates render only in gate slots. |
 | `no_eligible_candidate` | No candidate placement survived eligibility filtering for this slot. |
 | `no_gate_for_entitlement` | The Access Gate slot asks for an entitlement that no gate placement is authored for, so the slot shows its access-denied placeholder. |
 | `no_resolver_configured` | No placement resolver is configured, so the SDK has nothing to evaluate against. |

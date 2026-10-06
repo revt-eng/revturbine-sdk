@@ -48,8 +48,12 @@ export const MARKER_END = '<!-- END GENERATED: placement-reason-codes -->';
 export const DESCRIPTIONS = {
   config_unavailable:
     'The Playbook could not be fetched, or a fetch is still in flight — the SDK has no config to decide against yet.',
+  entitlement_not_denied:
+    "The Access Gate placement's entitlement is not denied or limited for this user, so the gate does not fire.",
   entitlement_gate_unmet:
     "The candidate's entitlement-gate trigger did not match the user's current entitlement state.",
+  gate_outside_access_gate:
+    'An Access Gate placement was requested from a slot that is not an Access Gate slot; gates render only in gate slots.',
   no_eligible_candidate:
     'No candidate placement survived eligibility filtering for this slot.',
   no_gate_for_entitlement:

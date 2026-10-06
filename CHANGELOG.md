@@ -47,6 +47,48 @@ also require a changelog entry.
 
 ---
 
+## 0.11.20
+
+### One entitlement answer for browser and server, with Entitlement Mirroring; Access Gates only fire while denied (D-60, D-61)
+
+**What changed.** Behaviour change in every port. Browser and server now run
+the same evaluation on the same inputs: the browser is trusted for
+interaction, and the server verifies.
+
+- **One effective entitlement (ts/py/rs/web).** Every entitlement check runs
+  the shared core evaluator over the Playbook and the user context (plan,
+  segments, usage, reverse-trial grants), then merges app-supplied data. Server
+  runtimes previously used a separate rule path that ignored reverse-trial
+  grants and allowed everything when the Playbook had no entitlement rules.
+  **Server-side results change for the live design partner:** a configured
+  entitlement with no rule for the user's plan is now denied on the server
+  too, and reverse-trial grants are honoured there.
+- **Entitlement Mirroring.** `UserContext.entitlements` accepts a boolean or a
+  grant (`status`, `limit`, `used`), and an app entitlement provider's
+  entries count as app data. By default the app's data wins;
+  `entitlementMerge` (`entitlement_merge` in Python and Rust) sets provider-level
+  `precedence` and per-field overrides. Browser-supplied data shapes the UI;
+  the server re-check stays authoritative.
+- **Unknown entitlement handles fail closed.** A handle neither the Playbook
+  nor the app knows is denied with `entitlement_not_in_playbook`, warned once,
+  and reported (browser telemetry; `onUnknownEntitlement` on the server).
+  0.11.19 returned `entitlement_not_found_default_allow`.
+- **Access Gates (D-60).** A gate placement appears only in an Access Gate
+  slot and fires only while its entitlement is denied or limited (a
+  tier-scoped gate below its tier counts as limited). Placement gates read the
+  same effective entitlements `checkEntitlement` returns.
+- **Reason codes.** New entitlement reason `entitlement_mirrored`; new
+  placement reasons `entitlement_not_denied` and `gate_outside_access_gate`.
+- **Scaffold pin 0.1.402 → 0.1.409** (revturbine-scaffold #462, #465
+  and #468; vendored `types.py` / `types.rs` refreshed).
+
+**Landed in** 0.11.20. **Fail-closed in** 0.11.20.
+
+**Proving tests.** `web-sdk/entitlement-mirroring.test.ts`; the D-60/D-61
+blocks in each port's resolver and runtime tests; parity fixtures
+`placement_slot_selection_is_category_first` and
+`placement_category_interactions`.
+
 ## 0.11.19
 
 ### Placement decisions rank category first; caps run before the pick; overall presentation cap rules enforced (D-59, BL-0536)
