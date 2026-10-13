@@ -27,7 +27,18 @@ The walkthrough is React because that is the shortest path to something on scree
     enforcement. Show me the diff before you finish.
     ```
 
-    The fuller, tested prompt — and the CLI loop an agent uses to keep changing monetization afterwards — is on [Add RevTurbine with a Coding Agent](/guides/coding-agent/).
+    Starting a new app instead? Scaffold it with its framework first (for example `create-next-app`), then paste this:
+
+    ```text
+    Run `npm create revturbine@latest` in this new app. Then follow the
+    revturbine-start-here skill and build monetization in from the start: put
+    every plan, limit and upgrade prompt in revturbine.playbook.json, never in
+    app code, and run `npx revturbine validate ./revturbine.playbook.json` after
+    each change. Gate features with <Gate> or can(), and re-check anything paid
+    on the server. Show me the Playbook and the diff before you finish.
+    ```
+
+    The fuller prompts for both cases — and the CLI loop an agent uses to keep changing monetization afterwards — are on [Add RevTurbine with a Coding Agent](/guides/coding-agent/).
   </TabItem>
   <TabItem label="By hand">
     ```bash

@@ -1,26 +1,30 @@
 ---
 title: Add RevTurbine with a Coding Agent
-description: A paste-in prompt to integrate RevTurbine with Claude Code, Cursor, or your agent of choice — plus how to automate the recurring config loop through the CLI with deterministic guardrails.
+description: Paste-in prompts to add RevTurbine to an existing app or build it into a new one with Claude Code, Cursor, or your agent of choice — plus how to automate the recurring config loop through the CLI with deterministic guardrails.
 sidebar:
   order: 12
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-If you integrate through a coding agent, you don't have to hand-wire the first gate. Point the agent at your app with the prompt below — it does the inspection and the edit, and you review the diff.
+If you integrate through a coding agent, you don't have to hand-wire anything. Pick the prompt that matches your situation — adding RevTurbine to an app you already have, or building a new app with RevTurbine from the start. The agent does the inspection and the edits, and you review the diff.
 
-## Paste-in prompt
+## Existing app: replace one plan check
 
 ```text
 You're adding RevTurbine (@revturbine/sdk) to this app to gate one paid feature.
 
 1. Inspect the app and find ONE non-critical feature currently gated by a
    hard-coded plan check (e.g. `user.plan === 'pro'`). Pick the safest one.
-2. Install @revturbine/sdk and wrap the app in <RevTurbineProvider> if it isn't
-   already. Use local_only mode with a bundled revturbine.playbook.json fixture so it
-   runs with no account.
-3. Add a minimal revturbine.playbook.json fixture with: a free and a pro plan, one
-   entitlement for the feature, and a gate placement (upgrade modal) for free users.
+2. Run `npm create revturbine@latest`. It installs @revturbine/sdk, pins the CLI
+   and writes a starter revturbine.playbook.json. Wrap the app in
+   <RevTurbineProvider> in local_only mode with that Playbook, so it runs with no
+   account.
+3. Edit the Playbook so it has a free and a pro plan, one entitlement for the
+   feature, and a gate placement (upgrade modal) for free users. Refer to plans and
+   entitlements by their unique_handle. Run
+   `npx revturbine validate ./revturbine.playbook.json` until it reports no errors
+   or warnings.
 4. Replace the hard-coded check with <Gate id="..." can="<entitlement>">, keeping
    the existing UI as the gated children and letting the placement render the upsell.
 5. Do NOT touch any billing-critical or server-side enforcement path. Leave those
@@ -31,6 +35,40 @@ You're adding RevTurbine (@revturbine/sdk) to this app to gate one paid feature.
 
 <Aside type="tip" title="Why 'one non-critical feature'">
 The prompt deliberately scopes the agent to a single, safe feature and forbids touching enforcement paths. Monetization changes ship as config, so the first change should be reversible and low-stakes. See [Client vs Server Enforcement](/concepts/enforcement/).
+</Aside>
+
+## New app: build RevTurbine in from the start
+
+```text
+You're building a new app with RevTurbine (@revturbine/sdk) handling its plans,
+entitlements, usage limits and upgrade prompts.
+
+1. Scaffold the app with its framework first (e.g. create-next-app), then run
+   `npm create revturbine@latest` inside it. It installs the SDK, pins the CLI,
+   writes a starter revturbine.playbook.json and installs the RevTurbine agent
+   skills. Follow the revturbine-start-here skill.
+2. Put monetization in the Playbook, not in code: every plan, entitlement, usage
+   limit and upgrade or sign-in prompt. No plan names, prices or limit numbers in
+   app code. Build on the starter Playbook and refer to plans and entitlements by
+   their unique_handle.
+3. Run `npx revturbine validate ./revturbine.playbook.json` after every Playbook
+   change and fix every error and warning.
+4. Start in local_only mode with the bundled Playbook. Use <Gate> or can() for
+   access, <Slot> for prompts, and update() to report usage as the running total
+   for the current period (your app keeps that count).
+5. Re-check every paid or billable action on the server with
+   @revturbine/sdk/headless before it runs, and answer a denial with 402. Client
+   checks only drive the UI.
+6. If people can use the app before signing in, give them a stable id your server
+   can see (for example a cookie) and pass it as user.id.
+7. When the docs don't cover something you need, say so and ask. Don't guess.
+8. Run `npx revturbine generate types ./revturbine.playbook.json --out
+   src/revturbine-handles.ts` and the type checker, then explain what lives in
+   the Playbook, what lives in code, and what's left for hosted mode.
+```
+
+<Aside type="tip" title="Why the Playbook comes first">
+Everything in the Playbook can change without a deploy once you move to hosted mode, so a new app should never hard-code what RevTurbine decides. The validator catches a reference that would silently grant nothing. See [Runtime Modes](/guides/runtime-modes/) and [Client vs Server Enforcement](/concepts/enforcement/).
 </Aside>
 
 ## Automate the config loop with the CLI

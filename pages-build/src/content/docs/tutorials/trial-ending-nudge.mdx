@@ -33,7 +33,7 @@ A trial countdown that:
      "artifact_type": "playbook",
      "format_version": "1.0.0",
      "plans": [
-       { "id": "plan_pro", "unique_handle": "pro", "name": "Pro", "tier_position": 1, "sort_order": 1 }
+       { "unique_handle": "pro", "name": "Pro", "tier_position": 1, "sort_order": 1 }
      ],
      "entitlements": [],
      "entitlement_rules": [],
@@ -77,7 +77,7 @@ A trial countdown that:
 
 2. **Provide trial status to the SDK**
 
-   The SDK reads trial state from a resolver in local mode (or from the user context in hosted mode). Supply the trial so the trigger and `{{days_remaining}}` token can compute the window.
+   In local mode the SDK reads trial state from `localRuntime.initialData` (in hosted mode it arrives with the user context). Supply the trial so the trigger and `{{days_remaining}}` token can compute the window.
 
    ```tsx title="src/App.tsx"
    <RevTurbineProvider
@@ -85,8 +85,8 @@ A trial countdown that:
        localRuntime: {
          playbook,
          // In local mode, hydrate trial status synchronously:
-         resolvers: {
-           getTrialStatus: () => ({ in_trial: true, days_remaining: 2 }),
+         initialData: {
+           trialStatus: { in_trial: true, days_remaining: 2 },
          },
        },
        user: { id: 'user_123', plan_handle: 'trial' },

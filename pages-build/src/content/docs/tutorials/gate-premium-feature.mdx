@@ -33,11 +33,11 @@ A video export button that:
      "artifact_type": "playbook",
      "format_version": "1.0.0",
      "plans": [
-       { "id": "plan_free", "unique_handle": "free", "name": "Free", "tier_position": 0, "sort_order": 0 },
-       { "id": "plan_pro", "unique_handle": "professional", "name": "Professional", "tier_position": 1, "sort_order": 1 }
+       { "unique_handle": "free", "name": "Free", "tier_position": 0, "sort_order": 0 },
+       { "unique_handle": "professional", "name": "Professional", "tier_position": 1, "sort_order": 1 }
      ],
      "entitlements": [
-       { "id": "ent_data_export", "unique_handle": "data_export", "name": "Data Export", "type": "feature" }
+       { "unique_handle": "data_export", "name": "Data Export", "type": "feature" }
      ],
      "entitlement_rules": [
        {
@@ -45,7 +45,8 @@ A video export button that:
          "entitlement_id": "data_export",
          "targets": [{ "kind": "plan", "id": "professional" }],
          "segment_ids": [],
-         "type_fields": { "kind": "feature", "enabled": true }
+         "kind": "feature",
+         "enabled": true
        }
      ],
      "segments": [],

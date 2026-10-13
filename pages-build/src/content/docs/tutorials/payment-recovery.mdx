@@ -85,7 +85,7 @@ A dunning banner that:
 
 2. **Pass the user's billing status into the SDK**
 
-   Feed `billing_status` from your backend into the user context so the segment evaluates correctly. Update it whenever your payment provider's webhook fires.
+   The placement's `payment_failed` trigger reads the user context's `payment_failed` flag, and its segment reads `billing_status`. Feed both from your backend, and update them whenever your payment provider's webhook fires.
 
    ```tsx title="src/App.tsx"
    <RevTurbineProvider
@@ -95,6 +95,7 @@ A dunning banner that:
        user: {
          id: 'user_123',
          plan_handle: 'pro',
+         payment_failed: billingStatus === 'payment_failed',
          custom: {
            billing_status: billingStatus, // 'active' | 'payment_failed'
          },
@@ -123,20 +124,20 @@ A dunning banner that:
 
 4. **Clear it on recovery**
 
-   When the payment succeeds, set `billing_status` back to `active` and the banner stops rendering automatically — no manual teardown.
+   When the payment succeeds, clear the flag and set `billing_status` back to `active`; the banner stops rendering automatically — no manual teardown.
 
    ```ts
-   sdk.identify('user_123', { plan_handle: 'pro', custom: { billing_status: 'active' } });
+   sdk.update({ payment_failed: false, custom: { billing_status: 'active' } });
    ```
 
 </Steps>
 
 ## How It Works
 
-1. The `seg_billing_failed` segment matches users whose `billing_status` context equals `payment_failed`.
-2. The placement targets that segment via `segment_chips`, so only affected users see the banner.
+1. The `payment_failed` qualifier trigger fires while the user context's `payment_failed` flag is `true`.
+2. The `seg_billing_failed` segment matches users whose `billing_status` context equals `payment_failed`, and the placement targets that segment via `segment_chips`, so only affected users see the banner.
 3. `"dismissible": "No"` keeps it visible — dunning prompts shouldn't be dismissible.
-4. Updating the user's billing status to `active` removes them from the segment, and the banner disappears on the next evaluation.
+4. Clearing the flag and setting `billing_status` to `active` takes the user out of both, and the banner disappears on the next evaluation.
 
 <Aside type="caution">
 The SDK targets and renders the banner; it doesn't process payments. Drive `billing_status` from your billing provider's source of truth (e.g. a Stripe `invoice.payment_failed` / `invoice.paid` webhook) so the banner reflects reality.

@@ -17,7 +17,7 @@ The SDK never throws into your app and never blocks your render. But *placements
 
 | API failure scenario | SDK behavior |
 |---|---|
-| API unreachable | Placements return `visible: false` |
+| Launched Playbook not fetched yet (hosted mode) | Placements return `visible: false` |
 | Entitlement check fails | Returns `{ status: 'denied', allowed: false, reason: 'config_unavailable' }` |
 | Config fetch fails | Falls back to cached Playbook; with none, entitlement checks deny |
 | Event delivery fails | Events are buffered and retried silently |
@@ -56,7 +56,7 @@ if (ctrl.state.error) {
 Most SDK methods fail silently and return sensible defaults:
 
 ```ts
-// Returns false on API failure
+// Denies ({ allowed: false }) when it can't justify a grant
 await sdk.can('data_export');
 
 // Silently drops event on delivery failure
@@ -221,7 +221,7 @@ you the price exists, not that the user may proceed.
 | Placement resolution | No auto-retry. Call `refresh()` to retry manually. |
 | Entitlement check | No auto-retry. Call `recheck()` to retry manually. |
 | Event delivery | Auto-buffered and retried on next batch interval. |
-| Config fetch | Falls back to cached config. Retried on next SDK initialization. |
+| Config fetch | Keeps the last-known-good Playbook; hosted mode re-checks for a new release about once a minute. |
 
 ### Manual Retry
 

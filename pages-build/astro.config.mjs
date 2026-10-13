@@ -172,6 +172,11 @@ export default defineConfig({
           // Trade-off: llms-full/llms-small carry raw MDX (import lines, JSX tags)
           // instead of cleaned markdown. See the plugin's rawContent option docs.
           rawContent: true,
+          // rawContent also skips minification, so without an exclude list
+          // llms-small.txt came out the same size as llms-full.txt. Leave the
+          // generated API reference out of the abridged bundle; it stays in
+          // llms-full.txt and on the /api/ pages.
+          exclude: ['api', 'api/**'],
         }),
         starlightTypeDoc({
           entryPoints: ['../web-sdk/index.ts'],
