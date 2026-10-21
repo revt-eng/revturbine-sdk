@@ -198,7 +198,7 @@ Everything above works forever in local mode, free. Hosted mode is where you sto
 
 1. **Create an account and connect the CLI.** [revturbine.com/app](https://revturbine.com/app), then `revturbine login` (a browser device flow — no keys to paste).
 
-2. **Connect Stripe** in **Settings → Stripe**. From then on a purchase updates what the user can do with no app code: plan and payment state arrive through a client session. See [Billing & Stripe](/guides/billing/).
+2. **Connect Stripe** in **Settings → Stripe**. From then on a purchase updates what the user can do with no app code: plan and payment state arrive through a client session. Put `revturbine_account_id` and `revturbine_user_id` in the metadata of every Stripe customer you create so each payer links to an account from day one: [Link Stripe customers to accounts](/guides/billing/#link-stripe-customers-to-accounts). See [Billing & Stripe](/guides/billing/).
 
 3. **Switch the provider to hosted mode.** Mint an ingest key under **Settings → API Token Management → Ingest Keys** and add your app's origins to its allowed origins. Then add the **client-session route** to your server (it mints a short-lived token with your server key, so the plan Stripe holds reaches the SDK) and pass both to the provider:
 

@@ -49,26 +49,147 @@ If billing state stops updating, the first place to look is **Settings →
 Stripe** in the RevTurbine dashboard: the connection status and the
 events-received summary show whether events are arriving.
 
-### Linking a Stripe customer to a RevTurbine user
+### Link Stripe customers to accounts
 
-RevTurbine identifies a user by the `user.id` your app passes to the SDK. To
-tie that user to their Stripe customer, put the same id on the Stripe
-Customer object as `metadata.revturbine_user_id` when you create it (for
-example, when your checkout creates the customer). RevTurbine links the two
-on `customer.created`, and uses the same key to attribute conversions to the
-prompts that drove them.
+Stripe knows who paid. RevTurbine knows which account and user used the
+product. Until each paying Stripe customer is linked to one of your accounts,
+that revenue is a payer nobody can attribute: it is missing from cohort and
+retention figures, and no conversion can be credited to the prompt that drove
+it. Link them from day one, in your own Stripe calls. **RevTurbine never writes
+to your Stripe account**; the metadata below is yours to set.
 
-```ts
-// Your checkout, when it creates the Stripe customer
-const customer = await stripe.customers.create({
-  email: user.email,
-  metadata: { revturbine_user_id: user.id }, // the id you pass to the SDK
-});
+RevTurbine looks for these three pieces of evidence for each payer:
+
+1. **Customer metadata.** `revturbine_account_id` (preferred), or
+   `revturbine_user_id`, which resolves through your users to their account.
+2. **An existing link** between the Stripe customer and an account.
+3. **A customer your Checkout created**, resolved through the session's
+   metadata or `client_reference_id`.
+
+They are not a priority list where the first hit silently wins. RevTurbine
+collects all that exist, and when they agree on one account the payer is
+linked. **When they point to two different accounts, the payer is left
+unlinked** until you correct the data. Keep the keys, the Checkout metadata and
+your customer records consistent.
+
+Matching a payer by email is not available: no SDK call writes a user's email
+to RevTurbine from your server yet, so there is nothing to match against. Do not
+rely on `identify()` with an `email` to link a payer.
+
+The first is explicit and the only one under your control from the start, so
+**use the `revturbine_*` keys as the primary path** and set them everywhere you
+create a customer. Use the same values you give the SDK: `revturbine_user_id`
+is the `user.id`, and `revturbine_account_id` is the `account_id`.
+
+**Fallback for billing layers such as Clerk.** When none of the three apply, a
+plain `user_id` in the Customer metadata is used as a stand-in account
+identity. It is a reasonable proxy for `account_id`, but it is **not a
+RevTurbine user id**: RevTurbine user ids come from the user context you pass
+to the SDK, never from this key. Do not rely on it when you can set
+`revturbine_account_id`.
+
+```ts docs-check=strict
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+/** Your signup or first-checkout code: create the customer already linked. */
+export async function createStripeCustomer(
+  user: { id: string; email: string },
+  accountId: string,
+) {
+  return stripe.customers.create({
+    email: user.email,
+    metadata: {
+      revturbine_account_id: accountId, // the account_id you pass to the SDK
+      revturbine_user_id: user.id, // the user.id you pass to the SDK
+    },
+  });
+}
+
+/** Customers that already exist: a one-off backfill, then keep it on every update. */
+export async function linkExistingCustomer(
+  stripeCustomerId: string,
+  user: { id: string },
+  accountId: string,
+) {
+  return stripe.customers.update(stripeCustomerId, {
+    metadata: { revturbine_account_id: accountId, revturbine_user_id: user.id },
+  });
+}
 ```
 
-If a Stripe customer was created without the metadata, RevTurbine can still
-match it once it has seen the customer's Stripe id — but the metadata is the
-explicit, authoritative join, and the one to rely on.
+When Checkout is what creates the customer, Stripe cannot set Customer metadata
+inline. Create the customer first and pass `customer`, so the link exists
+before the purchase:
+
+```ts docs-check=strict
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+export async function startCheckout(
+  user: { id: string },
+  accountId: string,
+  stripeCustomerId: string,
+  stripePriceId: string,
+) {
+  const ids = { revturbine_account_id: accountId, revturbine_user_id: user.id };
+  return stripe.checkout.sessions.create({
+    mode: 'subscription',
+    customer: stripeCustomerId, // created above, with the metadata
+    line_items: [{ price: stripePriceId, quantity: 1 }],
+    client_reference_id: user.id,
+    metadata: ids, // on the session
+    subscription_data: { metadata: ids }, // and on the subscription
+    success_url: 'https://app.example.com/billing/done',
+  });
+}
+```
+
+If you cannot pre-create the customer (a Checkout in `payment` mode, say, with
+`customer_creation: 'always'`), copy the same two keys onto the Customer from
+your `checkout.session.completed` handler with `stripe.customers.update`. The
+placement attribution bag from `checkoutMetadata()` below goes on the same
+session and subscription metadata.
+
+#### Use the same account id in the SDK
+
+Pass the same `account_id` to the SDK that you put in `revturbine_account_id`,
+so what the SDK reports and what Stripe bills describe the same account. Never
+use an email as the id.
+
+```tsx docs-check=strict
+import { useRevTurbine } from '@revturbine/sdk';
+import { useEffect } from 'react';
+
+/** Mount once, inside the provider, once the signed-in user is known. */
+export function IdentifyUser({ user }: { user: { id: string; accountId: string } }) {
+  const { sdk } = useRevTurbine();
+
+  useEffect(() => {
+    if (!sdk) return; // the SDK is null until the provider has initialized
+    sdk.identify(user.id, { account_id: user.accountId });
+  }, [sdk, user.id, user.accountId]);
+
+  return null;
+}
+```
+
+The same field works at init (`user: { id, account_id }` on
+`RevTurbineProvider`'s `options`) and through `setUserContext()` / `update()`.
+
+#### What linking unlocks
+
+- **Cohort and retention figures** for paying accounts, because revenue now
+  belongs to an account with a signup date and usage.
+- **Attribution**: a purchase is credited to the placement the user saw, even
+  for renewals and checkout-less billing events, with no time-window guess.
+- **Server-derived plan state** in the browser, through the
+  [client session](/guides/client-sessions/).
+
+A payer with none of these links cannot be attributed to an account until
+one exists, so set the metadata before the first purchase rather than after.
 
 ### What the events drive
 
