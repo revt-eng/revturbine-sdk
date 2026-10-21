@@ -47,6 +47,107 @@ also require a changelog entry.
 
 ---
 
+## 0.12.0
+
+### Breaking
+
+Pre-1.0, breaking changes ship in the minor. Each item names its migration.
+
+1. **Rust struct literals (BUG-554).** No function signature changed, but new
+   `pub` fields on `UserContext`, `StaticProviderOptions`,
+   `LocalEntitlementInput`, `EffectiveEntitlementBase` and
+   `RuleEvaluationContext` (`addons`, `billing_period`,
+   `matched_plan_variation_ids`) and on `EntitlementCheckResult`
+   (`contributing_rule_handles`) mean a struct literal that lists every field
+   no longer compiles. **Migration:** add `..Default::default()` to such
+   literals.
+2. **`localRuntime.initialData.placementsByLookupKey` is removed (BL-0537;
+   D-39/BL-0379).** It has been ignored, with a warning, since 0.11.21:
+   `getPlacement` is a pure function of the user context and the Playbook.
+   The field is gone from `RevTurbineLocalRuntimeData`, and the warning is
+   gone with it. The server ports' copies of the selection helper it fed are
+   removed too: Python `resolve_local_placement_from_candidates` and
+   `CandidateResolutionOptions`, and Rust
+   `placements::resolve_local_placement_from_candidates` and
+   `CandidateResolutionOptions`. No runtime path called them; the decision
+   ranks category first in every resolver (D-59). **Migration:** delete the
+   key, author the placement in `localRuntime.playbook`, or implement the
+   `getPlacement` resolver for a custom source. A plain-JS caller that still
+   sends the key is unaffected at runtime; TypeScript now rejects it.
+3. **`setUserContext()` is `Exact<>`, and `identify()` accepts only the keys it
+   merges.**
+   - `setUserContext()` now rejects, at compile time, a key
+     `RevTurbineUserContext` does not declare, even when the object arrives
+     through a variable, as `identify()` and `update()` already did.
+   - `IdentifyContextInput` no longer declares the ten session fields
+     `identify()` dropped with a warning: `email_type`, `trial`,
+     `payment_failed`, `payment_at_risk`, `tiers`, `instances`, `experiments`,
+     `derived_config_version`, `context_hash` and `derived_computed_at`.
+   - Runtime behaviour is unchanged: unknown keys are still dropped and
+     reported.
+
+   **Migration:** move free-form values under `custom`. Set session fields
+   through `update()` or `setUserContext()` instead of `identify()`, or let
+   client-context enrichment deliver them.
+
+### Purchased add-ons add to seat, usage and credit allowances (BUG-554)
+
+**What changed.** Behaviour change in every port, plus new inputs. The Rust
+struct-literal break is item 1 under Breaking.
+
+- Seats, usage limits and recurring credit allowances resolve to the largest
+  ordinary entitlement grant **plus** purchased add-on contributions (Kent
+  rulings 2476/2480): 10 seats plus a purchased 5-seat pack is 15, and 1,000
+  calls plus 2 x 500 is 2,000. Each holding uses its most permissive matching
+  rule, multiplied by its quantity. Features and capability tiers still use
+  the most permissive grant.
+- New `addons` purchased-holding input (`{ addon_handle, addon_variation_handle?,
+  quantity }`) on the browser `identify` / `update` / client-context refresh
+  and on the Python and Rust user context. A quantity-only refresh re-evaluates;
+  an explicit empty list clears holdings.
+- Additive grants must share a reset period and scope. A mismatch is an error
+  at evaluation (`Incompatible purchased allowances: … require matching periods
+  and scopes`), never a silent sum or a baseline-only answer. One-time credit
+  grants (no `reset_period`) stay on the customer-owned balance path.
+- Unknown add-ons, unknown variations and a variation that belongs to another
+  add-on contribute nothing; they no longer fail the evaluation.
+- Seat results report `limit` / `used` / `remaining`, and results carry
+  `contributing_rule_handles` when purchases contributed.
+- Rust (additive): new `try_check_entitlement`, `try_engine_check_entitlement`,
+  `try_derive_effective_entitlement` and
+  `try_derive_local_entitlement_from_configured_rules` return the rejection
+  message as `Err`. The existing infallible functions keep their signatures and
+  deny with `invalid_purchased_allowance`.
+- Payload `bundle_schema_version` 17 accepted (readable floor 11).
+- **Scaffold pin 0.1.503 → 0.1.507** (revturbine-scaffold #584 and #585;
+  vendored `types.py` / `types.rs` refreshed). 0.1.507 escapes a zero-width
+  regex that 0.1.506 shipped with literal characters (BUG-809), which kept the
+  bundled SDK from starting on a page that does not decode scripts as UTF-8.
+
+**Landed in** 0.12.0. **Fail-closed in** 0.12.0.
+
+### Deprecated `ExportedConfig` aliases stay one more minor
+
+Removal of the deprecated ExportedConfig aliases moved from 0.12.0 to 0.13.0
+(Kent, 2026-10-20). They keep working and warning in 0.12.0:
+`localRuntime.exportedConfig`, `getExportedConfig`,
+`resolvers.resolveExportedConfig`, `exportedConfigVersion`,
+`ExportedConfigProvider` and `ExportedConfig` (TS); `exported_config`,
+`get_exported_config`, `configured_plan_name_from_exported_config`,
+`parse_exported_config_or_throw` and `ExportedConfig` (Python);
+`configured_plan_name_from_exported_config` (Rust). Deprecation warnings now
+name 0.13.0.
+
+**Proving tests.**
+- **Purchased allowances:**
+  - parity scenarios `entitlement_purchased_allowances`, `entitlement_purchased_unknown_addons`, `entitlement_purchased_period_mismatch` and `entitlement_purchased_one_time_credit`;
+  - web-sdk `customer-side-purchased-allowances.test.ts`;
+  - py `test_purchased_allowances.py`;
+  - rs `tests/entitlement_check.rs` (purchased cases) and `unknown_or_mismatched_purchased_variation_contributes_nothing`.
+- **Breaking items 2 and 3:** the `@ts-expect-error` assertions in `web-sdk/update-keys-exhaustiveness.test-d.ts`, which `pnpm check:types:exact` compiles, and `web-sdk/pure-getplacement.test.ts`.
+
+Removal of the deprecated ExportedConfig aliases moved from 0.12.0 to 0.13.0 (Kent, 2026-10-20). Removing `placementsByLookupKey` and narrowing `setUserContext` / `identify` ship in 0.12.0 (Kent, 2026-10-20).
+
 ## 0.11.22
 
 ### Message slots never show Fixed or Access Gate content (D-62)
@@ -86,8 +187,9 @@ also require a changelog entry.
 - **Deprecated, ignored:** `localRuntime.initialData.placementsByLookupKey`
   (warns once when supplied). Author placements in `localRuntime.playbook`, or
   implement the `getPlacement` resolver for a custom source. The field, and
-  core's `resolveLocalPlacementFromCandidates` selection helper, are removed in
-  0.12.0 (BL-0167).
+  the ports' copies of the `resolveLocalPlacementFromCandidates` selection
+  helper, were removed in 0.12.0 (BL-0537). Scaffold core's TS original is
+  removed separately in a scaffold release.
 - **Live design partner:** an integration that seeded placement outputs, or
   relied on the old cached ranking, now sees the Playbook's decision.
 
@@ -816,6 +918,8 @@ would break callers that pass a wider object today. `IdentifyContextInput`
 also still declares 11 keys that `identify()` drops with a warning (`trial`,
 `tiers`, `experiments`, …). The type-test pins that list, so it cannot grow
 silently. Narrowing the type is a breaking change and waits for the minor.
+(Both shipped in 0.12.0: `setUserContext()` is `Exact<>`, and
+`IdentifyContextInput` declares only the keys `identify()` merges.)
 
 The `@revt-eng/*` pins move to `0.1.370` (scaffold #427: discovery-owned
 `SurfaceSlotSchema.slot_name`). That field now appears in the generated client
@@ -1579,7 +1683,7 @@ Ruling: Kent, 2026-09-23 (BL-0156 — `ExportedConfig` naming deprecated, Playbo
 canonical).
 
 **Landed in** `0.11.1` (additive — every old name still resolves).
-**Fail-closed in** `0.12.0`, when BL-0167 removes the `ExportedConfig*` keys from
+**Fail-closed in** `0.13.0` (moved from `0.12.0`, Kent 2026-10-20), when BL-0167 removes the `ExportedConfig*` keys from
 scaffold's barrel and the generated definitions disappear from the vendored types
 along with them. That is the same window as the `0.11.0` option/method aliases, so
 an integration has one removal to absorb, not two.
@@ -1647,7 +1751,7 @@ of them gets a single line, not a wall. Production builds are silent. Requires
 
 Ruling: Kent, 2026-09-23 (BL-0156).
 
-**Landed in** `0.11.0`. **Fail-closed in** `0.12.0` for the `ExportedConfig`
+**Landed in** `0.11.0`. **Fail-closed in** `0.13.0` (moved from `0.12.0`, Kent 2026-10-20) for the `ExportedConfig`
 aliases — until then every old name works and warns once.
 
 **Proving test:** `web-sdk/playbook-option.test.ts` (canonical never warns, the
@@ -1669,7 +1773,7 @@ exactly the confusion the "Landed in" / "Fail-closed in" split exists to
 prevent. As of `0.11.0` the alias also warns once (it did not before).
 
 **Landed in** a release before `0.11.0` (additive; the alias never stopped
-working). **Fail-closed in** `0.12.0`, with the rest of the `ExportedConfig`
+working). **Fail-closed in** `0.13.0` (moved from `0.12.0`, Kent 2026-10-20), with the rest of the `ExportedConfig`
 aliases.
 
 **Proving test:** `web-sdk/playbook-option.test.ts` — `resolveLocalPlaybook`

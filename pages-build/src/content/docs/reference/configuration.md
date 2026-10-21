@@ -139,7 +139,6 @@ client-context call is made. Server-derived context is opt-in.
 | Field | Type |
 |---|---|
 | `placementDecisionsByPlacementId` | `Record<string, RevTurbinePlacementDecision>` |
-| `placementsByLookupKey` | `Record<string, PlacementOutput \| null>` — **deprecated, ignored since 0.11.21**; removed in 0.12.0 |
 | `userContextByUserId` | `Record<string, UserTargetingContext>` |
 | `trialStatus` | `RevTurbineTrialContext` |
 
@@ -149,10 +148,10 @@ grants through `initialData`.
 
 Placements work the same way: `getPlacement` is a pure function of the user
 context and `localRuntime.playbook`, evaluated through the same decision path
-as `getPlacementDecision` and the server SDKs. Pre-decided outputs in
-`placementsByLookupKey` are ignored (with a warning); author the placement in
-the Playbook instead, or implement the `getPlacement` resolver for a custom
-source.
+as `getPlacementDecision` and the server SDKs. There is no seeded-output lane:
+`initialData.placementsByLookupKey` was removed in 0.12.0 (ignored since
+0.11.21). Author the placement in the Playbook instead, or implement the
+`getPlacement` resolver for a custom source.
 
 ### resolvers
 
