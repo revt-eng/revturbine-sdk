@@ -1,0 +1,136 @@
+---
+title: Runtime and Playbook
+description: The two halves of every RevTurbine decision — the Playbook you author and the Runtime that holds who is asking — how they combine locally, and which pieces are shipped today.
+sidebar:
+  order: 2
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Every RevTurbine decision, whether it is "may this user export?" or "which
+banner should this user see?", is one calculation with two inputs:
+
+- the **Playbook**: what you decided about plans, entitlements, targeting and
+  messages. It is the same for every user, and you author it.
+- the **Runtime**: who is asking right now, and what they have used. It is
+  different for every user and changes while they use your app.
+
+The SDK combines the two **locally**, in your app or on your server. Nothing in
+that calculation waits on RevTurbine.
+
+```text
+   Playbook (authored, versioned)          Runtime (per user, per moment)
+   plans · entitlements · segments         UserContext · usage · app answers
+   placements · payloads                   (AccountContext: planned)
+              \                                   /
+               \                                 /
+                +---- SDK: local evaluation ----+
+                                |
+              entitlement result · winning placement
+                                |
+          your UI renders it  ·  your server enforces it
+```
+
+## The Playbook
+
+The Playbook is the portable artifact RevTurbine evaluates: one JSON file,
+`revturbine.playbook.json`, that you edit in the dashboard, with the CLI or with
+your coding agent. Every launch is an immutable, versioned Release. In local
+mode you bundle the file; in hosted mode the SDK fetches the launched Release.
+Either way the SDK evaluates the same artifact the same way.
+
+| Primitive | In plain English | Why it exists | Example |
+|---|---|---|---|
+| **<span id="plan">Plan</span>** | A tier a customer can be on. A plan can have more than one price, each called a <span id="plan-variation">plan variation</span> (monthly, annual or regional); variations share the plan's tier, so switching between them is never an upgrade. | So your app asks "what is this user entitled to?" instead of "are they on Pro?" | `starter`, `pro` |
+| **<span id="entitlement">Entitlement</span>** | One thing a user may be allowed to do, and how much: a feature, a usage limit, credits or seats. | One vocabulary for gating, metering and upgrade prompts. | `batch_export`, `api_calls` (limit 1,000) |
+| **<span id="entitlement-rule">Entitlement rule</span>** | Says which plans, segments or seat types get an entitlement, and how much. | Changing who gets what is a Playbook edit, not a deploy. | "Pro gets `api_calls` up to 1,000 a month" |
+| **<span id="segment">Segment</span>** | A named group of users, defined by rules over their context. | Targeting and experiments: show this to trial users only. | `trial_users` |
+| **<span id="placement">Placement</span>** | A message the engine may show at the right moment: a banner, modal, toast or button. Its <span id="placement-payload">**payload**</span> is the copy, offer and call to action. | Upgrade prompts are decided by caps, cooldowns and priority, not by your code. | A "you have 5 exports left" banner |
+
+Related terms you will meet:
+
+- An **add-on** is something a customer buys on top of a plan.
+- A **gate** is where your app asks an entitlement question (`<Gate>`, `gate()`,
+  `can()`); a **slot** is where your app can show a placement (`<Slot>`). Both
+  are covered in [Core Concepts](/concepts/core-concepts/).
+
+## The Runtime
+
+The Runtime is everything the SDK knows about the moment of the decision.
+
+| Piece | In plain English | Who supplies it |
+|---|---|---|
+| **<span id="usercontext">UserContext</span>** | The user: id, plan, usage balances, trial state, custom traits. | Your app at init and as things change, plus plan, trial and payment state from Stripe through a [client session](/guides/client-sessions/) in hosted mode. See [`RevTurbineUserContext`](/user-context/). |
+| **<span id="usage">Usage</span>** | How much the user has consumed. Always an absolute balance, never a delta. | Your app (`update({ usage })`). |
+| **App answers** | When your own system already decides an entitlement, you pass its answer in the `entitlements` field. This is Entitlement Mirroring. | Your app. |
+| **<span id="entitlement-grant">Entitlement grant</span>** | What a user ends up with for one entitlement, and where it came from: a rule, an answer your app passed, or an override. | Derived by the engine. |
+
+Your app's own answer and the Playbook's can disagree. By default your app's
+answer wins, and the Playbook's rule is then only used to tell you which plans
+include the entitlement. That default is the Entitlement Mirroring precedence
+setting; set it the same way in the browser and on your server so they agree.
+It is separate from how overrides combine, below.
+
+<Aside type="caution" title="Planned, not shipped: AccountContext and overrides">
+Two Runtime pieces are approved but not built yet, so do not write code against
+them:
+
+- <span id="accountcontext">**AccountContext**</span>: account-level input that the SDK would merge with the
+  UserContext. When both carry the same key, the UserContext value would win,
+  with a warning if the values differ. The merge rules beyond that are still
+  being designed.
+- **Entitlement overrides**: a plan, add-on or entitlement granted to one
+  account or one user, optionally until an end date. Overrides only add access.
+
+Until they ship, supply account-level facts in the UserContext yourself. This
+page will describe them as shipped when they are.
+</Aside>
+
+## How initialization drives a decision
+
+1. **Initialize.** You give the SDK the Playbook (a bundled file, or a public
+   key so it can fetch the launched Release) and the user. See
+   [Initialize the SDK](/getting-started/initialization/).
+2. **Load.** In hosted mode the SDK fetches the Playbook once and re-checks for
+   a new Release about once a minute, keeping the last good copy if a refresh
+   fails. Until the first Playbook arrives, a check **denies** with
+   `config_unavailable`. It never grants on a guess.
+3. **Change the context.** `identify()`, `update()` and a client-session refresh
+   change the Runtime. The SDK re-evaluates against the Playbook it already
+   holds. No Playbook is fetched for that.
+4. **Decide.** `can()` returns an entitlement result; a `<Slot>` returns the one
+   placement that won, after eligibility, caps, cooldowns and priority.
+
+Local evaluation is what keeps this fast and independent of RevTurbine's
+availability. Two boundaries matter:
+
+- **Browser versus server.** The browser's decision drives the UI. It is a
+  convenience, because a user controls their own browser. Your server makes the
+  decision that protects money and data, by building its own instance from the
+  Playbook and **its own** record of the user. See
+  [Client vs Server Enforcement](/concepts/enforcement/).
+- **Local versus hosted.** Hosted changes where the Playbook and the
+  server-derived user state come from, not where the decision runs. See
+  [Runtime Modes](/guides/runtime-modes/).
+
+## A worked example
+
+You sell a "batch export" feature, included in Pro, with a limit of 10 exports
+a month on Starter.
+
+- **Playbook:** the `batch_export` entitlement; one rule that gives Pro unlimited
+  and Starter a limit of 10; a placement that shows an upgrade banner when a
+  Starter user has used 8.
+- **Runtime:** Maya is on Starter and has used 8 (UserContext and usage).
+- **Decision:** `can('batch_export')` returns allowed, with 2 remaining. The
+  banner placement is eligible, so the `<Slot>` shows it.
+- **Change:** Maya upgrades. Stripe tells RevTurbine; the client session brings
+  the new plan to the SDK; the Runtime changes, and the same Playbook now says
+  unlimited. Nothing was redeployed.
+
+## Where to go next
+
+- [Core Concepts](/concepts/core-concepts/): entitlements, gates and placements.
+- [Entitlements](/guides/entitlements/) and [Placements](/guides/placements/): each primitive in depth.
+- [What Owns What](/concepts/source-of-truth/): which system is authoritative for each fact.
+- [Initialize the SDK](/getting-started/initialization/): the code.

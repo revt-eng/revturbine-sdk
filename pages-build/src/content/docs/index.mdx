@@ -13,6 +13,15 @@ This page is the whole happy path. It runs in local mode first — no account, n
 The walkthrough is React because that is the shortest path to something on screen. The engine is framework-agnostic: `import { initRevTurbine } from '@revturbine/sdk/headless'` pulls in no React and runs on Svelte, Vue, plain TypeScript, and Node. Same checks, same decisions; you render the resolved content yourself. See [Headless API](/guides/headless-api/) and [Server-Side Integration](/getting-started/server-side/). Python and Rust SDKs evaluate the same Playbook with byte-identical results.
 </Aside>
 
+## Two ideas to hold
+
+Every decision RevTurbine makes combines two things, and the SDK combines them locally:
+
+- The **Playbook** is what you authored, the same for every user: [plans](/concepts/runtime-and-playbook/#plan) and their [variations](/concepts/runtime-and-playbook/#plan-variation), [entitlements](/concepts/runtime-and-playbook/#entitlement) and the [rules](/concepts/runtime-and-playbook/#entitlement-rule) that grant them, [segments](/concepts/runtime-and-playbook/#segment), and [placements](/concepts/runtime-and-playbook/#placement) with their [payloads](/concepts/runtime-and-playbook/#placement-payload). It is one versioned file.
+- The **Runtime** is who is asking right now: the [UserContext](/concepts/runtime-and-playbook/#usercontext), their [usage](/concepts/runtime-and-playbook/#usage), and the [entitlement grants](/concepts/runtime-and-playbook/#entitlement-grant) that result. [AccountContext](/concepts/runtime-and-playbook/#accountcontext) is planned, not shipped.
+
+Plain-English definitions, how initialization and context changes drive a decision, and a worked example are on [Runtime and Playbook](/concepts/runtime-and-playbook/). The code for every runtime is on [Initialize the SDK](/getting-started/initialization/).
+
 ## 1. Bootstrap
 
 <Tabs>
@@ -161,22 +170,25 @@ The browser check drives the UI; your server makes the money-safe decision befor
 
 ```ts
 import { initRevTurbine, RuntimeMode } from '@revturbine/sdk/headless';
+import playbook from './revturbine.playbook.json';
 
-async function handleExport(req, res) {
+export async function POST(request: Request): Promise<Response> {
+  const user = await getSignedInUser(request); // your own auth
   const rt = await initRevTurbine({
-    tenantId: process.env.REVTURBINE_TENANT_ID!,
-    apiKey: process.env.REVTURBINE_API_KEY!,
-    endpoint: process.env.REVTURBINE_ENDPOINT!,
-    runtimeMode: RuntimeMode.Server,
-    user: { id: req.userId, plan_handle: req.user.planHandle },
+    runtimeMode: RuntimeMode.LocalOnly,
+    localRuntime: { playbook }, // loaded once per process; `revturbine download --live` on deploy
+    user: { id: user.id, plan_handle: user.planHandle },
   });
   const result = await rt.can('batch_export');
-  if (!result.allowed) return res.status(402).json({ error: 'upgrade_required' });
-  await runExport(req);
+  if (!result.allowed) return Response.json({ error: 'upgrade_required' }, { status: 402 });
+  return runExport(request);
 }
 ```
 
-Why the re-check, and which actions need it: [Client vs Server Enforcement](/concepts/enforcement/).
+One instance per request, built from a Playbook you loaded once, so the check
+makes no network call. Why the re-check, and which actions need it:
+[Client vs Server Enforcement](/concepts/enforcement/). Why a server does not use
+hosted mode, and what it can report: [Server-Side Integration](/getting-started/server-side/).
 
 ## 8. Go hosted: connect Stripe, change it without a deploy
 
@@ -188,16 +200,25 @@ Everything above works forever in local mode, free. Hosted mode is where you sto
 
 2. **Connect Stripe** in **Settings → Stripe**. From then on a purchase updates what the user can do with no app code: plan and payment state arrive through a client session. See [Billing & Stripe](/guides/billing/).
 
-3. **Switch the provider to hosted mode.** Mint a publishable ingest key under **Settings → API tokens**, then:
+3. **Switch the provider to hosted mode.** Mint an ingest key under **Settings → API Token Management → Ingest Keys** and add your app's origins to its allowed origins. Then add the **client-session route** to your server (it mints a short-lived token with your server key, so the plan Stripe holds reaches the SDK) and pass both to the provider:
 
     ```tsx
-    const options = useMemo(() => ({
-      tenantId: 'tenant_abc',
-      publicKey: 'rtk_…',             // public key — safe in the browser
-      user: { id: currentUser.id },   // plan_handle now comes from Stripe
-      clientSession: () => fetch('/api/revturbine-session', { method: 'POST' }).then((r) => r.json()).then((j) => j.client_token),
-    }), [currentUser.id]);
+    import { RevTurbineProvider } from '@revturbine/sdk';
+    import { useMemo, type ReactNode } from 'react';
+    import { fetchClientSession } from './revturbine-client-session';
+
+    export function RevTurbine({ userId, children }: { userId: string; children: ReactNode }) {
+      const options = useMemo(() => ({
+        publicKey: process.env.NEXT_PUBLIC_REVTURBINE_PUBLIC_KEY!, // public key, safe in the browser
+        user: { id: userId },                                      // plan_handle now comes from Stripe
+        clientSession: fetchClientSession,                         // calls YOUR route; see Client sessions
+      }), [userId]);
+
+      return <RevTurbineProvider options={options}>{children}</RevTurbineProvider>;
+    }
     ```
+
+    The route and the `fetchClientSession` function are on [Client sessions](/guides/client-sessions/); every initialization variant is on [Initialize the SDK](/getting-started/initialization/).
 
 4. **Change something and reload.** Open the dashboard, edit the banner's copy or the free plan's export limit, launch the release. The SDK picks it up on its next refresh — no deploy. Or do it from the terminal: `revturbine download --live`, edit, `revturbine validate`, `revturbine diff --live`, `revturbine launch`.
 

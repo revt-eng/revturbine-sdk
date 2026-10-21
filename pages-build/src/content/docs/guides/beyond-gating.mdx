@@ -22,6 +22,9 @@ Multiple placements can be eligible for the same moment. `getPlacementDecision()
 Beyond "is this allowed?", you can tell the engine *what just happened* with `emitTrigger()` — canonical lifecycle events it recognizes and can respond to with the right placement:
 
 ```ts
+import { useRevTurbine } from '@revturbine/sdk';
+
+const { sdk: rt } = useRevTurbine(); // with a headless session: `session.sdk`
 await rt.emitTrigger('usage_limit_approaching', { usage_percent: 85, threshold: 80 });
 await rt.emitTrigger('trial_expiring', { days_remaining: 2 });
 await rt.emitTrigger('feature_gated', { feature: 'advanced_automation' });

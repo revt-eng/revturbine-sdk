@@ -46,6 +46,9 @@ They sound alike but do different jobs:
 - **`gate(action, fn)`** *asks and acts* — it runs `fn` only when the user is entitled, and hands back the entitlement so you can open a paywall otherwise.
 
   ```ts
+  import { useRevTurbine } from '@revturbine/sdk';
+
+  const { sdk: rt } = useRevTurbine(); // the browser SDK; `gate()` lives here, not on a headless session
   const gated = await rt.gate('export_pdf', () => exportPdf());
   if (!gated.ran) openPaywall(gated.entitlement);
   ```

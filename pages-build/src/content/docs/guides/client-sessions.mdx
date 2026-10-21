@@ -1,0 +1,210 @@
+---
+title: Client sessions
+description: The full round trip for hosted mode — your server route that mints a session token with the server key, the browser callback that fetches it, and what the SDK does with it.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+In hosted mode RevTurbine knows things your browser does not: the plan Stripe
+says this user is on, whether a trial is running, whether a payment failed. A
+**client session** is how that state reaches the SDK without you wiring a
+refresh loop.
+
+It has two halves, and you write both:
+
+- a **route on your server** that checks who is signed in, mints a short-lived
+  token with your server key, and returns it;
+- a **callback in the browser** that calls that route and hands the token to the
+  SDK.
+
+```text
+browser                      your server                        RevTurbine
+   |  POST /api/revturbine-session  |                                |
+   |------------------------------->|  who is signed in? (your auth) |
+   |                                |  POST /api/sdk/client-sessions |
+   |                                |  (server key, subject = user)  |
+   |                                |------------------------------->|
+   |                                |<-- { client_token, expires_at }|
+   |<-- { client_token, expires_at }|                                |
+   |  GET /api/sdk/client-context  (Bearer client_token)             |
+   |---------------------------------------------------------------->|
+   |<-- plan, trial, payment health (client-safe fields only)        |
+```
+
+The server key never leaves your server. The browser holds only the token,
+in memory, for about ten minutes.
+
+## The server route
+
+The route does three things in order: authenticate **your** user, mint with
+**your** server key, return **only** the token.
+
+<Steps>
+
+1. **Authenticate with your own auth.** RevTurbine does not know who is signed
+   in to your app. Mint for the user your session says is signed in, and take
+   the id from your session, never from the request body: the token carries
+   that subject, and the SDK will apply whatever plan it resolves to the user
+   it is initialized for.
+
+2. **Mint with the server key.** `RevTurbineServer` holds the key and calls
+   `POST /api/sdk/client-sessions` for you. Create it once per process.
+
+3. **Return only `client_token`** (and `expires_at` if you want it). Do not
+   return the server key, the tenant id, or any other secret.
+
+</Steps>
+
+Create the server object once, in a module of its own:
+
+```ts title="src/server/revturbine-server.ts"
+import { RevTurbineServer } from '@revturbine/sdk/headless';
+
+export const revturbineServer = new RevTurbineServer({
+  tenantId: process.env.REVTURBINE_TENANT_ID!,
+  apiKey: process.env.REVTURBINE_API_KEY!, // the server key. Never NEXT_PUBLIC_.
+  endpoint: process.env.REVTURBINE_ENDPOINT ?? 'https://revturbine.com/app',
+});
+```
+
+### Next.js route handler
+
+```ts title="app/api/revturbine-session/route.ts"
+import { revturbineServer } from '@/server/revturbine-server';
+import { getSignedInUser } from '@/server/auth'; // your own auth: the signed-in user, or null
+
+export async function POST(): Promise<Response> {
+  const user = await getSignedInUser();
+  if (!user) return new Response('Unauthorized', { status: 401 });
+
+  try {
+    const { client_token, expires_at } = await revturbineServer.clientSessions.create({
+      subject: user.id,
+    });
+    return Response.json({ client_token, expires_at }, { headers: { 'cache-control': 'no-store' } });
+  } catch {
+    // The error carries only a status and a request id, never the key.
+    return new Response('Could not create a RevTurbine session', { status: 502 });
+  }
+}
+```
+
+### Express
+
+```ts title="src/server/routes/revturbine-session.ts"
+import express from 'express';
+import type { Request, Response } from 'express';
+import { revturbineServer } from '../revturbine-server';
+import { requireSignedIn } from '../auth'; // your own auth middleware: sets req.user or answers 401
+
+export const revturbineSession = express.Router();
+
+revturbineSession.post('/api/revturbine-session', requireSignedIn, async (req: Request, res: Response) => {
+  try {
+    const { client_token, expires_at } = await revturbineServer.clientSessions.create({
+      subject: req.user.id,
+    });
+    res.set('cache-control', 'no-store').json({ client_token, expires_at });
+  } catch {
+    res.status(502).send('Could not create a RevTurbine session');
+  }
+});
+```
+
+Use this one route name everywhere: `/api/revturbine-session`. The SDK does not
+care what it is called, but your docs, your CSRF rules and your team will.
+
+<Aside type="note" title="What the token can do">
+A client session carries one capability, `context:read`: it reads the
+client-safe context for the user it was minted for, and nothing else. It cannot
+write, cannot read another user, and cannot call a management API. It expires
+after about ten minutes. Server-only detail, such as raw Stripe ids and failed
+payment records, is never in the response.
+</Aside>
+
+## The browser callback
+
+`clientSession` is a **function**, not a token. The tokens are short-lived, so a
+value captured at init would go stale mid-session.
+
+```ts title="src/revturbine-client-session.ts"
+export async function fetchClientSession(): Promise<string> {
+  const response = await fetch('/api/revturbine-session', {
+    method: 'POST',
+    credentials: 'same-origin',
+  });
+  if (!response.ok) {
+    throw new Error(`RevTurbine client session failed (${response.status})`);
+  }
+  const body: { client_token: string } = await response.json();
+  return body.client_token;
+}
+```
+
+Then pass it at init, as on [Initialize the SDK](/getting-started/initialization/):
+
+```tsx title="src/revturbine-provider.tsx"
+import { RevTurbineProvider } from '@revturbine/sdk';
+import { useMemo, type ReactNode } from 'react';
+import { fetchClientSession } from './revturbine-client-session';
+
+export function RevTurbine({ userId, children }: { userId: string; children: ReactNode }) {
+  const options = useMemo(
+    () => ({
+      publicKey: process.env.NEXT_PUBLIC_REVTURBINE_PUBLIC_KEY!,
+      user: { id: userId },
+      clientSession: fetchClientSession,
+    }),
+    [userId],
+  );
+
+  return <RevTurbineProvider options={options}>{children}</RevTurbineProvider>;
+}
+```
+
+## What the SDK does with it
+
+1. It calls your callback **the first time it needs a token**, which is at init.
+2. It sends the token as a Bearer credential to `GET /api/sdk/client-context`,
+   and folds the plan, trial and payment-health fields it gets back into the
+   user's context. Decisions then re-evaluate, locally.
+3. When you call `identify()` with a new user, it drops the held token and calls
+   your callback again, because a token is minted for one user.
+4. When RevTurbine answers `401` (the token expired or was revoked), it calls
+   your callback once for a fresh token and retries once. It does not loop.
+
+The token is held in memory only. It is never persisted, never logged, never put
+in a URL, and never merged into the user context you can read.
+
+### When something goes wrong
+
+Enrichment is best-effort, and it never breaks your app.
+
+| What fails | What happens |
+|---|---|
+| Your route returns an error or your callback throws | The SDK keeps the context you passed at init. No plan arrives from Stripe, so pass `plan_handle` yourself if your signed-out or error state needs one. |
+| Your callback returns an empty string | Treated as no token: same as above. |
+| The token expires mid-session | One automatic re-mint and retry. |
+| A different user signs in | Call `identify(newId)` (or re-create the provider, as the example above does when `userId` changes): the held token is dropped and your callback mints one for the new user. |
+| Nobody is signed in | Your route answers `401`, so the callback throws and the SDK keeps the context you passed. |
+| You omit `clientSession` | Nothing is requested. Server-derived plan and trial state never reach the SDK. |
+
+Because failures are silent by design, check the route yourself: sign in, open
+the network tab, and confirm `POST /api/revturbine-session` answers `200` with a
+`client_token`, followed by `GET …/api/sdk/client-context` answering `200`.
+
+## Which language mints
+
+TypeScript on Node mints today, with `RevTurbineServer` as above. The Python and
+Rust packages evaluate a Playbook you supply; they do not mint client sessions.
+If your backend is Python or Rust, call `POST /api/sdk/client-sessions` yourself
+with the server key as a Bearer token and `{ "subject": "<user id>" }` as the
+JSON body. It answers `201` with `{ client_token, expires_at }`; return the
+`client_token` to the browser.
+
+## Related
+
+- [Initialize the SDK](/getting-started/initialization/)
+- [Configuration reference → `clientSession`](/reference/configuration/#server-derived-context-clientsession)
+- [Production Readiness → Keys](/operate/production-readiness/#keys)
+- [Billing & Stripe](/guides/billing/)

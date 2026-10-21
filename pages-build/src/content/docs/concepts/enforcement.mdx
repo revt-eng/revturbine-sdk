@@ -65,25 +65,25 @@ Then verify again on your server before doing the paid work — with the same SD
 
 ```ts
 import { initRevTurbine, RuntimeMode } from '@revturbine/sdk/headless';
+import playbook from './revturbine.playbook.json';
 
-// Server: the trusted decision. Nothing on this path calls RevTurbine —
-// the headless SDK evaluates the Playbook it holds.
-async function handleExport(req, res) {
+// Server: the trusted decision. The instance is built from a Playbook this
+// process already loaded, so the check makes no call to RevTurbine.
+export async function POST(request: Request): Promise<Response> {
+  const user = await getSignedInUser(request); // your own auth
   const rt = await initRevTurbine({
-    tenantId: process.env.REVTURBINE_TENANT_ID!,
-    apiKey: process.env.REVTURBINE_API_KEY!,
-    endpoint: process.env.REVTURBINE_ENDPOINT!,
-    runtimeMode: RuntimeMode.Server,
-    user: { id: req.userId, plan_handle: req.user.planHandle },
+    runtimeMode: RuntimeMode.LocalOnly,
+    localRuntime: { playbook },
+    user: { id: user.id, plan_handle: user.planHandle },
   });
 
   const result = await rt.can('data_export');
-  if (!result.allowed) return res.status(402).json({ error: 'upgrade_required' });
-  await runExport(req);
+  if (!result.allowed) return Response.json({ error: 'upgrade_required' }, { status: 402 });
+  return runExport(request);
 }
 ```
 
-Two conventions worth keeping: answer a denied entitlement with **402** (upgrade to proceed) and reserve 403 for permission denials, so clients can tell the two apart; and on a request hot path, don't pay the Playbook fetch per request — see [Instance lifecycle](/getting-started/server-side/#instance-lifecycle).
+Two conventions worth keeping: answer a denied entitlement with **402** (upgrade to proceed) and reserve 403 for permission denials, so clients can tell the two apart; and build one instance per request from a Playbook you loaded once per process, because the SDK holds a single user context per instance. See [Server-Side Integration](/getting-started/server-side/#headless-server-re-check) for why a server does not use hosted `Server` mode.
 
 The client `<Gate>` keeps the UI honest and fast; the server check keeps the revenue safe. Both evaluate the same Playbook locally, so neither depends on our servers at decision time.
 

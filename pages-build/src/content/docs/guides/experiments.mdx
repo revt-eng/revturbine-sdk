@@ -149,7 +149,8 @@ Use the structured selection when your application must render variant-specific
 behavior itself:
 
 ```ts
-const selection = await rt.getExperimentVariant('pricing_test');
+// `sdk` is the SDK instance: `useRevTurbine().sdk` in React, `session.sdk` headless.
+const selection = await sdk.getExperimentVariant('pricing_test');
 
 if (selection.status === 'assigned') {
   renderPricingVariant(selection.variantHandle);
@@ -168,7 +169,7 @@ For diagnostics, the same immutable context used by local evaluation is
 available from `getEffectiveUserContext()`:
 
 ```ts
-const effectiveContext = await rt.getEffectiveUserContext();
+const effectiveContext = await sdk.getEffectiveUserContext();
 console.log(effectiveContext.experiments?.pricing_test);
 ```
 
@@ -178,9 +179,10 @@ An adapter is optional when your code has already normalized the assignment.
 Use the canonical `experiments` map, not an arbitrary custom trait:
 
 ```ts
-const rt = initRevTurbine({
-  tenantId: 'tenant_abc',
-  publicKey: 'rtk_…', // public key — safe in the browser
+import { initRevTurbine } from '@revturbine/sdk';
+
+const rt = await initRevTurbine({
+  publicKey: process.env.NEXT_PUBLIC_REVTURBINE_PUBLIC_KEY!, // public key — safe in the browser
   user: {
     id: 'user_123',
     plan_handle: 'free',

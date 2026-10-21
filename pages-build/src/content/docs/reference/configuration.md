@@ -9,13 +9,13 @@ Complete reference for `RevTurbineInitOptions` and related configuration types.
 
 ### Required Fields
 
-Required in `revturbine_server` and `custom_endpoints` modes. In `local_only` mode both are optional — `initRevTurbine({ runtimeMode: 'local_only', localRuntime: { playbook } })` is a complete configuration.
+In `revturbine_server` and `custom_endpoints` modes the browser needs `publicKey`; `tenantId` is optional because the key names its tenant. In `local_only` mode neither is needed — `initRevTurbine({ runtimeMode: 'local_only', localRuntime: { playbook } })` is a complete configuration. For copy-paste examples per runtime, see [Initialize the SDK](/getting-started/initialization/).
 
 | Field | Type | Description |
 |---|---|---|
-| `tenantId` | `string` | Your RevTurbine tenant identifier |
-| `publicKey` | `string` | In the browser: your public key (`rtk_…`, type `public`, minted under **Settings → API tokens → Ingest keys**). Safe to ship in a bundle. See [Production Readiness → Keys](/operate/production-readiness/#keys). |
-| `apiKey` | `string` | On a server only: your server key (`rtk_…`, type `server`), the same option the server SDK takes. Never ship it to a browser. As of `0.11.0` it is **not** accepted as a browser credential — pass `publicKey` there; `ingestPublicKey` was removed (BL-0113). |
+| `tenantId` | `string` | Your RevTurbine tenant identifier. Optional whenever `publicKey` is supplied: the key is bound to one tenant and the SDK reads the tenant back from the Playbook it fetches. A `tenantId` that disagrees with the key's tenant is ignored with a one-time warning; the key wins. Required by `RevTurbineServer`, where it must be the server key's own tenant. |
+| `publicKey` | `string` | In the browser: your public key (`rtk_…`, type `public`, minted under **Settings → API Token Management → Ingest Keys**). Safe to ship in a bundle. Add your app's origins to the key's allowed origins, or Playbook delivery is refused with `403 origin_not_allowed`. See [Production Readiness → Keys](/operate/production-readiness/#keys). |
+| `apiKey` | `string` | Your server key (`rtk_…`, type `server`), minted under **Settings → API Token Management → Server Token**. It is the option `RevTurbineServer` takes, to mint client sessions. `initRevTurbine` does **not** read it: a headless init with only `apiKey` fetches no Playbook. Never ship it to a browser. As of `0.11.0` it is not accepted as a browser credential — pass `publicKey` there; `ingestPublicKey` was removed (BL-0113). |
 
 ### Runtime Configuration
 
@@ -68,23 +68,34 @@ a payment that failed. `clientSession` is how the SDK gets it without you
 wiring a refresh loop.
 
 Supply a function that returns a client-session token minted by your backend
-(`POST /api/sdk/client-sessions`). The SDK calls it when it first needs a
+(`POST /api/sdk/client-sessions`, with the server key; `RevTurbineServer` does
+it for you). The SDK calls it when it first needs a
 token, again after `identify()`, and again if the control plane reports one
 expired — then fetches `GET /api/sdk/client-context` and folds the result into
 its decisions. **A purchase updates what the user can do with no further app
 code.**
 
 ```ts
-initRevTurbine({
-  tenantId: 'tenant_abc',
-  publicKey: 'rtk_…', // public key — safe in the browser
-  user: { id: 'user_123', plan_handle: 'free' },
-  clientSession: () =>
-    fetch('/api/revturbine-session', { method: 'POST' })
-      .then((r) => r.json())
-      .then((j) => j.client_token),
-});
+import { initRevTurbine } from '@revturbine/sdk';
+
+export async function startRevTurbine() {
+  return initRevTurbine({
+    publicKey: process.env.NEXT_PUBLIC_REVTURBINE_PUBLIC_KEY!, // public key — safe in the browser
+    user: { id: 'user_123', plan_handle: 'free' },
+    clientSession: async () => {
+      const response = await fetch('/api/revturbine-session', { method: 'POST' });
+      if (!response.ok) throw new Error(`RevTurbine client session failed (${response.status})`);
+      const body: { client_token: string } = await response.json();
+      return body.client_token;
+    },
+  });
+}
 ```
+
+The route behind `/api/revturbine-session` is yours: it authenticates your user,
+mints with the server key and returns only `client_token`. The complete route
+(Next.js and Express), the failure behavior and the refresh rules are on
+[Client sessions](/guides/client-sessions/).
 
 It is a **function, not a token**, because these tokens are short-lived (~10
 minutes) — a value captured at init would go stale mid-session, and refreshing
@@ -221,8 +232,8 @@ interface RevTurbineStorage {
 
 ```ts docs-check=false reason="required-field shape sketch, not a value"
 {
-  tenantId: string;   // ✅ Required
-  publicKey: string;  // ✅ Required in the browser (public key); on a server pass the server key as `apiKey` instead
+  tenantId?: string;  // optional: the key names its tenant
+  publicKey: string;  // ✅ Required (public key, browser). `apiKey` is not read here: a server uses a Playbook snapshot instead
   endpoint?: string;  // defaults to 'https://revturbine.com/app'
   mode?: string;      // defaults to 'snippet' ('react' via the provider)
 }
@@ -244,8 +255,8 @@ interface RevTurbineStorage {
 
 ```ts docs-check=false reason="required-field shape sketch, not a value"
 {
-  tenantId: string;                   // ✅ Required
-  publicKey: string;                  // ✅ Required (public key in the browser; `apiKey` = server key on a server)
+  tenantId?: string;                  // optional: the key names its tenant
+  publicKey: string;                  // ✅ Required (public key, browser)
   endpoint?: string;                  // defaults to 'https://revturbine.com/app'
   mode?: string;                      // defaults to 'snippet' ('react' via the provider)
   runtimeMode: 'custom_endpoints';   // ✅ Required

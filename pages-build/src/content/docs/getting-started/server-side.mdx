@@ -7,10 +7,11 @@ sidebar:
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
-The headless SDK runs on Node.js and edge runtimes. In `Server` mode it fetches
-the launched Playbook and evaluates each entitlement and placement in-process;
-in `LocalOnly` mode you bundle the Playbook yourself and make no decisioning
-network calls.
+The headless SDK runs on Node.js and edge runtimes. On a server it evaluates
+the Playbook snapshot you load, in-process, one user per instance, with no
+decisioning network call. Your server key is for a different job: minting
+[client sessions](/guides/client-sessions/) for the browser. This page covers
+both, and says plainly what a server cannot do yet.
 
 <Aside type="note" title="TypeScript uses RevTurbineUserContext">
 The `./headless` entry point accepts the same canonical, flat user shape as the
@@ -28,76 +29,113 @@ the identity in `user.id`; do not use the compact Python/Rust
 | Gate API endpoints | — | ✅ |
 | Enforce usage limits before processing | — | ✅ |
 | SSR placement decisions | ✅ (local mode) | ✅ |
-| Track server-side events | — | ✅ |
+| Report events to RevTurbine | ✅ | — (not yet; see [Events](#what-a-server-reports)) |
+| Mint client sessions | — | ✅ `RevTurbineServer` |
 
 ## Headless Server Re-check
 
 Use the `./headless` entry so a server or edge function does not load React.
-Always repeat money-, data-, or compute-sensitive checks at this boundary:
+Always repeat money-, data-, or compute-sensitive checks at this boundary.
 
-```ts
+**Load the Playbook once per process, and build one instance per request.** The
+SDK holds a single user context per instance, so a shared instance would let two
+concurrent requests overwrite each other's user. A request-scoped instance built
+from an already-loaded Playbook makes no network call to decide:
+
+```ts title="src/server/revturbine.ts"
 import {
   initRevTurbine,
   RuntimeMode,
   type RevTurbineUserContext,
 } from '@revturbine/sdk/headless';
+import playbook from './revturbine.playbook.json';
 
-async function handleExport(req) {
-  const user: RevTurbineUserContext = {
-    id: req.user.id,
-    plan_handle: req.user.planHandle,
+/** One instance per request. The Playbook is loaded once, when this module is. */
+export function revturbineFor(user: RevTurbineUserContext) {
+  return initRevTurbine({
+    runtimeMode: RuntimeMode.LocalOnly,
+    localRuntime: { playbook },
+    user,
+  });
+}
+```
+
+```ts title="src/server/export-route.ts" docs-check=strict
+import type { RevTurbineUserContext } from '@revturbine/sdk/headless';
+import { revturbineFor } from './revturbine';
+import { getSignedInUser, runExport } from './app'; // your own code
+
+export async function POST(request: Request): Promise<Response> {
+  const user = await getSignedInUser(request);
+  if (!user) return new Response('Unauthorized', { status: 401 });
+
+  const context: RevTurbineUserContext = {
+    id: user.id,
+    plan_handle: user.planHandle, // from your own billing record: the server decides, not the browser
     usage: {
       api_calls: {
         entitlement_handle: 'api_calls',
         unit: 'calls',
-        amount: req.user.apiCallCount,
-        limit: req.user.apiCallLimit,
+        amount: user.apiCallCount,
+        limit: user.apiCallLimit,
       },
     },
   };
 
-  const rt = await initRevTurbine({
-    tenantId: process.env.REVTURBINE_TENANT_ID!,
-    apiKey: process.env.REVTURBINE_API_KEY!,
-    endpoint: process.env.REVTURBINE_ENDPOINT!,
-    runtimeMode: RuntimeMode.Server,
-    user,
-  });
+  const rt = await revturbineFor(context);
 
   const result = await rt.can('data_export');
   if (!result.allowed) {
     return new Response('Upgrade required', { status: 402 });
   }
 
-  await rt.track('data_export_started');
-  await rt.flushEvents();
-  return runExport(req);
+  return runExport(request);
 }
 ```
 
-`Server` mode fetches the launched Playbook from the control plane, then
-evaluates locally. Before the first Playbook has arrived, a check denies rather
-than grants; once it has, a failed refresh keeps the last-known-good Playbook.
-
-### Instance lifecycle
-
-Each `initRevTurbine` call in `Server` mode fetches the launched Playbook and
-then caches it for that instance, re-checking for a new release at most once a
-minute. A request-scoped instance therefore pays that fetch on every request.
-Two patterns avoid it:
-
-- **One long-lived instance per process** where a single user context per
-  instance fits — workers, cron jobs, a per-tenant service.
-- **A shared Playbook snapshot with a request-scoped `LocalOnly` instance** —
-  the model the Python and Rust SDKs use. Load the Playbook once per process
-  (`revturbine download --live` on deploy, or a timer), then construct
-  `initRevTurbine({ runtimeMode: RuntimeMode.LocalOnly, localRuntime: { playbook }, user })`
-  per request, as in [Bundled Local Runtime](#bundled-local-runtime) below.
-  Note that a `LocalOnly` instance does not send events to RevTurbine ingest.
+The Playbook file comes from your launched Playbook:
+`revturbine download --live --save ./revturbine.playbook.json`, run in your
+build or deploy step. A launch reaches a running server when it next loads that
+file, so restart or redeploy after a launch.
 
 Initial `user.usage` entries use the rich `UserUsageEntry` shape shown above.
 After initialization, call `rt.update({ usage: { api_calls: total } })` with
 absolute numeric balances, not deltas.
+
+### Why not hosted `Server` mode on a server?
+
+`RuntimeMode.Server` is the browser's hosted mode: the SDK fetches your launched
+Playbook with the **public key**. A server cannot use it today, for two reasons
+you can check in the SDK's own behavior:
+
+- `initRevTurbine` reads `publicKey` and never `apiKey`. Passing your server key
+  as `apiKey` does not authenticate anything: with no `publicKey`, no Playbook
+  is requested, every check denies with `config_unavailable`, and no event
+  carries a credential.
+- A public key is bound to an origin allowlist that **fails closed**: a request
+  with no browser `Origin` is refused with `403 origin_not_allowed`. A Node
+  process or an edge function sends none, so even with `publicKey` set the
+  Playbook never arrives.
+
+Neither is an error you will see. The check just denies. That is the fail-closed
+rule working: an instance with no Playbook never guesses a grant. If your
+server's checks all deny with `config_unavailable`, this is why, and the fix is
+the pattern above.
+
+### What a server reports
+
+A request-scoped `LocalOnly` instance sends nothing to RevTurbine: it makes no
+decisioning call and no event call. `track()` on it is a no-op for ingest.
+
+A hosted instance cannot fill the gap from a server either. Event ingest accepts
+the public key, subject to the same origin allowlist as above, and refuses a
+server key. So **send events from the browser**, where the user is: `rt.track()`
+from the React or headless browser SDK. Direct server-side telemetry with the
+server key is planned, not shipped. Until it ships, do not wire a server
+`track()` call and expect an event to land.
+
+Python and Rust are decision-only in the same way: they evaluate a Playbook you
+supply and send nothing.
 
 ## Server-Owned CTA Actions
 
@@ -128,18 +166,13 @@ const options = {
 
 The route repeats the entitlement check before it changes anything:
 
-```ts
-import { initRevTurbine, RuntimeMode } from '@revturbine/sdk/headless';
+```ts docs-check=strict
+import { revturbineFor } from './revturbine';
+import { extendTrial, requireUser } from './app'; // your own code
 
-export async function POST(request: Request) {
+export async function POST(request: Request): Promise<Response> {
   const user = await requireUser(request);
-  const rt = await initRevTurbine({
-    tenantId: process.env.REVTURBINE_TENANT_ID!,
-    apiKey: process.env.REVTURBINE_API_KEY!,
-    endpoint: process.env.REVTURBINE_ENDPOINT!,
-    runtimeMode: RuntimeMode.Server,
-    user: { id: user.id, plan_handle: user.planHandle },
-  });
+  const rt = await revturbineFor({ id: user.id, plan_handle: user.planHandle });
 
   const access = await rt.can('trial_extension');
   if (!access.allowed) return new Response('Upgrade required', { status: 402 });
@@ -257,9 +290,33 @@ export default function Dashboard({ user }) {
 
 ## Client Sessions
 
-`RevTurbineServer`, exported from `@revturbine/sdk/headless`, mints short-lived,
-browser-safe client sessions from a secret server key. It is available today,
-but it is not the decision evaluator; use the headless session above for checks.
+`RevTurbineServer`, exported from `@revturbine/sdk/headless`, holds your server
+key and mints short-lived, browser-safe client sessions for one user at a time.
+This is the hosted-mode job for your server: it is how plan, trial and payment
+state from Stripe reaches the browser SDK. It is not a decision evaluator; use
+the headless session above for checks.
+
+```ts title="app/api/revturbine-session/route.ts"
+import { RevTurbineServer } from '@revturbine/sdk/headless';
+import { getSignedInUser } from '@/server/auth'; // your own auth: the signed-in user, or null
+
+const revturbine = new RevTurbineServer({
+  tenantId: process.env.REVTURBINE_TENANT_ID!,
+  apiKey: process.env.REVTURBINE_API_KEY!, // the server key, never NEXT_PUBLIC_
+  endpoint: process.env.REVTURBINE_ENDPOINT ?? 'https://revturbine.com/app',
+});
+
+export async function POST(): Promise<Response> {
+  const user = await getSignedInUser();
+  if (!user) return new Response('Unauthorized', { status: 401 });
+
+  const { client_token } = await revturbine.clientSessions.create({ subject: user.id });
+  return Response.json({ client_token });
+}
+```
+
+The browser half, an Express version, the failure behavior, and how the SDK
+refreshes the token are on [Client sessions](/guides/client-sessions/).
 
 ## Server SDK languages
 
@@ -271,7 +328,7 @@ TypeScript has both browser/React and headless entry points. Python and Rust are
 | Python | `revturbine` (PyPI) | [Python SDK](/getting-started/python/) |
 | Rust | `revturbine` (crates.io) | [Rust SDK](/getting-started/rust/) |
 
-TypeScript supports local and hosted modes. Python and Rust evaluate a supplied Playbook locally; the application owns refreshing that snapshot. Their guides describe installation, input shapes and the supported surfaces.
+TypeScript supports local mode everywhere and hosted mode in the browser; on a server it evaluates a supplied Playbook and mints client sessions with `RevTurbineServer`. Python and Rust evaluate a supplied Playbook locally; the application owns refreshing that snapshot. Their guides describe installation, input shapes and the supported surfaces.
 
 Python exposes the same re-check question as `can()`:
 

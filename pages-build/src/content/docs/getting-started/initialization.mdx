@@ -1,0 +1,196 @@
+---
+title: Initialize the SDK
+description: One canonical initialization example per runtime — React and headless in the browser, and your Node server — in local and hosted mode, with the option names the SDK actually reads.
+sidebar:
+  order: 3
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+Every other page links here for initialization, so these are the only
+copy-paste starting points. Each one compiles against the published SDK in CI.
+
+Which entry point you use depends on **where the code runs**:
+
+| Where it runs | Entry point | Local mode | Hosted mode |
+|---|---|---|---|
+| Browser, React | `RevTurbineProvider` from `@revturbine/sdk` | `localRuntime: { playbook }` | `publicKey` + `clientSession` |
+| Browser, no React | `initRevTurbine` from `@revturbine/sdk/headless` | `localRuntime: { playbook }` | `publicKey` + `clientSession` |
+| Your Node server | `initRevTurbine` from `@revturbine/sdk/headless`, plus `RevTurbineServer` | the Playbook snapshot you loaded | the server key, to mint client sessions |
+
+The option names are fixed, and they are not interchangeable:
+
+| Option | Where | What it is |
+|---|---|---|
+| `publicKey` | the browser | Your ingest key (`rtk_…`, type `public`). Safe to ship in a bundle. |
+| `apiKey` | `RevTurbineServer` on your server | Your server key (`rtk_…`, type `server`). Secret. Never in a browser bundle, never a `NEXT_PUBLIC_` variable. |
+| `localRuntime.playbook` | anywhere | The Playbook you load yourself (`revturbine.playbook.json`). |
+| `clientSession` | the browser | A function that returns a short-lived session token from **your** server. See [Client sessions](/guides/client-sessions/). |
+
+`initRevTurbine` reads `publicKey`, never `apiKey`. A browser init with only
+`apiKey` resolves no credential, and the check below says why a server cannot
+use hosted `Server` mode either.
+
+## Before you go hosted
+
+<Steps>
+
+1. **Launch a Playbook.** Hosted mode serves your launched Playbook:
+   `revturbine launch ./revturbine.playbook.json`.
+
+2. **Mint an ingest key and list your origins.** In the dashboard, open
+   **Settings → API Token Management → Ingest Keys** and mint a key. Add every
+   origin that will load the SDK to its **Allowed origins**, including your
+   local dev origin (for example `http://localhost:3000`). The list is
+   fail-closed: a request from any other origin gets `403 origin_not_allowed`,
+   and every check then denies with `config_unavailable`.
+
+3. **Mint a server key.** Under **Settings → API Token Management → Server
+   Token**. It is shown once. Put it in your server's environment as
+   `REVTURBINE_API_KEY`, next to `REVTURBINE_TENANT_ID`. The tenant id must be
+   the tenant the key belongs to.
+
+4. **Add the client-session route** on your server, so the SDK can pick up
+   plan, trial and payment state from Stripe. See [Client sessions](/guides/client-sessions/).
+
+</Steps>
+
+Local mode needs none of this. It is production-capable on its own, and it is
+the right first step: see [Runtime Modes](/guides/runtime-modes/).
+
+## Browser, React
+
+**Local**: the Playbook ships with your app.
+
+```tsx title="src/App.tsx"
+import { RevTurbineProvider } from '@revturbine/sdk';
+import { useMemo } from 'react';
+import playbook from './revturbine.playbook.json';
+
+export default function App() {
+  const options = useMemo(() => ({
+    localRuntime: { playbook },
+    user: { id: 'user_123', plan_handle: 'starter' },
+  }), []);
+
+  return (
+    <RevTurbineProvider options={options}>
+      <YourApp />
+    </RevTurbineProvider>
+  );
+}
+```
+
+**Hosted**: the SDK fetches your launched Playbook with the public key, and
+the `clientSession` callback brings in the plan Stripe says the user is on.
+
+```tsx title="src/revturbine-provider.tsx"
+import { RevTurbineProvider } from '@revturbine/sdk';
+import { useMemo, type ReactNode } from 'react';
+import { fetchClientSession } from './revturbine-client-session';
+
+export function RevTurbine({ userId, children }: { userId: string; children: ReactNode }) {
+  const options = useMemo(
+    () => ({
+      publicKey: process.env.NEXT_PUBLIC_REVTURBINE_PUBLIC_KEY!,
+      user: { id: userId },
+      clientSession: fetchClientSession,
+    }),
+    [userId],
+  );
+
+  return <RevTurbineProvider options={options}>{children}</RevTurbineProvider>;
+}
+```
+
+`user` carries only the id: the plan arrives from Stripe through the client
+session. `tenantId` is optional, because the key names its tenant. `endpoint`
+is optional and defaults to RevTurbine's hosted control plane. `fetchClientSession`
+is the browser half of the [client-session flow](/guides/client-sessions/#the-browser-callback).
+
+The provider needs a stable `options` object, so build it with `useMemo` as
+above; a new object on every render re-initializes the SDK.
+
+## Browser, headless
+
+For Vue, Svelte, Angular or plain TypeScript. Same options, no React.
+
+```ts title="src/revturbine.ts"
+import { initRevTurbine } from '@revturbine/sdk/headless';
+import { fetchClientSession } from './revturbine-client-session';
+
+export async function startRevTurbine(userId: string) {
+  return initRevTurbine({
+    publicKey: process.env.NEXT_PUBLIC_REVTURBINE_PUBLIC_KEY!,
+    user: { id: userId },
+    clientSession: fetchClientSession,
+  });
+}
+```
+
+`initRevTurbine` is asynchronous and resolves to a session. Use it directly
+(`await session.can('export')`), or reach the core SDK as `session.sdk`. For
+local mode, swap the two hosted options for `localRuntime: { playbook }`.
+
+## Your Node server
+
+A server has two jobs, and they use two different objects.
+
+**Decide** whether a user may do something, before you do the paid work. The
+headless SDK evaluates your Playbook in-process, for one user per instance.
+Load the Playbook once per process and build a request-scoped instance:
+
+```ts title="src/server/revturbine.ts"
+import {
+  initRevTurbine,
+  RuntimeMode,
+  type RevTurbineUserContext,
+} from '@revturbine/sdk/headless';
+import playbook from './revturbine.playbook.json';
+
+/** One instance per request: the SDK holds a single user context per instance. */
+export function revturbineFor(user: RevTurbineUserContext) {
+  return initRevTurbine({
+    runtimeMode: RuntimeMode.LocalOnly,
+    localRuntime: { playbook },
+    user,
+  });
+}
+```
+
+Get the Playbook with `revturbine download --live --save ./revturbine.playbook.json`
+in your build or deploy step, so the server evaluates the Playbook you last
+launched. A launch reaches a server when it next loads that file, so restart or
+redeploy after a launch. The full pattern, including why the server does not
+use hosted `Server` mode, is on
+[Server-Side Integration](/getting-started/server-side/).
+
+**Mint** client sessions and write server-only user state with your server key.
+`RevTurbineServer` is one long-lived object per process, not one per request:
+
+```ts title="src/server/revturbine-server.ts"
+import { RevTurbineServer } from '@revturbine/sdk/headless';
+
+export const revturbineServer = new RevTurbineServer({
+  tenantId: process.env.REVTURBINE_TENANT_ID!,
+  apiKey: process.env.REVTURBINE_API_KEY!,
+  endpoint: process.env.REVTURBINE_ENDPOINT ?? 'https://revturbine.com/app',
+});
+```
+
+`RevTurbineServer` does not evaluate anything. What it can do: mint client
+sessions (`clientSessions.create`), assign a seat type (`assignSeatType`),
+write built-in dimensions (`setBuiltinDimensions`) and read them back
+(`getBuiltinDimensions`). The server key stays in server code.
+
+<Aside type="caution" title="Keep the server key out of the browser">
+RevTurbine refuses a server key presented from a browser, and a key in a
+bundle is a leaked key. If it ever reaches the client, rotate it under
+**Settings → API Token Management → Server Token**.
+</Aside>
+
+## Next
+
+- [Client sessions](/guides/client-sessions/): the full round trip, with the server route and the browser callback.
+- [Server-Side Integration](/getting-started/server-side/): re-check before paid work, and what a server can and cannot report.
+- [Configuration reference](/reference/configuration/): every option.

@@ -204,6 +204,7 @@ export default defineConfig({
             { label: 'Start here', link: '/' },
             { label: 'Recommended API Path', slug: 'getting-started/api-overview' },
             { label: 'Installation', slug: 'getting-started/installation' },
+            { label: 'Initialize the SDK', slug: 'getting-started/initialization' },
             { label: 'React Integration', slug: 'getting-started/react' },
             { label: 'Server-Side Integration', slug: 'getting-started/server-side' },
             { label: 'Python SDK', slug: 'getting-started/python' },
@@ -215,6 +216,7 @@ export default defineConfig({
           label: 'Concepts',
           items: [
             { label: 'Core Concepts', slug: 'concepts/core-concepts' },
+            { label: 'Runtime and Playbook', slug: 'concepts/runtime-and-playbook' },
             { label: 'Client vs Server Enforcement', slug: 'concepts/enforcement' },
             { label: 'What Owns What', slug: 'concepts/source-of-truth' },
           ],
@@ -224,6 +226,7 @@ export default defineConfig({
           items: [
             { label: 'Replace Plan Checks', slug: 'guides/migrate-plan-checks' },
             { label: 'Billing & Stripe', slug: 'guides/billing' },
+            { label: 'Client Sessions', slug: 'guides/client-sessions' },
             { label: 'Runtime Modes', slug: 'guides/runtime-modes' },
             { label: 'Entitlements', slug: 'guides/entitlements' },
             { label: 'Placements', slug: 'guides/placements' },

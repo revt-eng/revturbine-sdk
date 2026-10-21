@@ -90,9 +90,10 @@ if (gate.denied) {
 Creates a fully-initialized session. Handles SDK initialization, user identification, theme resolution, and optional placement bootstrapping.
 
 ```ts
+import { initRevTurbine, RuntimeMode } from '@revturbine/sdk/headless';
+
 const session = await initRevTurbine({
-  tenantId: 'tenant_abc',
-  publicKey: 'rtk_…', // public key — safe in the browser
+  publicKey: process.env.NEXT_PUBLIC_REVTURBINE_PUBLIC_KEY!, // public key — safe in the browser
   user: { id: 'user_123', plan_handle: 'pro' },
   runtimeMode: RuntimeMode.Server,
   bootstrapPlacements: [

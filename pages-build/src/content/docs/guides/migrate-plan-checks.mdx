@@ -102,18 +102,18 @@ The `after` is not a magic one-liner — your app still owns two things:
 // 1. The money-safe decision, on your server, before the paid work runs —
 //    the same SDK, evaluating the same Playbook in-process.
 import { initRevTurbine, RuntimeMode } from '@revturbine/sdk/headless';
+import playbook from './revturbine.playbook.json';
 
-async function handleExport(req, res) {
+export async function POST(request: Request): Promise<Response> {
+  const user = await getSignedInUser(request); // your own auth
   const rt = await initRevTurbine({
-    tenantId: process.env.REVTURBINE_TENANT_ID!,
-    apiKey: process.env.REVTURBINE_API_KEY!,
-    endpoint: process.env.REVTURBINE_ENDPOINT!,
-    runtimeMode: RuntimeMode.Server,
-    user: { id: req.userId, plan_handle: req.user.planHandle },
+    runtimeMode: RuntimeMode.LocalOnly,
+    localRuntime: { playbook }, // loaded once per process
+    user: { id: user.id, plan_handle: user.planHandle },
   });
   const result = await rt.can('data_export');
-  if (!result.allowed) return res.status(402).json({ error: 'upgrade_required' });
-  await runExport(req);
+  if (!result.allowed) return Response.json({ error: 'upgrade_required' }, { status: 402 });
+  return runExport(request);
 }
 ```
 

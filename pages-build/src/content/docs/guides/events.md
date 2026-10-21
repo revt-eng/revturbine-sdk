@@ -175,7 +175,7 @@ await sdk.emitTrigger('usage_limit_approaching', {
 });
 ```
 
-Built-in triggers: `trial_started` · `trial_expiring` · `trial_expired` · `usage_limit_approaching` · `usage_limit_exceeded` · `feature_gated` · `payment_retry_required` · `subscription_renewing`.
+Built-in triggers: `trial_midpoint` · `trial_expiring` · `trial_expired` · `usage_limit_approaching` · `usage_limit_reached` · `credit_balance_low` · `seat_limit_reached` · `feature_gated` · `cancel_intent` · `payment_failed` · `auto_renewal_reminder` · `onboarding_complete` · `invite_teammate_prompt` · `referral_offer` · `plan_upgrade_nudge`. The compiler rejects any other name.
 
 :::tip
 Triggers are the primary way to activate message-type placements (toasts, banners, modals). Dashboard targeting rules reference them to decide when to show a placement.
@@ -186,9 +186,10 @@ Triggers are the primary way to activate message-type placements (toasts, banner
 Set `test: true` at init when an SDK instance generates **test traffic** — a staging deploy, an integration test, a QA walkthrough:
 
 ```ts
-const rt = initRevTurbine({
-  tenantId: 'your-tenant',
-  publicKey: 'rtk_…', // public key — safe in the browser
+import { initRevTurbine } from '@revturbine/sdk';
+
+const rt = await initRevTurbine({
+  publicKey: process.env.NEXT_PUBLIC_REVTURBINE_PUBLIC_KEY!, // public key — safe in the browser
   test: true, // this instance's events are test traffic
 });
 ```

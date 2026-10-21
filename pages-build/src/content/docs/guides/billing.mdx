@@ -135,7 +135,10 @@ and click it came from with **confirmed** credit instead of a time-window
 inference. Send it to your server with the price the user chose:
 
 ```ts
+import { useRevTurbine } from '@revturbine/sdk';
+
 // Browser: `output` is the decision the slot rendered (`decision.output`).
+const { sdk: rt } = useRevTurbine(); // with a headless session: `session.sdk`
 const checkout = rt.checkoutMetadata(output.output_id);
 // `checkout` is null for an output this SDK did not decide.
 ```

@@ -249,9 +249,9 @@ if (usagePercent >= 80) {
   });
 }
 
-// When usage exceeds limit
+// When usage reaches the limit
 if (usagePercent >= 100) {
-  await sdk.emitTrigger('usage_limit_exceeded', {
+  await sdk.emitTrigger('usage_limit_reached', {
     entitlement_handle: 'api_calls',
     current_usage: currentCalls,
     usage_limit: 1000,

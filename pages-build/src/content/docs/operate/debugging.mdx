@@ -12,7 +12,8 @@ sidebar:
 Call it with the same input you pass to `getPlacementDecision()`:
 
 ```ts
-const explanation = await rt.explainPlacementDecision(decisionInput);
+// A headless session exposes the SDK as `session.sdk`; in React it is `useRevTurbine().sdk`.
+const explanation = await session.sdk.explainPlacementDecision(decisionInput);
 ```
 
 The result is a structured diagnostic covering three things:

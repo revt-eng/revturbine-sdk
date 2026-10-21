@@ -243,22 +243,17 @@ context automatically:
 
 ```ts
 import { initRevTurbine } from '@revturbine/sdk';
+import { fetchClientSession } from './revturbine-client-session';
 
-export const rt = initRevTurbine({
-  tenantId: 'tenant_abc',
-  publicKey: 'rtk_…', // public key — safe in the browser
+export const rt = await initRevTurbine({
+  publicKey: process.env.NEXT_PUBLIC_REVTURBINE_PUBLIC_KEY!, // public key — safe in the browser
   user: { id: 'user_123', plan_handle: 'free' },
-  clientSession: () =>
-    fetch('/api/revturbine/client-session', { method: 'POST' })
-      .then((response) => {
-        if (!response.ok) throw new Error('Could not create RevTurbine client session');
-        return response.json();
-      })
-      .then((body) => body.client_token),
+  clientSession: fetchClientSession, // POSTs to your /api/revturbine-session route
 });
 ```
 
-Your backend—not the browser—mints the short-lived `rt_client_…` token. The SDK
+Your backend—not the browser—mints the short-lived `rt_client_…` token. The route
+and the `fetchClientSession` function are on [Client sessions](/guides/client-sessions/). The SDK
 requests one when needed, requests a fresh token after `identify()`, and retries
 with a new token after expiry. Server-derived plan and trial state then join the
 effective user context used for local evaluation. If enrichment is unavailable,

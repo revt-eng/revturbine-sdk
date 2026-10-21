@@ -19,18 +19,18 @@ RevTurbine issues three kinds of key. Two you create in the dashboard; the third
 
 | Key | Looks like | Lives in | What it does |
 |---|---|---|---|
-| **Ingest key** | `rtk_…` (type `public`) | Your browser bundle — safe to ship | The browser's key: Playbook delivery, event ingest, client-safe reads. Bound to an origin allowlist; cannot call management APIs. Create it at **Settings → API tokens → Ingest keys**. |
-| **Server key** | `rtk_…` (type `server`) | Your backend only | Programmatic calls to the RevTurbine API from your server — Playbook delivery, management APIs — and minting the session keys below. Refused on a browser-like request. Create it at **Settings → API tokens → Server token**. |
+| **Ingest key** | `rtk_…` (type `public`) | Your browser bundle — safe to ship | The browser's key: Playbook delivery, event ingest, client-safe reads. Bound to an origin allowlist that fails closed: a request from an origin not on the list is refused, as is one with no browser origin at all. Cannot call management APIs. Create it at **Settings → API Token Management → Ingest Keys**, and list every origin that loads the SDK, your local dev origin included. |
+| **Server key** | `rtk_…` (type `server`) | Your backend only | Programmatic calls to the RevTurbine API from your server — management APIs — and minting the session keys below with `RevTurbineServer`. The SDK's `initRevTurbine` does not read it. Refused on a browser-like request. Create it at **Settings → API Token Management → Server Token**. |
 | **Session key** | `rt_client_…` | The browser, in memory, short-lived (~10 minutes) | Lets the browser poll one user's server-derived context — plan, trial, payment state — straight from RevTurbine (`GET /api/sdk/client-context`). Your backend mints it per user with the server key (`POST /api/sdk/client-sessions`); the SDK asks for it through your `clientSession` callback and re-mints on expiry. |
 
 Which one goes where:
 
 - **In the browser**, pass the ingest key as `publicKey`. The name says what it is: a scanner or an agent that finds `publicKey` in a bundle knows it belongs there. As of `0.11.0` it is the **only** name accepted there — `ingestPublicKey` was removed and `apiKey` is no longer read as a browser credential (BL-0113), so a browser init without `publicKey` fails instead of sending the wrong key. Never a server key: RevTurbine refuses one presented from a browser.
-- **On your backend**, pass the server key as `apiKey` — on the server SDK and on the headless SDK alike; the sample on [Server-Side Integration](/getting-started/server-side/) reads it from `REVTURBINE_API_KEY` — and use it to mint session keys.
+- **On your backend**, pass the server key as `apiKey` to `new RevTurbineServer({ … })`, which mints session keys (read it from `REVTURBINE_API_KEY`, as [Client sessions](/guides/client-sessions/) does). It is not an option of `initRevTurbine`: your server's checks run from a Playbook snapshot, see [Server-Side Integration](/getting-started/server-side/).
 - **For server-derived context in the browser**, hand the SDK a `clientSession` callback that returns a session key from your backend. See [Configuration → Server-derived context](/reference/configuration/#server-derived-context-clientsession).
 - **Local mode needs no key at all.**
 
-Two further credentials exist for tooling, not for SDK wiring: the CLI's own `rtk_…` (type `client`) from `revturbine login`, one per machine; and an `rtk_…` (type `mcp`) for agent tooling, from **Settings → API tokens → MCP**.
+Two further credentials exist for tooling, not for SDK wiring: the CLI's own `rtk_…` (type `client`) from `revturbine login`, one per machine; and an `rtk_…` (type `mcp`) for agent tooling, from **Settings → API Token Management → MCP Tokens**.
 
 Stamp `environmentId` (`'production'` / `'staging'`) so analytics stays separated by deployment, and `test: true` on instances that generate test traffic.
 
