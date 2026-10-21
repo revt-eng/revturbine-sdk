@@ -47,6 +47,50 @@ also require a changelog entry.
 
 ---
 
+## 0.12.1
+
+### Fixed: the published types compile for customers (BUG-711)
+
+`@revturbine/sdk` now type-checks from a plain public install with
+`strict: true` and `skipLibCheck: false`, from both the React root and the
+`/headless` (server) entry.
+
+1. **No private module references in the shipped declarations.**
+   `dist/index.d.ts` and `dist/headless.d.ts` imported `@revt-eng/core/bundle`
+   and `@revt-eng/core/trials`, which customers cannot install (TS2307). They
+   are now inlined like every other internal type.
+2. **Every server method type is importable by name.** `/headless` (and so
+   the root) now exports `CreateClientSessionInput`, `ClientSessionResult`,
+   `AssignSeatTypeOptions`, `SetBuiltinDimensionsOptions`,
+   `ServerBuiltinDimensionsWrite`, `ServerUserBuiltinDimensions`,
+   `ServerUserContextAssignment`, the `ServerEvaluationPayload*` item types and
+   the error reasons, plus the error classes `RevTurbineServer` methods throw
+   (`RevTurbineClientSessionError`, `RevTurbineSeatAssignmentError`,
+   `RevTurbineDimensionWriteError`, `RevTurbineBuiltinDimensionsError`).
+   Before, they failed with TS2459 or TS2305.
+3. **Two more declaration errors are gone.** An inlined OpenAPI helper type
+   (`IExtensionName`) lost its declaration (TS2304, TS1268). A project that
+   imported both the root and `/headless` met two conflicting
+   `Window.RevTurbine` declarations (TS2717). `window.RevTurbine.init()` still
+   works for plain-script pages, but it is no longer declared on `Window`.
+   Module code imports `initRevTurbine`.
+4. **Resolution works from CommonJS and older TypeScript settings.** Every
+   entry lists `types` first and gains a `default` condition. The package
+   adds top-level `main` / `types` and `typesVersions`. A CommonJS server
+   (`moduleResolution: node16/nodenext`) and a `moduleResolution: node`
+   project now resolve `@revturbine/sdk/headless`, and Node `require()` loads
+   it (Node ≥ 22.13).
+5. The `./source*` subpath exports are removed. They pointed at TypeScript
+   sources that were never in the package. The package no longer ships the
+   intermediate `dist/types/` declaration tree, which referenced the private
+   modules throughout. It ships only the bundled `dist/*.js`, `*.js.map` and
+   `*.d.ts`.
+
+| | |
+|---|---|
+| **Landed in** | 0.12.1 |
+| **Proving test** | `web-sdk/scripts/check-packed-consumer.mjs` (packs the public manifest, scans declarations, then compiles a public-npm consumer under Bundler, NodeNext ESM and CJS, and node10). It runs in the public-build check on every PR and before tagging. Also `web-sdk/headless-server-exports.test.ts`. |
+
 ## 0.12.0
 
 ### Breaking
