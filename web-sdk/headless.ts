@@ -280,15 +280,40 @@ export { loadTheme, clearPersistedTheme } from './theme/theme-loader';
 export type { ThemeLoaderOptions } from './theme/theme-loader';
 
 // ── Server SDK ──────────────────────────────────────────────────────────────
-export { RevTurbineServer } from '../server-node';
+// BUG-711: the full public surface of `server-node`, so every method's input
+// and result type (and the error classes its methods throw) can be imported
+// by name. `headless-server-exports.test.ts` fails when server-node exports a public
+// name this list misses.
+export {
+  RevTurbineServer,
+  RevTurbineClientSessionError,
+  RevTurbineSeatAssignmentError,
+  RevTurbineDimensionWriteError,
+  RevTurbineBuiltinDimensionsError,
+} from '../server-node';
 export type {
   RevTurbineServerOptions,
   ServerEvaluationPayload,
+  ServerEvaluationPayloadDecisionsItem,
+  ServerEvaluationPayloadEntitlementsValue,
+  ServerEvaluationPayloadTrialStatus,
+  ServerEvaluationPayloadUser,
+  ServerEvaluationPayloadUserContext,
   ServerEvaluationRequest,
   ServerPlacementRequest,
   ServerPlacementDecision,
   ServerEntitlementResult,
   ServerUserContext,
+  CreateClientSessionInput,
+  ClientSessionResult,
+  SeatAssignmentErrorReason,
+  AssignSeatTypeOptions,
+  ServerUserContextAssignment,
+  ServerBuiltinDimensionsWrite,
+  SetBuiltinDimensionsOptions,
+  DimensionWriteErrorReason,
+  BuiltinDimensionsErrorReason,
+  ServerUserBuiltinDimensions,
 } from '../server-node';
 
 // ── Isomorphic core re-exports ──────────────────────────────────────────────

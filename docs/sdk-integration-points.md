@@ -52,7 +52,8 @@ Usage and credits both track consumption against a limit, but the app passes whi
 **Fixed placement — upgrade button renders with the page:**
 
 ```javascript
-const p = rt.getPlacement({ slotId: "header_upgrade_cta", surfaceType: "button" });
+// `sdk` is the SDK instance: `useRevTurbine().sdk` in React, `session.sdk` from a headless `initRevTurbine()`.
+const p = await sdk.getPlacement({ slotId: "header_upgrade_cta", surfaceType: "button" });
 if (p) renderUpgradeButton(p.content.label, p.cta_path);
 else renderDefaultButton(); // additive only
 ```
@@ -62,7 +63,7 @@ else renderDefaultButton(); // additive only
 ```javascript
 // Usage warning, trial prompt, promo banner, retention card —
 // RT's scoring engine decides what (if anything) to show
-const banner = rt.getPlacement({ slotId: "dashboard_promo", surfaceType: "banner" });
+const banner = await sdk.getPlacement({ slotId: "dashboard_promo", surfaceType: "banner" });
 if (banner) renderBanner(banner);
 ```
 
@@ -70,7 +71,7 @@ if (banner) renderBanner(banner);
 
 ```javascript
 // User clicks the "Pro Annual" plan card
-const p = rt.getPlacement({
+const p = await sdk.getPlacement({
   slotId: "pricing_page",
   surfaceType: "full_page",
   planHandle: "pro_annual"
@@ -84,9 +85,9 @@ else renderDefaultPlanDetail("pro_annual"); // additive only
 **Gated feature — user clicks "Export with AI":**
 
 ```javascript
-const access = rt.checkEntitlement("ai_export");
+const access = await sdk.checkEntitlement("ai_export");
 if (access.status === "denied") {
-  const p = rt.getPlacement({ entitlementHandle: "ai_export" });
+  const p = await sdk.getPlacement({ entitlementHandle: "ai_export" });
   if (p) showModal(p);
   else showGenericDenial(); // fallback — no placement configured
 } else {
@@ -98,7 +99,7 @@ if (access.status === "denied") {
 
 ```javascript
 const used = billing.getUsed("ai_credits"); // 45 — RT knows the limit (50)
-const access = rt.checkEntitlement("ai_credits", { used });
+const access = await sdk.checkEntitlement("ai_credits", { used });
 
 // Branch on `allowed` — it is the verdict. `limited` appears on BOTH sides of
 // it: at/past the cap it is allowed:false under the default enforcement, and
@@ -106,15 +107,15 @@ const access = rt.checkEntitlement("ai_credits", { used });
 if (access.allowed) {
   executeAction();
   billing.recordUsage("ai_credits", 1);                    // app's billing system is source of truth
-  rt.updateUsage({ ai_credits: billing.getUsed("ai_credits") }); // sync RT's cache from billing
+  sdk.updateUsage({ ai_credits: billing.getUsed("ai_credits") }); // sync RT's cache from billing
 
   if (access.status === "limited") {                        // allowed, but at the cap — nudge
-    const p = rt.getPlacement({ slotId: "usage_warning", surfaceType: "banner", entitlementHandle: "ai_credits" });
+    const p = await sdk.getPlacement({ slotId: "usage_warning", surfaceType: "banner", entitlementHandle: "ai_credits" });
     if (p) renderBanner(p);                                 // "5 credits remaining — upgrade for more"
   }
 
 } else {                                                    // denied
-  const p = rt.getPlacement({ slotId: "usage_limit_gate", surfaceType: "modal", entitlementHandle: "ai_credits" });
+  const p = await sdk.getPlacement({ slotId: "usage_limit_gate", surfaceType: "modal", entitlementHandle: "ai_credits" });
   if (p) showModal(p);
   else showGenericDenial();
 }
@@ -123,12 +124,12 @@ if (access.allowed) {
 **Capability Tier — user opens advanced dashboards (requires Pro):**
 
 ```javascript
-const access = rt.checkEntitlement("analytics_tier", { requiredTier: "pro" });
+const access = await sdk.checkEntitlement("analytics_tier", { requiredTier: "pro" });
 if (access.status === "allowed") {
   showDashboard();
 } else {
   // access.currentTier = "basic" — user's actual tier
-  const p = rt.getPlacement({ entitlementHandle: "analytics_tier" });
+  const p = await sdk.getPlacement({ entitlementHandle: "analytics_tier" });
   if (p) showModal(p);           // "Upgrade to Pro to unlock advanced dashboards"
   else showGenericDenial();
 }
@@ -185,7 +186,7 @@ Every placement payload includes a `cta_path` object that tells the app what to 
 The developer writes a single handler that switches on `cta_path.type` — all values come from the payload, nothing is developer-specified:
 
 ```javascript
-function handleCTA(placement) {
+async function handleCTA(placement) {
   const { cta_path } = placement;
   switch (cta_path.type) {
     case "open_checkout":
@@ -193,12 +194,12 @@ function handleCTA(placement) {
     case "view_plans":
       // If a placement_handle is present, chain to that placement
       if (cta_path.placement_handle) {
-        const p = rt.getPlacement({ placementHandle: cta_path.placement_handle });
+        const p = await sdk.getPlacement({ placementHandle: cta_path.placement_handle });
         return p ? renderPlacement(p) : navigateToPlans();
       }
       return navigateToPlans(cta_path.plan_handle);
     case "open_rt_placement":
-      const next = rt.getPlacement({ placementHandle: cta_path.placement_handle });
+      const next = await sdk.getPlacement({ placementHandle: cta_path.placement_handle });
       return next ? renderPlacement(next) : navigateToPlans();
     case "complete_onboarding": return navigateToTask(cta_path.event_name);
     case "book_demo":           return openBooking();
@@ -211,8 +212,8 @@ function handleCTA(placement) {
     case "manage_subscription": return openSubscriptionSettings();
     case "extend_trial":        return; // handled by serverActions.extend_trial at SDK init
     case "custom":              return handleCustomPath(cta_path.handle);
-    case "dismiss":             return rt.dismiss(placement.output_id);
-    case "snooze":              return rt.snooze(placement.output_id);
+    case "dismiss":             return sdk.dismiss(placement.output_id);
+    case "snooze":              return sdk.snooze(placement.output_id);
   }
 }
 ```

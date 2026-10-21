@@ -8,6 +8,7 @@
 // are consumer-supplied.
 import { fileURLToPath } from 'node:url';
 import dts from 'rollup-plugin-dts';
+import ts from 'typescript';
 
 const external = [
   /^@growthbook\/growthbook($|\/)/,
@@ -32,6 +33,31 @@ const generatedShim = {
   },
 };
 
+// BUG-711: rollup-plugin-dts drops some template-literal type aliases from
+// inlined third-party declarations while keeping their uses. zod-openapi's
+// inlined openapi3-ts types use `IExtensionName` as an index-signature key, and
+// every shipped entry lost its declaration (TS2304 + TS1268 for customers with
+// library checking on). Re-declare an alias a chunk uses but no longer
+// declares, verbatim from its source. `check-packed-consumer.mjs` compiles the
+// packed result and fails if another alias goes missing.
+const DROPPED_TEMPLATE_ALIASES = {
+  // zod-openapi dist/components-*.d.mts (openapi3-ts specification-extension).
+  IExtensionName: 'type IExtensionName = `x-${string}`;',
+};
+
+const restoreDroppedAliases = {
+  name: 'restore-dropped-template-aliases',
+  renderChunk(code) {
+    let next = code;
+    for (const [name, declaration] of Object.entries(DROPPED_TEMPLATE_ALIASES)) {
+      const used = new RegExp(`\\b${name}\\b`).test(next);
+      const declared = new RegExp(`\\btype ${name}\\b`).test(next);
+      if (used && !declared) next = `${next}\n${declaration}\n`;
+    }
+    return next === code ? null : { code: next, map: null };
+  },
+};
+
 const entry = (input, file) => ({
   input,
   output: { file, format: 'es' },
@@ -40,8 +66,21 @@ const entry = (input, file) => ({
     generatedShim,
     dts({
       respectExternal: true,
-      compilerOptions: { preserveSymlinks: false },
+      // BUG-711: `web-sdk/` has no tsconfig.json, so without these the plugin
+      // resolves with node10 semantics, which ignore package `exports`. The
+      // root `@revt-eng/core` resolved through `types`, but the subpaths
+      // (`@revt-eng/core/bundle`, `/trials`) did not, and their imports were
+      // left external — shipping private-package imports to customers (TS2307
+      // under skipLibCheck:false). Bundler resolution reads `exports`, so they
+      // inline like every other @revt-eng type.
+      compilerOptions: {
+        preserveSymlinks: false,
+        module: ts.ModuleKind.ESNext,
+        moduleResolution: ts.ModuleResolutionKind.Bundler,
+      },
     }),
+    // After dts: its own renderChunk rewrites the chunk first.
+    restoreDroppedAliases,
   ],
 });
 

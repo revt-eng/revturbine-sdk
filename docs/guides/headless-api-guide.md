@@ -97,8 +97,8 @@ const ctx = session.getUserContext();
 // Reset to anonymous
 session.resetIdentity();
 
-// Update usage balances
-session.updateUsage({ api_calls: { used: 150, limit: 1000 } });
+// Update usage balances — absolute numbers per entitlement handle, not deltas
+session.updateUsage({ api_calls: 150 });
 
 // Fetch user context from server
 const fullCtx = await session.fetchUserContext('user_456');

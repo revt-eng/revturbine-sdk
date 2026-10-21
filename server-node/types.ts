@@ -238,7 +238,8 @@ export interface RevTurbineServerOptions {
   tenantId: string;
   /**
    * Your **server key** — the secret backend credential (`rtk_…`, type
-   * `server`, minted under **Settings → API tokens → Server token**).
+   * `server`, minted under **Settings → API Token Management → Server
+   * Token**).
    *
    * Keep it in server-side configuration only. It is never the browser
    * SDK's `publicKey`, and the control plane refuses it on browser-like

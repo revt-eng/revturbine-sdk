@@ -1,36 +1,55 @@
 {
   "name": "@revt-eng/sdk",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "RevTurbine customer-facing SDK — placement decisioning, entitlement checks, and usage tracking.",
   "type": "module",
   "packageManager": "pnpm@11.12.0",
   "engines": {
     "node": ">=22.13"
   },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "headless": [
+        "./dist/headless.d.ts"
+      ],
+      "growthbook": [
+        "./dist/growthbook.d.ts"
+      ],
+      "optimizely": [
+        "./dist/optimizely.d.ts"
+      ]
+    }
+  },
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "default": "./dist/index.js"
     },
     "./headless": {
+      "types": "./dist/headless.d.ts",
       "import": "./dist/headless.js",
-      "types": "./dist/headless.d.ts"
+      "default": "./dist/headless.js"
     },
     "./growthbook": {
+      "types": "./dist/growthbook.d.ts",
       "import": "./dist/growthbook.js",
-      "types": "./dist/growthbook.d.ts"
+      "default": "./dist/growthbook.js"
     },
     "./optimizely": {
+      "types": "./dist/optimizely.d.ts",
       "import": "./dist/optimizely.js",
-      "types": "./dist/optimizely.d.ts"
+      "default": "./dist/optimizely.js"
     },
-    "./source": "./index.ts",
-    "./source/headless": "./headless.ts",
-    "./source/growthbook": "./growthbook.ts",
-    "./source/optimizely": "./optimizely.ts"
+    "./package.json": "./package.json"
   },
   "files": [
-    "dist",
+    "dist/*.js",
+    "dist/*.js.map",
+    "dist/*.d.ts",
     "CHANGELOG.md"
   ],
   "scripts": {
@@ -41,7 +60,8 @@
     "harness:headless": "pnpm exec tsx ../scripts/headless-harness.ts",
     "check:public-types": "node scripts/check-public-types.mjs",
     "check:headless-standalone": "node scripts/check-headless-standalone.mjs",
-    "check:public-diagnostics": "node scripts/check-public-diagnostics.mjs"
+    "check:public-diagnostics": "node scripts/check-public-diagnostics.mjs",
+    "check:packed-consumer": "node scripts/check-packed-consumer.mjs"
   },
   "peerDependencies": {
     "@growthbook/growthbook": ">=1.0.0",

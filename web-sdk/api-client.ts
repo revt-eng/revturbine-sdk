@@ -8,7 +8,7 @@
  * ```ts
  * const client = createRevTurbineApiClient({
  *   baseUrl: 'https://edge.example.com',
- *   token: 'rt_live_xxx',
+ *   token: process.env.REVTURBINE_SERVER_KEY, // rtk_… (a server key; keep it server-side)
  *   tenantId: 'tenant_abc',
  * });
  *

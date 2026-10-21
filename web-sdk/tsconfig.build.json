@@ -36,6 +36,7 @@
     "**/*.stories.tsx",
     "harness",
     "playground",
+    "scripts/packed-consumer-fixtures",
     "tsup.config.ts",
     "playbook-deprecation-arms.fixture.ts"
   ]

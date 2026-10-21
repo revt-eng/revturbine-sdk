@@ -13,12 +13,12 @@
  *
  * @example
  * ```ts
- * import { RevTurbineServer } from '@revt-eng/sdk/server';
+ * import { RevTurbineServer } from '@revturbine/sdk/headless';
  *
  * const server = new RevTurbineServer({
  *   tenantId: 'tenant_abc',
  *   apiKey: process.env.REVTURBINE_API_KEY!, // the server key (rtk_…, type server)
- *   endpoint: 'https://edge.example.com',
+ *   endpoint: 'https://revturbine.com/app',
  * });
  *
  * // Mint a session key for the signed-in user and hand it to the browser.

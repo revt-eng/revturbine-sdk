@@ -1,5 +1,5 @@
 /**
- * @module @revt-eng/sdk/server-node
+ * @module server-node — published inside `@revturbine/sdk/headless`
  *
  * Server-side support for RevTurbine on Node.
  *
@@ -20,12 +20,12 @@
  *
  * @example
  * ```ts
- * import { RevTurbineServer } from '@revt-eng/sdk/server';
+ * import { RevTurbineServer } from '@revturbine/sdk/headless';
  *
  * const server = new RevTurbineServer({
  *   tenantId: 'tenant_abc',
  *   apiKey: process.env.REVTURBINE_API_KEY!, // the server key (rtk_…, type server)
- *   endpoint: 'https://edge.example.com',
+ *   endpoint: 'https://revturbine.com/app',
  * });
  *
  * // Hand this to the browser; the client SDK re-mints on expiry.

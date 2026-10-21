@@ -1291,9 +1291,7 @@ export type PlaybookProvider = RevTurbineConfigProvider;
  * import { initRevTurbine } from '@revturbine/sdk';
  *
  * const session = await initRevTurbine({
- *   tenantId: 'tenant_abc',
- *   apiKey: 'rt_live_xxx',
- *   endpoint: 'https://edge.example.com',
+ *   publicKey: 'rtk_…', // your ingest key; add your app's origin to its allowed origins
  *   mode: 'react',
  * });
  * ```
@@ -1348,8 +1346,10 @@ export interface RevTurbineInitOptions {
    // @revturbine-graph configuration:revturbine-sdk-internal:web-sdk/customer-side.ts#RevTurbineInitOptions
    * Your **public key** — the browser credential.
    *
-   * Mint one in your RevTurbine tenant under **Settings → API tokens →
-   * Ingest keys**. It is a tenant-scoped `rtk_…` token of type `public`:
+   * Mint one in your RevTurbine tenant under **Settings → API Token
+   * Management → Ingest Keys**, and add every origin that loads the SDK to its
+   * allowed origins (the list fails closed). It is a tenant-scoped `rtk_…`
+   * token of type `public`:
    * it authorizes event ingestion (`POST /api/track`) and the read-only
    * SDK fetches (launched Playbook, user context, branding) and carries
    * no role authority, so it is safe to ship in client bundles. The
@@ -1357,20 +1357,28 @@ export interface RevTurbineInitOptions {
    * in a bundle knows it is meant to be there.
    *
    * Never pass a **server key** here. The server key (type `server`) is
-   * the backend credential for `@revturbine/sdk/server`, where it is the
-   * `apiKey` option; the control plane refuses it on browser-like
-   * requests.
+   * the backend credential for `RevTurbineServer` (exported from
+   * `@revturbine/sdk/headless`), where it is the `apiKey` option; the
+   * control plane refuses it on browser-like requests.
    *
    * Required for hosted runtime modes. Optional for `local_only`, where
    * the SDK fills a placeholder.
    */
   publicKey?: string;
   /**
-   * Your **server key** — for the headless SDK running on your backend.
+   * Your **server key** — the secret backend credential.
    *
-   * `apiKey` always means the secret server key (`rtk_…`, type `server`),
-   * exactly as it does on `@revturbine/sdk/server`. Pass it here only from
-   * server-side code such as a route handler using `@revturbine/sdk/headless`.
+   * `apiKey` always means the secret server key (`rtk_…`, type `server`,
+   * minted under **Settings → API Token Management → Server Token**), exactly
+   * as it does on `RevTurbineServer`, which `@revturbine/sdk/headless`
+   * exports: `new RevTurbineServer({ tenantId, apiKey, endpoint })` mints
+   * client sessions from your server. Keep it in server-side code only.
+   *
+   * Note that `initRevTurbine` itself reads {@link publicKey}, not `apiKey`,
+   * to fetch the launched Playbook and to ingest events: an init that supplies
+   * only `apiKey` fetches no Playbook. To decide on a server, build a
+   * `local_only` instance from a Playbook snapshot (see the Server-Side
+   * Integration guide).
    *
    * In the browser, pass {@link publicKey} instead. As of `0.11.0` `apiKey`
    * is **no longer accepted as an alias of the public key** (BL-0113): a
@@ -3314,9 +3322,7 @@ class ExternalRuntimePlaybookProvider implements RuntimePlaybookProvider {
  * import { initRevTurbine } from '@revturbine/sdk';
  *
  * const session = await initRevTurbine({
- *   tenantId: 'tenant_abc',
- *   apiKey: 'rt_live_xxx',
- *   endpoint: 'https://edge.example.com',
+ *   publicKey: 'rtk_…',
  *   mode: 'react',
  * });
  *
@@ -7718,7 +7724,7 @@ export class RevTurbineCustomerSdk {
    * @example
    * ```ts
    * // In your React component / page hydration:
-   * const session = await initRevTurbine({ tenantId, apiKey, endpoint, mode: 'react' });
+   * const session = await initRevTurbine({ publicKey, mode: 'react' });
    * session.sdk.hydrate(serverPayload);
    * ```
    */
@@ -11053,9 +11059,7 @@ export class RevTurbineCustomerSdk {
  * @example
  * ```ts
  * const sdk = window.RevTurbine?.init({
- *   tenantId: 'tenant_abc',
- *   apiKey: 'rt_live_xxx',
- *   endpoint: 'https://edge.example.com',
+ *   publicKey: 'rtk_…',
  *   mode: 'snippet',
  * });
  * ```
@@ -11232,7 +11236,7 @@ type BrowserKeyOptions = Pick<RevTurbineInitOptions, 'publicKey'>;
  * **The `0.10.0` alias window closed in `0.11.0` (BL-0113).** `ingestPublicKey`
  * is gone from {@link RevTurbineInitOptions} entirely — passing it is a type
  * error — and `apiKey` is no longer read here: it means the secret **server**
- * key, for `@revturbine/sdk/server` and for the headless SDK on a backend, and
+ * key, for `RevTurbineServer` (exported from `@revturbine/sdk/headless`), and
  * a browser init that supplies only `apiKey` now resolves nothing and fails at
  * init. Plan 257's CHANGELOG entry promised removal "one minor later"; this is
  * that minor.
@@ -11300,16 +11304,12 @@ function normalizePlacementTypeEntity(value: unknown): RevTurbinePlacementTypeEn
   };
 }
 
-declare global {
-  interface Window {
-    RevTurbine?: {
-      init: typeof initRevTurbine;
-    };
-  }
-}
-
+// The plain-script global (`window.RevTurbine.init()`). Installed without a
+// `declare global` Window augmentation (BUG-711): the root and headless
+// entries are separate declaration bundles, each carrying its own
+// `initRevTurbine`, so a project importing both met two augmentations of
+// `Window.RevTurbine` with different types — TS2717 for every customer with
+// library checking on. Module consumers import `initRevTurbine` instead.
 if (typeof window !== 'undefined') {
-  window.RevTurbine = {
-    init: initRevTurbine,
-  };
+  Object.assign(window, { RevTurbine: { init: initRevTurbine } });
 }
