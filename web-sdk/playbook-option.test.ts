@@ -234,7 +234,7 @@ describe('the SDK facade reaches the Playbook under both method names', () => {
     });
     const policy = sdk.getPolicy();
     expect(policy.playbookVersion).toBe('1.0.0');
-    // Deprecated, and emitted with the identical value until 0.12.0.
+    // Deprecated, and emitted with the identical value until 0.13.0.
     expect(policy.exportedConfigVersion).toBe(policy.playbookVersion);
   });
 });

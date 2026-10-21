@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.503/rust/revturbine_types.rs
+//   published/v0.1.507/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -106227,6 +106227,14 @@ impl<'de> ::serde::Deserialize<'de> for ChangeLogEntryTenantId {
 #[doc = "    \"subject\""]
 #[doc = "  ],"]
 #[doc = "  \"properties\": {"]
+#[doc = "    \"addons\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"$ref\": \"#/$defs/PurchasedAddon\""]
+#[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "    },"]
 #[doc = "    \"billing\": {"]
 #[doc = "      \"$ref\": \"#/$defs/ClientContextBilling\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
@@ -106273,6 +106281,8 @@ impl<'de> ::serde::Deserialize<'de> for ChangeLogEntryTenantId {
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct ClientContext {
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub addons: ::std::vec::Vec<PurchasedAddon>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub billing: ::std::option::Option<ClientContextBilling>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -120002,6 +120012,13 @@ impl<'de> ::serde::Deserialize<'de> for EntitlementAnchorId {
 #[doc = "      \"type\": \"boolean\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"contributing_rule_handles\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"string\""]
+#[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"current_tier\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
@@ -120045,6 +120062,8 @@ impl<'de> ::serde::Deserialize<'de> for EntitlementAnchorId {
 #[serde(deny_unknown_fields)]
 pub struct EntitlementCheckResult {
     pub allowed: bool,
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub contributing_rule_handles: ::std::vec::Vec<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub current_tier: ::std::option::Option<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -170872,6 +170891,228 @@ impl<'de> ::serde::Deserialize<'de> for ProviderProvenanceSourceRevision {
             .map_err(|e: self::error::ConversionError| {
                 <D::Error as ::serde::de::Error>::custom(e.to_string())
             })
+    }
+}
+#[doc = "`PurchasedAddon`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"addon_handle\","]
+#[doc = "    \"quantity\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"addon_handle\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^[a-z0-9._]{1,100}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "    },"]
+#[doc = "    \"addon_variation_handle\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^[a-z0-9._]{1,100}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "    },"]
+#[doc = "    \"quantity\": {"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PurchasedAddon {
+    pub addon_handle: PurchasedAddonAddonHandle,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub addon_variation_handle: ::std::option::Option<PurchasedAddonAddonVariationHandle>,
+    pub quantity: i64,
+}
+#[doc = "`PurchasedAddonAddonHandle`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[a-z0-9._]{1,100}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PurchasedAddonAddonHandle(::std::string::String);
+impl ::std::ops::Deref for PurchasedAddonAddonHandle {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PurchasedAddonAddonHandle> for ::std::string::String {
+    fn from(value: PurchasedAddonAddonHandle) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PurchasedAddonAddonHandle {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z0-9._]{1,100}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z0-9._]{1,100}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PurchasedAddonAddonHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PurchasedAddonAddonHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PurchasedAddonAddonHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PurchasedAddonAddonHandle {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PurchasedAddonAddonVariationHandle`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[a-z0-9._]{1,100}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PurchasedAddonAddonVariationHandle(::std::string::String);
+impl ::std::ops::Deref for PurchasedAddonAddonVariationHandle {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PurchasedAddonAddonVariationHandle> for ::std::string::String {
+    fn from(value: PurchasedAddonAddonVariationHandle) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PurchasedAddonAddonVariationHandle {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z0-9._]{1,100}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z0-9._]{1,100}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PurchasedAddonAddonVariationHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PurchasedAddonAddonVariationHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PurchasedAddonAddonVariationHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PurchasedAddonAddonVariationHandle {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PurchasedAddons`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"array\","]
+#[doc = "  \"items\": {"]
+#[doc = "    \"$ref\": \"#/$defs/PurchasedAddon\""]
+#[doc = "  }"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(transparent)]
+pub struct PurchasedAddons(pub ::std::vec::Vec<PurchasedAddon>);
+impl ::std::ops::Deref for PurchasedAddons {
+    type Target = ::std::vec::Vec<PurchasedAddon>;
+    fn deref(&self) -> &::std::vec::Vec<PurchasedAddon> {
+        &self.0
+    }
+}
+impl ::std::convert::From<PurchasedAddons> for ::std::vec::Vec<PurchasedAddon> {
+    fn from(value: PurchasedAddons) -> Self {
+        value.0
+    }
+}
+impl ::std::convert::From<::std::vec::Vec<PurchasedAddon>> for PurchasedAddons {
+    fn from(value: ::std::vec::Vec<PurchasedAddon>) -> Self {
+        Self(value)
     }
 }
 #[doc = "`RatioVariantStatisticalSummary`"]
@@ -223456,6 +223697,13 @@ pub struct ServerEvaluationPayloadDecisionsItem {
 #[doc = "      \"type\": \"boolean\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"contributing_rule_handles\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"string\""]
+#[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"current_tier\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
@@ -223499,6 +223747,8 @@ pub struct ServerEvaluationPayloadDecisionsItem {
 #[serde(deny_unknown_fields)]
 pub struct ServerEvaluationPayloadEntitlementsValue {
     pub allowed: bool,
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub contributing_rule_handles: ::std::vec::Vec<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub current_tier: ::std::option::Option<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -251695,9 +251945,10 @@ impl<'de> ::serde::Deserialize<'de> for StripeDiscoveryPopulationTestClockRef {
 #[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "    },"]
 #[doc = "    \"run_id\": {"]
+#[doc = "      \"description\": \"Derived from the unique scope and generation, so unique by construction.\","]
 #[doc = "      \"readOnly\": true,"]
 #[doc = "      \"type\": \"string\","]
-#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"maxLength\": 128,"]
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"operational\","]
 #[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
@@ -251927,6 +252178,7 @@ pub struct StripeDiscoveryRun {
     pub population_key: StripeDiscoveryRunPopulationKey,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub retry_after: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    #[doc = "Derived from the unique scope and generation, so unique by construction."]
     pub run_id: StripeDiscoveryRunRunId,
     pub run_version: f64,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -252611,15 +252863,16 @@ impl<'de> ::serde::Deserialize<'de> for StripeDiscoveryRunPopulationKey {
             })
     }
 }
-#[doc = "`StripeDiscoveryRunRunId`"]
+#[doc = "Derived from the unique scope and generation, so unique by construction."]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
+#[doc = "  \"description\": \"Derived from the unique scope and generation, so unique by construction.\","]
 #[doc = "  \"readOnly\": true,"]
 #[doc = "  \"type\": \"string\","]
-#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"maxLength\": 128,"]
 #[doc = "  \"minLength\": 1,"]
 #[doc = "  \"x-revturbine-data-classification\": \"operational\","]
 #[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
@@ -252643,8 +252896,8 @@ impl ::std::convert::From<StripeDiscoveryRunRunId> for ::std::string::String {
 impl ::std::str::FromStr for StripeDiscoveryRunRunId {
     type Err = self::error::ConversionError;
     fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
-        if value.chars().count() > 255usize {
-            return Err("longer than 255 characters".into());
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
         }
         if value.chars().count() < 1usize {
             return Err("shorter than 1 characters".into());
@@ -269731,6 +269984,14 @@ impl ::std::convert::TryFrom<::std::string::String> for UserBuiltinDimensionsTri
 #[doc = "      ],"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"addons\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"$ref\": \"#/$defs/PurchasedAddon\""]
+#[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "    },"]
 #[doc = "    \"builtin_dimensions\": {"]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"properties\": {"]
@@ -270300,6 +270561,8 @@ pub struct UserContext {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub activity_score_computed_at:
         ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub addons: ::std::vec::Vec<PurchasedAddon>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub builtin_dimensions: ::std::option::Option<UserContextBuiltinDimensions>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]

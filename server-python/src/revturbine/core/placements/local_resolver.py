@@ -75,7 +75,7 @@ __all__ = [
 
 # Loose aliases — tightened to generated Pydantic models in TASK-7.
 Playbook = dict[str, Any]
-#: Deprecated spelling of :data:`Playbook` (BL-0156). Removed in ``0.12.0``.
+#: Deprecated spelling of :data:`Playbook` (BL-0156). Removed in ``0.13.0``.
 ExportedConfig = Playbook
 LocalPlacementEntry = dict[str, Any]
 
@@ -582,7 +582,7 @@ def create_static_placement_resolver(
     """Create a placement resolver from a static dataset.
 
     ``playbook`` is canonical; the keyword-only ``exported_config`` is the
-    deprecated spelling kept for one minor (BL-0156), removed in ``0.12.0``.
+    deprecated spelling kept for compatibility (BL-0156), removed in ``0.13.0``.
 
     Supports plan-target filtering from payload targets, token
     interpolation from payload content, usage-token injection from the

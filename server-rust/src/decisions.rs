@@ -53,6 +53,9 @@ pub struct EntitlementCheckResult {
     /// different bytes in a canonical-JSON parity snapshot.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rule_handle: Option<String>,
+    /// All rules contributing to an additive allowance, in source order.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub contributing_rule_handles: Option<Vec<String>>,
 }
 
 impl EntitlementCheckResult {
@@ -68,6 +71,7 @@ impl EntitlementCheckResult {
             remaining: None,
             current_tier: None,
             rule_handle: None,
+            contributing_rule_handles: None,
         }
     }
 

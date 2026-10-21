@@ -7,19 +7,21 @@
 
 pub mod effective_entitlement;
 pub mod entitlement_check;
+pub(crate) mod purchased_allowance;
 pub mod rules;
 pub mod segment_matching;
 pub mod unlimited;
 
 pub use effective_entitlement::{
     app_entitlement, derive_effective_entitlement, derive_effective_entitlements,
-    merge_entitlement_results, reverse_trial_grants, AppEntitlementInputs, EffectiveEntitlement,
-    EffectiveEntitlementBase, EntitlementMergeFields, EntitlementMergeOptions, EntitlementSource,
-    PartialEntitlement, ReverseTrialGrants,
+    merge_entitlement_results, reverse_trial_grants, try_derive_effective_entitlement,
+    AppEntitlementInputs, EffectiveEntitlement, EffectiveEntitlementBase, EntitlementMergeFields,
+    EntitlementMergeOptions, EntitlementSource, PartialEntitlement, ReverseTrialGrants,
 };
 pub use entitlement_check::{
     derive_local_entitlement_from_configured_rules, derive_result_from_rule_type_fields,
-    is_rule_shaped_kind, with_rule_handle, LocalEntitlementInput,
+    is_rule_shaped_kind, try_derive_local_entitlement_from_configured_rules, with_rule_handle,
+    LocalEntitlementInput,
 };
 pub use rules::{
     evaluate_entitlement_rules, evaluate_plan_rules, find_matching_entitlement_rule,

@@ -48,30 +48,35 @@ export type UpdateListWithinType = Assert<Equals<UpdateKeysMissingFromType, neve
 
 // ── identify() ──────────────────────────────────────────────────────────────
 // identify() is the identity verb: it merges a deliberately narrow set of
-// keys (plan 168 REQ-3, plan 191) and drops-and-reports the rest. Its input
-// type is wider than that set today, so the gap is not `never` — it is pinned
-// to an explicit, reviewed list. A new `UserContextInput` field lands in this
-// Exclude and fails the equality until it is added to one side or the other.
-// Narrowing `IdentifyContextInput` to the merged keys is a breaking type
-// change for callers that pass these today (they are dropped at runtime
-// either way), so it waits for 0.12.0.
+// keys (plan 168 REQ-3, plan 191) and drops-and-reports the rest at runtime
+// for plain-JS callers. Since 0.12.0 its input type declares exactly that set:
+// the gap is `never`, so a key identify() would drop is a compile error, and
+// a new `UserContextInput` field lands in this Exclude and fails the equality
+// until it is merged or omitted from `IdentifyContextInput`.
 
-/** IdentifyContextInput keys identify() accepts at compile time but does not merge (dropped with a warning). */
-type IdentifyAcknowledgedUnmergedKey =
-  | 'email_type'
-  | 'trial'
-  | 'payment_failed'
-  | 'payment_at_risk'
-  | 'tiers'
-  | 'instances'
-  | 'experiments'
-  | 'derived_config_version'
-  | 'context_hash'
-  | 'derived_computed_at';
-
-export type IdentifyGapIsAcknowledged = Assert<
-  Equals<Exclude<keyof IdentifyContextInput, RecognizedIdentifyKey>, IdentifyAcknowledgedUnmergedKey>
+export type IdentifyTypeIsExactlyMerged = Assert<
+  Equals<Exclude<keyof IdentifyContextInput, RecognizedIdentifyKey>, never>
 >;
+
+// The former acknowledged-unmerged keys now fail at compile time, including
+// through a variable (Exact<>).
+declare const sdk: import('./customer-side').RevTurbineCustomerSdk;
+const trialViaVariable = { plan_handle: 'pro', trial: { in_trial: true } };
+// @ts-expect-error — `trial` is not an identify() field since 0.12.0
+sdk.identify('u_1', trialViaVariable);
+
+// ── setUserContext() is Exact<> since 0.12.0 ───────────────────────────────
+const junkViaVariable = { id: 'u_1', plan_handle: 'pro', not_a_field: 1 };
+// @ts-expect-error — an undeclared key is a compile error even through a variable
+sdk.setUserContext(junkViaVariable);
+sdk.setUserContext({ id: 'u_1', plan_handle: 'pro', custom: { anything: 1 } });
+
+// ── initialData.placementsByLookupKey was removed in 0.12.0 (BL-0537) ──────
+const seededData: import('./customer-side').RevTurbineLocalRuntimeData = {
+  // @ts-expect-error — the seeded placement lane is gone
+  placementsByLookupKey: {},
+};
+void seededData;
 export type IdentifyListWithinType = Assert<
   Equals<Exclude<RecognizedIdentifyKey, keyof IdentifyContextInput>, never>
 >;

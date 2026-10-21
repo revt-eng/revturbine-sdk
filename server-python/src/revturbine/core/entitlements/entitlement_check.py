@@ -6,9 +6,9 @@
 Playbook-rule fallback wired into
 ``LocalRuntime._derive_entitlement_from_config`` (plan 33 TASK-6 leaf,
 faithful to TS local-runtime.ts:355-369). It does its **own** inline
-rule filtering and takes the **first** matching rule — distinct from
-``rules.py``'s provider-snapshot most-permissive selector; both shapes
-are ported because plan 33 TASK-13 names both.
+rule filtering, takes the maximum ordinary grant, and adds the maximum
+grant per purchased holding. The provider-snapshot selector follows the
+same policy; both shapes are ported because plan 33 TASK-13 names both.
 
 Sync per Q-5. Playbook / rule items stay loosely typed
 (``dict[str, Any]``) per the port convention; the parity suite is the
@@ -24,6 +24,10 @@ from collections.abc import Set as AbstractSet
 from typing import Any
 
 from revturbine.core.decisions.types import EntitlementCheckResult
+from revturbine.core.entitlements.purchased_allowance import (
+    aggregate_purchased_allowance,
+    validate_purchased_addons,
+)
 from revturbine.core.entitlements.rules import (
     pick_most_permissive,
     rule_permissiveness,
@@ -36,7 +40,7 @@ from revturbine.playbook_option import resolve_playbook_option
 __all__ = ["derive_local_entitlement_from_configured_rules"]
 
 Playbook = dict[str, Any]
-#: Deprecated spelling of :data:`Playbook` (BL-0156). Removed in ``0.12.0``.
+#: Deprecated spelling of :data:`Playbook` (BL-0156). Removed in ``0.13.0``.
 ExportedConfig = Playbook
 
 
@@ -117,11 +121,13 @@ def derive_local_entitlement_from_configured_rules(
     exported_config: Playbook | None = None,
     trial_granted_entitlement_handles: AbstractSet[str] | None = None,
     effective_plan_handle: str | None = None,
+    addons: list[dict[str, Any]] | None = None,
+    billing_period: str | None = None,
 ) -> EntitlementCheckResult | None:
     """Derive an entitlement result locally from Playbook rules.
 
     ``playbook`` is canonical; ``exported_config`` is the deprecated spelling
-    kept for one minor (BL-0156) and removed in ``0.12.0``.
+    kept for compatibility (BL-0156) and removed in ``0.13.0``.
 
     ``trial_granted_entitlement_handles`` / ``effective_plan_handle`` are the
     reverse-trial inputs (plan 43 TASK-2): a handle the user holds through an
@@ -146,6 +152,22 @@ def derive_local_entitlement_from_configured_rules(
     if resolved is None:
         return None
     playbook = resolved
+    holdings = [
+        holding
+        for holding in validate_purchased_addons(addons)
+        if holding["quantity"] > 0
+        and any(
+            a.get("unique_handle") == holding["addon_handle"] for a in playbook.get("addons") or []
+        )
+        and (
+            "addon_variation_handle" not in holding
+            or any(
+                v.get("handle") == holding["addon_variation_handle"]
+                and v.get("addon_handle") == holding["addon_handle"]
+                for v in playbook.get("addon_variations") or []
+            )
+        )
+    ]
     entitlements: list[dict[str, Any]] = playbook.get("entitlements") or []
     # Plan 120 TASK-4 / plan 191 REQ-1: the config carries only the handle, so
     # entitlements resolve by handle alone. The `id` fallback this port used to
@@ -229,7 +251,7 @@ def derive_local_entitlement_from_configured_rules(
     # from ``no_matching_entitlement_rule`` on purpose: "we could not identify
     # the user's plan" is a broken integration, "their plan lacks this" is a
     # correctly-gated user, and telemetry has to tell them apart.
-    if current_plan_handle_ref is None:
+    if current_plan_handle_ref is None and not holdings:
         return {
             "status": "denied",
             "allowed": False,
@@ -237,6 +259,8 @@ def derive_local_entitlement_from_configured_rules(
         }
 
     rules: list[dict[str, Any]] = playbook.get("entitlement_rules") or []
+    baseline_rules: list[dict[str, Any]] = []
+    purchased_rules: list[list[dict[str, Any]]] = [[] for _ in holdings]
 
     # Plan #39 REQ-28: build the segment_id → dimension_id lookup once per
     # call so the dimensional matcher can group rule segments. Segments
@@ -288,7 +312,33 @@ def derive_local_entitlement_from_configured_rules(
         # current plan HANDLE against the rule's listed plan handles. The
         # ``None`` identity case returned above (plan 194 REQ-1), so this is an
         # unconditional match now rather than a skippable one.
-        if current_plan_handle_ref not in plan_ids:
+        matches_baseline = current_plan_handle_ref is not None and (
+            current_plan_handle_ref in plan_ids
+            or any(
+                t.get("kind") == "plan_variation"
+                and any(
+                    v.get("handle") == t.get("id")
+                    and v.get("plan_handle") == current_plan_handle_ref
+                    and v.get("billing_period") == billing_period
+                    and (not v.get("segment_handle") or v["segment_handle"] in segment_ids)
+                    for v in playbook.get("plan_variations") or []
+                )
+                for t in (targets if isinstance(targets, list) else [])
+            )
+        )
+        purchased_indexes = [
+            index
+            for index, holding in enumerate(holdings)
+            if any(
+                (t.get("kind") == "addon" and t.get("id") == holding["addon_handle"])
+                or (
+                    t.get("kind") == "addon_variation"
+                    and t.get("id") == holding.get("addon_variation_handle")
+                )
+                for t in (targets if isinstance(targets, list) else [])
+            )
+        ]
+        if not matches_baseline and not purchased_indexes:
             return False
 
         # Plan #39 REQ-8: dimensional matching — intra-dimension OR +
@@ -297,11 +347,17 @@ def derive_local_entitlement_from_configured_rules(
         rule_segment_ids = rule.get("segment_ids")
         if not isinstance(rule_segment_ids, list):
             rule_segment_ids = rule.get("segmentIds")
-        return matches_rule_segments(
+        if not matches_rule_segments(
             rule_segment_ids if isinstance(rule_segment_ids, list) else None,
             segment_ids,
             segment_dimensions,
-        )
+        ):
+            return False
+        if matches_baseline:
+            baseline_rules.append(rule)
+        for index in purchased_indexes:
+            purchased_rules[index].append(rule)
+        return True
 
     matching_rules = [r for r in rules if _matches(r)]
 
@@ -362,6 +418,67 @@ def derive_local_entitlement_from_configured_rules(
 
     chosen = pick_most_permissive(matching_rules, _score)
     selected_rule = chosen if chosen is not None else matching_rules[0]
+    effective_allowance = None
+    contributing_handles = None
+    if holdings and _type_fields_of(selected_rule).get("kind") in (
+        "seat",
+        "credits",
+        "usage_limit",
+        "limit",
+    ):
+
+        def as_allowance(rule: dict[str, Any]) -> dict[str, Any]:
+            fields = _type_fields_of(rule)
+            return {
+                "ruleId": rule.get("id"),
+                "kind": fields.get("kind", ""),
+                "fields": fields,
+                "source": rule,
+            }
+
+        purchases = []
+        for index, holding in enumerate(holdings):
+            eligible = [
+                r
+                for r in purchased_rules[index]
+                if _type_fields_of(r).get("kind") != "credits"
+                or "reset_period" in _type_fields_of(r)
+            ]
+            rule = pick_most_permissive(eligible, _score)
+            variation = next(
+                (
+                    v
+                    for v in playbook.get("addon_variations") or []
+                    if v.get("handle") == holding.get("addon_variation_handle")
+                ),
+                None,
+            )
+            if rule is not None:
+                purchases.append(
+                    {
+                        "rule": as_allowance(rule),
+                        "quantity": holding["quantity"],
+                        "billingPeriod": variation.get("billing_period") if variation else None,
+                    }
+                )
+        baseline = pick_most_permissive(
+            [
+                r
+                for r in baseline_rules
+                if not purchases
+                or _type_fields_of(r).get("kind") != "credits"
+                or "reset_period" in _type_fields_of(r)
+            ],
+            _score,
+        )
+        aggregate = aggregate_purchased_allowance(
+            as_allowance(baseline) if baseline else None, purchases, billing_period
+        )
+        if aggregate is None:
+            return {"status": "denied", "allowed": False, "reason": "no_matching_entitlement_rule"}
+        selected_rule = aggregate["rule"]["source"]
+        effective_allowance = aggregate.get("effectiveAllowance")
+        contributing_handles = aggregate.get("contributingRuleHandles")
     type_fields = _type_fields_of(selected_rule)
 
     # BL-0062 (gap G3): the selection above is the whole point of §2.6.5, and
@@ -414,14 +531,16 @@ def derive_local_entitlement_from_configured_rules(
             used = 0.0
 
     return with_rule_handle(
-        derive_result_from_rule_type_fields(type_fields, used),
+        derive_result_from_rule_type_fields(type_fields, used, effective_allowance),
         selected_rule_handle,
+        contributing_handles,
     )
 
 
 def with_rule_handle(
     result: EntitlementCheckResult,
     rule_handle: str | None,
+    contributing_rule_handles: list[str] | None = None,
 ) -> EntitlementCheckResult:
     """Stamp the winning rule's handle onto a shaped result (BL-0062).
 
@@ -433,9 +552,11 @@ def with_rule_handle(
 
     Source: entitlement-check.ts (withRuleHandle)
     """
-    if rule_handle is None:
-        return result
-    return {**result, "rule_handle": rule_handle}
+    if rule_handle is not None:
+        result = {**result, "rule_handle": rule_handle}
+    if contributing_rule_handles is not None:
+        result = {**result, "contributing_rule_handles": contributing_rule_handles}
+    return result
 
 
 def is_rule_shaped_kind(kind: Any) -> bool:
@@ -447,7 +568,7 @@ def is_rule_shaped_kind(kind: Any) -> bool:
 
     Source: entitlement-check.ts (isRuleShapedKind)
     """
-    return kind in ("feature", "usage_limit", "limit", "credits", "capability_tier")
+    return kind in ("feature", "usage_limit", "limit", "credits", "capability_tier", "seat")
 
 
 def _int_if_integral(value: float) -> float | int:
@@ -471,6 +592,7 @@ def _with_limit_fields(
 def derive_result_from_rule_type_fields(
     type_fields: dict[str, Any],
     used: float,
+    effective_allowance: float | None = None,
 ) -> EntitlementCheckResult:
     """Shape an EntitlementCheckResult from a matched rule's ``type_fields``
     (plan 133). Single-sourced for BOTH evaluators — the Playbook path
@@ -500,7 +622,11 @@ def derive_result_from_rule_type_fields(
         # finite → allowed; a finite limit enforces. Mirrors the TS shaper's
         # resolveLimitValue exactly (a numeric STRING is junk → allowed, it
         # is never coerced and enforced).
-        ul_limit = resolve_limit_value(type_fields.get("limit_value"))
+        ul_limit = (
+            effective_allowance
+            if effective_allowance is not None
+            else resolve_limit_value(type_fields.get("limit_value"))
+        )
         if ul_limit is not None and math.isfinite(ul_limit) and ul_limit >= 0:
             return _with_limit_fields(
                 _apply_usage_enforcement(
@@ -512,11 +638,14 @@ def derive_result_from_rule_type_fields(
         return {"status": "allowed", "allowed": True}
 
     if kind == "credits":
+        allowance: float | None
         # An *explicit* allowance (incl. None/'unlimited'/999999 → +inf,
         # plan 72) wins; only a *truly absent* allowance falls through to
         # initial_grant. Source: entitlement-check.ts credits branch.
         # Plan 147 REQ-2: canonical `allowance_value`, legacy `allowance` tolerated.
-        if "allowance_value" in type_fields:
+        if effective_allowance is not None:
+            allowance = effective_allowance
+        elif "allowance_value" in type_fields:
             allowance = resolve_limit_value(type_fields.get("allowance_value"))
         elif "allowance" in type_fields:
             allowance = resolve_limit_value(type_fields.get("allowance"))
@@ -540,6 +669,16 @@ def derive_result_from_rule_type_fields(
                 cr_limit,
                 used,
             )
+        return {"status": "allowed", "allowed": True}
+
+    if kind == "seat":
+        seat_limit = (
+            effective_allowance
+            if effective_allowance is not None
+            else resolve_limit_value(type_fields.get("included_count"))
+        )
+        if seat_limit is not None and math.isfinite(seat_limit) and seat_limit >= 0:
+            return _with_limit_fields({"status": "allowed", "allowed": True}, seat_limit, used)
         return {"status": "allowed", "allowed": True}
 
     if kind == "capability_tier":

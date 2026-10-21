@@ -15,6 +15,10 @@ use std::collections::{HashMap, HashSet};
 
 use serde_json::Value;
 
+use super::purchased_allowance::{
+    aggregate_purchased_allowance, allowance_field, validate_purchased_addons, AllowanceRule,
+    PurchasedAggregate, PurchasedContribution,
+};
 use super::segment_matching::matches_rule_segments;
 use super::unlimited::resolve_limit_value;
 
@@ -47,6 +51,10 @@ pub struct RuleEvaluationContext {
     pub billing_period: Option<String>,
     /// `segment_id -> dimension_id`. Empty falls back to flat-OR matching.
     pub segment_dimensions: HashMap<String, String>,
+    /// Current explicit holdings for purchased allowance evaluation.
+    pub addons: Option<Value>,
+    /// Plan variations matched from the plan's cadence and audience.
+    pub matched_plan_variation_ids: Vec<String>,
 }
 
 /// Read a string field off a loosely-typed config record.
@@ -76,8 +84,11 @@ fn target_matches(t: &Value, ctx: &RuleEvaluationContext) -> bool {
                 || (ctx.current_plan_handle.is_some() && id == ctx.current_plan_handle.as_deref())
         }
         Some("plan_variation") => {
-            ctx.current_plan_variation_id.is_some()
-                && id == ctx.current_plan_variation_id.as_deref()
+            if ctx.current_plan_variation_id.is_some() {
+                id == ctx.current_plan_variation_id.as_deref()
+            } else {
+                id.is_some_and(|id| ctx.matched_plan_variation_ids.iter().any(|v| v == id))
+            }
         }
         Some("addon") => id.is_some_and(|i| ctx.addon_ids.iter().any(|a| a == i)),
         Some("addon_variation") => {
@@ -273,6 +284,124 @@ pub fn find_matching_entitlement_rule<'a>(
     let evaluations = evaluate_entitlement_rules(rules, context);
     let matched: Vec<_> = evaluations.into_iter().filter(|e| e.matched).collect();
     select_most_permissive(&matched)
+}
+
+/// Owned aggregate for runtime consumers; the legacy borrowed selector keeps
+/// its public signature for callers that only need ordinary maximum grants.
+pub(crate) fn find_effective_entitlement_rule(
+    entitlement_rules: &HashMap<String, Vec<Value>>,
+    entitlement_id: &str,
+    context: &RuleEvaluationContext,
+    rule_state: &Value,
+) -> Result<Option<PurchasedAggregate>, String> {
+    let Some(rules) = entitlement_rules.get(entitlement_id) else {
+        return Ok(None);
+    };
+    let holdings = validate_purchased_addons(context.addons.as_ref())?;
+    let mut baseline_context = context.clone();
+    baseline_context.addon_ids.retain(|id| {
+        !holdings
+            .iter()
+            .any(|h| h.get("addon_handle").and_then(Value::as_str) == Some(id))
+    });
+    baseline_context.addon_variation_ids.retain(|id| {
+        !holdings
+            .iter()
+            .any(|h| h.get("addon_variation_handle").and_then(Value::as_str) == Some(id))
+    });
+    baseline_context.matched_plan_variation_ids = rule_state
+        .get("plan_variations")
+        .and_then(Value::as_object)
+        .map(|vs| {
+            vs.iter()
+                .filter(|(_, v)| {
+                    str_field(v, "plan_handle")
+                        == context
+                            .current_plan_handle
+                            .as_deref()
+                            .or(context.current_plan_id.as_deref())
+                        && str_field(v, "billing_period") == context.billing_period.as_deref()
+                        && str_field(v, "segment_handle")
+                            .is_none_or(|s| s.is_empty() || context.segment_ids.contains(s))
+                })
+                .map(|(handle, _)| handle.clone())
+                .collect()
+        })
+        .unwrap_or_default();
+    let as_allowance = |rule: &Value| AllowanceRule {
+        id: str_field(rule, "rule_id").unwrap_or("").into(),
+        kind: str_field(rule, "kind").unwrap_or("").into(),
+        fields: rule.get("fields").cloned().unwrap_or(Value::Null),
+        source: rule.clone(),
+    };
+    let score = |rule: &AllowanceRule| rule_permissiveness(&rule.kind, &rule.fields);
+    let recurring =
+        |rule: &AllowanceRule| rule.kind != "credits" || rule.fields.get("reset_period").is_some();
+    let mut purchases = Vec::new();
+    for holding in &holdings {
+        let quantity = holding["quantity"].as_f64().unwrap_or(0.0);
+        if quantity == 0.0 {
+            continue;
+        }
+        let variation_handle = str_field(holding, "addon_variation_handle");
+        let variation = variation_handle
+            .and_then(|h| rule_state.get("addon_variations").and_then(|vs| vs.get(h)));
+        // Unknown or mismatched variations contribute nothing (fail closed),
+        // matching scaffold rules.ts and the exported-Playbook path.
+        if variation_handle.is_some()
+            && (variation.is_none()
+                || variation.and_then(|v| str_field(v, "addon_handle"))
+                    != str_field(holding, "addon_handle"))
+        {
+            continue;
+        }
+        let purchase_context = RuleEvaluationContext {
+            segment_ids: context.segment_ids.clone(),
+            segment_dimensions: context.segment_dimensions.clone(),
+            addon_ids: vec![str_field(holding, "addon_handle").unwrap_or("").into()],
+            addon_variation_ids: variation_handle
+                .map(|h| vec![h.to_string()])
+                .unwrap_or_default(),
+            ..Default::default()
+        };
+        let candidates: Vec<_> = evaluate_entitlement_rules(rules, &purchase_context)
+            .iter()
+            .filter(|e| e.matched)
+            .map(|e| as_allowance(e.rule))
+            .filter(&recurring)
+            .collect();
+        if let Some(rule) = pick_most_permissive(&candidates, score) {
+            purchases.push(PurchasedContribution {
+                rule: rule.clone(),
+                quantity,
+                billing_period: variation
+                    .and_then(|v| str_field(v, "billing_period"))
+                    .map(str::to_string),
+            });
+        }
+    }
+    let baselines: Vec<_> = evaluate_entitlement_rules(rules, &baseline_context)
+        .iter()
+        .filter(|e| e.matched)
+        .map(|e| as_allowance(e.rule))
+        .filter(|r| purchases.is_empty() || recurring(r))
+        .collect();
+    let baseline = pick_most_permissive(&baselines, score).cloned();
+    let anchor = baseline
+        .as_ref()
+        .or_else(|| purchases.first().map(|p| &p.rule));
+    if anchor.is_some_and(|a| allowance_field(&a.kind).is_none()) {
+        let mut all: Vec<_> = baseline.into_iter().collect();
+        all.extend(purchases.into_iter().map(|p| p.rule));
+        return Ok(pick_most_permissive(&all, score)
+            .cloned()
+            .map(|rule| PurchasedAggregate {
+                rule,
+                effective_allowance: None,
+                contributing_rule_handles: None,
+            }));
+    }
+    aggregate_purchased_allowance(baseline, purchases, context.billing_period.as_deref())
 }
 
 #[cfg(test)]
@@ -493,6 +622,51 @@ mod tests {
             kept.len(),
             2,
             "null-segment + matching-segment active rules"
+        );
+    }
+
+    #[test]
+    fn unknown_or_mismatched_purchased_variation_contributes_nothing() {
+        // BUG-554: scaffold rules.ts skips these holdings (fail closed) instead
+        // of failing the evaluation. Parity: entitlement_purchased_unknown_addons.
+        let rules = vec![
+            json!({ "rule_id": "base", "kind": "seat", "targets": [{ "kind": "plan", "id": "pro" }],
+                    "fields": { "included_count": 100 } }),
+            json!({ "rule_id": "variation", "kind": "seat",
+                    "targets": [{ "kind": "addon_variation", "id": "boost_monthly" }],
+                    "fields": { "included_count": 25 } }),
+        ];
+        let by_ent = HashMap::from([("seats".to_string(), rules)]);
+        let state = json!({ "addon_variations": {
+            "boost_monthly": { "addon_handle": "boost", "billing_period": "monthly" } } });
+        let unknown = json!([
+            { "addon_handle": "boost", "addon_variation_handle": "ghost_monthly", "quantity": 2 },
+            { "addon_handle": "extra", "addon_variation_handle": "boost_monthly", "quantity": 3 },
+            { "addon_handle": "ghost", "quantity": 4 },
+        ]);
+        let mut ctx = RuleEvaluationContext {
+            current_plan_handle: Some("pro".into()),
+            billing_period: Some("monthly".into()),
+            addons: Some(unknown),
+            ..Default::default()
+        };
+        let found = find_effective_entitlement_rule(&by_ent, "seats", &ctx, &state)
+            .expect("unknown holdings do not fail the evaluation")
+            .expect("the plan baseline still matches");
+        assert_eq!(found.rule.id, "base");
+        assert_eq!(found.effective_allowance, None);
+
+        ctx.addons = Some(json!([
+            { "addon_handle": "ghost", "quantity": 4 },
+            { "addon_handle": "boost", "addon_variation_handle": "boost_monthly", "quantity": 2 },
+        ]));
+        let found = find_effective_entitlement_rule(&by_ent, "seats", &ctx, &state)
+            .expect("valid")
+            .expect("matched");
+        assert_eq!(found.effective_allowance, Some(150.0));
+        assert_eq!(
+            found.contributing_rule_handles,
+            Some(vec!["base".to_string(), "variation".to_string()])
         );
     }
 }

@@ -30,6 +30,10 @@ use crate::user_context::build_targeting_state;
 pub struct StaticProviderOptions {
     /// The user's current plan handle. No plan provider without it.
     pub plan_handle: Option<String>,
+    /// Explicit purchased holdings.
+    pub addons: Option<Value>,
+    /// Base plan billing cadence.
+    pub billing_period: Option<String>,
     /// Display name; defaults to the handle.
     pub plan_name: Option<String>,
     /// Per-entitlement `{used, limit}` overrides.
@@ -203,8 +207,21 @@ pub fn resolve_static_segment_membership(
 pub fn create_static_providers(config: &Value, opts: &StaticProviderOptions) -> Value {
     let mut ctx = Map::new();
 
-    if let Some(handle) = opts.plan_handle.as_deref().filter(|h| !h.is_empty()) {
+    if opts.plan_handle.as_ref().is_some_and(|h| !h.is_empty())
+        || opts
+            .addons
+            .as_ref()
+            .and_then(Value::as_array)
+            .is_some_and(|a| !a.is_empty())
+    {
+        let handle = opts.plan_handle.as_deref().unwrap_or("");
         let mut plan = Map::new();
+        if let Some(addons) = &opts.addons {
+            plan.insert("addons".into(), addons.clone());
+        }
+        if let Some(period) = &opts.billing_period {
+            plan.insert("billing_period".into(), json!(period));
+        }
         plan.insert("current_plan_handle".into(), json!(handle));
         plan.insert(
             "current_plan_name".into(),
@@ -362,6 +379,7 @@ pub fn create_static_providers(config: &Value, opts: &StaticProviderOptions) -> 
                 "rule_id": rule.get("id").cloned().unwrap_or(Value::Null),
                 "entitlement_id": ent_id,
                 "plan_ids": plan_ids,
+                "targets": targets,
                 "kind": kind,
                 "fields": Value::Object(fields),
                 "segment_ids": segment_ids,
@@ -385,11 +403,15 @@ pub fn create_static_providers(config: &Value, opts: &StaticProviderOptions) -> 
             .filter_map(|seg| Some((s(seg, "handle")?, json!(s(seg, "dimension_id")?))))
             .collect();
 
+        let addon_variations: Map<String, Value> = arr(config, "addon_variations").iter().filter_map(|v| Some((s(v, "handle")?, json!({"addon_handle": v.get("addon_handle"), "billing_period": v.get("billing_period")})))).collect();
+        let plan_variations: Map<String, Value> = arr(config, "plan_variations").iter().filter_map(|v| Some((s(v, "handle")?, json!({"plan_handle": v.get("plan_handle"), "billing_period": v.get("billing_period"), "segment_handle": v.get("segment_handle")})))).collect();
         ctx.insert(
             "rules".into(),
             json!({
                 "entitlement_rules": Value::Object(by_ent),
                 "segment_dimensions": Value::Object(segment_dimensions),
+                "addon_variations": Value::Object(addon_variations),
+                "plan_variations": Value::Object(plan_variations),
                 "config_version": playbook_version(config),
             }),
         );

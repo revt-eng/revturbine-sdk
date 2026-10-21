@@ -8,7 +8,7 @@ from typing import Any, Literal, NamedTuple, TypeAlias, TypedDict, TypeGuard
 
 PLAYBOOK_FORMAT_VERSION = "1.0.0"
 
-BUNDLE_SCHEMA_VERSION = 14
+BUNDLE_SCHEMA_VERSION = 17
 """Newest payload ``bundle_schema_version`` this port fully understands.
 
 Mirror of ``SCHEMA_VERSION`` in scaffold ``src/core/bundle/ir.ts`` — the

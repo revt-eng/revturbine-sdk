@@ -2,10 +2,8 @@ import type {
   PlacementOutput,
   RevTurbineEntitlementContext,
   RevTurbineLocalRuntimeData,
-  RevTurbinePlacementRequestConfig,
   EntitlementStatus,
 } from '../customer-side';
-import { resolvePlacementComponentType } from '@revt-eng/core';
 
 export type HarnessSlotId = string;
 
@@ -456,16 +454,6 @@ export function buildHarnessPlacementCatalog(
   }, {} as Record<HarnessSlotId, PlacementOutput>);
 }
 
-export function buildLookupConfigKey(config: RevTurbinePlacementRequestConfig): string {
-  return [
-    config.slotId || '',
-    resolvePlacementComponentType(config) || '',
-    config.entitlementHandle || '',
-    config.planHandle || '',
-    config.placementHandle || '',
-  ].join('::');
-}
-
 export interface HarnessEntitlementPayload {
   handle: string;
   allowed: boolean;
@@ -495,30 +483,19 @@ export const DEFAULT_ENTITLEMENT_PAYLOADS: HarnessEntitlementPayload[] = [
   { handle: 'exports', allowed: true, status: 'allowed', kind: 'usage_limit', limit: 500, current_usage: 120, unit: 'exports', period: 'monthly', enforcement: 'soft' },
 ];
 
+/**
+ * Seed the harness's local runtime with entitlement and user-context data.
+ * 0.12.0 (BL-0537): placements are no longer seeded — `getPlacement` decides
+ * from the user context and the Playbook (D-39), which carries the harness
+ * slots and content overrides.
+ */
 export function createLocalRuntimeData(
-  activeSlots: Record<HarnessSlotId, boolean>,
   userId: string,
   userName: string,
   planHandle: string,
   entitlementPayloads: HarnessEntitlementPayload[],
-  slots: HarnessSlotDescriptor[] = HARNESS_SLOTS,
   matchedSegmentIds: string[] = [],
-  contentOverrides: Record<HarnessSlotId, Record<string, string>> = buildDefaultContentOverrides(slots),
 ): RevTurbineLocalRuntimeData {
-  const placements = buildHarnessPlacementCatalog(slots, contentOverrides);
-  const placementsByLookupKey: Record<string, PlacementOutput | null> = {};
-
-  for (const slot of slots) {
-    const key = buildLookupConfigKey({
-      slotId: slot.id,
-      surfaceType: slot.surfaceType,
-      placementHandle: slot.placementHandle,
-      planHandle,
-    });
-
-    placementsByLookupKey[key] = activeSlots[slot.id] ? placements[slot.id] : null;
-  }
-
   const entitlementByHandle: Record<string, { status: EntitlementStatus; allowed: boolean; reason?: string }> = {};
   for (const ep of entitlementPayloads) {
     entitlementByHandle[ep.handle] = ep.allowed
@@ -527,7 +504,6 @@ export function createLocalRuntimeData(
   }
 
   return {
-    placementsByLookupKey,
     entitlementByHandle,
     userContextByUserId: {
       [userId]: {

@@ -262,6 +262,8 @@ class DecisionEngine:
             billing_period = plan.get("billing_period") if plan is not None else None
             if billing_period is not None:
                 rule_context["billing_period"] = billing_period
+            if plan is not None and plan.get("addons") is not None:
+                rule_context["addons"] = plan["addons"]
             matched = find_matching_entitlement_rule(rules, handle, rule_context)
             if matched is not None:
                 # Snapshot `kind` seeds the shaper for providers whose
@@ -282,10 +284,12 @@ class DecisionEngine:
                         derive_result_from_rule_type_fields(
                             type_fields,
                             float(ctx_used) if ctx_used is not None else 0.0,
+                            matched.get("effective_allowance"),
                         ),
                         matched_rule_id
                         if isinstance(matched_rule_id, str) and matched_rule_id != ""
                         else None,
+                        matched.get("contributing_rule_handles"),
                     )
                 # A matched rule of a kind the shaper doesn't model (e.g.
                 # legacy 'metered') proves the plan assignment exists — fall

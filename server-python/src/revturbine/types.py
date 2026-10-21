@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.503/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.507/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -4998,6 +4998,19 @@ class ProviderProvenance(BaseModel):
     source_revision: constr(min_length=1, max_length=200) | None = None
 
 
+class PurchasedAddon(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    addon_handle: constr(pattern=r"^[a-z0-9._]{1,100}$")
+    addon_variation_handle: constr(pattern=r"^[a-z0-9._]{1,100}$") | None = None
+    quantity: conint(ge=0, le=9007199254740991)
+
+
+class PurchasedAddons(RootModel[list[PurchasedAddon]]):
+    root: list[PurchasedAddon]
+
+
 class PriceSource1(Enum):
     stripe = "stripe"
     static = "static"
@@ -6349,6 +6362,7 @@ class ServerEvaluationPayloadEntitlementsValue(BaseModel):
     used: float | None = None
     remaining: float | None = None
     rule_handle: str | None = None
+    contributing_rule_handles: list[str] | None = None
     placement: PlacementDecisionOutput | None = None
 
 
@@ -10259,6 +10273,7 @@ class ClientContext(BaseModel):
     trial: ClientContextTrial | None = None
     billing: ClientContextBilling | None = None
     plan: ClientContextPlan | None = None
+    addons: list[PurchasedAddon] | None = None
     capabilities: ClientContextCapabilities | None = None
     builtin_dimensions: ClientContextBuiltinDimensions | None = None
 
@@ -10389,6 +10404,7 @@ class EntitlementCheckResult(BaseModel):
     used: float | None = None
     remaining: float | None = None
     rule_handle: str | None = None
+    contributing_rule_handles: list[str] | None = None
     placement: PlacementDecisionOutput | None = None
 
 
@@ -11852,7 +11868,10 @@ class StripeDiscoveryRun(BaseModel):
         description="Account/mode fingerprint: a config id alone may not change when fields change.",
     )
     generation: conint(ge=0, le=9007199254740991)
-    run_id: constr(min_length=1, max_length=255)
+    run_id: constr(min_length=1, max_length=128) = Field(
+        ...,
+        description="Derived from the unique scope and generation, so unique by construction.",
+    )
     trigger: StripeDiscoveryTrigger
     phase: StripeDiscoveryPhase | None = "customers"
     status: StripeDiscoveryRunStatus | None = "idle"
@@ -13871,6 +13890,7 @@ class UserContext(BaseModel):
     plan_handle: constr(min_length=1) | None = None
     seat_type_handle: constr(pattern=r"^[a-z0-9._]{1,100}$") | None = None
     plan: UserPlanContext | None = None
+    addons: list[PurchasedAddon] | None = None
     usage: dict[str, UserUsageEntry] | None = Field({}, validate_default=True)
     trial: UserTrialStatus | None = None
     payment_failed: bool | None = None

@@ -8,8 +8,7 @@ import { configArtifactForRuntime } from '../config-artifact';
 import {
   buildDefaultContentOverrides,
   buildExportedConfig,
-  buildLookupConfigKey,
-  createLocalRuntimeData,
+  buildHarnessPlacementCatalog,
   DEFAULT_ENTITLEMENTS,
   DEFAULT_ENTITLEMENT_RULES,
   DEFAULT_PLANS,
@@ -223,16 +222,9 @@ describe('harness Playbook projection migration', () => {
     const contentOverrides = buildDefaultContentOverrides(HARNESS_SLOTS);
     contentOverrides[SLOT.id].title = 'Canonical block title';
     contentOverrides[SLOT.id].body = 'Canonical block body';
-    const runtimeData = createLocalRuntimeData(
-      Object.fromEntries(HARNESS_SLOTS.map((slot) => [slot.id, true])),
-      'user_harness_01',
-      'Taylor Harness',
-      DEFAULT_PLANS[0].unique_handle,
-      [],
-      HARNESS_SLOTS,
-      [],
-      contentOverrides,
-    );
+    // The harness's authored placement per slot (with the content overrides),
+    // which the seeded `placementsByLookupKey` lane carried until 0.12.0.
+    const harnessCatalog = buildHarnessPlacementCatalog(HARNESS_SLOTS, contentOverrides);
 
     for (const slot of HARNESS_SLOTS) {
       const placement = runtimeConfig.placements?.find(
@@ -255,12 +247,7 @@ describe('harness Playbook projection migration', () => {
       };
       const input = { placementId: placement.id, userId: 'user_harness_01' };
       const rawDecision = await staticResolver(input, placementRecord, context);
-      const runtimeOutput = runtimeData.placementsByLookupKey?.[buildLookupConfigKey({
-        slotId: slot.id,
-        surfaceType: slot.surfaceType,
-        placementHandle: slot.placementHandle,
-        planHandle: DEFAULT_PLANS[0].unique_handle,
-      })];
+      const runtimeOutput = harnessCatalog[slot.id];
 
       expect(normalizeDecision(rawDecision.output), `raw/harness parity for ${slot.id}`)
         .toEqual(normalizeDecision(runtimeOutput));

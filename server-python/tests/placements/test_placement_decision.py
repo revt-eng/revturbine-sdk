@@ -25,7 +25,6 @@ from revturbine.core.placements.placement_decision import (
     filter_one_discretionary,
     local_placement_lookup_key,
     normalize_decision_from_response,
-    resolve_local_placement_from_candidates,
 )
 from revturbine.core.state.types import PresentationCapState, SurfaceTypeCapRule
 
@@ -223,87 +222,6 @@ class TestApplyCategoryConflictSuppression:
         right = _out("R", category="gated")
         survivors = apply_category_conflict_suppression([left, right])
         assert {o["output_id"] for o in survivors} == {"R"}
-
-
-# ── resolve_local_placement_from_candidates ─────────────────────────────────
-
-
-class TestResolveLocalPlacement:
-    def test_empty_returns_none(self) -> None:
-        assert resolve_local_placement_from_candidates([]) is None
-
-    def test_fixed_only_filter(self) -> None:
-        fixed = _out("f", category="fixed")  # bucket 1
-        other = _out("o", category="upsell")
-        result = resolve_local_placement_from_candidates(
-            [fixed, other], options={"fixed_only": True}
-        )
-        assert result is not None and result["output_id"] == "f"
-
-    def test_fixed_only_none_match(self) -> None:
-        assert (
-            resolve_local_placement_from_candidates(
-                [_out("o", category="upsell")], options={"fixed_only": True}
-            )
-            is None
-        )
-
-    def test_category_bucket_orders_winner(self) -> None:
-        gated = _out("g", category="gated")
-        upsell = _out("u", category="upsell")
-        winner = resolve_local_placement_from_candidates([upsell, gated])
-        assert winner is not None and winner["output_id"] == "g"
-
-    def test_server_order_wins_when_present(self) -> None:
-        a = _out("a", category="upsell", content={"server_order": 5})
-        b = _out("b", category="gated", content={"server_order": 1})
-        # explicit server_order present → ordered by it, ignoring buckets.
-        winner = resolve_local_placement_from_candidates([a, b])
-        assert winner is not None and winner["output_id"] == "b"
-
-    def test_score_tiebreak_within_bucket(self) -> None:
-        a = _out("a", category="upsell", content={"score": 10})
-        b = _out("b", category="upsell", content={"score": 99})
-        winner = resolve_local_placement_from_candidates([a, b])
-        assert winner is not None and winner["output_id"] == "b"
-
-    def test_output_id_localecompare_final_tiebreak(self) -> None:
-        a = _out("zzz", category="upsell")
-        b = _out("aaa", category="upsell")
-        # All scores equal → lexicographic output_id ascending.
-        winner = resolve_local_placement_from_candidates([a, b])
-        assert winner is not None and winner["output_id"] == "aaa"
-
-    def test_proximity_score_priority_tier(self) -> None:
-        # bucket 2 (usage) → proximity ranks.
-        a = _out("a", category="usage", content={"usage_percent": 50})
-        b = _out("b", category="usage", content={"usage_percent": 90})
-        winner = resolve_local_placement_from_candidates([a, b])
-        assert winner is not None and winner["output_id"] == "b"
-
-    def test_server_order_present_vs_absent_orders_present_first(self) -> None:
-        # One candidate has server_order, the other doesn't → the one
-        # with server_order sorts first (comparator: lo not None, ro None).
-        a = _out("a", category="upsell", content={"server_order": 7})
-        b = _out("b", category="upsell")  # no server_order
-        winner = resolve_local_placement_from_candidates([b, a])
-        assert winner is not None and winner["output_id"] == "a"
-
-    def test_equal_server_order_falls_through_to_bucket(self) -> None:
-        # Both have the same server_order → tie → fall through to
-        # category-bucket ordering (gated bucket 0 wins).
-        a = _out("a", category="upsell", content={"server_order": 1})
-        b = _out("b", category="gated", content={"server_order": 1})
-        winner = resolve_local_placement_from_candidates([a, b])
-        assert winner is not None and winner["output_id"] == "b"
-
-    def test_priority_tiebreak_after_equal_score(self) -> None:
-        # Same bucket, same score → placement_priority breaks the tie
-        # (higher priority wins; comparator's priority branch).
-        a = _out("a", category="upsell", content={"score": 5, "priority": 1})
-        b = _out("b", category="upsell", content={"score": 5, "priority": 9})
-        winner = resolve_local_placement_from_candidates([a, b])
-        assert winner is not None and winner["output_id"] == "b"
 
 
 # ── normalize_decision_from_response ────────────────────────────────────────
@@ -634,7 +552,7 @@ class TestFilterOneDiscretionary:
 
 
 class TestDecisionPilotCorpus:
-    """10 hand-derived fixtures for the decision-lifecycle surface,
+    """9 hand-derived fixtures for the decision-lifecycle surface,
     extending the TASK-5 batch-1 (entitlement) and batch-2a (payload)
     pilots. Each expected value traced from placement-decision.ts.
     """
@@ -676,16 +594,6 @@ class TestDecisionPilotCorpus:
                 )
             }
             == {"b"},
-        ),
-        (
-            "resolve_bucket_order",
-            (
-                resolve_local_placement_from_candidates(
-                    [_out("u", category="upsell"), _out("g", category="gated")]
-                )
-                or {}
-            ).get("output_id")
-            == "g",
         ),
         (
             "no_caps_allowed",
@@ -735,5 +643,7 @@ class TestDecisionPilotCorpus:
     def test_pilot(self, assertion: bool) -> None:
         assert assertion is True
 
-    def test_corpus_has_ten_fixtures(self) -> None:
-        assert len(self._FIXTURES) == 10
+    def test_corpus_has_nine_fixtures(self) -> None:
+        # Ten until 0.12.0 removed resolve_local_placement_from_candidates
+        # and its "resolve_bucket_order" fixture (BL-0537).
+        assert len(self._FIXTURES) == 9

@@ -127,7 +127,7 @@ class TestPublicSurface:
         # callback), neither of which persists anything. `playbook` and
         # `exported_config` are the SAME input under two spellings
         # (BL-0156) — `exported_config` is deprecated and removed in
-        # 0.12.0, at which point that name drops out of this set.
+        # 0.13.0, at which point that name drops out of this set.
         params = inspect.signature(RevTurbineCustomerSdk).parameters
         assert set(params) == {
             "user_context",

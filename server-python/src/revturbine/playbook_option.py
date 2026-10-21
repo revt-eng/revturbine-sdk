@@ -37,7 +37,7 @@ __all__ = [
 ]
 
 #: The minor that removes every ``exported_config``-spelled alias.
-PLAYBOOK_ALIAS_REMOVAL_VERSION = "0.12.0"
+PLAYBOOK_ALIAS_REMOVAL_VERSION = "0.13.0"
 
 _warned = False
 

@@ -11,7 +11,7 @@ use serde_json::{json, Value};
 use revturbine::decisions::EntitlementCheckResult;
 use revturbine::entitlements::{
     derive_local_entitlement_from_configured_rules, derive_result_from_rule_type_fields,
-    is_rule_shaped_kind, LocalEntitlementInput,
+    is_rule_shaped_kind, try_derive_local_entitlement_from_configured_rules, LocalEntitlementInput,
 };
 
 /// A config with one entitlement and the given rules, all targeting `pro`.
@@ -525,19 +525,22 @@ fn falls_through_to_user_usage_when_no_balance() {
 // ── shaper + helper surface ─────────────────────────────────────────────────
 
 #[test]
-fn rule_shaped_kinds_are_exactly_the_five() {
+fn rule_shaped_kinds_are_exactly_the_six() {
+    // BUG-554: `seat` is shaped so its (possibly purchased) included allowance
+    // reaches the result numerically — TS isRuleShapedKind lists it too.
     for k in [
         "feature",
         "usage_limit",
         "limit",
         "credits",
         "capability_tier",
+        "seat",
     ] {
         assert!(is_rule_shaped_kind(k), "{k} should be rule-shaped");
     }
     // `metered` proves a plan assignment but must fall through to provider
     // logic rather than the shaper's default.
-    for k in ["metered", "seat", "", "unknown"] {
+    for k in ["metered", "", "unknown"] {
         assert!(!is_rule_shaped_kind(k), "{k} should NOT be rule-shaped");
     }
 }
@@ -640,7 +643,9 @@ fn seat_pair_config(included_count: u64) -> Value {
 }
 
 #[test]
-fn seat_rule_alone_shapes_through_unknown_kind_default() {
+fn seat_rule_reports_included_allowance_without_enforcement() {
+    // BUG-554: the seat allowance is reported (limit/used/remaining) so a
+    // purchased 10 + 5 is observable, but max_seats is still not enforced.
     let cfg = config(
         "seat",
         json!([{ "entitlement_id": "feat_x", "plan_ids": ["pro"],
@@ -651,7 +656,9 @@ fn seat_rule_alone_shapes_through_unknown_kind_default() {
     let r = derive(&cfg, &inp);
     assert_eq!(r.status, "allowed");
     assert!(r.allowed);
-    assert_eq!(r.limit, None);
+    assert_eq!(r.limit.and_then(|n| n.as_f64()), Some(5.0));
+    assert_eq!(r.used.and_then(|n| n.as_f64()), Some(3.0));
+    assert_eq!(r.remaining.and_then(|n| n.as_f64()), Some(2.0));
 }
 
 #[test]
@@ -760,4 +767,103 @@ fn an_empty_rule_id_is_no_identity_rather_than_an_empty_handle() {
     let r = derive(&cfg, &input("feat_x", "pro"));
     assert!(r.allowed);
     assert_eq!(r.rule_handle, None);
+}
+
+// ── BUG-554 purchased allowances ────────────────────────────────────────────
+
+fn purchased_config(rules: Value, addons: &[&str]) -> Value {
+    let mut cfg = config("usage_limit", rules);
+    cfg["addons"] = addons
+        .iter()
+        .map(|handle| json!({ "unique_handle": handle }))
+        .collect();
+    cfg
+}
+
+#[test]
+fn mismatched_purchased_period_is_an_error_not_a_sum() {
+    // Kent comment 2480: additive allowances need matching reset periods.
+    let cfg = purchased_config(
+        json!([
+            { "id": "base", "entitlement_id": "feat_x", "targets": [{ "kind": "plan", "id": "pro" }],
+              "limit_value": 100, "period_scope": "per_month" },
+            { "id": "pack", "entitlement_id": "feat_x", "targets": [{ "kind": "addon", "id": "pack" }],
+              "limit_value": 500, "period_scope": "per_year" },
+        ]),
+        &["pack"],
+    );
+    let addons = json!([{ "addon_handle": "pack", "quantity": 1 }]);
+    let inp = LocalEntitlementInput {
+        addons: Some(&addons),
+        billing_period: Some("monthly"),
+        ..input("feat_x", "pro")
+    };
+    assert_eq!(
+        try_derive_local_entitlement_from_configured_rules(&inp, &cfg).err(),
+        Some(
+            "Incompatible purchased allowances: base and pack require matching periods and scopes"
+                .into()
+        )
+    );
+    let denied = derive(&cfg, &inp);
+    assert!(!denied.allowed);
+    assert_eq!(
+        denied.reason.as_deref(),
+        Some("invalid_purchased_allowance")
+    );
+}
+
+#[test]
+fn one_time_credit_purchase_never_joins_the_additive_allowance() {
+    let mut cfg = purchased_config(
+        json!([
+            { "id": "base", "entitlement_id": "feat_x", "targets": [{ "kind": "plan", "id": "pro" }],
+              "allowance_value": 100, "reset_period": "month" },
+            { "id": "topup", "entitlement_id": "feat_x", "targets": [{ "kind": "addon", "id": "topup" }],
+              "allowance_value": 500 },
+            { "id": "boost", "entitlement_id": "feat_x", "targets": [{ "kind": "addon", "id": "boost" }],
+              "allowance_value": 25, "reset_period": "month" },
+        ]),
+        &["topup", "boost"],
+    );
+    cfg["entitlements"][0]["type"] = json!("credits");
+    let addons = json!([
+        { "addon_handle": "topup", "quantity": 1 },
+        { "addon_handle": "boost", "quantity": 2 },
+    ]);
+    let inp = LocalEntitlementInput {
+        addons: Some(&addons),
+        billing_period: Some("monthly"),
+        ..input("feat_x", "pro")
+    };
+    let r = try_derive_local_entitlement_from_configured_rules(&inp, &cfg)
+        .expect("compatible")
+        .expect("config present");
+    assert_eq!(r.limit.and_then(|n| n.as_f64()), Some(150.0));
+    assert_eq!(
+        r.contributing_rule_handles,
+        Some(vec!["base".to_string(), "boost".to_string()])
+    );
+}
+
+#[test]
+fn unknown_purchased_addon_contributes_nothing() {
+    let cfg = purchased_config(
+        json!([
+            { "id": "base", "entitlement_id": "feat_x", "targets": [{ "kind": "plan", "id": "pro" }],
+              "limit_value": 100, "period_scope": "per_month" },
+        ]),
+        &[],
+    );
+    let addons = json!([{ "addon_handle": "ghost", "quantity": 4 }]);
+    let inp = LocalEntitlementInput {
+        addons: Some(&addons),
+        billing_period: Some("monthly"),
+        ..input("feat_x", "pro")
+    };
+    let r = try_derive_local_entitlement_from_configured_rules(&inp, &cfg)
+        .expect("unknown holdings are not an error")
+        .expect("config present");
+    assert_eq!(r.limit.and_then(|n| n.as_f64()), Some(100.0));
+    assert_eq!(r.contributing_rule_handles, None);
 }

@@ -12,6 +12,7 @@ import {
   type Exact,
   type ExactInitOptions,
   type IdentifyContextInput,
+  type UserContextInput,
 } from '../customer-side';
 import type { RevTurbineTheme, RevTurbineThemeInput } from '../theme/types';
 import {
@@ -56,7 +57,24 @@ import { isProductionBuild } from '../build-mode';
  * Keys the SDK does not recognise at all, and server-assigned keys, are NOT
  * stripped: identify() still reports those, exactly as a direct call would.
  */
-function identifyContextOf(context: IdentifyContextInput): IdentifyContextInput {
+type ProviderIdentifyInput = IdentifyContextInput &
+  Partial<
+    Pick<
+      UserContextInput,
+      | 'email_type'
+      | 'trial'
+      | 'payment_failed'
+      | 'payment_at_risk'
+      | 'tiers'
+      | 'instances'
+      | 'experiments'
+      | 'derived_config_version'
+      | 'context_hash'
+      | 'derived_computed_at'
+    >
+  >;
+
+function identifyContextOf(context: ProviderIdentifyInput): IdentifyContextInput {
   const {
     email_type: _emailType,
     trial: _trial,
@@ -318,7 +336,7 @@ export function RevTurbineProvider<
         phase = 'identify';
         const user = options.user;
         if (user && typeof user === 'object' && (user as { id?: string }).id) {
-          const { id, ...context } = user as { id: string } & IdentifyContextInput;
+          const { id, ...context } = user as { id: string } & ProviderIdentifyInput;
           nextSdk.identify(id, identifyContextOf(context));
         }
 

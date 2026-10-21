@@ -33,10 +33,9 @@ use serde_json::{json, Map, Value};
 
 use crate::decisions::EntitlementCheckResult;
 use crate::entitlements::{
-    derive_effective_entitlement, derive_effective_entitlements,
-    derive_result_from_rule_type_fields, find_matching_entitlement_rule, is_rule_shaped_kind,
-    reverse_trial_grants, with_rule_handle, AppEntitlementInputs, EffectiveEntitlementBase,
-    EntitlementMergeOptions, RuleEvaluationContext,
+    derive_effective_entitlement, derive_effective_entitlements, is_rule_shaped_kind,
+    reverse_trial_grants, try_derive_effective_entitlement, with_rule_handle, AppEntitlementInputs,
+    EffectiveEntitlementBase, EntitlementMergeOptions, RuleEvaluationContext,
 };
 use crate::placements::StaticPlacementResolver;
 use crate::state::{
@@ -424,6 +423,33 @@ impl LocalRuntime {
         effective.result
     }
 
+    /// [`check_entitlement`](Self::check_entitlement), but an invalid purchased
+    /// holding or an incompatible additive grant (BUG-554) is returned as the
+    /// error TS `checkEntitlement` throws, instead of the fail-closed
+    /// `invalid_purchased_allowance` denial.
+    ///
+    /// # Errors
+    ///
+    /// The purchased-holding validation or allowance-compatibility message.
+    ///
+    /// Source: local-runtime.ts (checkEntitlement)
+    pub fn try_check_entitlement(
+        &self,
+        handle: &str,
+        context: Option<&Value>,
+    ) -> Result<EntitlementCheckResult, String> {
+        let app_by_handle = self.app_inputs_by_handle(&self.providers);
+        let effective = try_derive_effective_entitlement(
+            handle,
+            &self.effective_base(&self.providers, context),
+            app_by_handle.get(handle),
+        )?;
+        if effective.unknown_handle {
+            self.report_unknown_entitlement(handle);
+        }
+        Ok(effective.result)
+    }
+
     /// The engine's provider-snapshot entitlement check — TS
     /// `runtime.engine.checkEntitlement`. It reads the provider entries and
     /// rule snapshots and falls back to the default policy (`deny` unless
@@ -431,7 +457,10 @@ impl LocalRuntime {
     /// otherwise, D-61) for a missing provider or entry.
     ///
     /// Decisions go through [`check_entitlement`](Self::check_entitlement);
-    /// this stays reachable for callers that want the raw engine view.
+    /// this stays reachable for callers that want the raw engine view. An
+    /// invalid purchased holding or incompatible additive grant fails closed
+    /// (`invalid_purchased_allowance`); see
+    /// [`try_engine_check_entitlement`](Self::try_engine_check_entitlement).
     ///
     /// Source: engine.ts:186-229
     #[must_use]
@@ -439,6 +468,34 @@ impl LocalRuntime {
         &self,
         handle: &str,
         context: Option<&Value>,
+    ) -> EntitlementCheckResult {
+        self.engine_check_entitlement_reporting(handle, context, &mut None)
+    }
+
+    /// [`engine_check_entitlement`](Self::engine_check_entitlement), but an
+    /// invalid purchased holding or incompatible additive grant (BUG-554) is
+    /// returned as the error TS `runtime.engine.checkEntitlement` throws.
+    ///
+    /// # Errors
+    ///
+    /// The purchased-holding validation or allowance-compatibility message.
+    ///
+    /// Source: engine.ts:186-229
+    pub fn try_engine_check_entitlement(
+        &self,
+        handle: &str,
+        context: Option<&Value>,
+    ) -> Result<EntitlementCheckResult, String> {
+        let mut error = None;
+        let result = self.engine_check_entitlement_reporting(handle, context, &mut error);
+        error.map_or(Ok(result), Err)
+    }
+
+    fn engine_check_entitlement_reporting(
+        &self,
+        handle: &str,
+        context: Option<&Value>,
+        error: &mut Option<String>,
     ) -> EntitlementCheckResult {
         let policy = self.default_entitlement_policy;
         let policy_default = |allowed_reason: &str, denied_reason: &str| {
@@ -518,8 +575,13 @@ impl LocalRuntime {
                 ..Default::default()
             };
 
-            match find_matching_entitlement_rule(&by_ent, handle, &rule_ctx) {
-                Some(matched) => {
+            let mut rule_ctx = rule_ctx;
+            rule_ctx.addons = plan.and_then(|p| p.get("addons")).cloned();
+            match crate::entitlements::rules::find_effective_entitlement_rule(
+                &by_ent, handle, &rule_ctx, rules,
+            ) {
+                Ok(Some(aggregate)) => {
+                    let matched = &aggregate.rule.source;
                     // The snapshot's `kind` seeds the shaper; a `fields.kind`
                     // wins via merge order. The two agree wherever both exist.
                     let mut type_fields = Map::new();
@@ -547,19 +609,33 @@ impl LocalRuntime {
                         // selection. The snapshot's `rule_id` comes from the
                         // Playbook entry's handle-valued `id`, so both
                         // evaluators agree on the VALUE, not just the field.
-                        return with_rule_handle(
-                            derive_result_from_rule_type_fields(&tf, used),
+                        let mut result = with_rule_handle(
+                            crate::entitlements::entitlement_check::derive_result_with_allowance(
+                                &tf,
+                                used,
+                                aggregate.effective_allowance,
+                            ),
                             matched
                                 .get("rule_id")
                                 .and_then(Value::as_str)
                                 .filter(|id| !id.is_empty())
                                 .map(str::to_string),
                         );
+                        result.contributing_rule_handles = aggregate.contributing_rule_handles;
+                        return result;
                     }
                     // A kind the shaper does not model (legacy 'metered')
                     // still proves the plan assignment exists — fall through.
                 }
-                None => {
+                Err(message) => {
+                    *error = Some(message);
+                    return EntitlementCheckResult::with_reason(
+                        "denied",
+                        false,
+                        "invalid_purchased_allowance",
+                    );
+                }
+                Ok(None) => {
                     // Kent's 2026-07-13 ruling: a CONFIGURED entitlement with
                     // no rule assigning it to the user's plan is DENIED.
                     // Unknown handles and engines with no rules provider keep
@@ -608,11 +684,11 @@ impl LocalRuntime {
     /// browser SDK uses.
     ///
     /// Source: local-runtime.ts (effectiveBase)
-    fn effective_base(
-        &self,
-        providers: &Value,
+    fn effective_base<'a>(
+        &'a self,
+        providers: &'a Value,
         context: Option<&Value>,
-    ) -> EffectiveEntitlementBase<'_> {
+    ) -> EffectiveEntitlementBase<'a> {
         // `Number.isFinite(entry.used)` — a JSON number is always finite.
         let usage_balances: HashMap<String, f64> = providers
             .get("entitlements")
@@ -650,6 +726,11 @@ impl LocalRuntime {
             segment_ids,
             usage_balances,
             merge: self.entitlement_merge,
+            addons: providers.get("plan").and_then(|p| p.get("addons")),
+            billing_period: providers
+                .get("plan")
+                .and_then(|p| p.get("billing_period"))
+                .and_then(Value::as_str),
             ..EffectiveEntitlementBase::default()
         }
         .with_reverse_trial_grants(reverse_trial_grants(

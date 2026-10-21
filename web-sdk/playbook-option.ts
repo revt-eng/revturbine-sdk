@@ -29,7 +29,7 @@
 import { devWarn as warnInDevelopmentBuild } from './build-mode';
 
 /** The minor that removes every `ExportedConfig`-spelled alias. */
-export const PLAYBOOK_ALIAS_REMOVAL_VERSION = '0.12.0';
+export const PLAYBOOK_ALIAS_REMOVAL_VERSION = '0.13.0';
 
 let warned = false;
 

@@ -436,7 +436,7 @@ class LocalRuntime:
         """Deprecated alias of :meth:`get_playbook` (BL-0156).
 
         ``ExportedConfig`` is dead vocabulary. Identical behaviour; removed in
-        ``0.12.0``.
+        ``0.13.0``.
         """
         warn_deprecated_playbook_alias_once(
             "`LocalRuntime.get_exported_config()` is deprecated; use `get_playbook()`."
@@ -613,6 +613,8 @@ class LocalRuntime:
             "segment_ids": segment_ids,
             "usage_balances": usage_balances,
             "playbook": self._playbook,
+            "addons": plan.get("addons") if plan else None,
+            "billing_period": plan.get("billing_period") if plan else None,
         }
         grants = reverse_trial_grants(self._playbook, self._trial_status)
         if "trial_granted_entitlement_handles" in grants:

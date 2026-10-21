@@ -85,7 +85,7 @@ export type BrowserRuntimeOptions = BrowserRuntimeOptionsBase &
     | {
         /** The Playbook this runtime evaluates against. */
         playbook: ConfigArtifact;
-        /** @deprecated Use `playbook`. Removed in `0.12.0`. */
+        /** @deprecated Use `playbook`. Removed in `0.13.0`. */
         exportedConfig?: ConfigArtifact;
       }
     | {
@@ -94,7 +94,7 @@ export type BrowserRuntimeOptions = BrowserRuntimeOptionsBase &
         /**
          * @deprecated Renamed to `playbook` — `Playbook` is the canonical name
          * for the artifact (BL-0156). Still fully supported: pass either one.
-         * When both are supplied `playbook` wins. Removed in `0.12.0`.
+         * When both are supplied `playbook` wins. Removed in `0.13.0`.
          */
         exportedConfig: ConfigArtifact;
       }

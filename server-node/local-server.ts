@@ -75,7 +75,7 @@ export interface LocalEvaluationServerOptions {
    * @deprecated Renamed to {@link LocalEvaluationServerOptions.playbook} —
    * `Playbook` is the canonical name for the artifact (BL-0156). Still fully
    * supported: pass either one. When both are supplied `playbook` wins.
-   * Removed in `0.12.0`.
+   * Removed in `0.13.0`.
    */
   exportedConfig?: ConfigArtifact;
   /** Target fallback for legacy configs. Omitted or blank resolves to `production`. */

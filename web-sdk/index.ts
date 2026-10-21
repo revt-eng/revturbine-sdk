@@ -121,7 +121,7 @@ export type { Playbook } from './generated';
 /**
  * @deprecated Legacy alias of {@link Playbook} — the pre-plan-139 name for the
  * same config artifact. `ExportedConfig` is dead vocabulary (BL-0156): use
- * `Playbook`. Removed in `0.12.0`.
+ * `Playbook`. Removed in `0.13.0`.
  */
 export type { Playbook as ExportedConfig } from './generated';
 /**

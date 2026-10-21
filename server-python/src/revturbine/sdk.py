@@ -134,6 +134,8 @@ class UserContext(_UserContextRequired, total=False):
     """
 
     plan_handle: str | None
+    addons: list[dict[str, Any]]
+    billing_period: str
     plan_name: str | None
     usage: dict[str, dict[str, float]] | None
     trial_status: dict[str, Any] | None
@@ -185,7 +187,7 @@ class RevTurbineCustomerSdk:
         """Compose the parity-locked substrate for one user context.
 
         Exactly one of ``playbook`` (canonical) or ``exported_config``
-        (deprecated, removed in ``0.12.0``) is required; supplying
+        (deprecated, removed in ``0.13.0``) is required; supplying
         neither raises ``ValueError``. ``exported_config`` emits a
         one-time :class:`DeprecationWarning` naming ``playbook``.
 
@@ -235,6 +237,8 @@ class RevTurbineCustomerSdk:
             config=playbook,
             plan_handle=user_context.get("plan_handle"),
             plan_name=user_context.get("plan_name"),
+            addons=user_context.get("addons"),
+            billing_period=user_context.get("billing_period"),
             usage=user_context.get("usage"),
             payment_failed=user_context.get("payment_failed"),
             payment_at_risk=user_context.get("payment_at_risk"),

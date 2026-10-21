@@ -28,7 +28,6 @@ from revturbine.core.placements.payload_resolution import (
     resolve_tokens,
 )
 from revturbine.core.placements.placement_decision import (
-    CandidateResolutionOptions,
     CapCheckResult,
     DecisionCacheKeyInput,
     FilteredSlotDecision,
@@ -47,7 +46,6 @@ from revturbine.core.placements.placement_decision import (
     local_placement_lookup_key,
     normalize_decision_from_response,
     normalize_placement_output,
-    resolve_local_placement_from_candidates,
     resolve_placement_component_type,
 )
 
@@ -71,7 +69,6 @@ __all__ = [
     "LocalPlacementEntry",
     "create_static_placement_resolver",
     # placement_decision
-    "CandidateResolutionOptions",
     "CapCheckResult",
     "DecisionCacheKeyInput",
     "FilteredSlotDecision",
@@ -90,6 +87,5 @@ __all__ = [
     "local_placement_lookup_key",
     "normalize_decision_from_response",
     "normalize_placement_output",
-    "resolve_local_placement_from_candidates",
     "resolve_placement_component_type",
 ]

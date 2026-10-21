@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping
-from functools import cmp_to_key
 from typing import Any, Literal, TypedDict
 
 from revturbine.core.canonical_json import canonical_hash_key
@@ -25,12 +24,7 @@ from revturbine.core.helpers import (
     normalized_route,
     parse_cap_rule,
     parse_numberish,
-    placement_priority,
-    placement_score,
-    proximity_score,
-    server_order,
     superseded_versions,
-    tier3_class,
 )
 from revturbine.core.normalization import normalize_placement_output
 from revturbine.core.placements.cap_rules import evaluate_caps
@@ -42,7 +36,6 @@ from revturbine.core.state.types import (
 )
 
 __all__ = [
-    "CandidateResolutionOptions",
     "CapCheckResult",
     "DecisionCacheKeyInput",
     "FilteredSlotDecision",
@@ -61,7 +54,6 @@ __all__ = [
     "local_placement_lookup_key",
     "normalize_decision_from_response",
     "normalize_placement_output",  # re-exported from normalization (TS parity)
-    "resolve_local_placement_from_candidates",
     "resolve_placement_component_type",
 ]
 
@@ -99,12 +91,6 @@ class DecisionCacheKeyInput(_DecisionCacheKeyRequired, total=False):
     overrides: dict[str, Any]
     traits: dict[str, Any]
     runtime_context_fingerprint: str
-
-
-class CandidateResolutionOptions(TypedDict, total=False):
-    """Source: placement-decision.ts:170-173"""
-
-    fixed_only: bool
 
 
 class _CapCheckResultRequired(TypedDict):
@@ -307,92 +293,11 @@ def apply_category_conflict_suppression(
     return [o for o in outputs if o["output_id"] not in suppressed]
 
 
-# ── Candidate scoring + selection ───────────────────────────────────────────
-
-
-def resolve_local_placement_from_candidates(
-    candidates: list[PlacementOutput],
-    enable_category_pipeline: bool = False,  # noqa: ARG001 — parity w/ TS signature
-    options: CandidateResolutionOptions | None = None,
-) -> PlacementOutput | None:
-    """Select the single winning candidate after milestone supersession,
-    category-conflict suppression, and the multi-key ordering.
-
-    ``enable_category_pipeline`` is accepted for TS signature parity but
-    is unused by the TS body too (the pipeline is gated upstream).
-
-    Not the placement decision. Per Kent's ruling D-59 (2026-10-06,
-    supersedes D-34) the decision contract is category first, then
-    within-category ranking — and ``create_static_placement_resolver``
-    implements it with its own ranking, without calling this function. Kept
-    3-way parity-locked because the browser SDK's cached ``getPlacement``
-    lookup uses the TS original.
-
-    Source: placement-decision.ts:175-232
-    """
-    pool = candidates
-    if options and options.get("fixed_only"):
-        pool = [o for o in pool if category_bucket(o["category"]) == 1]
-    if not pool:
-        return None
-
-    milestones_applied = apply_milestone_supersession(pool)
-    if not milestones_applied:
-        return None
-
-    has_explicit_server_order = any(server_order(o) is not None for o in milestones_applied)
-    conflicts_applied = (
-        milestones_applied
-        if has_explicit_server_order
-        else apply_category_conflict_suppression(milestones_applied)
-    )
-    if not conflicts_applied:
-        return None
-
-    def _cmp(left: PlacementOutput, right: PlacementOutput) -> int:
-        if has_explicit_server_order:
-            lo = server_order(left)
-            ro = server_order(right)
-            if lo is not None and ro is not None and lo != ro:
-                return -1 if lo < ro else 1
-            if lo is not None and ro is None:
-                return -1
-            if lo is None and ro is not None:
-                return 1
-
-        left_bucket = category_bucket(left["category"])
-        right_bucket = category_bucket(right["category"])
-        if left_bucket != right_bucket:
-            return left_bucket - right_bucket
-
-        # Within priority tier 3 (usage/credit/seat + trials, combined into
-        # bucket 2): two-stage urgency per plan 53 / spec 3.2. Stage 1:
-        # tier3_class ascending (transition beats at-limit beats approaching);
-        # stage 2: proximity_score descending. The old window `2 <= b <= 3`
-        # assumed the pre-plan-53 map this port carried (plan 234 TASK-15).
-        if left_bucket == 2:
-            cls = tier3_class(left) - tier3_class(right)
-            if cls != 0:
-                return -1 if cls < 0 else 1
-            prox = proximity_score(right) - proximity_score(left)
-            if prox != 0:
-                return -1 if prox < 0 else 1
-
-        score = placement_score(right) - placement_score(left)
-        if score != 0:
-            return -1 if score < 0 else 1
-
-        prio = placement_priority(right) - placement_priority(left)
-        if prio != 0:
-            return -1 if prio < 0 else 1
-
-        # JS String.prototype.localeCompare on ASCII output_id slugs.
-        lid = left["output_id"]
-        rid = right["output_id"]
-        return int(lid > rid) - int(lid < rid)
-
-    ordered = sorted(conflicts_applied, key=cmp_to_key(_cmp))
-    return ordered[0] if ordered else None
+# ``resolve_local_placement_from_candidates`` (the candidate-selection layer)
+# was removed in 0.12.0 (BL-0537): no runtime path consulted it after
+# ``getPlacement`` became a pure function of (user context, Playbook) in 0.11.21
+# (D-39, BL-0379). The decision contract (D-59, category first) lives in
+# ``create_static_placement_resolver``.
 
 
 # ── Response normalization ──────────────────────────────────────────────────

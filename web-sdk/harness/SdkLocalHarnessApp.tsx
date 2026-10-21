@@ -209,16 +209,13 @@ export function SdkLocalHarnessApp() {
 
   const runtimeData = useMemo(() => {
     return createLocalRuntimeData(
-      activeSlots,
       userId,
       userName,
       planHandle,
       entitlementPayloads,
-      slots,
       effectiveSegmentIds,
-      contentOverrides,
     );
-  }, [activeSlots, contentOverrides, effectiveSegmentIds, entitlementPayloads, planHandle, slots, userId, userName]);
+  }, [effectiveSegmentIds, entitlementPayloads, planHandle, userId, userName]);
 
   const currentExportedConfig = useMemo(() => buildExportedConfig({
     plans,

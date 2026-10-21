@@ -712,7 +712,7 @@ def configured_plan_name_from_exported_config(
     """Deprecated alias of :func:`configured_plan_name_from_playbook`.
 
     ``ExportedConfig`` is dead vocabulary (BL-0156). Kept so an existing import
-    keeps working; removed in ``0.12.0``.
+    keeps working; removed in ``0.13.0``.
     """
     warn_deprecated_playbook_alias_once(
         "`configured_plan_name_from_exported_config` is deprecated; "

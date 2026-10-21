@@ -19,6 +19,10 @@ import math
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, TypedDict, TypeVar
 
+from revturbine.core.entitlements.purchased_allowance import (
+    aggregate_purchased_allowance,
+    validate_purchased_addons,
+)
 from revturbine.core.entitlements.segment_matching import matches_rule_segments
 from revturbine.core.entitlements.unlimited import resolve_limit_value
 from revturbine.core.providers.types import (
@@ -62,6 +66,8 @@ class RuleEvaluationContext(_RuleEvaluationContextRequired, total=False):
     addon_variation_ids: list[str]
     billing_period: str
     segment_dimensions: dict[str, str]
+    addons: list[dict[str, Any]]
+    matched_plan_variation_ids: list[str]
 
 
 def _target_matches(t: dict[str, Any], ctx: RuleEvaluationContext) -> bool:
@@ -79,8 +85,11 @@ def _target_matches(t: dict[str, Any], ctx: RuleEvaluationContext) -> bool:
             and t.get("id") == ctx.get("current_plan_handle")
         )
     if kind == "plan_variation":
-        return ctx.get("current_plan_variation_id") is not None and t.get("id") == ctx.get(
-            "current_plan_variation_id"
+        explicit = ctx.get("current_plan_variation_id")
+        return (
+            t.get("id") == explicit
+            if explicit is not None
+            else t.get("id") in (ctx.get("matched_plan_variation_ids") or [])
         )
     if kind == "addon":
         return t.get("id") in (ctx.get("addon_ids") or [])
@@ -260,5 +269,104 @@ def find_matching_entitlement_rule(
     if state_dims is not None and context.get("segment_dimensions") is None:
         context = context.copy()
         context["segment_dimensions"] = state_dims
-    evaluations = evaluate_entitlement_rules(rules, context)
-    return _select_most_permissive([e for e in evaluations if e["matched"]])
+    declared = validate_purchased_addons(context.get("addons"))
+    baseline_context = context.copy()
+    baseline_context["matched_plan_variation_ids"] = [
+        handle
+        for handle, variation in (rule_state.get("plan_variations") or {}).items()
+        if variation.get("plan_handle")
+        == context.get("current_plan_handle", context.get("current_plan_id"))
+        and variation.get("billing_period") == context.get("billing_period")
+        and (
+            not variation.get("segment_handle")
+            or variation["segment_handle"] in context["segment_ids"]
+        )
+    ]
+    baseline_context["addon_ids"] = [
+        handle
+        for handle in context.get("addon_ids", [])
+        if not any(h["addon_handle"] == handle for h in declared)
+    ]
+    baseline_context["addon_variation_ids"] = [
+        handle
+        for handle in context.get("addon_variation_ids", [])
+        if not any(h.get("addon_variation_handle") == handle for h in declared)
+    ]
+    evaluations = evaluate_entitlement_rules(rules, baseline_context)
+    purchases = []
+
+    def as_allowance(rule: EntitlementRuleSnapshot) -> dict[str, Any]:
+        return {
+            "ruleId": rule["rule_id"],
+            "kind": rule["kind"],
+            "fields": rule["fields"],
+            "source": rule,
+        }
+
+    for holding in declared:
+        if holding["quantity"] == 0:
+            continue
+        variation_handle = holding.get("addon_variation_handle")
+        variation = (
+            (rule_state.get("addon_variations") or {}).get(variation_handle)
+            if variation_handle
+            else None
+        )
+        # Unknown or mismatched variations contribute nothing (fail closed),
+        # matching scaffold rules.ts and the exported-Playbook path.
+        if variation_handle and (
+            variation is None or variation.get("addon_handle") != holding["addon_handle"]
+        ):
+            continue
+        purchase_context: RuleEvaluationContext = {
+            "segment_ids": context["segment_ids"],
+            "addon_ids": [holding["addon_handle"]],
+            "addon_variation_ids": [variation_handle] if variation_handle else [],
+            "segment_dimensions": context.get("segment_dimensions", {}),
+        }
+        matches = evaluate_entitlement_rules(rules, purchase_context)
+        rule = _select_most_permissive(
+            [
+                e
+                for e in matches
+                if e["matched"]
+                and (e["rule"]["kind"] != "credits" or "reset_period" in e["rule"]["fields"])
+            ]
+        )
+        if rule is not None:
+            purchases.append(
+                {
+                    "rule": as_allowance(rule),
+                    "quantity": holding["quantity"],
+                    "billingPeriod": variation.get("billing_period") if variation else None,
+                }
+            )
+    baseline = _select_most_permissive(
+        [
+            e
+            for e in evaluations
+            if e["matched"]
+            and (
+                not purchases
+                or e["rule"]["kind"] != "credits"
+                or "reset_period" in e["rule"]["fields"]
+            )
+        ]
+    )
+    anchor = baseline or (purchases[0]["rule"]["source"] if purchases else None)
+    if anchor and anchor["kind"] not in ("seat", "credits", "usage_limit", "limit"):
+        return pick_most_permissive(
+            ([baseline] if baseline else []) + [p["rule"]["source"] for p in purchases],
+            rule_permissiveness,
+        )
+    aggregate = aggregate_purchased_allowance(
+        as_allowance(baseline) if baseline else None, purchases, context.get("billing_period")
+    )
+    if aggregate is None:
+        return None
+    result: EntitlementRuleSnapshot = aggregate["rule"]["source"].copy()
+    if "effectiveAllowance" in aggregate:
+        result["effective_allowance"] = aggregate["effectiveAllowance"]
+    if "contributingRuleHandles" in aggregate:
+        result["contributing_rule_handles"] = aggregate["contributingRuleHandles"]
+    return result

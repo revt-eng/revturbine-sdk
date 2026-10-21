@@ -83,7 +83,7 @@ fn the_matrix_is_not_vacuous() {
 fn live_constants_are_the_default_reader_window() {
     // The matrix pins windows explicitly; the defaults come from the live
     // constants and must track scaffold's ir.ts.
-    assert_eq!(BUNDLE_SCHEMA_VERSION, 14);
+    assert_eq!(BUNDLE_SCHEMA_VERSION, 17);
     assert_eq!(BUNDLE_MIN_READABLE_SCHEMA_VERSION, 11);
     let payload = serde_json::json!({ "bundle_schema_version": BUNDLE_SCHEMA_VERSION });
     assert!(assert_playbook_payload_readable(&payload, None, None).is_ok());

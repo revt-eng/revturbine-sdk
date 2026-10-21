@@ -15,6 +15,10 @@ use std::collections::{HashMap, HashSet};
 
 use serde_json::{Map, Value};
 
+use super::purchased_allowance::{
+    aggregate_purchased_allowance, allowance_field, validate_purchased_addons, AllowanceRule,
+    PurchasedContribution,
+};
 use super::rules::{pick_most_permissive, rule_permissiveness};
 use super::segment_matching::matches_rule_segments;
 use super::unlimited::resolve_limit_value;
@@ -109,7 +113,7 @@ fn with_limit_fields(
 pub fn is_rule_shaped_kind(kind: &str) -> bool {
     matches!(
         kind,
-        "feature" | "usage_limit" | "limit" | "credits" | "capability_tier"
+        "feature" | "usage_limit" | "limit" | "credits" | "capability_tier" | "seat"
     )
 }
 
@@ -124,6 +128,15 @@ pub fn is_rule_shaped_kind(kind: &str) -> bool {
 pub fn derive_result_from_rule_type_fields(
     type_fields: &Value,
     used: f64,
+) -> EntitlementCheckResult {
+    derive_result_with_allowance(type_fields, used, None)
+}
+
+/// Shape a result without interpreting computed totals as sentinel literals.
+pub(crate) fn derive_result_with_allowance(
+    type_fields: &Value,
+    used: f64,
+    allowance_override: Option<f64>,
 ) -> EntitlementCheckResult {
     let kind = type_fields.get("kind").and_then(Value::as_str);
 
@@ -142,7 +155,8 @@ pub fn derive_result_from_rule_type_fields(
         // `usage_limit` is the bundle-canonical kind; `limit` is the accepted
         // config-authoring shorthand — treated identically.
         Some("usage_limit" | "limit") => {
-            let resolved = resolve_limit_value(type_fields.get("limit_value"));
+            let resolved =
+                allowance_override.or_else(|| resolve_limit_value(type_fields.get("limit_value")));
             match resolved {
                 Some(l) if l.is_finite() && l >= 0.0 => with_limit_fields(
                     apply_usage_enforcement(
@@ -162,7 +176,9 @@ pub fn derive_result_from_rule_type_fields(
             // An *explicit* allowance (incl. null/'unlimited'/999999 → +inf)
             // wins; only a *truly absent* allowance falls through to
             // initial_grant. Presence, not resolution, picks the source.
-            let allowance = if type_fields.get("allowance_value").is_some() {
+            let allowance = if allowance_override.is_some() {
+                allowance_override
+            } else if type_fields.get("allowance_value").is_some() {
                 resolve_limit_value(type_fields.get("allowance_value"))
             } else if type_fields.get("allowance").is_some() {
                 resolve_limit_value(type_fields.get("allowance"))
@@ -191,6 +207,16 @@ pub fn derive_result_from_rule_type_fields(
             }
         }
 
+        Some("seat") => {
+            match allowance_override
+                .or_else(|| resolve_limit_value(type_fields.get("included_count")))
+            {
+                Some(limit) if limit.is_finite() && limit >= 0.0 => {
+                    with_limit_fields(EntitlementCheckResult::new("allowed", true), limit, used)
+                }
+                _ => EntitlementCheckResult::new("allowed", true),
+            }
+        }
         Some("capability_tier") => {
             let mut result = EntitlementCheckResult::new("allowed", true);
             if let Some(tier) = type_fields.get("tier_name").and_then(Value::as_str) {
@@ -233,12 +259,19 @@ pub struct LocalEntitlementInput<'a> {
     /// against, so that plan's limits apply. Unset (or empty) with a
     /// trial-granted handle short-circuits to `granted_by_reverse_trial`.
     pub effective_plan_handle: Option<String>,
+    /// Explicit purchased holdings, validated without quantity inference.
+    pub addons: Option<&'a Value>,
+    /// The base plan cadence for billing-period grants.
+    pub billing_period: Option<&'a str>,
 }
 
 /// Derive an entitlement result locally from Playbook rules.
 ///
 /// Returns `None` when no config is available; an explicit result otherwise —
 /// including `no_matching_entitlement_rule` ⇒ denied, **failing closed**.
+/// Invalid purchased holdings or incompatible additive grants deny with
+/// `invalid_purchased_allowance`; use
+/// [`try_derive_local_entitlement_from_configured_rules`] for the error message.
 ///
 /// Source: entitlement-check.ts:77-211
 #[must_use]
@@ -246,7 +279,69 @@ pub fn derive_local_entitlement_from_configured_rules(
     input: &LocalEntitlementInput,
     playbook: &Value,
 ) -> Option<EntitlementCheckResult> {
+    derive_local_entitlement_reporting(input, playbook, &mut None)
+}
+
+/// [`derive_local_entitlement_from_configured_rules`], but an invalid
+/// purchased holding or an incompatible additive grant is returned as the
+/// error TS throws (BUG-554), instead of a fail-closed denial.
+///
+/// # Errors
+///
+/// The purchased-holding validation or allowance-compatibility message.
+///
+/// Source: entitlement-check.ts:77-211
+pub fn try_derive_local_entitlement_from_configured_rules(
+    input: &LocalEntitlementInput,
+    playbook: &Value,
+) -> Result<Option<EntitlementCheckResult>, String> {
+    let mut error = None;
+    let result = derive_local_entitlement_reporting(input, playbook, &mut error);
+    error.map_or(Ok(result), Err)
+}
+
+/// Shared evaluator body: a rejection denies and records its message in `error`.
+pub(crate) fn derive_local_entitlement_reporting(
+    input: &LocalEntitlementInput,
+    playbook: &Value,
+    error: &mut Option<String>,
+) -> Option<EntitlementCheckResult> {
+    let mut invalid = |message: String| {
+        *error = Some(message);
+        Some(EntitlementCheckResult::with_reason(
+            "denied",
+            false,
+            "invalid_purchased_allowance",
+        ))
+    };
+    let declared = match validate_purchased_addons(input.addons) {
+        Ok(declared) => declared,
+        Err(message) => return invalid(message),
+    };
     let empty: Vec<Value> = Vec::new();
+    let addon_variations = playbook
+        .get("addon_variations")
+        .and_then(Value::as_array)
+        .unwrap_or(&empty);
+    let holdings: Vec<_> = declared
+        .into_iter()
+        .filter(|h| {
+            h["quantity"].as_f64().unwrap_or(0.0) > 0.0
+                && playbook
+                    .get("addons")
+                    .and_then(Value::as_array)
+                    .is_some_and(|addons| {
+                        addons
+                            .iter()
+                            .any(|a| a.get("unique_handle") == h.get("addon_handle"))
+                    })
+                && (h.get("addon_variation_handle").is_none()
+                    || addon_variations.iter().any(|v| {
+                        v.get("handle") == h.get("addon_variation_handle")
+                            && v.get("addon_handle") == h.get("addon_handle")
+                    }))
+        })
+        .collect();
     let entitlements = playbook
         .get("entitlements")
         .and_then(Value::as_array)
@@ -345,13 +440,14 @@ pub fn derive_local_entitlement_from_configured_rules(
     // from `no_matching_entitlement_rule` on purpose: "we could not identify
     // the user's plan" is a broken integration, "their plan lacks this" is a
     // correctly-gated user, and telemetry has to tell them apart.
-    let Some(current_plan_handle_ref) = current_plan_handle_ref else {
+    if current_plan_handle_ref.is_none() && holdings.is_empty() {
         return Some(EntitlementCheckResult::with_reason(
             "denied",
             false,
             "no_plan_identity",
         ));
-    };
+    }
+    let current_plan_handle_ref = current_plan_handle_ref.unwrap_or_default();
 
     let rules = playbook
         .get("entitlement_rules")
@@ -379,6 +475,58 @@ pub fn derive_local_entitlement_from_configured_rules(
         }
     }
 
+    let matches_holding = |rule: &Value, holding: &Value| -> bool {
+        rule.get("targets")
+            .and_then(Value::as_array)
+            .is_some_and(|targets| {
+                targets.iter().any(|t| {
+                    (t.get("kind").and_then(Value::as_str) == Some("addon")
+                        && t.get("id") == holding.get("addon_handle"))
+                        || (t.get("kind").and_then(Value::as_str) == Some("addon_variation")
+                            && holding.get("addon_variation_handle").is_some()
+                            && t.get("id") == holding.get("addon_variation_handle"))
+                })
+            })
+    };
+    let matches_baseline = |rule: &Value| -> bool {
+        if current_plan_handle_ref.is_empty() {
+            return false;
+        }
+        if let Some(targets) = rule.get("targets").and_then(Value::as_array) {
+            targets
+                .iter()
+                .any(|t| match t.get("kind").and_then(Value::as_str) {
+                    Some("plan") => {
+                        t.get("id").and_then(Value::as_str)
+                            == Some(current_plan_handle_ref.as_str())
+                    }
+                    Some("plan_variation") => playbook
+                        .get("plan_variations")
+                        .and_then(Value::as_array)
+                        .is_some_and(|vs| {
+                            vs.iter().any(|v| {
+                                v.get("handle") == t.get("id")
+                                    && v.get("plan_handle").and_then(Value::as_str)
+                                        == Some(current_plan_handle_ref.as_str())
+                                    && v.get("billing_period").and_then(Value::as_str)
+                                        == input.billing_period
+                                    && v.get("segment_handle").and_then(Value::as_str).is_none_or(
+                                        |s| s.is_empty() || input.segment_ids.contains(s),
+                                    )
+                            })
+                        }),
+                    _ => false,
+                })
+        } else {
+            rule.get("plan_ids")
+                .or_else(|| rule.get("planIds"))
+                .and_then(Value::as_array)
+                .is_some_and(|ids| {
+                    ids.iter()
+                        .any(|id| id.as_str() == Some(current_plan_handle_ref.as_str()))
+                })
+        }
+    };
     let matches = |rule: &Value| -> bool {
         let rule_ent_id = rule
             .get("entitlement_id")
@@ -389,31 +537,8 @@ pub fn derive_local_entitlement_from_configured_rules(
             return false;
         }
 
-        // Plan targeting derives from kind:'plan' targets; legacy
-        // plan_ids/planIds tolerated. Empty ⇒ matches NOTHING (plan 34 REQ-9).
-        let plan_ids: Vec<&str> = if let Some(targets) =
-            rule.get("targets").and_then(Value::as_array)
-        {
-            targets
-                .iter()
-                // `is_object()` is the Rust spelling of the TS `isRecord`
-                // predicate the Python port imports as `is_record`.
-                .filter(|t| t.is_object() && t.get("kind").and_then(Value::as_str) == Some("plan"))
-                .filter_map(|t| t.get("id").and_then(Value::as_str))
-                .collect()
-        } else {
-            rule.get("plan_ids")
-                .or_else(|| rule.get("planIds"))
-                .and_then(Value::as_array)
-                .map(|a| a.iter().filter_map(Value::as_str).collect())
-                .unwrap_or_default()
-        };
-
-        // Plan 120 TASK-4: plan targets are handle-valued — match the user's
-        // current plan HANDLE against the rule's listed plan handles. The
-        // `None` identity case returned above (plan 194 REQ-1), so this is an
-        // unconditional match now rather than a skippable one.
-        if !plan_ids.contains(&current_plan_handle_ref.as_str()) {
+        // Match an ordinary plan grant or an explicitly purchased holding.
+        if !matches_baseline(rule) && !holdings.iter().any(|h| matches_holding(rule, h)) {
             return false;
         }
 
@@ -505,9 +630,85 @@ pub fn derive_local_entitlement_from_configured_rules(
     // TASK-4), so the rule's `id` IS its `unique_handle`; an empty id is
     // missing data, not a rule named "". Mirrors entitlement-check.ts
     // `selectedRuleHandle`.
-    let selected_rule = chosen.map_or(matching_rules[0], |(rule, _)| *rule);
-    let type_fields =
+    let mut selected_rule = chosen.map_or(matching_rules[0], |(rule, _)| *rule).clone();
+    let mut type_fields =
         chosen.map_or_else(|| type_fields_of(matching_rules[0]), |(_, tf)| tf.clone());
+    let mut effective_allowance = None;
+    let mut contributing_handles = None;
+    if !holdings.is_empty()
+        && allowance_field(
+            type_fields
+                .get("kind")
+                .and_then(Value::as_str)
+                .unwrap_or(""),
+        )
+        .is_some()
+    {
+        let as_allowance = |rule: &Value| {
+            let fields = type_fields_of(rule);
+            AllowanceRule {
+                id: rule.get("id").and_then(Value::as_str).unwrap_or("").into(),
+                kind: fields
+                    .get("kind")
+                    .and_then(Value::as_str)
+                    .unwrap_or("")
+                    .into(),
+                fields,
+                source: rule.clone(),
+            }
+        };
+        let score = |r: &AllowanceRule| rule_permissiveness(&r.kind, &r.fields);
+        let recurring =
+            |r: &AllowanceRule| r.kind != "credits" || r.fields.get("reset_period").is_some();
+        let mut purchases = Vec::new();
+        for holding in &holdings {
+            let candidates: Vec<_> = matching_rules
+                .iter()
+                .filter(|r| matches_holding(r, holding))
+                .map(|r| as_allowance(r))
+                .filter(&recurring)
+                .collect();
+            if let Some(rule) = pick_most_permissive(&candidates, score) {
+                let billing_period = addon_variations
+                    .iter()
+                    .find(|v| {
+                        holding.get("addon_variation_handle").is_some()
+                            && v.get("handle") == holding.get("addon_variation_handle")
+                    })
+                    .and_then(|v| v.get("billing_period"))
+                    .and_then(Value::as_str)
+                    .map(str::to_string);
+                purchases.push(PurchasedContribution {
+                    rule: rule.clone(),
+                    quantity: holding["quantity"].as_f64().unwrap_or(0.0),
+                    billing_period,
+                });
+            }
+        }
+        let baselines: Vec<_> = matching_rules
+            .iter()
+            .filter(|r| matches_baseline(r))
+            .map(|r| as_allowance(r))
+            .filter(|r| purchases.is_empty() || recurring(r))
+            .collect();
+        let baseline = pick_most_permissive(&baselines, score).cloned();
+        match aggregate_purchased_allowance(baseline, purchases, input.billing_period) {
+            Ok(Some(aggregate)) => {
+                selected_rule = aggregate.rule.source;
+                type_fields = aggregate.rule.fields;
+                effective_allowance = aggregate.effective_allowance;
+                contributing_handles = aggregate.contributing_rule_handles;
+            }
+            Ok(None) => {
+                return Some(EntitlementCheckResult::with_reason(
+                    "denied",
+                    false,
+                    "no_matching_entitlement_rule",
+                ))
+            }
+            Err(message) => return invalid(message),
+        }
+    }
     let selected_rule_handle = selected_rule
         .get("id")
         .and_then(Value::as_str)
@@ -541,10 +742,12 @@ pub fn derive_local_entitlement_from_configured_rules(
             .unwrap_or(0.0)
     });
 
-    Some(with_rule_handle(
-        derive_result_from_rule_type_fields(&type_fields, used),
+    let mut result = with_rule_handle(
+        derive_result_with_allowance(&type_fields, used, effective_allowance),
         selected_rule_handle,
-    ))
+    );
+    result.contributing_rule_handles = contributing_handles;
+    Some(result)
 }
 
 /// Stamp the winning rule's handle onto a shaped result (BL-0062).

@@ -330,7 +330,7 @@
       "name": "RevTurbineCustomerSdk.setUserContext",
       "kind": "method",
       "file": "web-sdk/customer-side.ts",
-      "signature": "setUserContext(userContext: RevTurbineUserContext): void"
+      "signature": "setUserContext<T extends RevTurbineUserContext>(userContext: Exact<RevTurbineUserContext, T>): void"
     },
     {
       "name": "RevTurbineCustomerSdk.snooze",

@@ -32,7 +32,7 @@ export const WARNING_AT = 80;
  * proximity to its limit — wins. With nothing near a limit, the Explore-Pro
  * card (a category-4 conversion placement) shows as the gentle default.
  *
- * This mirrors the engine's own ranking (resolveLocalPlacementFromCandidates:
+ * This mirrors the decision's own ranking (D-59, category first:
  * usage/credit/trial is one category, sorted by proximity, and beats the
  * conversion category). The app owns live usage, so it computes proximity here
  * and asks the SDK to render the winner — the realistic local-runtime pattern.

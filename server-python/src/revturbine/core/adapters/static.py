@@ -37,7 +37,7 @@ __all__ = [
 ]
 
 Playbook = dict[str, Any]
-#: Deprecated spelling of :data:`Playbook` (BL-0156). Removed in ``0.12.0``.
+#: Deprecated spelling of :data:`Playbook` (BL-0156). Removed in ``0.13.0``.
 ExportedConfig = Playbook
 
 
@@ -149,6 +149,8 @@ def create_static_providers(
     config: Playbook,
     plan_handle: str | None = None,
     plan_name: str | None = None,
+    addons: list[dict[str, Any]] | None = None,
+    billing_period: str | None = None,
     usage: dict[str, dict[str, float]] | None = None,
     payment_failed: bool | None = None,
     payment_at_risk: bool | None = None,
@@ -183,7 +185,7 @@ def create_static_providers(
     providers: list[DomainProvider] = []
 
     # Plan provider — static.ts:46-57
-    if plan_handle:
+    if plan_handle or addons:
         resolved_plan_handle = plan_handle
         resolved_plan_name = plan_name if plan_name is not None else plan_handle
 
@@ -192,6 +194,10 @@ def create_static_providers(
                 "current_plan_handle": resolved_plan_handle,
                 "current_plan_name": resolved_plan_name,
             }
+            if addons is not None:
+                state["addons"] = addons
+            if billing_period is not None:
+                state["billing_period"] = billing_period
             # Billing-recovery signals for the Retention qualifier triggers
             # (§3.7). Omitted when not supplied, matching static.ts.
             if payment_failed is not None:
@@ -310,6 +316,7 @@ def create_static_providers(
                     else legacy_plan_ids,
                     "kind": kind,
                     "fields": fields,
+                    "targets": targets,
                 }
                 rule_segment_ids = rule.get("segment_ids")
                 if isinstance(rule_segment_ids, list):
@@ -331,6 +338,21 @@ def create_static_providers(
             return {
                 "entitlement_rules": by_ent,
                 "segment_dimensions": segment_dimensions,
+                "addon_variations": {
+                    v["handle"]: {
+                        "addon_handle": v.get("addon_handle"),
+                        "billing_period": v.get("billing_period"),
+                    }
+                    for v in config.get("addon_variations") or []
+                },
+                "plan_variations": {
+                    v["handle"]: {
+                        "plan_handle": v.get("plan_handle"),
+                        "billing_period": v.get("billing_period"),
+                        "segment_handle": v.get("segment_handle"),
+                    }
+                    for v in config.get("plan_variations") or []
+                },
                 "config_version": _playbook_version(config),
             }
 

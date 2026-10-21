@@ -264,7 +264,7 @@ pub fn to_segment_evaluation_traits(
 /// lint is the migration checklist.
 #[deprecated(
     since = "0.11.0",
-    note = "renamed to `configured_plan_name_from_playbook` (BL-0156); removed in 0.12.0"
+    note = "renamed to `configured_plan_name_from_playbook` (BL-0156); removed in 0.13.0"
 )]
 #[must_use]
 pub fn configured_plan_name_from_exported_config(

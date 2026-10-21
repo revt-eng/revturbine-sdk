@@ -412,12 +412,15 @@ class TestSeatAndTierVocabulary:
         limit["id"] = "r_f_limit"
         return _cfg([seat, limit])
 
-    def test_seat_rule_alone_shapes_through_unknown_kind_default(self) -> None:
+    def test_seat_rule_reports_included_allowance_without_enforcement(self) -> None:
         cfg = _cfg([_rule("f", {"kind": "seat", "included_count": 5})])
         assert _derive(cfg, "f", context={"used": 3}) == {
             "status": "allowed",
             "allowed": True,
             "rule_handle": "r_f",
+            "limit": 5,
+            "used": 3,
+            "remaining": 2,
         }
 
     def test_included_count_scores_most_permissive_selection(self) -> None:
@@ -428,6 +431,9 @@ class TestSeatAndTierVocabulary:
             "status": "allowed",
             "allowed": True,
             "rule_handle": "r_f",
+            "limit": 5,
+            "used": 3,
+            "remaining": 2,
         }
         # included_count 1 is outscored -> usage_limit shapes -> limited.
         assert _derive(self._pair(1), "f", context={"used": 3}) == {

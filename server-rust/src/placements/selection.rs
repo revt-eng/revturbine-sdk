@@ -1,20 +1,14 @@
-//! Rust port of the candidate-selection layer (plan 234 TASK-8c):
-//! `resolveLocalPlacementFromCandidates` + the scoring helpers it composes
-//! (placement-decision.ts, core/helpers.ts).
+//! Scoring and supersession helpers from the former candidate-selection layer
+//! (plan 234 TASK-8c; placement-decision.ts, core/helpers.ts).
 //!
-//! Until this landed, Rust's `static_resolver` selected by entry order and
-//! the TS/Python selection pipeline — milestone supersession, category
-//! conflict suppression, the multi-key comparator with the plan-53
-//! two-stage tier-3 urgency — had no third side, which is why TASK-15's
-//! competing-categories fixture had to be deferred.
-//!
-//! Not the placement decision. Per Kent's ruling D-59 (2026-10-06,
-//! supersedes D-34) the decision contract is category first, then
-//! within-category ranking — and `static_resolver` implements it with its own
-//! ranking, without calling this module. It stays 3-way parity-locked because
-//! the browser SDK's cached `getPlacement` lookup uses the TS original.
+//! `resolve_local_placement_from_candidates` itself was removed in 0.12.0
+//! (BL-0537): no runtime path consulted it after `getPlacement` became a pure
+//! function of (user context, Playbook) in 0.11.21 (D-39, BL-0379). Per D-59
+//! the decision contract is category first, then within-category ranking, and
+//! `static_resolver` implements it with its own ranking. The helpers here
+//! stay public because `static_resolver` and the state modules use
+//! `category_bucket`, and scaffold core still exports their TS originals.
 
-use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
 use serde_json::Value;
@@ -392,106 +386,4 @@ pub fn apply_category_conflict_suppression(outputs: &[Value]) -> Vec<Value> {
         .filter(|o| !suppressed.contains(output_id(o)))
         .cloned()
         .collect()
-}
-
-/// Selection options mirroring `CandidateResolutionOptions`.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct CandidateResolutionOptions {
-    /// When true, only fixed-category candidates are considered.
-    pub fixed_only: bool,
-}
-
-/// Source: placement-decision.ts (resolveLocalPlacementFromCandidates)
-#[must_use]
-pub fn resolve_local_placement_from_candidates(
-    candidates: &[Value],
-    options: CandidateResolutionOptions,
-) -> Option<Value> {
-    let pool: Vec<Value> = if options.fixed_only {
-        candidates
-            .iter()
-            .filter(|o| {
-                category_bucket(o.get("category").and_then(Value::as_str).unwrap_or("")) == 1
-            })
-            .cloned()
-            .collect()
-    } else {
-        candidates.to_vec()
-    };
-    if pool.is_empty() {
-        return None;
-    }
-
-    let milestones_applied = apply_content_milestone_supersession(&pool);
-    if milestones_applied.is_empty() {
-        return None;
-    }
-
-    let has_explicit_server_order = milestones_applied.iter().any(|o| server_order(o).is_some());
-
-    let conflicts_applied = if has_explicit_server_order {
-        milestones_applied
-    } else {
-        apply_category_conflict_suppression(&milestones_applied)
-    };
-    if conflicts_applied.is_empty() {
-        return None;
-    }
-
-    let mut ordered = conflicts_applied;
-    ordered.sort_by(|left, right| {
-        if has_explicit_server_order {
-            let lo = server_order(left);
-            let ro = server_order(right);
-            match (lo, ro) {
-                (Some(l), Some(r)) if l != r => {
-                    return l.partial_cmp(&r).unwrap_or(Ordering::Equal);
-                }
-                (Some(_), None) => return Ordering::Less,
-                (None, Some(_)) => return Ordering::Greater,
-                _ => {}
-            }
-        }
-
-        let left_bucket =
-            category_bucket(left.get("category").and_then(Value::as_str).unwrap_or(""));
-        let right_bucket =
-            category_bucket(right.get("category").and_then(Value::as_str).unwrap_or(""));
-        if left_bucket != right_bucket {
-            return left_bucket.cmp(&right_bucket);
-        }
-
-        // Plan 53 two-stage tier-3 urgency: tier3_class ascending, then
-        // proximity descending.
-        if left_bucket == 2 {
-            let class_delta = tier3_class(left).cmp(&tier3_class(right));
-            if class_delta != Ordering::Equal {
-                return class_delta;
-            }
-            let prox = proximity_score(right)
-                .partial_cmp(&proximity_score(left))
-                .unwrap_or(Ordering::Equal);
-            if prox != Ordering::Equal {
-                return prox;
-            }
-        }
-
-        let score = placement_score(right)
-            .partial_cmp(&placement_score(left))
-            .unwrap_or(Ordering::Equal);
-        if score != Ordering::Equal {
-            return score;
-        }
-
-        let priority = placement_priority(right)
-            .partial_cmp(&placement_priority(left))
-            .unwrap_or(Ordering::Equal);
-        if priority != Ordering::Equal {
-            return priority;
-        }
-
-        output_id(left).cmp(output_id(right))
-    });
-
-    ordered.into_iter().next()
 }

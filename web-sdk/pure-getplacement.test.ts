@@ -74,13 +74,14 @@ describe('BL-0379 — getPlacement is a pure function of (user context, Playbook
     expect((await instance.getPlacement({ slotId: SLOT }))?.rule_id).toBe('pl_limit');
   });
 
-  it('ignores pre-decided outputs and warns that the option is deprecated', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  it('never consults a pre-decided output, even under the removed placementsByLookupKey key', async () => {
+    // `initialData.placementsByLookupKey` was removed from the type in 0.12.0
+    // (BL-0537; the type-level rejection is in update-keys-exhaustiveness.test-d.ts).
+    // An untyped caller that still sends it gets the pure decision.
     const seeded = { output_id: 'seeded', rule_id: 'seeded_rule', decision_id: 'd', config_version: 'v',
       category: 'fixed', surface: { type: 'banner', template: 'banner_placement', slot_id: SLOT }, content: { header: 'Seeded' },
       cta_path: {}, present_upsell: false };
     const instance = sdk(10, { initialData: { placementsByLookupKey: { [`${SLOT}::banner::::::`]: seeded } } });
     expect((await instance.getPlacement({ slotId: SLOT }))?.rule_id).toBe('pl_nudge');
-    expect(warn.mock.calls.some(([m]) => String(m).includes('placementsByLookupKey is deprecated'))).toBe(true);
   });
 });

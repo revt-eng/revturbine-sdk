@@ -1,7 +1,7 @@
 //! Effective entitlements — the ONE answer every SDK runtime uses (D-61,
 //! Kent 2026-10-06).
 //!
-//! The shared evaluator ([`derive_local_entitlement_from_configured_rules`])
+//! The shared evaluator ([`super::derive_local_entitlement_from_configured_rules`])
 //! decides each entitlement from the Playbook + user context. An app may then
 //! enrich that answer with its own data ("Entitlement Mirroring"): grants on
 //! `UserContext.entitlements` and/or an app-registered entitlement provider.
@@ -23,9 +23,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use serde_json::{Number, Value};
 
-use super::entitlement_check::{
-    derive_local_entitlement_from_configured_rules, LocalEntitlementInput,
-};
+use super::entitlement_check::{derive_local_entitlement_reporting, LocalEntitlementInput};
 use crate::decisions::{int_if_integral, EntitlementCheckResult};
 
 /// Which side wins a merge: the app's own data, or the Playbook evaluation.
@@ -381,6 +379,10 @@ pub struct EffectiveEntitlementBase<'a> {
     pub effective_plan_handle: Option<String>,
     /// How app data merges with the Playbook evaluation.
     pub merge: EntitlementMergeOptions,
+    /// Current purchased holdings.
+    pub addons: Option<&'a Value>,
+    /// Base plan billing cadence.
+    pub billing_period: Option<&'a str>,
 }
 
 impl EffectiveEntitlementBase<'_> {
@@ -417,12 +419,43 @@ fn playbook_knows(playbook: &Value, handle: &str) -> bool {
 
 /// The effective entitlement for one handle.
 ///
+/// An invalid purchased holding or incompatible additive grant fails closed
+/// (`invalid_purchased_allowance`); [`try_derive_effective_entitlement`]
+/// returns its message instead.
+///
 /// Source: effective-entitlement.ts (deriveEffectiveEntitlement)
 #[must_use]
 pub fn derive_effective_entitlement(
     handle: &str,
     base: &EffectiveEntitlementBase,
     app: Option<&AppEntitlementInputs>,
+) -> EffectiveEntitlement {
+    derive_effective_entitlement_reporting(handle, base, app, &mut None)
+}
+
+/// [`derive_effective_entitlement`], but the Playbook evaluation's purchased
+/// allowance rejection is returned as the error TS throws (BUG-554).
+///
+/// # Errors
+///
+/// The purchased-holding validation or allowance-compatibility message.
+///
+/// Source: effective-entitlement.ts (deriveEffectiveEntitlement)
+pub fn try_derive_effective_entitlement(
+    handle: &str,
+    base: &EffectiveEntitlementBase,
+    app: Option<&AppEntitlementInputs>,
+) -> Result<EffectiveEntitlement, String> {
+    let mut error = None;
+    let effective = derive_effective_entitlement_reporting(handle, base, app, &mut error);
+    error.map_or(Ok(effective), Err)
+}
+
+fn derive_effective_entitlement_reporting(
+    handle: &str,
+    base: &EffectiveEntitlementBase,
+    app: Option<&AppEntitlementInputs>,
+    error: &mut Option<String>,
 ) -> EffectiveEntitlement {
     let app_view = app_entitlement(app);
     let known_playbook = base.playbook.filter(|pb| playbook_knows(pb, handle));
@@ -457,10 +490,12 @@ pub fn derive_effective_entitlement(
             segment_ids: base.segment_ids.clone(),
             usage_balances,
             user_usage: base.user_usage,
+            addons: base.addons,
+            billing_period: base.billing_period,
             trial_granted_entitlement_handles: base.trial_granted_entitlement_handles.clone(),
             effective_plan_handle: base.effective_plan_handle.clone(),
         };
-        derive_local_entitlement_from_configured_rules(&input, playbook)
+        derive_local_entitlement_reporting(&input, playbook, error)
     });
     let result = merge_entitlement_results(evaluated.as_ref(), app_view.as_ref(), &base.merge)
         .unwrap_or_else(|| {

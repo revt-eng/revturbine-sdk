@@ -78,6 +78,7 @@ class EntitlementCheckResult(_EntitlementCheckResultRequired, total=False):
     # port that cannot name the rule is a parity gap, not an omission.
     # Absent — never None — when no rule produced the verdict.
     rule_handle: str
+    contributing_rule_handles: list[str]
 
 
 # ── Placement input / output / decision ─────────────────────────────────────

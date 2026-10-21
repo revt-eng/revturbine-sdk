@@ -2073,8 +2073,8 @@ export interface components {
         Anon_decf640c9996: components["schemas"]["Anon_eca965e9cb3d_1"];
         /** @enum {string} */
         Anon_eca965e9cb3d_1: "desktop" | "mobile" | "tablet" | "unknown";
-        Anon_c5d45818321f: components["schemas"]["Anon_0083ff3642e4"] | null;
-        Anon_0083ff3642e4: string;
+        Anon_c5d45818321f: components["schemas"]["Anon_0083ff3642e4_2"] | null;
+        Anon_0083ff3642e4_2: string;
         Anon_fc091757ffd3: {
             activity_level?: components["schemas"]["Anon_3b35bf76a160_1"];
             subscription_state?: components["schemas"]["Anon_dd3586a1ddbf_1"];

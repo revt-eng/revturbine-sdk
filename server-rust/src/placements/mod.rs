@@ -32,7 +32,6 @@ pub use qualifier_gating::{
     is_qualifier_valid_for_category, matches_qualifier_trigger, qualifiers_for_category,
     QualifierTrigger, QUALIFIERS_BY_CATEGORY,
 };
-pub use selection::{resolve_local_placement_from_candidates, CandidateResolutionOptions};
 pub use static_resolver::{
     interpolate_content_tokens, interpolate_string_tokens, StaticPlacementResolver,
 };

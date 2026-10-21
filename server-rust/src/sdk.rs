@@ -68,6 +68,10 @@ pub struct UserContext {
     pub plan_handle: Option<String>,
     /// Display name; defaults to the handle.
     pub plan_name: Option<String>,
+    /// Current purchased holdings with explicit quantities.
+    pub addons: Option<Value>,
+    /// Base plan billing cadence.
+    pub billing_period: Option<String>,
     /// Per-entitlement `{used, limit}` overrides.
     pub usage: Option<Value>,
     /// Already-derived trial state (the runtime `UserTrialStatus` shape).
@@ -289,6 +293,17 @@ impl RevTurbineCustomerSdk {
             .ok_or_else(|| "Invalid playbook: expected an artifact, got null".to_string())?;
 
         let opts = StaticProviderOptions {
+            addons: user_context
+                .addons
+                .as_ref()
+                .map(|addons| {
+                    crate::entitlements::purchased_allowance::validate_purchased_addons(Some(
+                        addons,
+                    ))
+                    .map(Value::Array)
+                })
+                .transpose()?,
+            billing_period: user_context.billing_period.clone(),
             plan_handle: user_context.plan_handle.clone(),
             plan_name: user_context.plan_name.clone(),
             usage: user_context.usage.clone(),

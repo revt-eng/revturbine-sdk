@@ -93,6 +93,7 @@ class PlanProviderState(_PlanProviderStateRequired, total=False):
     current_plan_name: str
     current_plan_price: str
     billing_period: Literal["monthly", "annual", "none"]
+    addons: list[dict[str, Any]]
     trial_active: bool
     trial_limit_type: Literal["time", "usage"]
     trial_progress_percent: float
@@ -258,6 +259,8 @@ class EntitlementRuleSnapshot(_EntitlementRuleSnapshotRequired, total=False):
 
     targets: list[dict[str, Any]]
     segment_ids: list[str]
+    effective_allowance: float
+    contributing_rule_handles: list[str]
 
 
 class _RuleProviderStateRequired(TypedDict):
@@ -269,6 +272,8 @@ class RuleProviderState(_RuleProviderStateRequired, total=False):
     """Source: types.ts:303-310 (RuleProviderState)"""
 
     plan_rules: dict[str, list[dict[str, Any]]]
+    plan_variations: dict[str, dict[str, Any]]
+    addon_variations: dict[str, dict[str, Any]]
     # Plan #39 REQ-28: segment_id -> dimension_id lookup for §2.5
     # intra-OR / cross-AND matching. Optional during the cascade.
     segment_dimensions: dict[str, str]

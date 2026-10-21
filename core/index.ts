@@ -99,11 +99,11 @@ export { evaluateSegments } from './evaluation/segments';
 export type { Trait, PlaybookSegmentsItem, PlaybookSegmentsItemPredicatesItem } from './evaluation/segments';
 // BL-0165: the `ExportedConfig` spellings of the two above. Both names are
 // generated from the same scaffold schema object, so they are the same type —
-// not merely structurally equal. Deprecated in 0.11.1; removed in 0.12.0
+// not merely structurally equal. Deprecated in 0.11.1; removed in 0.13.0
 // (BL-0167), the same window as the option/method aliases.
-/** @deprecated Use `PlaybookSegmentsItem`. Removed in 0.12.0 (BL-0167). */
+/** @deprecated Use `PlaybookSegmentsItem`. Removed in 0.13.0 (BL-0167). */
 export type { ExportedConfigSegmentsItem } from './evaluation/segments';
-/** @deprecated Use `PlaybookSegmentsItemPredicatesItem`. Removed in 0.12.0 (BL-0167). */
+/** @deprecated Use `PlaybookSegmentsItemPredicatesItem`. Removed in 0.13.0 (BL-0167). */
 export type { ExportedConfigSegmentsItemPredicatesItem } from './evaluation/segments';
 
 // ---- Rules evaluation ----
@@ -209,7 +209,7 @@ export {
   parsePlaybookOrThrow,
   playbookVersion,
   // BL-0156: the `ExportedConfig` spellings of the three above. Deprecated in
-  // @revt-eng/core 0.1.330 and removed in this package's 0.12.0; re-exported
+  // @revt-eng/core 0.1.330 and removed in this package's 0.13.0; re-exported
   // meanwhile so a consumer importing them from here keeps compiling.
   configuredPlanNameFromExportedConfig,
   parseExportedConfigOrThrow,

@@ -145,6 +145,7 @@ import {
   // ── Lifecycle pure functions ──
   mergeUserContext as coreMergeUserContext,
   computeUserContextHash,
+  validatePurchasedAddons,
   toSegmentEvaluationTraits as coreToSegmentEvaluationTraits,
   buildTargetingState as coreBuildTargetingState,
   generatePlacementId as coreGeneratePlacementId,
@@ -278,6 +279,7 @@ const RECOGNIZED_IDENTIFY_KEYS = [
   'plan_handle',
   'usage',
   'entitlements',
+  'addons',
   'custom',
   'personalization',
 ] as const satisfies readonly (keyof IdentifyContextInput)[];
@@ -636,6 +638,23 @@ function withoutServerAssignedKeys<T>(context: T): { accepted: T; dropped: strin
 }
 
 /**
+ * User-context fields `identify()` does not merge, omitted from
+ * {@link IdentifyContextInput} since 0.12.0 (before that they compiled and
+ * were dropped at runtime with a warning).
+ */
+type IdentifyUnmergedUserContextKey =
+  | 'email_type'
+  | 'trial'
+  | 'payment_failed'
+  | 'payment_at_risk'
+  | 'tiers'
+  | 'instances'
+  | 'experiments'
+  | 'derived_config_version'
+  | 'context_hash'
+  | 'derived_computed_at';
+
+/**
  * Input accepted by {@link RevTurbineCustomerSdk.identify} for the canonical
  * user-context shape (plan 191). `plan_handle` is THE plan matching
  * identity — the plan's `unique_handle`; the `plan` object is display
@@ -645,8 +664,14 @@ function withoutServerAssignedKeys<T>(context: T): { accepted: T; dropped: strin
  * `activity_score_computed_at`, `builtin_dimensions`) are not accepted here
  * (plan 279, D-36, D-46; BL-0352, BL-0381); the tenant's backend or
  * RevTurbine's enrichment writes them.
+ *
+ * Since 0.12.0 the type also omits the user-context fields `identify()` never
+ * merged (it dropped them with a warning): trial, billing and tier state,
+ * instances, experiments and the derived-context bookkeeping. Set those
+ * through {@link RevTurbineCustomerSdk.update} / `setUserContext`, or let
+ * client-context enrichment deliver them.
  */
-export type IdentifyContextInput = Partial<Omit<UserContextInput, ServerAssignedUserContextKey>> & {
+export type IdentifyContextInput = Partial<Omit<UserContextInput, ServerAssignedUserContextKey | IdentifyUnmergedUserContextKey>> & {
   /** THE plan matching identity — the plan's `unique_handle` (e.g. `'pro'`). */
   plan_handle?: string;
 };
@@ -825,6 +850,7 @@ export type RevTurbineUpdateInput = Omit<RevTurbineUserContext, 'id' | 'usage'> 
  */
 export const RECOGNIZED_UPDATE_KEYS = [
   'usage',
+  'addons',
   'account_id',
   'email',
   'email_type',
@@ -873,8 +899,8 @@ export interface RevTurbinePolicySnapshot {
   playbookVersion?: string;
   /**
    * @deprecated Renamed to {@link RevTurbinePolicySnapshot.playbookVersion}
-   * (BL-0156). Still emitted with the identical value for one minor; removed in
-   * `0.12.0`. Read `playbookVersion`.
+   * (BL-0156). Still emitted with the identical value; removed in
+   * `0.13.0`. Read `playbookVersion`.
    */
   exportedConfigVersion?: string;
 }
@@ -1012,7 +1038,8 @@ interface ClientSafeContextResponse {
    * present it patches the canonical `userContext.plan`, so a purchase
    * updates client decisions without app code.
    */
-  plan?: { handle?: string; name?: string } | null;
+  plan?: ClientContext['plan'] | null;
+  addons?: ClientContext['addons'];
   capabilities?: { can_upgrade?: boolean; can_manage_billing?: boolean };
   /**
    * Server-evaluated built-in segment dimensions (plan 279 PD-3). Present
@@ -1189,7 +1216,7 @@ export interface RevTurbineConfigProvider {
    * @deprecated Renamed to {@link RevTurbineConfigProvider.getPlaybook} —
    * `Playbook` is the canonical name for the artifact (BL-0156). Still fully
    * supported: implement either one. When both are present `getPlaybook()`
-   * wins. Removed in `0.12.0`.
+   * wins. Removed in `0.13.0`.
    */
   getExportedConfig?(): ConfigArtifact | undefined;
   /** Optionally refresh the snapshot (for example, from a REST API). */
@@ -1206,7 +1233,7 @@ export type RevTurbineConfigProviderInput = RevTurbineConfigProvider &
   (
     | { getPlaybook(): ConfigArtifact | undefined }
     | {
-        /** @deprecated Implement `getPlaybook()` instead. Removed in `0.12.0`. */
+        /** @deprecated Implement `getPlaybook()` instead. Removed in `0.13.0`. */
         getExportedConfig(): ConfigArtifact | undefined;
       }
   );
@@ -1240,7 +1267,7 @@ export function resolveProviderPlaybook(
 /**
  * @deprecated Renamed to {@link RevTurbineConfigProvider} (plan 104). Kept as a
  * back-compat alias so existing integrations keep compiling. Removed in
- * `0.12.0` alongside the other `ExportedConfig`-spelled aliases (BL-0156). Use
+ * `0.13.0` alongside the other `ExportedConfig`-spelled aliases (BL-0156). Use
  * `RevTurbineConfigProvider`.
  */
 export type ExportedConfigProvider = RevTurbineConfigProvider;
@@ -1712,12 +1739,6 @@ export interface RevTurbineEventBatchingOptions {
 
 export interface RevTurbineLocalRuntimeData {
   placementDecisionsByPlacementId?: Record<string, RevTurbinePlacementDecision>;
-  /**
-   * @deprecated Ignored since 0.11.21 (D-39 / BL-0379): `getPlacement` is a
-   * pure function of the user context and `localRuntime.playbook`, so
-   * pre-decided outputs are never consulted. Removed in 0.12.0.
-   */
-  placementsByLookupKey?: Record<string, PlacementOutput | null>;
   entitlementByHandle?: Record<string, EntitlementResult>;
   userContextByUserId?: Record<string, UserTargetingContext>;
   trialStatus?: RevTurbineTrialContext;
@@ -1735,7 +1756,7 @@ export interface RevTurbineLocalRuntimeResolvers {
    * @deprecated Renamed to {@link RevTurbineLocalRuntimeResolvers.resolvePlaybook}
    * — `Playbook` is the canonical name for the artifact (BL-0156). Still fully
    * supported: pass either one. When both are supplied `resolvePlaybook` wins.
-   * Removed in `0.12.0`.
+   * Removed in `0.13.0`.
    */
   resolveExportedConfig?: () => ConfigArtifact | Promise<ConfigArtifact>;
 }
@@ -3360,6 +3381,8 @@ export class RevTurbineCustomerSdk {
   private appProviderEntitlements: Record<string, EntitlementResult> = {};
   /** Plan from an app-registered plan provider (D-61) — wins over the user-context plan, as on the server. */
   private appProviderPlanHandle: string | undefined;
+  private appProviderAddons: UserContextInput['addons'];
+  private appProviderBillingPeriod: NonNullable<ResolvedProviderContext['plan']>['billingPeriod'];
   /** Usage from an app entitlement provider (D-61), fed into the evaluation as on the server. */
   private appProviderUsage: Record<string, number> = {};
   /** Segment membership from an app segment provider (D-61), as a server runtime sees it. */
@@ -3608,6 +3631,7 @@ export class RevTurbineCustomerSdk {
       usage: {},
       ...(this.policy.inferUser ? inferUserContext() : {}),
       ...initUser.accepted,
+      ...(initUser.accepted.addons === undefined ? {} : { addons: validatePurchasedAddons(initUser.accepted.addons) }),
     };
     // BL-0403: an init `user.trial` is app-supplied trial state. Stamped here,
     // BEFORE `hydrateLocalRuntimeState()` below, so an
@@ -4210,6 +4234,8 @@ export class RevTurbineCustomerSdk {
     this.usageBalances = {};
     const next: HeldUserContext = { ...this.userContext, usage: {} };
     delete next.trial;
+    delete next.addons;
+    this.appProviderAddons = undefined;
     this.userContext = next;
   }
 
@@ -4304,12 +4330,14 @@ export class RevTurbineCustomerSdk {
     };
 
     return {
-      ...(plan || planHandle || hasTrial ? {
+      ...(plan || planHandle || hasTrial || this.userContext.addons ? {
         plan: {
           // Identity from the first-class handle (plan 191 Q-1 amendment:
           // the object's symbol is `handle` — there is no plan id).
           currentPlanHandle: planHandle || (plan?.handle ?? ''),
           ...(plan?.name !== undefined ? { currentPlanName: plan.name } : {}),
+          ...(plan?.billing_period !== undefined ? { billingPeriod: plan.billing_period } : {}),
+          ...(this.userContext.addons !== undefined ? { addons: this.userContext.addons } : {}),
           ...planTrialFields,
           ...(paymentFailed !== undefined ? { paymentFailed } : {}),
           ...(paymentAtRisk !== undefined ? { paymentAtRisk } : {}),
@@ -4329,6 +4357,7 @@ export class RevTurbineCustomerSdk {
   private immutableProviderUserContext(): Readonly<HeldUserContext> {
     const snapshot = {
       ...this.userContext,
+      ...(this.userContext.addons ? { addons: this.userContext.addons.map(holding => Object.freeze({ ...holding })) } : {}),
       ...(this.userContext.custom
         ? { custom: Object.freeze({ ...this.userContext.custom }) }
         : {}),
@@ -4850,13 +4879,6 @@ export class RevTurbineCustomerSdk {
       for (const [key, value] of Object.entries(fromInit.placementDecisionsByPlacementId)) {
         this.localDecisionsByPlacementId.set(key, value);
       }
-    }
-    if (fromInit?.placementsByLookupKey && Object.keys(fromInit.placementsByLookupKey).length > 0) {
-      // D-39 / BL-0379: placements are decided from (user context, Playbook);
-      // seeded outputs are ignored. Removed from the type in 0.12.0.
-      const message = 'localRuntime.initialData.placementsByLookupKey is deprecated and ignored: getPlacement decides from the user context and localRuntime.playbook';
-      console.warn(`[revturbine] ${message}`);
-      this.emitSdkWarning(message, { seeded_keys: Object.keys(fromInit.placementsByLookupKey).length });
     }
     if (fromInit?.entitlementByHandle) {
       for (const [key, value] of Object.entries(fromInit.entitlementByHandle)) {
@@ -5851,9 +5873,9 @@ export class RevTurbineCustomerSdk {
       contextPolicy: this.policy,
       placementBehavior: this.placementBehavior,
       runtimeMode: this.runtimeMode,
-      // Both keys carry the identical value for one minor. `playbookVersion`
-      // is canonical; `exportedConfigVersion` is emitted alongside it so a
-      // reader on the old key keeps working, and is removed in 0.12.0.
+      // Both keys carry the identical value. `playbookVersion` is canonical;
+      // `exportedConfigVersion` is emitted alongside it so a reader on the old
+      // key keeps working, and is removed in 0.13.0.
       ...(typeof playbook?.format_version === 'string'
         ? { playbookVersion: playbook.format_version, exportedConfigVersion: playbook.format_version }
         : {}),
@@ -5927,6 +5949,8 @@ export class RevTurbineCustomerSdk {
       handle,
       context,
       currentPlanHandle,
+      addons: this.appProviderAddons ?? this.userContext.addons,
+      billingPeriod: this.appProviderBillingPeriod ?? this.userContext.plan?.billing_period,
       segmentIds,
       usageBalances: { ...this.usageBalances, ...this.appProviderUsage },
       userUsage: this.userContext.usage as Record<string, unknown> | undefined, // sdk-ok: boundary-parse
@@ -5960,6 +5984,8 @@ export class RevTurbineCustomerSdk {
     this.appProviderSegments = [...(segments?.segmentSlugs ?? []), ...(segments?.segmentIds ?? [])];
     const plan = resolved?.plan?.currentPlanHandle;
     this.appProviderPlanHandle = typeof plan === 'string' && plan.trim() ? plan.trim() : undefined;
+    this.appProviderAddons = resolved?.plan?.addons;
+    this.appProviderBillingPeriod = resolved?.plan?.billingPeriod;
   }
 
   /** D-61: resolve the app's providers before an entitlement check (cached per provider TTL). */
@@ -7593,15 +7619,17 @@ export class RevTurbineCustomerSdk {
    * Server-assigned fields (`seat_type_handle`, `activity_score`,
    * `activity_score_computed_at`) are dropped and reported, never merged:
    * they are written only by the tenant's backend or RevTurbine's
-   * enrichment (D-36, BL-0352). The parameter type does not yet reject other
-   * undeclared keys the way {@link identify} and {@link update} do; that
-   * `Exact<>` narrowing is deferred to `0.12.0` because it can break callers
-   * that pass a wider object today.
+   * enrichment (D-36, BL-0352). Since 0.12.0 the parameter is
+   * {@link Exact}, like {@link identify} and {@link update}: a key
+   * `RevTurbineUserContext` does not declare is a compile error even when the
+   * object arrives through a variable. Free-form values belong under `custom`.
    *
    * @public
    */
-  setUserContext(userContext: RevTurbineUserContext): void {
-    const { accepted, dropped } = withoutServerAssignedKeys(userContext);
+  setUserContext<T extends RevTurbineUserContext>(userContext: Exact<RevTurbineUserContext, T>): void {
+    // Exact<> maps excess keys to `never`; the value itself is a
+    // RevTurbineUserContext (same boundary as update()).
+    const { accepted, dropped } = withoutServerAssignedKeys(userContext as RevTurbineUserContext);
     this.reportServerAssignedContextKeys('setUserContext', dropped);
     this.mergeAcceptedUserContext(accepted);
   }
@@ -9689,7 +9717,7 @@ export class RevTurbineCustomerSdk {
       // `computeUserContextHash` (from `@revt-eng/core`) does NOT hash
       // whatever object it is given — it re-projects its input through
       // `canonicalHashProjection`, which keeps only a fixed key set
-      // (`plan_handle`, `plan`, `usage`, `custom`, `trial`, `instances`) and
+      // (`plan_handle`, `plan`, `addons`, `usage`, `custom`, `trial`, `instances`) and
       // silently drops everything else. `builtin_dimensions` is not in that
       // set, so adding it to `serverHashInput` below would be a no-op — the
       // premise this task set out to verify. The coarse `payment_at_risk`
@@ -9702,6 +9730,10 @@ export class RevTurbineCustomerSdk {
           trial: patch.trial ?? null,
           plan_handle: patch.plan_handle ?? null,
           plan: patch.plan ?? null,
+          // Omitted, never null: the core projection validates `addons`, and
+          // null is not "no holdings" — it throws, and the catch below would
+          // silently drop the whole fetch.
+          ...(patch.addons !== undefined ? { addons: patch.addons } : {}),
         }),
       );
       const nextHash =
@@ -9788,6 +9820,8 @@ export class RevTurbineCustomerSdk {
             : planHandle,
       };
     }
+
+    if (data.addons !== undefined) patch.addons = validatePurchasedAddons(data.addons);
 
     // Server-evaluated built-in segment dimensions (plan 279 PD-3). This is
     // the ONLY browser source of `builtin_dimensions` (D-46, BL-0381): every
@@ -10193,7 +10227,7 @@ export class RevTurbineCustomerSdk {
   /**
    * @deprecated Renamed to {@link RevTurbineCustomerSdk.getPlaybook} —
    * `Playbook` is the canonical name for the artifact (BL-0156). Identical
-   * behaviour; removed in `0.12.0`.
+   * behaviour; removed in `0.13.0`.
    */
   getExportedConfig(): RevTurbineConfig | undefined {
     return this.getPlaybook();
@@ -10733,6 +10767,7 @@ export class RevTurbineCustomerSdk {
           : undefined,
       plan: ctx.plan,
       usage: ctx.usage,
+      addons: ctx.addons,
       entitlements: ctx.entitlements as Record<string, boolean> | undefined,
       custom: ctx.custom,
       personalization: ctx.personalization,
@@ -10970,7 +11005,10 @@ export class RevTurbineCustomerSdk {
         'to (re)establish identity use identify().',
     );
     if (recognized.length > 0) {
-      this.setUserContext(Object.fromEntries(recognized));
+      // Annotated (not cast) so setUserContext's Exact<> infers T as the
+      // declared shape; the entries are already filtered to recognized keys.
+      const patch: RevTurbineUserContext = Object.fromEntries(recognized);
+      this.setUserContext(patch);
     }
     // Usage keeps the dedicated balances path so the original `update({ usage })`
     // contract — absolute Record<string, number> + threshold crossings — is preserved.

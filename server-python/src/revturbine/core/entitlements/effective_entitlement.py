@@ -122,6 +122,8 @@ class EffectiveEntitlementBase(_EffectiveEntitlementBaseRequired, total=False):
     trial_granted_entitlement_handles: AbstractSet[str] | None
     effective_plan_handle: str | None
     merge: EntitlementMergeOptions | None
+    addons: list[dict[str, Any]] | None
+    billing_period: str | None
 
 
 class EffectiveEntitlement(TypedDict):
@@ -350,6 +352,8 @@ def derive_effective_entitlement(
     effective_plan_handle: str | None = None,
     app: AppEntitlementInputs | None = None,
     merge: EntitlementMergeOptions | None = None,
+    addons: list[dict[str, Any]] | None = None,
+    billing_period: str | None = None,
 ) -> EffectiveEntitlement:
     """The effective entitlement for one handle.
 
@@ -388,6 +392,8 @@ def derive_effective_entitlement(
             playbook=playbook,
             trial_granted_entitlement_handles=trial_granted_entitlement_handles,
             effective_plan_handle=effective_plan_handle,
+            addons=addons,
+            billing_period=billing_period,
         )
         if known
         else None
