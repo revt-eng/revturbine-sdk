@@ -47,6 +47,106 @@ also require a changelog entry.
 
 ---
 
+## 0.12.2
+
+### Changed (behaviour)
+
+1. **A user switch without a reset is a full reset (BL-0421).** `identify(B)`,
+   `setUserContext({ id: B })` and `hydrate()` for a different identified user
+   used to drop only A's trial and usage. A's plan handle and plan,
+   entitlements, payment flags, tiers, instances, add-ons, built-in
+   dimensions, experiments, custom and personalization fields, email and
+   account were merged into B, so B could be granted A's plan until the next
+   server delivery. Now nothing of A survives; B's own values apply.
+   Anonymous → identified and re-identifying the same user still merge. A
+   `setUserContext({ id: B })` switch re-mints the client-session token, as
+   `identify()` does.
+2. **Headless theme fetching is opt-in, as in `<RevTurbineProvider>` (BL-0477).**
+   `initRevTurbine()` from `/headless` used to call `GET /api/sdk/theme`
+   unconditionally whenever the Playbook carried no theme. In local mode it
+   sent a placeholder bearer to a placeholder host. It also ignored the
+   explicit `branding` option. Now it resolves the same branding ladder as the
+   provider (explicit `branding` → branding API → legacy Playbook `theme` →
+   embedded default). It fetches the theme only with `fetchThemeOverride: true`
+   and a `publicKey`. **Migration:** pass `fetchThemeOverride: true` to keep
+   fetching the control-plane theme in a headless session.
+3. **The theme API authenticates with the public key alone (BL-0477).**
+   `loadTheme()` takes `publicKey`. `apiKey` and `tenantId` are deprecated and
+   **ignored**: `apiKey` is the secret server key everywhere else, so a
+   `loadTheme({ apiKey })` call sends nothing, warns once and returns the
+   persisted or `base` theme. **Migration:** pass the public key as
+   `publicKey`. `x-tenant-id` is never sent. The persisted theme is scoped per
+   key, not per tenant, so a cached theme is fetched again once after
+   upgrading. Without a public key nothing is fetched.
+4. **`getBranding()` with nothing supplied reports the embedded default
+   theme** instead of an empty `theme`, so it agrees with what the provider and
+   headless sessions render (BL-0477).
+5. **Hosted server mode: `apiKey` authenticates a backend instance.** On a
+   backend, a hosted `RuntimeMode.Server` / headless instance now loads the
+   launched Playbook (`/api/sdk/bootstrap`, `/api/sdk/config`, refreshed on
+   its TTL) and reports events (`/api/track`) with the server key passed as
+   `apiKey`. Before, it read only `publicKey`: an `apiKey`-only Node server
+   loaded no Playbook (every check answered `config_unavailable`) and posted
+   events with an empty bearer. When both keys are passed on a backend, the
+   server key is used. Every browser context — a page, a Web Worker, a shared
+   worker or a service worker — uses only `publicKey` and never sends
+   `apiKey`, whatever was passed. Server runtimes with a worker-style global
+   (Cloudflare Workers, Vercel Edge, Deno, Bun) count as backends. Needs the
+   control plane's server-key lanes (revturbine-web#1207).
+6. **One client-session mint per user.** A headless
+   `initRevTurbine({ user, clientSession })` minted the client-session token
+   twice (once at construction, again from the initial `identify`). It now
+   mints once per user: overlapping triggers share one request, and only a
+   real user switch or a reset mints again.
+
+### Fixed
+
+1. **CommonJS servers on TypeScript 5.0–5.7 compile against the SDK.** A
+   CommonJS TypeScript project (`module: node16` or `nodenext`) on TypeScript
+   older than 5.8 failed with TS1479 on every entry point (`@revturbine/sdk`,
+   `/headless`, `/growthbook`, `/optimizely`): the package is an ES module,
+   and those TypeScript versions do not let a CommonJS file import one. Each
+   entry's `require` condition now resolves CommonJS-typed declarations
+   (`dist/<entry>.d.cts`); the `import` condition keeps `dist/<entry>.d.ts`.
+   The runtime is unchanged: Node ≥ 22.13 `require()`s the ES module build.
+   With `skipLibCheck: false` the floor is TypeScript 5.4, which the `zod`
+   declarations require; TypeScript 5.0–5.3 needs `skipLibCheck: true`.
+
+### Added
+
+1. **`getPlaybookLoadFailure()` and `RevTurbinePlaybookLoadFailure` (BL-0012).**
+   A failed hosted Playbook load used to look exactly like "not loaded yet":
+   checks answered `config_unavailable`, and nothing named the endpoint or the
+   credential. Now the failing step, URL, HTTP status and, for a 401/403 or a
+   missing `publicKey`, the credential to check, are readable. The SDK also
+   warns once per distinct failure while no Playbook is loaded. An
+   `apiKey`-only browser init warns at init that `apiKey` is never sent. A
+   throwing `resolvePlaybook()` resolver is reported too.
+2. **A malformed Playbook fails init with one descriptive error (BL-0426).** A
+   segment without a `handle` crashed init with
+   `Cannot read properties of undefined (reading 'startsWith')`. A segment,
+   plan or entitlement row without its identity key now throws
+   `Invalid <source>: segments[<i>] ("<id or name>") has no "handle"`.
+3. **A rule naming no entitlement warns (BL-0426).** In development builds, a
+   rule whose `entitlement_id` matches no entitlement `unique_handle` warns
+   once, naming the rule and the handle. The check's reason is unchanged
+   (`no_matching_entitlement_rule`).
+4. **Headless `autoGate` finds the Access Gate placement in local mode
+   (BL-0426).** `EntitlementGate` / `session.entitlement({ autoGate: true })`
+   asked `getPlacement({ entitlementHandle })`, which names no slot, so a
+   denied gate resolved no placement. When that finds nothing, the gate now
+   decides through the same gated surface slot `<Gate>` uses.
+5. **`session.getPlacementBySlotId(slotId, { surfaceTemplateIds })` (BL-0426).**
+   This restricts the one-shot slot to those templates. Omitted, the
+   Playbook's declaration for the slot applies.
+6. `getUserContext()` also returns `plan_handle` and `builtin_dimensions`
+   (read-only copies), as the `RevTurbineUserContext` TSDoc promised (BL-0421).
+
+| | |
+|---|---|
+| **Landed in** | 0.12.2 |
+| **Proving tests** | `web-sdk/user-switch-full-reset.test.ts`, `web-sdk/playbook-load-failure.test.ts`, `web-sdk/playbook-init-validation.test.ts`, `web-sdk/headless-gate-local.test.ts`, `web-sdk/theme/theme-resolution-public-key.test.ts`, `web-sdk/hosted-server-key.test.ts`, `web-sdk/env.test.ts`, `web-sdk/customer-side-client-session-autowire.test.ts`; for the CommonJS fix, `web-sdk/scripts/check-packed-consumer.mjs` (CommonJS legs on TypeScript 5.5, 5.4 and 5.0) |
+
 ## 0.12.1
 
 ### Fixed: the published types compile for customers (BUG-711)
