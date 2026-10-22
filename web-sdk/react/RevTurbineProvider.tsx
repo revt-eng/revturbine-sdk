@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   initRevTurbine,
   resolveBrowserPublicKey,
+  DEFAULT_HOSTED_ENDPOINT,
   type RevTurbineCustomerSdk,
   type RevTurbineInitInputOptions,
   type RevTurbinePlacementConfig,
@@ -367,28 +368,31 @@ export function RevTurbineProvider<
         // `getBranding()` also reads the RESOLVED config rather than the raw
         // option, so a Playbook normalized at init (plan 233 TASK-1) is what
         // gets consulted.
-        const brandingTheme = nextSdk.getBranding().branding.theme;
+        const resolvedBranding = nextSdk.getBranding();
+        const brandingTheme = resolvedBranding.branding.theme;
         // `BrandingConfig.theme` is a deliberate passthrough record — scaffold
         // does not replicate the SDK's ~40 rendering tokens, so `RevTurbineTheme`
         // is the authoritative shape and this is the sanctioned boundary cast.
+        // The default rung (BL-0477: the embedded light theme) is not a brand
+        // base — the colour-scheme palette below supplies it.
         const baseTheme =
-          brandingTheme && Object.keys(brandingTheme).length > 0
+          resolvedBranding.source !== 'default' && brandingTheme && Object.keys(brandingTheme).length > 0
             ? (brandingTheme as RevTurbineThemeInput)
             : undefined;
 
-        if (options.fetchThemeOverride) {
+        // BL-0477: the theme API authenticates with the public key alone; with
+        // no public key there is nothing to fetch (never a placeholder bearer
+        // or a placeholder host).
+        const themePublicKey = resolveBrowserPublicKey(options);
+        if (options.fetchThemeOverride && themePublicKey) {
           // Const capture: `nextSdk` is a `let ... | undefined`, and TS cannot
           // prove it is still assigned inside the `onOverride` closure below
           // (TS18048 under the release build's declaration emit).
           const initializedSdk = nextSdk;
           const initialTheme = await loadTheme(
             {
-              // No placeholder tenant on the wire (BL-0335): the control plane
-              // ignores (with a warning) a tenant id that differs from the key's.
-              tenantId: options.tenantId || undefined,
-              storageScope: options.tenantId || 'local',
-              endpoint: options.endpoint ?? 'https://api.revturbine.local',
-              apiKey: resolveBrowserPublicKey(options) ?? 'local-only',
+              publicKey: themePublicKey,
+              endpoint: options.endpoint ?? DEFAULT_HOSTED_ENDPOINT,
               base: baseTheme,
               // Feed the raw override into the SDK's branding-API rung so
               // `getBranding()` and `useRevTurbineTheme()` resolve from the

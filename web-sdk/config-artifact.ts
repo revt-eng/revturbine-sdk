@@ -105,6 +105,40 @@ function requireBodyArrays(value: Record<string, unknown>, source: string): void
   }
 }
 
+/**
+ * The identity key of every Playbook row the runtime indexes by handle. A row
+ * without one used to load and then crash init deep in normalisation (a
+ * segment with no `handle` threw `reading 'startsWith'`, BL-0426), so the load
+ * refuses it here with one error that names the row.
+ */
+const IDENTIFIED_BODY_ROWS: ReadonlyArray<{ array: string; key: string }> = [
+  { array: 'segments', key: 'handle' },
+  { array: 'plans', key: 'unique_handle' },
+  { array: 'entitlements', key: 'unique_handle' },
+];
+
+function describeRow(row: unknown): string { // sdk-ok: boundary-parse
+  if (!isRecord(row)) return `a ${row === null ? 'null' : typeof row} value`;
+  const label = [row.id, row.name].find((value) => typeof value === 'string' && value.length > 0);
+  return typeof label === 'string' ? `"${label}"` : 'an unnamed row';
+}
+
+function requireIdentifiedRows(value: Record<string, unknown>, source: string): void { // sdk-ok: boundary-parse
+  for (const { array, key } of IDENTIFIED_BODY_ROWS) {
+    const rows = value[array];
+    if (!Array.isArray(rows)) continue;
+    rows.forEach((row, index) => {
+      const identity = isRecord(row) ? row[key] : undefined;
+      if (typeof identity === 'string' && identity.trim().length > 0) return;
+      throw new Error(
+        `Invalid ${source}: ${array}[${index}] (${describeRow(row)}) has no "${key}". `
+          + `Every Playbook ${array.replace(/s$/, '')} needs a non-empty string "${key}"; `
+          + 'fix the row in the Playbook you supplied, or re-export it from RevTurbine.',
+      );
+    });
+  }
+}
+
 function isPlaybook(value: Record<string, unknown>): value is Playbook { // sdk-ok: boundary-parse
   return value.artifact_type === 'playbook'
     && value.format_version === PLAYBOOK_FORMAT_VERSION
@@ -196,6 +230,7 @@ export function normalizeConfigArtifactOrThrow(
 
   warnForLegacyProjections(raw, source);
   requireBodyArrays(raw, source);
+  requireIdentifiedRows(raw, source);
   const canonical = 'artifact_type' in raw || 'format_version' in raw;
   if (canonical && raw.artifact_type !== 'playbook') {
     throw new Error(`Invalid ${source}: unsupported "artifact_type"`);

@@ -4,5 +4,5 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext"
   },
-  "include": ["src/server-cjs.cts"]
+  "include": ["src/server-cjs.cts", "src/entries-cjs.cts"]
 }

@@ -10,6 +10,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RevTurbineCustomerSdk } from './customer-side';
+import { initRevTurbine as initHeadless } from './controllers';
 import type { RevTurbineInitOptions } from './customer-side';
 
 // A Playbook granting `batch_export` to `pro` only — so which plan the SDK
@@ -184,5 +185,39 @@ describe('clientSession auto-wire (plan 191 REQ-5 / AC-5)', () => {
     // Held in memory only — nothing about the token reaches storage.
     const stored = JSON.stringify(globalThis.localStorage ?? {});
     expect(stored).not.toContain('rt_client_secret_value');
+  });
+});
+
+describe('clientSession: one mint per user, not per trigger', () => {
+  it('headless initRevTurbine({ user, clientSession }) mints once (it minted twice: constructor + identify)', async () => {
+    stubFetch(() => ({ status: 200, body: CLIENT_CTX }));
+    const mint = vi.fn(async () => 'rt_client_once');
+    const session = await initHeadless({
+      tenantId: 'tn_test',
+      endpoint: 'https://cp.example.com',
+      runtimeMode: 'local_only',
+      localRuntime: { playbook: LOCAL_CONFIG },
+      anonymousTelemetry: false,
+      analytics: false,
+      clientSession: mint,
+      user: { id: 'u_1', plan_handle: 'free' },
+    } as Parameters<typeof initHeadless>[0]);
+    await settle();
+    await settle();
+    expect(mint).toHaveBeenCalledTimes(1);
+    session.sdk.dispose();
+  });
+
+  it('identifying a DIFFERENT user still mints a fresh token for them', async () => {
+    stubFetch(() => ({ status: 200, body: CLIENT_CTX }));
+    let minted = 0;
+    const mint = vi.fn(async () => `rt_client_${(minted += 1)}`);
+    const sdk = makeSdk({ clientSession: mint });
+    await settle();
+    sdk.identify('u_2');
+    await settle();
+    await settle();
+    expect(mint).toHaveBeenCalledTimes(2);
+    expect(clientContextCalls().at(-1)?.auth).toBe('Bearer rt_client_2');
   });
 });

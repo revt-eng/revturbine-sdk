@@ -86,7 +86,8 @@ async function deliveryFixture(
 function sdk(overrides: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerSdk {
   const client = new RevTurbineCustomerSdk({
     tenantId: TENANT,
-    apiKey: 'sk_test',
+    // No `apiKey`: on a backend (this test's Node runtime) a server key would
+    // authenticate delivery instead (hosted-server-key.test.ts).
     publicKey: 'pub_test',
     endpoint: ENDPOINT,
     mode: 'snippet',

@@ -16,7 +16,7 @@ import type {
 } from './providers/types';
 import { resolveBranding, type ResolvedBranding } from './branding';
 import type { BrandingConfig } from './generated';
-import { isServer, isBrowser } from './env';
+import { isServer, isBrowser, isServerKeyContext } from './env';
 import { normalizeEnvironmentId } from './environment';
 import { devWarn as warnInDevelopmentBuild, isDevelopmentBuild } from './build-mode';
 import { warnDeprecatedPlaybookAliasOnce, resetPlaybookAliasWarning } from './playbook-option';
@@ -527,6 +527,34 @@ export const DEFAULT_SDK_MODE: RevTurbineSdkMode = 'snippet';
  * retriable, `unavailable` makes it terminal for now.
  */
 export type RevTurbinePlaybookLoadState = 'ready' | 'loading' | 'unavailable';
+
+/**
+ * Why the hosted Playbook did not load (BL-0012).
+ *
+ * A failed load used to look exactly like "no config yet": the fetch returned
+ * nothing, `can()` answered `config_unavailable`, and neither the console nor
+ * any API named the endpoint or the credential. Read it with
+ * `getPlaybookLoadFailure()`; the SDK also warns once per distinct failure
+ * while no Playbook is loaded.
+ *
+ * - `credentials` — no `publicKey` was supplied, so nothing can be fetched
+ *   (an `apiKey` is the server key and is never sent from this SDK).
+ * - `bootstrap` / `manifest` / `bundle` — a step of the signed CDN delivery
+ *   failed; the legacy `config` endpoint is tried next.
+ * - `config` — the legacy `GET /api/sdk/config` fetch failed too.
+ *
+ * @public
+ */
+export interface RevTurbinePlaybookLoadFailure {
+  /** Which step failed. */
+  stage: 'credentials' | 'bootstrap' | 'manifest' | 'bundle' | 'config';
+  /** The URL the step requested, when it made a request. */
+  url?: string;
+  /** The HTTP status, when the step got a response. */
+  status?: number;
+  /** A human-readable explanation, naming the credential when it is the likely cause. */
+  message: string;
+}
 
 /**
  * How long a placement decision waits for an in-flight Playbook load before
@@ -1374,11 +1402,12 @@ export interface RevTurbineInitOptions {
    * exports: `new RevTurbineServer({ tenantId, apiKey, endpoint })` mints
    * client sessions from your server. Keep it in server-side code only.
    *
-   * Note that `initRevTurbine` itself reads {@link publicKey}, not `apiKey`,
-   * to fetch the launched Playbook and to ingest events: an init that supplies
-   * only `apiKey` fetches no Playbook. To decide on a server, build a
-   * `local_only` instance from a Playbook snapshot (see the Server-Side
-   * Integration guide).
+   * On a backend (no `window` / `document`), `initRevTurbine` authenticates
+   * its Playbook delivery and event ingest with `apiKey` when it is supplied
+   * (since 0.12.2): a hosted `RuntimeMode.Server` instance in a Node server
+   * loads and refreshes the launched Playbook and reports events, with no
+   * `publicKey`. Create one instance per process, outside the request
+   * handler. The theme API always takes {@link publicKey}.
    *
    * In the browser, pass {@link publicKey} instead. As of `0.11.0` `apiKey`
    * is **no longer accepted as an alias of the public key** (BL-0113): a
@@ -1658,6 +1687,10 @@ export interface RevTurbineInitOptions {
    *
    * Independent of {@link apiBranding}, which is the same rung supplied by the
    * host instead of fetched by the SDK.
+   *
+   * Applies to `<RevTurbineProvider>` and headless `initRevTurbine()` alike.
+   * The request authenticates with {@link publicKey} only, which also names
+   * the tenant; with no public key nothing is fetched (BL-0477).
    */
   fetchThemeOverride?: boolean;
 }
@@ -2967,9 +3000,46 @@ function matchesEntitlementRuleSegmentsForDiagnostics(
   return true;
 }
 
+function errorMessage(error: unknown): string { // sdk-ok: boundary-parse
+  return error instanceof Error ? error.message : String(error);
+}
+
+/** A failed hosted-delivery step, worded for the integrator (BL-0012). */
+function playbookHttpFailure(
+  stage: RevTurbinePlaybookLoadFailure['stage'],
+  url: string,
+  status: number,
+): RevTurbinePlaybookLoadFailure {
+  const refused = status === 401 || status === 403;
+  return {
+    stage,
+    url,
+    status,
+    message: refused
+      ? `the control plane refused the key (HTTP ${status}) at ${url}. In a browser, check that publicKey is a public `
+        + 'key for this tenant (Settings → API tokens → Ingest keys) and that this page\'s origin is on its allowlist. '
+        + 'On a backend, pass the tenant\'s server key as apiKey, and a tenantId only if it is that key\'s tenant.'
+      : `the Playbook request to ${url} failed with HTTP ${status}.`,
+  };
+}
+
+/** A failed hosted-delivery step that never got a usable response (BL-0012). */
+function playbookStepFailure(
+  stage: RevTurbinePlaybookLoadFailure['stage'],
+  url: string | undefined,
+  detail: string,
+): RevTurbinePlaybookLoadFailure {
+  return { stage, ...(url ? { url } : {}), message: `${detail}${url ? ` (${url})` : ''}.` };
+}
+
 interface RuntimePlaybookProvider {
   getPlaybook(): RevTurbineConfig | undefined;
   refresh?(): Promise<RevTurbineConfig | undefined>;
+  /**
+   * Why the most recent load produced no Playbook, or `undefined` after a
+   * successful one (BL-0012). Only hosted delivery reports failures.
+   */
+  lastLoadFailure?(): RevTurbinePlaybookLoadFailure | undefined;
   /**
    * The key's tenant, when a key-authenticated delivery named one that differs
    * from the configured `tenantId` (D-49): the SDK adopts it. Undefined when
@@ -3026,6 +3096,14 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
     return this.adopted;
   }
 
+  /** The signed-delivery failure of the current attempt, kept for the legacy step's report. */
+  private cdnFailure?: RevTurbinePlaybookLoadFailure;
+  private failure?: RevTurbinePlaybookLoadFailure;
+
+  lastLoadFailure(): RevTurbinePlaybookLoadFailure | undefined {
+    return this.failure;
+  }
+
   /** The key's tenant, adopted when it differs from the configured one (D-49). */
   private adopted?: string;
   private tenantMismatchWarned = false;
@@ -3074,60 +3152,86 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
   }
 
   private async refreshOnce(): Promise<RevTurbineConfig | undefined> {
+    this.cdnFailure = undefined;
     try {
       const cdnConfig = await this.fetchCdnConfig();
       if (cdnConfig) {
         this.cached = cdnConfig;
+        this.failure = undefined;
         return this.cached;
       }
       return await this.fetchLegacyConfig();
-    } catch {
+    } catch (error) {
       // Network/parse/refusal failure — keep last-known-good; never throw.
+      this.failure = playbookStepFailure('config', undefined, `the Playbook load failed: ${errorMessage(error)}`);
       return this.cached;
     }
   }
 
+  /** Record a signed-delivery failure and report "no config" (BL-0012). */
+  private cdnMiss(failure: RevTurbinePlaybookLoadFailure): undefined {
+    this.cdnFailure = failure;
+    return undefined;
+  }
+
   private async fetchCdnConfig(): Promise<RevTurbineConfig | undefined> {
+    const bootstrapUrl = `${this.endpoint}/api/sdk/bootstrap`;
+    let stage: RevTurbinePlaybookLoadFailure['stage'] = 'bootstrap';
+    let stageUrl = bootstrapUrl;
     try {
-      const bootstrap = await fetch(`${this.endpoint}/api/sdk/bootstrap`, {
+      const bootstrap = await fetch(bootstrapUrl, {
         method: 'GET',
         headers: {
           accept: 'application/json',
           authorization: `Bearer ${this.token}`,
         },
       });
-      if (!bootstrap.ok) return undefined;
+      if (!bootstrap.ok) return this.cdnMiss(playbookHttpFailure('bootstrap', bootstrapUrl, bootstrap.status));
 
       const bootstrapRaw: unknown = await bootstrap.json(); // sdk-ok: boundary-parse
       if (!isRecord(bootstrapRaw) || typeof bootstrapRaw.manifest_url !== 'string') {
-        return undefined;
+        return this.cdnMiss(playbookStepFailure('bootstrap', bootstrapUrl, 'the bootstrap response named no manifest_url'));
       }
 
       // The server issues `not_before` during this request, so validate against
       // a post-response clock instead of the TTL timestamp captured pre-fetch.
+      stage = 'manifest';
+      stageUrl = this.resolveDeliveryUrl(bootstrapRaw.manifest_url);
       let manifest = await this.acceptManifest(bootstrapRaw.manifest, Date.now());
       if (!manifest) {
-        const manifestResponse = await fetch(this.resolveDeliveryUrl(bootstrapRaw.manifest_url), {
+        const manifestResponse = await fetch(stageUrl, {
           method: 'GET',
           headers: { accept: 'application/json' },
         });
-        if (!manifestResponse.ok) return undefined;
+        if (!manifestResponse.ok) return this.cdnMiss(playbookHttpFailure('manifest', stageUrl, manifestResponse.status));
         const manifestRaw: unknown = await manifestResponse.json(); // sdk-ok: boundary-parse
         manifest = await this.acceptManifest(manifestRaw, Date.now());
       }
-      if (!manifest) return undefined;
+      if (!manifest) {
+        return this.cdnMiss(playbookStepFailure(
+          'manifest',
+          stageUrl,
+          'the bundle manifest was malformed, outside its validity window, or failed signature verification',
+        ));
+      }
 
-      const bundleResponse = await fetch(this.resolveDeliveryUrl(manifest.active.url), {
+      stage = 'bundle';
+      stageUrl = this.resolveDeliveryUrl(manifest.active.url);
+      const bundleResponse = await fetch(stageUrl, {
         method: 'GET',
         headers: { accept: 'application/json' },
       });
-      if (!bundleResponse.ok) return undefined;
+      if (!bundleResponse.ok) return this.cdnMiss(playbookHttpFailure('bundle', stageUrl, bundleResponse.status));
       const bytes = new Uint8Array(await bundleResponse.arrayBuffer());
-      if (await sha256Hex(bytes) !== manifest.active.sha256) return undefined;
+      if (await sha256Hex(bytes) !== manifest.active.sha256) {
+        return this.cdnMiss(playbookStepFailure('bundle', stageUrl, 'the Playbook bundle failed its integrity check'));
+      }
       // The bundle fetch itself may cross the activation boundary. Re-check
       // immediately before decode so even a just-expired manifest cannot
       // activate after a slow network response.
-      if (!this.manifestWindowIsValid(manifest, Date.now())) return undefined;
+      if (!this.manifestWindowIsValid(manifest, Date.now())) {
+        return this.cdnMiss(playbookStepFailure('bundle', stageUrl, 'the bundle manifest expired during the download'));
+      }
 
       const text = new TextDecoder().decode(bytes);
       const raw: unknown = JSON.parse(text); // sdk-ok: boundary-parse
@@ -3139,8 +3243,8 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
         'signed Playbook bundle',
         this.deliveredTargetDefaults(this.observeDeliveredTenant(manifest.tenant_id)),
       );
-    } catch {
-      return undefined;
+    } catch (error) {
+      return this.cdnMiss(playbookStepFailure(stage, stageUrl, `the ${stage} step failed: ${errorMessage(error)}`));
     }
   }
 
@@ -3185,9 +3289,28 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
     return new URL(path, endpoint.origin).toString();
   }
 
+  /**
+   * Record that the legacy fallback failed too (BL-0012). An auth refusal on
+   * the signed delivery is the more useful report — it names the credential —
+   * so it wins; otherwise the legacy failure is reported with the signed
+   * delivery's reason appended.
+   */
+  private legacyMiss(failure: RevTurbinePlaybookLoadFailure): RevTurbineConfig | undefined {
+    const cdn = this.cdnFailure;
+    if (cdn && (cdn.status === 401 || cdn.status === 403)) {
+      this.failure = cdn;
+    } else {
+      this.failure = cdn
+        ? { ...failure, message: `${failure.message} The signed delivery failed first: ${cdn.message}` }
+        : failure;
+    }
+    return this.cached;
+  }
+
   private async fetchLegacyConfig(): Promise<RevTurbineConfig | undefined> {
+    const configUrl = `${this.endpoint}/api/sdk/config`;
     try {
-      const response = await fetch(`${this.endpoint}/api/sdk/config`, {
+      const response = await fetch(configUrl, {
         method: 'GET',
         headers: {
           accept: 'application/json',
@@ -3201,7 +3324,11 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
       });
       // 304 (unchanged) or any non-2xx: keep the last-known-good config. A
       // caller with no config at all fails closed at the check site.
-      if (response.status === 304 || !response.ok) return this.cached;
+      if (response.status === 304) {
+        if (this.cached) this.failure = undefined;
+        return this.cached;
+      }
+      if (!response.ok) return this.legacyMiss(playbookHttpFailure('config', configUrl, response.status));
       // The body is the canonical-JSON payload artifact (plan 177 TASK-5).
       // Read it as TEXT so integrity is verified over the exact received
       // bytes, not a re-serialization.
@@ -3213,7 +3340,9 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
       const expectedSha = response.headers.get('x-bundle-sha256');
       if (expectedSha) {
         const actualSha = await sha256Hex(new TextEncoder().encode(text));
-        if (actualSha !== expectedSha) return this.cached;
+        if (actualSha !== expectedSha) {
+          return this.legacyMiss(playbookStepFailure('config', configUrl, 'the Playbook failed its integrity check'));
+        }
       }
       const raw: unknown = JSON.parse(text); // sdk-ok: boundary-parse
       // Version refusal BEFORE consumption (plan 177 AC-3): a payload this
@@ -3233,10 +3362,11 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
       if (next) {
         this.cached = next;
         this.etag = response.headers.get('etag') ?? undefined;
+        this.failure = undefined;
       }
       return this.cached;
-    } catch {
-      return this.cached;
+    } catch (error) {
+      return this.legacyMiss(playbookStepFailure('config', configUrl, `the Playbook could not be read: ${errorMessage(error)}`));
     }
   }
 }
@@ -3348,6 +3478,8 @@ export class RevTurbineCustomerSdk {
   private readonly tenantNamespace: string;
   /** The browser credential — `publicKey`, the only name it arrives under. */
   private readonly publicKey: string;
+  /** Bearer for `/api/track`: the public key, or on a backend the server key (see resolveSdkDeliveryCredential). */
+  private readonly ingestBearer: string;
   /**
    * True when the integration supplied a real `publicKey`, as opposed to the
    * local-only placeholder. Gates the keyless anonymous beacon (plan 95).
@@ -3566,6 +3698,10 @@ export class RevTurbineCustomerSdk {
   // (terminal for now). These three fields are the whole distinction.
   private playbookLoadInFlight: Promise<void> | null = null;
   private playbookLoadAttempted = false;
+  // BL-0012: why the Playbook did not load, and which failures were already
+  // reported, so a refresh loop warns once per distinct failure.
+  private credentialFailure?: RevTurbinePlaybookLoadFailure;
+  private readonly warnedPlaybookFailures = new Set<string>();
   private readonly playbookSettleListeners = new Set<() => void>();
   // Injectable so the post-bound retry path is testable (BL-0179). See
   // `setPlaybookWaitBoundMs`.
@@ -3590,8 +3726,11 @@ export class RevTurbineCustomerSdk {
       );
     }
     this.publicKey = resolveBrowserPublicKey(options) ?? '';
+    this.ingestBearer = resolveSdkDeliveryCredential(options)?.token ?? '';
     this.ingestKeyConfigured = hasValue(options.publicKey);
-    this.tenantNamespace = resolveTenantNamespace(this.configuredTenantId, this.publicKey);
+    // On a backend the server key identifies the tenant just as a public key
+    // does (only its hash ever reaches a storage key).
+    this.tenantNamespace = resolveTenantNamespace(this.configuredTenantId, this.publicKey || this.ingestBearer);
     this.environmentId = normalizeEnvironmentId(options.environmentId);
     this.locale = options.locale?.trim() || undefined;
     this.testTraffic = options.test === true;
@@ -3611,6 +3750,19 @@ export class RevTurbineCustomerSdk {
     this.branding = options.branding;
     this.apiBranding = options.apiBranding;
     this.configProvider = this.resolveConfigProvider(options);
+    // BL-0012: a hosted init with no public key can never fetch a Playbook.
+    // Say so at init instead of answering `config_unavailable` forever.
+    if (!this.configProvider && this.runtimeMode !== RuntimeMode.LocalOnly) {
+      this.credentialFailure = {
+        stage: 'credentials',
+        message: hasValue(options.apiKey)
+          ? 'no publicKey was supplied, so the hosted Playbook cannot be fetched. apiKey is the secret server key '
+            + 'and is never sent from a browser; pass your public key as publicKey.'
+          : 'no key was supplied, so the hosted Playbook cannot be fetched. In a browser pass your public key as '
+            + 'publicKey; on a backend pass the server key as apiKey; or supply localRuntime.playbook for local mode.',
+      };
+      this.warnPlaybookLoadFailure(this.credentialFailure);
+    }
     this.localStorageKey =
       options.localRuntime?.storageKey ?? `revturbine:${this.tenantNamespace}:local-runtime`;
     this.mode = options.mode ?? DEFAULT_SDK_MODE;
@@ -3850,7 +4002,9 @@ export class RevTurbineCustomerSdk {
     // Server mode with no customer-supplied config: fetch the launched Playbook
     // from the control-plane cache (plan 159) so entitlements evaluate locally.
     const runtimeMode = options.runtimeMode ?? RuntimeMode.Server;
-    const configToken = resolveBrowserPublicKey(options);
+    // The public key in a browser; on a backend, the server key when supplied
+    // (hosted Node server SDK) — see resolveSdkDeliveryCredential.
+    const configToken = resolveSdkDeliveryCredential(options)?.token;
     if (runtimeMode !== RuntimeMode.LocalOnly && configToken) {
       return new ServerLaunchedPlaybookProvider(
         this.endpoint,
@@ -3875,6 +4029,7 @@ export class RevTurbineCustomerSdk {
       try {
         const previousConfig = this.getConfiguredPlaybook();
         await this.configProvider?.refresh?.();
+        this.warnPlaybookLoadFailure(this.configProvider?.lastLoadFailure?.());
         this.rebuildSegmentPredicateFieldIndex();
         if (previousConfig !== this.getConfiguredPlaybook()) {
           this.invalidateEffectiveContext();
@@ -3882,8 +4037,13 @@ export class RevTurbineCustomerSdk {
           // lifecycle triggers on — evaluate a trial supplied before it loaded.
           this.syncTrialLifecycleWithView();
         }
-      } catch {
-        // Config refresh is best-effort; keep SDK operational without throwing.
+      } catch (error) {
+        // Config refresh is best-effort; keep SDK operational without throwing,
+        // but never silently (BL-0012): a throwing resolver or an unreadable
+        // Playbook is named once.
+        this.warnPlaybookLoadFailure(
+          playbookStepFailure('config', undefined, `the Playbook load threw: ${errorMessage(error)}`),
+        );
       }
     })();
 
@@ -3916,6 +4076,48 @@ export class RevTurbineCustomerSdk {
     if (!this.configProvider) return 'unavailable';
     if (this.playbookLoadInFlight) return 'loading';
     return this.playbookLoadAttempted ? 'unavailable' : 'loading';
+  }
+
+  /**
+   * Why the hosted Playbook has not loaded, or `undefined` when nothing failed
+   * (BL-0012).
+   *
+   * A failed load is otherwise indistinguishable from "not loaded yet": checks
+   * answer `config_unavailable` either way. This names the failing step, the
+   * URL, the HTTP status and — for a 401/403 or a missing `publicKey` — the
+   * credential to check. A failed refresh while a previously loaded Playbook
+   * is still in use is reported here too; the SDK keeps deciding with the
+   * last-known-good Playbook.
+   *
+   * @example
+   * ```ts
+   * if (!(await rt.can('export')).allowed) {
+   *   const failure = rt.getPlaybookLoadFailure();
+   *   if (failure) console.error('RevTurbine Playbook did not load:', failure.message);
+   * }
+   * ```
+   *
+   * @public
+   */
+  getPlaybookLoadFailure(): RevTurbinePlaybookLoadFailure | undefined {
+    const failure = this.credentialFailure ?? this.configProvider?.lastLoadFailure?.();
+    return failure ? { ...failure } : undefined;
+  }
+
+  /**
+   * Warn once per distinct failure while no Playbook is loaded (BL-0012).
+   * Prod-visible on purpose: in a deployed app this is the only place the
+   * cause of a blanket `config_unavailable` deny is ever named.
+   */
+  private warnPlaybookLoadFailure(failure: RevTurbinePlaybookLoadFailure | undefined): void {
+    if (!failure || this.getConfiguredPlaybook()) return;
+    const key = `${failure.stage}|${failure.status ?? ''}|${failure.url ?? ''}`;
+    if (this.warnedPlaybookFailures.has(key)) return;
+    this.warnedPlaybookFailures.add(key);
+    console.warn(
+      `[RevTurbine] The Playbook did not load (${failure.stage}): ${failure.message} `
+        + 'Entitlement checks answer config_unavailable until it does. Details: rt.getPlaybookLoadFailure().',
+    );
   }
 
   /**
@@ -4042,11 +4244,39 @@ export class RevTurbineCustomerSdk {
     return flags;
   }
 
+  /** Rule ids already warned about by {@link warnOnUnmatchedEntitlementRules}. */
+  private readonly unmatchedRuleWarnings = new Set<string>();
+
+  /**
+   * BL-0426 (2): a rule whose `entitlement_id` names no entitlement
+   * `unique_handle` can never apply, so a check on that handle denies with
+   * `no_matching_entitlement_rule` and nothing says why. Warn once per rule per
+   * SDK instance, in development builds only, naming the rule and the handle.
+   * The check's reason contract is unchanged.
+   */
+  private warnOnUnmatchedEntitlementRules(playbook: RevTurbineConfig | undefined): void {
+    if (!playbook || !isDevelopmentBuild()) return;
+    const handles = new Set((playbook.entitlements ?? []).map((entitlement) => entitlement.unique_handle));
+    for (const rule of playbook.entitlement_rules ?? []) {
+      const handle = rule.entitlement_id;
+      if (typeof handle !== 'string' || handles.has(handle)) continue;
+      const ruleId = typeof rule.id === 'string' && rule.id !== '' ? rule.id : `(unnamed rule for ${handle})`;
+      if (this.unmatchedRuleWarnings.has(ruleId)) continue;
+      this.unmatchedRuleWarnings.add(ruleId);
+      warnInDevelopmentBuild(
+        `Playbook entitlement rule "${ruleId}" names entitlement "${handle}", which is not an entitlement `
+          + 'unique_handle in this Playbook. The rule never applies, so a check on that handle denies '
+          + 'with no_matching_entitlement_rule. Fix the rule\'s entitlement_id or add the entitlement.',
+      );
+    }
+  }
+
   private rebuildSegmentPredicateFieldIndex(): void {
     this.segmentIdsByPredicateField.clear();
     this.configuredSegmentsById.clear();
 
     const playbook = this.getConfiguredPlaybook();
+    this.warnOnUnmatchedEntitlementRules(playbook);
     const configuredSegments = playbook?.segments ?? [];
 
     for (const segment of configuredSegments) {
@@ -4226,23 +4456,33 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
-   * Drop the previous user's trial and usage state on a switch to a different
-   * identified user without an intervening reset (BL-0417): the SDK trial
-   * status and markers, the context `trial`, the reported usage balances and
-   * the context `usage`. Both feed decisions directly — the trial view and
-   * the usage view — so carrying them across the merge would decide the new
-   * user's trial placements, reverse-trial grants, `{{trial_days_*}}` /
-   * `{{usage_*}}` tokens and usage thresholds from the old user's state.
-   * The new identity's own values are merged in afterwards by the caller.
+   * Drop EVERYTHING the previous user owned on a switch to a different
+   * identified user without an intervening reset (BL-0417, BL-0421).
+   *
+   * A user-id change is a full reset of user-scoped state: the held context
+   * (plan handle and plan, entitlements, payment flags, tiers, instances,
+   * add-ons, built-in dimensions, experiments, custom and personalization
+   * fields, email, account), the SDK trial status and markers, the reported
+   * usage balances, the app-provider snapshot and a pending optimistic
+   * conversion. Only tenant, session and config survive. The new identity's
+   * own values are merged in afterwards by the caller, so user B can never be
+   * granted user A's plan or entitlements until the next server delivery.
+   *
+   * Anonymous → identified and re-identifying the same user are not switches
+   * (see {@link isIdentifiedUserSwitch}) and keep merging.
    */
-  private dropPreviousUserTrialAndUsage(): void {
+  private dropPreviousUserState(): void {
     this.clearTrialState();
     this.usageBalances = {};
-    const next: HeldUserContext = { ...this.userContext, usage: {} };
-    delete next.trial;
-    delete next.addons;
-    this.appProviderAddons = undefined;
-    this.userContext = next;
+    this.captureAppProviderState(undefined);
+    this.pendingConversionPlan = undefined;
+    this.userContext = {
+      id: undefined,
+      usage: {},
+      custom: {},
+      entitlements: {},
+      personalization: {},
+    };
   }
 
   /**
@@ -7212,9 +7452,10 @@ export class RevTurbineCustomerSdk {
     // Once per SDK instance — never per event, never when nothing redacted.
     if (valuesRedacted > 0) this.warnPiiRedactedOnce();
 
-    // `/api/track` accepts ONLY a `public` ingest token; the tenant is
-    // derived from the verified token, never a header (plan 41 REQ-13),
-    // so no `x-tenant-id` is sent. Best-effort: ingest failures must
+    // `/api/track` takes the `public` ingest key from a browser, or the tenant
+    // server key from a backend (ST-455); the tenant is derived from the
+    // verified token, never a header (plan 41 REQ-13), so no `x-tenant-id` is
+    // sent. Best-effort: ingest failures must
     // never throw into the customer app, and there is no legacy fallback
     // sink (plan 41 Q-3 — `/api/telemetry` retired in TASK-4b).
     //
@@ -7229,7 +7470,7 @@ export class RevTurbineCustomerSdk {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        authorization: `Bearer ${this.publicKey}`,
+        authorization: `Bearer ${this.ingestBearer}`,
         'x-request-id': rid,
       },
       body: JSON.stringify({ events: trackEvents }),
@@ -7653,10 +7894,14 @@ export class RevTurbineCustomerSdk {
       warnOnEmailShapedIdentity('account_id', userContext.account_id);
     }
     const previousContext = this.userContext;
-    // BL-0417: a `setUserContext({ id })` naming a different user is a user
-    // switch too — see identify().
-    if (this.isIdentifiedUserSwitch(userContext.id)) this.dropPreviousUserTrialAndUsage();
+    // BL-0417 / BL-0421: a `setUserContext({ id })` naming a different user is
+    // a user switch too — see identify().
+    const switched = this.isIdentifiedUserSwitch(userContext.id);
+    if (switched) this.dropPreviousUserState();
     this.userContext = this.mergeUserContext(userContext);
+    // A client-session token is minted for one user; the switched-to user
+    // gets a fresh one, exactly as identify() does.
+    if (switched) this.remintClientContextForSwitch();
     this.recalculateDerivedUsageTraits();
     this.markSegmentsDirtyFromContextChange(previousContext, this.userContext);
     this.persistLocalRuntimeState();
@@ -7741,7 +7986,7 @@ export class RevTurbineCustomerSdk {
       // BL-0417: a payload for a different user replaces, not extends, the
       // previous user's trial and usage (its own `trial_status` /
       // `usage_balances` are applied below).
-      if (this.isIdentifiedUserSwitch(payload.user.id)) this.dropPreviousUserTrialAndUsage();
+      if (this.isIdentifiedUserSwitch(payload.user.id)) this.dropPreviousUserState();
       this.userContext = this.mergeUserContext({
         id: payload.user.id,
         custom: payload.user.traits as SdkTraits | undefined,
@@ -9510,9 +9755,9 @@ export class RevTurbineCustomerSdk {
    * Build the full persistence-ready {@link UserContext} from the current
    * SDK state. Includes `tenant_id` and `user_id` required for API storage.
    *
-   * Also projects the decision-driving fields — `trial` (the resolved trial
-   * view), `tiers`, `payment_failed`, `payment_at_risk` and `instances` —
-   * when held. The snapshot is a copy: changing it changes nothing in the SDK;
+   * Also projects the decision-driving fields — `plan_handle`,
+   * `builtin_dimensions`, `trial` (the resolved trial view), `tiers`,
+   * `payment_failed`, `payment_at_risk` and `instances` — when held. The snapshot is a copy: changing it changes nothing in the SDK;
    * write through `update()` / `setUserContext()`.
    *
    * @public
@@ -9529,6 +9774,13 @@ export class RevTurbineCustomerSdk {
       updated_at: now,
       account_id: this.userContext.account_id,
       email: this.userContext.email,
+      // BL-0421: the plan matching identity and the delivered built-in
+      // dimensions, read-only (copies), as the RevTurbineUserContext TSDoc
+      // promises.
+      ...(this.userContext.plan_handle !== undefined ? { plan_handle: this.userContext.plan_handle } : {}),
+      ...(this.userContext.builtin_dimensions !== undefined
+        ? { builtin_dimensions: { ...this.userContext.builtin_dimensions } }
+        : {}),
       plan: this.userContext.plan,
       usage: this.userContext.usage ?? {},
       entitlements: this.userContext.entitlements ?? {},
@@ -9779,11 +10031,40 @@ export class RevTurbineCustomerSdk {
    * called from the constructor and from `identify()`, neither of which may
    * block on the network.
    */
+  /** The auto client-context fetch in flight, so overlapping triggers share one mint. */
+  private clientContextFetchInFlight: Promise<void> | null = null;
+
   private autoFetchClientContext(): void {
     if (!this.clientSessionProvider) return;
-    void this.fetchClientContext().catch(() => {
+    // One fetch (and so at most one mint) at a time: init kicks one from the
+    // constructor and `initRevTurbine({ user })` identifies straight after,
+    // which used to mint a second token for the same session.
+    if (this.clientContextFetchInFlight) return;
+    const fetching = this.fetchClientContext().catch(() => {
       // `fetchClientContext` already swallows its own failures; this guards
       // the promise itself so a rejection never becomes unhandled.
+    }).finally(() => {
+      if (this.clientContextFetchInFlight === fetching) this.clientContextFetchInFlight = null;
+    });
+    this.clientContextFetchInFlight = fetching;
+  }
+
+  /**
+   * Re-mint the client-session token for a DIFFERENT user (a switch): the held
+   * one was minted for the previous user. If a fetch is still in flight, its
+   * token is discarded once it lands and a fresh one is minted.
+   */
+  private remintClientContextForSwitch(): void {
+    if (!this.clientSessionProvider) return;
+    const pending = this.clientContextFetchInFlight;
+    this.clientContextToken = undefined;
+    if (!pending) {
+      this.autoFetchClientContext();
+      return;
+    }
+    void pending.then(() => {
+      this.clientContextToken = undefined;
+      this.autoFetchClientContext();
     });
   }
 
@@ -10735,7 +11016,8 @@ export class RevTurbineCustomerSdk {
     const previousContext = this.userContext;
     // BL-0417: identifying a DIFFERENT user without a reset must not carry the
     // previous user's trial or usage into this one's decisions.
-    if (this.isIdentifiedUserSwitch(userId)) this.dropPreviousUserTrialAndUsage();
+    const switchedUser = this.isIdentifiedUserSwitch(userId);
+    if (switchedUser) this.dropPreviousUserState();
     // Plan 191 REQ-3 (Q-2 ruling): there is no legacy traits overload — a
     // plain traits object no longer routes into `custom` silently. Free-form
     // values are passed explicitly under `custom`. Unrecognized keys are
@@ -10786,11 +11068,15 @@ export class RevTurbineCustomerSdk {
     // Switch impression history to the new user and re-hydrate retired cache.
     this.impressionHistory.setUserId(userId);
     void this.impressionHistory.hydrate();
-    // A client-session token is minted FOR a specific user, so a new identity
-    // invalidates the held one and re-mints (plan 191 REQ-5). Without this a
-    // sign-out/sign-in would enrich the new user from the old user's token.
-    if (this.clientSessionProvider) {
-      this.clientContextToken = undefined;
+    // A client-session token is minted FOR a specific user, so a DIFFERENT
+    // identity invalidates the held one and re-mints (plan 191 REQ-5); a reset
+    // drops it too. Identifying the session's first user, or the same user
+    // again, keeps the held (or in-flight) token and only refreshes the
+    // context — init used to mint twice: once from the constructor and once
+    // from `initRevTurbine({ user })`'s identify.
+    if (switchedUser) {
+      this.remintClientContextForSwitch();
+    } else {
       this.autoFetchClientContext();
     }
     // A pending optimistic conversion belongs to the identity that converted
@@ -10856,6 +11142,9 @@ export class RevTurbineCustomerSdk {
     this.clearTrialState();
     // BL-0004: the pending optimistic conversion is this user's, not the next one's.
     this.pendingConversionPlan = undefined;
+    // The client-session token was minted for the signed-out user; the next
+    // identify mints a fresh one.
+    this.clientContextToken = undefined;
     this.recalculateDerivedUsageTraits();
     this.markSegmentsDirtyFromContextChange(previousContext, this.userContext);
     this.decisionCache.clear();
@@ -11212,7 +11501,8 @@ function resolveTenantNamespace(configuredTenantId: string | undefined, publicKe
   if (configuredTenantId !== undefined) return configuredTenantId;
   if (!hasValue(publicKey)) {
     throw new Error(
-      '[RevTurbine] init needs either a `publicKey` (it identifies your tenant) or a `tenantId`. '
+      '[RevTurbine] init needs a key that identifies your tenant — `publicKey` in a browser, the server key as '
+        + '`apiKey` on a backend — or a `tenantId`. '
         + 'In `local_only` mode, pass `tenantId` or supply `localRuntime.playbook` (the SDK then defaults it).',
     );
   }
@@ -11226,6 +11516,34 @@ function resolveTenantNamespace(configuredTenantId: string | undefined, publicKe
 
 /** The one name the browser credential arrives under (BL-0113). */
 type BrowserKeyOptions = Pick<RevTurbineInitOptions, 'publicKey'>;
+
+/**
+ * The credential the SDK authenticates its Playbook delivery
+ * (`/api/sdk/bootstrap`, `/api/sdk/config`) and event ingest (`/api/track`)
+ * with.
+ *
+ * On a backend (no `window` / `document`, and not a browser Web Worker or
+ * service worker — see {@link isServerKeyContext}) the SERVER key (`apiKey`) wins when
+ * supplied: the control plane refuses a public key that arrives without a
+ * browser `Origin`, and accepts a server key only from a non-browser caller,
+ * scoped to the key's own tenant. That is what makes a hosted
+ * `RuntimeMode.Server` instance work in a Node server — one long-lived
+ * instance per process loading and refreshing the launched Playbook and
+ * reporting events.
+ *
+ * In a browser — worker scopes included — the server key is NEVER used, whatever was passed: only
+ * `publicKey` is read. The theme API and the other browser routes always use
+ * the public key ({@link resolveBrowserPublicKey}).
+ *
+ * @internal
+ */
+export function resolveSdkDeliveryCredential(
+  options: Pick<RevTurbineInitOptions, 'publicKey' | 'apiKey'>,
+): { token: string; kind: 'public' | 'server' } | undefined {
+  if (isServerKeyContext() && hasValue(options.apiKey)) return { token: options.apiKey, kind: 'server' };
+  const publicKey = resolveBrowserPublicKey(options);
+  return publicKey ? { token: publicKey, kind: 'public' } : undefined;
+}
 
 /**
  * Resolve the browser credential.

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "count": 78,
+  "count": 80,
   "exports": [
     {
       "name": "AccessDeniedPlaceholder",
@@ -243,6 +243,12 @@
       "signature": "async getPlacementDecision(input: RevTurbinePlacementDecisionInput): Promise<RevTurbinePlacementDecision>"
     },
     {
+      "name": "RevTurbineCustomerSdk.getPlaybookLoadFailure",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "getPlaybookLoadFailure(): RevTurbinePlaybookLoadFailure | undefined"
+    },
+    {
       "name": "RevTurbineCustomerSdk.getRegisteredSlots",
       "kind": "method",
       "file": "web-sdk/customer-side.ts",
@@ -385,6 +391,12 @@
       "kind": "interface",
       "file": "web-sdk/react/init-status.ts",
       "signature": "export interface RevTurbineInitStatus { readonly ok: boolean; readonly phase?: RevTurbineInitPhase; readonly message?: string; readonly remediation?: string; }"
+    },
+    {
+      "name": "RevTurbinePlaybookLoadFailure",
+      "kind": "interface",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "export interface RevTurbinePlaybookLoadFailure { stage: 'credentials' | 'bootstrap' | 'manifest' | 'bundle' | 'config'; url?: string; status?: number; message: string; }"
     },
     {
       "name": "RevTurbineProvider",

@@ -58,9 +58,20 @@ const restoreDroppedAliases = {
   },
 };
 
+// 0.12.2: every entry ships twice — `<entry>.d.ts` for the `import`
+// condition and an identical `<entry>.d.cts` for `require`. The package is
+// `"type": "module"`, so TypeScript reads a `.d.ts` as an ES module, and before
+// 5.8 it rejects a CommonJS import of one (TS1479) even though Node ≥ 22.13
+// `require()`s the ESM build. A `.d.cts` declares the same names as a CommonJS
+// module, which is what `require()` of the ESM build returns (its namespace —
+// no entry has a default export). Each bundle is self-contained (no relative
+// imports), so the copy needs no specifier rewriting.
 const entry = (input, file) => ({
   input,
-  output: { file, format: 'es' },
+  output: [
+    { file, format: 'es' },
+    { file: file.replace(/\.d\.ts$/, '.d.cts'), format: 'es' },
+  ],
   external,
   plugins: [
     generatedShim,

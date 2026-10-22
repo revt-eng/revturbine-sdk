@@ -267,16 +267,20 @@ describe('init guards — a tenant must be identifiable', () => {
 });
 
 describe('theme loader — no placeholder tenant on the wire', () => {
-  it('omits x-tenant-id without a tenant and sends it when configured', async () => {
+  // BL-0477 (Kent 2026-09-29): the public key alone names the tenant on the
+  // theme API, so `x-tenant-id` is never sent — even when a tenant is
+  // configured. (It was sent when configured until BL-0477.)
+  it('never sends x-tenant-id, with or without a configured tenant', async () => {
     const requests: Recorded[] = [];
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       requests.push({ url: String(input), headers: new Headers(init?.headers) });
       return Response.json({});
     }));
-    await loadTheme({ endpoint: ENDPOINT, apiKey: 'rtk_public_key_a', storage: new InMemoryStorage() });
-    await loadTheme({ tenantId: KEY_TENANT, endpoint: ENDPOINT, apiKey: 'rtk_public_key_a', storage: new InMemoryStorage() });
+    await loadTheme({ endpoint: ENDPOINT, publicKey: 'rtk_public_key_a', storage: new InMemoryStorage() });
+    await loadTheme({ tenantId: KEY_TENANT, endpoint: ENDPOINT, publicKey: 'rtk_public_key_a', storage: new InMemoryStorage() });
     await vi.waitFor(() => expect(requests).toHaveLength(2));
     expect(requests[0]?.headers.get('x-tenant-id')).toBeNull();
-    expect(requests[1]?.headers.get('x-tenant-id')).toBe(KEY_TENANT);
+    expect(requests[1]?.headers.get('x-tenant-id')).toBeNull();
+    expect(requests[1]?.headers.get('authorization')).toBe('Bearer rtk_public_key_a');
   });
 });

@@ -41,23 +41,60 @@ export function clearPersistedTheme(tenantId: string, storage?: RevTurbineStorag
   }
 }
 
+/**
+ * A short, stable, non-reversible tag for a key (FNV-1a, 32-bit). Used to
+ * scope the persisted theme per public key, so two keys on one origin never
+ * share a cache entry and the key itself is not written into storage keys.
+ */
+function keyScope(key: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < key.length; index += 1) {
+    hash ^= key.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `key-${(hash >>> 0).toString(16).padStart(8, '0')}`;
+}
+
+let apiKeyIgnoredWarned = false;
+
+/** Warn once that `loadTheme({ apiKey })` no longer sends that key. */
+function warnApiKeyIgnored(): void {
+  if (apiKeyIgnoredWarned) return;
+  apiKeyIgnoredWarned = true;
+  console.warn(
+    '[RevTurbine] loadTheme() ignores `apiKey`: it is the secret server key and is never sent. '
+      + 'Pass your public key as `publicKey` to fetch the theme.',
+  );
+}
+
 export interface ThemeLoaderOptions {
   /**
-   * RevTurbine tenant identifier — optional (BL-0335). Sent as `x-tenant-id`
-   * only when present; the key alone identifies the tenant, and the control
-   * plane ignores (with a warning) a value that differs from it (D-49).
+   * Your **public key** — the only credential the theme API accepts
+   * (BL-0477). The control plane resolves the tenant from it; a server key is
+   * refused with 403. Without a key nothing is fetched and the persisted /
+   * `base` theme is returned.
+   */
+  publicKey?: string;
+  /**
+   * @deprecated **Ignored since 0.12.2.** Use {@link ThemeLoaderOptions.publicKey}.
+   * `apiKey` names the secret server key everywhere else in the SDK, so the
+   * theme loader never sends it: a call that supplies only `apiKey` fetches
+   * nothing (and warns once) and returns the persisted / `base` theme. Kept so
+   * existing callers still compile.
+   */
+  apiKey?: string;
+  /**
+   * @deprecated No longer sent (BL-0477): the public key alone identifies the
+   * tenant (D-49). Kept so existing callers still compile.
    */
   tenantId?: string;
   /**
-   * Namespace for the locally persisted theme. Defaults to `tenantId`, then
-   * `'local'` — so an integration that passed a tenant id keeps its existing
-   * cache key.
+   * Namespace for the locally persisted theme. Defaults to a scope derived
+   * from the public key, so two keys on one origin never share an entry.
    */
   storageScope?: string;
   /** Base URL of the RevTurbine API Edge. */
   endpoint: string;
-  /** API key for authentication. */
-  apiKey: string;
   /** Optional storage provider. Falls back to localStorage in browser, in-memory on server. */
   storage?: RevTurbineStorage;
   /**
@@ -92,8 +129,13 @@ export async function loadTheme(
   opts: ThemeLoaderOptions,
   onUpdate?: (theme: RevTurbineTheme) => void,
 ): Promise<RevTurbineTheme> {
-  const { tenantId, endpoint, apiKey, base } = opts;
-  const scope = opts.storageScope ?? tenantId ?? 'local';
+  const { endpoint, base } = opts;
+  // BL-0477: the public key is the ONLY credential read. `apiKey` is never
+  // sent — whatever it holds — because everywhere else it is the secret
+  // server key, and a theme fetch runs in browsers.
+  const publicKey = opts.publicKey?.trim() || undefined;
+  if (!publicKey && opts.apiKey?.trim()) warnApiKeyIgnored();
+  const scope = opts.storageScope ?? (publicKey ? keyScope(publicKey) : 'local');
   const storage = opts.storage ?? resolvePersistentStorage();
 
   // Fast path: use persisted theme while we fetch. Layered over the Playbook's
@@ -103,8 +145,11 @@ export async function loadTheme(
   const localTheme = mergeTheme({ ...base, ...persisted });
   opts.onOverride?.(persisted);
 
+  // BL-0477: no key, no request — never a placeholder bearer.
+  if (!publicKey) return localTheme;
+
   // Fire off background fetch — don't block the caller.
-  fetchRemoteTheme(endpoint, tenantId, apiKey).then((remote) => {
+  fetchRemoteTheme(endpoint, publicKey).then((remote) => {
     if (!remote) return;
     // Skip update if versions match.
     if (persisted?.version && remote.version === persisted.version) return;
@@ -125,19 +170,19 @@ export async function loadTheme(
  */
 async function fetchRemoteTheme(
   endpoint: string,
-  tenantId: string | undefined,
-  apiKey: string,
+  publicKey: string,
 ): Promise<RevTurbineThemeInput | null> {
   const base = endpoint.replace(/\/$/, '');
   const rid = typeof crypto.randomUUID === 'function'
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
+  // BL-0477: the public key is the only credential and names the tenant; no
+  // `x-tenant-id` is sent.
   const response = await fetch(`${base}/api/sdk/theme`, {
     method: 'GET',
     headers: {
-      authorization: `Bearer ${apiKey}`,
-      ...(tenantId ? { 'x-tenant-id': tenantId } : {}),
+      authorization: `Bearer ${publicKey}`,
       'x-request-id': rid,
     },
   });

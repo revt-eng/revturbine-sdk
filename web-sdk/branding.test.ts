@@ -11,6 +11,7 @@
  * must not outrank it. See `docs/specs/scaffold/domain-model.md`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_THEME } from './theme/defaults';
 import {
   DEFAULT_BRANDING,
   resolveBranding,
@@ -30,11 +31,12 @@ afterEach(() => {
 });
 
 describe('resolveBranding — four-rung ladder', () => {
-  it('rung 4: no inputs → DEFAULT_BRANDING (structural, renders fully)', () => {
+  it('rung 4: no inputs → DEFAULT_BRANDING with the embedded default theme (BL-0477)', () => {
     const { branding, source } = resolveBranding();
     expect(source).toBe('default');
     expect(branding.workspace_name).toBe(DEFAULT_BRANDING.workspace_name);
-    expect(branding.theme).toEqual({});
+    // The theme the renderers fall back to, not an empty map (BL-0477).
+    expect(branding.theme).toEqual({ ...DEFAULT_THEME });
   });
 
   it('rung 1: explicit branding wins over every lower rung', () => {

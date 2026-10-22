@@ -29,11 +29,17 @@
  *      node10 resolution. Negative fixtures use `@ts-expect-error`, so an
  *      input that silently stops being rejected fails; `IsAny` assertions
  *      fail when a public type widens to `any`.
+ *   4b. Compiles the CommonJS fixtures again on OLDER TypeScript (5.5, 5.4 and,
+ *      with skipLibCheck, 5.0 by default; `--legacy-ts` to override) under
+ *      Node16 and NodeNext. Before
+ *      0.12.2 every entry failed there with TS1479 — TypeScript < 5.8 refuses a
+ *      CommonJS import of an ES module — while the 5.9 leg stayed green.
  *   5. Loads the headless entry in Node through `import()` and `require()`.
  *
  * It prints the package name, version and tarball sha256 it verified.
  *
- *   node web-sdk/scripts/check-packed-consumer.mjs [--tarball <file.tgz>] [--ts <version>] [--keep]
+ *   node web-sdk/scripts/check-packed-consumer.mjs [--tarball <file.tgz>] [--ts <version>]
+ *     [--legacy-ts <v1,v2|none>] [--keep]
  *
  * Run `pnpm --dir web-sdk run build` first when packing from source.
  */
@@ -56,6 +62,23 @@ const argValue = (name) => {
 };
 const keep = args.includes('--keep');
 const tsVersion = argValue('--ts') ?? '5.9.3';
+// CommonJS consumers on TypeScript older than 5.8 (no `require` of ES modules
+// in the type system). Each installs as an npm alias next to `typescript`.
+// `<version>:skipLibCheck` compiles that leg with library checking off: below
+// TypeScript 5.4 the `zod` declarations the SDK depends on do not themselves
+// compile (`NoInfer`, TS 5.4+), so 5.0 is checked the way such a project must
+// already be configured, which still catches TS1479 in the consumer's own file.
+const legacyArg = argValue('--legacy-ts') ?? '5.5.4,5.4.5,5.0.4:skipLibCheck';
+const legacyLegs = (legacyArg === 'none' ? [] : legacyArg.split(','))
+  .map((spec) => spec.trim())
+  .filter(Boolean)
+  .map((spec) => {
+    const [version, flag] = spec.split(':');
+    return { version, skipLibCheck: flag === 'skipLibCheck' };
+  });
+const legacyTsVersions = [...new Set(legacyLegs.map(({ version }) => version))];
+const legacyAlias = (version) => `typescript-legacy-${version}`;
+const legacyProjects = ['tsconfig.node16-cjs.json', 'tsconfig.nodenext-cjs.json'];
 let tarball = argValue('--tarball');
 
 const work = mkdtempSync(join(tmpdir(), 'revt-packed-consumer-'));
@@ -197,6 +220,7 @@ const consumerManifest = {
     '@growthbook/growthbook': peers['@growthbook/growthbook'] ?? '^1.7.0',
     '@optimizely/optimizely-sdk': peers['@optimizely/optimizely-sdk'] ?? '^6.5.0',
     typescript: tsVersion,
+    ...Object.fromEntries(legacyTsVersions.map((version) => [legacyAlias(version), `npm:typescript@${version}`])),
   },
 };
 writeFileSync(join(consumer, 'package.json'), `${JSON.stringify(consumerManifest, null, 2)}\n`);
@@ -212,24 +236,29 @@ if (install.status !== 0) {
 }
 
 // ── 4. compile ──────────────────────────────────────────────────────────────
-const projects = ['tsconfig.bundler.json', 'tsconfig.nodenext.json', 'tsconfig.nodenext-cjs.json', 'tsconfig.node10.json'];
+const projects = ['tsconfig.bundler.json', 'tsconfig.nodenext.json', 'tsconfig.nodenext-cjs.json', 'tsconfig.node16-cjs.json', 'tsconfig.node10.json'];
+const compileWith = (packageDir, label, project, extraArgs = []) => {
+  step(`tsc ${label} -p ${project} ${extraArgs.join(' ')}`.trimEnd());
+  const tsc = join(consumer, 'node_modules', packageDir, 'bin', 'tsc');
+  // Each entry inlines the whole SDK surface (~5 MB of declarations), and the
+  // fixtures load all four entries with library checking on: the default
+  // 2 GB heap of a CI runner is not enough.
+  const compiled = run(process.execPath, ['--max-old-space-size=6144', tsc, '-p', project, '--noEmit', ...extraArgs], {
+    cwd: consumer,
+    shell: false,
+  });
+  if (compiled.status !== 0) {
+    console.error(compiled.out);
+    fail(`consumer compile failed: TypeScript ${label} ${project} ${extraArgs.join(' ')}`.trimEnd());
+  } else {
+    console.log('ok');
+  }
+};
 if (install.status === 0) {
-  const tsc = join(consumer, 'node_modules', 'typescript', 'bin', 'tsc');
-  for (const project of projects) {
-    step(`tsc -p ${project}`);
-    // Each entry inlines the whole SDK surface (~5 MB of declarations), and the
-    // fixtures load all four entries with library checking on: the default
-    // 2 GB heap of a CI runner is not enough.
-    const compiled = run(process.execPath, ['--max-old-space-size=6144', tsc, '-p', project, '--noEmit'], {
-      cwd: consumer,
-      shell: false,
-    });
-    if (compiled.status !== 0) {
-      console.error(compiled.out);
-      fail(`consumer compile failed: ${project}`);
-    } else {
-      console.log('ok');
-    }
+  for (const project of projects) compileWith('typescript', tsVersion, project);
+  for (const { version, skipLibCheck } of legacyLegs) {
+    const extra = skipLibCheck ? ['--skipLibCheck'] : [];
+    for (const project of legacyProjects) compileWith(legacyAlias(version), version, project, extra);
   }
 
   // ── 5. runtime smoke ──────────────────────────────────────────────────────

@@ -59,7 +59,7 @@ function declFiles(dir, out = []) {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) declFiles(full, out);
-    else if (entry.endsWith('.d.ts')) out.push(full);
+    else if (entry.endsWith('.d.ts') || entry.endsWith('.d.cts')) out.push(full);
   }
   return out;
 }

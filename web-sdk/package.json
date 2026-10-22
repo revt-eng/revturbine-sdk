@@ -1,6 +1,6 @@
 {
   "name": "@revt-eng/sdk",
-  "version": "0.12.1",
+  "version": "0.12.2",
   "description": "RevTurbine customer-facing SDK — placement decisioning, entitlement checks, and usage tracking.",
   "type": "module",
   "packageManager": "pnpm@11.12.0",
@@ -25,23 +25,47 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.js"
+      },
       "default": "./dist/index.js"
     },
     "./headless": {
-      "types": "./dist/headless.d.ts",
-      "import": "./dist/headless.js",
+      "import": {
+        "types": "./dist/headless.d.ts",
+        "default": "./dist/headless.js"
+      },
+      "require": {
+        "types": "./dist/headless.d.cts",
+        "default": "./dist/headless.js"
+      },
       "default": "./dist/headless.js"
     },
     "./growthbook": {
-      "types": "./dist/growthbook.d.ts",
-      "import": "./dist/growthbook.js",
+      "import": {
+        "types": "./dist/growthbook.d.ts",
+        "default": "./dist/growthbook.js"
+      },
+      "require": {
+        "types": "./dist/growthbook.d.cts",
+        "default": "./dist/growthbook.js"
+      },
       "default": "./dist/growthbook.js"
     },
     "./optimizely": {
-      "types": "./dist/optimizely.d.ts",
-      "import": "./dist/optimizely.js",
+      "import": {
+        "types": "./dist/optimizely.d.ts",
+        "default": "./dist/optimizely.js"
+      },
+      "require": {
+        "types": "./dist/optimizely.d.cts",
+        "default": "./dist/optimizely.js"
+      },
       "default": "./dist/optimizely.js"
     },
     "./package.json": "./package.json"
@@ -50,6 +74,7 @@
     "dist/*.js",
     "dist/*.js.map",
     "dist/*.d.ts",
+    "dist/*.d.cts",
     "CHANGELOG.md"
   ],
   "scripts": {

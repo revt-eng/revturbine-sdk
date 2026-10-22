@@ -98,13 +98,17 @@ describe('publicKey is the browser bearer (AC-1)', () => {
     expect(bearerOf(trackCall())).toBe('Bearer rtk_public_key');
   });
 
+  // In a BROWSER. On a backend the server key wins by design
+  // (resolveSdkDeliveryCredential; hosted-server-key.test.ts).
   it('authenticates ingest with publicKey even when a server apiKey is also set', async () => {
+    stubBrowserGlobals();
     const sdk = makeSdk({ publicKey: 'rtk_public_key', apiKey: 'old_api' });
     await sdk.capture('feature_used', {}, { immediate: true });
     expect(bearerOf(trackCall())).toBe('Bearer rtk_public_key');
   });
 
-  it('uses the same publicKey on every control-plane fetch, not only ingest', async () => {
+  it('uses the same publicKey on every control-plane fetch, not only ingest (in a browser)', async () => {
+    stubBrowserGlobals();
     const sdk = makeSdk({ publicKey: 'rtk_public_key', apiKey: 'old_api' });
     await sdk.capture('feature_used', {}, { immediate: true });
     await sdk.getTrialStatus();

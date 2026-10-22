@@ -41,9 +41,11 @@ describe('public initializer user context (plan 254 AC-5)', () => {
   it('defaults endpoint and mode for a hosted init that omits them', async () => {
     const fetchMock = vi.fn(async () => new Response('{}', { status: 404 }));
     vi.stubGlobal('fetch', fetchMock);
+    // A public key, so the hosted Playbook fetch runs (BL-0477 removed the
+    // unconditional theme request that used to be this test's only call).
     const session = await initHeadless({
       tenantId: 'public_init',
-      apiKey: 'rtk_test',
+      publicKey: 'rtk_test',
       previewMode: true,
       contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
       user: { id: 'user_123' },

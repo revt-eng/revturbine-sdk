@@ -59,14 +59,14 @@ import {
   DEFAULT_HOSTED_ENDPOINT,
   initRevTurbine as initRevTurbineCore,
   resolveBrowserPublicKey,
-  resolveLocalPlaybook,
 } from './customer-side';
 import { exposureManager } from './telemetry';
 import type { ExposureBasis } from './telemetry';
 import type { RevTurbineTheme, RevTurbineThemeInput } from './theme/types';
-import { DEFAULT_THEME, mergeTheme } from './theme/defaults';
+import { mergeTheme } from './theme/defaults';
 import { loadTheme } from './theme/theme-loader';
 import { normalizeSlotRoute } from './slot-route';
+import { GATED_SURFACE_TEMPLATE_IDS } from './placements/surface-slot-constants';
 
 // ── Change listener type ────────────────────────────────────────────────────
 
@@ -1130,12 +1130,60 @@ export class EntitlementGate {
     } else if (res.placement) {
       this._gatedPlacement = res.placement;
     } else {
-      // Fetch gated placement from API
-      const resolved = await this.sdk.getPlacement({
-        ...gatePlacementRequest,
-        entitlementHandle: handle,
-      });
-      this._gatedPlacement = resolved;
+      this._gatedPlacement = await this.resolveGatedPlacement(handle, res, gatePlacementRequest);
+    }
+  }
+
+  /**
+   * Resolve the Access Gate placement for a denied check (BL-0426 (4)).
+   *
+   * `getPlacement` is asked first, exactly as before — an authored slot named
+   * by `gatePlacementRequest`, or a custom `localRuntime.resolvers.getPlacement`,
+   * still answers. When it finds nothing, the gate decides through the same
+   * gated surface slot `<Gate>` uses: the gated template ids plus the handle
+   * and this check's status, through the pure local decision path (D-39).
+   * `getPlacement({ entitlementHandle })` alone names no slot, so in local mode
+   * it never found the gate. The fallback is best-effort: it never turns a
+   * settled deny into an error.
+   */
+  private async resolveGatedPlacement(
+    handle: string,
+    res: EntitlementResult,
+    request: EntitlementGateOptions['gatePlacementRequest'],
+  ): Promise<PlacementOutput | null> {
+    const requested = await this.sdk.getPlacement({ ...request, entitlementHandle: handle });
+    if (requested) return requested;
+    try {
+      return await this.decideGatedSlot(handle, res, request);
+    } catch {
+      return null;
+    }
+  }
+
+  /** The `<Gate>`-equivalent gated-slot decision for {@link resolveGatedPlacement}. */
+  private async decideGatedSlot(
+    handle: string,
+    res: EntitlementResult,
+    request: EntitlementGateOptions['gatePlacementRequest'],
+  ): Promise<PlacementOutput | null> {
+    const controller = new PlacementController(this.sdk, {
+      surfaceSlot: {
+        id: request?.slotId ?? `entitlement_gate:${handle}`,
+        name: request?.slotId ?? `entitlement_gate:${handle}`,
+        surfaceTemplateIds: [...GATED_SURFACE_TEMPLATE_IDS],
+        metadata: {
+          surface_slot_category: 'gated',
+          entitlement_handle: handle,
+          entitlement_status: res.status === 'limited' ? 'limited' : 'denied',
+        },
+      },
+      autoTrackImpression: false,
+    });
+    try {
+      const decision = await controller.load();
+      return decision?.visible ? decision.output ?? null : null;
+    } finally {
+      controller.dispose();
     }
   }
 
@@ -1469,14 +1517,25 @@ export class SdkSession {
    *
    * For repeated use or interaction tracking, prefer {@link placement} which
    * returns a full controller.
+   *
+   * `surfaceTemplateIds` limits the slot to those templates. Omitted, the
+   * slot accepts the templates the Playbook declares for `slotId`.
    */
   async getPlacementBySlotId(
     slotId: string,
-    options?: Omit<PlacementControllerOptions, 'surfaceSlot' | 'placement'>,
+    options?: Omit<PlacementControllerOptions, 'surfaceSlot' | 'placement'> & {
+      /** Surface template ids this slot accepts; defaults to the Playbook's declaration for the slot. */
+      surfaceTemplateIds?: string[];
+    },
   ): Promise<RevTurbinePlacementDecision | null> {
+    const { surfaceTemplateIds, ...controllerOptions } = options ?? {};
     const ctrl = this.placement({
-      ...options,
-      surfaceSlot: { id: slotId, name: slotId },
+      ...controllerOptions,
+      surfaceSlot: {
+        id: slotId,
+        name: slotId,
+        ...(surfaceTemplateIds && surfaceTemplateIds.length > 0 ? { surfaceTemplateIds } : {}),
+      },
     });
     try {
       return await ctrl.load();
@@ -1616,24 +1675,31 @@ export async function initRevTurbine<TUser extends RevTurbineUserContext = RevTu
     sdk.identify(id, context as IdentifyContextInput);
   }
 
-  // Resolve theme
-  let theme: RevTurbineTheme = DEFAULT_THEME;
-  const playbook = resolveLocalPlaybook(initOptions.localRuntime);
-  const configTheme = playbook?.theme;
-
-  if (configTheme && typeof configTheme === 'object') {
-    theme = mergeTheme(configTheme as RevTurbineThemeInput);
-  } else {
-    theme = await loadTheme(
-      {
-        // No placeholder tenant on the wire (BL-0335): the control plane
-        // ignores (with a warning) a tenant id that differs from the key's.
-        tenantId: initOptions.tenantId || undefined,
-        storageScope: initOptions.tenantId || 'local',
-        endpoint: initOptions.endpoint ?? (playbook ? 'https://api.revturbine.local' : DEFAULT_HOSTED_ENDPOINT),
-        apiKey: resolveBrowserPublicKey(initOptions) ?? 'local-only',
+  // Resolve theme — BL-0477: the same branding ladder and the same opt-in as
+  // `<RevTurbineProvider>`. It used to read only the Playbook's `theme` (so the
+  // explicit `branding` option was ignored) and otherwise fetch
+  // `/api/sdk/theme` unconditionally, with a placeholder host and bearer in
+  // local mode. Now: explicit `branding` → branding API → legacy Playbook
+  // `theme` → the embedded default, and the theme API only with
+  // `fetchThemeOverride` and a public key.
+  const resolvedBranding = sdk.getBranding();
+  const brandingTheme = resolvedBranding.branding.theme;
+  // `BrandingConfig.theme` is a deliberate passthrough record; `RevTurbineTheme`
+  // is the authoritative token shape (the same boundary as the React provider).
+  const baseTheme = resolvedBranding.source !== 'default' && brandingTheme && Object.keys(brandingTheme).length > 0
+    ? (brandingTheme as RevTurbineThemeInput)
+    : undefined;
+  let theme: RevTurbineTheme = mergeTheme(baseTheme);
+  const themePublicKey = resolveBrowserPublicKey(initOptions);
+  if (initOptions.fetchThemeOverride && themePublicKey) {
+    theme = await loadTheme({
+      publicKey: themePublicKey,
+      endpoint: initOptions.endpoint ?? DEFAULT_HOSTED_ENDPOINT,
+      base: baseTheme,
+      onOverride: (override) => {
+        sdk.setApiBranding(override && Object.keys(override).length > 0 ? { theme: override } : undefined);
       },
-    );
+    });
   }
 
   // Bootstrap placements

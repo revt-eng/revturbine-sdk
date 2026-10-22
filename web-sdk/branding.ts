@@ -25,6 +25,7 @@
  */
 import type { BrandingConfig } from './generated';
 import { isDevelopmentBuild } from './build-mode';
+import { mergeTheme } from './theme/defaults';
 
 /**
  * Structural default branding. Neutral, brandless values that let the SDK render
@@ -132,7 +133,11 @@ export function resolveBranding(input: BrandingResolutionInput = {}): ResolvedBr
     return merge({ theme: input.legacyConfigTheme }, 'legacy-config');
   }
 
-  return merge(undefined, 'default');
+  // BL-0477: nothing supplied resolves to the SDK's embedded default theme, the
+  // palette the React provider and headless sessions render with — so
+  // `getBranding()` no longer reports an empty theme the renderer never uses.
+  const fallback = merge(undefined, 'default');
+  return { ...fallback, branding: { ...fallback.branding, theme: { ...mergeTheme() } } };
 }
 
 /** Test-only: reset the one-time legacy-branding warning latch. @internal */
