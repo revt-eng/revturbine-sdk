@@ -47,6 +47,38 @@ also require a changelog entry.
 
 ---
 
+## 0.12.3
+
+### Changed (behaviour)
+
+1. **`rate_limit` and `price_per_unit` are not access entitlements (DEC-880,
+   BL-0514).** `can()` / `checkEntitlement()` on one of these kinds used to
+   answer `allowed` whenever a rule matched (the retired "non-gating
+   carve-out"). It now answers `status: "denied"`, `allowed: false`, reason
+   `not_access_entitlement_kind`, in all three ports, and warns. They describe
+   a price or a ceiling for upgrade copy and plan comparison; read their
+   values from the Playbook, and enforce a rate limit with your own limiter.
+   **Migration:** a gate that called `can()` on a `rate_limit` or
+   `price_per_unit` handle and relied on `allowed: true` must stop doing so.
+2. **An unrecognised entitlement kind fails closed (BL-0514).** In Python and
+   Rust a matched rule of a kind the SDK does not know fell through to the
+   static provider's default allow. It now denies with
+   `unknown_entitlement_kind`, as the TypeScript core does. Seats (`seat`),
+   the `seats` / `tiered` spellings and every other shaped kind decide as
+   before.
+3. **An unknown placement trigger type never shows (BL-0514).** In Python and
+   Rust a placement whose trigger type the SDK does not recognise is skipped
+   on the slot path, and a direct lookup reports `unknown_trigger_type`.
+
+The TypeScript SDKs (`@revturbine/sdk`, its `/headless` server entry) get
+items 1 and 2 through the `@revt-eng/core` 0.1.517 pin.
+
+| | |
+|---|---|
+| **Landed in** | 0.12.3 |
+| **Fail-closed in** | 0.12.3 |
+| **Proving tests** | parity fixture `tests/parity/fixtures/entitlement_nongating_types.json` (TS, Python and Rust snapshots), `server-python/tests/entitlements/test_entitlement_check.py`, `server-python/tests/placements/test_unknown_trigger.py`, `server-rust/tests/entitlement_check.rs`, `server-rust/tests/static_resolver.rs`, `server-rust/tests/local_runtime.rs` |
+
 ## 0.12.2
 
 ### Changed (behaviour)
