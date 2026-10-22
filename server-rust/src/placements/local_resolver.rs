@@ -21,6 +21,39 @@ use super::threshold_gating::ThresholdTrigger;
 /// The threshold kinds the resolver recognizes.
 const THRESHOLD_KINDS: &[&str] = &["usage_threshold", "credit_threshold", "seat_threshold"];
 
+/// Every placement trigger `type` the resolver evaluates — the members of
+/// `RevTurbineConfigPlacementTriggerSchema`. Any other `type` string on a
+/// trigger is unknown and never shows (BL-0514).
+///
+/// Source: local-resolver.ts (KNOWN_TRIGGER_TYPES)
+const KNOWN_TRIGGER_TYPES: &[&str] = &[
+    "surface_render",
+    "entitlement_gate",
+    "usage_threshold",
+    "credit_threshold",
+    "seat_threshold",
+    "trial_started",
+    "trial_progress",
+    "trial_ending",
+    "trial_ended",
+    "trial_converted",
+    "qualifier",
+];
+
+/// True when the trigger names a `type` string the resolver does not know.
+/// An absent trigger, or one with no string `type`, applies no gate, as
+/// before.
+///
+/// Source: local-resolver.ts (hasUnknownTriggerType)
+#[must_use]
+pub fn has_unknown_trigger_type(trigger: Option<&Value>) -> bool {
+    trigger
+        .filter(|t| t.is_object())
+        .and_then(|t| t.get("type"))
+        .and_then(Value::as_str)
+        .is_some_and(|kind| !KNOWN_TRIGGER_TYPES.contains(&kind))
+}
+
 /// Read a trigger's `entitlement_handle`, if it carries a string one.
 ///
 /// Source: local-resolver.ts:28-34

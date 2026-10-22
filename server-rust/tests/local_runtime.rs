@@ -358,6 +358,66 @@ fn a_configured_rule_is_authoritative_over_the_provider_default() {
     );
 }
 
+/// A runtime whose one rule assigns `exports` to `starter` with `kind`; the
+/// static provider entry for `exports` is the default ALLOW.
+fn single_kind_runtime(kind: &str) -> LocalRuntime {
+    let mut cfg = config();
+    cfg["entitlement_rules"] = json!([{
+        "id": "r_kind",
+        "entitlement_id": "exports",
+        "targets": [{ "kind": "plan", "id": "starter" }],
+        "kind": kind,
+    }]);
+    let providers = create_static_providers(&cfg, &plan_opts());
+    LocalRuntime::new(cfg, providers, "tenant_1", "user_1")
+}
+
+#[test]
+fn an_unrecognised_rule_kind_denies_instead_of_the_static_default_allow() {
+    // BL-0514. Mirrors e2e.test.ts "a matched rule of an unrecognised kind
+    // denies with unknown_entitlement_kind". It used to fall through to the
+    // provider entry, which reported static_config_default_allow.
+    let r = single_kind_runtime("metered").engine_check_entitlement("exports", None);
+    assert_eq!(
+        serde_json::to_value(&r).unwrap(),
+        json!({
+            "status": "denied",
+            "allowed": false,
+            "reason": "unknown_entitlement_kind",
+            "rule_handle": "r_kind",
+        })
+    );
+}
+
+#[test]
+fn a_non_access_rule_kind_denies_instead_of_the_static_default_allow() {
+    // BL-0514: rate limits and per-unit prices are not access decisions.
+    for kind in ["rate_limit", "price_per_unit"] {
+        let r = single_kind_runtime(kind).engine_check_entitlement("exports", None);
+        assert_eq!(
+            serde_json::to_value(&r).unwrap(),
+            json!({
+                "status": "denied",
+                "allowed": false,
+                "reason": "not_access_entitlement_kind",
+                "rule_handle": "r_kind",
+            }),
+            "{kind}"
+        );
+    }
+}
+
+#[test]
+fn a_seat_rule_still_defers_to_the_provider_entry() {
+    // The IR seat spelling `seats` stays provider-deferred, as in scaffold
+    // #599 and the Python port ("a recognised unshaped kind (seats) falls
+    // through"). `seat` itself is shaped since BUG-554 (it carries its own
+    // allowance), so it no longer reaches the provider entry.
+    let r = single_kind_runtime("seats").engine_check_entitlement("exports", None);
+    assert!(r.allowed);
+    assert_eq!(r.reason.as_deref(), Some("static_config_default_allow"));
+}
+
 #[test]
 fn a_configured_entitlement_with_no_matching_rule_is_denied() {
     // Kent's 2026-07-13 ruling: fail closed. A rules provider that assigns

@@ -32,6 +32,7 @@ from typing import Any, Literal, TypedDict, cast
 from revturbine.core.decisions.types import EntitlementCheckResult
 from revturbine.core.entitlements.entitlement_check import (
     derive_local_entitlement_from_configured_rules,
+    warn_on_non_access_check,
 )
 from revturbine.core.helpers import is_record
 
@@ -355,14 +356,54 @@ def derive_effective_entitlement(
     addons: list[dict[str, Any]] | None = None,
     billing_period: str | None = None,
 ) -> EffectiveEntitlement:
-    """The effective entitlement for one handle.
+    """The effective entitlement for one handle — the answer ``can()`` /
+    ``check_entitlement()`` returns. A rate_limit / price_per_unit handle warns
+    once (BL-0514); the all-handles map below does not.
 
     Source: effective-entitlement.ts (deriveEffectiveEntitlement)
+    """
+    effective, evaluated = _effective_entitlement_for(
+        handle=handle,
+        current_plan_handle=current_plan_handle,
+        segment_ids=segment_ids,
+        usage_balances=usage_balances,
+        playbook=playbook,
+        context=context,
+        user_usage=user_usage,
+        trial_granted_entitlement_handles=trial_granted_entitlement_handles,
+        effective_plan_handle=effective_plan_handle,
+        app=app,
+        merge=merge,
+        addons=addons,
+        billing_period=billing_period,
+    )
+    warn_on_non_access_check(handle, evaluated)
+    return effective
+
+
+def _effective_entitlement_for(
+    *,
+    handle: str,
+    current_plan_handle: str,
+    segment_ids: AbstractSet[str],
+    usage_balances: dict[str, float],
+    playbook: Playbook | None = None,
+    context: dict[str, Any] | None = None,
+    user_usage: dict[str, Any] | None = None,
+    trial_granted_entitlement_handles: AbstractSet[str] | None = None,
+    effective_plan_handle: str | None = None,
+    app: AppEntitlementInputs | None = None,
+    merge: EntitlementMergeOptions | None = None,
+    addons: list[dict[str, Any]] | None = None,
+    billing_period: str | None = None,
+) -> tuple[EffectiveEntitlement, EntitlementCheckResult | None]:
+    """The effective entitlement plus the Playbook's own evaluation (before the
+    app merge). Source: effective-entitlement.ts (effectiveEntitlementFor)
     """
     app_view = app_entitlement(app)
     known = _playbook_knows(playbook, handle) if playbook is not None else False
     if not known and app_view is None:
-        return {"result": _not_in_playbook(), "unknown_handle": True}
+        return {"result": _not_in_playbook(), "unknown_handle": True}, None
     # App-mirrored usage is an INPUT to the Playbook evaluation (when `used`
     # follows the app), so the evaluated status reflects it — not a number
     # pasted on afterwards.
@@ -402,7 +443,7 @@ def derive_effective_entitlement(
     return {
         "result": merged if merged is not None else _not_in_playbook(),
         "unknown_handle": False,
-    }
+    }, evaluated
 
 
 def derive_effective_entitlements(
@@ -424,7 +465,7 @@ def derive_effective_entitlements(
     for key in app_by_handle:
         handles[key] = None
     return {
-        handle: derive_effective_entitlement(**base, handle=handle, app=app_by_handle.get(handle))[
+        handle: _effective_entitlement_for(**base, handle=handle, app=app_by_handle.get(handle))[0][
             "result"
         ]
         for handle in handles

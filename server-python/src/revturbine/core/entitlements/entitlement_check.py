@@ -20,6 +20,7 @@ Source: revturbine-scaffold/src/entitlements/controllers/entitlement-check.ts
 from __future__ import annotations
 
 import math
+import warnings
 from collections.abc import Set as AbstractSet
 from typing import Any
 
@@ -562,13 +563,76 @@ def with_rule_handle(
 def is_rule_shaped_kind(kind: Any) -> bool:
     """Rule kinds ``derive_result_from_rule_type_fields`` gives dedicated
     semantics. The DecisionEngine uses this to decide whether a matched rule
-    fully shapes the result; a matched rule of any OTHER kind (e.g. legacy
-    ``metered``) proves the plan assignment exists but falls through to the
-    provider entry/usage logic instead of the shaper's unknown-kind default.
+    fully shapes the result; a matched rule of a recognised but unshaped kind
+    (see :func:`is_provider_deferred_kind`) proves the plan assignment exists
+    and falls through to the provider entry/usage logic. Every other kind is
+    decided by :func:`unrecognised_kind_result` (BL-0514).
 
     Source: entitlement-check.ts (isRuleShapedKind)
     """
     return kind in ("feature", "usage_limit", "limit", "credits", "capability_tier", "seat")
+
+
+def is_provider_deferred_kind(kind: Any) -> bool:
+    """Recognised kinds the shaper does not model and that stay decided exactly
+    as before BL-0514: the IR spellings of the seat kind (``seats``) and of
+    the tier kind (``tiered``). The schema spellings ``seat`` and
+    ``capability_tier`` are shaped. The Playbook path allows; the
+    DecisionEngine falls through to the provider entry/usage logic.
+
+    Source: entitlement-check.ts (isProviderDeferredKind)
+    """
+    return kind in ("seats", "tiered")
+
+
+#: Entitlement types the schema declares that are not access decisions
+#: (BL-0514). Source: entitlement-check.ts (NON_ACCESS_ENTITLEMENT_KINDS)
+_NON_ACCESS_ENTITLEMENT_KINDS = frozenset({"rate_limit", "price_per_unit"})
+
+
+def unrecognised_kind_result(kind: Any) -> EntitlementCheckResult | None:
+    """The fail-closed outcome for a matched rule whose kind is neither shaped
+    nor provider-deferred, or ``None`` when it is one of those (BL-0514).
+
+    - ``rate_limit`` / ``price_per_unit`` → denied,
+      ``not_access_entitlement_kind``. The single-handle checks warn about it
+      (:func:`warn_on_non_access_check`).
+    - anything else, including an absent kind → denied,
+      ``unknown_entitlement_kind``.
+
+    Source: entitlement-check.ts (unrecognisedKindResult)
+    """
+    if is_rule_shaped_kind(kind) or is_provider_deferred_kind(kind):
+        return None
+    if isinstance(kind, str) and kind in _NON_ACCESS_ENTITLEMENT_KINDS:
+        return {"status": "denied", "allowed": False, "reason": "not_access_entitlement_kind"}
+    return {"status": "denied", "allowed": False, "reason": "unknown_entitlement_kind"}
+
+
+_warned_non_access_handles: set[str] = set()
+
+
+def warn_on_non_access_check(handle: str, result: EntitlementCheckResult | None) -> None:
+    """Warn once per process per handle when an access check (``can()`` /
+    ``check_entitlement()``) answered ``not_access_entitlement_kind``
+    (BL-0514), through the same ``warnings`` channel the runtime uses for its
+    other once-per-process diagnostics. Called from the single-handle check
+    paths only, so evaluating every entitlement never warns on its own.
+
+    Source: entitlement-check.ts (warnOnNonAccessCheck)
+    """
+    if result is None or result.get("reason") != "not_access_entitlement_kind":
+        return
+    if handle in _warned_non_access_handles:
+        return
+    _warned_non_access_handles.add(handle)
+    warnings.warn(
+        f'[revturbine] can() / check_entitlement("{handle}") was called on a rate_limit '
+        "or price_per_unit entitlement, which is not an access entitlement; denying "
+        "(not_access_entitlement_kind). Use the rate-limit / metering module for it instead.",
+        RuntimeWarning,
+        stacklevel=3,
+    )
 
 
 def _int_if_integral(value: float) -> float | int:
@@ -690,4 +754,9 @@ def derive_result_from_rule_type_fields(
             result["current_tier"] = tier_name
         return result
 
+    # BL-0514: only the recognised-but-unshaped kinds (seats, the `tiered` IR
+    # spelling) keep the plain allow. A non-access or unknown kind denies.
+    refused = unrecognised_kind_result(kind)
+    if refused is not None:
+        return refused
     return {"status": "allowed", "allowed": True}

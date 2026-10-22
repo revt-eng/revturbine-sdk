@@ -12,6 +12,7 @@
 //! Source: revturbine-scaffold/src/entitlements/controllers/entitlement-check.ts
 
 use std::collections::{HashMap, HashSet};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use serde_json::{Map, Value};
 
@@ -104,9 +105,10 @@ fn with_limit_fields(
 }
 
 /// Rule kinds [`derive_result_from_rule_type_fields`] gives dedicated
-/// semantics. A matched rule of any OTHER kind (e.g. legacy `metered`) proves
-/// the plan assignment exists but falls through to provider entry/usage logic
-/// rather than the shaper's unknown-kind default.
+/// semantics. A matched rule of a recognised but unshaped kind (see
+/// [`is_provider_deferred_kind`]) proves the plan assignment exists and falls
+/// through to provider entry/usage logic. Every other kind is decided by
+/// [`unrecognised_kind_result`] (BL-0514).
 ///
 /// Source: entitlement-check.ts (isRuleShapedKind)
 #[must_use]
@@ -115,6 +117,72 @@ pub fn is_rule_shaped_kind(kind: &str) -> bool {
         kind,
         "feature" | "usage_limit" | "limit" | "credits" | "capability_tier" | "seat"
     )
+}
+
+/// Recognised kinds the shaper does not model and that stay decided exactly
+/// as before BL-0514: the IR spellings of the seat kind (`seats`) and of the
+/// tier kind (`tiered`). The schema spellings `seat` and `capability_tier` are
+/// shaped. The Playbook path allows; the provider-snapshot path falls through
+/// to the provider entry/usage logic.
+///
+/// Source: entitlement-check.ts (isProviderDeferredKind)
+#[must_use]
+pub fn is_provider_deferred_kind(kind: &str) -> bool {
+    matches!(kind, "seats" | "tiered")
+}
+
+static WARNED_RATE_LIMIT: AtomicBool = AtomicBool::new(false);
+static WARNED_PRICE_PER_UNIT: AtomicBool = AtomicBool::new(false);
+
+/// Warn once per process per kind that an access check reached a non-access
+/// entitlement, on stderr like the runtime's other once-per-process
+/// diagnostics.
+///
+/// Source: entitlement-check.ts (warnNonAccessKind)
+fn warn_non_access_kind(kind: &str, warned: &AtomicBool) {
+    if warned.swap(true, Ordering::Relaxed) {
+        return;
+    }
+    eprintln!(
+        "[revturbine] can() / check_entitlement() reached a {kind} entitlement, which is not an access entitlement; denying (not_access_entitlement_kind). Use the rate-limit / metering module for it instead."
+    );
+}
+
+/// The fail-closed outcome for a matched rule whose kind is neither shaped
+/// nor provider-deferred, or `None` when it is one of those (BL-0514).
+///
+/// - `rate_limit` / `price_per_unit` → denied, `not_access_entitlement_kind`,
+///   plus a once-per-process warning.
+/// - anything else, including an absent or non-string kind → denied,
+///   `unknown_entitlement_kind`.
+///
+/// Source: entitlement-check.ts (unrecognisedKindResult)
+#[must_use]
+pub fn unrecognised_kind_result(kind: Option<&str>) -> Option<EntitlementCheckResult> {
+    match kind {
+        Some(k) if is_rule_shaped_kind(k) || is_provider_deferred_kind(k) => None,
+        Some("rate_limit") => {
+            warn_non_access_kind("rate_limit", &WARNED_RATE_LIMIT);
+            Some(EntitlementCheckResult::with_reason(
+                "denied",
+                false,
+                "not_access_entitlement_kind",
+            ))
+        }
+        Some("price_per_unit") => {
+            warn_non_access_kind("price_per_unit", &WARNED_PRICE_PER_UNIT);
+            Some(EntitlementCheckResult::with_reason(
+                "denied",
+                false,
+                "not_access_entitlement_kind",
+            ))
+        }
+        _ => Some(EntitlementCheckResult::with_reason(
+            "denied",
+            false,
+            "unknown_entitlement_kind",
+        )),
+    }
 }
 
 /// Shape a result from a matched rule's `type_fields` (plan 133).
@@ -227,7 +295,11 @@ pub(crate) fn derive_result_with_allowance(
             result
         }
 
-        _ => EntitlementCheckResult::new("allowed", true),
+        // BL-0514: only the recognised-but-unshaped kinds (seats, the
+        // `tiered` IR spelling) keep the plain allow. A non-access or unknown
+        // kind denies.
+        _ => unrecognised_kind_result(kind)
+            .unwrap_or_else(|| EntitlementCheckResult::new("allowed", true)),
     }
 }
 

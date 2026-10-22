@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.507/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.517/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -484,6 +484,12 @@ class AnalyticsMetricAggregationSemantics(Enum):
     non_additive = "non_additive"
 
 
+class AnalyticsMetricCurrencyPolicy(Enum):
+    not_monetary = "not_monetary"
+    per_currency = "per_currency"
+    reporting_currency = "reporting_currency"
+
+
 class AnalyticsMetricDirection(Enum):
     increase = "increase"
     decrease = "decrease"
@@ -496,6 +502,28 @@ class AnalyticsMetricStatisticalType(Enum):
     continuous = "continuous"
     ratio = "ratio"
     revenue = "revenue"
+
+
+class AnalyticsMetricWindowAlignment(Enum):
+    trailing = "trailing"
+    calendar = "calendar"
+    as_of = "as_of"
+
+
+class AnalyticsMetricWindowPeriod(Enum):
+    day = "day"
+    week = "week"
+    month = "month"
+    quarter = "quarter"
+
+
+class AnalyticsMetricWindow(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    period: AnalyticsMetricWindowPeriod
+    alignment: AnalyticsMetricWindowAlignment
+    default_count: conint(ge=1, le=400)
 
 
 class AnalyticsPeriodCompareMode(Enum):
@@ -1687,6 +1715,53 @@ class Payment7(BaseModel):
     reason: Reason4
 
 
+class CadenceProvenance(Enum):
+    stated = "stated"
+    inferred = "inferred"
+    unknown = "unknown"
+
+
+class Evidence(Enum):
+    start = "start"
+    renewal = "renewal"
+    change = "change"
+    lapse = "lapse"
+    retracted = "retracted"
+
+
+class AmountBasis(Enum):
+    metadata_amount = "metadata_amount"
+    captured_less_tax = "captured_less_tax"
+    captured_net_of_refunds = "captured_net_of_refunds"
+
+
+class ItemKind(Enum):
+    plan = "plan"
+    addon = "addon"
+
+
+class SourcePaymentId(RootModel[constr(min_length=1, max_length=255)]):
+    root: constr(min_length=1, max_length=255)
+
+
+class BillingItemStateDerivation(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    source: Literal["payments"]
+    cadence_provenance: CadenceProvenance
+    evidence: Evidence
+    price_key: constr(pattern=r"^opk_[0-9a-f]{24}$")
+    amount_basis: AmountBasis
+    list_amount_minor: conint(ge=1, le=9007199254740991) | None
+    description: constr(min_length=1, max_length=1000) | None
+    variation_handle: constr(min_length=1, max_length=255) | None
+    product_handle: constr(min_length=1, max_length=255) | None
+    item_kind: ItemKind | None
+    source_payment_ids: list[SourcePaymentId] = Field(..., max_length=250, min_length=1)
+    revision: conint(ge=0, le=1000000)
+
+
 class SourceEventId(RootModel[constr(min_length=1, max_length=800)]):
     root: constr(min_length=1, max_length=800)
 
@@ -1892,6 +1967,33 @@ class Status8(Enum):
     under_review = "under_review"
     won = "won"
     lost = "lost"
+
+
+class AccountExternalIdSource(Enum):
+    customer_metadata_user_id = "customer_metadata.user_id"
+
+
+class BillingMirrorPaymentStatus(Enum):
+    succeeded = "succeeded"
+    pending = "pending"
+    failed = "failed"
+    unknown = "unknown"
+
+
+class Interval(Enum):
+    day = "day"
+    week = "week"
+    month = "month"
+    year = "year"
+
+
+class UsageType(Enum):
+    licensed = "licensed"
+    metered = "metered"
+
+
+class FieldsPresentItem(RootModel[constr(min_length=1, max_length=128)]):
+    root: constr(min_length=1, max_length=128)
 
 
 class BillingOccurrence(BaseModel):
@@ -2386,18 +2488,6 @@ class BillingRecurringOpeningItem(BaseModel):
     variation_id: constr(min_length=1, max_length=512) | None
     billing_period: constr(min_length=1, max_length=512) | None
     segment_ids: list[SegmentId] | None
-
-
-class Interval(Enum):
-    day = "day"
-    week = "week"
-    month = "month"
-    year = "year"
-
-
-class UsageType(Enum):
-    licensed = "licensed"
-    metered = "metered"
 
 
 class Status10(Enum):
@@ -4394,6 +4484,70 @@ class MeteringConfig(BaseModel):
     metadata: dict[str, Any] | None = {}
 
 
+class MrrAccountFactsRow(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    policy_version: constr(
+        pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128
+    )
+    calendar_version: constr(min_length=1, max_length=512)
+    account_key: constr(min_length=1, max_length=512)
+    currency: constr(pattern=r"^[a-z]{3}$")
+    first_paid_on: constr(pattern=r"^\d{4}-\d{2}-\d{2}$") | None
+    last_paid_on: constr(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    mirror_version: conint(ge=1, le=2147483647)
+    deleted_at: AwareDatetime | None
+
+
+class MrrCalendarVersion(RootModel[constr(min_length=1, max_length=512)]):
+    root: constr(min_length=1, max_length=512)
+
+
+class MrrLocalDate(RootModel[constr(pattern=r"^\d{4}-\d{2}-\d{2}$")]):
+    root: constr(pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+
+class MrrMovementComponent(
+    RootModel[
+        constr(pattern=r"^(plan|unbound|addon:.+)$", min_length=1, max_length=300)
+    ]
+):
+    root: constr(pattern=r"^(plan|unbound|addon:.+)$", min_length=1, max_length=300)
+
+
+class MrrMovementReason(RootModel[constr(min_length=1, max_length=160)]):
+    root: constr(min_length=1, max_length=160)
+
+
+class MrrPolicyVersion(
+    RootModel[constr(pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128)]
+):
+    root: constr(pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128)
+
+
+class MrrTenantStateRow(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    active_policy_version: (
+        constr(pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128) | None
+    )
+    active_calendar_version: constr(min_length=1, max_length=512) | None
+    coverage_from: constr(pattern=r"^\d{4}-\d{2}-\d{2}$") | None
+    complete_through: constr(pattern=r"^\d{4}-\d{2}-\d{2}$") | None
+    pending_policy_version: (
+        constr(pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128) | None
+    )
+    pending_calendar_version: constr(min_length=1, max_length=512) | None
+    pending_complete_through: constr(pattern=r"^\d{4}-\d{2}-\d{2}$") | None
+    run_started_at: AwareDatetime | None
+    updated_at: AwareDatetime
+    mirror_version: conint(ge=1, le=2147483647)
+
+
 class Objective(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -4489,6 +4643,59 @@ class PaginationParams(BaseModel):
     )
     page: conint(ge=1, le=9007199254740991) | None = 1
     per_page: conint(ge=1, le=100) | None = 25
+
+
+class PaymentEvidenceCadenceToken(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    token: constr(pattern=r"^[A-Za-z0-9][A-Za-z0-9 _-]{0,31}$")
+    interval: Interval
+    interval_count: conint(ge=1, le=36)
+
+
+class StartValue(RootModel[constr(min_length=1, max_length=100)]):
+    root: constr(min_length=1, max_length=100)
+
+
+class RenewalValue(RootModel[constr(min_length=1, max_length=100)]):
+    root: constr(min_length=1, max_length=100)
+
+
+class StartMarkerKey(RootModel[constr(min_length=1, max_length=40)]):
+    root: constr(min_length=1, max_length=40)
+
+
+class AmountEncoding(Enum):
+    base64_json = "base64_json"
+    json = "json"
+    integer = "integer"
+
+
+class AmountField(RootModel[constr(min_length=1, max_length=64)]):
+    root: constr(min_length=1, max_length=64)
+
+
+class TaxField(RootModel[constr(min_length=1, max_length=64)]):
+    root: constr(min_length=1, max_length=64)
+
+
+class PricePointField(RootModel[constr(min_length=1, max_length=64)]):
+    root: constr(min_length=1, max_length=64)
+
+
+class PaymentEvidencePlanMapping(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    description: constr(min_length=1, max_length=1000)
+    variation_handle: constr(min_length=1, max_length=255)
+    product_handle: constr(min_length=1, max_length=255) | None = None
+    item_kind: ItemKind | None = "plan"
+    interval: Interval | None = None
+    interval_count: conint(ge=1, le=36) | None = None
+    effective_start: AwareDatetime | None = None
+    effective_end: AwareDatetime | None = None
 
 
 class PaymentTriggerPayload(BaseModel):
@@ -7883,33 +8090,6 @@ class TemplateFieldType(Enum):
     json = "json"
 
 
-class TenantConfig(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(min_length=1)
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-    tenant_id: constr(min_length=1)
-    workspace_name: constr(min_length=1, max_length=200)
-    support_email: EmailStr | None = None
-    timezone: constr(max_length=50) | None = "UTC"
-    reporting_day_boundary_hour: conint(ge=0, le=23) | None = 0
-    reporting_calendar_version: constr(min_length=1, max_length=512) | None = None
-    analytics_min_sample: conint(ge=1, le=2147483647) | None = 30
-    paid_conversion_window_days: conint(ge=1, le=365) | None = 30
-    quiet_days: conint(ge=1, le=2147483647) | None = None
-    gate_follow_up_days: conint(ge=1, le=2147483647) | None = None
-    gate_window_days: GateWindowDaysModel | None = None
-    default_currency: constr(min_length=3, max_length=3) | None = "USD"
-    logo_url: AnyUrl | None = None
-    activity_window_days: conint(ge=1, le=9007199254740991) | None = 30
-    activity_high_min: conint(ge=1, le=9007199254740991) | None = 10
-    activity_medium_min: conint(ge=1, le=9007199254740991) | None = 3
-    activity_low_min: conint(ge=1, le=9007199254740991) | None = 1
-    analytics_retention_days: conint(ge=1, le=9007199254740991) | None = 365
-
-
 class TenantStatus(Enum):
     active = "active"
     suspended = "suspended"
@@ -8553,6 +8733,58 @@ class AnalyticsReportingCurrencyMeta(RootModel[Any]):
     root: Any
 
 
+class BillingItemStateInterval(RootModel[Any]):
+    root: Any
+
+
+class BillingItemStatePresence(RootModel[Any]):
+    root: Any
+
+
+class BillingItemStateStatus(RootModel[Any]):
+    root: Any
+
+
+class BillingMirrorCoverageState(RootModel[Any]):
+    root: Any
+
+
+class BillingMirrorInvoiceLineKind(RootModel[Any]):
+    root: Any
+
+
+class BillingMirrorInvoiceStatus(RootModel[Any]):
+    root: Any
+
+
+class BillingMirrorPayerKind(RootModel[Any]):
+    root: Any
+
+
+class BillingMirrorPriceType(RootModel[Any]):
+    root: Any
+
+
+class BillingMirrorProvider(RootModel[Any]):
+    root: Any
+
+
+class BillingMirrorSubscriptionStatus(RootModel[Any]):
+    root: Any
+
+
+class BillingObservationEntityKind(RootModel[Any]):
+    root: Any
+
+
+class BillingObservationSourceKind(RootModel[Any]):
+    root: Any
+
+
+class BillingObservationSourceTimeKind(RootModel[Any]):
+    root: Any
+
+
 class BinaryVariantStatisticalSummary(RootModel[Any]):
     root: Any
 
@@ -8634,6 +8866,38 @@ class ExperimentSequentialResult(RootModel[Any]):
 
 
 class MeanVariantStatisticalSummary(RootModel[Any]):
+    root: Any
+
+
+class MrrBillingInterval(RootModel[Any]):
+    root: Any
+
+
+class MrrChurnCause(RootModel[Any]):
+    root: Any
+
+
+class MrrContributingStatus(RootModel[Any]):
+    root: Any
+
+
+class MrrItemKind(RootModel[Any]):
+    root: Any
+
+
+class MrrMovementKind(RootModel[Any]):
+    root: Any
+
+
+class MrrPolicySwitchReason(RootModel[Any]):
+    root: Any
+
+
+class OperatorEventName(RootModel[Any]):
+    root: Any
+
+
+class OperatorEventStatus(RootModel[Any]):
     root: Any
 
 
@@ -8921,82 +9185,6 @@ class AnalyticsCatalogDimension(BaseModel):
     deprecation: AnalyticsCatalogDeprecation | None = None
 
 
-class AnalyticsCatalogMetric(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
-    label: constr(min_length=1, max_length=120)
-    description: constr(max_length=500) | None = None
-    when_to_use: constr(max_length=500) | None = None
-    do_not_use_for: constr(max_length=500) | None = None
-    value_type: AnalyticsFieldType
-    format: AnalyticsFormatSpec | None = None
-    source_scope: AnalyticsSourceScope | None = None
-    direction: AnalyticsMetricDirection | None = None
-    statistical_type: AnalyticsMetricStatisticalType | None = None
-    aggregation_semantics: AnalyticsMetricAggregationSemantics | None = None
-    accounting: AnalyticsMetricAccounting | None = None
-    preferred_analysis_unit: AnalyticsAnalyticalUnit | None = None
-    numerator_metric: (
-        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
-    ) = None
-    denominator_metric: (
-        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
-    ) = None
-    derivation: AnalyticsMetricDerivation | None = None
-    layer: AnalyticsMetricLayer | None = None
-    catalog_status: AnalyticsCatalogStatus | None = None
-    first_valid_date: date_aliased | None = None
-    release_condition: constr(min_length=1, max_length=1000) | None = None
-    deprecation: AnalyticsCatalogDeprecation | None = None
-
-
-class AnalyticsCatalogMetricValidated(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    id: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
-    label: constr(min_length=1, max_length=120)
-    description: constr(max_length=500) | None = None
-    when_to_use: constr(max_length=500) | None = None
-    do_not_use_for: constr(max_length=500) | None = None
-    value_type: AnalyticsFieldType
-    format: AnalyticsFormatSpec | None = None
-    source_scope: AnalyticsSourceScope | None = None
-    direction: AnalyticsMetricDirection | None = None
-    statistical_type: AnalyticsMetricStatisticalType | None = None
-    aggregation_semantics: AnalyticsMetricAggregationSemantics | None = None
-    accounting: AnalyticsMetricAccounting | None = None
-    preferred_analysis_unit: AnalyticsAnalyticalUnit | None = None
-    numerator_metric: (
-        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
-    ) = None
-    denominator_metric: (
-        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
-    ) = None
-    derivation: AnalyticsMetricDerivation | None = None
-    layer: AnalyticsMetricLayer | None = None
-    catalog_status: AnalyticsCatalogStatus | None = None
-    first_valid_date: date_aliased | None = None
-    release_condition: constr(min_length=1, max_length=1000) | None = None
-    deprecation: AnalyticsCatalogDeprecation | None = None
-
-
-class AnalyticsCatalog(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    catalog_version: constr(min_length=1, max_length=64)
-    source: AnalyticsCatalogSource
-    generated_at: AwareDatetime | None = None
-    provenance: list[AnalyticsCatalogProvenance] | None = None
-    concepts: list[AnalyticsCatalogConcept] = Field(..., min_length=1)
-    dimensions: list[AnalyticsCatalogDimension] = Field(..., min_length=1)
-    metrics: list[AnalyticsCatalogMetric] = Field(..., min_length=1)
-    annotations: list[AnalyticsCatalogAnnotationKind] | None = None
-
-
 class AnalyticsCatalogSearchResult(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -9048,6 +9236,16 @@ class AnalyticsGateSettingsValues(BaseModel):
     quiet_days: conint(ge=1, le=2147483647)
     gate_follow_up_days: conint(ge=1, le=2147483647)
     gate_window_days: GateWindowDaysModel
+
+
+class AnalyticsMetricSemantics(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    grain: AnalyticsTimeGrain
+    window: AnalyticsMetricWindow
+    currency: AnalyticsMetricCurrencyPolicy
+    timezone: Literal["tenant_configs.timezone"]
 
 
 class AnalyticsQueryOverrides(BaseModel):
@@ -9854,6 +10052,24 @@ class EventPayment(BaseModel):
     canceled_at: AwareDatetime | None
 
 
+class BillingItemStateObservation(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    subscription_id: constr(min_length=1, max_length=255)
+    item_id: constr(min_length=1, max_length=255)
+    price_id: constr(min_length=1, max_length=255)
+    quantity: conint(ge=0, le=2147483647)
+    status: BillingItemStateStatus
+    interval: BillingItemStateInterval
+    interval_count: conint(ge=1, le=1000)
+    unit_amount: conint(ge=0, le=9007199254740991)
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    item_state: BillingItemStatePresence
+    payer_provider_id: constr(min_length=1, max_length=255)
+    derivation: BillingItemStateDerivation | None = None
+
+
 class BillingLifecycleManifest(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -10115,6 +10331,247 @@ class BillingMappingHistory(BaseModel):
     effective_from: AwareDatetime
     observed_at: AwareDatetime
     mapping: BillingAccountMappingRevision
+
+
+class BillingMirrorInvoiceLine(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    provider: BillingMirrorProvider
+    provider_id: constr(min_length=1, max_length=255)
+    provider_account_id: constr(min_length=1, max_length=255) | None
+    livemode: bool
+    source_updated_at: AwareDatetime
+    observed_at: AwareDatetime
+    last_synced_at: AwareDatetime
+    mirror_version: conint(ge=1, le=2147483647)
+    deleted_at: AwareDatetime | None
+    coverage_state: BillingMirrorCoverageState
+    coverage_reasons: list[
+        BillingCoverageGapReason | BillingCoverageUnavailableReason
+    ] = Field(..., max_length=250)
+    provider_extension: dict[constr(min_length=1, max_length=64), Any] | None
+    invoice_provider_id: constr(min_length=1, max_length=255)
+    line_kind: BillingMirrorInvoiceLineKind
+    subscription_provider_id: constr(min_length=1, max_length=255) | None
+    subscription_item_provider_id: constr(min_length=1, max_length=255) | None
+    price_provider_id: constr(min_length=1, max_length=255) | None
+    quantity: conint(ge=0, le=9007199254740991) | None
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    subtotal_minor: constr(pattern=r"^-?(0|[1-9][0-9]*)$", max_length=40)
+    discount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    tax_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    total_minor: constr(pattern=r"^-?(0|[1-9][0-9]*)$", max_length=40)
+    proration: bool
+    service_period_start_at: AwareDatetime | None
+    service_period_end_at: AwareDatetime | None
+
+
+class BillingMirrorInvoice(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    provider: BillingMirrorProvider
+    provider_id: constr(min_length=1, max_length=255)
+    provider_account_id: constr(min_length=1, max_length=255) | None
+    livemode: bool
+    source_updated_at: AwareDatetime
+    observed_at: AwareDatetime
+    last_synced_at: AwareDatetime
+    mirror_version: conint(ge=1, le=2147483647)
+    deleted_at: AwareDatetime | None
+    coverage_state: BillingMirrorCoverageState
+    coverage_reasons: list[
+        BillingCoverageGapReason | BillingCoverageUnavailableReason
+    ] = Field(..., max_length=250)
+    provider_extension: dict[constr(min_length=1, max_length=64), Any] | None
+    payer_provider_id: constr(min_length=1, max_length=255)
+    subscription_provider_id: constr(min_length=1, max_length=255) | None
+    status: BillingMirrorInvoiceStatus
+    provider_status: constr(min_length=1, max_length=64)
+    billing_reason: constr(min_length=1, max_length=64) | None
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    subtotal_minor: constr(pattern=r"^(0|-?[1-9][0-9]*)$", max_length=41)
+    total_minor: constr(pattern=r"^(0|-?[1-9][0-9]*)$", max_length=41)
+    amount_due_minor: constr(pattern=r"^(0|-?[1-9][0-9]*)$", max_length=41)
+    amount_paid_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    period_start: AwareDatetime | None
+    period_end: AwareDatetime | None
+    created_at_provider: AwareDatetime
+    finalized_at: AwareDatetime | None
+    paid_at: AwareDatetime | None
+
+
+class BillingMirrorOffering(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    provider: BillingMirrorProvider
+    provider_id: constr(min_length=1, max_length=255)
+    provider_account_id: constr(min_length=1, max_length=255) | None
+    livemode: bool
+    source_updated_at: AwareDatetime
+    observed_at: AwareDatetime
+    last_synced_at: AwareDatetime
+    mirror_version: conint(ge=1, le=2147483647)
+    deleted_at: AwareDatetime | None
+    coverage_state: BillingMirrorCoverageState
+    coverage_reasons: list[
+        BillingCoverageGapReason | BillingCoverageUnavailableReason
+    ] = Field(..., max_length=250)
+    provider_extension: dict[constr(min_length=1, max_length=64), Any] | None
+    name: constr(min_length=1, max_length=500) | None
+    active: bool | None
+
+
+class BillingMirrorPayer(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    provider: BillingMirrorProvider
+    provider_id: constr(min_length=1, max_length=255)
+    provider_account_id: constr(min_length=1, max_length=255) | None
+    livemode: bool
+    source_updated_at: AwareDatetime
+    observed_at: AwareDatetime
+    last_synced_at: AwareDatetime
+    mirror_version: conint(ge=1, le=2147483647)
+    deleted_at: AwareDatetime | None
+    coverage_state: BillingMirrorCoverageState
+    coverage_reasons: list[
+        BillingCoverageGapReason | BillingCoverageUnavailableReason
+    ] = Field(..., max_length=250)
+    provider_extension: dict[constr(min_length=1, max_length=64), Any] | None
+    payer_kind: BillingMirrorPayerKind
+    has_default_payment_method: bool | None
+    delinquent: bool | None
+    currency: constr(pattern=r"^[A-Z]{3}$") | None
+    account_external_id: constr(min_length=1, max_length=255) | None = None
+    account_external_id_source: AccountExternalIdSource | None = None
+
+
+class BillingMirrorPayment(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    provider: BillingMirrorProvider
+    provider_id: constr(min_length=1, max_length=255)
+    provider_account_id: constr(min_length=1, max_length=255) | None
+    livemode: bool
+    source_updated_at: AwareDatetime
+    observed_at: AwareDatetime
+    last_synced_at: AwareDatetime
+    mirror_version: conint(ge=1, le=2147483647)
+    deleted_at: AwareDatetime | None
+    coverage_state: BillingMirrorCoverageState
+    coverage_reasons: list[
+        BillingCoverageGapReason | BillingCoverageUnavailableReason
+    ] = Field(..., max_length=250)
+    provider_extension: dict[constr(min_length=1, max_length=64), Any] | None
+    payer_provider_id: constr(min_length=1, max_length=255) | None
+    payment_intent_provider_id: constr(min_length=1, max_length=255) | None
+    invoice_provider_id: constr(min_length=1, max_length=255) | None
+    subscription_provider_id: constr(min_length=1, max_length=255) | None
+    status: BillingMirrorPaymentStatus
+    provider_status: constr(min_length=1, max_length=64)
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    captured_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    refunded_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
+    captured_at: AwareDatetime
+    payment_method_present: bool | None
+    description: constr(min_length=1, max_length=1000) | None
+    metadata: dict[constr(min_length=1, max_length=40), constr(max_length=500)]
+
+
+class BillingMirrorPrice(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    provider: BillingMirrorProvider
+    provider_id: constr(min_length=1, max_length=255)
+    provider_account_id: constr(min_length=1, max_length=255) | None
+    livemode: bool
+    source_updated_at: AwareDatetime
+    observed_at: AwareDatetime
+    last_synced_at: AwareDatetime
+    mirror_version: conint(ge=1, le=2147483647)
+    deleted_at: AwareDatetime | None
+    coverage_state: BillingMirrorCoverageState
+    coverage_reasons: list[
+        BillingCoverageGapReason | BillingCoverageUnavailableReason
+    ] = Field(..., max_length=250)
+    provider_extension: dict[constr(min_length=1, max_length=64), Any] | None
+    offering_provider_id: constr(min_length=1, max_length=255) | None
+    price_type: BillingMirrorPriceType
+    active: bool | None
+    lookup_key: constr(min_length=1, max_length=255) | None
+
+
+class BillingMirrorSubscription(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    provider: BillingMirrorProvider
+    provider_id: constr(min_length=1, max_length=255)
+    provider_account_id: constr(min_length=1, max_length=255) | None
+    livemode: bool
+    source_updated_at: AwareDatetime
+    observed_at: AwareDatetime
+    last_synced_at: AwareDatetime
+    mirror_version: conint(ge=1, le=2147483647)
+    deleted_at: AwareDatetime | None
+    coverage_state: BillingMirrorCoverageState
+    coverage_reasons: list[
+        BillingCoverageGapReason | BillingCoverageUnavailableReason
+    ] = Field(..., max_length=250)
+    provider_extension: dict[constr(min_length=1, max_length=64), Any] | None
+    payer_provider_id: constr(min_length=1, max_length=255)
+    status: BillingMirrorSubscriptionStatus
+    provider_status: constr(min_length=1, max_length=64)
+    currency: constr(pattern=r"^[A-Z]{3}$") | None
+    started_at: AwareDatetime | None
+    current_period_start: AwareDatetime | None
+    current_period_end: AwareDatetime | None
+    trial_start: AwareDatetime | None
+    trial_end: AwareDatetime | None
+    cancel_at_period_end: bool
+    cancel_at: AwareDatetime | None
+    canceled_at: AwareDatetime | None
+    ended_at: AwareDatetime | None
+    cancellation_reason: constr(min_length=1, max_length=64) | None
+    has_default_payment_method: bool | None
+    discount_terms: list[BillingRecurringDiscountTerms] = Field(..., max_length=250)
+
+
+class BillingObservation(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    provider: BillingMirrorProvider
+    entity_kind: BillingObservationEntityKind
+    provider_id: constr(min_length=1, max_length=255)
+    source_updated_at: AwareDatetime
+    source_time_kind: BillingObservationSourceTimeKind
+    observed_at: AwareDatetime
+    source_kind: BillingObservationSourceKind
+    source_ref: constr(min_length=1, max_length=255)
+    content_hash: constr(pattern=r"^[0-9a-f]{64}$")
+    schema_version: conint(ge=1, le=1000)
+    state: dict[constr(min_length=1, max_length=128), Any]
+    fields_present: list[FieldsPresentItem] | None
+    applied: bool | None
+    rejected_reason: constr(min_length=1, max_length=2000) | None
 
 
 class BillingPaymentIntentObservation(BaseModel):
@@ -10870,6 +11327,105 @@ class ManagedItemSubject(BaseModel):
     historical_managed_account: HistoricalManagedAccount2 | HistoricalManagedAccount3
 
 
+class MrrDailyRow(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    policy_version: constr(
+        pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128
+    )
+    calendar_version: constr(min_length=1, max_length=512)
+    as_of: constr(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    account_key: constr(min_length=1, max_length=512)
+    subscription_id: constr(min_length=1, max_length=255)
+    item_id: constr(min_length=1, max_length=255)
+    currency: constr(pattern=r"^[a-z]{3}$")
+    price_id: constr(min_length=1, max_length=255)
+    item_kind: MrrItemKind
+    product_handle: constr(min_length=1, max_length=255) | None
+    variation_handle: constr(min_length=1, max_length=255) | None
+    status: MrrContributingStatus
+    billing_interval: MrrBillingInterval
+    interval_count: conint(ge=1, le=1000)
+    quantity: conint(ge=1, le=2147483647)
+    unit_amount_minor: conint(ge=0, le=2147483647)
+    effective_at: AwareDatetime
+    mrr_minor_units: conint(ge=1, le=2147483647)
+    account_resolved: bool
+    opening_cohort_member: bool
+    mirror_version: conint(ge=1, le=2147483647)
+    deleted_at: AwareDatetime | None
+
+
+class MrrMovementDailyRow(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    policy_version: constr(
+        pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128
+    )
+    calendar_version: constr(min_length=1, max_length=512)
+    as_of: constr(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    account_key: constr(min_length=1, max_length=512)
+    subscription_id: constr(min_length=1, max_length=255)
+    item_id: constr(min_length=1, max_length=255)
+    component: constr(
+        pattern=r"^(plan|unbound|addon:.+)$", min_length=1, max_length=300
+    )
+    currency: constr(pattern=r"^[a-z]{3}$")
+    opening: conint(ge=0, le=2147483647)
+    closing: conint(ge=0, le=2147483647)
+    delta: conint(ge=-2147483647, le=2147483647)
+    kind: MrrMovementKind
+    account_kind: MrrMovementKind
+    reason: constr(min_length=1, max_length=160)
+    entitlement_handle: constr(min_length=1, max_length=255) | None
+    churn_cause: MrrChurnCause | None
+    account_opening: conint(ge=0, le=2147483647)
+    account_closing: conint(ge=0, le=2147483647)
+    opening_cohort_member: bool
+    unattributed: bool
+    mirror_version: conint(ge=1, le=2147483647)
+    deleted_at: AwareDatetime | None
+
+
+class MrrPolicySwitchRow(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    from_policy_version: constr(
+        pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128
+    )
+    from_calendar_version: constr(min_length=1, max_length=512)
+    to_policy_version: constr(
+        pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128
+    )
+    to_calendar_version: constr(min_length=1, max_length=512)
+    reason: MrrPolicySwitchReason
+    switched_at: AwareDatetime
+    superseded_delete_after: AwareDatetime
+
+
+class OperatorEventRequestRow(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    event_id: constr(min_length=1, max_length=300)
+    event_name: OperatorEventName
+    tenant_id: constr(min_length=1, max_length=255)
+    reason: constr(min_length=1, max_length=64)
+    requested_by: constr(min_length=1, max_length=128)
+    run_id: constr(min_length=1, max_length=64)
+    status: OperatorEventStatus
+    attempts: conint(ge=0, le=5)
+    last_error: constr(max_length=500) | None
+    requested_at: AwareDatetime
+    processed_at: AwareDatetime | None
+
+
 class OpportunityEvidence(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -10908,6 +11464,25 @@ class OptimizationSuggestion(BaseModel):
     confidence: confloat(ge=0.0, le=1.0) | None = None
     is_dismissed: bool | None = False
     metadata: dict[str, Any] | None = {}
+
+
+class PaymentEvidenceConfig(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    enabled: bool | None = True
+    cadence_tokens: list[PaymentEvidenceCadenceToken] = Field(..., max_length=50)
+    payment_type_key: constr(min_length=1, max_length=40) | None
+    start_values: list[StartValue] = Field(..., max_length=20)
+    renewal_values: list[RenewalValue] = Field(..., max_length=20)
+    start_marker_keys: list[StartMarkerKey] = Field(..., max_length=20)
+    amount_key: constr(min_length=1, max_length=40) | None
+    amount_encoding: AmountEncoding
+    amount_fields: list[AmountField] = Field(..., max_length=10)
+    tax_fields: list[TaxField] = Field(..., max_length=10)
+    price_point_fields: list[PricePointField] = Field(..., max_length=10)
+    plans: list[PaymentEvidencePlanMapping] = Field(..., max_length=500)
+    grace_days: conint(ge=0, le=90)
 
 
 class PlacementPayload(BaseModel):
@@ -12036,6 +12611,34 @@ class SurfaceTemplate(BaseModel):
     description: constr(max_length=500) | None = None
 
 
+class TenantConfig(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    tenant_id: constr(min_length=1)
+    workspace_name: constr(min_length=1, max_length=200)
+    support_email: EmailStr | None = None
+    timezone: constr(max_length=50) | None = "UTC"
+    reporting_day_boundary_hour: conint(ge=0, le=23) | None = 0
+    reporting_calendar_version: constr(min_length=1, max_length=512) | None = None
+    analytics_min_sample: conint(ge=1, le=2147483647) | None = 30
+    paid_conversion_window_days: conint(ge=1, le=365) | None = 30
+    quiet_days: conint(ge=1, le=2147483647) | None = None
+    gate_follow_up_days: conint(ge=1, le=2147483647) | None = None
+    gate_window_days: GateWindowDaysModel | None = None
+    payment_evidence: PaymentEvidenceConfig | None = None
+    default_currency: constr(min_length=3, max_length=3) | None = "USD"
+    logo_url: AnyUrl | None = None
+    activity_window_days: conint(ge=1, le=9007199254740991) | None = 30
+    activity_high_min: conint(ge=1, le=9007199254740991) | None = 10
+    activity_medium_min: conint(ge=1, le=9007199254740991) | None = 3
+    activity_low_min: conint(ge=1, le=9007199254740991) | None = 1
+    analytics_retention_days: conint(ge=1, le=9007199254740991) | None = 365
+
+
 class Tenant(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -12319,6 +12922,84 @@ class AnalyticsAnnotation(
     RootModel[AnalyticsAnnotation1 | AnalyticsAnnotation2 | AnalyticsAnnotation3]
 ):
     root: AnalyticsAnnotation1 | AnalyticsAnnotation2 | AnalyticsAnnotation3
+
+
+class AnalyticsCatalogMetric(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    label: constr(min_length=1, max_length=120)
+    description: constr(max_length=500) | None = None
+    when_to_use: constr(max_length=500) | None = None
+    do_not_use_for: constr(max_length=500) | None = None
+    value_type: AnalyticsFieldType
+    format: AnalyticsFormatSpec | None = None
+    source_scope: AnalyticsSourceScope | None = None
+    direction: AnalyticsMetricDirection | None = None
+    statistical_type: AnalyticsMetricStatisticalType | None = None
+    aggregation_semantics: AnalyticsMetricAggregationSemantics | None = None
+    accounting: AnalyticsMetricAccounting | None = None
+    preferred_analysis_unit: AnalyticsAnalyticalUnit | None = None
+    numerator_metric: (
+        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
+    ) = None
+    denominator_metric: (
+        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
+    ) = None
+    derivation: AnalyticsMetricDerivation | None = None
+    layer: AnalyticsMetricLayer | None = None
+    semantics: AnalyticsMetricSemantics | None = None
+    catalog_status: AnalyticsCatalogStatus | None = None
+    first_valid_date: date_aliased | None = None
+    release_condition: constr(min_length=1, max_length=1000) | None = None
+    deprecation: AnalyticsCatalogDeprecation | None = None
+
+
+class AnalyticsCatalogMetricValidated(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+    label: constr(min_length=1, max_length=120)
+    description: constr(max_length=500) | None = None
+    when_to_use: constr(max_length=500) | None = None
+    do_not_use_for: constr(max_length=500) | None = None
+    value_type: AnalyticsFieldType
+    format: AnalyticsFormatSpec | None = None
+    source_scope: AnalyticsSourceScope | None = None
+    direction: AnalyticsMetricDirection | None = None
+    statistical_type: AnalyticsMetricStatisticalType | None = None
+    aggregation_semantics: AnalyticsMetricAggregationSemantics | None = None
+    accounting: AnalyticsMetricAccounting | None = None
+    preferred_analysis_unit: AnalyticsAnalyticalUnit | None = None
+    numerator_metric: (
+        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
+    ) = None
+    denominator_metric: (
+        constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120) | None
+    ) = None
+    derivation: AnalyticsMetricDerivation | None = None
+    layer: AnalyticsMetricLayer | None = None
+    semantics: AnalyticsMetricSemantics | None = None
+    catalog_status: AnalyticsCatalogStatus | None = None
+    first_valid_date: date_aliased | None = None
+    release_condition: constr(min_length=1, max_length=1000) | None = None
+    deprecation: AnalyticsCatalogDeprecation | None = None
+
+
+class AnalyticsCatalog(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    catalog_version: constr(min_length=1, max_length=64)
+    source: AnalyticsCatalogSource
+    generated_at: AwareDatetime | None = None
+    provenance: list[AnalyticsCatalogProvenance] | None = None
+    concepts: list[AnalyticsCatalogConcept] = Field(..., min_length=1)
+    dimensions: list[AnalyticsCatalogDimension] = Field(..., min_length=1)
+    metrics: list[AnalyticsCatalogMetric] = Field(..., min_length=1)
+    annotations: list[AnalyticsCatalogAnnotationKind] | None = None
 
 
 class AnalyticsFilterState(BaseModel):
@@ -12942,6 +13623,75 @@ class BillingLifecycleResult(BaseModel):
     status: Status7
     rows: list[BillingLifecycleTransition] = Field(..., max_length=10000)
     gaps: list[Gap2] = Field(..., max_length=100000)
+
+
+class BillingMirrorPriceTerm(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    provider: BillingMirrorProvider
+    provider_id: constr(min_length=1, max_length=255)
+    provider_account_id: constr(min_length=1, max_length=255) | None
+    livemode: bool
+    source_updated_at: AwareDatetime
+    observed_at: AwareDatetime
+    last_synced_at: AwareDatetime
+    mirror_version: conint(ge=1, le=2147483647)
+    deleted_at: AwareDatetime | None
+    coverage_state: BillingMirrorCoverageState
+    coverage_reasons: list[
+        BillingCoverageGapReason | BillingCoverageUnavailableReason
+    ] = Field(..., max_length=250)
+    provider_extension: dict[constr(min_length=1, max_length=64), Any] | None
+    term_key: constr(min_length=1, max_length=64)
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    interval: Interval | None
+    interval_count: conint(ge=1, le=9007199254740991) | None
+    usage_type: UsageType | None
+    unit_amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40) | None
+    terms: BillingPriceTerms | None
+
+
+class BillingMirrorSubscriptionItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    provider: BillingMirrorProvider
+    provider_id: constr(min_length=1, max_length=255)
+    provider_account_id: constr(min_length=1, max_length=255) | None
+    livemode: bool
+    source_updated_at: AwareDatetime
+    observed_at: AwareDatetime
+    last_synced_at: AwareDatetime
+    mirror_version: conint(ge=1, le=2147483647)
+    deleted_at: AwareDatetime | None
+    coverage_state: BillingMirrorCoverageState
+    coverage_reasons: list[
+        BillingCoverageGapReason | BillingCoverageUnavailableReason
+    ] = Field(..., max_length=250)
+    provider_extension: dict[constr(min_length=1, max_length=64), Any] | None
+    subscription_provider_id: constr(min_length=1, max_length=255)
+    price_provider_id: constr(min_length=1, max_length=255)
+    offering_provider_id: constr(min_length=1, max_length=255) | None
+    quantity: conint(ge=0, le=9007199254740991) | None
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    interval: Interval
+    interval_count: conint(ge=1, le=9007199254740991)
+    usage_type: UsageType
+    unit_amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40) | None
+    price_terms: BillingPriceTerms | None
+    full_period_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40) | None
+    effective_monthly_minor: (
+        constr(pattern=r"^(0|[1-9][0-9]*)(\/[1-9][0-9]*)?$", max_length=90) | None
+    )
+    discount_terms: list[BillingRecurringDiscountTerms] = Field(..., max_length=250)
+    trial_end_at: AwareDatetime | None
+    current_period_start: AwareDatetime | None
+    current_period_end: AwareDatetime | None
 
 
 class Allocations(BaseModel):

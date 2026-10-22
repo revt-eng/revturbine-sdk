@@ -32,6 +32,7 @@ use std::sync::{Mutex, PoisonError};
 use serde_json::{json, Map, Value};
 
 use crate::decisions::EntitlementCheckResult;
+use crate::entitlements::entitlement_check::unrecognised_kind_result;
 use crate::entitlements::{
     derive_effective_entitlement, derive_effective_entitlements, is_rule_shaped_kind,
     reverse_trial_grants, try_derive_effective_entitlement, with_rule_handle, AppEntitlementInputs,
@@ -624,8 +625,24 @@ impl LocalRuntime {
                         result.contributing_rule_handles = aggregate.contributing_rule_handles;
                         return result;
                     }
-                    // A kind the shaper does not model (legacy 'metered')
-                    // still proves the plan assignment exists — fall through.
+                    // BL-0514: a non-access kind (rate_limit / price_per_unit)
+                    // or a kind this evaluator does not recognise denies here.
+                    // It used to fall through to the provider entry, whose
+                    // static default is ALLOW.
+                    if let Some(refused) =
+                        unrecognised_kind_result(tf.get("kind").and_then(Value::as_str))
+                    {
+                        return with_rule_handle(
+                            refused,
+                            matched
+                                .get("rule_id")
+                                .and_then(Value::as_str)
+                                .filter(|id| !id.is_empty())
+                                .map(str::to_string),
+                        );
+                    }
+                    // A recognised-but-unshaped kind (seats, the `tiered` IR
+                    // spelling) proves the plan assignment exists — fall through.
                 }
                 Err(message) => {
                     *error = Some(message);

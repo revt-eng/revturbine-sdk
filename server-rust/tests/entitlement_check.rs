@@ -9,6 +9,9 @@ use std::collections::{HashMap, HashSet};
 use serde_json::{json, Value};
 
 use revturbine::decisions::EntitlementCheckResult;
+use revturbine::entitlements::entitlement_check::{
+    is_provider_deferred_kind, unrecognised_kind_result,
+};
 use revturbine::entitlements::{
     derive_local_entitlement_from_configured_rules, derive_result_from_rule_type_fields,
     is_rule_shaped_kind, try_derive_local_entitlement_from_configured_rules, LocalEntitlementInput,
@@ -538,8 +541,7 @@ fn rule_shaped_kinds_are_exactly_the_six() {
     ] {
         assert!(is_rule_shaped_kind(k), "{k} should be rule-shaped");
     }
-    // `metered` proves a plan assignment but must fall through to provider
-    // logic rather than the shaper's default.
+    // None of these is shaped; each is unrecognised and denies (BL-0514).
     for k in ["metered", "", "unknown"] {
         assert!(!is_rule_shaped_kind(k), "{k} should NOT be rule-shaped");
     }
@@ -558,11 +560,78 @@ fn limit_is_the_authoring_shorthand_for_usage_limit() {
     assert_eq!(a, b);
 }
 
+// ── BL-0514: unrecognised and non-access kinds fail closed ──────────────────
+//
+// Mirrors entitlement-check.test.ts "unrecognised and non-access kinds fail
+// closed". An unknown kind used to default to allowed.
+
 #[test]
-fn unknown_kinds_default_to_allowed() {
-    let r = derive_result_from_rule_type_fields(&json!({ "kind": "mystery" }), 0.0);
-    assert_eq!(r.status, "allowed");
-    assert!(r.allowed);
+fn unknown_kinds_deny_with_unknown_entitlement_kind() {
+    for tf in [
+        json!({ "kind": "mystery" }),
+        json!({ "kind": "metered" }),
+        json!({}),
+    ] {
+        let r = derive_result_from_rule_type_fields(&tf, 0.0);
+        assert_eq!(
+            serde_json::to_value(&r).unwrap(),
+            json!({ "status": "denied", "allowed": false, "reason": "unknown_entitlement_kind" }),
+            "{tf}"
+        );
+    }
+}
+
+#[test]
+fn non_access_kinds_deny_with_not_access_entitlement_kind() {
+    for kind in ["rate_limit", "price_per_unit"] {
+        let r = derive_result_from_rule_type_fields(&json!({ "kind": kind }), 0.0);
+        assert_eq!(
+            serde_json::to_value(&r).unwrap(),
+            json!({ "status": "denied", "allowed": false, "reason": "not_access_entitlement_kind" }),
+            "{kind}"
+        );
+    }
+}
+
+#[test]
+fn provider_deferred_kinds_keep_their_allow() {
+    // `seat` is shaped since BUG-554 (it carries its allowance); only the IR
+    // spellings stay provider-deferred, as in scaffold #599.
+    assert!(!is_provider_deferred_kind("seat"));
+    assert_eq!(
+        unrecognised_kind_result(Some("seat")),
+        None,
+        "seat is recognised"
+    );
+    for kind in ["seats", "tiered"] {
+        assert!(is_provider_deferred_kind(kind), "{kind}");
+        assert_eq!(
+            unrecognised_kind_result(Some(kind)),
+            None,
+            "{kind} is recognised"
+        );
+        let r = derive_result_from_rule_type_fields(&json!({ "kind": kind }), 0.0);
+        assert_eq!(
+            serde_json::to_value(&r).unwrap(),
+            json!({ "status": "allowed", "allowed": true }),
+            "{kind}"
+        );
+    }
+}
+
+#[test]
+fn unknown_entitlement_type_denies_through_the_playbook_path() {
+    let cfg = config(
+        "teleportation",
+        json!([{
+            "id": "rule_x",
+            "entitlement_id": "feat_x",
+            "targets": [{ "kind": "plan", "id": "pro" }],
+        }]),
+    );
+    let r = derive(&cfg, &input("feat_x", "pro"));
+    assert_eq!(r.reason.as_deref(), Some("unknown_entitlement_kind"));
+    assert!(!r.allowed);
 }
 
 #[test]

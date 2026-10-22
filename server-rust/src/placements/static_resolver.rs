@@ -29,7 +29,7 @@ use serde_json::{json, Map, Value};
 
 use super::entitlement_gate_gating::{matches_entitlement_gate_trigger, EntitlementGateTrigger};
 use super::local_resolver::{
-    decision_content, header_str, is_finite_number, normalize_cta_path,
+    decision_content, has_unknown_trigger_type, header_str, is_finite_number, normalize_cta_path,
     read_entitlement_handle_from_trigger, read_json_entitlement_gate_trigger,
     read_json_qualifier_trigger, read_json_threshold_trigger, read_slot_id_from_trigger,
 };
@@ -188,6 +188,9 @@ struct CandidateOutput {
     threshold_trigger: Option<ThresholdTrigger>,
     qualifier_trigger: Option<QualifierTrigger>,
     entitlement_gate_trigger: Option<EntitlementGateTrigger>,
+    /// BL-0514: the entry's trigger names a `type` this resolver does not
+    /// know. No gate can be evaluated for it, so the candidate never shows.
+    unknown_trigger_type: bool,
 }
 
 // ── Prioritization (D-59, 2026-10-06; placement-prioritization.md §2–§3, §6) ──
@@ -662,6 +665,7 @@ impl StaticPlacementResolver {
                         trigger,
                         trigger_entitlement_handle.as_deref(),
                     ),
+                    unknown_trigger_type: has_unknown_trigger_type(trigger),
                 });
                 by_template.entry(template_id).or_default().push(idx);
 
@@ -995,6 +999,10 @@ impl StaticPlacementResolver {
                 });
             }
 
+            // BL-0514: a trigger type this resolver does not know has no gate
+            // to evaluate, so the candidate never shows.
+            idxs.retain(|i| !self.candidates[*i].unknown_trigger_type);
+
             // The four gates.
             idxs.retain(|i| {
                 matches_trial_trigger(self.candidates[*i].trial_trigger.as_ref(), plan)
@@ -1139,6 +1147,10 @@ impl StaticPlacementResolver {
                     }) {
                         // Plan 234 TASK-13 — mirrors local-resolver.ts.
                         Some("placement_retired")
+                    } else if c.unknown_trigger_type {
+                        // BL-0514: an unrecognised trigger type never shows —
+                        // on the direct-lookup path as on the slot path.
+                        Some("unknown_trigger_type")
                     } else if !matches_trial_trigger(c.trial_trigger.as_ref(), plan) {
                         Some("trial_trigger_unmet")
                     } else if !matches_threshold_trigger(

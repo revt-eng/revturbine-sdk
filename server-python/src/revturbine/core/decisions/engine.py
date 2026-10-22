@@ -30,6 +30,8 @@ from revturbine.core.decisions.types import (
 from revturbine.core.entitlements.entitlement_check import (
     derive_result_from_rule_type_fields,
     is_rule_shaped_kind,
+    unrecognised_kind_result,
+    warn_on_non_access_check,
     with_rule_handle,
 )
 from revturbine.core.entitlements.rules import RuleEvaluationContext, find_matching_entitlement_rule
@@ -196,7 +198,9 @@ class DecisionEngine:
         Source: engine.ts:162-229
         """
         providers = self._registry.resolve_all()
-        return self._derive_entitlement_result(handle, providers, context)
+        result = self._derive_entitlement_result(handle, providers, context)
+        warn_on_non_access_check(handle, result)
+        return result
 
     def track_interaction(self, input_data: RevTurbineTreatmentInteractionInput) -> None:
         """Delegate to the configured ``InteractionTracker``.
@@ -291,9 +295,22 @@ class DecisionEngine:
                         else None,
                         matched.get("contributing_rule_handles"),
                     )
-                # A matched rule of a kind the shaper doesn't model (e.g.
-                # legacy 'metered') proves the plan assignment exists — fall
-                # through to the provider entry/usage logic below.
+                # BL-0514: a non-access kind (rate_limit / price_per_unit) or
+                # a kind this evaluator does not recognise denies here. It
+                # used to fall through to the provider entry, whose static
+                # default is ALLOW.
+                refused = unrecognised_kind_result(type_fields.get("kind"))
+                if refused is not None:
+                    refused_rule_id = matched.get("rule_id")
+                    return with_rule_handle(
+                        refused,
+                        refused_rule_id
+                        if isinstance(refused_rule_id, str) and refused_rule_id != ""
+                        else None,
+                    )
+                # A matched rule of a recognised-but-unshaped kind (seats, the
+                # `tiered` IR spelling) proves the plan assignment exists —
+                # fall through to the provider entry/usage logic below.
             else:
                 # Kent's 2026-07-13 ruling (supersedes the initial plan-133
                 # fail-open stance): a CONFIGURED entitlement with no rule

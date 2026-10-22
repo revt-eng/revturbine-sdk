@@ -12,6 +12,7 @@ The ten-fixture pilot corpus lives in ``tests/decisions/test_engine_pilot.py``.
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import pytest
@@ -538,9 +539,11 @@ class TestEntitlementRuleSurfacing:
         )
 
     def test_matched_unshaped_kind_falls_through_to_usage_logic(self) -> None:
-        # Legacy kinds (e.g. 'metered') prove the plan assignment without the
-        # shaper modeling them — usage-snapshot enforcement still applies and
-        # the result is NOT the fail-closed denial.
+        # The IR seat spelling proves the plan assignment without the shaper
+        # modeling it — usage-snapshot enforcement still applies and the result
+        # is NOT the fail-closed denial. Mirrors e2e.test.ts "a matched rule of
+        # a recognised unshaped kind (seats) falls through" (`seat` is shaped
+        # since BUG-554).
         reg = _registry_with_entitlements(
             entries={"api_calls": {"status": "allowed", "allowed": True}},
             usage={"api_calls": {"used": 1000, "limit": 1000, "remaining": 0}},
@@ -551,12 +554,12 @@ class TestEntitlementRuleSurfacing:
                 {
                     "api_calls": [
                         {
-                            "rule_id": "rule_metered",
+                            "rule_id": "rule_seat",
                             "entitlement_id": "api_calls",
                             "plan_ids": ["pro"],
                             "segment_ids": [],
-                            "kind": "metered",
-                            "fields": {"kind": "metered", "limit": 1000},
+                            "kind": "seats",
+                            "fields": {"kind": "seats", "limit": 1000},
                         }
                     ]
                 }
@@ -566,6 +569,52 @@ class TestEntitlementRuleSurfacing:
         result = engine.check_entitlement("api_calls", context={"used": 1000})
         assert result["allowed"] is False
         assert result["reason"] == "usage_limit_exceeded"
+
+    def _single_rule_engine(self, kind: str) -> DecisionEngine:
+        # The provider entry ALLOWS, exactly like the static adapter's default.
+        reg = _registry_with_entitlements(
+            entries={"api_calls": {"status": "allowed", "allowed": True}},
+        )
+        reg.register(_plan_provider("pro"))
+        reg.register(
+            _rules_provider(
+                {
+                    "api_calls": [
+                        {
+                            "rule_id": "rule_x",
+                            "entitlement_id": "api_calls",
+                            "plan_ids": ["pro"],
+                            "segment_ids": [],
+                            "kind": kind,
+                            "fields": {"kind": kind},
+                        }
+                    ]
+                }
+            )
+        )
+        return DecisionEngine(registry=reg)
+
+    def test_matched_unrecognised_kind_denies_not_default_allow(self) -> None:
+        # BL-0514: an unrecognised kind used to fall through to the provider
+        # entry, which allowed it. Mirrors e2e.test.ts.
+        assert self._single_rule_engine("metered").check_entitlement("api_calls") == {
+            "status": "denied",
+            "allowed": False,
+            "reason": "unknown_entitlement_kind",
+            "rule_handle": "rule_x",
+        }
+
+    @pytest.mark.parametrize("kind", ["rate_limit", "price_per_unit"])
+    def test_matched_non_access_kind_denies_not_default_allow(self, kind: str) -> None:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            result = self._single_rule_engine(kind).check_entitlement("api_calls")
+        assert result == {
+            "status": "denied",
+            "allowed": False,
+            "reason": "not_access_entitlement_kind",
+            "rule_handle": "rule_x",
+        }
 
     def test_matched_disabled_feature_rule_overrides_default_allow(self) -> None:
         reg = _registry_with_entitlements(

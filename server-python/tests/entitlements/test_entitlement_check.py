@@ -9,11 +9,18 @@ revturbine-sdk-internal/tests/parity entitlement_rule_* fixtures.)
 
 from __future__ import annotations
 
+import warnings
+from collections.abc import Iterator
 from typing import Any
 
 import pytest
 
+from revturbine.core.entitlements.effective_entitlement import (
+    derive_effective_entitlement,
+    derive_effective_entitlements,
+)
 from revturbine.core.entitlements.entitlement_check import (
+    _warned_non_access_handles,
     derive_local_entitlement_from_configured_rules,
 )
 
@@ -452,3 +459,84 @@ class TestSeatAndTierVocabulary:
         # fall to the unknown-kind default: allowed, NO current_tier.
         cfg = _cfg([_rule("f", {"kind": "tiered", "tier_value": "gold"})])
         assert _derive(cfg, "f") == {"status": "allowed", "allowed": True, "rule_handle": "r_f"}
+
+
+class TestUnrecognisedKindsFailClosed:
+    """BL-0514 — a kind the evaluator does not recognise, and a non-access
+    kind, deny instead of falling to the old allow default. Mirrors
+    entitlement-check.test.ts "unrecognised and non-access kinds fail closed".
+    """
+
+    @pytest.fixture(autouse=True)
+    def _fresh_warning_state(self) -> Iterator[None]:
+        _warned_non_access_handles.clear()
+        yield
+        _warned_non_access_handles.clear()
+
+    def test_unknown_kind_denies(self) -> None:
+        cfg = _cfg([_rule("f", {"kind": "teleportation"})])
+        assert _derive(cfg, "f") == {
+            "status": "denied",
+            "allowed": False,
+            "reason": "unknown_entitlement_kind",
+            "rule_handle": "r_f",
+        }
+
+    def test_unknown_kind_from_entitlement_type_denies(self) -> None:
+        cfg = _cfg([{**_rule("f", {}), "type_fields": None}])
+        cfg["entitlements"] = [{"unique_handle": "f", "type": "teleportation"}]
+        assert _derive(cfg, "f")["reason"] == "unknown_entitlement_kind"
+
+    def test_absent_kind_denies(self) -> None:
+        cfg = _cfg([_rule("f", {})])
+        assert _derive(cfg, "f")["reason"] == "unknown_entitlement_kind"
+
+    @pytest.mark.parametrize("kind", ["rate_limit", "price_per_unit"])
+    def test_non_access_kind_denies(self, kind: str) -> None:
+        cfg = _cfg([_rule("f", {"kind": kind})])
+        assert _derive(cfg, "f") == {
+            "status": "denied",
+            "allowed": False,
+            "reason": "not_access_entitlement_kind",
+            "rule_handle": "r_f",
+        }
+
+    def test_single_handle_check_warns_once_and_the_map_never_warns(self) -> None:
+        cfg = _cfg([_rule("f", {"kind": "rate_limit"})])
+        cfg["entitlements"] = [{"unique_handle": "f", "type": "rate_limit"}]
+        base: dict[str, Any] = {
+            "current_plan_handle": "starter",
+            "segment_ids": set(),
+            "usage_balances": {},
+            "playbook": cfg,
+        }
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            # The all-handles map (what the placement resolver reads) is not a can() call.
+            mapped = derive_effective_entitlements(base, {})  # type: ignore[arg-type]
+            assert mapped["f"]["reason"] == "not_access_entitlement_kind"
+            assert caught == []
+
+            first = derive_effective_entitlement(handle="f", **base)
+            derive_effective_entitlement(handle="f", **base)
+        assert first["result"]["reason"] == "not_access_entitlement_kind"
+        assert len(caught) == 1
+        assert '"f"' in str(caught[0].message)
+        assert "not_access_entitlement_kind" in str(caught[0].message)
+
+    def test_seat_keeps_its_allow(self) -> None:
+        # `seat` is shaped since BUG-554: allowed, with its seat allowance.
+        cfg = _cfg([_rule("f", {"kind": "seat", "included_count": 5})])
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            result = _derive(cfg, "f")
+            assert result is not None
+            assert result["status"] == "allowed"
+            assert result["allowed"] is True
+            assert result.get("limit") == 5
+            assert result.get("rule_handle") == "r_f"
+
+    def test_ir_spellings_keep_the_plain_allow(self) -> None:
+        for kind in ("seats", "tiered"):
+            cfg = _cfg([_rule("f", {"kind": kind})])
+            assert _derive(cfg, "f") == {"status": "allowed", "allowed": True, "rule_handle": "r_f"}

@@ -113,6 +113,41 @@ class _CandidateOutput(TypedDict):
     threshold_trigger: Any  # ThresholdTriggerShape | None — see threshold_gating.py
     qualifier_trigger: Any  # QualifierTriggerShape | None — see qualifier_gating.py
     entitlement_gate_trigger: Any  # EntitlementGateTriggerShape | None
+    # BL-0514: the entry's trigger names a ``type`` this resolver does not
+    # know. No gate can be evaluated for it, so the candidate never shows.
+    unknown_trigger_type: bool
+
+
+#: Every placement trigger ``type`` the resolver evaluates — the members of
+#: ``RevTurbineConfigPlacementTriggerSchema``. Any other ``type`` string on a
+#: trigger is unknown and never shows (BL-0514).
+#: Source: local-resolver.ts (KNOWN_TRIGGER_TYPES)
+_KNOWN_TRIGGER_TYPES = frozenset(
+    {
+        "surface_render",
+        "entitlement_gate",
+        "usage_threshold",
+        "credit_threshold",
+        "seat_threshold",
+        "trial_started",
+        "trial_progress",
+        "trial_ending",
+        "trial_ended",
+        "trial_converted",
+        "qualifier",
+    }
+)
+
+
+def _has_unknown_trigger_type(trigger: Any) -> bool:
+    """True when the trigger names a ``type`` string the resolver does not
+    know. An absent trigger, or one with no string ``type``, applies no gate,
+    as before. Source: local-resolver.ts (hasUnknownTriggerType)
+    """
+    if not is_record(trigger):
+        return False
+    trigger_type = trigger.get("type")
+    return isinstance(trigger_type, str) and trigger_type not in _KNOWN_TRIGGER_TYPES
 
 
 # Vendored from @revt-eng/schema 0.1.260 DEFAULT_TEMPLATE_COMPONENT_TYPES.
@@ -768,6 +803,7 @@ def create_static_placement_resolver(
                 "threshold_trigger": threshold_trigger,
                 "qualifier_trigger": qualifier_trigger,
                 "entitlement_gate_trigger": entitlement_gate_trigger,
+                "unknown_trigger_type": _has_unknown_trigger_type(trigger),
             }
             outputs_by_template.setdefault(template_id, []).append(candidate)
 
@@ -999,6 +1035,10 @@ def create_static_placement_resolver(
                     )
                 ]
 
+            # BL-0514: a trigger type this resolver does not know has no gate
+            # to evaluate, so the candidate never shows.
+            filtered = [c for c in filtered if not c.get("unknown_trigger_type")]
+
             # Trial-trigger gating + milestone supersession (plan 43
             # TASK-12). Shared logic with the TS resolver via
             # ``trial_gating.py`` (byte-faithful port of
@@ -1140,6 +1180,10 @@ def create_static_placement_resolver(
                     output.get("rule_id") or "", output.get("category")
                 ):
                     return "placement_retired"
+                # BL-0514: an unrecognised trigger type never shows — on the
+                # direct-lookup path as on the slot path.
+                if candidate.get("unknown_trigger_type"):
+                    return "unknown_trigger_type"
                 # Plan 43 TASK-12: symmetric with the slot-based path.
                 if not matches_trial_trigger(candidate.get("trial_trigger"), plan):
                     return "trial_trigger_unmet"

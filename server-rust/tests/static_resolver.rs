@@ -492,6 +492,55 @@ fn a_trial_trigger_gates_the_direct_path_too() {
     );
 }
 
+// ── BL-0514: an unknown trigger type never shows ────────────────────────────
+//
+// Mirrors local-resolver-unknown-trigger.test.ts. A `type` the resolver does
+// not know used to apply no gate at all, so the placement showed.
+
+fn triggered(trigger: Value) -> StaticPlacementResolver {
+    let mut e = entry("pl_k", "other_conversion", 0, "H");
+    e["trigger"] = trigger;
+    StaticPlacementResolver::new(&[e], &config())
+}
+
+#[test]
+fn an_unknown_trigger_type_never_shows_on_the_direct_path() {
+    let d = triggered(json!({ "type": "moon_phase", "phase": "full" }))
+        .resolve("pl_k", None, None, None);
+    assert_eq!(d["visible"], json!(false));
+    assert_eq!(d["reason_codes"], json!(["unknown_trigger_type"]));
+}
+
+#[test]
+fn an_unknown_trigger_type_is_never_a_slot_candidate() {
+    let d = triggered(json!({ "type": "moon_phase" })).resolve(
+        "slot_1",
+        Some(&slot(&["banner_placement"])),
+        None,
+        None,
+    );
+    assert_eq!(d["visible"], json!(false));
+    assert_eq!(d["reason_codes"], json!(["no_eligible_candidate"]));
+}
+
+#[test]
+fn known_and_typeless_triggers_are_unaffected() {
+    let always_on = json!({ "type": "qualifier", "qualifier": "none_always_on" });
+    assert_eq!(
+        triggered(always_on.clone()).resolve("pl_k", None, None, None)["visible"],
+        json!(true)
+    );
+    assert_eq!(
+        triggered(always_on).resolve("slot_1", Some(&slot(&["banner_placement"])), None, None)
+            ["visible"],
+        json!(true)
+    );
+    assert_eq!(
+        triggered(json!({})).resolve("pl_k", None, None, None)["visible"],
+        json!(true)
+    );
+}
+
 // ── Usage enrichment ────────────────────────────────────────────────────────
 
 #[test]
