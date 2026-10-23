@@ -68,4 +68,5 @@ def test_matrix_is_not_vacuous() -> None:
         "schema_version_too_new",
         "schema_version_too_old",
         "requires_newer_reader",
+        "unsupported_mandatory_extension",
     }

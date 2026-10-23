@@ -16,7 +16,9 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RevTurbineCustomerSdk } from './customer-side';
+import type { RevTurbineInitOptions } from './customer-side';
 import type { RevTurbineConfig } from '@revt-eng/schema';
+import { PlaybookSchema } from '@revt-eng/schema';
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(async () =>
@@ -31,7 +33,7 @@ afterEach(() => {
 
 function thresholdPlacement(
   id: string,
-  type: 'usage_threshold' | 'credit_threshold',
+  type: 'usage_threshold' | 'credit_threshold' | 'seat_threshold',
   entitlementHandle: string,
   body: string,
 ): Record<string, unknown> {
@@ -132,7 +134,7 @@ function playbook(): RevTurbineConfig {
   } as unknown as RevTurbineConfig;
 }
 
-function makeSdk(): RevTurbineCustomerSdk {
+function makeSdk(overrides: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerSdk {
   return new RevTurbineCustomerSdk({
     tenantId: 'tenant_bl0402',
     apiKey: 'sk_test',
@@ -143,6 +145,7 @@ function makeSdk(): RevTurbineCustomerSdk {
     runtimeMode: 'local_only',
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
     localRuntime: { playbook: playbook() },
+    ...overrides,
   });
 }
 
@@ -150,6 +153,82 @@ async function decide(sdk: RevTurbineCustomerSdk, name: string) {
   const placementId = await sdk.registerPlacement({ name });
   return sdk.getPlacementDecision({ placementId, userId: 'u_1' });
 }
+
+describe('BL-0413: usage limits reach every public reader', () => {
+  it.each([
+    { included_count: 10, max_seats: 20, expected: 10 },
+    { max_seats: 10, expected: 10 },
+    { included_count: 0, max_seats: 10, expected: undefined },
+    { included_count: 'unlimited', max_seats: 10, expected: undefined },
+  ])('resolves seat thresholds from $expected seats', async ({ expected, ...allowance }) => {
+    const config = PlaybookSchema.parse({
+      artifact_type: 'playbook', format_version: '1.0.0',
+      tenant_id: 'tenant_bl0402', environment_id: 'staging',
+      plans: [{ unique_handle: 'starter', name: 'Starter' }],
+      entitlements: [{ unique_handle: 'seats', name: 'Seats', type: 'seat', unit: 'seats' }],
+      entitlement_rules: [{
+        id: 'seats_starter', entitlement_id: 'seats', kind: 'seat',
+        targets: [{ kind: 'plan', id: 'starter' }], ...allowance,
+      }],
+      segments: [], content_ui_paths: [],
+      surface_templates: [{ id: 'banner_warning', surface_type: 'banner', fields: [] }],
+      placements: [thresholdPlacement('seat_warning', 'seat_threshold', 'seats', '{{usage_limit}} seats')],
+    });
+    const sdk = makeSdk({ localRuntime: { playbook: config } });
+    sdk.identify('u_1', { plan_handle: 'starter' });
+    sdk.update({ usage: { seats: 8 } });
+    expect(sdk.getPersonalizationTokens().usage_limit).toBe(expected);
+    expect((await decide(sdk, 'seat_warning')).visible).toBe(expected !== undefined);
+  });
+
+  it('resolves a wire rule without kind from its entitlement', async () => {
+    const config = playbook();
+    config.entitlement_rules = config.entitlement_rules.map((rule) => {
+      const portable = { ...rule };
+      delete portable.kind;
+      delete portable.unit;
+      return portable;
+    });
+    const sdk = makeSdk({ localRuntime: { playbook: config } });
+    sdk.identify('u_1', { plan_handle: 'starter' });
+    sdk.update({ usage: { api_calls: 800 } });
+    expect((await decide(sdk, 'pl_usage_warning')).visible).toBe(true);
+    expect(sdk.getPersonalizationTokens().usage_limit).toBe(1000);
+    expect(sdk.getUsage().calls).toEqual({ current: 800, limit: 1000 });
+  });
+
+  it('recomputes limits when a hosted Playbook arrives after usage', async () => {
+    let loaded: RevTurbineConfig | undefined;
+    let deliver = () => {};
+    const delivery = new Promise<void>((resolve) => { deliver = resolve; });
+    const sdk = makeSdk({
+      runtimeMode: 'revturbine_server',
+      configProvider: {
+        getPlaybook: () => loaded,
+        refresh: async () => { await delivery; loaded = playbook(); return loaded; },
+      },
+    });
+    sdk.identify('u_1', { plan_handle: 'starter' });
+    sdk.update({ usage: { api_calls: 800 } });
+    expect(sdk.getPersonalizationTokens().usage_limit).toBeUndefined();
+    deliver();
+    await sdk.whenPlaybookSettled();
+    expect(sdk.getPersonalizationTokens().usage_limit).toBe(1000);
+    expect((await decide(sdk, 'pl_usage_warning')).visible).toBe(true);
+  });
+
+  it('uses the explicit context limit for personalization without changing getUsage', () => {
+    const sdk = makeSdk();
+    sdk.identify('u_1', {
+      plan_handle: 'starter',
+      usage: { api_calls: { entitlement_handle: 'api_calls', unit: 'calls', amount: 4000, limit: 5000 } },
+    });
+    expect(sdk.getPersonalizationTokens()).toMatchObject({
+      usage_current: 4000, usage_limit: 5000, usage_remaining: 1000, usage_percent: 80,
+    });
+    expect(sdk.getUsage().calls).toEqual({ current: 4000, limit: 1000 });
+  });
+});
 
 describe('BL-0402: update({ usage }) reaches usage_threshold placements', () => {
   it('hides the 80% usage warning at 50% and shows it at 80%', async () => {

@@ -1,5 +1,5 @@
 import type { RevTurbineTheme, RevTurbineThemeInput } from './types';
-import { mergeTheme } from './defaults';
+import { baseThemeForScheme, mergeTheme } from './defaults';
 import type { RevTurbineStorage } from '../storage';
 import { resolvePersistentStorage } from '../storage';
 
@@ -103,6 +103,8 @@ export interface ThemeLoaderOptions {
    * control plane refines the Playbook's theme instead of replacing it.
    */
   base?: RevTurbineThemeInput;
+  /** Palette used for tokens absent from the base and fetched override. */
+  colorScheme?: 'light' | 'dark';
   /**
    * Called with the RAW override — the persisted copy on the fast path, then
    * the freshly-fetched one — or `null` when there is no override.
@@ -142,7 +144,8 @@ export async function loadTheme(
   // theme so an override that sets only a few tokens refines the base rather
   // than replacing it (plan 184).
   const persisted = readPersistedTheme(scope, storage);
-  const localTheme = mergeTheme({ ...base, ...persisted });
+  const palette = baseThemeForScheme(opts.colorScheme ?? 'light');
+  const localTheme = mergeTheme({ ...base, ...persisted }, palette);
   opts.onOverride?.(persisted);
 
   // BL-0477: no key, no request — never a placeholder bearer.
@@ -156,7 +159,7 @@ export async function loadTheme(
 
     persistTheme(scope, remote, storage);
     opts.onOverride?.(remote);
-    onUpdate?.(mergeTheme({ ...base, ...remote }));
+    onUpdate?.(mergeTheme({ ...base, ...remote }, palette));
   }).catch(() => {
     // Network failures are non-fatal; we already have the local theme.
   });

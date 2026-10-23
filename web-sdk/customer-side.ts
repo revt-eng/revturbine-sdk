@@ -15,6 +15,7 @@ import type {
   ResolvedProviderContext,
 } from './providers/types';
 import { resolveBranding, type ResolvedBranding } from './branding';
+import { TrialTriggerHistory } from './trial-trigger-history';
 import type { BrandingConfig } from './generated';
 import { isServer, isBrowser, isServerKeyContext } from './env';
 import { normalizeEnvironmentId } from './environment';
@@ -102,6 +103,7 @@ import {
 // evaluation. (Replaces plan 160's client-side binary-bundle decode.)
 import {
   assertPlaybookPayloadReadable,
+  PlaybookPayloadVersionError,
   BundleManifestSchema,
   checkManifestWindow,
   sha256Hex,
@@ -165,7 +167,6 @@ import {
   mirroredEntitlementTrait as coreMirroredEntitlementTrait,
   usageThresholdForEntitlement as coreUsageThreshold,
   evaluateUsageThresholdCrossings as coreEvaluateUsageCrossings,
-  deriveTrialTriggerStage as coreDeriveTrialStage,
   recalculateDerivedUsageTokens,
   getPersonalizationTokens as coreGetPersonalizationTokens,
   getUsage as coreGetUsage,
@@ -646,6 +647,10 @@ const SERVER_ASSIGNED_USER_CONTEXT_KEYS = [
   'activity_score_computed_at',
   'builtin_dimensions',
   'customer_builtin_dimensions',
+  // Canonical ServerOnly lifecycle fields: callers cannot retire or merge users.
+  'retired_at',
+  'provisional',
+  'merged_into',
 ] as const satisfies readonly (keyof UserContextInput)[];
 type ServerAssignedUserContextKey = (typeof SERVER_ASSIGNED_USER_CONTEXT_KEYS)[number];
 const SERVER_ASSIGNED_USER_CONTEXT_KEY_SET: ReadonlySet<string> = new Set(SERVER_ASSIGNED_USER_CONTEXT_KEYS);
@@ -1058,7 +1063,7 @@ type HeldUserContext = RevTurbineUserContext & {
 interface ClientSafeContextResponse {
   subject?: string;
   context_version?: string;
-  trial?: { status?: string; days_remaining?: number; ends_at?: string };
+  trial?: Partial<NonNullable<ClientContext['trial']>>;
   billing?: { health?: string };
   /**
    * Server-derived plan identity (plan 174 TASK-9 / F-74 / plan 179 TASK-1):
@@ -1669,6 +1674,8 @@ export interface RevTurbineInitOptions {
    * {@link apiBranding}, then {@link DEFAULT_BRANDING}. See {@link resolveBranding}.
    */
   branding?: BrandingConfig;
+  /** Display palette for embedded theme defaults; defaults to light. */
+  colorScheme?: 'light' | 'dark';
   /**
    * Branding fetched from the RevTurbine Branding API or a workspace-settings
    * source, supplied by the host. The third rung of the branding ladder — used
@@ -3034,6 +3041,7 @@ function playbookStepFailure(
 
 interface RuntimePlaybookProvider {
   getPlaybook(): RevTurbineConfig | undefined;
+  hasUnreadablePayload?(): boolean;
   refresh?(): Promise<RevTurbineConfig | undefined>;
   /**
    * Why the most recent load produced no Playbook, or `undefined` after a
@@ -3069,6 +3077,7 @@ class StaticPlaybookProvider implements RuntimePlaybookProvider {
  */
 class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
   private cached?: RevTurbineConfig;
+  private unreadablePayload = false;
   private etag?: string;
   private lastFetchedAt = 0;
   private inFlight?: Promise<RevTurbineConfig | undefined>;
@@ -3086,10 +3095,17 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
     private readonly token: string,
     private readonly targetDefaults: ConfigTargetDefaults,
     private readonly trustedManifestKeys: readonly TrustedKey[],
-  ) {}
+    initialConfig?: RevTurbineConfig,
+  ) {
+    this.cached = initialConfig;
+  }
 
   getPlaybook(): RevTurbineConfig | undefined {
     return this.cached;
+  }
+
+  hasUnreadablePayload(): boolean {
+    return this.unreadablePayload && !this.cached;
   }
 
   adoptedTenantId(): string | undefined {
@@ -3157,6 +3173,7 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
       const cdnConfig = await this.fetchCdnConfig();
       if (cdnConfig) {
         this.cached = cdnConfig;
+        this.unreadablePayload = false;
         this.failure = undefined;
         return this.cached;
       }
@@ -3244,6 +3261,7 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
         this.deliveredTargetDefaults(this.observeDeliveredTenant(manifest.tenant_id)),
       );
     } catch (error) {
+      if (error instanceof PlaybookPayloadVersionError) this.unreadablePayload = true;
       return this.cdnMiss(playbookStepFailure(stage, stageUrl, `the ${stage} step failed: ${errorMessage(error)}`));
     }
   }
@@ -3361,11 +3379,13 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
       );
       if (next) {
         this.cached = next;
+        this.unreadablePayload = false;
         this.etag = response.headers.get('etag') ?? undefined;
         this.failure = undefined;
       }
       return this.cached;
     } catch (error) {
+      if (error instanceof PlaybookPayloadVersionError) this.unreadablePayload = true;
       return this.legacyMiss(playbookStepFailure('config', configUrl, `the Playbook could not be read: ${errorMessage(error)}`));
     }
   }
@@ -3679,9 +3699,10 @@ export class RevTurbineCustomerSdk {
   private readonly dirtySegmentIds = new Set<string>();
   private readonly segmentMembershipBySegmentId = new Map<string, boolean>();
   private segmentMembershipUserId?: string;
-  private lastTrialTriggerStage: 'none' | 'midpoint' | 'expiring' | 'expired' = 'none';
+  private readonly trialTriggerHistory = new TrialTriggerHistory();
   private readonly configProvider?: RuntimePlaybookProvider;
   private readonly branding?: BrandingConfig;
+  private colorScheme: 'light' | 'dark';
   // Not readonly: `setApiBranding` replaces it when the SDK fetches the
   // branding-API rung itself (plan 184 `fetchThemeOverride`), so `getBranding()`
   // and the React theme context resolve from the same value.
@@ -3698,6 +3719,7 @@ export class RevTurbineCustomerSdk {
   // (terminal for now). These three fields are the whole distinction.
   private playbookLoadInFlight: Promise<void> | null = null;
   private playbookLoadAttempted = false;
+  private playbookAdmissionRefused = false;
   // BL-0012: why the Playbook did not load, and which failures were already
   // reported, so a refresh loop warns once per distinct failure.
   private credentialFailure?: RevTurbinePlaybookLoadFailure;
@@ -3748,6 +3770,7 @@ export class RevTurbineCustomerSdk {
     this.localRuntime = options.localRuntime;
     this.clientSessionProvider = options.clientSession;
     this.branding = options.branding;
+    this.colorScheme = options.colorScheme ?? 'light';
     this.apiBranding = options.apiBranding;
     this.configProvider = this.resolveConfigProvider(options);
     // BL-0012: a hosted init with no public key can never fetch a Playbook.
@@ -3995,12 +4018,8 @@ export class RevTurbineCustomerSdk {
       );
     }
 
-    if (initialConfig) {
-      return new StaticPlaybookProvider(initialConfig);
-    }
-
-    // Server mode with no customer-supplied config: fetch the launched Playbook
-    // from the control-plane cache (plan 159) so entitlements evaluate locally.
+    // Connected mode refreshes a supplied startup seed as well as a cold load.
+    // LocalOnly keeps the caller-supplied snapshot static.
     const runtimeMode = options.runtimeMode ?? RuntimeMode.Server;
     // The public key in a browser; on a backend, the server key when supplied
     // (hosted Node server SDK) — see resolveSdkDeliveryCredential.
@@ -4012,7 +4031,12 @@ export class RevTurbineCustomerSdk {
         configToken,
         targetDefaults,
         options.trustedManifestKeys ?? [],
+        initialConfig,
       );
+    }
+
+    if (initialConfig) {
+      return new StaticPlaybookProvider(initialConfig);
     }
 
     return undefined;
@@ -4026,18 +4050,24 @@ export class RevTurbineCustomerSdk {
     if (this.playbookLoadInFlight) return this.playbookLoadInFlight;
 
     const attempt = (async () => {
+      let previousConfig: RevTurbineConfig | undefined;
       try {
-        const previousConfig = this.getConfiguredPlaybook();
+        previousConfig = this.getConfiguredPlaybook();
         await this.configProvider?.refresh?.();
+        if (this.getConfiguredPlaybook()) this.playbookAdmissionRefused = false;
         this.warnPlaybookLoadFailure(this.configProvider?.lastLoadFailure?.());
         this.rebuildSegmentPredicateFieldIndex();
         if (previousConfig !== this.getConfiguredPlaybook()) {
           this.invalidateEffectiveContext();
+          this.recalculateDerivedUsageTraits();
           // BL-0417: a Playbook that authors `trials` placements turns the
           // lifecycle triggers on — evaluate a trial supplied before it loaded.
           this.syncTrialLifecycleWithView();
         }
       } catch (error) {
+        if (error instanceof PlaybookPayloadVersionError && !previousConfig) {
+          this.playbookAdmissionRefused = true;
+        }
         // Config refresh is best-effort; keep SDK operational without throwing,
         // but never silently (BL-0012): a throwing resolver or an unreadable
         // Playbook is named once.
@@ -4440,7 +4470,7 @@ export class RevTurbineCustomerSdk {
     this.localTrialStatus = { in_trial: false };
     this.trialStatusWrittenAt = 0;
     this.contextTrialWrittenAt = 0;
-    this.lastTrialTriggerStage = 'none';
+    this.trialTriggerHistory.reset();
   }
 
   /**
@@ -4494,9 +4524,9 @@ export class RevTurbineCustomerSdk {
    * enables the triggers — so `trial_midpoint` / `trial_expiring` /
    * `trial_expired` fire whichever source supplied the trial.
    *
-   * The dedupe is the evaluator's own: a stage fires only when it differs
-   * from the last stage seen, so re-evaluating an unchanged view — or both
-   * sources reporting the same threshold — never fires twice. While the
+   * Each stage fires once per trial episode, including after sparse updates
+   * and local-state reloads. Identity comes from the trial instance or start
+   * time; legacy inputs start a new episode after an explicit end. While the
    * triggers are off (no Playbook loaded yet, or none authoring a `trials`
    * placement) nothing is evaluated or recorded, so a trial supplied before
    * the Playbook loads still fires once it does.
@@ -5158,6 +5188,7 @@ export class RevTurbineCustomerSdk {
         trialStatus?: RevTurbineTrialContext;
         trialStatusSupplied?: boolean;
         trialViewSource?: 'context' | 'status';
+        trialTriggerHistory?: unknown; // sdk-ok: boundary-parse — restore validates this app-writable JSON field
       };
 
       // BL-0352 / BL-0381: a state blob persisted before server-assigned keys
@@ -5196,6 +5227,7 @@ export class RevTurbineCustomerSdk {
       if (parsed.trialViewSource === 'context' && isRecord(this.userContext.trial)) {
         this.contextTrialWrittenAt = ++this.trialWriteClock;
       }
+      this.trialTriggerHistory.restore(parsed.trialTriggerHistory);
     } catch {
       this.persistentStore.removeItem(this.localStorageKey);
       this.persistLocalRuntimeState();
@@ -5218,6 +5250,7 @@ export class RevTurbineCustomerSdk {
         // resolves the same trial view (see hydrateLocalRuntimeState).
         trialStatusSupplied: this.trialStatusWrittenAt > 0,
         trialViewSource: this.resolveTrialView() === this.localTrialStatus ? 'status' : 'context',
+        trialTriggerHistory: this.trialTriggerHistory.snapshot(),
       };
       this.persistentStore.setItem(this.localStorageKey, JSON.stringify(payload));
     } catch {
@@ -5618,6 +5651,7 @@ export class RevTurbineCustomerSdk {
 
     const entitlementHandleById = new Map<string, string>();
     const entitlements = playbook.entitlements ?? [];
+    const entitlementByHandle = new Map(entitlements.map((item) => [item.unique_handle, item]));
     for (const item of entitlements) {
       const handle = typeof item.unique_handle === 'string' ? item.unique_handle : '';
       if (handle) entitlementHandleById.set(handle, handle);
@@ -5633,13 +5667,14 @@ export class RevTurbineCustomerSdk {
       // Plan 147 (OQ-6): the wire is flat — read the rule's per-kind fields
       // directly (typed). `kind` / `unit` are derived fields exported configs
       // carry; no nested `type_fields` bag any more.
-      const kind = typeof rule.kind === 'string' ? rule.kind : '';
+      const entitlement = entitlementByHandle.get(entitlementId);
+      const kind = typeof rule.kind === 'string' ? rule.kind : entitlement?.type;
       const supportsUsageThreshold = kind === 'usage_limit' || kind === 'credits' || kind === 'seat';
       if (!supportsUsageThreshold) continue;
 
       const entitlementHandle = entitlementHandleById.get(entitlementId) ?? '';
 
-      const rawUsageUnit = typeof rule.unit === 'string' ? rule.unit : '';
+      const rawUsageUnit = typeof rule.unit === 'string' ? rule.unit : entitlement?.unit ?? '';
 
       const normalizedUsageUnit = sanitizeUsageTokenPrefix(rawUsageUnit);
       const prefix = normalizedUsageUnit && !looksGenericUsageUnit(normalizedUsageUnit)
@@ -5652,7 +5687,9 @@ export class RevTurbineCustomerSdk {
         }
       }
 
-      const limit = Number(rule.limit_value ?? rule.allowance_value);
+      const limit = Number(kind === 'seat'
+        ? rule.included_count ?? rule.max_seats
+        : rule.limit_value ?? rule.allowance_value);
       if (!Number.isFinite(limit) || limit <= 0) continue;
 
       // Only record the limit when the rule applies to the user's current plan.
@@ -5683,7 +5720,14 @@ export class RevTurbineCustomerSdk {
       playbook,
       usageBalances: this.usageBalances,
       usageTokenPrefixByEntitlement: this.usageTokenPrefixByEntitlement,
-      usageThresholdLookup: (entitlement) => this.usageThresholdForEntitlement(entitlement),
+      usageThresholdLookup: (entitlement) => {
+        // Personalization follows the same explicit limit as placement gating;
+        // getUsage keeps its existing plan-allowance reporting contract.
+        const limit = this.userContext.usage?.[entitlement]?.limit;
+        return typeof limit === 'number' && Number.isFinite(limit) && limit >= 0
+          ? { limit, warningPercent: this.defaultUsageWarningPercent }
+          : this.usageThresholdForEntitlement(entitlement);
+      },
     });
 
     const recommendationTokens = this.deriveRecommendedPlanTokens(playbook);
@@ -6142,10 +6186,21 @@ export class RevTurbineCustomerSdk {
    */
   getBranding(): ResolvedBranding {
     return resolveBranding({
+      colorScheme: this.colorScheme,
       explicit: this.branding,
       legacyConfigTheme: this.getConfiguredPlaybook()?.theme,
       apiBranding: this.apiBranding,
     });
+  }
+
+  /**
+   * Set the resolved display palette without rebuilding the SDK or its caches.
+   * Explicit branding retains precedence; this only selects embedded defaults.
+   * @param scheme Resolved light or dark preference.
+   * @public
+   */
+  setColorScheme(scheme: 'light' | 'dark'): void {
+    if (scheme === 'light' || scheme === 'dark') this.colorScheme = scheme;
   }
 
   /**
@@ -6762,21 +6817,13 @@ export class RevTurbineCustomerSdk {
     }));
   }
 
-  private deriveTrialTriggerStage(status: RevTurbineTrialContext): 'none' | 'midpoint' | 'expiring' | 'expired' {
-    return coreDeriveTrialStage(status, this.lastTrialTriggerStage, this.defaultTrialExpiringDays);
-  }
-
   // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#evaluateTrialLifecycleTriggers
   private async evaluateTrialLifecycleTriggers(status: RevTurbineTrialContext): Promise<void> {
-    const nextStage = this.deriveTrialTriggerStage(status);
-
-    if (!this.placementBehavior.enableTrialAutoTriggers) {
-      this.lastTrialTriggerStage = nextStage;
-      return;
-    }
-
-    if (nextStage === this.lastTrialTriggerStage) return;
-    this.lastTrialTriggerStage = nextStage;
+    if (!this.placementBehavior.enableTrialAutoTriggers) return;
+    const nextStage = this.trialTriggerHistory.observe(status, this.defaultTrialExpiringDays);
+    // Persist before emission: a reload must not repeat a stage already sent.
+    this.persistLocalRuntimeState();
+    if (!nextStage) return;
 
     if (nextStage === 'midpoint') {
       // @revturbine-graph event:customer:trial_midpoint
@@ -7962,9 +8009,10 @@ export class RevTurbineCustomerSdk {
    * Hydrate the SDK with a server-evaluated payload.
    *
    * Call this on the client after receiving a `ServerEvaluationPayload`
-   * from the server-side SDK. Pre-populates the decision cache,
-   * entitlements, trial status, and user context so the client SDK
-   * avoids redundant API calls.
+   * from the server-side SDK. Applies entitlements, trial status, usage,
+   * and user context. Placement decisions are evaluated locally against
+   * the current UserContext and Playbook: legacy payloads do not bind their
+   * decisions to the producer's complete evaluation context.
    *
    * @example
    * ```ts
@@ -7995,38 +8043,10 @@ export class RevTurbineCustomerSdk {
       this.recalculateDerivedUsageTraits();
     }
 
-    // Pre-populate decision cache
-    const ttlMs = (payload.ttl_seconds ?? 60) * 1000;
-    const expiresAt = Date.now() + ttlMs;
-    for (const decision of payload.decisions ?? []) {
-      if (!decision.output) continue;
-      const cacheKey = [
-        this.tenantNamespace,
-        decision.slot_id ?? decision.entitlement_handle ?? decision.placement_handle ?? 'unknown',
-        payload.user?.id ?? this.anonymousId,
-      ].join(':');
-
-      const outputContent = isRecord(decision.output?.content) ? decision.output.content : {};
-      this.decisionCache.set(cacheKey, {
-        value: {
-          placementId: decision.slot_id ?? decision.entitlement_handle ?? decision.placement_handle ?? 'unknown',
-          requestId: payload.request_id,
-          visible: decision.visible,
-          decisionSource: 'cache',
-          reasonCodes: decision.reason_codes ?? [],
-          content: decisionContent(
-            String(outputContent.header ?? ''),
-            String(outputContent.body ?? ''),
-            String(outputContent.cta_label ?? ''),
-          ),
-          // Wire-format output is Record<string, unknown>; narrow to PlacementOutput
-          // at this deserialization boundary (runtime shape is guaranteed by server SDK).
-          output: decision.output as unknown as PlacementOutput, // sdk-ok: boundary-parse
-        },
-        expiresAt,
-      });
-    }
-    this.persistDecisionCache();
+    // BUG-1127: legacy decisions lack a producer context/Playbook binding.
+    // Recompute through getPlacementDecision rather than inserting an unbound
+    // answer into the context-keyed cache. Slot handles also need not equal
+    // the browser's registered placement IDs.
 
     // Pre-populate entitlements
     if (payload.entitlements) {
@@ -8049,6 +8069,9 @@ export class RevTurbineCustomerSdk {
         plan_handle: payload.trial_status.plan_handle,
         day_number: payload.trial_status.day_number,
         days_remaining: payload.trial_status.days_remaining,
+        instance_id: payload.trial_status.instance_id,
+        started_at: payload.trial_status.started_at,
+        state: payload.trial_status.state,
       });
     }
 
@@ -8487,6 +8510,7 @@ export class RevTurbineCustomerSdk {
   }
 
   private readDecisionCache(key: string): RevTurbinePlacementDecision | null {
+    if (this.playbookAdmissionRefused || this.configProvider?.hasUnreadablePayload?.()) return null;
     const cached = this.decisionCache.get(key);
     if (!cached) return null;
     if (cached.expiresAt <= Date.now()) {
@@ -8694,6 +8718,8 @@ export class RevTurbineCustomerSdk {
       });
     }
 
+    // A hydrated answer cannot race ahead of compatibility admission.
+    if (this.getPlaybookLoadState() === 'loading') await this.whenPlaybookSettled();
     const key = this.decisionCacheKey(input, runtimeContextFingerprint);
     const cached = this.readDecisionCache(key);
     if (cached && !cached.reasonCodes.includes('placement_retired')
@@ -8718,7 +8744,7 @@ export class RevTurbineCustomerSdk {
       }
 
       const localDecision = this.localDecisionsByPlacementId.get(input.placementId);
-      if (localDecision) {
+      if (localDecision && !this.playbookAdmissionRefused && !this.configProvider?.hasUnreadablePayload?.()) {
         const resolved = { ...localDecision, decisionSource: 'fallback' as const };
         const interacting = this.gateDecisionByInteraction(resolved, input);
         if (resolved.visible && !interacting.visible) return interacting;
@@ -9589,7 +9615,7 @@ export class RevTurbineCustomerSdk {
     if (derived) return derived;
 
     const existing = this.localEntitlementsByHandle.get(handle);
-    if (existing) return existing;
+    if (existing && !this.playbookAdmissionRefused && !this.configProvider?.hasUnreadablePayload?.()) return existing;
 
     // No config YET. Before failing closed, wait out an in-flight load
     // (BL-0179 — the entitlement half of BL-0177). A gate that mounts on a cold
@@ -9772,6 +9798,7 @@ export class RevTurbineCustomerSdk {
       user_id: userId,
       created_at: now,
       updated_at: now,
+      retired_at: null,
       account_id: this.userContext.account_id,
       email: this.userContext.email,
       // BL-0421: the plan matching identity and the delivered built-in
@@ -10078,6 +10105,8 @@ export class RevTurbineCustomerSdk {
       patch.trial = {
         in_trial: state === 'active' || state === 'running_out',
         state,
+        ...(typeof data.trial?.instance_id === 'string' ? { instance_id: data.trial.instance_id } : {}),
+        ...(typeof data.trial?.started_at === 'string' ? { started_at: data.trial.started_at } : {}),
         ...(typeof data.trial?.days_remaining === 'number'
           ? { days_remaining: data.trial.days_remaining }
           : {}),

@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.517/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.520/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -1059,6 +1059,65 @@ class B2BSegmentEventName(Enum):
     Trial_Ended = "Trial Ended"
 
 
+class BillingAccountBindingActor1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["system"]
+    process: Literal["payer_auto_match"]
+
+
+class Via(Enum):
+    session = "session"
+    api_token = "api_token"
+
+
+class BillingAccountBindingActor2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["user"]
+    user_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
+    role: constr(min_length=1, max_length=64)
+    via: Via
+
+
+class BillingAccountBindingActor(
+    RootModel[BillingAccountBindingActor1 | BillingAccountBindingActor2]
+):
+    root: BillingAccountBindingActor1 | BillingAccountBindingActor2
+
+
+class Kind1(Enum):
+    provider_metadata_account = "provider_metadata_account"
+    provider_metadata_user = "provider_metadata_user"
+    customer_link = "customer_link"
+    checkout_link = "checkout_link"
+    verified_email = "verified_email"
+    operator_link = "operator_link"
+    operator_no_account = "operator_no_account"
+    operator_unlink = "operator_unlink"
+
+
+class Confidence(Enum):
+    explicit = "explicit"
+    exact_match = "exact_match"
+    operator_asserted = "operator_asserted"
+
+
+class BillingAccountBindingEvidence(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Kind1
+    confidence: Confidence
+    actor: BillingAccountBindingActor
+    reason: constr(max_length=500) | None
+    via_user_id: (
+        constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128) | None
+    )
+
+
 class RestatementReason(Enum):
     merge = "merge"
     split = "split"
@@ -1311,7 +1370,7 @@ class BillingCreditSettlement(
     root: BillingCreditSettlement1 | BillingCreditSettlement2 | BillingCreditSettlement3
 
 
-class Kind1(Enum):
+class Kind2(Enum):
     discount = "discount"
     coupon = "coupon"
     promotion_code = "promotion_code"
@@ -1321,7 +1380,7 @@ class Reference(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    kind: Kind1
+    kind: Kind2
     id: constr(min_length=1, max_length=255)
 
 
@@ -1903,7 +1962,7 @@ class BillingLifecycleTransitionLink(BaseModel):
     config_snapshot_ids: list[ConfigSnapshotId] = Field(..., max_length=1000)
 
 
-class Kind2(Enum):
+class Kind3(Enum):
     paid_started = "paid_started"
     reactivated = "reactivated"
     paid_ended = "paid_ended"
@@ -2999,6 +3058,10 @@ class CustomerAccount(BaseModel):
     updated_at: AwareDatetime
     account_id: constr(min_length=1, max_length=255)
     name: str | None = None
+    provisional: bool | None = False
+    no_app_account: bool | None = False
+    merged_into: constr(min_length=1, max_length=255) | None = None
+    retired_at: AwareDatetime | None = None
 
 
 class Value4(Enum):
@@ -3280,6 +3343,7 @@ class CustomerSummary(BaseModel):
     subscription_status: SubscriptionStatus | None = "none"
     status: Status12 | None = "active"
     billing_health_issues: list[BillingHealthIssue] | None = []
+    provisional: bool | None = False
     created_at: AwareDatetime
     updated_at: AwareDatetime
     stripe_linked: bool
@@ -4645,6 +4709,151 @@ class PaginationParams(BaseModel):
     per_page: conint(ge=1, le=100) | None = 25
 
 
+class EvidenceKind(Enum):
+    provider_metadata_account = "provider_metadata_account"
+    provider_metadata_user = "provider_metadata_user"
+    customer_link = "customer_link"
+    checkout_link = "checkout_link"
+    verified_email = "verified_email"
+    operator_link = "operator_link"
+    operator_no_account = "operator_no_account"
+    operator_unlink = "operator_unlink"
+
+
+class ChangedBy(Enum):
+    automatic_matching = "automatic_matching"
+    workspace_member = "workspace_member"
+    unknown = "unknown"
+
+
+class Plan(RootModel[constr(max_length=120)]):
+    root: constr(max_length=120)
+
+
+class State3(Enum):
+    unmatched = "unmatched"
+    linked = "linked"
+    no_account = "no_account"
+    all = "all"
+
+
+class PayerAccountLinkListQuery(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    state: State3 | None = "unmatched"
+    q: constr(max_length=255) | None = None
+    page: conint(ge=1, le=9007199254740991) | None = 1
+    per_page: conint(ge=1, le=100) | None = 25
+
+
+class Provenance1(Enum):
+    live = "live"
+    simulated = "simulated"
+
+
+class Outcome1(Enum):
+    linked = "linked"
+    marked_no_account = "marked_no_account"
+    unlinked = "unlinked"
+    unchanged = "unchanged"
+    stale = "stale"
+    not_found = "not_found"
+    unknown_account = "unknown_account"
+    not_linked = "not_linked"
+
+
+class Rederive(Enum):
+    requested = "requested"
+    not_requested = "not_requested"
+
+
+class PayerAccountLinkResult(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    outcome: Outcome1
+    mapping_revision: conint(ge=0, le=9007199254740991)
+    rederive: Rederive
+
+
+class PayerAccountLinkState(Enum):
+    unmatched = "unmatched"
+    linked = "linked"
+    no_account = "no_account"
+
+
+class LinkedByEvidenceItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    evidence_kind: EvidenceKind
+    payers: conint(ge=1, le=9007199254740991)
+
+
+class Reason12(Enum):
+    no_evidence = "no_evidence"
+    ambiguous = "ambiguous"
+    operator_decision = "operator_decision"
+    provider_unread = "provider_unread"
+
+
+class MissedItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    reason: Reason12
+    payers: conint(ge=1, le=9007199254740991)
+
+
+class EvidenceKind3(Enum):
+    provider_metadata_account = "provider_metadata_account"
+    provider_metadata_user = "provider_metadata_user"
+    customer_link = "customer_link"
+    checkout_link = "checkout_link"
+    verified_email = "verified_email"
+
+
+class ByEvidenceItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    evidence_kind: EvidenceKind3
+    payers: conint(ge=1, le=9007199254740991)
+
+
+class ProviderReads(Enum):
+    complete = "complete"
+    partial = "partial"
+    unavailable = "unavailable"
+
+
+class PayerAccountMatchResult(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    payers: conint(ge=0, le=9007199254740991)
+    linked: conint(ge=0, le=9007199254740991)
+    relinked: conint(ge=0, le=9007199254740991)
+    unchanged: conint(ge=0, le=9007199254740991)
+    missed: list[MissedItem] = Field(..., max_length=4)
+    by_evidence: list[ByEvidenceItem] = Field(..., max_length=5)
+    provider_reads: ProviderReads
+    rederive: Rederive
+
+
+class PayerAccountMoney(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    amount_minor: constr(pattern=r"^-?\d{1,20}$")
+
+
+class PayerKey(RootModel[constr(pattern=r"^payer:pay_[0-9a-f]{16}$")]):
+    root: constr(pattern=r"^payer:pay_[0-9a-f]{16}$")
+
+
 class PaymentEvidenceCadenceToken(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -4904,7 +5113,7 @@ class Placement(BaseModel):
     metadata: dict[str, Any] | None = {}
 
 
-class Kind3(Enum):
+class Kind4(Enum):
     template = "template"
     slot = "slot"
 
@@ -4913,7 +5122,7 @@ class PlacementSettingsCapRuleGroupItem(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    kind: Kind3
+    kind: Kind4
     id: constr(min_length=1)
     label: constr(min_length=1) | None = None
 
@@ -7059,7 +7268,7 @@ class Error1(BaseModel):
     message: constr(pattern=r"^[^\x00-\x1f\x7f]*$", min_length=1, max_length=512)
 
 
-class Kind4(Enum):
+class Kind5(Enum):
     ingest = "ingest"
     billing = "billing"
 
@@ -7076,7 +7285,7 @@ class SimulationProbeReceipt(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    kind: Kind4
+    kind: Kind5
     probe_run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
     workflow_run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
     workflow_attempt: conint(le=9007199254740991, gt=0)
@@ -7561,7 +7770,7 @@ class StripeDiscoveryMapRequest(BaseModel):
     expected_observation_revision: conint(ge=0, le=9007199254740991)
 
 
-class Outcome1(Enum):
+class Outcome2(Enum):
     linked = "linked"
     already_linked = "already_linked"
     conflict = "conflict"
@@ -7691,7 +7900,7 @@ class Coverage2(BaseModel):
     positive_only: Literal[True]
 
 
-class State3(Enum):
+class State4(Enum):
     none_observed = "none_observed"
     observed = "observed"
     unknown = "unknown"
@@ -7701,7 +7910,7 @@ class Subscriptions(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    state: State3
+    state: State4
     observed_count: conint(ge=0, le=9007199254740991) | None
 
 
@@ -8466,7 +8675,7 @@ class UserRole(Enum):
     admin = "admin"
 
 
-class State4(Enum):
+class State5(Enum):
     active = "active"
     running_out = "running_out"
     expired = "expired"
@@ -8484,9 +8693,11 @@ class UserTrialStatus(BaseModel):
         extra="forbid",
     )
     in_trial: bool
+    instance_id: str | None = None
+    started_at: AwareDatetime | None = None
     trial_type: str | None = None
     plan_handle: str | None = None
-    state: State4 | None = None
+    state: State5 | None = None
     trial_limit_type: TrialLimitType1 | None = None
     progress_percent: confloat(ge=0.0, le=100.0) | None = None
     day_number: conint(ge=0, le=9007199254740991) | None = None
@@ -9493,6 +9704,7 @@ class BillingAccountMappingRevision1(BaseModel):
     effective_to: AwareDatetime | None
     observed_at: AwareDatetime
     supersedes_mapping_revision: conint(ge=1, le=9007199254740991) | None
+    binding_evidence: BillingAccountBindingEvidence | None = None
     basis: Literal["explicit_binding"]
 
 
@@ -9509,6 +9721,7 @@ class BillingAccountMappingRevision2(BaseModel):
     effective_to: AwareDatetime | None
     observed_at: AwareDatetime
     supersedes_mapping_revision: conint(ge=1, le=9007199254740991) | None
+    binding_evidence: BillingAccountBindingEvidence | None = None
     basis: Literal["integration_sync"]
 
 
@@ -9525,6 +9738,7 @@ class BillingAccountMappingRevision3(BaseModel):
     effective_to: AwareDatetime | None
     observed_at: AwareDatetime
     supersedes_mapping_revision: conint(ge=1, le=9007199254740991) | None
+    binding_evidence: BillingAccountBindingEvidence | None = None
     basis: Literal["approved_correction"]
     correction_generation_id: constr(
         pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128
@@ -10167,7 +10381,7 @@ class BillingLifecycleTransition(BaseModel):
     account_id: constr(min_length=1, max_length=800)
     payer_id: constr(min_length=1, max_length=800)
     mapping_evidence_id: constr(min_length=1, max_length=800)
-    kind: Kind2
+    kind: Kind3
     effective_at: AwareDatetime
     observed_at: AwareDatetime
     source_recorded_at: AwareDatetime
@@ -10804,6 +11018,9 @@ class Customer(BaseModel):
     status: Status12 | None = "active"
     billing_health_issues: list[BillingHealthIssue] | None = []
     metadata: dict[str, Any] | None = {}
+    provisional: bool | None = False
+    merged_into: constr(min_length=1) | None = None
+    retired_at: AwareDatetime | None = None
 
 
 class DeleteProtectionDecision(BaseModel):
@@ -11466,6 +11683,99 @@ class OptimizationSuggestion(BaseModel):
     metadata: dict[str, Any] | None = {}
 
 
+class PayerAccountLinkHistoryEntry(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    mapping_revision: conint(ge=1, le=9007199254740991)
+    state: PayerAccountLinkState
+    rt_account_id: constr(min_length=1, max_length=255) | None
+    evidence_kind: EvidenceKind | None
+    confidence: Confidence | None
+    changed_by: ChangedBy
+    changed_by_you: bool
+    reason: constr(max_length=500) | None
+    changed_at: AwareDatetime
+
+
+class PayerAccountLinkHistory(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    payer_key: PayerKey
+    revisions: list[PayerAccountLinkHistoryEntry] = Field(..., max_length=200)
+
+
+class PayerAccountLinkItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    payer_key: PayerKey
+    state: PayerAccountLinkState
+    rt_account_id: constr(min_length=1, max_length=255) | None
+    evidence_kind: EvidenceKind | None
+    confidence: Confidence | None
+    mapping_revision: conint(ge=0, le=9007199254740991)
+    changed_at: AwareDatetime | None
+    changed_by: ChangedBy | None
+    mrr: list[PayerAccountMoney] = Field(..., max_length=8)
+    last_payment_at: AwareDatetime | None
+    active_subscriptions: conint(ge=0, le=9007199254740991)
+    plans: list[Plan] = Field(..., max_length=8)
+
+
+class PayerAccountLinkRequest1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    payer_key: PayerKey
+    expected_revision: conint(ge=0, le=9007199254740991)
+    reason: constr(max_length=500) | None = None
+    action: Literal["link"]
+    rt_account_id: constr(min_length=1, max_length=255)
+
+
+class PayerAccountLinkRequest2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    payer_key: PayerKey
+    expected_revision: conint(ge=0, le=9007199254740991)
+    reason: constr(max_length=500) | None = None
+    action: Literal["no_account"]
+
+
+class PayerAccountLinkRequest3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    payer_key: PayerKey
+    expected_revision: conint(ge=0, le=9007199254740991)
+    reason: constr(max_length=500) | None = None
+    action: Literal["unlink"]
+
+
+class PayerAccountLinkRequest(
+    RootModel[
+        PayerAccountLinkRequest1 | PayerAccountLinkRequest2 | PayerAccountLinkRequest3
+    ]
+):
+    root: PayerAccountLinkRequest1 | PayerAccountLinkRequest2 | PayerAccountLinkRequest3
+
+
+class PayerAccountLinkSummary(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    payers: conint(ge=0, le=9007199254740991)
+    unmatched: conint(ge=0, le=9007199254740991)
+    linked: conint(ge=0, le=9007199254740991)
+    no_account: conint(ge=0, le=9007199254740991)
+    unmatched_paying: conint(ge=0, le=9007199254740991)
+    unmatched_mrr: list[PayerAccountMoney] = Field(..., max_length=8)
+    linked_by_evidence: list[LinkedByEvidenceItem] = Field(..., max_length=8)
+
+
 class PaymentEvidenceConfig(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -11554,7 +11864,7 @@ class PlacementSettings(BaseModel):
     priority_collision_strategy: PriorityCollisionStrategy | None = "highest_priority"
 
 
-class Plan(BaseModel):
+class Plan1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -12372,7 +12682,7 @@ class StripeDiscoveryMapResult(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    outcome: Outcome1
+    outcome: Outcome2
     user_link_status: StripeDiscoveryUserLinkStatus | None
     account_link_status: StripeDiscoveryAccountLinkStatus | None
     observation_revision: conint(ge=0, le=9007199254740991) | None
@@ -14274,6 +14584,20 @@ class OpportunityCandidate(BaseModel):
     suggested_experiment: dict[str, Any] | None = None
 
 
+class PayerAccountLinkList(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    items: list[PayerAccountLinkItem] = Field(..., max_length=100)
+    page: conint(ge=1, le=9007199254740991)
+    per_page: conint(ge=1, le=100)
+    total: conint(ge=0, le=9007199254740991)
+    summary: PayerAccountLinkSummary
+    as_of: constr(pattern=r"^\d{4}-\d{2}-\d{2}$") | None
+    connected: bool
+    provenance: Provenance1
+
+
 class PlaybookPlacementItem(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -14635,6 +14959,9 @@ class UserContext(BaseModel):
     updated_at: AwareDatetime
     user_id: constr(min_length=1)
     account_id: constr(min_length=1) | None = None
+    provisional: bool | None = None
+    merged_into: constr(min_length=1) | None = None
+    retired_at: AwareDatetime | None = None
     email: EmailStr | None = None
     email_type: str | None = None
     plan_handle: constr(min_length=1) | None = None

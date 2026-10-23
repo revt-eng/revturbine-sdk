@@ -7,6 +7,9 @@
 //! `server-python/src/revturbine/config.py`.
 
 use serde_json::{Map, Value};
+use std::sync::atomic::{AtomicBool, Ordering};
+
+static WARNED_UNVERSIONED_PLAYBOOK: AtomicBool = AtomicBool::new(false);
 
 /// The only format version this reader accepts, on either path.
 pub const PLAYBOOK_FORMAT_VERSION: &str = "1.0.0";
@@ -85,6 +88,17 @@ pub fn parse_playbook_or_throw(
     let Some(obj) = raw.as_object() else {
         return Err(format!("Invalid {source}: expected top-level object"));
     };
+
+    if obj.contains_key("bundle_schema_version")
+        || obj.contains_key("bundle_min_readable_schema_version")
+    {
+        assert_playbook_payload_readable(raw, None, None).map_err(|err| err.message)?;
+    } else {
+        assert_playbook_extensions_supported(raw).map_err(|err| err.message)?;
+        if !WARNED_UNVERSIONED_PLAYBOOK.swap(true, Ordering::Relaxed) {
+            eprintln!("[revturbine] Playbook has no bundle_schema_version; accepting legacy input without version compatibility assurance.");
+        }
+    }
 
     let canonical = obj.contains_key("artifact_type") || obj.contains_key("format_version");
 
@@ -222,7 +236,7 @@ pub fn parse_playbook_or_throw(
 /// Newest payload `bundle_schema_version` this port fully understands.
 /// Mirror of `SCHEMA_VERSION` in scaffold `src/core/bundle/ir.ts` — the
 /// single source of truth, whose header logs every bump.
-pub const BUNDLE_SCHEMA_VERSION: u64 = 17;
+pub const BUNDLE_SCHEMA_VERSION: u64 = 18;
 
 /// Oldest payload `bundle_schema_version` this port still reads correctly.
 /// Mirror of `MIN_READABLE_SCHEMA_VERSION` in scaffold `src/core/bundle/ir.ts`.
@@ -243,6 +257,8 @@ pub enum PlaybookPayloadRefusalReason {
     SchemaVersionTooOld,
     /// The payload's own floor demands a newer reader than this one.
     RequiresNewerReader,
+    /// A required extension has no runtime enforcement implementation.
+    UnsupportedMandatoryExtension,
 }
 
 impl PlaybookPayloadRefusalReason {
@@ -254,6 +270,7 @@ impl PlaybookPayloadRefusalReason {
             Self::SchemaVersionTooNew => "schema_version_too_new",
             Self::SchemaVersionTooOld => "schema_version_too_old",
             Self::RequiresNewerReader => "requires_newer_reader",
+            Self::UnsupportedMandatoryExtension => "unsupported_mandatory_extension",
         }
     }
 }
@@ -375,7 +392,28 @@ pub fn assert_playbook_payload_readable(
             ),
         ));
     }
+    assert_playbook_extensions_supported(raw)?;
     Ok(version)
+}
+
+/// Refuse required extension semantics, including unversioned legacy inputs.
+pub fn assert_playbook_extensions_supported(
+    raw: &Value,
+) -> Result<(), PlaybookPayloadVersionError> {
+    if let Some(entries) = raw.get("extension_rules").and_then(Value::as_array) {
+        for entry in entries {
+            if entry.get("must_understand").and_then(Value::as_bool) == Some(true) {
+                return Err(refusal(
+                    PlaybookPayloadRefusalReason::UnsupportedMandatoryExtension,
+                    format!(
+                        "Playbook payload: unsupported mandatory extension kind={}",
+                        entry.get("kind").unwrap_or(&Value::Null)
+                    ),
+                ));
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Parse a delivered payload artifact into a validated Playbook.
@@ -396,6 +434,29 @@ pub fn parse_playbook_payload(text: &str, source: &str) -> Result<Value, String>
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn constructor_admission_checks_versions_and_mandatory_extensions() {
+        for version in [15, 16, BUNDLE_SCHEMA_VERSION] {
+            let mut raw = canonical();
+            raw["bundle_schema_version"] = json!(version);
+            assert!(parse_playbook_or_throw(Some(&raw), "test", None).is_ok());
+        }
+        for version in [json!(10), json!(999), json!("18"), Value::Null] {
+            let mut raw = canonical();
+            raw["bundle_schema_version"] = version;
+            assert!(parse_playbook_or_throw(Some(&raw), "test", None).is_err());
+        }
+        for versioned in [false, true] {
+            let mut raw = canonical();
+            if versioned {
+                raw["bundle_schema_version"] = json!(BUNDLE_SCHEMA_VERSION);
+            }
+            raw["extension_rules"] = json!([{ "kind": "geo.v1", "must_understand": true }]);
+            let err = parse_playbook_or_throw(Some(&raw), "test", None).unwrap_err();
+            assert!(err.contains("unsupported mandatory extension"));
+        }
+    }
 
     fn body() -> Map<String, Value> {
         json!({
@@ -528,7 +589,7 @@ mod tests {
             );
         }
         let mut good = canonical();
-        good["bundle_schema_version"] = json!(3);
+        good["bundle_schema_version"] = json!(BUNDLE_SCHEMA_VERSION);
         assert!(parse_playbook_or_throw(Some(&good), "src", None).is_ok());
     }
 

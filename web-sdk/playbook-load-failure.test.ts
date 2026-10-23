@@ -10,6 +10,8 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RevTurbineCustomerSdk, type RevTurbineInitOptions } from './customer-side';
+import { InMemoryStorage } from './storage';
+import { normalizeConfigArtifactOrThrow } from './config-artifact';
 
 const ENDPOINT = 'https://edge.example.com';
 
@@ -68,6 +70,60 @@ function warnings(spy: ReturnType<typeof vi.spyOn>): string[] {
 }
 
 describe('BL-0012: a refused publicKey is named, not silent', () => {
+  it.each(['hosted', 'resolver-version', 'resolver-extension'])('an incompatible %s Playbook cannot be bypassed by hydrated entitlements', async (kind) => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    stubFetch((url) => url.includes('/bootstrap') ? { status: 404 } : {
+      status: 200, body: JSON.stringify({ ...LEGACY_CONFIG, bundle_schema_version: 999 }),
+    });
+    const sdk = makeSdk(kind === 'hosted' ? {} : {
+      localRuntime: { resolvers: { resolvePlaybook: () => {
+        const raw = kind === 'resolver-version'
+          ? { ...LEGACY_CONFIG, bundle_schema_version: 999 }
+          : { ...LEGACY_CONFIG, bundle_schema_version: 18, extension_rules: [{ kind: 'geo.v1', must_understand: true }] };
+        const parsed = normalizeConfigArtifactOrThrow(raw, 'resolver');
+        if (!parsed) throw new Error('Missing fixture');
+        return parsed;
+      } } },
+    });
+    const placementId = await sdk.registerPlacement({ name: 'Cached upsell' });
+    sdk.hydrate({
+      version: '1.0.0', request_id: 'hydrated', tenant_id: 'tenant_bl0012',
+      evaluated_at: '2026-10-22T00:00:00Z', ttl_seconds: 60, user: { id: 'user_1' },
+      entitlements: { sso: { status: 'allowed', allowed: true } },
+      decisions: [{ slot_id: placementId, visible: true, output: {
+        output_id: 'output', category: 'upsell', surface: { type: 'banner' },
+        content: { header: 'Cached grant' }, rule_id: 'rule', decision_id: 'decision',
+        config_version: 'old', present_upsell: true,
+      } }],
+    });
+    expect((await sdk.can('sso')).allowed).toBe(false);
+    sdk.dispose();
+  });
+
+  it.each([false, true])('actual session cache: compatibility refusal=%s', async (refused) => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    stubFetch((url) => url.includes('/bootstrap') || !refused ? { status: 500 } : {
+      status: 200, body: JSON.stringify({ ...LEGACY_CONFIG, bundle_schema_version: 999 }),
+    });
+    const stores = { sessionStorage: new InMemoryStorage(), persistentStorage: new InMemoryStorage() };
+    const seed = makeSdk({ ...stores, runtimeMode: 'local_only', user: { id: 'user_1' },
+      localRuntime: { resolvers: { getPlacementDecision: (input) => ({
+        placementId: input.placementId, requestId: 'seed', visible: true,
+        decisionSource: 'local', reasonCodes: [], content: { header: 'Cached', body: '', ctaLabel: '' },
+      }) } },
+    });
+    const placementId = await seed.registerPlacement({ name: 'Cached upsell' });
+    expect((await seed.getPlacementDecision({ placementId, userId: 'user_1' })).visible).toBe(true);
+    seed.dispose();
+    const sdk = makeSdk({ ...stores, user: { id: 'user_1' } });
+    expect(await sdk.registerPlacement({ name: 'Cached upsell' })).toBe(placementId);
+    const decision = await sdk.getPlacementDecision({ placementId, userId: 'user_1' });
+    expect(decision.visible).toBe(!refused);
+    if (refused) expect(decision.reasonCodes).toContain('config_unavailable');
+    else expect(decision.decisionSource).toBe('cache');
+    sdk.dispose();
+  });
+
   it('a 401 on both steps reports the bootstrap refusal, naming the publicKey and the URL', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     stubFetch(() => ({ status: 401 }));

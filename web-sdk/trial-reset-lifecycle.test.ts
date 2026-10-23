@@ -21,6 +21,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RevTurbineCustomerSdk } from './customer-side';
 import type { RevTurbineInitOptions, RevTurbineTrialContext } from './customer-side';
 import type { RevTurbineConfig } from '@revt-eng/schema';
+import { InMemoryStorage } from './storage';
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(async () =>
@@ -167,6 +168,76 @@ function spyLifecycle(): () => string[] {
     .map(([trigger]) => String(trigger))
     .filter((name) => name.startsWith('trial_'));
 }
+
+describe('BL-0422: lifecycle stages are scoped to a trial episode', () => {
+  it('fires for distinct instances, remembers earlier instances, and survives sparse sources', () => {
+    const lifecycle = spyLifecycle();
+    const sdk = makeSdk();
+    sdk.identify('u_1', { plan_handle: 'free' });
+    const first = { ...ENDING, instance_id: 'trial_1', started_at: '2026-10-01T00:00:00Z' };
+    const second = { ...ENDING, instance_id: 'trial_2', started_at: '2026-10-15T00:00:00Z' };
+    sdk.hydrate(hydration('u_1', first));
+    sdk.hydrate(hydration('u_1', { in_trial: true, days_remaining: 7 }));
+    sdk.hydrate(hydration('u_1', first));
+    expect(lifecycle()).toEqual(['trial_expiring']);
+    sdk.hydrate(hydration('u_1', second));
+    expect(lifecycle()).toEqual(['trial_expiring', 'trial_expiring']);
+    sdk.hydrate(hydration('u_1', first));
+    expect(lifecycle()).toEqual(['trial_expiring', 'trial_expiring']);
+  });
+
+  it('uses started_at when no instance id is supplied and retains history on reload', () => {
+    const lifecycle = spyLifecycle();
+    const persistentStorage = new InMemoryStorage();
+    const first = makeSdk({ persistentStorage });
+    first.identify('u_1', { plan_handle: 'free' });
+    first.hydrate(hydration('u_1', { ...ENDING, started_at: '2026-10-01T00:00:00Z' }));
+    const reloaded = makeSdk({ persistentStorage });
+    expect(lifecycle()).toEqual(['trial_expiring']);
+    reloaded.hydrate(hydration('u_1', { ...ENDING, started_at: '2026-10-15T00:00:00Z' }));
+    expect(lifecycle()).toEqual(['trial_expiring', 'trial_expiring']);
+  });
+
+  it('keeps stage history isolated across identified users', () => {
+    const lifecycle = spyLifecycle();
+    const sdk = makeSdk();
+    const trial = { ...ENDING, instance_id: 'shared_external_id' };
+    sdk.hydrate(hydration('u_1', trial));
+    sdk.hydrate(hydration('u_2', trial));
+    expect(lifecycle()).toEqual(['trial_expiring', 'trial_expiring']);
+  });
+
+  it('does not repeat a stage after a poorer source temporarily reports no stage', () => {
+    const lifecycle = spyLifecycle();
+    const sdk = makeSdk();
+    sdk.identify('u_1', { plan_handle: 'free' });
+    sdk.hydrate(hydration('u_1', ENDING));
+    sdk.hydrate(hydration('u_1', { in_trial: true, days_remaining: 7 }));
+    sdk.hydrate(hydration('u_1', ENDING));
+    expect(lifecycle()).toEqual(['trial_expiring']);
+  });
+
+  it('does not repeat the current stage after a local-only reload', () => {
+    const lifecycle = spyLifecycle();
+    const persistentStorage = new InMemoryStorage();
+    const first = makeSdk({ persistentStorage });
+    first.identify('u_1', { plan_handle: 'free' });
+    first.update({ trial: ENDING });
+    expect(lifecycle()).toEqual(['trial_expiring']);
+    makeSdk({ persistentStorage });
+    expect(lifecycle()).toEqual(['trial_expiring']);
+  });
+
+  it('allows an identity-free new trial after an explicit terminal state', () => {
+    const lifecycle = spyLifecycle();
+    const sdk = makeSdk();
+    sdk.identify('u_1', { plan_handle: 'free' });
+    sdk.update({ trial: ENDING });
+    sdk.update({ trial: { in_trial: false, state: 'expired', days_remaining: 0 } });
+    sdk.update({ trial: { ...ENDING, state: 'running_out' } });
+    expect(lifecycle()).toEqual(['trial_expiring', 'trial_expired', 'trial_expiring']);
+  });
+});
 
 describe('BL-0417 (1): the previous user\'s trial does not leak into the next user', () => {
   for (const reset of ['resetIdentity', 'resetUserContext'] as const) {

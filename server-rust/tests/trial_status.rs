@@ -32,6 +32,17 @@ fn at(iso: &str, instance: &Value) -> Option<revturbine::trials::UserTrialStatus
 // ── Time-based derivation ───────────────────────────────────────────────────
 
 #[test]
+fn trial_episode_identity_survives_derivation() {
+    for status in ["active", "expired", "converted"] {
+        let mut instance = time_instance(status);
+        instance["id"] = json!("trial_episode");
+        let trial = at("2026-01-04T00:00:00.000Z", &instance).expect("started trial");
+        assert_eq!(trial.instance_id.as_deref(), Some("trial_episode"));
+        assert_eq!(trial.started_at.as_deref(), Some(DAY1));
+    }
+}
+
+#[test]
 fn day_and_remaining_counts_track_the_window() {
     let inst = time_instance("active");
 

@@ -13,7 +13,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadTheme } from './theme-loader';
-import { DEFAULT_THEME } from './defaults';
+import { DARK_THEME, DEFAULT_THEME } from './defaults';
 import { InMemoryStorage } from '../storage';
 import { initRevTurbine } from '../controllers';
 
@@ -93,6 +93,13 @@ describe('BL-0477: theme-loader authenticates with the public key only', () => {
 
 describe('BL-0477: headless init resolves the branding ladder', () => {
   const hosted = { tenantId: 'tenant_1', endpoint: 'https://edge.example.com', contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false } };
+
+  it('uses the dark embedded defaults in both headless rendering and branding', async () => {
+    const session = await initRevTurbine({ ...hosted, publicKey: 'rtk_public_a', colorScheme: 'dark' });
+    expect(session.theme).toEqual(DARK_THEME);
+    expect(session.sdk.getBranding().branding.theme).toEqual(DARK_THEME);
+    expect(themeRequests()).toHaveLength(0);
+  });
 
   it('nothing supplied: no theme request, and getBranding() reports the embedded defaults', async () => {
     const session = await initRevTurbine({ ...hosted, publicKey: 'rtk_public_a' });

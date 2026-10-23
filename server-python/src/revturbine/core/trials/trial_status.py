@@ -214,6 +214,10 @@ def derive_local_trial_status_from_instance(
         "trial_limit_type": limit_type,
         "progress_percent": progress_percent,
     }
+    if isinstance(instance.get("id"), str):
+        result["instance_id"] = instance["id"]
+    if isinstance(instance.get("started_at"), str):
+        result["started_at"] = instance["started_at"]
     if plan_handle is not None:
         result["plan_handle"] = plan_handle
     if day_number is not None:

@@ -104,10 +104,30 @@ def test_lenient_parser_type_checks_the_floor_field() -> None:
         parse_playbook_or_throw(_payload(bundle_min_readable_schema_version="11"), "test")
     with pytest.raises(ValueError, match="bundle_min_readable_schema_version"):
         parse_playbook_or_throw(_payload(bundle_min_readable_schema_version=-1), "test")
-    # But the lenient parser does NOT range-refuse — hand-authored configs
-    # without any envelope must keep parsing; refusal is the payload
-    # boundary's job (parse_playbook_payload).
+    # Hand-authored configs without an envelope remain a supported legacy path.
     raw = _payload()
     del raw["bundle_schema_version"]
     del raw["bundle_min_readable_schema_version"]
-    assert parse_playbook_or_throw(raw, "test") is not None
+    with pytest.warns(RuntimeWarning, match="no bundle_schema_version"):
+        assert parse_playbook_or_throw(raw, "test") is not None
+
+
+@pytest.mark.parametrize("version", [15, 16, 18])
+def test_constructor_boundary_accepts_supported_versions(version: int) -> None:
+    assert parse_playbook_or_throw(_payload(bundle_schema_version=version), "test") is not None
+
+
+@pytest.mark.parametrize("version", [10, 999, "18", None])
+def test_constructor_boundary_refuses_bad_versions(version: Any) -> None:
+    with pytest.raises(PlaybookPayloadVersionError):
+        parse_playbook_or_throw(_payload(bundle_schema_version=version), "test")
+
+
+@pytest.mark.parametrize("versioned", [True, False])
+def test_constructor_boundary_refuses_mandatory_extensions(versioned: bool) -> None:
+    raw = _payload(extension_rules=[{"kind": "geo.v1", "must_understand": True}])
+    if not versioned:
+        del raw["bundle_schema_version"]
+        del raw["bundle_min_readable_schema_version"]
+    with pytest.raises(PlaybookPayloadVersionError, match="unsupported mandatory extension"):
+        parse_playbook_or_throw(raw, "test")

@@ -63,7 +63,7 @@ import {
 import { exposureManager } from './telemetry';
 import type { ExposureBasis } from './telemetry';
 import type { RevTurbineTheme, RevTurbineThemeInput } from './theme/types';
-import { mergeTheme } from './theme/defaults';
+import { baseThemeForScheme, mergeTheme } from './theme/defaults';
 import { loadTheme } from './theme/theme-loader';
 import { normalizeSlotRoute } from './slot-route';
 import { GATED_SURFACE_TEMPLATE_IDS } from './placements/surface-slot-constants';
@@ -1689,10 +1689,11 @@ export async function initRevTurbine<TUser extends RevTurbineUserContext = RevTu
   const baseTheme = resolvedBranding.source !== 'default' && brandingTheme && Object.keys(brandingTheme).length > 0
     ? (brandingTheme as RevTurbineThemeInput)
     : undefined;
-  let theme: RevTurbineTheme = mergeTheme(baseTheme);
+  let theme: RevTurbineTheme = mergeTheme(baseTheme, baseThemeForScheme(initOptions.colorScheme ?? 'light'));
   const themePublicKey = resolveBrowserPublicKey(initOptions);
   if (initOptions.fetchThemeOverride && themePublicKey) {
     theme = await loadTheme({
+      colorScheme: initOptions.colorScheme,
       publicKey: themePublicKey,
       endpoint: initOptions.endpoint ?? DEFAULT_HOSTED_ENDPOINT,
       base: baseTheme,

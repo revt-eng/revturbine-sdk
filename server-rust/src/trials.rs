@@ -30,6 +30,12 @@ const RUNNING_OUT_PERCENT_THRESHOLD: f64 = 75.0;
 /// absent key and an explicit null into different output.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UserTrialStatus {
+    /// Stable identity of the trial episode, when supplied by the instance.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub instance_id: Option<String>,
+    /// Original start timestamp of the trial episode.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub started_at: Option<String>,
     /// Whether the trial is currently active (after lazy expiry).
     pub in_trial: bool,
     /// `free` | `reverse`.
@@ -263,6 +269,8 @@ pub fn derive_local_trial_status_from_instance(
     };
 
     Some(UserTrialStatus {
+        instance_id: str_field(instance, "id").map(str::to_string),
+        started_at: str_field(instance, "started_at").map(str::to_string),
         in_trial: resolved_status == "active",
         trial_type: if rule_type == "reverse_trial" {
             "reverse".to_string()

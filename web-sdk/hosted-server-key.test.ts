@@ -70,6 +70,27 @@ const hosted = {
 };
 
 describe('hosted server mode: the server key authenticates delivery and ingest on a backend', () => {
+  it('replaces a compatible startup seed with the hosted Playbook', async () => {
+    stubControlPlane();
+    const session = await initRevTurbine({
+      ...hosted, runtimeMode: 'revturbine_server', apiKey: SERVER_KEY, user: { id: 'user_1', plan_handle: 'pro' },
+      localRuntime: { playbook: { ...PLAYBOOK, entitlement_rules: [] } },
+    });
+    expect((await session.sdk.can('sso')).allowed).toBe(true);
+    expect(calls.some(({ url }) => url.includes('/api/sdk/config'))).toBe(true);
+    session.sdk.dispose();
+  });
+
+  it('keeps LocalOnly seeds offline', async () => {
+    stubControlPlane();
+    const session = await initRevTurbine({
+      ...hosted, runtimeMode: 'local_only', apiKey: SERVER_KEY,
+      localRuntime: { playbook: PLAYBOOK },
+    });
+    expect(calls).toHaveLength(0);
+    session.sdk.dispose();
+  });
+
   it('an apiKey-only backend instance loads the launched Playbook and decides with it', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     stubControlPlane();

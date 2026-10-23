@@ -12,11 +12,23 @@ from __future__ import annotations
 from typing import Any
 
 from revturbine.core.trials.trial_status import (
+    derive_local_trial_status_from_instance,
     derive_reverse_trial_grants,
     evaluate_trial_status,
     find_latest_started_trial_instance,
 )
 from revturbine.sdk import RevTurbineCustomerSdk
+
+
+def test_trial_episode_identity_survives_derivation() -> None:
+    for status in ("active", "expired", "converted"):
+        instance = _instance(status=status)
+        trial = derive_local_trial_status_from_instance(
+            instance=instance, now_iso="2026-05-08T00:00:00Z"
+        )
+        assert trial is not None
+        assert trial["instance_id"] == instance["id"]
+        assert trial["started_at"] == instance["started_at"]
 
 
 def _instance(**overrides: Any) -> dict[str, Any]:
@@ -181,6 +193,8 @@ class TestEvaluateTrialStatus:
             "day_number": 7,
             "days_remaining": 7,
             "plan_handle": "slack_pro",
+            "instance_id": "ti_test",
+            "started_at": "2026-05-01T00:00:00Z",
         }
         assert result["reverse_grants"] is None
 
@@ -206,6 +220,8 @@ class TestEvaluateTrialStatus:
             "day_number": 7,
             "days_remaining": 7,
             "plan_handle": "slack_free",
+            "instance_id": "ti_test",
+            "started_at": "2026-05-01T00:00:00Z",
         }
         assert result["reverse_grants"] is not None
         assert result["reverse_grants"]["effective_plan_handle"] == "slack_business_plus"

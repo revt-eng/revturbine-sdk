@@ -3,8 +3,10 @@ import {
   type RevTurbineConfig,
 } from '@revt-eng/schema';
 import { isDevelopmentBuild } from './build-mode';
+import { assertPlaybookExtensionsSupported, assertPlaybookPayloadReadable } from '@revt-eng/core/bundle';
 
 const PLAYBOOK_FORMAT_VERSION = '1.0.0';
+let warnedUnversionedPlaybook = false;
 const REQUIRED_BODY_ARRAY_FIELDS = [
   'plans',
   'entitlements',
@@ -226,6 +228,16 @@ export function normalizeConfigArtifactOrThrow(
   if (raw === undefined) return undefined;
   if (!isRecord(raw)) {
     throw new Error(`Invalid ${source}: expected top-level object`);
+  }
+
+  if ('bundle_schema_version' in raw || 'bundle_min_readable_schema_version' in raw) {
+    assertPlaybookPayloadReadable(raw);
+  } else {
+    assertPlaybookExtensionsSupported(raw);
+    if (!warnedUnversionedPlaybook) {
+      warnedUnversionedPlaybook = true;
+      console.warn('[RevTurbine] Playbook has no bundle_schema_version; accepting legacy input without version compatibility assurance.');
+    }
   }
 
   warnForLegacyProjections(raw, source);

@@ -8,7 +8,7 @@ from typing import Any, Literal, NamedTuple, TypeAlias, TypedDict, TypeGuard
 
 PLAYBOOK_FORMAT_VERSION = "1.0.0"
 
-BUNDLE_SCHEMA_VERSION = 17
+BUNDLE_SCHEMA_VERSION = 18
 """Newest payload ``bundle_schema_version`` this port fully understands.
 
 Mirror of ``SCHEMA_VERSION`` in scaffold ``src/core/bundle/ir.ts`` — the
@@ -98,6 +98,17 @@ def parse_playbook_or_throw(
         return None
     if not isinstance(raw, dict):
         raise ValueError(f"Invalid {source}: expected top-level object")
+
+    if "bundle_schema_version" in raw or "bundle_min_readable_schema_version" in raw:
+        assert_playbook_payload_readable(raw)
+    else:
+        assert_playbook_extensions_supported(raw)
+        warnings.warn(
+            "Playbook has no bundle_schema_version; accepting legacy input "
+            "without version compatibility assurance.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
 
     legacy_projection_fields = [field for field in _LEGACY_PROJECTION_FIELDS if field in raw]
     if legacy_projection_fields:
@@ -209,6 +220,7 @@ PlaybookPayloadRefusalReason: TypeAlias = Literal[
     "schema_version_too_new",
     "schema_version_too_old",
     "requires_newer_reader",
+    "unsupported_mandatory_extension",
 ]
 """Why a payload was refused. Mirrors the TypeScript reason taxonomy."""
 
@@ -301,7 +313,20 @@ def assert_playbook_payload_readable(
             f"Playbook payload: unsupported bundle_schema_version={version.schema_version} "
             f"(reader supports {reader_floor}..{supported})",
         )
+    assert_playbook_extensions_supported(raw)
     return version
+
+
+def assert_playbook_extensions_supported(raw: Any) -> None:
+    """Refuse required extension semantics even on unversioned legacy inputs."""
+    entries = raw.get("extension_rules") if isinstance(raw, dict) else None
+    if isinstance(entries, list):
+        for entry in entries:
+            if isinstance(entry, dict) and entry.get("must_understand") is True:
+                raise PlaybookPayloadVersionError(
+                    "unsupported_mandatory_extension",
+                    f"Playbook payload: unsupported mandatory extension kind={entry.get('kind')}",
+                )
 
 
 def parse_playbook_payload(

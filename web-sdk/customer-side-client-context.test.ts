@@ -58,6 +58,19 @@ afterEach(() => {
 });
 
 describe('web-SDK fetchClientContext (plan 157 T5)', () => {
+  it('BL-0422: carries trial episode identity across HTTP into the public context', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      ...CLIENT_CTX,
+      trial: { ...CLIENT_CTX.trial, instance_id: 'trial_http_1', started_at: '2026-07-01T00:00:00Z' },
+    }), { status: 200, headers: { 'content-type': 'application/json' } })));
+    const sdk = makeSdk({ runtimeMode: 'local_only' });
+    sdk.identify('user_1');
+    await sdk.fetchClientContext('rt_client_trial');
+    expect(sdk.getUserContext().trial).toMatchObject({
+      instance_id: 'trial_http_1', started_at: '2026-07-01T00:00:00Z', days_remaining: 8,
+    });
+  });
+
   it('fetches /api/sdk/client-context with the client token and merges trial + billing', async () => {
     const fetchMock = stubFetch({
       ok: true,

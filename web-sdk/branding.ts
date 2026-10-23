@@ -25,7 +25,7 @@
  */
 import type { BrandingConfig } from './generated';
 import { isDevelopmentBuild } from './build-mode';
-import { mergeTheme } from './theme/defaults';
+import { baseThemeForScheme, mergeTheme } from './theme/defaults';
 
 /**
  * Structural default branding. Neutral, brandless values that let the SDK render
@@ -55,6 +55,8 @@ export type BrandingSource = 'explicit' | 'legacy-config' | 'branding-api' | 'de
  * @public
  */
 export interface BrandingResolutionInput {
+  /** Resolved display palette used when no branding theme was supplied. */
+  colorScheme?: 'light' | 'dark';
   /** Rung 1 — branding passed explicitly to the SDK at init. */
   explicit?: BrandingConfig;
   /**
@@ -137,7 +139,7 @@ export function resolveBranding(input: BrandingResolutionInput = {}): ResolvedBr
   // palette the React provider and headless sessions render with — so
   // `getBranding()` no longer reports an empty theme the renderer never uses.
   const fallback = merge(undefined, 'default');
-  return { ...fallback, branding: { ...fallback.branding, theme: { ...mergeTheme() } } };
+  return { ...fallback, branding: { ...fallback.branding, theme: { ...mergeTheme(undefined, baseThemeForScheme(input.colorScheme ?? 'light')) } } };
 }
 
 /** Test-only: reset the one-time legacy-branding warning latch. @internal */

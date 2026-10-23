@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "count": 80,
+  "count": 81,
   "exports": [
     {
       "name": "AccessDeniedPlaceholder",
@@ -24,7 +24,7 @@
       "name": "BrandingResolutionInput",
       "kind": "interface",
       "file": "web-sdk/branding.ts",
-      "signature": "export interface BrandingResolutionInput { explicit?: BrandingConfig; legacyConfigTheme?: BrandingConfig['theme']; apiBranding?: BrandingConfig; warnOnLegacy?: boolean; }"
+      "signature": "export interface BrandingResolutionInput { colorScheme?: 'light' | 'dark'; explicit?: BrandingConfig; legacyConfigTheme?: BrandingConfig['theme']; apiBranding?: BrandingConfig; warnOnLegacy?: boolean; }"
     },
     {
       "name": "BrandingSource",
@@ -319,6 +319,12 @@
       "kind": "method",
       "file": "web-sdk/customer-side.ts",
       "signature": "setApiBranding(branding: BrandingConfig | undefined): void"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.setColorScheme",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "setColorScheme(scheme: 'light' | 'dark'): void"
     },
     {
       "name": "RevTurbineCustomerSdk.setTelemetryConsent",

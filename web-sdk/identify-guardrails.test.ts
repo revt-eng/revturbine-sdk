@@ -370,6 +370,19 @@ describe('setUserContext() drops server-assigned keys at its runtime boundary (B
     sdk.setUserContext({ id: 'user_1', plan_handle: 'starter' });
     expect(warnings().join('\n')).not.toContain('server-assigned');
   });
+
+  it('drops canonical server-owned retirement fields from plain-JS input and storage', () => {
+    const store = new InMemoryStorage();
+    const sdk = makeLocalSdk({ persistentStorage: store });
+    sdk.setUserContext(JSON.parse('{"id":"user_1","retired_at":"2026-10-22T00:00:00Z","provisional":true,"merged_into":"other_user"}'));
+    const raw = store.getItem('revturbine:tenant_identity:local-runtime');
+    for (const key of ['retired_at', 'provisional', 'merged_into']) {
+      expect(raw).not.toContain(key);
+      expect(warnings().join('\n')).toContain(key);
+    }
+    expect(sdk.getUserContext().retired_at).toBeNull();
+    sdk.dispose();
+  });
 });
 
 describe('update() carries app-owned experiments (BL-0352)', () => {

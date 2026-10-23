@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.517/rust/revturbine_types.rs
+//   published/v0.1.520/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -37301,6 +37301,740 @@ impl ::std::convert::TryFrom<::std::string::String> for B2bSegmentEventName {
         value.parse()
     }
 }
+#[doc = "`BillingAccountBindingActor`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"kind\","]
+#[doc = "        \"process\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"kind\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"system\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"process\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"payer_auto_match\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"kind\","]
+#[doc = "        \"role\","]
+#[doc = "        \"user_id\","]
+#[doc = "        \"via\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"kind\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"user\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"role\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 64,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"user_id\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"via\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"session\","]
+#[doc = "            \"api_token\""]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    }"]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(tag = "kind", deny_unknown_fields)]
+pub enum BillingAccountBindingActor {
+    #[serde(rename = "system")]
+    System { process: ::std::string::String },
+    #[serde(rename = "user")]
+    User {
+        role: BillingAccountBindingActorRole,
+        user_id: BillingAccountBindingActorUserId,
+        via: BillingAccountBindingActorVia,
+    },
+}
+#[doc = "`BillingAccountBindingActorRole`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 64,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingAccountBindingActorRole(::std::string::String);
+impl ::std::ops::Deref for BillingAccountBindingActorRole {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingAccountBindingActorRole> for ::std::string::String {
+    fn from(value: BillingAccountBindingActorRole) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingAccountBindingActorRole {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 64usize {
+            return Err("longer than 64 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountBindingActorRole {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingAccountBindingActorRole {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountBindingActorRole {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingAccountBindingActorRole {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingAccountBindingActorUserId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 128,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"pattern\": \"^[A-Za-z0-9_.:-]+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingAccountBindingActorUserId(::std::string::String);
+impl ::std::ops::Deref for BillingAccountBindingActorUserId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingAccountBindingActorUserId> for ::std::string::String {
+    fn from(value: BillingAccountBindingActorUserId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingAccountBindingActorUserId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Za-z0-9_.:-]+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Za-z0-9_.:-]+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountBindingActorUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingAccountBindingActorUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountBindingActorUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingAccountBindingActorUserId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingAccountBindingActorVia`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"session\","]
+#[doc = "    \"api_token\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingAccountBindingActorVia {
+    #[serde(rename = "session")]
+    Session,
+    #[serde(rename = "api_token")]
+    ApiToken,
+}
+impl ::std::fmt::Display for BillingAccountBindingActorVia {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Session => f.write_str("session"),
+            Self::ApiToken => f.write_str("api_token"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingAccountBindingActorVia {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "session" => Ok(Self::Session),
+            "api_token" => Ok(Self::ApiToken),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountBindingActorVia {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingAccountBindingActorVia {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountBindingActorVia {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingAccountBindingEvidence`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"actor\","]
+#[doc = "    \"confidence\","]
+#[doc = "    \"kind\","]
+#[doc = "    \"reason\","]
+#[doc = "    \"via_user_id\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"actor\": {"]
+#[doc = "      \"$ref\": \"#/$defs/BillingAccountBindingActor\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"confidence\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"explicit\","]
+#[doc = "        \"exact_match\","]
+#[doc = "        \"operator_asserted\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"kind\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"provider_metadata_account\","]
+#[doc = "        \"provider_metadata_user\","]
+#[doc = "        \"customer_link\","]
+#[doc = "        \"checkout_link\","]
+#[doc = "        \"verified_email\","]
+#[doc = "        \"operator_link\","]
+#[doc = "        \"operator_no_account\","]
+#[doc = "        \"operator_unlink\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"reason\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 500"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"via_user_id\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^[A-Za-z0-9_.:-]+$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BillingAccountBindingEvidence {
+    pub actor: BillingAccountBindingActor,
+    pub confidence: BillingAccountBindingEvidenceConfidence,
+    pub kind: BillingAccountBindingEvidenceKind,
+    pub reason: ::std::option::Option<BillingAccountBindingEvidenceReason>,
+    pub via_user_id: ::std::option::Option<BillingAccountBindingEvidenceViaUserId>,
+}
+#[doc = "`BillingAccountBindingEvidenceConfidence`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"explicit\","]
+#[doc = "    \"exact_match\","]
+#[doc = "    \"operator_asserted\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingAccountBindingEvidenceConfidence {
+    #[serde(rename = "explicit")]
+    Explicit,
+    #[serde(rename = "exact_match")]
+    ExactMatch,
+    #[serde(rename = "operator_asserted")]
+    OperatorAsserted,
+}
+impl ::std::fmt::Display for BillingAccountBindingEvidenceConfidence {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Explicit => f.write_str("explicit"),
+            Self::ExactMatch => f.write_str("exact_match"),
+            Self::OperatorAsserted => f.write_str("operator_asserted"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingAccountBindingEvidenceConfidence {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "explicit" => Ok(Self::Explicit),
+            "exact_match" => Ok(Self::ExactMatch),
+            "operator_asserted" => Ok(Self::OperatorAsserted),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountBindingEvidenceConfidence {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingAccountBindingEvidenceConfidence {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountBindingEvidenceConfidence {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingAccountBindingEvidenceKind`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"provider_metadata_account\","]
+#[doc = "    \"provider_metadata_user\","]
+#[doc = "    \"customer_link\","]
+#[doc = "    \"checkout_link\","]
+#[doc = "    \"verified_email\","]
+#[doc = "    \"operator_link\","]
+#[doc = "    \"operator_no_account\","]
+#[doc = "    \"operator_unlink\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingAccountBindingEvidenceKind {
+    #[serde(rename = "provider_metadata_account")]
+    ProviderMetadataAccount,
+    #[serde(rename = "provider_metadata_user")]
+    ProviderMetadataUser,
+    #[serde(rename = "customer_link")]
+    CustomerLink,
+    #[serde(rename = "checkout_link")]
+    CheckoutLink,
+    #[serde(rename = "verified_email")]
+    VerifiedEmail,
+    #[serde(rename = "operator_link")]
+    OperatorLink,
+    #[serde(rename = "operator_no_account")]
+    OperatorNoAccount,
+    #[serde(rename = "operator_unlink")]
+    OperatorUnlink,
+}
+impl ::std::fmt::Display for BillingAccountBindingEvidenceKind {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::ProviderMetadataAccount => f.write_str("provider_metadata_account"),
+            Self::ProviderMetadataUser => f.write_str("provider_metadata_user"),
+            Self::CustomerLink => f.write_str("customer_link"),
+            Self::CheckoutLink => f.write_str("checkout_link"),
+            Self::VerifiedEmail => f.write_str("verified_email"),
+            Self::OperatorLink => f.write_str("operator_link"),
+            Self::OperatorNoAccount => f.write_str("operator_no_account"),
+            Self::OperatorUnlink => f.write_str("operator_unlink"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingAccountBindingEvidenceKind {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "provider_metadata_account" => Ok(Self::ProviderMetadataAccount),
+            "provider_metadata_user" => Ok(Self::ProviderMetadataUser),
+            "customer_link" => Ok(Self::CustomerLink),
+            "checkout_link" => Ok(Self::CheckoutLink),
+            "verified_email" => Ok(Self::VerifiedEmail),
+            "operator_link" => Ok(Self::OperatorLink),
+            "operator_no_account" => Ok(Self::OperatorNoAccount),
+            "operator_unlink" => Ok(Self::OperatorUnlink),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountBindingEvidenceKind {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingAccountBindingEvidenceKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountBindingEvidenceKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingAccountBindingEvidenceReason`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 500"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingAccountBindingEvidenceReason(::std::string::String);
+impl ::std::ops::Deref for BillingAccountBindingEvidenceReason {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingAccountBindingEvidenceReason> for ::std::string::String {
+    fn from(value: BillingAccountBindingEvidenceReason) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingAccountBindingEvidenceReason {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 500usize {
+            return Err("longer than 500 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountBindingEvidenceReason {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingAccountBindingEvidenceReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountBindingEvidenceReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingAccountBindingEvidenceReason {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingAccountBindingEvidenceViaUserId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 128,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"pattern\": \"^[A-Za-z0-9_.:-]+$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingAccountBindingEvidenceViaUserId(::std::string::String);
+impl ::std::ops::Deref for BillingAccountBindingEvidenceViaUserId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingAccountBindingEvidenceViaUserId> for ::std::string::String {
+    fn from(value: BillingAccountBindingEvidenceViaUserId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingAccountBindingEvidenceViaUserId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Za-z0-9_.:-]+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Za-z0-9_.:-]+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingAccountBindingEvidenceViaUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingAccountBindingEvidenceViaUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingAccountBindingEvidenceViaUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingAccountBindingEvidenceViaUserId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`BillingAccountMappingRevision`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -37328,6 +38062,10 @@ impl ::std::convert::TryFrom<::std::string::String> for B2bSegmentEventName {
 #[doc = "          \"const\": \"explicit_binding\","]
 #[doc = "          \"x-revturbine-data-classification\": \"operational\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"binding_evidence\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingAccountBindingEvidence\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
 #[doc = "        },"]
 #[doc = "        \"customer_ref\": {"]
 #[doc = "          \"type\": \"string\","]
@@ -37432,6 +38170,10 @@ impl ::std::convert::TryFrom<::std::string::String> for B2bSegmentEventName {
 #[doc = "          \"const\": \"integration_sync\","]
 #[doc = "          \"x-revturbine-data-classification\": \"operational\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"binding_evidence\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingAccountBindingEvidence\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
 #[doc = "        },"]
 #[doc = "        \"customer_ref\": {"]
 #[doc = "          \"type\": \"string\","]
@@ -37538,6 +38280,10 @@ impl ::std::convert::TryFrom<::std::string::String> for B2bSegmentEventName {
 #[doc = "          \"const\": \"approved_correction\","]
 #[doc = "          \"x-revturbine-data-classification\": \"operational\","]
 #[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        \"binding_evidence\": {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingAccountBindingEvidence\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
 #[doc = "        },"]
 #[doc = "        \"correction_generation_id\": {"]
 #[doc = "          \"type\": \"string\","]
@@ -37653,6 +38399,8 @@ impl ::std::convert::TryFrom<::std::string::String> for B2bSegmentEventName {
 pub enum BillingAccountMappingRevision {
     #[serde(rename = "explicit_binding")]
     ExplicitBinding {
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        binding_evidence: ::std::option::Option<BillingAccountBindingEvidence>,
         customer_ref: BillingAccountMappingRevisionCustomerRef,
         effective_from: ::chrono::DateTime<::chrono::offset::Utc>,
         effective_to: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
@@ -37665,6 +38413,8 @@ pub enum BillingAccountMappingRevision {
     },
     #[serde(rename = "integration_sync")]
     IntegrationSync {
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        binding_evidence: ::std::option::Option<BillingAccountBindingEvidence>,
         customer_ref: BillingAccountMappingRevisionCustomerRef,
         effective_from: ::chrono::DateTime<::chrono::offset::Utc>,
         effective_to: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
@@ -37677,6 +38427,8 @@ pub enum BillingAccountMappingRevision {
     },
     #[serde(rename = "approved_correction")]
     ApprovedCorrection {
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        binding_evidence: ::std::option::Option<BillingAccountBindingEvidence>,
         correction_generation_id: BillingAccountMappingRevisionCorrectionGenerationId,
         customer_ref: BillingAccountMappingRevisionCustomerRef,
         effective_from: ::chrono::DateTime<::chrono::offset::Utc>,
@@ -121534,6 +122286,18 @@ impl<'de> ::serde::Deserialize<'de> for ClientContextSubject {
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
 #[doc = "    },"]
+#[doc = "    \"instance_id\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "    },"]
+#[doc = "    \"started_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"external\""]
+#[doc = "    },"]
 #[doc = "    \"status\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"enum\": ["]
@@ -121560,6 +122324,10 @@ pub struct ClientContextTrial {
     pub days_remaining: ::std::option::Option<i64>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub ends_at: ::std::option::Option<::std::string::String>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub instance_id: ::std::option::Option<::std::string::String>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub started_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
     pub status: ClientContextTrialStatus,
 }
 #[doc = "`ClientContextTrialStatus`"]
@@ -124493,6 +125261,19 @@ impl<'de> ::serde::Deserialize<'de> for Currency {
 #[doc = "      \"$ref\": \"#/$defs/Identity\","]
 #[doc = "      \"x-revturbine-data-classification\": \"pii\""]
 #[doc = "    },"]
+#[doc = "    \"merged_into\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"pii\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
 #[doc = "    \"metadata\": {"]
 #[doc = "      \"default\": {},"]
 #[doc = "      \"type\": \"object\","]
@@ -124500,6 +125281,26 @@ impl<'de> ::serde::Deserialize<'de> for Currency {
 #[doc = "      \"propertyNames\": {"]
 #[doc = "        \"type\": \"string\""]
 #[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"provisional\": {"]
+#[doc = "      \"default\": false,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"retired_at\": {"]
+#[doc = "      \"default\": null,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
 #[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "    },"]
@@ -124570,8 +125371,14 @@ pub struct Customer {
     pub external_id: CustomerExternalId,
     pub id: CustomerId,
     pub identity: Identity,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub merged_into: ::std::option::Option<CustomerMergedInto>,
     #[serde(default, skip_serializing_if = "::serde_json::Map::is_empty")]
     pub metadata: ::serde_json::Map<::std::string::String, ::serde_json::Value>,
+    #[serde(default)]
+    pub provisional: bool,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub retired_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
     #[serde(default = "defaults::customer_status")]
     pub status: CustomerStatus,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -124616,6 +125423,20 @@ pub struct Customer {
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"merged_into\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"pii\","]
+#[doc = "          \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ]"]
+#[doc = "    },"]
 #[doc = "    \"name\": {"]
 #[doc = "      \"anyOf\": ["]
 #[doc = "        {"]
@@ -124627,6 +125448,27 @@ pub struct Customer {
 #[doc = "      ],"]
 #[doc = "      \"x-revturbine-data-classification\": \"pii\","]
 #[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"no_app_account\": {"]
+#[doc = "      \"default\": false,"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"provisional\": {"]
+#[doc = "      \"default\": false,"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    },"]
+#[doc = "    \"retired_at\": {"]
+#[doc = "      \"default\": null,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ]"]
 #[doc = "    },"]
 #[doc = "    \"tenant_id\": {"]
 #[doc = "      \"readOnly\": true,"]
@@ -124666,7 +125508,15 @@ pub struct CustomerAccount {
     pub created_at: ::chrono::DateTime<::chrono::offset::Utc>,
     pub id: CustomerAccountId,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub merged_into: ::std::option::Option<CustomerAccountMergedInto>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub name: ::std::option::Option<::std::string::String>,
+    #[serde(default)]
+    pub no_app_account: bool,
+    #[serde(default)]
+    pub provisional: bool,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub retired_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
     pub tenant_id: CustomerAccountTenantId,
     pub updated_at: ::chrono::DateTime<::chrono::offset::Utc>,
 }
@@ -125117,6 +125967,80 @@ impl ::std::convert::TryFrom<::std::string::String> for CustomerAccountListQuery
     }
 }
 impl<'de> ::serde::Deserialize<'de> for CustomerAccountListQueryAccountId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`CustomerAccountMergedInto`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"pii\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CustomerAccountMergedInto(::std::string::String);
+impl ::std::ops::Deref for CustomerAccountMergedInto {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CustomerAccountMergedInto> for ::std::string::String {
+    fn from(value: CustomerAccountMergedInto) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CustomerAccountMergedInto {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CustomerAccountMergedInto {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CustomerAccountMergedInto {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CustomerAccountMergedInto {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CustomerAccountMergedInto {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -129492,6 +130416,74 @@ impl<'de> ::serde::Deserialize<'de> for CustomerId {
             })
     }
 }
+#[doc = "`CustomerMergedInto`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CustomerMergedInto(::std::string::String);
+impl ::std::ops::Deref for CustomerMergedInto {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CustomerMergedInto> for ::std::string::String {
+    fn from(value: CustomerMergedInto) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CustomerMergedInto {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CustomerMergedInto {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CustomerMergedInto {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CustomerMergedInto {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CustomerMergedInto {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`CustomerOverride`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -130709,6 +131701,11 @@ impl ::std::default::Default for CustomerSubscriptionStatus {
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"provisional\": {"]
+#[doc = "      \"default\": false,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"status\": {"]
 #[doc = "      \"default\": \"active\","]
 #[doc = "      \"type\": \"string\","]
@@ -130762,6 +131759,8 @@ pub struct CustomerSummary {
     pub current_plan_id: ::std::option::Option<::std::string::String>,
     pub external_id: CustomerSummaryExternalId,
     pub id: CustomerSummaryId,
+    #[serde(default)]
+    pub provisional: bool,
     #[serde(default = "defaults::customer_summary_status")]
     pub status: CustomerSummaryStatus,
     pub stripe_linked: bool,
@@ -173577,6 +174576,3340 @@ impl ::std::default::Default for PaginationParams {
         }
     }
 }
+#[doc = "`PayerAccountLinkHistory`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"payer_key\","]
+#[doc = "    \"revisions\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"payer_key\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/PayerKey\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"revisions\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"$ref\": \"#/$defs/PayerAccountLinkHistoryEntry\""]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 200,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PayerAccountLinkHistory {
+    pub payer_key: PayerKey,
+    pub revisions: ::std::vec::Vec<PayerAccountLinkHistoryEntry>,
+}
+#[doc = "`PayerAccountLinkHistoryEntry`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"changed_at\","]
+#[doc = "    \"changed_by\","]
+#[doc = "    \"changed_by_you\","]
+#[doc = "    \"confidence\","]
+#[doc = "    \"evidence_kind\","]
+#[doc = "    \"mapping_revision\","]
+#[doc = "    \"reason\","]
+#[doc = "    \"rt_account_id\","]
+#[doc = "    \"state\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"changed_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"changed_by\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"automatic_matching\","]
+#[doc = "        \"workspace_member\","]
+#[doc = "        \"unknown\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"changed_by_you\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"confidence\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"explicit\","]
+#[doc = "            \"exact_match\","]
+#[doc = "            \"operator_asserted\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"evidence_kind\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"provider_metadata_account\","]
+#[doc = "            \"provider_metadata_user\","]
+#[doc = "            \"customer_link\","]
+#[doc = "            \"checkout_link\","]
+#[doc = "            \"verified_email\","]
+#[doc = "            \"operator_link\","]
+#[doc = "            \"operator_no_account\","]
+#[doc = "            \"operator_unlink\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"mapping_revision\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"reason\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 500"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"rt_account_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"state\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/PayerAccountLinkState\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PayerAccountLinkHistoryEntry {
+    pub changed_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub changed_by: PayerAccountLinkHistoryEntryChangedBy,
+    pub changed_by_you: bool,
+    pub confidence: ::std::option::Option<PayerAccountLinkHistoryEntryConfidence>,
+    pub evidence_kind: ::std::option::Option<PayerAccountLinkHistoryEntryEvidenceKind>,
+    pub mapping_revision: ::std::num::NonZeroU64,
+    pub reason: ::std::option::Option<PayerAccountLinkHistoryEntryReason>,
+    pub rt_account_id: ::std::option::Option<PayerAccountLinkHistoryEntryRtAccountId>,
+    pub state: PayerAccountLinkState,
+}
+#[doc = "`PayerAccountLinkHistoryEntryChangedBy`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"automatic_matching\","]
+#[doc = "    \"workspace_member\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PayerAccountLinkHistoryEntryChangedBy {
+    #[serde(rename = "automatic_matching")]
+    AutomaticMatching,
+    #[serde(rename = "workspace_member")]
+    WorkspaceMember,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for PayerAccountLinkHistoryEntryChangedBy {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::AutomaticMatching => f.write_str("automatic_matching"),
+            Self::WorkspaceMember => f.write_str("workspace_member"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkHistoryEntryChangedBy {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "automatic_matching" => Ok(Self::AutomaticMatching),
+            "workspace_member" => Ok(Self::WorkspaceMember),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkHistoryEntryChangedBy {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkHistoryEntryChangedBy {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkHistoryEntryChangedBy {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`PayerAccountLinkHistoryEntryConfidence`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"explicit\","]
+#[doc = "    \"exact_match\","]
+#[doc = "    \"operator_asserted\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PayerAccountLinkHistoryEntryConfidence {
+    #[serde(rename = "explicit")]
+    Explicit,
+    #[serde(rename = "exact_match")]
+    ExactMatch,
+    #[serde(rename = "operator_asserted")]
+    OperatorAsserted,
+}
+impl ::std::fmt::Display for PayerAccountLinkHistoryEntryConfidence {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Explicit => f.write_str("explicit"),
+            Self::ExactMatch => f.write_str("exact_match"),
+            Self::OperatorAsserted => f.write_str("operator_asserted"),
+        }
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkHistoryEntryConfidence {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "explicit" => Ok(Self::Explicit),
+            "exact_match" => Ok(Self::ExactMatch),
+            "operator_asserted" => Ok(Self::OperatorAsserted),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkHistoryEntryConfidence {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkHistoryEntryConfidence {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkHistoryEntryConfidence {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`PayerAccountLinkHistoryEntryEvidenceKind`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"provider_metadata_account\","]
+#[doc = "    \"provider_metadata_user\","]
+#[doc = "    \"customer_link\","]
+#[doc = "    \"checkout_link\","]
+#[doc = "    \"verified_email\","]
+#[doc = "    \"operator_link\","]
+#[doc = "    \"operator_no_account\","]
+#[doc = "    \"operator_unlink\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PayerAccountLinkHistoryEntryEvidenceKind {
+    #[serde(rename = "provider_metadata_account")]
+    ProviderMetadataAccount,
+    #[serde(rename = "provider_metadata_user")]
+    ProviderMetadataUser,
+    #[serde(rename = "customer_link")]
+    CustomerLink,
+    #[serde(rename = "checkout_link")]
+    CheckoutLink,
+    #[serde(rename = "verified_email")]
+    VerifiedEmail,
+    #[serde(rename = "operator_link")]
+    OperatorLink,
+    #[serde(rename = "operator_no_account")]
+    OperatorNoAccount,
+    #[serde(rename = "operator_unlink")]
+    OperatorUnlink,
+}
+impl ::std::fmt::Display for PayerAccountLinkHistoryEntryEvidenceKind {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::ProviderMetadataAccount => f.write_str("provider_metadata_account"),
+            Self::ProviderMetadataUser => f.write_str("provider_metadata_user"),
+            Self::CustomerLink => f.write_str("customer_link"),
+            Self::CheckoutLink => f.write_str("checkout_link"),
+            Self::VerifiedEmail => f.write_str("verified_email"),
+            Self::OperatorLink => f.write_str("operator_link"),
+            Self::OperatorNoAccount => f.write_str("operator_no_account"),
+            Self::OperatorUnlink => f.write_str("operator_unlink"),
+        }
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkHistoryEntryEvidenceKind {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "provider_metadata_account" => Ok(Self::ProviderMetadataAccount),
+            "provider_metadata_user" => Ok(Self::ProviderMetadataUser),
+            "customer_link" => Ok(Self::CustomerLink),
+            "checkout_link" => Ok(Self::CheckoutLink),
+            "verified_email" => Ok(Self::VerifiedEmail),
+            "operator_link" => Ok(Self::OperatorLink),
+            "operator_no_account" => Ok(Self::OperatorNoAccount),
+            "operator_unlink" => Ok(Self::OperatorUnlink),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkHistoryEntryEvidenceKind {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkHistoryEntryEvidenceKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkHistoryEntryEvidenceKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`PayerAccountLinkHistoryEntryReason`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 500"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PayerAccountLinkHistoryEntryReason(::std::string::String);
+impl ::std::ops::Deref for PayerAccountLinkHistoryEntryReason {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PayerAccountLinkHistoryEntryReason> for ::std::string::String {
+    fn from(value: PayerAccountLinkHistoryEntryReason) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkHistoryEntryReason {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 500usize {
+            return Err("longer than 500 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkHistoryEntryReason {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkHistoryEntryReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkHistoryEntryReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PayerAccountLinkHistoryEntryReason {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PayerAccountLinkHistoryEntryRtAccountId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PayerAccountLinkHistoryEntryRtAccountId(::std::string::String);
+impl ::std::ops::Deref for PayerAccountLinkHistoryEntryRtAccountId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PayerAccountLinkHistoryEntryRtAccountId> for ::std::string::String {
+    fn from(value: PayerAccountLinkHistoryEntryRtAccountId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkHistoryEntryRtAccountId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkHistoryEntryRtAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkHistoryEntryRtAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkHistoryEntryRtAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PayerAccountLinkHistoryEntryRtAccountId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PayerAccountLinkItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"active_subscriptions\","]
+#[doc = "    \"changed_at\","]
+#[doc = "    \"changed_by\","]
+#[doc = "    \"confidence\","]
+#[doc = "    \"evidence_kind\","]
+#[doc = "    \"last_payment_at\","]
+#[doc = "    \"mapping_revision\","]
+#[doc = "    \"mrr\","]
+#[doc = "    \"payer_key\","]
+#[doc = "    \"plans\","]
+#[doc = "    \"rt_account_id\","]
+#[doc = "    \"state\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"active_subscriptions\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"changed_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"changed_by\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"automatic_matching\","]
+#[doc = "            \"workspace_member\","]
+#[doc = "            \"unknown\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"confidence\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"explicit\","]
+#[doc = "            \"exact_match\","]
+#[doc = "            \"operator_asserted\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"evidence_kind\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"enum\": ["]
+#[doc = "            \"provider_metadata_account\","]
+#[doc = "            \"provider_metadata_user\","]
+#[doc = "            \"customer_link\","]
+#[doc = "            \"checkout_link\","]
+#[doc = "            \"verified_email\","]
+#[doc = "            \"operator_link\","]
+#[doc = "            \"operator_no_account\","]
+#[doc = "            \"operator_unlink\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"last_payment_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"mapping_revision\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"mrr\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"$ref\": \"#/$defs/PayerAccountMoney\""]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 8,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"payer_key\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/PayerKey\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"plans\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"string\","]
+#[doc = "        \"maxLength\": 120"]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 8,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"rt_account_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"state\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/PayerAccountLinkState\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PayerAccountLinkItem {
+    pub active_subscriptions: i64,
+    pub changed_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    pub changed_by: ::std::option::Option<PayerAccountLinkItemChangedBy>,
+    pub confidence: ::std::option::Option<PayerAccountLinkItemConfidence>,
+    pub evidence_kind: ::std::option::Option<PayerAccountLinkItemEvidenceKind>,
+    pub last_payment_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    pub mapping_revision: i64,
+    pub mrr: ::std::vec::Vec<PayerAccountMoney>,
+    pub payer_key: PayerKey,
+    pub plans: ::std::vec::Vec<PayerAccountLinkItemPlansItem>,
+    pub rt_account_id: ::std::option::Option<PayerAccountLinkItemRtAccountId>,
+    pub state: PayerAccountLinkState,
+}
+#[doc = "`PayerAccountLinkItemChangedBy`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"automatic_matching\","]
+#[doc = "    \"workspace_member\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PayerAccountLinkItemChangedBy {
+    #[serde(rename = "automatic_matching")]
+    AutomaticMatching,
+    #[serde(rename = "workspace_member")]
+    WorkspaceMember,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for PayerAccountLinkItemChangedBy {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::AutomaticMatching => f.write_str("automatic_matching"),
+            Self::WorkspaceMember => f.write_str("workspace_member"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkItemChangedBy {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "automatic_matching" => Ok(Self::AutomaticMatching),
+            "workspace_member" => Ok(Self::WorkspaceMember),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkItemChangedBy {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkItemChangedBy {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkItemChangedBy {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`PayerAccountLinkItemConfidence`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"explicit\","]
+#[doc = "    \"exact_match\","]
+#[doc = "    \"operator_asserted\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PayerAccountLinkItemConfidence {
+    #[serde(rename = "explicit")]
+    Explicit,
+    #[serde(rename = "exact_match")]
+    ExactMatch,
+    #[serde(rename = "operator_asserted")]
+    OperatorAsserted,
+}
+impl ::std::fmt::Display for PayerAccountLinkItemConfidence {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Explicit => f.write_str("explicit"),
+            Self::ExactMatch => f.write_str("exact_match"),
+            Self::OperatorAsserted => f.write_str("operator_asserted"),
+        }
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkItemConfidence {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "explicit" => Ok(Self::Explicit),
+            "exact_match" => Ok(Self::ExactMatch),
+            "operator_asserted" => Ok(Self::OperatorAsserted),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkItemConfidence {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkItemConfidence {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkItemConfidence {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`PayerAccountLinkItemEvidenceKind`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"provider_metadata_account\","]
+#[doc = "    \"provider_metadata_user\","]
+#[doc = "    \"customer_link\","]
+#[doc = "    \"checkout_link\","]
+#[doc = "    \"verified_email\","]
+#[doc = "    \"operator_link\","]
+#[doc = "    \"operator_no_account\","]
+#[doc = "    \"operator_unlink\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PayerAccountLinkItemEvidenceKind {
+    #[serde(rename = "provider_metadata_account")]
+    ProviderMetadataAccount,
+    #[serde(rename = "provider_metadata_user")]
+    ProviderMetadataUser,
+    #[serde(rename = "customer_link")]
+    CustomerLink,
+    #[serde(rename = "checkout_link")]
+    CheckoutLink,
+    #[serde(rename = "verified_email")]
+    VerifiedEmail,
+    #[serde(rename = "operator_link")]
+    OperatorLink,
+    #[serde(rename = "operator_no_account")]
+    OperatorNoAccount,
+    #[serde(rename = "operator_unlink")]
+    OperatorUnlink,
+}
+impl ::std::fmt::Display for PayerAccountLinkItemEvidenceKind {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::ProviderMetadataAccount => f.write_str("provider_metadata_account"),
+            Self::ProviderMetadataUser => f.write_str("provider_metadata_user"),
+            Self::CustomerLink => f.write_str("customer_link"),
+            Self::CheckoutLink => f.write_str("checkout_link"),
+            Self::VerifiedEmail => f.write_str("verified_email"),
+            Self::OperatorLink => f.write_str("operator_link"),
+            Self::OperatorNoAccount => f.write_str("operator_no_account"),
+            Self::OperatorUnlink => f.write_str("operator_unlink"),
+        }
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkItemEvidenceKind {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "provider_metadata_account" => Ok(Self::ProviderMetadataAccount),
+            "provider_metadata_user" => Ok(Self::ProviderMetadataUser),
+            "customer_link" => Ok(Self::CustomerLink),
+            "checkout_link" => Ok(Self::CheckoutLink),
+            "verified_email" => Ok(Self::VerifiedEmail),
+            "operator_link" => Ok(Self::OperatorLink),
+            "operator_no_account" => Ok(Self::OperatorNoAccount),
+            "operator_unlink" => Ok(Self::OperatorUnlink),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkItemEvidenceKind {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkItemEvidenceKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkItemEvidenceKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`PayerAccountLinkItemPlansItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 120"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PayerAccountLinkItemPlansItem(::std::string::String);
+impl ::std::ops::Deref for PayerAccountLinkItemPlansItem {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PayerAccountLinkItemPlansItem> for ::std::string::String {
+    fn from(value: PayerAccountLinkItemPlansItem) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkItemPlansItem {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 120usize {
+            return Err("longer than 120 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkItemPlansItem {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkItemPlansItem {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkItemPlansItem {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PayerAccountLinkItemPlansItem {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PayerAccountLinkItemRtAccountId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PayerAccountLinkItemRtAccountId(::std::string::String);
+impl ::std::ops::Deref for PayerAccountLinkItemRtAccountId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PayerAccountLinkItemRtAccountId> for ::std::string::String {
+    fn from(value: PayerAccountLinkItemRtAccountId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkItemRtAccountId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkItemRtAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkItemRtAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkItemRtAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PayerAccountLinkItemRtAccountId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PayerAccountLinkList`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"as_of\","]
+#[doc = "    \"connected\","]
+#[doc = "    \"items\","]
+#[doc = "    \"page\","]
+#[doc = "    \"per_page\","]
+#[doc = "    \"provenance\","]
+#[doc = "    \"summary\","]
+#[doc = "    \"total\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"as_of\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"pattern\": \"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"connected\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"items\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"$ref\": \"#/$defs/PayerAccountLinkItem\""]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 100,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"page\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"per_page\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 100.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"provenance\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"live\","]
+#[doc = "        \"simulated\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"summary\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/PayerAccountLinkSummary\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"total\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PayerAccountLinkList {
+    pub as_of: ::std::option::Option<PayerAccountLinkListAsOf>,
+    pub connected: bool,
+    pub items: ::std::vec::Vec<PayerAccountLinkItem>,
+    pub page: ::std::num::NonZeroU64,
+    pub per_page: ::std::num::NonZeroU64,
+    pub provenance: PayerAccountLinkListProvenance,
+    pub summary: PayerAccountLinkSummary,
+    pub total: i64,
+}
+#[doc = "`PayerAccountLinkListAsOf`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PayerAccountLinkListAsOf(::std::string::String);
+impl ::std::ops::Deref for PayerAccountLinkListAsOf {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PayerAccountLinkListAsOf> for ::std::string::String {
+    fn from(value: PayerAccountLinkListAsOf) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkListAsOf {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^\\d{4}-\\d{2}-\\d{2}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^\\d{4}-\\d{2}-\\d{2}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkListAsOf {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkListAsOf {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkListAsOf {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PayerAccountLinkListAsOf {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PayerAccountLinkListProvenance`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"live\","]
+#[doc = "    \"simulated\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PayerAccountLinkListProvenance {
+    #[serde(rename = "live")]
+    Live,
+    #[serde(rename = "simulated")]
+    Simulated,
+}
+impl ::std::fmt::Display for PayerAccountLinkListProvenance {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Live => f.write_str("live"),
+            Self::Simulated => f.write_str("simulated"),
+        }
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkListProvenance {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "live" => Ok(Self::Live),
+            "simulated" => Ok(Self::Simulated),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkListProvenance {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkListProvenance {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkListProvenance {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`PayerAccountLinkListQuery`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"page\": {"]
+#[doc = "      \"default\": 1,"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"per_page\": {"]
+#[doc = "      \"default\": 25,"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 100.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"q\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"state\": {"]
+#[doc = "      \"default\": \"unmatched\","]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"unmatched\","]
+#[doc = "        \"linked\","]
+#[doc = "        \"no_account\","]
+#[doc = "        \"all\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PayerAccountLinkListQuery {
+    #[serde(default = "defaults::default_nzu64::<::std::num::NonZeroU64, 1>")]
+    pub page: ::std::num::NonZeroU64,
+    #[serde(default = "defaults::default_nzu64::<::std::num::NonZeroU64, 25>")]
+    pub per_page: ::std::num::NonZeroU64,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub q: ::std::option::Option<PayerAccountLinkListQueryQ>,
+    #[serde(default = "defaults::payer_account_link_list_query_state")]
+    pub state: PayerAccountLinkListQueryState,
+}
+impl ::std::default::Default for PayerAccountLinkListQuery {
+    fn default() -> Self {
+        Self {
+            page: defaults::default_nzu64::<::std::num::NonZeroU64, 1>(),
+            per_page: defaults::default_nzu64::<::std::num::NonZeroU64, 25>(),
+            q: Default::default(),
+            state: defaults::payer_account_link_list_query_state(),
+        }
+    }
+}
+#[doc = "`PayerAccountLinkListQueryQ`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PayerAccountLinkListQueryQ(::std::string::String);
+impl ::std::ops::Deref for PayerAccountLinkListQueryQ {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PayerAccountLinkListQueryQ> for ::std::string::String {
+    fn from(value: PayerAccountLinkListQueryQ) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkListQueryQ {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkListQueryQ {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkListQueryQ {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkListQueryQ {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PayerAccountLinkListQueryQ {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PayerAccountLinkListQueryState`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"default\": \"unmatched\","]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"unmatched\","]
+#[doc = "    \"linked\","]
+#[doc = "    \"no_account\","]
+#[doc = "    \"all\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PayerAccountLinkListQueryState {
+    #[serde(rename = "unmatched")]
+    Unmatched,
+    #[serde(rename = "linked")]
+    Linked,
+    #[serde(rename = "no_account")]
+    NoAccount,
+    #[serde(rename = "all")]
+    All,
+}
+impl ::std::fmt::Display for PayerAccountLinkListQueryState {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Unmatched => f.write_str("unmatched"),
+            Self::Linked => f.write_str("linked"),
+            Self::NoAccount => f.write_str("no_account"),
+            Self::All => f.write_str("all"),
+        }
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkListQueryState {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "unmatched" => Ok(Self::Unmatched),
+            "linked" => Ok(Self::Linked),
+            "no_account" => Ok(Self::NoAccount),
+            "all" => Ok(Self::All),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkListQueryState {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkListQueryState {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkListQueryState {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::default::Default for PayerAccountLinkListQueryState {
+    fn default() -> Self {
+        PayerAccountLinkListQueryState::Unmatched
+    }
+}
+#[doc = "`PayerAccountLinkRequest`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"action\","]
+#[doc = "        \"expected_revision\","]
+#[doc = "        \"payer_key\","]
+#[doc = "        \"rt_account_id\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"action\": {"]
+#[doc = "          \"readOnly\": true,"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"link\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"expected_revision\": {"]
+#[doc = "          \"readOnly\": true,"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 9007199254740991.0,"]
+#[doc = "          \"minimum\": 0.0,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"payer_key\": {"]
+#[doc = "          \"readOnly\": true,"]
+#[doc = "          \"$ref\": \"#/$defs/PayerKey\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"reason\": {"]
+#[doc = "          \"readOnly\": true,"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 500,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"rt_account_id\": {"]
+#[doc = "          \"readOnly\": true,"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"action\","]
+#[doc = "        \"expected_revision\","]
+#[doc = "        \"payer_key\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"action\": {"]
+#[doc = "          \"readOnly\": true,"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"no_account\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"expected_revision\": {"]
+#[doc = "          \"readOnly\": true,"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 9007199254740991.0,"]
+#[doc = "          \"minimum\": 0.0,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"payer_key\": {"]
+#[doc = "          \"readOnly\": true,"]
+#[doc = "          \"$ref\": \"#/$defs/PayerKey\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"reason\": {"]
+#[doc = "          \"readOnly\": true,"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 500,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"action\","]
+#[doc = "        \"expected_revision\","]
+#[doc = "        \"payer_key\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"action\": {"]
+#[doc = "          \"readOnly\": true,"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"const\": \"unlink\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"expected_revision\": {"]
+#[doc = "          \"readOnly\": true,"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 9007199254740991.0,"]
+#[doc = "          \"minimum\": 0.0,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"payer_key\": {"]
+#[doc = "          \"readOnly\": true,"]
+#[doc = "          \"$ref\": \"#/$defs/PayerKey\","]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        },"]
+#[doc = "        \"reason\": {"]
+#[doc = "          \"readOnly\": true,"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 500,"]
+#[doc = "          \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    }"]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(tag = "action", deny_unknown_fields)]
+pub enum PayerAccountLinkRequest {
+    #[serde(rename = "link")]
+    Link {
+        expected_revision: i64,
+        payer_key: PayerKey,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        reason: ::std::option::Option<PayerAccountLinkRequestReason>,
+        rt_account_id: PayerAccountLinkRequestRtAccountId,
+    },
+    #[serde(rename = "no_account")]
+    NoAccount {
+        expected_revision: i64,
+        payer_key: PayerKey,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        reason: ::std::option::Option<PayerAccountLinkRequestReason>,
+    },
+    #[serde(rename = "unlink")]
+    Unlink {
+        expected_revision: i64,
+        payer_key: PayerKey,
+        #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+        reason: ::std::option::Option<PayerAccountLinkRequestReason>,
+    },
+}
+#[doc = "`PayerAccountLinkRequestReason`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 500,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PayerAccountLinkRequestReason(::std::string::String);
+impl ::std::ops::Deref for PayerAccountLinkRequestReason {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PayerAccountLinkRequestReason> for ::std::string::String {
+    fn from(value: PayerAccountLinkRequestReason) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkRequestReason {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 500usize {
+            return Err("longer than 500 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkRequestReason {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkRequestReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkRequestReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PayerAccountLinkRequestReason {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PayerAccountLinkRequestRtAccountId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PayerAccountLinkRequestRtAccountId(::std::string::String);
+impl ::std::ops::Deref for PayerAccountLinkRequestRtAccountId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PayerAccountLinkRequestRtAccountId> for ::std::string::String {
+    fn from(value: PayerAccountLinkRequestRtAccountId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkRequestRtAccountId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkRequestRtAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkRequestRtAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkRequestRtAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PayerAccountLinkRequestRtAccountId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PayerAccountLinkResult`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"mapping_revision\","]
+#[doc = "    \"outcome\","]
+#[doc = "    \"rederive\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"mapping_revision\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"outcome\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"linked\","]
+#[doc = "        \"marked_no_account\","]
+#[doc = "        \"unlinked\","]
+#[doc = "        \"unchanged\","]
+#[doc = "        \"stale\","]
+#[doc = "        \"not_found\","]
+#[doc = "        \"unknown_account\","]
+#[doc = "        \"not_linked\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"rederive\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"requested\","]
+#[doc = "        \"not_requested\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PayerAccountLinkResult {
+    pub mapping_revision: i64,
+    pub outcome: PayerAccountLinkResultOutcome,
+    pub rederive: PayerAccountLinkResultRederive,
+}
+#[doc = "`PayerAccountLinkResultOutcome`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"linked\","]
+#[doc = "    \"marked_no_account\","]
+#[doc = "    \"unlinked\","]
+#[doc = "    \"unchanged\","]
+#[doc = "    \"stale\","]
+#[doc = "    \"not_found\","]
+#[doc = "    \"unknown_account\","]
+#[doc = "    \"not_linked\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PayerAccountLinkResultOutcome {
+    #[serde(rename = "linked")]
+    Linked,
+    #[serde(rename = "marked_no_account")]
+    MarkedNoAccount,
+    #[serde(rename = "unlinked")]
+    Unlinked,
+    #[serde(rename = "unchanged")]
+    Unchanged,
+    #[serde(rename = "stale")]
+    Stale,
+    #[serde(rename = "not_found")]
+    NotFound,
+    #[serde(rename = "unknown_account")]
+    UnknownAccount,
+    #[serde(rename = "not_linked")]
+    NotLinked,
+}
+impl ::std::fmt::Display for PayerAccountLinkResultOutcome {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Linked => f.write_str("linked"),
+            Self::MarkedNoAccount => f.write_str("marked_no_account"),
+            Self::Unlinked => f.write_str("unlinked"),
+            Self::Unchanged => f.write_str("unchanged"),
+            Self::Stale => f.write_str("stale"),
+            Self::NotFound => f.write_str("not_found"),
+            Self::UnknownAccount => f.write_str("unknown_account"),
+            Self::NotLinked => f.write_str("not_linked"),
+        }
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkResultOutcome {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "linked" => Ok(Self::Linked),
+            "marked_no_account" => Ok(Self::MarkedNoAccount),
+            "unlinked" => Ok(Self::Unlinked),
+            "unchanged" => Ok(Self::Unchanged),
+            "stale" => Ok(Self::Stale),
+            "not_found" => Ok(Self::NotFound),
+            "unknown_account" => Ok(Self::UnknownAccount),
+            "not_linked" => Ok(Self::NotLinked),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkResultOutcome {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkResultOutcome {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkResultOutcome {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`PayerAccountLinkResultRederive`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"requested\","]
+#[doc = "    \"not_requested\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PayerAccountLinkResultRederive {
+    #[serde(rename = "requested")]
+    Requested,
+    #[serde(rename = "not_requested")]
+    NotRequested,
+}
+impl ::std::fmt::Display for PayerAccountLinkResultRederive {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Requested => f.write_str("requested"),
+            Self::NotRequested => f.write_str("not_requested"),
+        }
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkResultRederive {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "requested" => Ok(Self::Requested),
+            "not_requested" => Ok(Self::NotRequested),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkResultRederive {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkResultRederive {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkResultRederive {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`PayerAccountLinkState`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"unmatched\","]
+#[doc = "    \"linked\","]
+#[doc = "    \"no_account\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PayerAccountLinkState {
+    #[serde(rename = "unmatched")]
+    Unmatched,
+    #[serde(rename = "linked")]
+    Linked,
+    #[serde(rename = "no_account")]
+    NoAccount,
+}
+impl ::std::fmt::Display for PayerAccountLinkState {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Unmatched => f.write_str("unmatched"),
+            Self::Linked => f.write_str("linked"),
+            Self::NoAccount => f.write_str("no_account"),
+        }
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkState {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "unmatched" => Ok(Self::Unmatched),
+            "linked" => Ok(Self::Linked),
+            "no_account" => Ok(Self::NoAccount),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkState {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkState {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkState {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`PayerAccountLinkSummary`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"linked\","]
+#[doc = "    \"linked_by_evidence\","]
+#[doc = "    \"no_account\","]
+#[doc = "    \"payers\","]
+#[doc = "    \"unmatched\","]
+#[doc = "    \"unmatched_mrr\","]
+#[doc = "    \"unmatched_paying\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"linked\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"linked_by_evidence\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"object\","]
+#[doc = "        \"required\": ["]
+#[doc = "          \"evidence_kind\","]
+#[doc = "          \"payers\""]
+#[doc = "        ],"]
+#[doc = "        \"properties\": {"]
+#[doc = "          \"evidence_kind\": {"]
+#[doc = "            \"readOnly\": true,"]
+#[doc = "            \"type\": \"string\","]
+#[doc = "            \"enum\": ["]
+#[doc = "              \"provider_metadata_account\","]
+#[doc = "              \"provider_metadata_user\","]
+#[doc = "              \"customer_link\","]
+#[doc = "              \"checkout_link\","]
+#[doc = "              \"verified_email\","]
+#[doc = "              \"operator_link\","]
+#[doc = "              \"operator_no_account\","]
+#[doc = "              \"operator_unlink\""]
+#[doc = "            ],"]
+#[doc = "            \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "          },"]
+#[doc = "          \"payers\": {"]
+#[doc = "            \"readOnly\": true,"]
+#[doc = "            \"type\": \"integer\","]
+#[doc = "            \"maximum\": 9007199254740991.0,"]
+#[doc = "            \"minimum\": 1.0,"]
+#[doc = "            \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "          }"]
+#[doc = "        },"]
+#[doc = "        \"additionalProperties\": false"]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 8,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"no_account\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"payers\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"unmatched\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"unmatched_mrr\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"$ref\": \"#/$defs/PayerAccountMoney\""]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 8,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"unmatched_paying\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PayerAccountLinkSummary {
+    pub linked: i64,
+    pub linked_by_evidence: ::std::vec::Vec<PayerAccountLinkSummaryLinkedByEvidenceItem>,
+    pub no_account: i64,
+    pub payers: i64,
+    pub unmatched: i64,
+    pub unmatched_mrr: ::std::vec::Vec<PayerAccountMoney>,
+    pub unmatched_paying: i64,
+}
+#[doc = "`PayerAccountLinkSummaryLinkedByEvidenceItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"evidence_kind\","]
+#[doc = "    \"payers\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"evidence_kind\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"provider_metadata_account\","]
+#[doc = "        \"provider_metadata_user\","]
+#[doc = "        \"customer_link\","]
+#[doc = "        \"checkout_link\","]
+#[doc = "        \"verified_email\","]
+#[doc = "        \"operator_link\","]
+#[doc = "        \"operator_no_account\","]
+#[doc = "        \"operator_unlink\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"payers\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PayerAccountLinkSummaryLinkedByEvidenceItem {
+    pub evidence_kind: PayerAccountLinkSummaryLinkedByEvidenceItemEvidenceKind,
+    pub payers: ::std::num::NonZeroU64,
+}
+#[doc = "`PayerAccountLinkSummaryLinkedByEvidenceItemEvidenceKind`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"provider_metadata_account\","]
+#[doc = "    \"provider_metadata_user\","]
+#[doc = "    \"customer_link\","]
+#[doc = "    \"checkout_link\","]
+#[doc = "    \"verified_email\","]
+#[doc = "    \"operator_link\","]
+#[doc = "    \"operator_no_account\","]
+#[doc = "    \"operator_unlink\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PayerAccountLinkSummaryLinkedByEvidenceItemEvidenceKind {
+    #[serde(rename = "provider_metadata_account")]
+    ProviderMetadataAccount,
+    #[serde(rename = "provider_metadata_user")]
+    ProviderMetadataUser,
+    #[serde(rename = "customer_link")]
+    CustomerLink,
+    #[serde(rename = "checkout_link")]
+    CheckoutLink,
+    #[serde(rename = "verified_email")]
+    VerifiedEmail,
+    #[serde(rename = "operator_link")]
+    OperatorLink,
+    #[serde(rename = "operator_no_account")]
+    OperatorNoAccount,
+    #[serde(rename = "operator_unlink")]
+    OperatorUnlink,
+}
+impl ::std::fmt::Display for PayerAccountLinkSummaryLinkedByEvidenceItemEvidenceKind {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::ProviderMetadataAccount => f.write_str("provider_metadata_account"),
+            Self::ProviderMetadataUser => f.write_str("provider_metadata_user"),
+            Self::CustomerLink => f.write_str("customer_link"),
+            Self::CheckoutLink => f.write_str("checkout_link"),
+            Self::VerifiedEmail => f.write_str("verified_email"),
+            Self::OperatorLink => f.write_str("operator_link"),
+            Self::OperatorNoAccount => f.write_str("operator_no_account"),
+            Self::OperatorUnlink => f.write_str("operator_unlink"),
+        }
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkSummaryLinkedByEvidenceItemEvidenceKind {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "provider_metadata_account" => Ok(Self::ProviderMetadataAccount),
+            "provider_metadata_user" => Ok(Self::ProviderMetadataUser),
+            "customer_link" => Ok(Self::CustomerLink),
+            "checkout_link" => Ok(Self::CheckoutLink),
+            "verified_email" => Ok(Self::VerifiedEmail),
+            "operator_link" => Ok(Self::OperatorLink),
+            "operator_no_account" => Ok(Self::OperatorNoAccount),
+            "operator_unlink" => Ok(Self::OperatorUnlink),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkSummaryLinkedByEvidenceItemEvidenceKind {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for PayerAccountLinkSummaryLinkedByEvidenceItemEvidenceKind
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for PayerAccountLinkSummaryLinkedByEvidenceItemEvidenceKind
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`PayerAccountMatchResult`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"by_evidence\","]
+#[doc = "    \"linked\","]
+#[doc = "    \"missed\","]
+#[doc = "    \"payers\","]
+#[doc = "    \"provider_reads\","]
+#[doc = "    \"rederive\","]
+#[doc = "    \"relinked\","]
+#[doc = "    \"unchanged\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"by_evidence\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"object\","]
+#[doc = "        \"required\": ["]
+#[doc = "          \"evidence_kind\","]
+#[doc = "          \"payers\""]
+#[doc = "        ],"]
+#[doc = "        \"properties\": {"]
+#[doc = "          \"evidence_kind\": {"]
+#[doc = "            \"readOnly\": true,"]
+#[doc = "            \"type\": \"string\","]
+#[doc = "            \"enum\": ["]
+#[doc = "              \"provider_metadata_account\","]
+#[doc = "              \"provider_metadata_user\","]
+#[doc = "              \"customer_link\","]
+#[doc = "              \"checkout_link\","]
+#[doc = "              \"verified_email\""]
+#[doc = "            ],"]
+#[doc = "            \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "          },"]
+#[doc = "          \"payers\": {"]
+#[doc = "            \"readOnly\": true,"]
+#[doc = "            \"type\": \"integer\","]
+#[doc = "            \"maximum\": 9007199254740991.0,"]
+#[doc = "            \"minimum\": 1.0,"]
+#[doc = "            \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "          }"]
+#[doc = "        },"]
+#[doc = "        \"additionalProperties\": false"]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 5,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"linked\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"missed\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"object\","]
+#[doc = "        \"required\": ["]
+#[doc = "          \"payers\","]
+#[doc = "          \"reason\""]
+#[doc = "        ],"]
+#[doc = "        \"properties\": {"]
+#[doc = "          \"payers\": {"]
+#[doc = "            \"readOnly\": true,"]
+#[doc = "            \"type\": \"integer\","]
+#[doc = "            \"maximum\": 9007199254740991.0,"]
+#[doc = "            \"minimum\": 1.0,"]
+#[doc = "            \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "          },"]
+#[doc = "          \"reason\": {"]
+#[doc = "            \"readOnly\": true,"]
+#[doc = "            \"type\": \"string\","]
+#[doc = "            \"enum\": ["]
+#[doc = "              \"no_evidence\","]
+#[doc = "              \"ambiguous\","]
+#[doc = "              \"operator_decision\","]
+#[doc = "              \"provider_unread\""]
+#[doc = "            ],"]
+#[doc = "            \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "          }"]
+#[doc = "        },"]
+#[doc = "        \"additionalProperties\": false"]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 4,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"payers\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"provider_reads\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"complete\","]
+#[doc = "        \"partial\","]
+#[doc = "        \"unavailable\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"rederive\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"requested\","]
+#[doc = "        \"not_requested\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"relinked\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"unchanged\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PayerAccountMatchResult {
+    pub by_evidence: ::std::vec::Vec<PayerAccountMatchResultByEvidenceItem>,
+    pub linked: i64,
+    pub missed: ::std::vec::Vec<PayerAccountMatchResultMissedItem>,
+    pub payers: i64,
+    pub provider_reads: PayerAccountMatchResultProviderReads,
+    pub rederive: PayerAccountMatchResultRederive,
+    pub relinked: i64,
+    pub unchanged: i64,
+}
+#[doc = "`PayerAccountMatchResultByEvidenceItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"evidence_kind\","]
+#[doc = "    \"payers\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"evidence_kind\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"provider_metadata_account\","]
+#[doc = "        \"provider_metadata_user\","]
+#[doc = "        \"customer_link\","]
+#[doc = "        \"checkout_link\","]
+#[doc = "        \"verified_email\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"payers\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PayerAccountMatchResultByEvidenceItem {
+    pub evidence_kind: PayerAccountMatchResultByEvidenceItemEvidenceKind,
+    pub payers: ::std::num::NonZeroU64,
+}
+#[doc = "`PayerAccountMatchResultByEvidenceItemEvidenceKind`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"provider_metadata_account\","]
+#[doc = "    \"provider_metadata_user\","]
+#[doc = "    \"customer_link\","]
+#[doc = "    \"checkout_link\","]
+#[doc = "    \"verified_email\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PayerAccountMatchResultByEvidenceItemEvidenceKind {
+    #[serde(rename = "provider_metadata_account")]
+    ProviderMetadataAccount,
+    #[serde(rename = "provider_metadata_user")]
+    ProviderMetadataUser,
+    #[serde(rename = "customer_link")]
+    CustomerLink,
+    #[serde(rename = "checkout_link")]
+    CheckoutLink,
+    #[serde(rename = "verified_email")]
+    VerifiedEmail,
+}
+impl ::std::fmt::Display for PayerAccountMatchResultByEvidenceItemEvidenceKind {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::ProviderMetadataAccount => f.write_str("provider_metadata_account"),
+            Self::ProviderMetadataUser => f.write_str("provider_metadata_user"),
+            Self::CustomerLink => f.write_str("customer_link"),
+            Self::CheckoutLink => f.write_str("checkout_link"),
+            Self::VerifiedEmail => f.write_str("verified_email"),
+        }
+    }
+}
+impl ::std::str::FromStr for PayerAccountMatchResultByEvidenceItemEvidenceKind {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "provider_metadata_account" => Ok(Self::ProviderMetadataAccount),
+            "provider_metadata_user" => Ok(Self::ProviderMetadataUser),
+            "customer_link" => Ok(Self::CustomerLink),
+            "checkout_link" => Ok(Self::CheckoutLink),
+            "verified_email" => Ok(Self::VerifiedEmail),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountMatchResultByEvidenceItemEvidenceKind {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for PayerAccountMatchResultByEvidenceItemEvidenceKind
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for PayerAccountMatchResultByEvidenceItemEvidenceKind
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`PayerAccountMatchResultMissedItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"payers\","]
+#[doc = "    \"reason\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"payers\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"reason\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"no_evidence\","]
+#[doc = "        \"ambiguous\","]
+#[doc = "        \"operator_decision\","]
+#[doc = "        \"provider_unread\""]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PayerAccountMatchResultMissedItem {
+    pub payers: ::std::num::NonZeroU64,
+    pub reason: PayerAccountMatchResultMissedItemReason,
+}
+#[doc = "`PayerAccountMatchResultMissedItemReason`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"no_evidence\","]
+#[doc = "    \"ambiguous\","]
+#[doc = "    \"operator_decision\","]
+#[doc = "    \"provider_unread\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PayerAccountMatchResultMissedItemReason {
+    #[serde(rename = "no_evidence")]
+    NoEvidence,
+    #[serde(rename = "ambiguous")]
+    Ambiguous,
+    #[serde(rename = "operator_decision")]
+    OperatorDecision,
+    #[serde(rename = "provider_unread")]
+    ProviderUnread,
+}
+impl ::std::fmt::Display for PayerAccountMatchResultMissedItemReason {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::NoEvidence => f.write_str("no_evidence"),
+            Self::Ambiguous => f.write_str("ambiguous"),
+            Self::OperatorDecision => f.write_str("operator_decision"),
+            Self::ProviderUnread => f.write_str("provider_unread"),
+        }
+    }
+}
+impl ::std::str::FromStr for PayerAccountMatchResultMissedItemReason {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "no_evidence" => Ok(Self::NoEvidence),
+            "ambiguous" => Ok(Self::Ambiguous),
+            "operator_decision" => Ok(Self::OperatorDecision),
+            "provider_unread" => Ok(Self::ProviderUnread),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountMatchResultMissedItemReason {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountMatchResultMissedItemReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountMatchResultMissedItemReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`PayerAccountMatchResultProviderReads`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"complete\","]
+#[doc = "    \"partial\","]
+#[doc = "    \"unavailable\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PayerAccountMatchResultProviderReads {
+    #[serde(rename = "complete")]
+    Complete,
+    #[serde(rename = "partial")]
+    Partial,
+    #[serde(rename = "unavailable")]
+    Unavailable,
+}
+impl ::std::fmt::Display for PayerAccountMatchResultProviderReads {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Complete => f.write_str("complete"),
+            Self::Partial => f.write_str("partial"),
+            Self::Unavailable => f.write_str("unavailable"),
+        }
+    }
+}
+impl ::std::str::FromStr for PayerAccountMatchResultProviderReads {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "complete" => Ok(Self::Complete),
+            "partial" => Ok(Self::Partial),
+            "unavailable" => Ok(Self::Unavailable),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountMatchResultProviderReads {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountMatchResultProviderReads {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountMatchResultProviderReads {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`PayerAccountMatchResultRederive`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"requested\","]
+#[doc = "    \"not_requested\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PayerAccountMatchResultRederive {
+    #[serde(rename = "requested")]
+    Requested,
+    #[serde(rename = "not_requested")]
+    NotRequested,
+}
+impl ::std::fmt::Display for PayerAccountMatchResultRederive {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Requested => f.write_str("requested"),
+            Self::NotRequested => f.write_str("not_requested"),
+        }
+    }
+}
+impl ::std::str::FromStr for PayerAccountMatchResultRederive {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "requested" => Ok(Self::Requested),
+            "not_requested" => Ok(Self::NotRequested),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountMatchResultRederive {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountMatchResultRederive {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountMatchResultRederive {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`PayerAccountMoney`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"amount_minor\","]
+#[doc = "    \"currency\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"amount_minor\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^-?\\\\d{1,20}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"currency\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^[A-Z]{3}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PayerAccountMoney {
+    pub amount_minor: PayerAccountMoneyAmountMinor,
+    pub currency: PayerAccountMoneyCurrency,
+}
+#[doc = "`PayerAccountMoneyAmountMinor`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^-?\\\\d{1,20}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PayerAccountMoneyAmountMinor(::std::string::String);
+impl ::std::ops::Deref for PayerAccountMoneyAmountMinor {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PayerAccountMoneyAmountMinor> for ::std::string::String {
+    fn from(value: PayerAccountMoneyAmountMinor) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PayerAccountMoneyAmountMinor {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^-?\\d{1,20}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^-?\\d{1,20}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountMoneyAmountMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountMoneyAmountMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountMoneyAmountMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PayerAccountMoneyAmountMinor {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PayerAccountMoneyCurrency`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[A-Z]{3}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PayerAccountMoneyCurrency(::std::string::String);
+impl ::std::ops::Deref for PayerAccountMoneyCurrency {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PayerAccountMoneyCurrency> for ::std::string::String {
+    fn from(value: PayerAccountMoneyCurrency) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PayerAccountMoneyCurrency {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Z]{3}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Z]{3}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountMoneyCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountMoneyCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountMoneyCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PayerAccountMoneyCurrency {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PayerKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^payer:pay_[0-9a-f]{16}$\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PayerKey(::std::string::String);
+impl ::std::ops::Deref for PayerKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PayerKey> for ::std::string::String {
+    fn from(value: PayerKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PayerKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| {
+                ::regress::Regex::new("^payer:pay_[0-9a-f]{16}$").unwrap()
+            });
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^payer:pay_[0-9a-f]{16}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PayerKey {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`PaymentEvidenceCadenceToken`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -194798,6 +199131,10 @@ impl<'de> ::serde::Deserialize<'de> for RevTurbineConfigEnvironmentId {
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"must_understand\": {"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"schema_version\": {"]
 #[doc = "      \"type\": \"integer\","]
 #[doc = "      \"maximum\": 9007199254740991.0,"]
@@ -194820,6 +199157,8 @@ impl<'de> ::serde::Deserialize<'de> for RevTurbineConfigEnvironmentId {
 pub struct RevTurbineConfigExtensionRulesItem {
     pub config: ::serde_json::Value,
     pub kind: RevTurbineConfigExtensionRulesItemKind,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub must_understand: ::std::option::Option<bool>,
     pub schema_version: i64,
 }
 #[doc = "`RevTurbineConfigExtensionRulesItemKind`"]
@@ -291588,6 +295927,19 @@ impl ::std::convert::TryFrom<::std::string::String> for UserBuiltinDimensionsTri
 #[doc = "      },"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"merged_into\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"pii\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
 #[doc = "    \"payment_at_risk\": {"]
 #[doc = "      \"type\": \"boolean\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
@@ -291622,6 +295974,26 @@ impl ::std::convert::TryFrom<::std::string::String> for UserBuiltinDimensionsTri
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"provisional\": {"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"retired_at\": {"]
+#[doc = "      \"default\": null,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "    },"]
 #[doc = "    \"seat_type_handle\": {"]
 #[doc = "      \"anyOf\": ["]
@@ -291732,6 +296104,8 @@ pub struct UserContext {
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
     pub instances: ::std::vec::Vec<UserInstanceContext>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub merged_into: ::std::option::Option<UserContextMergedInto>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub payment_at_risk: ::std::option::Option<bool>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub payment_failed: ::std::option::Option<bool>,
@@ -291745,6 +296119,10 @@ pub struct UserContext {
     pub plan: ::std::option::Option<UserPlanContext>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub plan_handle: ::std::option::Option<UserContextPlanHandle>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub provisional: ::std::option::Option<bool>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub retired_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub seat_type_handle: ::std::option::Option<UserContextSeatTypeHandle>,
     pub tenant_id: UserContextTenantId,
@@ -294232,6 +298610,74 @@ impl<'de> ::serde::Deserialize<'de> for UserContextId {
             })
     }
 }
+#[doc = "`UserContextMergedInto`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct UserContextMergedInto(::std::string::String);
+impl ::std::ops::Deref for UserContextMergedInto {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<UserContextMergedInto> for ::std::string::String {
+    fn from(value: UserContextMergedInto) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for UserContextMergedInto {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for UserContextMergedInto {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for UserContextMergedInto {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for UserContextMergedInto {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for UserContextMergedInto {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`UserContextPersonalizationValue`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -295173,6 +299619,10 @@ impl ::std::convert::TryFrom<::std::string::String> for UserRole {
 #[doc = "      \"type\": \"boolean\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"instance_id\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"plan_handle\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
@@ -295181,6 +299631,12 @@ impl ::std::convert::TryFrom<::std::string::String> for UserRole {
 #[doc = "      \"type\": \"number\","]
 #[doc = "      \"maximum\": 100.0,"]
 #[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"started_at\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z))$\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"state\": {"]
@@ -295244,9 +299700,13 @@ pub struct UserTrialStatus {
     pub days_remaining: ::std::option::Option<i64>,
     pub in_trial: bool,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub instance_id: ::std::option::Option<::std::string::String>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub plan_handle: ::std::option::Option<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub progress_percent: ::std::option::Option<f64>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub started_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub state: ::std::option::Option<UserTrialStatusState>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -300903,6 +305363,9 @@ pub mod defaults {
     }
     pub(super) fn optimization_suggestion_severity() -> super::Severity {
         super::Severity::Info
+    }
+    pub(super) fn payer_account_link_list_query_state() -> super::PayerAccountLinkListQueryState {
+        super::PayerAccountLinkListQueryState::Unmatched
     }
     pub(super) fn payment_evidence_plan_mapping_item_kind(
     ) -> super::PaymentEvidencePlanMappingItemKind {

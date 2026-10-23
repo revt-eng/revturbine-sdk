@@ -130,8 +130,8 @@ describe('a usage value the SDK cannot read is reported, not dropped', () => {
       generations: { entitlement_handle: 'generations', unit: 'runs', amount: 7 },
     } as never);
 
-    // The meter reflects the reported balance instead of reading empty.
-    expect(sdk.getUsage().generations?.current).toBe(7);
+    // The meter is keyed by the entitlement's unit even when the rule omits it.
+    expect(sdk.getUsage().runs?.current).toBe(7);
     expect(warnings().filter((m) => m.includes('could not read'))).toHaveLength(0);
   });
 
@@ -157,7 +157,7 @@ describe('a usage value the SDK cannot read is reported, not dropped', () => {
     sdk.updateUsage({ generations: { bogus: true } } as never);
     const after = await sdk.checkEntitlement('generations');
 
-    expect(sdk.getUsage().generations?.current).toBe(9);
+    expect(sdk.getUsage().runs?.current).toBe(9);
     expect(after.allowed).toBe(before.allowed);
   });
 });

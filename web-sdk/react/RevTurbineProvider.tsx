@@ -268,9 +268,10 @@ export function RevTurbineProvider<
   // rebuild: it never touches `options`, so the init effect does not re-run and
   // the SDK instance identity is preserved (plan 233 AC-7).
   useEffect(() => {
+    sdk?.setColorScheme(resolvedScheme);
     if (brandingInput === undefined) return;
     setTheme(mergeTheme(brandingInput, baseThemeForScheme(resolvedScheme)));
-  }, [brandingInput, resolvedScheme]);
+  }, [brandingInput, resolvedScheme, sdk]);
 
   // Annotated DOM capture (plan 144 TASK-15). One delegated listener per event
   // at the document root; emits only allowlisted `data-rt-*` values, redacted by
@@ -389,7 +390,7 @@ export function RevTurbineProvider<
           // prove it is still assigned inside the `onOverride` closure below
           // (TS18048 under the release build's declaration emit).
           const initializedSdk = nextSdk;
-          const initialTheme = await loadTheme(
+          await loadTheme(
             {
               publicKey: themePublicKey,
               endpoint: options.endpoint ?? DEFAULT_HOSTED_ENDPOINT,
@@ -402,13 +403,17 @@ export function RevTurbineProvider<
                 initializedSdk.setApiBranding(
                   override && Object.keys(override).length > 0 ? { theme: override } : undefined,
                 );
+                if (mounted) {
+                  // Keep raw brand tokens separate from the display palette so
+                  // both failed fetches and later scheme changes use defaults
+                  // for the current scheme. Explicit branding still wins.
+                  setBrandingInput(resolvedBranding.source === 'explicit'
+                    ? baseTheme ?? null
+                    : override ?? baseTheme ?? null);
+                }
               },
             },
-            (updated) => {
-              if (mounted) setTheme(updated);
-            },
           );
-          if (mounted) setTheme(initialTheme);
         } else if (mounted) {
           // Only record the branding tokens here. The scheme effect below owns
           // setTheme, so flipping light/dark re-merges these over the other

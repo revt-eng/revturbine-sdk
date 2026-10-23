@@ -71,23 +71,23 @@ function stubMatchMedia(prefersDark: boolean, listeners: Array<(e: MediaQueryLis
   }));
 }
 
-async function mount(scheme?: RevTurbineColorScheme): Promise<void> {
+async function mount(scheme?: RevTurbineColorScheme, options = OPTIONS): Promise<void> {
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
   await act(async () => {
     root!.render(
-      <RevTurbineProvider options={OPTIONS} colorScheme={scheme}>
+      <RevTurbineProvider options={options} colorScheme={scheme}>
         <Probe />
       </RevTurbineProvider>,
     );
   });
 }
 
-async function rerender(scheme: RevTurbineColorScheme): Promise<void> {
+async function rerender(scheme: RevTurbineColorScheme, options = OPTIONS): Promise<void> {
   await act(async () => {
     root!.render(
-      <RevTurbineProvider options={OPTIONS} colorScheme={scheme}>
+      <RevTurbineProvider options={options} colorScheme={scheme}>
         <Probe />
       </RevTurbineProvider>,
     );
@@ -115,6 +115,28 @@ afterEach(async () => {
 });
 
 describe('AC-7 — toggling scheme repaints without re-initializing', () => {
+  it('BL-0477: a failed theme fetch retains the selected palette and allows toggling', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 503 })));
+    const options = { ...OPTIONS, publicKey: 'rtk_theme_dark', fetchThemeOverride: true };
+    await mount('dark', options);
+    expect(seen.colors.background).toBe(DARK_THEME.colors.background);
+    expect(sdkSeen?.getBranding().branding.theme).toEqual(seen);
+    const original = sdkSeen;
+    await rerender('light', options);
+    expect(sdkSeen).toBe(original);
+    expect(seen.colors.background).toBe(DEFAULT_THEME.colors.background);
+  });
+
+  it('BL-0477: getBranding follows the rendered default across scheme changes', async () => {
+    await mount('dark');
+    expect(sdkSeen?.getBranding().branding.theme).toEqual(seen);
+    expect(seen.colors.background).toBe(DARK_THEME.colors.background);
+    const original = sdkSeen;
+    await rerender('light');
+    expect(sdkSeen).toBe(original);
+    expect(sdkSeen?.getBranding().branding.theme).toEqual(seen);
+  });
+
   it('keeps the SAME SDK instance across a light→dark toggle', async () => {
     await mount('light');
     const before = sdkSeen;

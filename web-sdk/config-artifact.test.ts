@@ -13,6 +13,35 @@ const BODY = {
 };
 
 describe('config artifact dual-read normalization', () => {
+  it('warns once when accepting a legacy unversioned Playbook', async () => {
+    vi.resetModules();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { normalizeConfigArtifactOrThrow: normalize } = await import('./config-artifact');
+    const input = { ...BODY, version: '1.0.0', tenant_id: 't', environment_id: 'e' };
+    normalize(input, 'fixture');
+    normalize(input, 'fixture');
+    expect(warn.mock.calls.filter(([message]) => String(message).includes('no bundle_schema_version'))).toHaveLength(1);
+  });
+  it.each([15, 16, 18])('admits historical/current writer %s through the actual normalizer', (version) => {
+    expect(normalizeConfigArtifactOrThrow({
+      ...BODY, version: '1.0.0', tenant_id: 't', environment_id: 'e', bundle_schema_version: version,
+    }, 'fixture')?.bundle_schema_version).toBe(version);
+  });
+
+  it.each([10, 999, '18', null])('refuses incompatible or malformed writer %s before projection', (version) => {
+    expect(() => normalizeConfigArtifactOrThrow({
+      ...BODY, version: '1.0.0', tenant_id: 't', environment_id: 'e', bundle_schema_version: version,
+    }, 'fixture')).toThrow();
+  });
+
+  it.each([undefined, 18])('refuses mandatory extensions with writer %s', (version) => {
+    expect(() => normalizeConfigArtifactOrThrow({
+      ...BODY, version: '1.0.0', tenant_id: 't', environment_id: 'e',
+      ...(version === undefined ? {} : { bundle_schema_version: version }),
+      extension_rules: [{ kind: 'geo.v1', must_understand: true }],
+    }, 'fixture')).toThrow('unsupported mandatory extension');
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
