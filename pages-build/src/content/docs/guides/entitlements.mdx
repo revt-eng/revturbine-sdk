@@ -319,6 +319,61 @@ application's metering or rate limiter. Display tokens continue to expose the
 metadata.
 :::
 
+## Parameter entitlements
+
+`price_per_unit` and `rate_limit` configure application behavior; they are not
+always-allowed feature gates. `can()` returns `allowed: false`, `status: 'denied'`,
+and `reason: 'not_access_entitlement_kind'` for these kinds. Do not reinterpret
+that denial as a grant or use a parameter handle in `Gate`.
+
+Use a separate access entitlement for authorization. The application reads
+parameter metadata from its admitted Playbook/provider data and implements the
+meter or rate limiter itself. Resolve the appropriate rule for the current
+plan/target; do not simply take the first rule or infer unlimited access from an
+absent value. Display tokens can expose metadata for presentation, but a display
+token is not enforcement. This version does not provide a new universal
+`getParameter()` or `getRateLimit()` API.
+
+For example, inspect the configured rules through the initialized SDK's
+`session.sdk.getPlaybook()` accessor. This lists metadata for a handle; it deliberately
+does **not** select an effective rule for a particular user:
+
+```ts
+import { initRevTurbine } from '@revturbine/sdk';
+
+function inspectParameterRules(
+  session: Awaited<ReturnType<typeof initRevTurbine>>,
+  entitlementHandle: string,
+) {
+  const playbook = session.sdk.getPlaybook();
+  if (!playbook) throw new Error('No admitted Playbook is available');
+  return playbook.entitlement_rules
+    .filter((rule) => rule.entitlement_id === entitlementHandle)
+    .map((rule) => ({
+      targets: rule.targets,
+      segment_ids: rule.segment_ids,
+      rate_value: rule.rate_value,
+      period_scope: rule.period_scope,
+      amount_cents: rule.amount_cents,
+      currency: rule.currency,
+    }));
+}
+```
+
+Keep absent values absent. A rate value needs its period, and a price needs its
+currency; do not treat either as an access grant. Use this inspection for
+configuration/debugging or presentation. Application-owned enforcement must
+apply the intended plan, add-on, and segment policy rather than taking the first
+row returned here. If the admitted artifact does not include this metadata,
+use your application's authoritative configuration source instead of inventing
+a default.
+
+For mirrored access grants, `UserContext.entitlements` and `entitlementMerge`
+control how application facts combine with Playbook evaluation. The default
+gives application mirrors precedence. A result with `entitlement_mirrored`
+therefore need not have a Playbook `rule_handle`. See
+[SDK upgrades](/guides/sdk-upgrades/) before copying old rule-only assertions.
+
 ## Next Steps
 
 - [Placements Guide](/guides/placements/) — render upgrade prompts for denied entitlements

@@ -22,7 +22,7 @@ What it gives you:
 
 What doesn't change: the RevTurbine SDK runs inside your app, and on your backend where you verify. It evaluates entitlements and placements locally, as a pure function of your Playbook and the current user context. Hosted mode changes where the Playbook and user state come from, not where decisions run. We add no latency, and our availability never affects your product.
 
-In code: `runtimeMode: RuntimeMode.Server` (`revturbine_server`), with the browser's `publicKey`. Hosted mode is a **browser** mode: a Node server evaluates a Playbook snapshot in local mode instead, and uses its server key only to mint client sessions. See [Initialize the SDK](/getting-started/initialization/) and [Server-Side Integration](/getting-started/server-side/#why-not-hosted-server-mode-on-a-server).
+In code: `runtimeMode: RuntimeMode.Server` (`revturbine_server`), with the browser's `publicKey` or a trusted backend's `apiKey`. Both load hosted Playbooks and evaluate locally. Backend sessions belong to one user and operation; keep server keys out of browser bundles. See [Initialize the SDK](/getting-started/initialization/) and [Server-Side Integration](/getting-started/server-side/#hosted-delivery-on-a-backend).
 
 ## Local mode
 
@@ -176,7 +176,7 @@ When you want dashboard-managed changes without deploying your app, switch the c
 
 ## Provider Fallback Strategy
 
-Providers are for teams that supply their own facts — entitlement grants, user context — from more than one source. They are not a resilience mechanism for `revturbine_server` mode: decisions are evaluated locally from the cached Playbook, so RevTurbine's availability never affects them. Most apps configure no provider.
+Providers are for teams that supply their own facts — entitlement grants, user context — from more than one source. Decisions evaluate locally from the available Playbook. Loading or refreshing that snapshot can still fail; handle `config_unavailable` and choose an explicit freshness policy. Most apps configure no provider.
 
 **Available options:**
 

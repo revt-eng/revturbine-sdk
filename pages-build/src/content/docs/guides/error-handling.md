@@ -207,12 +207,12 @@ string.
 :::
 
 :::caution[Two entitlement types are not gates]
-`price_per_unit` and `rate_limit` entitlements always evaluate to allowed. This
-is by design and is the one explicit carve-out from the fail-closed rule: they
-are **non-gating metadata**, present to populate text tokens (an overage price
-in upgrade copy, a documented rate ceiling), not to control access. Do not gate
-a feature on one of them — a `price_per_unit` check answering "allowed" tells
-you the price exists, not that the user may proceed.
+`price_per_unit` and `rate_limit` are parameter metadata, not access gates.
+Checking them as access entitlements returns a denied result with
+`not_access_entitlement_kind`. Read their configured values for presentation
+or application-owned enforcement; use a boolean or usage entitlement for an
+access decision. See [parameter entitlements](/guides/entitlements/) for the
+boundary between metadata and access checks.
 :::
 
 ## Retry Behavior

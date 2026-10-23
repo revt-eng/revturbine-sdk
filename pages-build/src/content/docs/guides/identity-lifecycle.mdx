@@ -1,0 +1,59 @@
+---
+title: Visitor, User, and Account Identity
+description: Handle signed-out visitors, sign-in, sign-out, and account changes without carrying another user's grants.
+---
+
+A **visitor** is not yet signed in. A **user** is a person identified by your
+application's stable internal ID. An **account** is the organization or billing
+scope that person belongs to. These identifiers are different: use `user.id`
+for the person and `account_id` for their current account. An account ID is not
+a replacement user ID, and a Stripe payer may map to an account separately.
+
+## Before sign-in
+
+Omit `user` intentionally for a signed-out visitor. The SDK uses anonymous
+identity for attribution; anonymous identity is not authentication or proof of
+a paid plan. Supplying a user object with a blank ID logs an error and falls
+back to anonymous identity. Do not use a blank string as your loading state.
+
+If the app needs a stable guest identity across its own sessions or devices,
+the app owns that identity and its authentication policy. The SDK's anonymous
+storage is not an account system. Do not assume it persists across server
+requests, cleared storage, or isolated browser contexts.
+
+## Sign-in and user switches
+
+Resolve the authenticated user's ID and authoritative account/plan before
+granting paid access. Use `identify` when the identity changes, and `update`
+for changing facts about the same user. Use a stable internal ID, never an email
+address; email can change and is personal data.
+
+An anonymous visitor becoming an identified user retains applicable accumulated
+state. Switching from one identified user to a different identified user clears
+the previous user's context, usage, trial state, and application-provider
+snapshot before applying the new user's facts. Do not rely on a user switch to
+load facts your application has not supplied.
+
+For sign-out, call the SDK's `resetIdentity()` and clear your application's own
+authenticated state. Then return to the visitor experience. Clear private
+application caches and cancel in-flight user work as part of your app's logout;
+the SDK cannot clear application state it does not own.
+
+## Account changes
+
+The same person may switch accounts without changing their user ID. Refresh the
+complete account-scoped context from your trusted backend, including plan,
+usage, add-ons, and mirrored grants. Explicitly clear obsolete values rather
+than merging a new account ID onto the old account's entitlements. On a server,
+construct a fresh session for the selected user/account operation.
+
+An account membership check belongs to your application. A context token should
+be issued only after that check; never sign an arbitrary client-provided
+`account_id` or plan. See [cloud enforcement](/guides/cloud-entitlements/).
+
+## Lifecycle test
+
+Start signed out, sign in as a paid user, sign out, then sign in as a free user
+without reloading the application. Assert the actual SDK context and gate result
+after every transition. Repeat with one user switching accounts. The free user
+must not retain the paid user's grants or balances.

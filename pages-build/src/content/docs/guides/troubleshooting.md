@@ -21,6 +21,28 @@ sidebar:
 | Type is `unknown` from SDK route | Contract/schema title mismatch | Ensure the SDK version matches the schema version and reinstall. |
 | Build fails after SDK API changes | Missing migration updates in caller code | Migrate to object-style request helpers and rerun typecheck. |
 
+## Warnings that need an integration fix
+
+| Warning or reason | What to inspect |
+| --- | --- |
+| Blank user ID | Wait for authentication or intentionally omit `user` for a visitor; never pass an empty ID as a loading placeholder. |
+| Email-shaped identity | Use a stable internal user/account ID; keep email in its dedicated context field. |
+| Dropped context keys | Use the flat canonical UserContext shape; free-form targeting belongs under `custom`, not an extra `context` wrapper. |
+| Missing UI-path resolver | Register the authored action type or remove the unused action. A tracked click alone does not navigate or open checkout. |
+| `entitlement_not_in_playbook` | Compare the exact handle with the loaded Playbook and confirm the correct tenant/version. |
+| `not_access_entitlement_kind` | `price_per_unit` and `rate_limit` are parameter kinds; gate on an access entitlement. |
+| `config_unavailable` | Diagnose delivery/authentication/version admission; do not turn an unavailable policy into a paid grant. |
+| `VAL-PLN-07` | A numeric cap has no explicit enforcement choice. The default blocks at the cap. Choose `hard_block`, `block_with_upsell`, `degrade`, or `allow_overage` intentionally in the authored rule. |
+| Playbook `tenant_id` differs from the SDK initialization target (for example, `local`) | Check the imported artifact and the explicit `tenantId` option. For local input, the init target wins and a mismatch warns; align them with the intended tenant rather than suppressing the warning. This is not an instruction to rewrite a signed hosted artifact. |
+| The server's schema is newer than this CLI's bundled snapshot | Offline validation may lack newer rules. Update the repository's pinned CLI (`npm install -D @revturbine/cli@latest`, or your package manager's equivalent). The warning clears when that CLI's bundled schema version is at least the server stamp; reinstalling the same version does not resolve the lag. |
+
+Read `initStatus` inside the actual provider and inspect `getPlaybookLoadFailure()`
+on an initialized SDK when delivery fails. A once-per-session warning may not
+repeat on every render; fix the cause and rerun the relevant transition. Do not
+disable validation globally to hide a warning. See
+[identity lifecycle](/guides/identity-lifecycle/) and
+[SDK upgrades](/guides/sdk-upgrades/).
+
 ## Nothing renders, and nothing explains why
 
 This is the hardest symptom to debug, because **there is no error**. Almost

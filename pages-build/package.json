@@ -16,7 +16,8 @@
     "lint:reason-codes": "node scripts/check-reason-codes.mjs",
     "gen:reason-codes": "node scripts/gen-reason-codes.mjs",
     "lint:no-internal-pkg": "node scripts/check-no-internal-pkg.mjs",
-    "check": "pnpm lint:no-internal-pkg && pnpm typecheck && pnpm test && pnpm lint:md && pnpm lint:config && pnpm lint:reason-codes && pnpm build && pnpm lint:links",
+    "check": "pnpm lint:no-internal-pkg && pnpm typecheck && pnpm test && pnpm lint:sdk-init && pnpm lint:md && pnpm lint:config && pnpm lint:reason-codes && pnpm build && pnpm lint:links",
+    "lint:sdk-init": "node scripts/check-sdk-init-examples.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "lint:deps": "node scripts/check-deps.mjs",
     "test": "vitest --run"
@@ -32,7 +33,7 @@
     "@revt-eng/core": "0.1.520",
     "@revt-eng/schema": "0.1.520",
     "@revt-eng/schema-external": "0.1.520",
-    "@revturbine/sdk": "0.11.16",
+    "@revturbine/sdk": "0.12.4",
     "astro": "^6.1.9",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

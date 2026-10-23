@@ -15,7 +15,7 @@ RevTurbine has a small vocabulary. Learn three primitives and you can read the r
 
 - **Gates — *where your app asks*.** A gate is the checkpoint in your code or UI where you consult an entitlement before letting something happen — a `<Gate>` around a subtree, a `gate('export', …)` around an action, or a bare `can()` check. Same question, different shapes.
 
-- **Placements — *what to show when it matters*.** A placement is the UI the control plane decides to render at the right moment: an upgrade prompt when a gate denies, a "running low" banner near a limit, a trial-ending toast. You render one with a [`<Slot>`](/getting-started/api-overview/).
+- **Placements — *what to show when it matters*.** A placement is authored presentation that the SDK selects locally: an upgrade prompt when a gate denies, a "running low" banner near a limit, a trial-ending toast. You render one with a [`<Slot>`](/getting-started/api-overview/).
 
 That's the whole loop: an **entitlement** defines the policy, a **gate** asks the question in your app, and a **placement** is what RevTurbine shows when the answer should change behavior.
 
@@ -28,7 +28,7 @@ All three primitives are driven by your **Playbook** — the portable config Rev
 RevTurbine decides for a *specific* user, so you tell it who's asking: an id,
 the user's current plan handle, reported usage, and any custom traits. You set
 this with `rt.identify(userId, { plan_handle, usage, …})` or the
-`<RevTurbineProvider>` `user` prop. Entitlement checks and
+`<RevTurbineProvider>` `options.user`. Entitlement checks and
 [segment targeting](/guides/experiments/) both read from it. The dedicated
 [`RevTurbineUserContext` guide](/user-context/) covers every field, update
 semantics, and server-derived context.
@@ -39,8 +39,8 @@ The same primitives work whether the SDK reads a Playbook bundled with your app 
 
 ## Where decisions run
 
-<Aside type="tip" title="No latency, no dependence on our availability">
-We add no latency and our availability never affects your product. Decisions never have critical dependence on our servers. The RevTurbine SDK runs inside your app, and on your backend where you verify. It evaluates entitlements and placements locally, as a pure function of your Playbook and the current user context.
+<Aside type="tip" title="Local decisions, explicit delivery policy">
+The RevTurbine SDK runs inside your app, and on your backend where you verify. It evaluates entitlements and placements locally, as a pure function of your Playbook and the current user context. Hosted loading and refresh can fail; choose an explicit freshness and failure policy for the snapshot your app evaluates.
 
 We push additional inputs to your local engine: aggregated frequency caps, prioritization scores as available. These are additive; nothing breaks or blocks if not present.
 
@@ -57,6 +57,15 @@ A check that can't justify a grant returns no access rather than guessing, so a 
 | **Playbook** | The portable config RevTurbine evaluates (plans, entitlements, segments, placements) |
 | **Segment** | A named rule over user traits used for targeting and experiments |
 | **Slot** | The component that renders a placement (`<Slot>`) |
+| **User** | An application-identified person; `user.id` is distinct from their account |
+| **Account** | An organization or billing scope identified by `account_id`; membership is enforced by your app |
+| **Trigger** | A supported event or condition that makes a placement eligible for consideration |
+
+"Moment" can describe when your app asks for a decision, but SDK 0.12.4 has no
+public `moment()` function. Use the documented trigger, `Gate`, `Slot`, and
+headless APIs. Likewise, proposed `InlineSlot`/`OverlaySlot` names are not current
+exports. A slot is a place to render; an overlay is a presentation choice of the
+selected component/template, not a separate SDK decision service.
 
 For the component/config name aliases (`SurfaceSlotComponent`, `Playbook`, …), see the [Recommended API Path](/getting-started/api-overview/#the-vocabulary-slot--gate--playbook).
 

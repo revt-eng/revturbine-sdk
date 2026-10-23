@@ -1,0 +1,29 @@
+{
+  "name": "revturbine-cloud-entitlements-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --import tsx --test test/*.test.ts",
+    "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "@revturbine/sdk": "0.12.4",
+    "jose": "6.2.13",
+    "zod": "4.6.7",
+    "firebase-functions": "7.4.0",
+    "@azure/functions": "4.17.0",
+    "@aws-sdk/client-secrets-manager": "3.1156.0"
+  },
+  "devDependencies": {
+    "@edge-runtime/vm": "5.0.0",
+    "@types/node": "24.19.2",
+    "esbuild": "0.28.2",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "@types/aws-lambda": "8.10.164"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

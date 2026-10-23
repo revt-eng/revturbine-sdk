@@ -22,6 +22,23 @@ Every decision RevTurbine makes combines two things, and the SDK combines them l
 
 Plain-English definitions, how initialization and context changes drive a decision, and a worked example are on [Runtime and Playbook](/concepts/runtime-and-playbook/). The code for every runtime is on [Initialize the SDK](/getting-started/initialization/).
 
+## Integration questions
+
+Use these focused guides when moving beyond the first gate:
+
+- [SDK upgrade behavior](/guides/sdk-upgrades/): mirrors, denial reasons, gates, and presentation changes.
+- [Plans without subscriptions](/guides/plans-without-subscriptions/): explicit free-plan policy and hosted context precedence.
+- [Visitor, user, and account identity](/guides/identity-lifecycle/): sign-in, sign-out, and account switches.
+- [Usage periods and resets](/guides/usage-periods/): application accounting and atomic enforcement.
+- [Billing facts versus app events](/guides/events/#billing-facts-and-application-events): Stripe ownership and event identity.
+- [Mounted React gates](/getting-started/react/#keeping-mounted-gates-current): reactive updates without remounting.
+- [Warnings and diagnostics](/guides/troubleshooting/#warnings-that-need-an-integration-fix): what to fix when initialization or decisions degrade.
+- [Custom CTA actions and prices](/guides/custom-cta-actions/): authored versus resolved shape and currency units.
+- [First CLI upload](/reference/cli/#first-upload-of-a-starter-playbook): tenant selection and local evaluation limits.
+- [Parameter entitlements](/guides/entitlements/#parameter-entitlements): application-read metadata rather than access gates.
+
+These pages are also included in the generated `llms-full.txt` for coding agents.
+
 ## 1. Bootstrap
 
 <Tabs>
@@ -265,3 +282,9 @@ Coding agents can fetch individual pages from this index. [llms-small.txt](/llms
 - [Runtime Modes](/guides/runtime-modes/) — local mode, hosted mode, and what is cached
 - [Interactive Playground](/playground/) — every scenario, live and editable
 - [API reference](/api/) — full TypeDoc reference for all exports
+
+## Backend and edge examples
+
+Use the [cloud integration tutorial](/tutorials/vercel-edge-entitlements/) for runnable
+Vercel, Firebase, AWS, Google Cloud and Azure adapters. It covers trusted user
+context, Playbook freshness, local entitlement checks, and server enforcement.

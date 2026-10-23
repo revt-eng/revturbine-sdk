@@ -60,7 +60,7 @@ const gateScenarios = sandpackScenarios.filter(
   (s) => s.component === 'Gate' || s.component === 'HeadlessEntitlementGate',
 );
 
-async function sessionFor(userId: DemoUserId) {
+async function sessionFor(userId: DemoUserId, includeMirrors = true) {
   // Widened to the shared context type so every demo user fits one call site.
   const user: DemoUserContext = demoUsers[userId].context;
   return initRevTurbine({
@@ -68,7 +68,7 @@ async function sessionFor(userId: DemoUserId) {
     // Keep the test out of SDK adoption telemetry, exactly as the docs demos do.
     previewMode: true,
     localRuntime: { playbook },
-    user,
+    user: { ...user, entitlements: includeMirrors ? user.entitlements : {} },
     uiPathResolvers: {
       navigate_to_plans: async () => {},
       open_checkout_modal: async () => {},
@@ -84,7 +84,8 @@ describe('every playground gate scenario decides per user through the real SDK',
   });
 
   for (const scenario of gateScenarios) {
-    const handle = scenario.entitlementHandle as string;
+    const handle = scenario.entitlementHandle;
+    if (!handle) throw new Error(`Gate scenario ${scenario.code} needs an entitlement`);
 
     describe(`${scenario.code} ${scenario.title} (${handle})`, () => {
       for (const userId of DEMO_USER_IDS) {
@@ -110,30 +111,40 @@ describe('every playground gate scenario decides per user through the real SDK',
 
           if (granted) {
             expect(result).toMatchObject({ status: 'allowed', allowed: true });
-            expect(result.reason).toBeUndefined();
-            // Bound by handle — the very comparison the legacy fixture failed.
-            expect(result.rule_handle).toBeTruthy();
+            expect(result.reason).toBe('entitlement_mirrored');
+            expect(result.rule_handle).toBeUndefined();
             expect(decision?.visible ?? false).toBe(false);
           } else {
             expect(result).toMatchObject({
               status: 'denied',
               allowed: false,
-              reason: 'feature_not_enabled_for_plan',
+              reason: 'entitlement_mirrored',
             });
             expect(decision?.visible).toBe(true);
             expect(decision?.content).toBeTruthy();
           }
+          session.sdk.dispose();
         });
       }
     });
   }
 
   it('Alice (professional) is granted data_export — the G-1 regression', async () => {
-    const session = await sessionFor('user_alice');
+    const session = await sessionFor('user_alice', false);
     expect(await session.can('data_export')).toMatchObject({
       status: 'allowed',
       allowed: true,
       rule_handle: 'ev_data_export_enabled',
     });
+    session.sdk.dispose();
+  });
+
+  it('Starter without mirrored grants is denied by the Playbook rule', async () => {
+    const session = await sessionFor('user_carol', false);
+    try {
+      expect(await session.can('data_export')).toMatchObject({
+        status: 'denied', allowed: false, reason: 'feature_not_enabled_for_plan',
+      });
+    } finally { session.sdk.dispose(); }
   });
 });

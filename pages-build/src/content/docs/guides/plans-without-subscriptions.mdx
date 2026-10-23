@@ -1,0 +1,48 @@
+---
+title: Plans Without a Subscription
+description: Supply an explicit free-plan identity and understand application versus hosted plan context.
+---
+
+A free user does not need a Stripe subscription. They do need an explicit plan
+identity when a Playbook rule targets a plan. The SDK resolves `plan_handle`
+first, then `plan.handle`. If neither exists, it does not select the cheapest
+public plan or invent a default free plan; plan-targeted checks can deny with
+`no_plan_identity`.
+
+## Choose your no-subscription policy
+
+Define a free plan in the Playbook and have your application supply its handle
+for users who should receive it. Public visibility is a merchandising setting,
+not an instruction to assign that plan to every unidentified user. Keep the
+same policy on your backend's authoritative context builder.
+
+```ts
+rt.update({ plan_handle: 'free' });
+```
+
+Use your actual Playbook handle. Do not translate a display name into a handle
+or send the retired `plan: { id: ... }` shape.
+
+## Hosted context and application context
+
+Hosted client-context delivery can provide a plan derived from the current
+customer/account state. When a server plan is present, it can replace an earlier
+application-supplied plan. When the response omits a plan, that omission does
+not necessarily clear the SDK's existing application plan.
+
+Therefore, a missing subscription is not a universal reset-to-free operation.
+After cancellation, account change, or logout, refresh the authoritative state
+and explicitly apply or clear the relevant context. Cancellation timing also
+matters: cancellation at period end may intentionally retain paid access until
+the paid period ends. Do not infer that all canceled Stripe states have the
+same access policy.
+
+An application-supplied plan can provide an immediate UI update while billing
+synchronizes. It is not payment proof. The backend must derive access from
+trusted billing/application records, and a later hosted plan can supersede the
+optimistic value.
+
+Test a new free user, a paid user, cancellation at period end, an expired paid
+period, and a response that contains no plan. Check the held SDK context as well
+as the final entitlement result. See [identity lifecycle](/guides/identity-lifecycle/)
+and [Billing & Stripe](/guides/billing/).

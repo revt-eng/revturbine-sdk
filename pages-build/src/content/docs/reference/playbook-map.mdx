@@ -1,0 +1,107 @@
+---
+title: Playbook Field and Reference Map
+description: The 29 body fields, their roles, and the references connecting policy and presentation.
+---
+
+A Playbook is a versioned document, not a flat list of entitlements. Its envelope
+identifies the artifact, tenant, environment, and schema version; its body holds
+policy, targeting, and presentation. This map describes the 29 top-level body
+keys in the schema pinned by SDK 0.12.4 documentation (`0.1.520`). Their key set
+also matches the scaffold source reviewed on October 23, 2026.
+
+## The main reference paths
+
+Arrows point from a record that contains a reference to the record it names.
+This overview groups related fields; the tables below provide their exact names.
+
+<svg viewBox="0 0 760 310" role="img" aria-labelledby="playbook-map-title playbook-map-description" style="width:100%;height:auto;max-width:760px">
+  <title id="playbook-map-title">Playbook policy and presentation reference map</title>
+  <desc id="playbook-map-description">Entitlement rules reference entitlements, plans and add-ons, and segments. Variations reference plans and add-ons and segments. Placements reference payloads and slots. Payloads reference message blocks, UI paths and promotions. Message blocks reference surface templates.</desc>
+  <defs><marker id="playbook-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" /></marker></defs>
+  <g fill="none" stroke="currentColor" stroke-width="1.5" marker-end="url(#playbook-arrow)">
+    <path d="M170 45 H280" /><path d="M170 45 L280 115" /><path d="M170 45 L280 185" />
+    <path d="M170 115 H280" /><path d="M170 115 L280 185" />
+    <path d="M570 45 V90" /><path d="M570 140 V190" /><path d="M570 240 V265" />
+  </g>
+  <g fill="var(--sl-color-gray-6, #eee)" stroke="currentColor">
+    <rect x="5" y="20" width="165" height="50" rx="7" /><rect x="5" y="90" width="165" height="50" rx="7" />
+    <rect x="280" y="20" width="170" height="50" rx="7" /><rect x="280" y="90" width="170" height="50" rx="7" /><rect x="280" y="160" width="170" height="50" rx="7" />
+    <rect x="475" y="20" width="280" height="50" rx="7" /><rect x="475" y="90" width="280" height="50" rx="7" /><rect x="475" y="190" width="280" height="50" rx="7" /><rect x="475" y="265" width="280" height="40" rx="7" />
+  </g>
+  <g fill="currentColor" text-anchor="middle" font-size="15" font-family="sans-serif">
+    <text x="87" y="50">Entitlement rules</text><text x="87" y="120">Variations</text>
+    <text x="365" y="50">Entitlements</text><text x="365" y="120">Plans / add-ons</text><text x="365" y="190">Segments</text>
+    <text x="615" y="50">Placements</text><text x="615" y="120">Payloads / slots</text>
+    <text x="615" y="211">Message blocks / UI paths</text><text x="615" y="230">and promotions</text><text x="615" y="291">Surface templates</text>
+  </g>
+</svg>
+
+## Body field inventory
+
+“Array” means a collection of records, not a promise that each record is an
+independent runtime entity. Optional fields may be absent. Compatibility and
+authoring-only fields are not instructions to build new integrations around them.
+
+| Field | Shape | Purpose |
+| --- | --- | --- |
+| `plans` | Array | Base plan definitions, identified by `unique_handle`. |
+| `addons` | Array | Add-on definitions referenced by entitlement targets. |
+| `entitlements` | Array | Named access or parameter capabilities and their kinds. |
+| `entitlement_rules` | Array | Rules binding an entitlement to plan/add-on targets and optional segments. |
+| `segments` | Array | Named targeting predicates over context. |
+| `content_ui_paths` | Array | Authored CTA action definitions and routing parameters. |
+| `slot_configs` | Array | Deprecated compatibility field; activation/trigger state belongs to the SDK. |
+| `content_overrides` | Object | Deprecated compatibility map; author Message Block/Payload content instead. |
+| `theme` | Object | Legacy branding compatibility data; branding is independently owned. |
+| `placement_slots` | Array | Authored locations into which matching placements may render. |
+| `message_blocks` | Array | Reusable content shaped for a surface template. |
+| `placement_payloads` | Array | Content selections, targeting, actions, and presentation for placements. |
+| `placements` | Array | Placement category, triggers, targeting, and content associations. |
+| `content_promotions` | Array | Authored promotions that content and actions can reference. |
+| `personalization_tokens` | Array | Named substitutions used in content. |
+| `surface_templates` | Array | Presentation templates referenced by message blocks and slots. |
+| `free_trial_rules` | Array | Authoring definitions for opt-in/free trial behavior. |
+| `reverse_trial_rules` | Array | Authoring definitions for reverse trials and their fallback/conversion plans. |
+| `objectives` | Array | Authoring-only business labels; not runtime decision inputs. |
+| `plan_variations` | Array | Plan-owned pricing variations, with optional segment eligibility. |
+| `addon_variations` | Array | Add-on-owned pricing variations, with optional segment eligibility. |
+| `extension_rules` | Array | Tagged extension payloads; unknown mandatory kinds must be rejected by readers. |
+| `seat_types` | Array | Seat-type policy definitions for account-scoped access. |
+| `enforcement_defaults` | Array | Configured enforcement defaults used by applicable policies. |
+| `placement_settings` | Array | Placement presentation and selection settings. |
+| `segment_dimensions` | Array | Segment-dimension declarations; field presence does not imply a normalized bundle table. |
+| `meter_bindings` | Array | Bindings connecting policy to meter definitions. |
+| `experiments` | Array | Reserved compatibility placeholder; the current schema requires an empty array. |
+| `signal_catalog` | Object | Reserved compatibility placeholder; the current schema requires an empty strict object. Signal definitions remain on the control plane and are not shipped to the browser. |
+
+## References use the target's declared identity
+
+Do not assume a field ending in `_id` is a database UUID. Portable references
+often use handles. These examples follow the schema's reference graph:
+
+| Referencing field | Target identity | Meaning |
+| --- | --- | --- |
+| Rule `entitlement_id` | Entitlement `unique_handle` | The capability this rule configures. |
+| Rule `targets[].id`, kind `plan` | Plan `unique_handle` | Applicable plan. |
+| Rule `targets[].id`, kind `addon` | Add-on `unique_handle` | Applicable add-on. |
+| Rule segment references | Segment `handle` | Eligibility restriction. |
+| Variation `plan_handle` / `addon_handle` | Parent `unique_handle` | Owning plan or add-on. |
+| Variation `segment_handle` | Segment `handle` | Optional price eligibility. |
+| Trial plan, fallback, or conversion references | Plan handle | Trial entry/exit plan policy. |
+| Placement trigger entitlement / slot references | Entitlement handle / slot ID | Which event or location can activate the placement. |
+| Payload segment-content entries | Segment handle | Conditional content selection. |
+| Payload content/action references | Message block, UI path, promotion identities | Content and action to resolve. |
+| Message block template reference | Surface template ID | Rendering shape. |
+| UI-path promotion / placement references | Referenced promotion / placement identity | Destination or offer for the action. |
+
+Variation-level rule target enum members exist for compatibility but are not a
+recommendation to author new variation-level entitlement targeting. Use the
+supported plan/add-on targeting model. Removing a segment constraint can widen
+access; do not silently drop a missing reference. Validate the whole document
+with the CLI before upload and review the diff before launch.
+
+The compiler's 13 normalized bundle tables are a projection of this document,
+not the complete list of Playbook body fields. A body field's presence does not
+prove it is lowered into an independent table or read by every language port.
+See [runtime and Playbook](/concepts/runtime-and-playbook/) for the distinction
+between authored policy and the per-user facts evaluated with it.

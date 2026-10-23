@@ -205,6 +205,24 @@ function ExportButton() {
 | `gatedPlacement` | `PlacementOutput \| null` | Upgrade placement (if `autoGate: true`) |
 | `recheck` | `() => Promise<void>` | Re-check entitlement |
 
+### Keeping mounted gates current
+
+`Gate` and `useEntitlement` subscribe to SDK context and usage notifications.
+After `rt.update({ usage: { api_calls: total } })` or a supported context update,
+the mounted gate rechecks; a forced remount or page reload is not required.
+`recheck()` remains available for an explicit retry.
+
+This subscription does not poll your billing database. When a subscription or
+balance changes elsewhere, fetch fresh authoritative context and pass it to
+the SDK. Updating React state that the SDK never receives cannot change its
+decision. Preserve the provider's stable options object and update facts through
+the SDK rather than rebuilding the provider for every balance change.
+
+Verify a gate stays mounted while usage crosses its limit and then resets.
+Also verify a paid-to-free user switch clears the old grants. See
+[identity lifecycle](/guides/identity-lifecycle/) and
+[usage periods](/guides/usage-periods/).
+
 ### useUsageSnapshot
 
 Get current usage balances:

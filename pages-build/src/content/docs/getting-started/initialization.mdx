@@ -16,20 +16,21 @@ Which entry point you use depends on **where the code runs**:
 |---|---|---|---|
 | Browser, React | `RevTurbineProvider` from `@revturbine/sdk` | `localRuntime: { playbook }` | `publicKey` + `clientSession` |
 | Browser, no React | `initRevTurbine` from `@revturbine/sdk/headless` | `localRuntime: { playbook }` | `publicKey` + `clientSession` |
-| Your Node server | `initRevTurbine` from `@revturbine/sdk/headless`, plus `RevTurbineServer` | the Playbook snapshot you loaded | the server key, to mint client sessions |
+| Your Node server | `initRevTurbine` from `@revturbine/sdk/headless`, plus `RevTurbineServer` | the Playbook snapshot you loaded | server key for Playbook delivery and events; `RevTurbineServer` for client sessions |
 
 The option names are fixed, and they are not interchangeable:
 
 | Option | Where | What it is |
 |---|---|---|
 | `publicKey` | the browser | Your ingest key (`rtk_…`, type `public`). Safe to ship in a bundle. |
-| `apiKey` | `RevTurbineServer` on your server | Your server key (`rtk_…`, type `server`). Secret. Never in a browser bundle, never a `NEXT_PUBLIC_` variable. |
+| `apiKey` | headless server initialization and `RevTurbineServer` | Your server key (`rtk_…`, type `server`). Secret. Never in a browser bundle, never a `NEXT_PUBLIC_` variable. |
 | `localRuntime.playbook` | anywhere | The Playbook you load yourself (`revturbine.playbook.json`). |
 | `clientSession` | the browser | A function that returns a short-lived session token from **your** server. See [Client sessions](/guides/client-sessions/). |
 
-`initRevTurbine` reads `publicKey`, never `apiKey`. A browser init with only
-`apiKey` resolves no credential, and the check below says why a server cannot
-use hosted `Server` mode either.
+In a browser, initialize with `publicKey`. On a trusted backend, headless
+`RuntimeMode.Server` accepts `apiKey` for Playbook loading and event ingest.
+The key never makes a hosted entitlement decision: evaluation runs locally
+with the user's context and the loaded Playbook.
 
 ## Before you go hosted
 
@@ -161,8 +162,7 @@ export function revturbineFor(user: RevTurbineUserContext) {
 Get the Playbook with `revturbine download --live --save ./revturbine.playbook.json`
 in your build or deploy step, so the server evaluates the Playbook you last
 launched. A launch reaches a server when it next loads that file, so restart or
-redeploy after a launch. The full pattern, including why the server does not
-use hosted `Server` mode, is on
+redeploy after a launch. The full local and connected patterns are on
 [Server-Side Integration](/getting-started/server-side/).
 
 **Mint** client sessions and write server-only user state with your server key.
@@ -188,6 +188,40 @@ RevTurbine refuses a server key presented from a browser, and a key in a
 bundle is a leaked key. If it ever reaches the client, rotate it under
 **Settings → API Token Management → Server Token**.
 </Aside>
+
+### Connected backend
+
+For hosted Playbook updates, use the server runtime after authenticating the
+caller and constructing their context from trusted application data:
+
+```ts
+import { initRevTurbine, RuntimeMode, type RevTurbineUserContext } from '@revturbine/sdk/headless';
+
+export async function canExport(user: RevTurbineUserContext): Promise<boolean> {
+  const session = await initRevTurbine({
+    runtimeMode: RuntimeMode.Server,
+    tenantId: process.env.REVTURBINE_TENANT_ID!,
+    apiKey: process.env.REVTURBINE_API_KEY!,
+    user,
+    analytics: false,
+    anonymousTelemetry: false,
+  });
+  try {
+    if (session.sdk.getPlaybookLoadFailure()) return false;
+    return (await session.can('data_export')).allowed;
+  } finally {
+    session.sdk.dispose();
+  }
+}
+```
+
+Keep an identified session scoped to that user and operation. Share immutable
+Playbook snapshots, not sessions, between callers. A connected instance treats
+`localRuntime.playbook` as a startup seed and refreshes it from hosted delivery;
+`LocalOnly` continues using the supplied snapshot without fetching.
+
+The [cloud integration tutorial](/tutorials/vercel-edge-entitlements/) adds authenticated
+context tokens, an explicitly bounded shared Playbook cache, and provider adapters.
 
 ## Next
 

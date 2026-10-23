@@ -1,0 +1,18 @@
+{
+  "functions": {
+    "source": ".",
+    "runtime": "nodejs22"
+  },
+  "hosting": {
+    "public": "public",
+    "rewrites": [
+      {
+        "source": "/api/check-export",
+        "function": {
+          "functionId": "checkExport",
+          "region": "us-central1"
+        }
+      }
+    ]
+  }
+}

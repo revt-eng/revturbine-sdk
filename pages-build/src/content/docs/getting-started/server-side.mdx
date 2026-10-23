@@ -9,9 +9,9 @@ import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
 The headless SDK runs on Node.js and edge runtimes. On a server it evaluates
 the Playbook snapshot you load, in-process, one user per instance, with no
-decisioning network call. Your server key is for a different job: minting
-[client sessions](/guides/client-sessions/) for the browser. This page covers
-both, and says plainly what a server cannot do yet.
+decisioning network call. Your server key authenticates hosted Playbook loading and event ingest. The
+separate `RevTurbineServer` helper mints [client sessions](/guides/client-sessions/)
+for the browser; it does not evaluate entitlements.
 
 <Aside type="note" title="TypeScript uses RevTurbineUserContext">
 The `./headless` entry point accepts the same canonical, flat user shape as the
@@ -27,9 +27,9 @@ the identity in `user.id`; do not use the compact Python/Rust
 |---|---|---|
 | Render placements in React | ✅ | — |
 | Gate API endpoints | — | ✅ |
-| Enforce usage limits before processing | — | ✅ |
+| Check a usage allowance before processing | — | ✅ (your application owns atomic consumption) |
 | SSR placement decisions | ✅ (local mode) | ✅ |
-| Report events to RevTurbine | ✅ | — (not yet; see [Events](#what-a-server-reports)) |
+| Report events to RevTurbine | ✅ | ✅ TypeScript connected mode; see [Events](#what-a-server-reports) |
 | Mint client sessions | — | ✅ `RevTurbineServer` |
 
 ## Headless Server Re-check
@@ -84,12 +84,13 @@ export async function POST(request: Request): Promise<Response> {
 
   const rt = await revturbineFor(context);
 
-  const result = await rt.can('data_export');
-  if (!result.allowed) {
-    return new Response('Upgrade required', { status: 402 });
+  try {
+    const result = await rt.can('data_export');
+    if (!result.allowed) return new Response('Upgrade required', { status: 403 });
+    return await runExport(request);
+  } finally {
+    rt.sdk.dispose();
   }
-
-  return runExport(request);
 }
 ```
 
@@ -125,7 +126,9 @@ A `LocalOnly` instance makes no hosted decision or event-ingest call. Its
 
 A TypeScript hosted backend instance authenticates `track()` events with its
 server key. Call `await rt.flushEvents()` before ending a short-lived operation;
-backend instances have no browser page-unload lifecycle. Events belong to that
+backend instances have no browser page-unload lifecycle. `flushEvents()` is
+best-effort transport work, not a durable delivery receipt; call `rt.sdk.dispose()`
+in `finally` after using the session. Events belong to that
 instance's user context. This transport does not turn the SDK into a request
 handler or share identity between users.
 
@@ -169,14 +172,18 @@ export async function POST(request: Request): Promise<Response> {
   const user = await requireUser(request);
   const rt = await revturbineFor({ id: user.id, plan_handle: user.planHandle });
 
-  const access = await rt.can('trial_extension');
-  if (!access.allowed) return new Response('Upgrade required', { status: 402 });
+  try {
+    const access = await rt.can('trial_extension');
+    if (!access.allowed) return new Response('Upgrade required', { status: 403 });
 
-  const trial = await extendTrial(user.id);
-  return Response.json({
-    plan_handle: user.planHandle,
-    trial: { in_trial: true, days_remaining: trial.daysRemaining },
-  });
+    const trial = await extendTrial(user.id);
+    return Response.json({
+      plan_handle: user.planHandle,
+      trial: { in_trial: true, days_remaining: trial.daysRemaining },
+    });
+  } finally {
+    rt.sdk.dispose();
+  }
 }
 ```
 
@@ -328,7 +335,7 @@ TypeScript has both browser/React and headless entry points. Python and Rust are
 | Python | `revturbine` (PyPI) | [Python SDK](/getting-started/python/) |
 | Rust | `revturbine` (crates.io) | [Rust SDK](/getting-started/rust/) |
 
-TypeScript supports local mode everywhere and hosted mode in the browser; on a server it evaluates a supplied Playbook and mints client sessions with `RevTurbineServer`. Python and Rust evaluate a supplied Playbook locally; the application owns refreshing that snapshot. Their guides describe installation, input shapes and the supported surfaces.
+TypeScript supports local mode everywhere and hosted Playbook delivery in both browsers and trusted backends. A backend uses its server `apiKey` for delivery and evaluates locally in a request-scoped session; the separate `RevTurbineServer` helper mints browser client sessions. Python and Rust evaluate a supplied Playbook locally; the application owns refreshing that snapshot. Their guides describe installation, input shapes and the supported surfaces.
 
 Python exposes the same re-check question as `can()`:
 
@@ -346,3 +353,11 @@ See the [Python SDK guide](/getting-started/python/) and [Rust SDK guide](/getti
 - [Entitlements Guide](/guides/entitlements/) — entitlement types and checking patterns
 - [Runtime Modes](/guides/runtime-modes/) — choosing the right runtime mode
 - [Headless API](/guides/headless-api/) — imperative SDK usage without React
+
+## Runnable cloud examples
+
+Follow [Cloud and edge entitlement checks](/tutorials/vercel-edge-entitlements/) for
+Vercel, Firebase, AWS, Google Cloud and Azure. It keeps authentication and request
+handling in your application, caches only immutable Playbooks, and constructs a
+fresh SDK session for each operation. The [Vercel walkthrough](/tutorials/vercel-edge-entitlements/)
+also exercises the browser-compatible bundle in an Edge VM.

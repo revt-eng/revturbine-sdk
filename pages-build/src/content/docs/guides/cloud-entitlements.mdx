@@ -1,0 +1,86 @@
+---
+title: Cloud and Edge Entitlements
+description: Run the same trusted UserContext and Playbook pattern across five cloud providers.
+---
+
+The SDK evaluates a **UserContext and Playbook in your application**. It can run
+in a browser, a regional server function, or a compatible edge runtime. RevTurbine
+delivers configuration; your application's protected operation enforces the result.
+
+The [complete example](https://github.com/revt-eng/revturbine-sdk/tree/main/examples/cloud-entitlements)
+uses the published SDK 0.12.4 and includes local tests. Start with the
+[cloud export tutorial](/tutorials/vercel-edge-entitlements/), then choose an adapter.
+
+| Provider | Server implementation | Edge implementation |
+| --- | --- | --- |
+| Vercel | Node.js Function | Standalone Edge Function |
+| Firebase | Functions v2 | Hosting CDN rewrites to the regional function |
+| AWS | Lambda with HTTP API v2 | Lambda@Edge origin-request; not CloudFront Functions |
+| Google Cloud | Cloud Run HTTP container | Global load balancer routes to regional Cloud Run |
+| Azure | Functions v4 HTTP | Front Door routes to regional Functions |
+
+The CDN/front-door variants for Firebase, Google Cloud, and Azure do not execute
+the SDK at the edge. They preserve the same authenticated regional enforcement.
+
+## Shared request lifecycle
+
+1. Authenticate the application-issued context token using a trusted JWKS endpoint.
+2. Validate its issuer, audience, tenant, subject, type, and short expiry.
+3. Load a verified, bounded Playbook snapshot for that deployment's tenant.
+4. Initialize a fresh SDK session with that user's authoritative context.
+5. Check the entitlement, enforce resource ownership, and perform the operation.
+6. Dispose the session in `finally`, including denied and failed operations.
+
+Only immutable Playbook snapshots and public keys are shared across requests.
+Never keep a mutable SDK session in a global variable and switch users between
+requests. Ignore client-supplied plan or account claims unless authenticated by
+your trusted issuer; a signed token must originate from authoritative records.
+
+## Cache and security contract
+
+The example cache uses authenticated HTTPS bootstrap, approved HTTPS origins,
+tenant/environment checks, manifest validity, schema compatibility, byte length,
+and SHA-256 integrity. It refreshes within 60 seconds and never beyond manifest
+expiry. A failed refresh returns 503; it does not grant from stale policy.
+It does not verify the optional Ed25519 manifest signature. This is an online,
+authenticated-bootstrap trust model, not offline signature verification.
+
+Context tokens expire within five minutes. This bounds, but does not eliminate,
+the delay before a changed subscription or revoked membership becomes visible.
+Choose shorter tokens or an application revocation check when needed.
+
+These are application-issued JWTs, not `rt_client_` RevTurbine client-session
+tokens. They have separate issuers, audiences, and verification paths. Delivery
+uses a four-second timeout **per fetch**, while JWKS resolution has its own
+three-second timeout. These are not a total-operation deadline; budget for
+sequential requests and enforce your application's overall timeout separately.
+
+Do not cache personalized responses at a CDN. The adapters emit `private,
+no-store`; also disable the provider's route caching and forward Authorization.
+Keep server tokens out of public bundles, logs, URLs, and downstream CDN requests.
+
+The sample `data_export` entitlement is boolean. Metered operations additionally
+need atomic application-side quota reservation/consumption. An SDK check followed
+by a separate write is not an atomic quota transaction.
+
+## Local validation
+
+From `examples/cloud-entitlements`, run `npm ci`, `npm run typecheck`, and
+`npm test`. Tests build adapters, exercise realistic HTTP/event boundaries, verify
+JWTs and real SDK decisions, and execute the browser bundle in Edge Runtime.
+No cloud accounts, deployments, or live credentials are required for acceptance.
+
+See the example README for configuration, packaging, and provider limitations.
+Provider deployment remains an optional adoption step, not a claim made by the
+local tests. Compare this cache with the simpler
+[native server initialization](/getting-started/initialization/).
+
+## Provider references
+
+- [Vercel Edge runtime](https://vercel.com/docs/functions/runtimes/edge)
+- [Firebase Hosting function rewrites](https://firebase.google.com/docs/hosting/functions)
+- [Lambda@Edge restrictions](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-at-edge-function-restrictions.html)
+- [HTTP API payload formats](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html)
+- [Cloud Run container contract](https://cloud.google.com/run/docs/container-contract)
+- [Azure Functions Node programming model](https://learn.microsoft.com/en-us/azure/azure-functions/functions-reference-node)
+- [Front Door caching](https://learn.microsoft.com/en-us/azure/frontdoor/front-door-caching)

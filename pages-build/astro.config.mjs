@@ -9,6 +9,9 @@ import { join, resolve } from 'node:path';
 import { readFile, writeFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolveSdkVersion } from './scripts/resolve-sdk-version.mjs';
+import { docsAnalyticsEnabled, docsTagManagerId } from './src/lib/docs-analytics';
+
+const analyticsEnabled = docsAnalyticsEnabled(process.env);
 
 // PAGES_BASE can be set by the deploy workflow.
 const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? '';
@@ -113,6 +116,7 @@ export default defineConfig({
   vite: {
     define: {
       'import.meta.env.PUBLIC_SDK_VERSION': JSON.stringify(sdkVersion),
+      'import.meta.env.PUBLIC_DOCS_ANALYTICS': JSON.stringify(String(analyticsEnabled)),
     },
     resolve: {
       alias: {
@@ -136,11 +140,16 @@ export default defineConfig({
       customCss: ['./src/styles/custom.css'],
       components: {
         SiteTitle: './src/components/SiteTitle.astro',
+        SkipLink: './src/components/DocsSkipLink.astro',
       },
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/revt-eng/revturbine-sdk' },
       ],
       head: [
+        ...(analyticsEnabled ? [{
+          tag: 'script',
+          content: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${docsTagManagerId}');`,
+        }] : []),
         // OpenGraph defaults
         { tag: 'meta', attrs: { property: 'og:type', content: 'website' } },
         { tag: 'meta', attrs: { property: 'og:site_name', content: 'RevTurbine Docs' } },
@@ -207,6 +216,7 @@ export default defineConfig({
             { label: 'Initialize the SDK', slug: 'getting-started/initialization' },
             { label: 'React Integration', slug: 'getting-started/react' },
             { label: 'Server-Side Integration', slug: 'getting-started/server-side' },
+            { label: 'Cloud and Edge Examples', slug: 'guides/cloud-entitlements' },
             { label: 'Python SDK', slug: 'getting-started/python' },
             { label: 'Rust SDK', slug: 'getting-started/rust' },
           ],
@@ -240,6 +250,7 @@ export default defineConfig({
             { label: 'Headless API', slug: 'guides/headless-api' },
             // Tutorials (step-by-step) folded in from the former standalone Tutorials section.
             { label: 'Tutorial: Add an Upgrade Button', slug: 'tutorials/upgrade-button' },
+            { label: 'Tutorial: Protect a Cloud Export', slug: 'tutorials/vercel-edge-entitlements' },
             { label: 'Tutorial: Show a Banner Placement', slug: 'tutorials/banner-placement' },
             { label: 'Tutorial: Gate a Premium Feature', slug: 'tutorials/gate-premium-feature' },
             { label: 'Tutorial: Track Usage & Quota Meter', slug: 'tutorials/usage-quota-meter' },
@@ -270,6 +281,7 @@ export default defineConfig({
           label: 'Reference',
           items: [
             { label: 'Configuration', slug: 'reference/configuration' },
+            { label: 'Playbook Field Map', slug: 'reference/playbook-map' },
             { label: 'CLI', slug: 'reference/cli' },
             { label: 'Error Codes', slug: 'reference/errors' },
             { label: 'Compatibility Matrix', slug: 'reference/compatibility' },

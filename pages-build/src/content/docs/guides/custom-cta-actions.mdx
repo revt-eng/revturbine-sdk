@@ -1,0 +1,46 @@
+---
+title: Custom CTA Actions and Prices
+description: Keep authored CTA configuration, resolved actions, and display price units distinct.
+---
+
+The authored Studio CTA shape uses `label`, `path`, and optional string-valued
+`config`. The selected action resolves into a placement's `cta_path`. Do not
+invent a nested `config.ui_path` object to select a custom action.
+
+```json title="A Studio CTA fragment, not a complete Playbook"
+{
+  "label": "Open account settings",
+  "path": "open_account_settings",
+  "config": { "tab": "billing" }
+}
+```
+
+For a custom/unmapped path, the resolver carries the action name into the
+resolved path's `type` and preserves the configured parameters. The SDK's CTA
+registry normalizes those parameters for the registered action. Register your
+resolver under the same action name. A label is presentation text, not a
+dispatch key.
+
+The renderer reads normalized `cta_path` and accepts `ui_path` as a compatibility
+alias. Those output fields are distinct from an authored Studio CTA's
+`path`/`config` and from a payload's reference to `content_ui_paths`. Follow the
+[CTA action guide](/guides/placements/#cta-actions) for resolver registration.
+The resolver performs your application's navigation or backend call; authoring
+a CTA does not implement that action automatically.
+
+## Display prices use currency minor units
+
+Supply `price_amount` using the currency's minor-unit convention. For USD,
+`4900` displays as $49.00; it is not $4,900. Other currencies can have different
+fraction digits, so do not unconditionally divide every currency by 100.
+The schema accepts a nonnegative number; that structural validation alone does
+not prove the amount uses the right currency units.
+
+Playbook prices are display metadata. Stripe or your billing backend determines
+what is actually charged. Pass a trusted price identifier into checkout and
+verify it server-side rather than charging an amount from a browser-rendered
+card. See [source of truth](/concepts/source-of-truth/).
+
+Test the resolved action type and parameters, missing-resolver behavior, a
+successful action, a rejected backend action, and price formatting for each
+currency your application supports.

@@ -21,6 +21,40 @@ Placement components and headless controllers instrument the placement lifecycle
 
 `placement_interaction` is the one placement interaction event; there are no separate dismiss/snooze/convert events.
 
+## Billing facts and application events
+
+With Stripe connected and identity mapping configured, RevTurbine records
+subscription, trial, renewal, and payment facts from Stripe webhooks. Your app
+does not need to emit a second billing fact merely because a checkout page
+returned successfully. A browser return URL is not authoritative payment proof.
+
+The billing event names are `subscription_started`, `subscription_renewed`,
+`subscription_expanded`, `subscription_canceled`, `trial_started`,
+`trial_converted`, `trial_expired`, `payment_succeeded`, and `payment_failed`.
+For example, record your app's checkout-button interaction as an application
+event; let the webhook integration report the resulting `payment_succeeded`
+and subscription fact. Do not send a duplicate `subscription_started` from
+the browser's checkout-success page.
+
+Use application events for what your app knows: feature use, an onboarding step,
+or an interaction that is not a Stripe billing occurrence. `track()` is the
+generic lane and namespaces collisions with platform event names. The typed
+`emitPlatformEvent` API is the platform-event lane and requires that event's
+payload contract; renaming an arbitrary `track()` event does not make it a
+canonical billing fact.
+
+`billing_ref` is a producer-owned stable billing-fact identity, not the SDK
+transport `event_id`. Preserve it when retrying the same fact. Do not reuse it
+for unrelated occurrences or invent a new one on each retry. Newer managed
+billing profiles distinguish occurrence identity, source revision, delivery ID,
+and the legacy billing reference; a legacy reference alone does not identify
+every repeated subscription transition. Prefer the Stripe integration for
+Stripe-owned facts rather than reproducing its accounting logic in the browser.
+
+The SDK does not emit the removed `growth_signal_observed` event. Use the current
+documented event/trigger contracts and keep custom names in the application lane.
+For identity mapping and webhook setup, see [Billing & Stripe](/guides/billing/).
+
 ## Custom events
 
 In React, `useTrack` returns a `track(name, data?, options?)` bound to the surrounding [scope](#scoping-with-telemetryscope). Reserved names (canonical identity + provenance fields) are dropped so you can't overwrite a system value; without a provider, `track` is a safe no-op.
@@ -199,7 +233,7 @@ Every emitted event (clickstream and treatment interactions) is then stamped `te
 This is a deliberate, code-passed decision: pass it explicitly from your own configuration. The SDK never infers it from the environment — no `NODE_ENV` sniffing. Whether traffic is test traffic is your call, not a deployment artifact. Omitted or `false`, events are emitted unchanged (byte-identical to earlier SDK versions).
 
 :::note[Not the same as placement "Test Mode"]
-Placement **Test Mode** (`off / test_users / all_traffic` on a placement's settings) is a *server-side decisioning* control — it governs **who is eligible to see** a placement, and stamps its own marker on decision responses. The `test` init option is a *caller-declared* marker on **emitted events**. A production user in a placement's test audience is not test traffic; a staging deploy emitting real-looking events is. The two are independent.
+Placement **Test Mode** (`off / test_users / all_traffic` on a placement's settings) controls **who is eligible to see** a placement during SDK evaluation and carries its own decision marker. The `test` init option is a *caller-declared* marker on **emitted events**. A production user in a placement's test audience is not test traffic; a staging deploy emitting real-looking events is. The two are independent.
 :::
 
 ## Silent-failure diagnostics

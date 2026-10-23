@@ -1,0 +1,91 @@
+---
+title: Protect a Cloud Export
+description: Authenticate UserContext, load a Playbook, and enforce a paid action with a fresh SDK session.
+---
+
+This tutorial starts with a Vercel standalone Edge Function. The same application
+handler also has Node, Firebase, AWS, Google Cloud, and Azure adapters in the
+[cloud examples](/guides/cloud-entitlements/).
+
+## 1. Run the example locally
+
+Clone the [SDK repository](https://github.com/revt-eng/revturbine-sdk) and open
+`examples/cloud-entitlements`. Install with `npm ci`, check types with
+`npm run typecheck`, and run `npm test`. Tests provide their own keys and delivery
+fixtures. You do not need to deploy or supply production credentials.
+
+The fixture grants the boolean `data_export` entitlement to `pro` and denies it
+to `free`. Tests verify both decisions, rejected authentication, unavailable
+configuration, cache refresh, and user isolation against the published SDK.
+
+## 2. Establish authoritative context
+
+In your trusted application backend, authenticate the caller and resolve their
+account membership and plan from your application's records. Pass that context
+to `issuer/issue-context-token.ts`. Keep its signing private key on the issuer;
+publish only public keys at your HTTPS JWKS URL.
+
+Set `CONTEXT_JWKS_URL`, `CONTEXT_ISSUER`, and `CONTEXT_AUDIENCE` to your application's
+values. The token's subject must match `user.id`, and its tenant must match the
+deployment. The helper is not an endpoint for signing arbitrary browser JSON.
+
+This application JWT is separate from an `rt_client_` RevTurbine client-session
+token. Do not send a client-session token to this verifier or treat the two
+credential types as interchangeable.
+
+## 3. Configure trusted Playbook delivery
+
+Use the variable names in `.env.example`. Set `REVTURBINE_TENANT_ID`, the secret
+server `REVTURBINE_API_KEY`, `REVTURBINE_ENDPOINT`, and an explicit allowlist in
+`REVTURBINE_CDN_ORIGINS`. Use the actual delivery origins supplied by your
+deployment; do not accept an origin from the incoming request.
+
+`src/playbook-cache.ts` shares only immutable snapshots. It authenticates
+bootstrap, checks scope/integrity/version/expiry, and refreshes within 60 seconds.
+The cache deliberately rejects a failed refresh instead of serving stale grants.
+The native connected alternative is in `src/native-connected-example.ts`.
+
+The four-second delivery timeout is per fetch, not for the complete operation.
+JWKS resolution separately allows three seconds. Account for sequential requests
+when setting your overall application deadline and provider timeout.
+
+## 4. Follow the enforcement boundary
+
+`api/check-export.ts` selects the Edge runtime and delegates to the configured
+handler. `src/check-export.ts` verifies authentication before loading policy,
+initializes a fresh SDK session, invokes `session.can('data_export')`, and disposes
+the session in `finally`. There is no shared mutable session for multiple users.
+
+The sample returns 200 for allowed, 403 for denied, 401 for rejected authentication,
+405 for an unsupported method, and 503 for unavailable configuration. Personalized
+responses carry `private, no-store`.
+
+Replace the allowed response with your export operation, after verifying that
+the caller owns or may access the requested resource. Do not call this endpoint
+from the browser and treat a successful response as authorization for a separate,
+unguarded download. Keep the check and protected operation in the trusted handler.
+
+## 5. Choose your runtime
+
+Use `api/check-export-node.ts` when you need Node APIs or your framework does not
+support standalone Edge execution. Keep Node-only provider imports outside the
+Edge graph. Other providers use the same handler through the adapters listed in
+the [cloud guide](/guides/cloud-entitlements/).
+
+Before optional deployment, follow the example README's platform-specific setup.
+Disable CDN caching for the route, forward Authorization, protect direct origin
+access, and store server secrets in the provider's secret facility. Firebase,
+Google Cloud, and Azure CDN front doors still execute this handler regionally.
+
+## 6. Decide freshness and accounting requirements
+
+Short-lived context tokens can remain valid until their expiry, and policy
+snapshots can remain current for the cache interval. Document those bounds for
+your application. Add revocation checks when changes must take effect sooner.
+The example trusts authenticated HTTPS bootstrap and checks the supplied digest;
+it does not independently verify optional manifest signatures.
+
+For a metered export, use atomic application-side quota accounting as well as the
+SDK policy check. Telemetry delivery and an entitlement decision are not a durable
+usage transaction. See [server-side integration](/getting-started/server-side/)
+for session lifecycle and event-delivery details.

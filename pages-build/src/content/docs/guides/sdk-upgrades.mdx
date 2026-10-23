@@ -1,0 +1,69 @@
+---
+title: Upgrade an SDK Integration
+description: Check identity, entitlement mirroring, gate behavior, and presentation contracts when upgrading to SDK 0.12.4.
+---
+
+Pin the SDK version in your package manifest and lockfile. This guide describes
+the published TypeScript SDK **0.12.4**; review the
+[changelog](https://github.com/revt-eng/revturbine-sdk/blob/main/CHANGELOG.md)
+for your starting version. TypeScript, Python, and Rust do not expose identical
+integration APIs even when their evaluator results agree.
+
+## Entitlement results and mirrors
+
+An unknown handle denies with `entitlement_not_in_playbook`. Check spelling and
+the loaded Playbook before presenting that operational error as an upsell. Read
+`allowed`, not `status`, because a `limited` outcome can permit or deny work.
+
+`UserContext.entitlements` contains application-supplied mirrored grants. These
+can determine a result before ordinary Playbook rules; `entitlement_mirrored`
+identifies that path. Do not populate every handle with placeholder booleans and
+then expect the rules to decide. Supply mirrors only when the application owns
+those grants and select `entitlementMerge` deliberately. Test a conflicting
+mirror and rule, an absent mirror, and both a free and paid user.
+
+Parameter kinds such as `price_per_unit` and `rate_limit` are not access gates.
+They deny `can()` with `not_access_entitlement_kind`; see
+[parameter entitlements](/guides/entitlements/#parameter-entitlements).
+
+## Gates, slots, and presentation
+
+A denied gate resolves Access Gate content. A generic promotional placement is
+not interchangeable with a denied gate's upgrade surface. Keep a safe
+`deniedFallback` for cases with no eligible Access Gate content.
+
+Presentation caps may come from payloads and placement settings. Check the
+authored category, eligibility, and presentation settings when content does not
+appear. Message slots do not consume fixed-content placements. Test the actual
+mounted component with its authored slot and template, not just a raw placement
+lookup. The public components are `Gate` and `Slot`; this version does not export
+`InlineSlot`, `OverlaySlot`, or a `moment()` API.
+
+Mounted gates recheck when the SDK publishes relevant context or usage updates.
+You do not need a React key change to make a new SDK balance take effect. Changes
+in another device or a billing webhook still need to reach the local SDK first.
+See [React updates](/getting-started/react/#keeping-mounted-gates-current).
+
+## Events and lifecycle
+
+Do not emit the removed `growth_signal_observed` event. Use the current typed
+event/trigger surface for supported signals, and `track()` for your application
+events. [Billing event ownership](/guides/events/#billing-facts-and-application-events)
+explains how Stripe facts differ from app telemetry.
+
+On a backend, create an SDK session for one verified user and operation and
+dispose it in `finally`. Sharing immutable Playbooks is safe; sharing a mutable
+user-bound session across callers is not. Browser sign-in, sign-out, and account
+switches should follow [identity lifecycle](/guides/identity-lifecycle/).
+
+## Verify the migration
+
+Run your application's typecheck and focused integration tests against the exact
+package you install. Exercise a paid grant, a free denial, a missing Playbook,
+a misspelled handle, a usage threshold crossed while a gate stays mounted, and
+user A switching to user B. Recheck the backend operation as well as the UI.
+
+The [Gate](/tutorials/gate-premium-feature/) and
+[usage meter](/tutorials/usage-quota-meter/) tutorials use the current API shapes.
+The [cloud examples](/guides/cloud-entitlements/) exercise real SDK behavior with
+local provider adapters; no cloud deployment is required to run them.

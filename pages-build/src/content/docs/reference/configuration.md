@@ -15,13 +15,13 @@ In `revturbine_server` and `custom_endpoints` modes the browser needs `publicKey
 |---|---|---|
 | `tenantId` | `string` | Your RevTurbine tenant identifier. Optional whenever `publicKey` is supplied: the key is bound to one tenant and the SDK reads the tenant back from the Playbook it fetches. A `tenantId` that disagrees with the key's tenant is ignored with a one-time warning; the key wins. Required by `RevTurbineServer`, where it must be the server key's own tenant. |
 | `publicKey` | `string` | In the browser: your public key (`rtk_…`, type `public`, minted under **Settings → API Token Management → Ingest Keys**). Safe to ship in a bundle. Add your app's origins to the key's allowed origins, or Playbook delivery is refused with `403 origin_not_allowed`. See [Production Readiness → Keys](/operate/production-readiness/#keys). |
-| `apiKey` | `string` | Your server key (`rtk_…`, type `server`), minted under **Settings → API Token Management → Server Token**. It is the option `RevTurbineServer` takes, to mint client sessions. `initRevTurbine` does **not** read it: a headless init with only `apiKey` fetches no Playbook. Never ship it to a browser. As of `0.11.0` it is not accepted as a browser credential — pass `publicKey` there; `ingestPublicKey` was removed (BL-0113). |
+| `apiKey` | `string` | Your server key (`rtk_…`, type `server`), minted under **Settings → API Token Management → Server Token**. Trusted backend `initRevTurbine` in `RuntimeMode.Server` uses it for Playbook delivery and event ingest; `RevTurbineServer` uses it for client sessions and server-only writes. Evaluation remains local. Never ship it to a browser. As of `0.11.0` it is not accepted as a browser credential — pass `publicKey` there; `ingestPublicKey` was removed (BL-0113). |
 
 ### Runtime Configuration
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `runtimeMode` | `'revturbine_server' \| 'custom_endpoints' \| 'local_only'` | `'revturbine_server'` | How the SDK resolves decisions |
+| `runtimeMode` | `'revturbine_server' \| 'custom_endpoints' \| 'local_only'` | `'revturbine_server'` | How the SDK loads its Playbook; evaluation remains local |
 | `endpoint` | `string` | `'https://revturbine.com/app'` | RevTurbine control-plane URL; omit it for the hosted service |
 | `mode` | `'react' \| 'snippet' \| 'iframe'` | `'snippet'` (`'react'` when `<RevTurbineProvider>` initializes the SDK) | Integration label carried in telemetry; no decision depends on it |
 | `endpointOverrides` | `Partial<RevTurbineEndpointOverrides>` | — | Route the SDK's non-decision calls through your own endpoints (`custom_endpoints` mode) |
@@ -49,7 +49,7 @@ In `revturbine_server` and `custom_endpoints` modes the browser needs `publicKey
 |---|---|---|---|
 | `branding` | `BrandingConfig` | Built-in defaults | Optional workspace name, logo and partial theme. An explicit value takes priority over API branding and legacy config themes. |
 
-See [Theming](/guides/theming/) for an example. Light/dark selection is the React provider's `colorScheme` prop, not an initialization option.
+See [Theming](/guides/theming/) for an example. Set `colorScheme: 'light'` or `'dark'` in initialization, use the React provider's `colorScheme` prop, or call `session.sdk.setColorScheme(scheme)` in a headless integration (SDK 0.12.4).
 
 ### User & Page Context
 

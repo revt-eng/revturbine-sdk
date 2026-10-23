@@ -1,0 +1,57 @@
+{
+  "artifact_type": "playbook",
+  "format_version": "1.0.0",
+  "playbook_handle": "default",
+  "playbook_version_id": "pv_example",
+  "tenant_id": "tn_example",
+  "environment_id": "production",
+  "bundle_schema_version": 18,
+  "bundle_min_readable_schema_version": 11,
+  "plans": [
+    {
+      "unique_handle": "free",
+      "name": "Free",
+      "tier_position": 0,
+      "sort_order": 0,
+      "visibility": "public"
+    },
+    {
+      "unique_handle": "pro",
+      "name": "Pro",
+      "tier_position": 1,
+      "sort_order": 1,
+      "visibility": "public"
+    }
+  ],
+  "entitlements": [
+    {
+      "unique_handle": "data_export",
+      "name": "Data export",
+      "type": "feature"
+    }
+  ],
+  "entitlement_rules": [
+    {
+      "id": "data_export_free",
+      "entitlement_id": "data_export",
+      "targets": [{ "kind": "plan", "id": "free" }],
+      "segment_ids": [],
+      "kind": "feature",
+      "enabled": false,
+      "current_usage": 0,
+      "max_balance": null
+    },
+    {
+      "id": "data_export_pro",
+      "entitlement_id": "data_export",
+      "targets": [{ "kind": "plan", "id": "pro" }],
+      "segment_ids": [],
+      "kind": "feature",
+      "enabled": true,
+      "current_usage": 0,
+      "max_balance": null
+    }
+  ],
+  "segments": [],
+  "content_ui_paths": []
+}

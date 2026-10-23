@@ -50,6 +50,36 @@ revturbine launch --draft
 `diff <file> --live` uses live as the base. A `+` is created on launch; a `-`
 is pruned on launch unless `--no-prune` is selected.
 
+## First upload of a starter Playbook
+
+A starter file may contain a placeholder or origin tenant. After login, select
+the intended tenant explicitly for the first upload:
+
+```bash
+revturbine validate --offline ./revturbine.playbook.json
+revturbine upload ./revturbine.playbook.json -t YOUR_TENANT_ID
+revturbine validate --draft -t YOUR_TENANT_ID
+```
+
+Review the resulting draft before launching. `upload` stages a draft; it does
+not launch it. `-t`/`--tenant-id` selects the destination but does not grant
+permission to a tenant your credential cannot access. Do not confuse an SDK
+public key with a CLI login credential.
+
+## Evaluate without confusing it with the application
+
+`evaluate` fetches the selected Playbook and runs the engine locally; RevTurbine
+does not host a decision endpoint. Supply a user-context file and one version
+selector, such as `--draft --user ./user.json --entitlement data_export`.
+Use `--slot` and, when needed, `--component-type` for placement checks.
+
+This is a clean evaluation with no live browser suppression or impression
+history. It does not render React, execute a CTA, or reproduce a mounted Gate's
+complete denial-and-placement lifecycle. There is no `--gate-placement` option:
+verify the entitlement and placement inputs separately, then test the real Gate
+in your application. Use the installed version's `evaluate --help` for its
+supported flags.
+
 ## Version selectors and positional files
 
 Commands never guess which config version you mean.

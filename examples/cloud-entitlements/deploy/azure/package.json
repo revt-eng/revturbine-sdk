@@ -1,0 +1,11 @@
+{
+  "name": "revturbine-azure-example",
+  "private": true,
+  "main": "index.cjs",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@azure/functions": "4.17.0"
+  }
+}

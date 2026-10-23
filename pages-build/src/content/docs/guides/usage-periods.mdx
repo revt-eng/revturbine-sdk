@@ -1,0 +1,57 @@
+---
+title: Usage Periods and Reset Ownership
+description: Keep authoritative counters, period boundaries, and SDK snapshots consistent.
+---
+
+Your application owns usage counting, storage, concurrency, and resets. The SDK
+evaluates the balance supplied in UserContext against the Playbook's policy.
+An authored `period_scope` describes the intended period; it does not schedule
+a database reset or roll a counter over automatically.
+
+## Define the period in your application
+
+The authored `period_scope` values are `per_second`, `per_minute`, `per_hour`,
+`per_6_hours`, `per_day`, `per_week`, `per_month`, `per_year`,
+`per_billing_period`, `lifetime`, `concurrent`, and `per_instance`.
+Choose the value that matches your application-owned accounting model.
+`concurrent` and `per_instance` describe a population or instance boundary,
+not a scheduled time reset; `lifetime` does not imply periodic replenishment.
+
+Decide whether a monthly allowance means a calendar month or a customer's
+billing-cycle month, which timezone defines the boundary, and what happens on
+upgrade, downgrade, cancellation, and retry. Store that period identity with
+the counter so delayed requests cannot consume or reset the wrong period.
+
+At a boundary, atomically open the new period in your backend and deliver its
+current balance to the SDK. A `reset_date` can describe when a reset is due;
+changing that date alone does not reset the reported amount.
+
+## Report absolute values
+
+Initialize usage with the rich `UserUsageEntry` shape. For later changes, use
+`update({ usage: { api_calls: total } })` with the latest **absolute** total,
+not the delta for the last request. Treat delayed or out-of-order refreshes
+according to your application's versioning policy.
+
+```ts
+// After the backend has accepted the operation and returned the current total:
+rt.update({ usage: { api_calls: 951 } });
+```
+
+A missing balance can be interpreted as zero used. That is not evidence of an
+unused account: ensure every metered handle has authoritative usage before
+allowing a valuable operation. UI updates keep mounted gates current, but the
+backend remains the enforcement boundary.
+
+## Enforce concurrent operations
+
+Two requests can both observe the same remaining allowance. A local SDK check
+does not reserve it. Use an atomic database update, reservation, or your own
+metering service to prevent overspending, and then report the resulting balance.
+Telemetry delivery is not a durable accounting write.
+
+Test the last permitted operation, the first denied operation, two concurrent
+requests for the last unit, and a request across the reset boundary. The
+[quota-meter tutorial](/tutorials/usage-quota-meter/) covers the UI, while
+[server-side integration](/getting-started/server-side/) covers per-operation
+SDK sessions.

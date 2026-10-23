@@ -1,0 +1,7 @@
+---
+import SkipLink from '@astrojs/starlight/components/SkipLink.astro';
+import { docsTagManagerId } from '../lib/docs-analytics';
+const enabled = import.meta.env.PUBLIC_DOCS_ANALYTICS === 'true';
+---
+{enabled && <noscript><iframe src={`https://www.googletagmanager.com/ns.html?id=${docsTagManagerId}`} height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe></noscript>}
+<SkipLink />

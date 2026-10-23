@@ -34,6 +34,7 @@ import {
   Slot,
   Gate,
   RuntimeMode,
+  type RevTurbineUserContext,
 } from '@revturbine/sdk';
 
 /**
@@ -545,7 +546,8 @@ function PlaygroundPanels({
   useEffect(() => {
     if (!sdk || !isReady) return;
     sdk.resetIdentity();
-    sdk.setUserContext(selectedUser.context);
+    const context: RevTurbineUserContext = selectedUser.context;
+    sdk.setUserContext(context);
     setRevision((r) => r + 1);
   }, [sdk, isReady, selectedUser]);
 

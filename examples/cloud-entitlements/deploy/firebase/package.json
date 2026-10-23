@@ -1,0 +1,11 @@
+{
+  "name": "revturbine-firebase-example",
+  "private": true,
+  "main": "index.cjs",
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "firebase-functions": "7.4.0"
+  }
+}
