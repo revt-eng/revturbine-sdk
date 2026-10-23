@@ -102,40 +102,35 @@ Initial `user.usage` entries use the rich `UserUsageEntry` shape shown above.
 After initialization, call `rt.update({ usage: { api_calls: total } })` with
 absolute numeric balances, not deltas.
 
-### Why not hosted `Server` mode on a server?
+### Hosted delivery on a backend
 
-`RuntimeMode.Server` is the browser's hosted mode: the SDK fetches your launched
-Playbook with the **public key**. A server cannot use it today, for two reasons
-you can check in the SDK's own behavior:
+TypeScript's `RuntimeMode.Server` supports a backend `apiKey` for Playbook
+loading and event ingest. Browser integrations use `publicKey`; browser and
+worker contexts never send the server secret. A backend public key without an
+allowed browser origin is not a substitute for a server key.
 
-- `initRevTurbine` reads `publicKey` and never `apiKey`. Passing your server key
-  as `apiKey` does not authenticate anything: with no `publicKey`, no Playbook
-  is requested, every check denies with `config_unavailable`, and no event
-  carries a credential.
-- A public key is bound to an origin allowlist that **fails closed**: a request
-  with no browser `Origin` is refused with `403 origin_not_allowed`. A Node
-  process or an edge function sends none, so even with `publicKey` set the
-  Playbook never arrives.
+Evaluation still runs locally over `UserContext` and `Playbook`. The application
+owns requests and any shared snapshot; never mutate a shared user-bound SDK
+instance to serve different users. The `LocalOnly` pattern above evaluates the
+snapshot supplied by the application. For an explicitly connected instance, a
+supplied `localRuntime.playbook` is a startup seed that hosted loading refreshes.
 
-Neither is an error you will see. The check just denies. That is the fail-closed
-rule working: an instance with no Playbook never guesses a grant. If your
-server's checks all deny with `config_unavailable`, this is why, and the fix is
-the pattern above.
+A failed load is visible through `getPlaybookLoadFailure()`. Without a readable
+Playbook, entitlement checks fail closed with `config_unavailable`.
 
 ### What a server reports
 
-A request-scoped `LocalOnly` instance sends nothing to RevTurbine: it makes no
-decisioning call and no event call. `track()` on it is a no-op for ingest.
+A `LocalOnly` instance makes no hosted decision or event-ingest call. Its
+`track()` calls do not reach RevTurbine ingest.
 
-A hosted instance cannot fill the gap from a server either. Event ingest accepts
-the public key, subject to the same origin allowlist as above, and refuses a
-server key. So **send events from the browser**, where the user is: `rt.track()`
-from the React or headless browser SDK. Direct server-side telemetry with the
-server key is planned, not shipped. Until it ships, do not wire a server
-`track()` call and expect an event to land.
+A TypeScript hosted backend instance authenticates `track()` events with its
+server key. Call `await rt.flushEvents()` before ending a short-lived operation;
+backend instances have no browser page-unload lifecycle. Events belong to that
+instance's user context. This transport does not turn the SDK into a request
+handler or share identity between users.
 
-Python and Rust are decision-only in the same way: they evaluate a Playbook you
-supply and send nothing.
+Python and Rust evaluate a Playbook supplied by the application and send no
+events.
 
 ## Server-Owned CTA Actions
 
@@ -256,6 +251,11 @@ if (banner) {
 ## SSR with React (Local Mode)
 
 For frameworks like Next.js, resolve placements with the local runtime and hydrate client-side:
+
+`sdk.hydrate(payload)` applies user context, entitlements, trial status, and usage.
+Legacy payload placement decisions are not reused: they lack a binding to the
+producer's complete evaluation context and Playbook. The browser evaluates
+placements locally from its current inputs, without a decision HTTP request.
 
 ```tsx
 // components/Dashboard.tsx

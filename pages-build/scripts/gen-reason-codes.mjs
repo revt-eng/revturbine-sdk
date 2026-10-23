@@ -98,6 +98,8 @@ export const DESCRIPTIONS = {
     "The candidate's threshold trigger did not match the user's current entitlement usage.",
   trial_trigger_unmet:
     "The candidate's trial trigger did not match the user's trial state.",
+  unknown_trigger_type:
+    "The candidate uses a trigger type this SDK does not recognize, so it is not shown.",
 };
 
 export function loadContract() {

@@ -182,13 +182,20 @@ The SDK never fetches or caches it — your service owns its lifecycle:
 
 1. Fetch/export the latest `Playbook` JSON (on boot, on a timer, or on a
    webhook from the control plane).
-2. Construct a **new** `RevTurbineCustomerSdk` with the new snapshot. Because
-   the instance is stateless, "refresh" is just "rebuild" — atomically swap
-   the reference your handlers read.
+2. Atomically replace the shared **Playbook snapshot**. Construct a new
+   `RevTurbineCustomerSdk` for each request with that request's authenticated
+   user context. Never share a user-bound SDK instance across requests.
 
 ```python
-# e.g. behind a lock / atomic reference, refreshed every N minutes
-_sdk = RevTurbineCustomerSdk(user_context=ctx, exported_config=load_config())
+# Replace this snapshot on refresh, rather than modifying it in place.
+playbook = load_config()
+
+def check_request(user_context, entitlement):
+    sdk = RevTurbineCustomerSdk(
+        user_context=user_context,
+        exported_config=playbook,
+    )
+    return sdk.check_entitlement(entitlement)
 ```
 
 Pin the installed SDK tag to a version whose schema matches the

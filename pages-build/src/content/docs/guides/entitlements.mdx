@@ -311,7 +311,12 @@ In `local_only` mode, all entitlement checks resolve instantly from the cached P
 :::
 
 :::caution[`price_per_unit` and `rate_limit` are not gates]
-Those two entitlement types always evaluate to allowed — the one explicit carve-out from fail-closed. They are **non-gating metadata** that exists to populate text tokens (an overage price in upgrade copy, a documented rate ceiling), not to control access. Gating a feature on one of them grants it to everyone.
+Those types carry metering and rate-limit parameters; they do not grant access.
+Calling `can()` on either returns `{ status: 'denied', allowed: false,
+reason: 'not_access_entitlement_kind' }` and reports a developer warning.
+Use an access entitlement to gate a feature, and read the parameters for your
+application's metering or rate limiter. Display tokens continue to expose the
+metadata.
 :::
 
 ## Next Steps

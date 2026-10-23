@@ -948,9 +948,9 @@
     },
     {
       "name": "Checkout: Expansion Pack",
-      "action_type": "open_checkout_modal",
-      "plan_handle": "premium_expansion_pack_1",
-      "description": "Opens Stripe Checkout for Advanced Expansion Pack 1"
+      "action_type": "custom_url",
+      "url": "/settings/billing?addon=premium_expansion_pack_1",
+      "description": "Opens app billing to purchase Premium Expansion Pack 1"
     },
     {
       "name": "Contact Sales",

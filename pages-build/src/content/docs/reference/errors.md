@@ -39,6 +39,7 @@ Returned in `decision.reasonCodes[]` to explain why a placement was or wasn't sh
 | `suppressed_until_remind_window` | The user chose "remind me later" and that reminder window has not elapsed yet. |
 | `threshold_trigger_unmet` | The candidate's threshold trigger did not match the user's current entitlement usage. |
 | `trial_trigger_unmet` | The candidate's trial trigger did not match the user's trial state. |
+| `unknown_trigger_type` | The candidate uses a trigger type this SDK does not recognize, so it is not shown. |
 
 <!-- END GENERATED: placement-reason-codes -->
 

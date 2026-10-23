@@ -47,6 +47,39 @@ also require a changelog entry.
 
 ---
 
+## 0.12.4
+
+### Fixed
+
+- Usage personalization and threshold triggers read seat allowances, derive missing
+  rule kind/unit from the entitlement, and recalculate after Playbook loading.
+- Trial lifecycle triggers retain episode identity across context delivery,
+  hydration and reloads, preventing duplicate stages while allowing a new trial.
+- Branding defaults follow the resolved light/dark scheme in React and headless
+  integrations. Added `setColorScheme(scheme)` and the `colorScheme` init option.
+- Connected initialization refreshes a supplied startup Playbook; LocalOnly
+  initialization continues to use its supplied snapshot without fetching.
+- All three SDK ports reject incompatible versioned constructor inputs and
+  unsupported mandatory extensions before evaluation. Reader versions track
+  schema 18 (readable floor 11), including historical versions 15 and 16.
+- Hydrated decisions cannot bypass rejection of an unreadable hosted Playbook
+  when no readable snapshot is available.
+- Legacy hydration no longer persists unbound placement decisions. Placements
+  recompute from the current context and Playbook; other hydrated state remains
+  supported (`hydration-placement-context.test.ts`).
+- Python and Rust trial derivation retain `instance_id` and `started_at`,
+  matching TypeScript. Cross-port regression coverage now also protects the
+  `unknown_entitlement_kind` and `unknown_trigger_type` denial reasons; no
+  existing reason is renamed.
+
+Evaluation remains local over `UserContext` and `Playbook`. Python integration
+guidance now shares only the snapshot and keeps user-bound evaluators separate.
+
+Regression coverage: `usage-reaches-placements.test.ts`,
+`trial-reset-lifecycle.test.ts`, `RevTurbineProvider.color-scheme.test.tsx`,
+`hosted-server-key.test.ts`, `playbook-load-failure.test.ts`,
+`reader-version-drift.test.ts`, and the cross-language version-refusal matrix.
+
 ## 0.12.3
 
 ### Changed (behaviour)
