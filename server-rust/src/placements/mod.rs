@@ -33,7 +33,8 @@ pub use qualifier_gating::{
     QualifierTrigger, QUALIFIERS_BY_CATEGORY,
 };
 pub use static_resolver::{
-    interpolate_content_tokens, interpolate_string_tokens, StaticPlacementResolver,
+    interpolate_content_tokens, interpolate_string_tokens, template_id_equivalents,
+    StaticPlacementResolver,
 };
 pub use threshold_gating::{compute_consumed_percent, matches_threshold_trigger, ThresholdTrigger};
 pub use trial_gating::{

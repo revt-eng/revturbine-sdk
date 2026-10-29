@@ -23,6 +23,12 @@ import type { RevTurbineConfig } from '@revt-eng/schema';
 type FetchCall = { url: string; init: RequestInit };
 let calls: FetchCall[];
 let rejectNonMeta = false;
+const sdks: RevTurbineCustomerSdk[] = [];
+
+function trackSdk(sdk: RevTurbineCustomerSdk): RevTurbineCustomerSdk {
+  sdks.push(sdk);
+  return sdk;
+}
 
 function okResponse(): Response {
   return {
@@ -67,6 +73,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  for (const sdk of sdks.splice(0)) sdk.dispose();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -78,7 +85,7 @@ const metaBodies = () =>
 
 /** A KEYED local-only install — the adoption beacon stays silent (keyless-only), diagnostics do not. */
 function makeKeyedSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerSdk {
-  return new RevTurbineCustomerSdk({
+  return trackSdk(new RevTurbineCustomerSdk({
     tenantId: 'tenant_diag',
     apiKey: 'sk_test',
     publicKey: 'pub_test',
@@ -88,15 +95,14 @@ function makeKeyedSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCust
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
     localRuntime: { playbook: makeConfig() },
     ...over,
-  });
+  }));
 }
 
 describe('resolution_failure diagnostics — keyed installs emit (124 Q-7)', () => {
   it('an unregistered placement decision emits one allow-listed diagnostic', async () => {
     const sdk = makeKeyedSdk();
     await sdk.getPlacementDecision({ placementId: 'ghost_upsell', userId: 'u1' });
-    await settle();
-    expect(calls).toHaveLength(1);
+    await vi.waitFor(() => expect(calls).toHaveLength(1));
     const [body] = metaBodies();
     expect(body.events).toHaveLength(1);
     expect(body.events[0]).toMatchObject({
@@ -112,13 +118,12 @@ describe('resolution_failure diagnostics — keyed installs emit (124 Q-7)', () 
   it('dedupes per (reason, handle) for the session; a distinct handle emits again', async () => {
     const sdk = makeKeyedSdk();
     await sdk.getPlacementDecision({ placementId: 'ghost_a', userId: 'u1' });
-    await settle();
+    await vi.waitFor(() => expect(calls).toHaveLength(1));
     await sdk.getPlacementDecision({ placementId: 'ghost_a', userId: 'u1' });
     await settle();
     expect(calls).toHaveLength(1);
     await sdk.getPlacementDecision({ placementId: 'ghost_b', userId: 'u1' });
-    await settle();
-    expect(calls).toHaveLength(2);
+    await vi.waitFor(() => expect(calls).toHaveLength(2));
   });
 
   it('caps diagnostics per session', async () => {
@@ -126,9 +131,7 @@ describe('resolution_failure diagnostics — keyed installs emit (124 Q-7)', () 
     for (let i = 0; i < 25; i += 1) {
       await sdk.getPlacementDecision({ placementId: `ghost_${i}`, userId: 'u1' });
     }
-    await settle();
-    expect(calls.length).toBeLessThanOrEqual(20);
-    expect(calls.length).toBeGreaterThan(0);
+    await vi.waitFor(() => expect(calls).toHaveLength(20));
   });
 });
 
@@ -151,7 +154,7 @@ describe('resolution_failure diagnostics — both opt-outs govern (124 Q-6)', ()
 describe('resolution_failure diagnostics — entitlement infra-denials (Q-3 scope)', () => {
   it('server mode with an unreachable config emits config_unavailable with the entitlement handle', async () => {
     rejectNonMeta = true;
-    const sdk = new RevTurbineCustomerSdk({
+    const sdk = trackSdk(new RevTurbineCustomerSdk({
       tenantId: 'tenant_diag',
       apiKey: 'sk_test',
       publicKey: 'pub_test',
@@ -159,23 +162,24 @@ describe('resolution_failure diagnostics — entitlement infra-denials (Q-3 scop
       mode: 'snippet',
       runtimeMode: 'revturbine_server',
       contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
-    });
+    }));
     sdk.identify('u1', { plan_handle: 'free' });
     const res = await sdk.checkEntitlement('generations');
-    await settle();
     expect(res.status).toBe('denied');
-    const diag = metaBodies()
-      .flatMap((b) => b.events)
-      .find((e) => e.reason === 'config_unavailable');
-    expect(diag).toMatchObject({
-      event_type: 'resolution_failure',
-      entitlement_handle: 'generations',
-      plan_handle: 'free',
+    await vi.waitFor(() => {
+      const diag = metaBodies()
+        .flatMap((b) => b.events)
+        .find((e) => e.reason === 'config_unavailable');
+      expect(diag).toMatchObject({
+        event_type: 'resolution_failure',
+        entitlement_handle: 'generations',
+        plan_handle: 'free',
+      });
     });
   });
 
   it("local mode's default deny does NOT emit (a configuration choice, not infrastructure)", async () => {
-    const sdk = new RevTurbineCustomerSdk({
+    const sdk = trackSdk(new RevTurbineCustomerSdk({
       tenantId: 'tenant_diag',
       apiKey: 'sk_test',
       publicKey: 'pub_test',
@@ -183,7 +187,7 @@ describe('resolution_failure diagnostics — entitlement infra-denials (Q-3 scop
       mode: 'snippet',
       runtimeMode: 'local_only',
       contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
-    });
+    }));
     await sdk.checkEntitlement('generations');
     await settle();
     expect(calls).toHaveLength(0);

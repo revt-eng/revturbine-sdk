@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.520/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.524/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -384,6 +384,41 @@ class AnalyticsFormatSpec(BaseModel):
     compact: bool | None = None
 
 
+class AnalyticsFxRateEvidence(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    provider: constr(pattern=r"^[a-z][a-z0-9_-]*$", min_length=1, max_length=120)
+    requested_fact_date: date_aliased
+    selected_rate_date: date_aliased
+    stored_rate_id: constr(
+        pattern=r"^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+    )
+
+
+class AnalyticsFxRateEvidenceSet1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    status: Literal["complete"]
+    entries: list[AnalyticsFxRateEvidence] = Field(..., max_length=8000)
+
+
+class AnalyticsFxRateEvidenceSet2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    status: Literal["overflow"]
+    required_entries: conint(ge=8001, le=9007199254740991)
+    limit: Literal[8000]
+
+
+class AnalyticsFxRateEvidenceSet(
+    RootModel[AnalyticsFxRateEvidenceSet1 | AnalyticsFxRateEvidenceSet2]
+):
+    root: AnalyticsFxRateEvidenceSet1 | AnalyticsFxRateEvidenceSet2
+
+
 class Values(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -647,6 +682,17 @@ class AnalyticsRenderTimeline(BaseModel):
     type: Literal["timeline"]
     timestamp: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
     event_type: constr(pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", max_length=120)
+
+
+class AnalyticsReportingCurrencyMeta(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    currency: constr(pattern=r"^[a-z]{3}$")
+    policy_version: constr(min_length=1, max_length=120)
+    rate_source: constr(min_length=1, max_length=120)
+    date_basis: constr(min_length=1, max_length=120)
+    rate_evidence: AnalyticsFxRateEvidenceSet | None = None
 
 
 class Calendar(BaseModel):
@@ -3991,6 +4037,33 @@ class FunnelStep(BaseModel):
     count: conint(ge=0, le=9007199254740991)
     conversion_rate: confloat(ge=0.0, le=1.0)
     drop_off_rate: confloat(ge=0.0, le=1.0)
+
+
+class FxDailyRateRow(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(
+        pattern=r"^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+    )
+    provider: constr(pattern=r"^[a-z][a-z0-9_-]*$", min_length=1, max_length=120)
+    rate_date: date_aliased
+    base_currency: constr(pattern=r"^[a-z]{3}$")
+    quote_currency: constr(pattern=r"^[a-z]{3}$")
+    rate: constr(pattern=r"^\d+(?:\.\d+)?$", max_length=256)
+    retrieved_at: AwareDatetime
+    source_reference: constr(min_length=1, max_length=2048)
+    response_sha256: constr(pattern=r"^[a-f0-9]{64}$")
+
+
+class FxProvider(
+    RootModel[constr(pattern=r"^[a-z][a-z0-9_-]*$", min_length=1, max_length=120)]
+):
+    root: constr(pattern=r"^[a-z][a-z0-9_-]*$", min_length=1, max_length=120)
+
+
+class FxRateDecimal(RootModel[constr(pattern=r"^\d+(?:\.\d+)?$", max_length=256)]):
+    root: constr(pattern=r"^\d+(?:\.\d+)?$", max_length=256)
 
 
 class GateWindowDaysModel(BaseModel):
@@ -8940,10 +9013,6 @@ class AnalyticsRecordContract(RootModel[Any]):
     root: Any
 
 
-class AnalyticsReportingCurrencyMeta(RootModel[Any]):
-    root: Any
-
-
 class BillingItemStateInterval(RootModel[Any]):
     root: Any
 
@@ -11606,24 +11675,6 @@ class MrrMovementDailyRow(BaseModel):
     unattributed: bool
     mirror_version: conint(ge=1, le=2147483647)
     deleted_at: AwareDatetime | None
-
-
-class MrrPolicySwitchRow(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    tenant_id: constr(min_length=1, max_length=255)
-    from_policy_version: constr(
-        pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128
-    )
-    from_calendar_version: constr(min_length=1, max_length=512)
-    to_policy_version: constr(
-        pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128
-    )
-    to_calendar_version: constr(min_length=1, max_length=512)
-    reason: MrrPolicySwitchReason
-    switched_at: AwareDatetime
-    superseded_delete_after: AwareDatetime
 
 
 class OperatorEventRequestRow(BaseModel):
@@ -14565,6 +14616,25 @@ class GrowthSignalBundle(BaseModel):
     availability: ProviderAvailability
     series: list[GrowthSignalSeries]
     provenance: ProviderProvenance
+
+
+class MrrPolicySwitchRow(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    from_policy_version: constr(
+        pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128
+    )
+    from_calendar_version: constr(min_length=1, max_length=512)
+    to_policy_version: constr(
+        pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128
+    )
+    to_calendar_version: constr(min_length=1, max_length=512)
+    reason: MrrPolicySwitchReason
+    switched_at: AwareDatetime
+    superseded_delete_after: AwareDatetime
+    annotation_provenance: AnalyticsAnnotationChange | None = None
 
 
 class OpportunityCandidate(BaseModel):

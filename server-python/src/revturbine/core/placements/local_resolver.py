@@ -22,6 +22,7 @@ Source: revturbine-scaffold/src/placements/controllers/local-resolver.ts
 
 from __future__ import annotations
 
+import logging
 import math
 import re
 import time
@@ -64,6 +65,8 @@ from revturbine.core.rules.plan_eligibility import evaluate_plan_eligibility
 from revturbine.core.rules.segment_eligibility import evaluate_segment_eligibility
 from revturbine.core.state.impression_history import ImpressionHistory
 from revturbine.playbook_option import require_playbook_option
+
+_logger = logging.getLogger(__name__)
 
 __all__ = [
     "Playbook",
@@ -175,10 +178,40 @@ DEFAULT_TEMPLATE_COMPONENT_TYPES: dict[str, str] = {
     "custom_in_app": "custom",
 }
 
+# Legacy template id -> canonical default template id. Customer Playbooks that
+# predate the canonical ids still load. Mirrors scaffold LEGACY_TEMPLATE_ALIASES.
+LEGACY_TEMPLATE_ALIASES: dict[str, str] = {
+    "toast_message": "toast",
+    "push_notification": "push",
+    "plans_pricing_ctas": "plans_page_ctas",
+    "plans_pricing_full": "plans_page_full",
+    "credit_balance_counter": "credit_counter",
+    "modal_overlay": "modal_optional",
+    "banner_placement": "banner",
+}
+
+
+def template_id_equivalents(template_id: str) -> list[str]:
+    """The id's equivalence class: itself, its canonical id (if it is a legacy
+    alias), then every legacy id aliasing that canonical id. Custom ids return
+    just ``[template_id]``. Mirrors scaffold ``templateIdEquivalents``."""
+    canonical = LEGACY_TEMPLATE_ALIASES.get(template_id, template_id)
+    out = [template_id]
+    for candidate in (
+        canonical,
+        *(legacy for legacy, target in LEGACY_TEMPLATE_ALIASES.items() if target == canonical),
+    ):
+        if candidate not in out:
+            out.append(candidate)
+    return out
+
+
 BUILT_IN_TEMPLATE_COMPONENT_TYPES: dict[str, str] = {
     **DEFAULT_TEMPLATE_COMPONENT_TYPES,
-    "modal_overlay": "modal",
-    "banner_placement": "banner",
+    **{
+        legacy: DEFAULT_TEMPLATE_COMPONENT_TYPES[canonical]
+        for legacy, canonical in LEGACY_TEMPLATE_ALIASES.items()
+    },
     "full_page": "full_page",
 }
 
@@ -638,10 +671,14 @@ def create_static_placement_resolver(
             if isinstance(surface_type_value, str):
                 component_type = _resolve_component_type(surface_type_value)
                 if component_type is None:
-                    raise ValueError(
-                        f"Surface template {template['id']} has no canonical ComponentType "
-                        f"for {surface_type_value}"
+                    # Failure is local: skip only this authored template.
+                    _logger.warning(
+                        '[revturbine] surface template "%s" has no canonical ComponentType '
+                        'for "%s"; skipping it.',
+                        template.get("id"),
+                        surface_type_value,
                     )
+                    continue
                 template_to_surface[template["id"]] = component_type
 
     plan_handle_to_id: dict[str, str] = {}
@@ -719,7 +756,13 @@ def create_static_placement_resolver(
             template_id = surface["template_id"]
             surface_type = template_to_surface.get(template_id)
             if surface_type is None:
-                raise ValueError(f"Surface template {template_id} has no canonical ComponentType")
+                _logger.warning(
+                    '[revturbine] payload "%s" uses surface template "%s", which has no '
+                    "canonical ComponentType; skipping the payload.",
+                    payload.get("id"),
+                    template_id,
+                )
+                continue
 
             fields = surface.get("fields")
             content: dict[str, Any] = {**fields} if is_record(fields) else {}
@@ -937,7 +980,14 @@ def create_static_placement_resolver(
 
         if allowed_template_ids:
             candidates: list[_CandidateOutput] = []
-            for tid in allowed_template_ids:
+            # Slot matching is by equivalence class (legacy or canonical name);
+            # dedupe across the whole list so no candidate appears twice.
+            expanded_ids = dict.fromkeys(
+                equivalent
+                for tid in allowed_template_ids
+                for equivalent in template_id_equivalents(tid)
+            )
+            for tid in expanded_ids:
                 bucket = outputs_by_template.get(tid)
                 if bucket:
                     candidates.extend(bucket)

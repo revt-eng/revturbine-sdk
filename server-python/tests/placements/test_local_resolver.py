@@ -30,6 +30,7 @@ from revturbine.core.placements.local_resolver import (
     _normalize_cta_path,
     _read_entitlement_handle_from_trigger,
     _read_slot_id_from_trigger,
+    template_id_equivalents,
 )
 from revturbine.core.state.impression_history import ImpressionHistory
 from revturbine.core.state.impression_history_stores import (
@@ -395,16 +396,74 @@ class TestResolverIndex:
             "custom_in_app",
         }
 
-    def test_unknown_authored_template_fails_loudly(self) -> None:
-        with pytest.raises(ValueError, match="unknown_tpl has no canonical ComponentType"):
-            create_static_placement_resolver(
+    def test_unknown_payload_template_is_skipped_locally(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        with caplog.at_level("WARNING"):
+            resolver = create_static_placement_resolver(
                 {
                     "placements": [
-                        _entry(payloads=[_payload(surfaces=[_surface(template_id="unknown_tpl")])])
+                        _entry(
+                            entry_id="pl_bad",
+                            payloads=[
+                                _payload(
+                                    payload_id="bad", surfaces=[_surface(template_id="unknown_tpl")]
+                                )
+                            ],
+                        ),
+                        _entry(
+                            entry_id="pl_good",
+                            payloads=[_payload(surfaces=[_surface(template_id="modal_overlay")])],
+                        ),
                     ]
                 },
                 _config(),
             )
+        assert (
+            '[revturbine] payload "bad" uses surface template "unknown_tpl", which has no '
+            "canonical ComponentType; skipping the payload." in caplog.text
+        )
+        good = resolver({"placement_id": "p", "user_id": "u"}, _rec(name="pl_good"), _ctx())
+        assert good["output"]["surface"]["type"] == "modal"
+        bad = resolver({"placement_id": "p", "user_id": "u"}, _rec(name="pl_bad"), _ctx())
+        assert not bad.get("output")
+
+    def test_unknown_authored_surface_type_is_skipped_with_warning(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        with caplog.at_level("WARNING"):
+            resolver = create_static_placement_resolver(
+                {
+                    "placements": [
+                        _entry(
+                            payloads=[_payload(surfaces=[_surface(template_id="modal_overlay")])]
+                        )
+                    ]
+                },
+                _config(surface_templates=[{"id": "cfg_bad", "surface_type": "nonsense"}]),
+            )
+        assert (
+            '[revturbine] surface template "cfg_bad" has no canonical ComponentType '
+            'for "nonsense"; skipping it.' in caplog.text
+        )
+        decision = resolver({"placement_id": "p", "user_id": "u"}, _rec(name="pl_foo"), _ctx())
+        assert decision["output"]["surface"]["type"] == "modal"
+
+    def test_legacy_template_alias_resolves_without_surface_templates(self) -> None:
+        resolver = create_static_placement_resolver(
+            {
+                "placements": [
+                    _entry(payloads=[_payload(surfaces=[_surface(template_id="toast_message")])])
+                ]
+            },
+            _config(),
+        )
+        decision = resolver({"placement_id": "p", "user_id": "u"}, _rec(name="pl_foo"), _ctx())
+        assert decision["output"]["surface"]["type"] == "toast"
+        assert BUILT_IN_TEMPLATE_COMPONENT_TYPES["push_notification"] == "push"
+        assert BUILT_IN_TEMPLATE_COMPONENT_TYPES["plans_pricing_ctas"] == "in_page"
+        assert BUILT_IN_TEMPLATE_COMPONENT_TYPES["plans_pricing_full"] == "full_page"
+        assert BUILT_IN_TEMPLATE_COMPONENT_TYPES["credit_balance_counter"] == "in_page"
 
 
 # ── Resolver: candidate path ────────────────────────────────────────────────
@@ -1426,3 +1485,51 @@ class TestMessageSlotsShowOnlyRtInitiated:
         ):
             decision = self._resolve([self._entry_for("pl_rt", category, "RT")])
             assert decision["content"]["header"] == "RT", category
+
+
+# ── Slot matching by legacy or canonical template name (ST-1347) ────────────
+
+
+class TestSlotTemplateEquivalence:
+    def _slot(self, payload_template: str, slot_ids: list[str]) -> Any:
+        resolver = create_static_placement_resolver(
+            {
+                "placements": [
+                    _entry(payloads=[_payload(surfaces=[_surface(template_id=payload_template)])])
+                ]
+            },
+            _config(),
+        )
+        return resolver(
+            {"placement_id": "p", "user_id": "u"},
+            _rec(metadata={"surface_template_ids": slot_ids}),
+            _ctx(),
+        )
+
+    def test_helper_examples(self) -> None:
+        assert template_id_equivalents("toast_message") == ["toast_message", "toast"]
+        assert template_id_equivalents("toast") == ["toast", "toast_message"]
+        assert template_id_equivalents("modal_optional") == ["modal_optional", "modal_overlay"]
+        assert template_id_equivalents("modal_overlay") == ["modal_overlay", "modal_optional"]
+        assert template_id_equivalents("modal_blocking") == ["modal_blocking"]
+        assert template_id_equivalents("custom_x") == ["custom_x"]
+
+    def test_canonical_payload_matches_legacy_slot(self) -> None:
+        d = self._slot("toast", ["toast_message"])
+        assert d["visible"] is True
+        assert d["output"]["surface"]["type"] == "toast"
+
+    def test_legacy_payload_matches_canonical_slot(self) -> None:
+        d = self._slot("toast_message", ["toast"])
+        assert d["visible"] is True
+        assert d["output"]["surface"]["type"] == "toast"
+
+    def test_slot_listing_both_names_still_resolves_once(self) -> None:
+        d = self._slot("toast", ["toast", "toast_message"])
+        assert d["visible"] is True
+        assert d["output"]["surface"]["type"] == "toast"
+
+    def test_modal_blocking_does_not_match_modal_overlay_slot(self) -> None:
+        d = self._slot("modal_blocking", ["modal_overlay"])
+        assert d["visible"] is False
+        assert d["reason_codes"] == ["no_candidates_for_template"]

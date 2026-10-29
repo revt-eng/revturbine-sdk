@@ -124,9 +124,9 @@ For production deployments that prefer RevTurbine as the primary runtime:
 ### Provider + Fallback Example
 
 ```ts
-import { initRevTurbine } from '@revt-eng/sdk';
+import { initRevTurbine, type RevTurbineSdkProvider } from '@revturbine/sdk';
 
-const primaryProvider = {
+const primaryProvider: RevTurbineSdkProvider = {
   async getPlacement(config) {
     return fetchPlacementFromPrimary(config);
   },
@@ -138,7 +138,7 @@ const primaryProvider = {
   },
 };
 
-const fallbackProvider = {
+const fallbackProvider: RevTurbineSdkProvider = {
   async getPlacement(config) {
     return fetchPlacementFromFallback(config);
   },
@@ -165,6 +165,8 @@ If you do not supply a provider, the SDK uses its built-in runtime mode behavior
 ### Custom Endpoint Mode
 
 ```ts
+import { initRevTurbine } from '@revturbine/sdk';
+
 const sdk = initRevTurbine({
   tenantId: 'tenant_abc',
   publicKey: 'unused_or_customer_key',
@@ -183,6 +185,8 @@ const sdk = initRevTurbine({
 ### Local-Only Mode
 
 ```ts
+import { initRevTurbine } from '@revturbine/sdk';
+
 const sdk = initRevTurbine({
   tenantId: 'tenant_local',
   publicKey: 'local',
@@ -191,7 +195,7 @@ const sdk = initRevTurbine({
   localRuntime: {
     storageKey: 'my-app:revturbine-local-runtime',
     initialData: {
-      trialStatus: { inTrial: true, dayNumber: 3, daysRemaining: 11 },
+      trialStatus: { in_trial: true, day_number: 3, days_remaining: 11 },
       entitlementByHandle: {
         ai_export: { status: 'limited', allowed: true, reason: 'near_limit' },
       },

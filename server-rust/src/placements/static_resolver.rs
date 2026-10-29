@@ -75,11 +75,60 @@ const DEFAULT_TEMPLATE_COMPONENT_TYPES: &[(&str, &str)] = &[
     ("custom_in_app", "custom"),
 ];
 
-const LEGACY_TEMPLATE_COMPONENT_TYPES: &[(&str, &str)] = &[
-    ("modal_overlay", "modal"),
+/// Legacy template id -> canonical default template id. Customer Playbooks that
+/// predate the canonical ids still load. Mirrors scaffold LEGACY_TEMPLATE_ALIASES.
+const LEGACY_TEMPLATE_ALIASES: &[(&str, &str)] = &[
+    ("toast_message", "toast"),
+    ("push_notification", "push"),
+    ("plans_pricing_ctas", "plans_page_ctas"),
+    ("plans_pricing_full", "plans_page_full"),
+    ("credit_balance_counter", "credit_counter"),
+    ("modal_overlay", "modal_optional"),
     ("banner_placement", "banner"),
-    ("full_page", "full_page"),
 ];
+
+/// The id's equivalence class: itself, its canonical id (if it is a legacy
+/// alias), then every legacy id aliasing that canonical id. Custom ids return
+/// just `[id]`. Mirrors scaffold `templateIdEquivalents`.
+#[must_use]
+pub fn template_id_equivalents(id: &str) -> Vec<String> {
+    let canonical = LEGACY_TEMPLATE_ALIASES
+        .iter()
+        .find_map(|(legacy, target)| (*legacy == id).then_some(*target))
+        .unwrap_or(id);
+    let mut out = vec![id.to_string()];
+    let rest = std::iter::once(canonical).chain(
+        LEGACY_TEMPLATE_ALIASES
+            .iter()
+            .filter(|(_, target)| *target == canonical)
+            .map(|(legacy, _)| *legacy),
+    );
+    for c in rest {
+        if !out.iter().any(|o| o == c) {
+            out.push(c.to_string());
+        }
+    }
+    out
+}
+
+/// DEFAULT_TEMPLATE_COMPONENT_TYPES + each legacy alias mapped to its canonical
+/// id's component type + `full_page`.
+fn built_in_template_component_types() -> HashMap<String, String> {
+    let mut map: HashMap<String, String> = DEFAULT_TEMPLATE_COMPONENT_TYPES
+        .iter()
+        .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
+        .collect();
+    for (legacy, canonical) in LEGACY_TEMPLATE_ALIASES {
+        if let Some((_, component)) = DEFAULT_TEMPLATE_COMPONENT_TYPES
+            .iter()
+            .find(|(id, _)| id == canonical)
+        {
+            map.insert((*legacy).to_string(), (*component).to_string());
+        }
+    }
+    map.insert("full_page".to_string(), "full_page".to_string());
+    map
+}
 
 fn resolve_component_type(value: &str) -> Option<&str> {
     const COMPONENT_TYPES: &[&str] = &[
@@ -458,20 +507,20 @@ impl StaticPlacementResolver {
     /// Build the candidate index from a Playbook and its placement dataset.
     #[must_use]
     pub fn new(placements: &[Value], playbook: &Value) -> Self {
-        let mut template_to_surface: HashMap<String, String> = DEFAULT_TEMPLATE_COMPONENT_TYPES
-            .iter()
-            .chain(LEGACY_TEMPLATE_COMPONENT_TYPES.iter())
-            .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
-            .collect();
+        let mut template_to_surface: HashMap<String, String> = built_in_template_component_types();
         for t in playbook
             .get("surface_templates")
             .and_then(Value::as_array)
             .unwrap_or(&vec![])
         {
             if let (Some(id), Some(st)) = (s(t, "id"), s(t, "surface_type")) {
-                let component_type = resolve_component_type(&st).unwrap_or_else(|| {
-                    panic!("Surface template {id} has no canonical ComponentType for {st}")
-                });
+                // Failure is local: skip only this authored template.
+                let Some(component_type) = resolve_component_type(&st) else {
+                    eprintln!(
+                        "[revturbine] surface template \"{id}\" has no canonical ComponentType for \"{st}\"; skipping it."
+                    );
+                    continue;
+                };
                 template_to_surface.insert(id, component_type.to_string());
             }
         }
@@ -558,12 +607,13 @@ impl StaticPlacementResolver {
                 let Some(template_id) = s(surface, "template_id") else {
                     continue;
                 };
-                let surface_type = template_to_surface
-                    .get(&template_id)
-                    .cloned()
-                    .unwrap_or_else(|| {
-                        panic!("Surface template {template_id} has no canonical ComponentType")
-                    });
+                let Some(surface_type) = template_to_surface.get(&template_id).cloned() else {
+                    let payload_id = s(payload, "id").unwrap_or_default();
+                    eprintln!(
+                        "[revturbine] payload \"{payload_id}\" uses surface template \"{template_id}\", which has no canonical ComponentType; skipping the payload."
+                    );
+                    continue;
+                };
 
                 let mut content = surface
                     .get("fields")
@@ -879,9 +929,19 @@ impl StaticPlacementResolver {
         let mut reason_codes: Vec<String> = Vec::new();
 
         if let Some(template_ids) = allowed_template_ids {
-            let mut idxs: Vec<usize> = template_ids
+            // Slot matching is by equivalence class (legacy or canonical name);
+            // dedupe across the whole list so no candidate appears twice.
+            let mut expanded_ids: Vec<String> = Vec::new();
+            for tid in &template_ids {
+                for eq in template_id_equivalents(tid) {
+                    if !expanded_ids.contains(&eq) {
+                        expanded_ids.push(eq);
+                    }
+                }
+            }
+            let mut idxs: Vec<usize> = expanded_ids
                 .iter()
-                .filter_map(|tid| self.by_template.get(*tid))
+                .filter_map(|tid| self.by_template.get(tid))
                 .flatten()
                 .copied()
                 .collect();

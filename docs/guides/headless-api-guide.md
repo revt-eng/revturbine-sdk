@@ -57,6 +57,8 @@ Creates a fully-initialized session. Handles:
 4. Placement bootstrapping (optional preloaded decisions)
 
 ```ts
+import { initRevTurbine } from '@revturbine/sdk/headless';
+
 const session = await initRevTurbine({
   tenantId: 'tenant_abc',
   publicKey: 'rtk_…',

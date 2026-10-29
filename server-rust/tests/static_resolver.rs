@@ -96,11 +96,47 @@ fn a_non_seed_modal_template_resolves_to_the_modal_component_type() {
 }
 
 #[test]
-#[should_panic(expected = "unknown_tpl has no canonical ComponentType")]
-fn an_unknown_authored_template_fails_loudly() {
-    let mut e = entry("pl_unknown", "fixed", 0, "Unknown");
-    e["payloads"][0]["surfaces"][0]["template_id"] = json!("unknown_tpl");
-    let _ = StaticPlacementResolver::new(&[e], &config());
+fn an_unknown_payload_template_is_skipped_locally() {
+    let mut bad = entry("pl_unknown", "fixed", 0, "Unknown");
+    bad["payloads"][0]["surfaces"][0]["template_id"] = json!("unknown_tpl");
+    let good = entry("pl_banner", "fixed", 0, "Hello");
+    let r = StaticPlacementResolver::new(&[bad, good], &config());
+
+    assert_eq!(
+        r.resolve("pl_banner", None, None, None)["output"]["surface"]["type"],
+        json!("banner"),
+    );
+    assert_eq!(
+        r.resolve("pl_unknown", None, None, None)["visible"],
+        json!(false)
+    );
+}
+
+#[test]
+fn an_unknown_authored_surface_type_is_skipped_not_fatal() {
+    let mut c = config();
+    c["surface_templates"] = json!([
+        { "id": "cfg_bad", "surface_type": "nonsense" },
+        { "id": "banner_placement", "surface_type": "banner" },
+    ]);
+    let r = StaticPlacementResolver::new(&[entry("pl_banner", "fixed", 0, "Hello")], &c);
+    assert_eq!(
+        r.resolve("pl_banner", None, None, None)["visible"],
+        json!(true)
+    );
+}
+
+#[test]
+fn a_legacy_template_alias_resolves_without_surface_templates() {
+    let mut c = config();
+    c["surface_templates"] = json!([]);
+    let mut e = entry("pl_toast", "fixed", 0, "Hi");
+    e["payloads"][0]["surfaces"][0]["template_id"] = json!("toast_message");
+    let r = StaticPlacementResolver::new(&[e], &c);
+    assert_eq!(
+        r.resolve("pl_toast", None, None, None)["output"]["surface"]["type"],
+        json!("toast"),
+    );
 }
 
 #[test]
@@ -969,4 +1005,55 @@ fn d62_every_rt_initiated_category_spelling_is_accepted() {
         let d = d62_resolve(&[entry("pl_rt", category, 0, "RT")]);
         assert_eq!(d["content"]["header"], json!("RT"), "{category}");
     }
+}
+
+// ── Slot matching by legacy or canonical template name (ST-1347) ────────────
+
+fn slot_resolve(payload_template: &str, slot_ids: &[&str]) -> Value {
+    let mut e = entry("pl_toast", "fixed", 0, "Hi");
+    e["payloads"][0]["surfaces"][0]["template_id"] = json!(payload_template);
+    let r = StaticPlacementResolver::new(&[e], &config());
+    r.resolve("slot_1", Some(&slot(slot_ids)), None, None)
+}
+
+#[test]
+fn template_id_equivalents_examples() {
+    use revturbine::placements::template_id_equivalents as eq;
+    assert_eq!(eq("toast_message"), vec!["toast_message", "toast"]);
+    assert_eq!(eq("toast"), vec!["toast", "toast_message"]);
+    assert_eq!(
+        eq("modal_optional"),
+        vec!["modal_optional", "modal_overlay"]
+    );
+    assert_eq!(eq("modal_overlay"), vec!["modal_overlay", "modal_optional"]);
+    assert_eq!(eq("modal_blocking"), vec!["modal_blocking"]);
+    assert_eq!(eq("custom_x"), vec!["custom_x"]);
+}
+
+#[test]
+fn a_canonical_payload_matches_a_legacy_slot() {
+    let d = slot_resolve("toast", &["toast_message"]);
+    assert_eq!(d["visible"], json!(true));
+    assert_eq!(d["output"]["surface"]["type"], json!("toast"));
+}
+
+#[test]
+fn a_legacy_payload_matches_a_canonical_slot() {
+    let d = slot_resolve("toast_message", &["toast"]);
+    assert_eq!(d["visible"], json!(true));
+    assert_eq!(d["output"]["surface"]["type"], json!("toast"));
+}
+
+#[test]
+fn a_slot_listing_both_names_still_resolves_once() {
+    let d = slot_resolve("toast", &["toast", "toast_message"]);
+    assert_eq!(d["visible"], json!(true));
+    assert_eq!(d["output"]["surface"]["type"], json!("toast"));
+}
+
+#[test]
+fn modal_blocking_does_not_match_a_modal_overlay_slot() {
+    let d = slot_resolve("modal_blocking", &["modal_overlay"]);
+    assert_eq!(d["visible"], json!(false));
+    assert_eq!(d["reason_codes"], json!(["no_candidates_for_template"]));
 }
