@@ -54,6 +54,8 @@ export const DESCRIPTIONS = {
     "The candidate's entitlement-gate trigger did not match the user's current entitlement state.",
   gate_outside_access_gate:
     'An Access Gate placement was requested from a slot that is not an Access Gate slot; gates render only in gate slots.',
+  no_candidates_for_template:
+    "No payload uses any of the slot's templates (either name of a renamed template counts). A payload whose template the SDK could not recognise was skipped at load and never becomes a candidate.",
   no_eligible_candidate:
     'No candidate placement survived eligibility filtering for this slot.',
   no_gate_for_entitlement:

@@ -47,6 +47,40 @@ also require a changelog entry.
 
 ---
 
+## 0.12.5
+
+### Fixed
+
+- Legacy template ids load again with no authored `surface_templates`
+  (BUG-1345). `toast_message`, `push_notification`, `plans_pricing_ctas`,
+  `plans_pricing_full` and `credit_balance_counter` resolve to their component
+  types, like `modal_overlay` and `banner_placement` already did. In 0.12.4 a
+  payload using `toast_message` made the SDK throw `Surface template
+  toast_message has no canonical ComponentType`: no placement rendered, and
+  the Python `RevTurbineCustomerSdk` constructor raised.
+- An unresolvable template now fails locally in all three ports. A payload whose
+  template has no canonical ComponentType, or an authored template with an
+  unknown `surface_type`, is skipped with a `[revturbine]` warning; the rest of
+  the Playbook keeps resolving (ST-1346).
+- Slots match a template by either its legacy or canonical name (ST-1347). The
+  default `MessageSurfaceSlot` (`toast_message`) now shows a payload authored as
+  `toast`, and a `toast` slot shows `toast_message` payloads. The same applies to
+  the modal, banner, push, plans-page and credit-counter pairs; `modal_blocking`
+  stays distinct from `modal_overlay`, and a custom template id matches only
+  itself.
+
+`revturbine validate` gains a matching launch-blocking rule, `VAL-PLC-11`, for a
+payload template that is neither built in nor authored (schema 0.1.523+).
+
+The placement reason `no_candidates_for_template` (a slot whose templates match
+no payload, including one skipped for an unresolvable template) is now part of
+the protected reason baseline. The value is unchanged; it was emitted before but
+reached by no live fixture until `placement_legacy_template_aliases`.
+
+Regression coverage: `local-resolver.test.ts` (scaffold), `test_local_resolver.py`,
+`server-rust/tests/static_resolver.rs`, and the cross-language parity scenario
+`placement_legacy_template_aliases`.
+
 ## 0.12.4
 
 ### Fixed

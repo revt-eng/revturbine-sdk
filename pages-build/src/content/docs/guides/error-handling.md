@@ -106,6 +106,7 @@ An interaction-flush failure and a client-side cap-enforcement fallback are each
 | `entitlement_gate_unmet` | The candidate's entitlement-gate trigger did not match the user's current entitlement state. |
 | `entitlement_not_denied` | The Access Gate placement's entitlement is not denied or limited for this user, so the gate does not fire. |
 | `gate_outside_access_gate` | An Access Gate placement was requested from a slot that is not an Access Gate slot; gates render only in gate slots. |
+| `no_candidates_for_template` | No payload uses any of the slot's templates (either name of a renamed template counts). A payload whose template the SDK could not recognise was skipped at load and never becomes a candidate. |
 | `no_eligible_candidate` | No candidate placement survived eligibility filtering for this slot. |
 | `no_gate_for_entitlement` | The Access Gate slot asks for an entitlement that no gate placement is authored for, so the slot shows its access-denied placeholder. |
 | `no_resolver_configured` | No placement resolver is configured, so the SDK has nothing to evaluate against. |
