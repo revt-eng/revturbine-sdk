@@ -33,6 +33,8 @@ const RESERVED_TRACK_PROPS = new Set<string>([
 export interface TrackOptions {
   /** Overrides the scope `area` for this event. */
   area?: string;
+  /** Overrides the scope `feature` for this event (area → feature → action). */
+  feature?: string;
   /** Overrides the scope `action` for this event. */
   action?: string;
   /** Advisory {@link TrackPurpose}; overrides the scope purpose. */
@@ -75,7 +77,8 @@ function stripReserved(data?: SdkEventProperties): SdkEventProperties {
  * Returns a `track(name, data?, options?)` function bound to the enclosing
  * {@link TelemetryScope} (plan 144 TASK-12 / REQ-21).
  *
- * - Scope context (`area` / `action` / `purpose`) merges **outer → inner →
+ * - Scope context (`area` / `feature` / `action` / `purpose`, plus scope
+ *   `properties` beneath event data) merges **outer → inner →
  *   invocation** — the per-event option wins.
  * - `once` and `dedupeKey` suppress repeats for this hook instance's lifetime.
  * - Reserved property names are dropped so a caller can't overwrite canonical
@@ -99,11 +102,14 @@ export function useTrack(): TrackFn {
       }
 
       const area = options?.area ?? scope.area;
+      const feature = options?.feature ?? scope.feature;
       const action = options?.action ?? scope.action;
       const purpose = options?.purpose ?? scope.purpose;
 
-      const payload: SdkEventProperties = { ...stripReserved(data) };
+      // Scope properties sit beneath per-event data (data wins).
+      const payload: SdkEventProperties = { ...stripReserved({ ...scope.properties, ...data }) };
       if (area != null) payload.area = area;
+      if (feature != null) payload.feature = feature;
       if (action != null) payload.action = action;
       if (purpose != null) payload.purpose = purpose;
 

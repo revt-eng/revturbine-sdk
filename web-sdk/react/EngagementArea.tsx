@@ -3,11 +3,22 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { TelemetryScope, type TrackPurpose } from './TelemetryScope';
 import { useTrack } from './useTrack';
+import { devWarn } from '../build-mode';
 
 /** Props for {@link EngagementArea}. */
 export interface EngagementAreaProps {
-  /** Logical area name — set as the telemetry scope for descendants and stamped on emitted events. */
-  area: string;
+  /**
+   * Logical area name — set as the telemetry scope for descendants and stamped on
+   * emitted events. Optional: when omitted, an enclosing {@link TelemetryScope}
+   * `area` is inherited (area → feature → action).
+   */
+  area?: string;
+  /**
+   * Product feature within the area (the spec's former `id`), stamped on emitted
+   * events and the descendant scope. Leaves an outer `area` intact when `area` is
+   * not given. Provide at least one of `area` or `feature`.
+   */
+  feature?: string;
   /** Event emitted once when the area is first qualified-viewed. Default `engagement_view`. */
   viewEvent?: string;
   /** Event emitted with accrued dwell (`dwell_ms`) when the area unmounts. Default `engagement_dwell`. */
@@ -27,7 +38,9 @@ export interface EngagementAreaProps {
 
 /**
  * A qualified engagement region (plan 144 TASK-13 / REQ-21). It:
- * - establishes a {@link TelemetryScope} (`area` / `purpose`) for its descendants;
+ * - establishes a {@link TelemetryScope} (`area` / `feature` / `purpose`) for its
+ *   descendants — an outer scope's `area` survives when only `feature` is given
+ *   (area → feature → action);
  * - emits `viewEvent` **once** when first viewport-qualified — one-shot across
  *   React Strict Mode's double-mount (AC-12);
  * - accrues dwell only while the region is **onscreen and the tab is visible**,
@@ -38,6 +51,7 @@ export interface EngagementAreaProps {
  */
 export function EngagementArea({
   area,
+  feature,
   // @revturbine-graph event:customer:engagement_dwell
   viewEvent = 'engagement_view',
   dwellEvent = 'engagement_dwell',
@@ -49,6 +63,9 @@ export function EngagementArea({
   style,
   children,
 }: EngagementAreaProps): React.ReactElement {
+  if (area === undefined && feature === undefined) {
+    devWarn('<EngagementArea> needs an `area` or a `feature`; events will carry neither.');
+  }
   const track = useTrack();
   const trackRef = useRef(track);
   trackRef.current = track;
@@ -80,9 +97,9 @@ export function EngagementArea({
     startIfActive();
     if (!firedViewRef.current) {
       firedViewRef.current = true;
-      trackRef.current(viewEvent, {}, { area, purpose });
+      trackRef.current(viewEvent, {}, { area, feature, purpose });
     }
-  }, [viewEvent, area, purpose, startIfActive]);
+  }, [viewEvent, area, feature, purpose, startIfActive]);
 
   const leaveViewport = useCallback(() => {
     accrue();
@@ -135,20 +152,24 @@ export function EngagementArea({
       accrue();
       const dwellMs = accruedMsRef.current;
       if (dwellMs > 0) {
-        trackRef.current(dwellEvent, { dwell_ms: dwellMs }, { area, purpose });
+        trackRef.current(dwellEvent, { dwell_ms: dwellMs }, { area, feature, purpose });
       }
     },
-    [accrue, dwellEvent, area, purpose],
+    [accrue, dwellEvent, area, feature, purpose],
   );
 
   const handleClick = useCallback(() => {
-    trackRef.current(interactionEvent, {}, { area, purpose });
-  }, [interactionEvent, area, purpose]);
+    trackRef.current(interactionEvent, {}, { area, feature, purpose });
+  }, [interactionEvent, area, feature, purpose]);
 
   const host = React.createElement(
     as,
     { ref: refCb, className, style, onClickCapture: handleClick },
     children,
   );
-  return <TelemetryScope area={area} purpose={purpose}>{host}</TelemetryScope>;
+  return (
+    <TelemetryScope area={area} feature={feature} purpose={purpose}>
+      {host}
+    </TelemetryScope>
+  );
 }
