@@ -47,6 +47,35 @@ also require a changelog entry.
 
 ---
 
+## 0.12.7
+
+### Changed
+
+- Segment evaluation and rule targeting read a segment's mode and dimension
+  from its predicates (ST-1391, fixes BUG-1389). All three ports (web SDK,
+  Python, Rust) pin `@revt-eng/schema` / `@revt-eng/core` 0.1.527.
+  - A segment is **basic** when every predicate operator is `eq` or `in`
+    (or it carries `mode: "basic"`), otherwise **advanced**. The Playbook
+    segment gains an optional `mode`; `SCHEMA_VERSION` is unchanged.
+  - Basic segments OR predicates on the same field and AND across fields.
+    A repeated-field `eq` pair used to be unsatisfiable and now matches either
+    value. Advanced segments keep the flat AND, so ranges such as
+    `gte` + `lte` on one field are unchanged. Segments with one predicate per
+    field evaluate exactly as before.
+  - A rule's `segment_ids` are bucketed by a dimension derived from the
+    segment (single-field basic segment: its field, `rt_<key>` becoming
+    `rt.<key>`; otherwise its `dimension_id`), not by the stored
+    `dimension_id` alone. A Playbook whose uploaded segments all share one
+    placeholder `dimension_id` now evaluates as OR within a dimension and AND
+    across dimensions instead of a flat OR.
+  - Python gains `revturbine.core.segments.classify_segment`,
+    `segment_dimension_keys` and `canonicalize_segment_predicates`; Rust gains
+    the same under `revturbine::segments`.
+
+Proving tests: `tests/parity/fixtures/segment_evaluation.json`,
+`tests/parity/fixtures/entitlement_segment_derived_dimensions.json`,
+`server-python/tests/test_segment_mode.py`.
+
 ## 0.12.6
 
 ### Added
