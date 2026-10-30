@@ -47,6 +47,32 @@ also require a changelog entry.
 
 ---
 
+## 0.12.6
+
+### Added
+
+- The React telemetry hierarchy is now area -> feature -> action (ST-1344,
+  ruling of 2026-10-29 on ST-1259 Q-1). Purely additive: existing calls behave
+  as before.
+  - `TelemetryScopeValue.feature` names the product feature within the scope's
+    `area`.
+  - `EngagementArea` gains `feature` (the value formerly modelled as the spec's
+    `id`); the outer `area` is preserved, so `area` is now optional on
+    `EngagementArea` and a dev warning fires when neither `area` nor `feature`
+    is set.
+  - `TrackOptions.feature` overrides the scope feature for one event. Every
+    emit carries the resolved value as `payload.feature`.
+  - `TelemetryScope` accepts an optional low-cardinality `properties` bag,
+    merged into every event's properties (outer -> inner -> per-event data;
+    data wins). Reserved property names are dropped by `useTrack`.
+  - Inheritance is per field: a scope or `EngagementArea` that sets `area`
+    does not reset an inherited `feature`.
+
+Web SDK only; the Python and Rust ports are unchanged and ship at the same
+version for lockstep.
+
+Regression coverage: `web-sdk/react/EngagementArea.hierarchy.test.tsx`.
+
 ## 0.12.5
 
 ### Fixed
