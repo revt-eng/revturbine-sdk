@@ -1,8 +1,9 @@
 """revturbine.core.segments — Python port of ``@revt-eng/core`` segment evaluation.
 
 Port of ``segments/controllers/segments.ts``. Segments are composed of
-predicates over user traits; a segment matches when ALL of its predicates are
-satisfied (AND logic).
+predicates over user traits. A basic segment (eq/in only) ORs predicates on the
+same field and ANDs across fields; an advanced segment ANDs every predicate
+(ST-1391, see ``segment_mode``).
 
 Previously ``LocalRuntime.evaluate_segments`` raised ``NotImplementedError`` as
 a plan-33 REQ-14 non-goal, which left segment membership a browser-only concept.
@@ -22,11 +23,21 @@ import math
 from typing import Any
 
 from revturbine.core.helpers import js_number
+from revturbine.core.segments.segment_mode import (
+    SegmentClassification,
+    canonicalize_segment_predicates,
+    classify_segment,
+    segment_dimension_keys,
+)
 
 __all__ = [
     "ACTIVE_ACTIVITY_LEVELS",
     "ACTIVITY_LEVEL_TRAIT",
+    "SegmentClassification",
     "activity_level_satisfies",
+    "canonicalize_segment_predicates",
+    "classify_segment",
+    "segment_dimension_keys",
     "evaluate_predicate",
     "evaluate_segments",
     "experiment_by_segment_handle",
@@ -161,10 +172,31 @@ def evaluate_segments(
         elif not has_predicates:
             continue
 
-        if all(evaluate_predicate(p, traits) for p in predicates):
+        if _segment_predicates_match(segment, predicates, traits):
             matched.append(handle)
 
     return matched
+
+
+def _segment_predicates_match(
+    segment: dict[str, Any],
+    predicates: list[dict[str, Any]],
+    traits: dict[str, Any],
+) -> bool:
+    """Combine a segment's predicates per its mode (ST-1391).
+
+    Basic: predicates on the same field are OR'd, fields are AND'd - identical
+    to a flat AND when each field appears once. Advanced: flat AND, so ranges
+    such as ``seats gte 10`` + ``seats lte 100`` keep working.
+
+    Source: segments/controllers/segments.ts:segmentPredicatesMatch
+    """
+    if classify_segment(segment).mode == "advanced":
+        return all(evaluate_predicate(p, traits) for p in predicates)
+    groups: dict[Any, list[dict[str, Any]]] = {}
+    for p in predicates:
+        groups.setdefault(p.get("field"), []).append(p)
+    return all(any(evaluate_predicate(p, traits) for p in group) for group in groups.values())
 
 
 def experiment_by_segment_handle(segments: list[dict[str, Any]]) -> dict[str, str]:

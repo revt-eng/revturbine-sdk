@@ -1,8 +1,9 @@
 //! Segment evaluation — predicate-based segment membership resolution.
 //!
 //! Port of `segments/controllers/segments.ts`. Segments are composed of
-//! predicates over user traits; a segment matches when ALL of its predicates
-//! are satisfied (AND logic).
+//! predicates over user traits. A basic segment (eq/in only) ORs predicates on
+//! the same field and ANDs across fields; an advanced segment ANDs every
+//! predicate (ST-1391, see [`segment_mode`]).
 //!
 //! Segment evaluation was previously browser-only (a plan-33 REQ-14 non-goal).
 //! Plan 233 made segment targeting a decision input in every runtime, so
@@ -12,8 +13,15 @@
 //! Parity is asserted byte-for-byte by `tests/parity`, which is why the JS
 //! coercion semantics below are reproduced deliberately rather than approximated.
 
+pub mod segment_mode;
+
 use serde_json::Value;
 use std::collections::BTreeMap;
+
+pub use segment_mode::{
+    canonicalize_segment_predicates, classify_segment, segment_dimension_keys,
+    SegmentClassification,
+};
 
 /// The trait key carrying the retrieval-derived activity level (plan 180 D5).
 pub const ACTIVITY_LEVEL_TRAIT: &str = "activity_level";
@@ -216,12 +224,35 @@ pub fn evaluate_segments(
             continue;
         }
 
-        if predicates.iter().all(|p| evaluate_predicate(p, traits)) {
+        if segment_predicates_match(segment, predicates, traits) {
             matched.push(handle);
         }
     }
 
     matched
+}
+
+/// Combine a segment's predicates per its mode (ST-1391).
+///
+/// Basic: predicates on the same field are OR'd, fields are AND'd - identical
+/// to a flat AND when each field appears once. Advanced: flat AND, so ranges
+/// such as `seats gte 10` + `seats lte 100` keep working.
+///
+/// Source: segments/controllers/segments.ts:segmentPredicatesMatch
+fn segment_predicates_match(segment: &Value, predicates: &[Value], traits: &Value) -> bool {
+    if classify_segment(segment).mode == "advanced" {
+        return predicates.iter().all(|p| evaluate_predicate(p, traits));
+    }
+    let mut groups: Vec<(Option<&str>, bool)> = Vec::new();
+    for p in predicates {
+        let field = p.get("field").and_then(Value::as_str);
+        let hit = evaluate_predicate(p, traits);
+        match groups.iter_mut().find(|(f, _)| *f == field) {
+            Some(group) => group.1 |= hit,
+            None => groups.push((field, hit)),
+        }
+    }
+    groups.iter().all(|(_, hit)| *hit)
 }
 
 /// `{segment_handle: experiment_handle}` for segments naming an experiment.
@@ -315,6 +346,61 @@ mod tests {
             &p,
             &json!({ "activity_level": "inactive" })
         ));
+    }
+
+    fn eq(field: &str, value: &str) -> Value {
+        json!({ "field": field, "operator": "eq", "value": value })
+    }
+
+    fn matches(segment: Value, traits: Value) -> bool {
+        !evaluate_segments(&[segment], &traits, &BTreeMap::new()).is_empty()
+    }
+
+    #[test]
+    fn basic_repeated_field_eq_ors() {
+        let seg = json!({ "handle": "s", "predicates": [eq("plan", "pro"), eq("plan", "team")] });
+        assert!(matches(seg.clone(), json!({ "plan": "team" })));
+        assert!(!matches(seg, json!({ "plan": "free" })));
+    }
+
+    #[test]
+    fn basic_one_per_field_is_flat_and() {
+        let seg = json!({ "handle": "s", "predicates": [eq("plan", "pro"), eq("country", "us")] });
+        assert!(matches(
+            seg.clone(),
+            json!({ "plan": "pro", "country": "us" })
+        ));
+        assert!(!matches(seg, json!({ "plan": "pro", "country": "ca" })));
+    }
+
+    #[test]
+    fn range_on_one_field_is_advanced_and() {
+        let seg = json!({ "handle": "r", "predicates": [
+            { "field": "seats", "operator": "gte", "value": "10" },
+            { "field": "seats", "operator": "lte", "value": "100" }
+        ]});
+        assert!(matches(seg.clone(), json!({ "seats": 50 })));
+        assert!(!matches(seg, json!({ "seats": 500 })));
+    }
+
+    #[test]
+    fn explicit_advanced_repeated_eq_never_matches() {
+        let seg = json!({ "handle": "a", "mode": "advanced",
+            "predicates": [eq("plan", "pro"), eq("plan", "team")] });
+        assert!(!matches(seg.clone(), json!({ "plan": "pro" })));
+        assert!(!matches(seg, json!({ "plan": "team" })));
+    }
+
+    #[test]
+    fn or_within_field_and_across_fields() {
+        let seg = json!({ "handle": "s", "predicates": [
+            eq("plan", "pro"), eq("country", "us"), eq("plan", "team")
+        ]});
+        assert!(matches(
+            seg.clone(),
+            json!({ "plan": "team", "country": "us" })
+        ));
+        assert!(!matches(seg, json!({ "plan": "team", "country": "ca" })));
     }
 
     #[test]

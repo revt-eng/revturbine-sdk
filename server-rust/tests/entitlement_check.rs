@@ -690,6 +690,62 @@ fn cross_dimension_and_grants_when_both_dimensions_held() {
     assert!(r.allowed);
 }
 
+// ── derived segment dimensions (ST-1391, BUG-1389) ──────────────────────────
+//
+// Every segment carries the same upload placeholder `dimension_id`, the shape
+// an import wrote before the fix. The dimension is derived from the
+// predicates, so pro/team (plan) and us/ca (country) bucket separately and the
+// rule is (pro OR team) AND (us OR ca). Mirrors
+// `server-python/tests/test_segment_mode.py::TestBug1389RuleMatching`; byte
+// parity locked by `entitlement_segment_derived_dimensions`.
+
+fn bug_1389_config() -> Value {
+    let seg = |handle: &str, field: &str, value: &str| {
+        json!({
+            "id": format!("seg_{handle}"),
+            "handle": handle,
+            "dimension_id": "dim_imported_t",
+            "predicates": [{ "field": field, "operator": "eq", "value": value }]
+        })
+    };
+    json!({
+        "entitlements": [{ "unique_handle": "feat_x", "type": "feature" }],
+        "plans": [{ "id": "plan_pro", "unique_handle": "pro" }],
+        "segments": [
+            seg("pro_seg", "plan", "pro"),
+            seg("team_seg", "plan", "team"),
+            seg("us_seg", "country", "us"),
+            seg("ca_seg", "country", "ca"),
+        ],
+        "entitlement_rules": [{
+            "entitlement_id": "feat_x",
+            "targets": [{ "kind": "plan", "id": "pro" }],
+            "segment_ids": ["pro_seg", "team_seg", "us_seg", "ca_seg"],
+            "type_fields": { "kind": "feature", "enabled": true }
+        }],
+    })
+}
+
+fn bug_1389_allowed(held: &[&str]) -> bool {
+    let cfg = bug_1389_config();
+    let mut inp = input("feat_x", "pro");
+    inp.segment_ids = held.iter().map(|s| (*s).to_string()).collect();
+    derive(&cfg, &inp).allowed
+}
+
+#[test]
+fn shared_placeholder_dimension_does_not_collapse_rule_buckets() {
+    assert!(!bug_1389_allowed(&["pro_seg"]));
+    assert!(!bug_1389_allowed(&["us_seg", "ca_seg"]));
+    assert!(!bug_1389_allowed(&["pro_seg", "team_seg"]));
+}
+
+#[test]
+fn one_segment_from_each_derived_dimension_grants() {
+    assert!(bug_1389_allowed(&["pro_seg", "us_seg"]));
+    assert!(bug_1389_allowed(&["team_seg", "ca_seg"]));
+}
+
 // ── seat rules + tier vocabularies (plan 234 TASK-3) ────────────────────────
 //
 // Focused seat-kind rule tests (coverage-map gap A.6: no engine ever

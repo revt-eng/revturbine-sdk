@@ -62,6 +62,7 @@ from revturbine.core.entitlements.effective_entitlement import (
 from revturbine.core.plans import get_eligible_addons, get_eligible_plans
 from revturbine.core.providers.types import DomainProvider, DomainProviderName
 from revturbine.core.runtime import LocalRuntime
+from revturbine.core.segments import segment_dimension_keys
 from revturbine.core.trials import evaluate_trial_status as _evaluate_trial_status
 from revturbine.playbook_option import require_playbook_option
 
@@ -279,11 +280,8 @@ class RevTurbineCustomerSdk:
         )
 
     def _segment_dimensions(self) -> dict[str, str]:
-        return {
-            segment["handle"]: segment["dimension_id"]
-            for segment in self._playbook.get("segments") or []
-            if segment.get("handle") and segment.get("dimension_id")
-        }
+        # ST-1391: derived from each segment's predicates, not the stored id.
+        return segment_dimension_keys(self._playbook.get("segments"))
 
     def get_eligible_plans(self) -> list[dict[str, Any]]:
         """Return public plan variations eligible for this user."""

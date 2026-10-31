@@ -22,7 +22,7 @@ use std::collections::BTreeMap;
 
 use serde_json::{json, Map, Value};
 
-use crate::segments::evaluate_segments;
+use crate::segments::{evaluate_segments, segment_dimension_keys};
 use crate::user_context::build_targeting_state;
 
 /// Inputs the caller supplies alongside the Playbook.
@@ -398,10 +398,12 @@ pub fn create_static_providers(config: &Value, opts: &StaticProviderOptions) -> 
         // (plan 120). Omitting it collapsed every segment into one OR bucket on
         // the provider-backed path — invisible while every configured segment
         // matched, a grant once membership is real (BL-0369).
-        let segment_dimensions: Map<String, Value> = arr(config, "segments")
-            .iter()
-            .filter_map(|seg| Some((s(seg, "handle")?, json!(s(seg, "dimension_id")?))))
-            .collect();
+        // ST-1391: derived from each segment's predicates, not the stored id.
+        let segment_dimensions: Map<String, Value> =
+            segment_dimension_keys(arr(config, "segments"))
+                .into_iter()
+                .map(|(handle, key)| (handle, json!(key)))
+                .collect();
 
         let addon_variations: Map<String, Value> = arr(config, "addon_variations").iter().filter_map(|v| Some((s(v, "handle")?, json!({"addon_handle": v.get("addon_handle"), "billing_period": v.get("billing_period")})))).collect();
         let plan_variations: Map<String, Value> = arr(config, "plan_variations").iter().filter_map(|v| Some((s(v, "handle")?, json!({"plan_handle": v.get("plan_handle"), "billing_period": v.get("billing_period"), "segment_handle": v.get("segment_handle")})))).collect();

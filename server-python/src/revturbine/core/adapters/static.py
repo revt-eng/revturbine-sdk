@@ -27,7 +27,7 @@ from revturbine.core.providers.types import (
     DomainProvider,
     EntitlementResult,
 )
-from revturbine.core.segments import evaluate_segments
+from revturbine.core.segments import evaluate_segments, segment_dimension_keys
 from revturbine.core.user_context import build_targeting_state
 
 __all__ = [
@@ -330,11 +330,8 @@ def create_static_providers(
             # into one OR bucket on the provider-backed path - invisible while
             # every configured segment matched, a grant once membership is
             # real (BL-0369).
-            segment_dimensions: dict[str, str] = {
-                seg["handle"]: seg["dimension_id"]
-                for seg in config.get("segments") or []
-                if isinstance(seg.get("handle"), str) and isinstance(seg.get("dimension_id"), str)
-            }
+            # ST-1391: derived from each segment's predicates, not the stored id.
+            segment_dimensions: dict[str, str] = segment_dimension_keys(config.get("segments"))
             return {
                 "entitlement_rules": by_ent,
                 "segment_dimensions": segment_dimensions,

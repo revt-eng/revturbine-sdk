@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.524/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.527/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -936,6 +936,72 @@ class AnalyticsWarning(BaseModel):
     )
     code: constr(pattern=r"^[A-Z][A-Z0-9_]{2,79}$")
     message: constr(min_length=1, max_length=500)
+
+
+class AttributionCreditBasis(Enum):
+    confirmed = "confirmed"
+    inferred = "inferred"
+
+
+class AttributionCreditStatus(Enum):
+    credited = "credited"
+    no_eligible_touch = "no_eligible_touch"
+    not_applicable = "not_applicable"
+    unresolved_identity = "unresolved_identity"
+    deduped_to_movement = "deduped_to_movement"
+
+
+class AttributionDirection(Enum):
+    positive = "positive"
+    negative = "negative"
+
+
+class AttributionEnvironmentScope(Enum):
+    tenant_billing = "tenant_billing"
+    sdk_environment = "sdk_environment"
+
+
+class AttributionLane(Enum):
+    placement = "placement"
+    message = "message"
+    experiment = "experiment"
+    gate = "gate"
+
+
+class AttributionLineage(Enum):
+    single = "single"
+    partial = "partial"
+    day_close = "day_close"
+
+
+class AttributionMoneyBasis(Enum):
+    item_mrr_delta = "item_mrr_delta"
+    sdk_reported_amount = "sdk_reported_amount"
+
+
+class AttributionRunKind(Enum):
+    landed = "landed"
+    sweep = "sweep"
+    rekey = "rekey"
+    policy_change = "policy_change"
+    restate = "restate"
+
+
+class AttributionSettledReason(Enum):
+    watermark = "watermark"
+    cap = "cap"
+
+
+class AttributionSubjectKind(Enum):
+    movement = "movement"
+    sdk_conversion = "sdk_conversion"
+
+
+class AttributionTouchKind(Enum):
+    exposure = "exposure"
+    cta = "cta"
+    gate_denied = "gate_denied"
+    gate = "gate"
 
 
 class AuditActorType(Enum):
@@ -2072,6 +2138,12 @@ class Status8(Enum):
     under_review = "under_review"
     won = "won"
     lost = "lost"
+
+
+class BillingMirrorCheckoutMode(Enum):
+    payment = "payment"
+    subscription = "subscription"
+    setup = "setup"
 
 
 class AccountExternalIdSource(Enum):
@@ -5822,17 +5894,6 @@ class RevTurbineConfigSegmentsItemPredicatesItem(BaseModel):
     value: str
 
 
-class RevTurbineConfigSegmentsItem(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    name: constr(min_length=1)
-    handle: constr(min_length=1)
-    predicates: list[RevTurbineConfigSegmentsItemPredicatesItem] | None = None
-    dimension_id: str | None = None
-    experiment_handle: constr(min_length=1) | None = None
-
-
 class RevTurbineConfigSlotConfigsItem(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -6689,6 +6750,11 @@ class SegmentDimension(BaseModel):
 class SegmentLibraryContext(BaseModel):
     name: constr(min_length=1) | None = None
     version: constr(min_length=1) | None = None
+
+
+class SegmentMode(Enum):
+    basic = "basic"
+    advanced = "advanced"
 
 
 class SegmentPageContext(BaseModel):
@@ -9717,6 +9783,143 @@ class AnalyticsViewQuery(BaseModel):
     limit: conint(ge=1, le=1000) | None = None
 
 
+class AttributionCreditRow(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    subject_kind: AttributionSubjectKind
+    subject_id: constr(min_length=1, max_length=2048)
+    attribution_policy_version: constr(
+        pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128
+    )
+    subject_at: AwareDatetime
+    account_key: constr(min_length=1, max_length=512)
+    account_resolved: bool
+    environment_id: constr(min_length=1, max_length=255)
+    environment_scope: AttributionEnvironmentScope
+    is_test: bool
+    attribution_version: conint(ge=1, le=2147483647)
+    created_at: AwareDatetime
+    deleted_at: AwareDatetime | None
+    lane: AttributionLane
+    direction: AttributionDirection
+    target_key: constr(min_length=1, max_length=600)
+    status: AttributionCreditStatus
+    placement_id: constr(min_length=1, max_length=255) | None
+    payload_id: constr(min_length=1, max_length=255) | None
+    experiment_id: constr(min_length=1, max_length=255) | None
+    variant_key: constr(min_length=1, max_length=255) | None
+    entitlement_handle: constr(min_length=1, max_length=255) | None
+    touch_kind: AttributionTouchKind | None
+    touch_rank: conint(ge=1, le=10) | None
+    credit_basis: AttributionCreditBasis | None
+    movement_kind: MrrMovementKind
+    subscription_kind: MrrMovementKind | None
+    lineage: AttributionLineage
+    reason: constr(min_length=1, max_length=160)
+    churn_cause: MrrChurnCause | None
+    amount_minor: conint(ge=0, le=2147483647) | None
+    currency: constr(pattern=r"^[a-z]{3}$")
+    money_basis: AttributionMoneyBasis
+    split_share: confloat(le=1.0, gt=0.0)
+    threshold_seconds_applied: conint(ge=0, le=2147483647)
+    entitlement_gated_before: bool
+    policy_version: (
+        constr(pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128) | None
+    )
+    calendar_version: constr(min_length=1, max_length=512) | None
+    subscription_id: constr(min_length=1, max_length=255) | None
+    item_id: constr(min_length=1, max_length=255) | None
+    component: (
+        constr(pattern=r"^(plan|unbound|addon:.+)$", min_length=1, max_length=300)
+        | None
+    )
+    source_provider: constr(min_length=1, max_length=64) | None
+    settled: bool
+    settled_at: AwareDatetime | None
+    settled_reason: AttributionSettledReason | None
+
+
+class AttributionRunRow(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    subject_kind: AttributionSubjectKind
+    subject_id: constr(min_length=1, max_length=2048)
+    attribution_policy_version: constr(
+        pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128
+    )
+    subject_at: AwareDatetime
+    account_key: constr(min_length=1, max_length=512)
+    account_resolved: bool
+    environment_id: constr(min_length=1, max_length=255)
+    environment_scope: AttributionEnvironmentScope
+    is_test: bool
+    attribution_version: conint(ge=1, le=2147483647)
+    created_at: AwareDatetime
+    deleted_at: AwareDatetime | None
+    run_kind: AttributionRunKind
+    content_hash: constr(pattern=r"^[0-9a-f]{64}$")
+    identity_snapshot_hash: constr(pattern=r"^[0-9a-f]{64}$")
+    user_count: conint(ge=0, le=2147483647)
+    telemetry_watermark_at: AwareDatetime | None
+    settled: bool
+    settled_at: AwareDatetime | None
+    settled_reason: AttributionSettledReason | None
+    lineage: AttributionLineage
+    member_keys: constr(min_length=2, max_length=65535)
+    dedupe_subject_id: constr(min_length=1, max_length=2048) | None
+    rekeyed_from_subject_id: constr(min_length=1, max_length=2048) | None
+    trigger_event_id: constr(min_length=1, max_length=255)
+    ran_at: AwareDatetime
+
+
+class AttributionTouchRow(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    subject_kind: AttributionSubjectKind
+    subject_id: constr(min_length=1, max_length=2048)
+    attribution_policy_version: constr(
+        pattern=r"^[A-Za-z0-9_.:@/+-]+$", min_length=1, max_length=128
+    )
+    subject_at: AwareDatetime
+    account_key: constr(min_length=1, max_length=512)
+    account_resolved: bool
+    environment_id: constr(min_length=1, max_length=255)
+    environment_scope: AttributionEnvironmentScope
+    is_test: bool
+    attribution_version: conint(ge=1, le=2147483647)
+    created_at: AwareDatetime
+    deleted_at: AwareDatetime | None
+    touch_kind: AttributionTouchKind
+    touch_rank: conint(ge=1, le=10)
+    touch_depth: conint(ge=1, le=10)
+    touch_id: constr(min_length=1, max_length=255)
+    exposure_id: constr(min_length=1, max_length=255) | None
+    touched_at: AwareDatetime
+    elapsed_seconds: confloat(ge=0.0)
+    touch_user_id: constr(min_length=1, max_length=255)
+    placement_id: constr(max_length=255)
+    payload_id: constr(max_length=255)
+    rule_handle: constr(min_length=1, max_length=255) | None
+    entitlement_handle: constr(min_length=1, max_length=255) | None
+    experiment_id: constr(min_length=1, max_length=255) | None
+    variant_key: constr(min_length=1, max_length=255) | None
+    outcome: constr(min_length=1, max_length=64) | None
+    decision_id: constr(min_length=1, max_length=255) | None
+    message_shown: bool | None
+    credit_basis: AttributionCreditBasis
+    movement_kind: MrrMovementKind
+    subscription_kind: MrrMovementKind | None
+    movement_direction: AttributionDirection
+    lineage: AttributionLineage
+    subscription_id: constr(min_length=1, max_length=255) | None
+
+
 class AuthInvitation(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -10616,6 +10819,35 @@ class BillingMappingHistory(BaseModel):
     mapping: BillingAccountMappingRevision
 
 
+class BillingMirrorCheckoutSession(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    provider: BillingMirrorProvider
+    provider_id: constr(min_length=1, max_length=255)
+    provider_account_id: constr(min_length=1, max_length=255) | None
+    livemode: bool
+    source_updated_at: AwareDatetime
+    observed_at: AwareDatetime
+    last_synced_at: AwareDatetime
+    mirror_version: conint(ge=1, le=2147483647)
+    deleted_at: AwareDatetime | None
+    coverage_state: BillingMirrorCoverageState
+    coverage_reasons: list[
+        BillingCoverageGapReason | BillingCoverageUnavailableReason
+    ] = Field(..., max_length=250)
+    provider_extension: dict[constr(min_length=1, max_length=64), Any] | None
+    payer_provider_id: constr(min_length=1, max_length=255) | None
+    subscription_provider_id: constr(min_length=1, max_length=255) | None
+    invoice_provider_id: constr(min_length=1, max_length=255) | None
+    client_reference_id: constr(min_length=1, max_length=200) | None
+    metadata_placement_id: constr(min_length=1, max_length=500) | None
+    metadata_decision_id: constr(min_length=1, max_length=500) | None
+    mode: BillingMirrorCheckoutMode
+    completed_at: AwareDatetime | None
+
+
 class BillingMirrorInvoiceLine(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -11488,6 +11720,7 @@ class ExportedConfigSegmentsItem(BaseModel):
     predicates: list[RevTurbineConfigSegmentsItemPredicatesItem] | None = None
     dimension_id: str | None = None
     experiment_handle: constr(min_length=1) | None = None
+    mode: SegmentMode | None = None
 
 
 class FeatureFlag(BaseModel):
@@ -11976,6 +12209,7 @@ class PlaybookSegmentsItem(BaseModel):
     predicates: list[RevTurbineConfigSegmentsItemPredicatesItem] | None = None
     dimension_id: str | None = None
     experiment_handle: constr(min_length=1) | None = None
+    mode: SegmentMode | None = None
 
 
 class PlaybookVersionDiff(BaseModel):
@@ -12157,6 +12391,18 @@ class RevTurbineConfigPlacementSettingsItem(BaseModel):
     suppress_for_trial: bool | None = False
     allow_stacking: bool | None = False
     priority_collision_strategy: str | None = None
+
+
+class RevTurbineConfigSegmentsItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    name: constr(min_length=1)
+    handle: constr(min_length=1)
+    predicates: list[RevTurbineConfigSegmentsItemPredicatesItem] | None = None
+    dimension_id: str | None = None
+    experiment_handle: constr(min_length=1) | None = None
+    mode: SegmentMode | None = None
 
 
 class RevTurbineConfigStudioPayload(BaseModel):

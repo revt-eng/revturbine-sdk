@@ -41,6 +41,7 @@ use crate::decisions::EntitlementCheckResult;
 use crate::entitlements::EntitlementMergeOptions;
 use crate::plans::{get_eligible_addons, get_eligible_plans, EligibleAddon, EligiblePlan};
 use crate::runtime::{LocalRuntime, PlacementDecisionInput, UnknownEntitlementHook};
+use crate::segments::segment_dimension_keys;
 use crate::trials::{evaluate_trial_status, TrialEvaluation};
 
 const PRODUCTION_ENVIRONMENT_ID: &str = "production";
@@ -366,18 +367,14 @@ impl RevTurbineCustomerSdk {
     ///
     /// Source: `server-python/src/revturbine/sdk.py` `_segment_dimensions`.
     fn segment_dimensions(&self) -> HashMap<String, String> {
-        self.playbook
-            .get("segments")
-            .and_then(Value::as_array)
-            .map(Vec::as_slice)
-            .unwrap_or(&[])
-            .iter()
-            .filter_map(|segment| {
-                let handle = segment.get("handle").and_then(Value::as_str)?;
-                let dimension = segment.get("dimension_id").and_then(Value::as_str)?;
-                Some((handle.to_string(), dimension.to_string()))
-            })
-            .collect()
+        // ST-1391: derived from each segment's predicates, not the stored id.
+        segment_dimension_keys(
+            self.playbook
+                .get("segments")
+                .and_then(Value::as_array)
+                .map(Vec::as_slice)
+                .unwrap_or(&[]),
+        )
     }
 
     fn playbook_array(&self, key: &str) -> Vec<Value> {

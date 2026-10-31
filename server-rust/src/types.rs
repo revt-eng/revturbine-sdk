@@ -1,7 +1,7 @@
 // @generated — DO NOT EDIT.
 //
 // Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.524/rust/revturbine_types.rs
+//   published/v0.1.527/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
@@ -32461,6 +32461,5756 @@ impl ::std::convert::TryFrom<::std::string::String> for AnalyticsWarningMessage 
     }
 }
 impl<'de> ::serde::Deserialize<'de> for AnalyticsWarningMessage {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditBasis`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"confirmed\","]
+#[doc = "    \"inferred\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AttributionCreditBasis {
+    #[serde(rename = "confirmed")]
+    Confirmed,
+    #[serde(rename = "inferred")]
+    Inferred,
+}
+impl ::std::fmt::Display for AttributionCreditBasis {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Confirmed => f.write_str("confirmed"),
+            Self::Inferred => f.write_str("inferred"),
+        }
+    }
+}
+impl ::std::str::FromStr for AttributionCreditBasis {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "confirmed" => Ok(Self::Confirmed),
+            "inferred" => Ok(Self::Inferred),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditBasis {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditBasis {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditBasis {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AttributionCreditRow`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"account_key\","]
+#[doc = "    \"account_resolved\","]
+#[doc = "    \"amount_minor\","]
+#[doc = "    \"attribution_policy_version\","]
+#[doc = "    \"attribution_version\","]
+#[doc = "    \"calendar_version\","]
+#[doc = "    \"churn_cause\","]
+#[doc = "    \"component\","]
+#[doc = "    \"created_at\","]
+#[doc = "    \"credit_basis\","]
+#[doc = "    \"currency\","]
+#[doc = "    \"deleted_at\","]
+#[doc = "    \"direction\","]
+#[doc = "    \"entitlement_gated_before\","]
+#[doc = "    \"entitlement_handle\","]
+#[doc = "    \"environment_id\","]
+#[doc = "    \"environment_scope\","]
+#[doc = "    \"experiment_id\","]
+#[doc = "    \"is_test\","]
+#[doc = "    \"item_id\","]
+#[doc = "    \"lane\","]
+#[doc = "    \"lineage\","]
+#[doc = "    \"money_basis\","]
+#[doc = "    \"movement_kind\","]
+#[doc = "    \"payload_id\","]
+#[doc = "    \"placement_id\","]
+#[doc = "    \"policy_version\","]
+#[doc = "    \"reason\","]
+#[doc = "    \"settled\","]
+#[doc = "    \"settled_at\","]
+#[doc = "    \"settled_reason\","]
+#[doc = "    \"source_provider\","]
+#[doc = "    \"split_share\","]
+#[doc = "    \"status\","]
+#[doc = "    \"subject_at\","]
+#[doc = "    \"subject_id\","]
+#[doc = "    \"subject_kind\","]
+#[doc = "    \"subscription_id\","]
+#[doc = "    \"subscription_kind\","]
+#[doc = "    \"target_key\","]
+#[doc = "    \"tenant_id\","]
+#[doc = "    \"threshold_seconds_applied\","]
+#[doc = "    \"touch_kind\","]
+#[doc = "    \"touch_rank\","]
+#[doc = "    \"variant_key\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"account_key\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 512,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"account_resolved\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"amount_minor\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 2147483647.0,"]
+#[doc = "          \"minimum\": 0.0"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"attribution_policy_version\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 128,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"pattern\": \"^[A-Za-z0-9_.:@/+-]+$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"attribution_version\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 2147483647.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"calendar_version\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 512,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"churn_cause\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/$defs/MrrChurnCause\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"component\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 300,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^(plan|unbound|addon:.+)$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"created_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"credit_basis\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/$defs/AttributionCreditBasis\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"currency\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^[a-z]{3}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"deleted_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"direction\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionDirection\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"entitlement_gated_before\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"entitlement_handle\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"environment_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"environment_scope\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionEnvironmentScope\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"experiment_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"is_test\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"item_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"lane\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionLane\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"lineage\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionLineage\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"money_basis\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionMoneyBasis\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"movement_kind\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/MrrMovementKind\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"payload_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"placement_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"policy_version\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 128,"]
+#[doc = "          \"minLength\": 1,"]
+#[doc = "          \"pattern\": \"^[A-Za-z0-9_.:@/+-]+$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"reason\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 160,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"settled\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"settled_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"settled_reason\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/$defs/AttributionSettledReason\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"source_provider\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 64,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"split_share\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"number\","]
+#[doc = "      \"maximum\": 1.0,"]
+#[doc = "      \"exclusiveMinimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"status\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionCreditStatus\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"subject_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"subject_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 2048,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"subject_kind\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionSubjectKind\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_kind\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/$defs/MrrMovementKind\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"target_key\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 600,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"tenant_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"threshold_seconds_applied\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 2147483647.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"touch_kind\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/$defs/AttributionTouchKind\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"touch_rank\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 10.0,"]
+#[doc = "          \"minimum\": 1.0"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"variant_key\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-context\": \"billing\","]
+#[doc = "  \"x-revturbine-in-config\": false,"]
+#[doc = "  \"x-revturbine-persistence\": {"]
+#[doc = "    \"indexes\": ["]
+#[doc = "      ["]
+#[doc = "        \"tenant_id\","]
+#[doc = "        \"lane\","]
+#[doc = "        \"direction\","]
+#[doc = "        \"subject_at\""]
+#[doc = "      ],"]
+#[doc = "      ["]
+#[doc = "        \"tenant_id\","]
+#[doc = "        \"subject_kind\","]
+#[doc = "        \"subject_id\""]
+#[doc = "      ],"]
+#[doc = "      ["]
+#[doc = "        \"tenant_id\","]
+#[doc = "        \"movement_kind\","]
+#[doc = "        \"status\","]
+#[doc = "        \"subject_at\""]
+#[doc = "      ]"]
+#[doc = "    ],"]
+#[doc = "    \"table\": \"attributionCredits\","]
+#[doc = "    \"uniqueBy\": ["]
+#[doc = "      \"tenant_id\","]
+#[doc = "      \"subject_kind\","]
+#[doc = "      \"subject_id\","]
+#[doc = "      \"attribution_policy_version\","]
+#[doc = "      \"lane\","]
+#[doc = "      \"direction\","]
+#[doc = "      \"target_key\""]
+#[doc = "    ]"]
+#[doc = "  },"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"persisted\","]
+#[doc = "  \"x-revturbine-sdk-input\": false,"]
+#[doc = "  \"x-revturbine-source\": \"runtime\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AttributionCreditRow {
+    pub account_key: AttributionCreditRowAccountKey,
+    pub account_resolved: bool,
+    pub amount_minor: ::std::option::Option<i64>,
+    pub attribution_policy_version: AttributionCreditRowAttributionPolicyVersion,
+    pub attribution_version: ::std::num::NonZeroU64,
+    pub calendar_version: ::std::option::Option<AttributionCreditRowCalendarVersion>,
+    pub churn_cause: ::std::option::Option<MrrChurnCause>,
+    pub component: ::std::option::Option<AttributionCreditRowComponent>,
+    pub created_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub credit_basis: ::std::option::Option<AttributionCreditBasis>,
+    pub currency: AttributionCreditRowCurrency,
+    pub deleted_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    pub direction: AttributionDirection,
+    pub entitlement_gated_before: bool,
+    pub entitlement_handle: ::std::option::Option<AttributionCreditRowEntitlementHandle>,
+    pub environment_id: AttributionCreditRowEnvironmentId,
+    pub environment_scope: AttributionEnvironmentScope,
+    pub experiment_id: ::std::option::Option<AttributionCreditRowExperimentId>,
+    pub is_test: bool,
+    pub item_id: ::std::option::Option<AttributionCreditRowItemId>,
+    pub lane: AttributionLane,
+    pub lineage: AttributionLineage,
+    pub money_basis: AttributionMoneyBasis,
+    pub movement_kind: MrrMovementKind,
+    pub payload_id: ::std::option::Option<AttributionCreditRowPayloadId>,
+    pub placement_id: ::std::option::Option<AttributionCreditRowPlacementId>,
+    pub policy_version: ::std::option::Option<AttributionCreditRowPolicyVersion>,
+    pub reason: AttributionCreditRowReason,
+    pub settled: bool,
+    pub settled_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    pub settled_reason: ::std::option::Option<AttributionSettledReason>,
+    pub source_provider: ::std::option::Option<AttributionCreditRowSourceProvider>,
+    pub split_share: f64,
+    pub status: AttributionCreditStatus,
+    pub subject_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub subject_id: AttributionCreditRowSubjectId,
+    pub subject_kind: AttributionSubjectKind,
+    pub subscription_id: ::std::option::Option<AttributionCreditRowSubscriptionId>,
+    pub subscription_kind: ::std::option::Option<MrrMovementKind>,
+    pub target_key: AttributionCreditRowTargetKey,
+    pub tenant_id: AttributionCreditRowTenantId,
+    pub threshold_seconds_applied: i64,
+    pub touch_kind: ::std::option::Option<AttributionTouchKind>,
+    pub touch_rank: ::std::option::Option<::std::num::NonZeroU64>,
+    pub variant_key: ::std::option::Option<AttributionCreditRowVariantKey>,
+}
+#[doc = "`AttributionCreditRowAccountKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 512,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowAccountKey(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowAccountKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowAccountKey> for ::std::string::String {
+    fn from(value: AttributionCreditRowAccountKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowAccountKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 512usize {
+            return Err("longer than 512 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowAccountKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowAccountKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowAccountKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowAccountKey {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowAttributionPolicyVersion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 128,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"pattern\": \"^[A-Za-z0-9_.:@/+-]+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowAttributionPolicyVersion(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowAttributionPolicyVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowAttributionPolicyVersion> for ::std::string::String {
+    fn from(value: AttributionCreditRowAttributionPolicyVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowAttributionPolicyVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Za-z0-9_.:@/+-]+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Za-z0-9_.:@/+-]+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowAttributionPolicyVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for AttributionCreditRowAttributionPolicyVersion
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for AttributionCreditRowAttributionPolicyVersion
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowAttributionPolicyVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowCalendarVersion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 512,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowCalendarVersion(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowCalendarVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowCalendarVersion> for ::std::string::String {
+    fn from(value: AttributionCreditRowCalendarVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowCalendarVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 512usize {
+            return Err("longer than 512 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowCalendarVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowCalendarVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowCalendarVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowCalendarVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowComponent`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 300,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"pattern\": \"^(plan|unbound|addon:.+)$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowComponent(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowComponent {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowComponent> for ::std::string::String {
+    fn from(value: AttributionCreditRowComponent) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowComponent {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 300usize {
+            return Err("longer than 300 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| {
+                ::regress::Regex::new("^(plan|unbound|addon:.+)$").unwrap()
+            });
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^(plan|unbound|addon:.+)$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowComponent {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowComponent {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowComponent {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowComponent {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowCurrency`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[a-z]{3}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowCurrency(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowCurrency {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowCurrency> for ::std::string::String {
+    fn from(value: AttributionCreditRowCurrency) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowCurrency {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z]{3}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z]{3}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowCurrency {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowEntitlementHandle`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowEntitlementHandle(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowEntitlementHandle {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowEntitlementHandle> for ::std::string::String {
+    fn from(value: AttributionCreditRowEntitlementHandle) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowEntitlementHandle {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowEntitlementHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowEntitlementHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowEntitlementHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowEntitlementHandle {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowEnvironmentId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowEnvironmentId(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowEnvironmentId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowEnvironmentId> for ::std::string::String {
+    fn from(value: AttributionCreditRowEnvironmentId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowEnvironmentId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowEnvironmentId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowEnvironmentId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowEnvironmentId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowEnvironmentId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowExperimentId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowExperimentId(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowExperimentId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowExperimentId> for ::std::string::String {
+    fn from(value: AttributionCreditRowExperimentId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowExperimentId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowExperimentId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowExperimentId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowExperimentId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowExperimentId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowItemId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowItemId(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowItemId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowItemId> for ::std::string::String {
+    fn from(value: AttributionCreditRowItemId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowItemId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowItemId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowItemId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowItemId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowItemId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowPayloadId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowPayloadId(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowPayloadId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowPayloadId> for ::std::string::String {
+    fn from(value: AttributionCreditRowPayloadId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowPayloadId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowPayloadId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowPayloadId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowPayloadId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowPayloadId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowPlacementId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowPlacementId(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowPlacementId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowPlacementId> for ::std::string::String {
+    fn from(value: AttributionCreditRowPlacementId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowPlacementId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowPlacementId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowPlacementId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowPlacementId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowPlacementId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowPolicyVersion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 128,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"pattern\": \"^[A-Za-z0-9_.:@/+-]+$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowPolicyVersion(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowPolicyVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowPolicyVersion> for ::std::string::String {
+    fn from(value: AttributionCreditRowPolicyVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowPolicyVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Za-z0-9_.:@/+-]+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Za-z0-9_.:@/+-]+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowPolicyVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowPolicyVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowPolicyVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowPolicyVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowReason`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 160,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowReason(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowReason {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowReason> for ::std::string::String {
+    fn from(value: AttributionCreditRowReason) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowReason {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 160usize {
+            return Err("longer than 160 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowReason {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowReason {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowSourceProvider`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 64,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowSourceProvider(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowSourceProvider {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowSourceProvider> for ::std::string::String {
+    fn from(value: AttributionCreditRowSourceProvider) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowSourceProvider {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 64usize {
+            return Err("longer than 64 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowSourceProvider {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowSourceProvider {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowSourceProvider {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowSourceProvider {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowSubjectId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 2048,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowSubjectId(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowSubjectId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowSubjectId> for ::std::string::String {
+    fn from(value: AttributionCreditRowSubjectId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowSubjectId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 2048usize {
+            return Err("longer than 2048 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowSubjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowSubjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowSubjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowSubjectId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowSubscriptionId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowSubscriptionId(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowSubscriptionId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowSubscriptionId> for ::std::string::String {
+    fn from(value: AttributionCreditRowSubscriptionId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowSubscriptionId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowSubscriptionId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowSubscriptionId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowSubscriptionId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowSubscriptionId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowTargetKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 600,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowTargetKey(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowTargetKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowTargetKey> for ::std::string::String {
+    fn from(value: AttributionCreditRowTargetKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowTargetKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 600usize {
+            return Err("longer than 600 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowTargetKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowTargetKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowTargetKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowTargetKey {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowTenantId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowTenantId(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowTenantId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowTenantId> for ::std::string::String {
+    fn from(value: AttributionCreditRowTenantId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowTenantId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowTenantId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditRowVariantKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionCreditRowVariantKey(::std::string::String);
+impl ::std::ops::Deref for AttributionCreditRowVariantKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionCreditRowVariantKey> for ::std::string::String {
+    fn from(value: AttributionCreditRowVariantKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionCreditRowVariantKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditRowVariantKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditRowVariantKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditRowVariantKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionCreditRowVariantKey {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionCreditStatus`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"credited\","]
+#[doc = "    \"no_eligible_touch\","]
+#[doc = "    \"not_applicable\","]
+#[doc = "    \"unresolved_identity\","]
+#[doc = "    \"deduped_to_movement\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AttributionCreditStatus {
+    #[serde(rename = "credited")]
+    Credited,
+    #[serde(rename = "no_eligible_touch")]
+    NoEligibleTouch,
+    #[serde(rename = "not_applicable")]
+    NotApplicable,
+    #[serde(rename = "unresolved_identity")]
+    UnresolvedIdentity,
+    #[serde(rename = "deduped_to_movement")]
+    DedupedToMovement,
+}
+impl ::std::fmt::Display for AttributionCreditStatus {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Credited => f.write_str("credited"),
+            Self::NoEligibleTouch => f.write_str("no_eligible_touch"),
+            Self::NotApplicable => f.write_str("not_applicable"),
+            Self::UnresolvedIdentity => f.write_str("unresolved_identity"),
+            Self::DedupedToMovement => f.write_str("deduped_to_movement"),
+        }
+    }
+}
+impl ::std::str::FromStr for AttributionCreditStatus {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "credited" => Ok(Self::Credited),
+            "no_eligible_touch" => Ok(Self::NoEligibleTouch),
+            "not_applicable" => Ok(Self::NotApplicable),
+            "unresolved_identity" => Ok(Self::UnresolvedIdentity),
+            "deduped_to_movement" => Ok(Self::DedupedToMovement),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionCreditStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionCreditStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionCreditStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AttributionDirection`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"positive\","]
+#[doc = "    \"negative\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AttributionDirection {
+    #[serde(rename = "positive")]
+    Positive,
+    #[serde(rename = "negative")]
+    Negative,
+}
+impl ::std::fmt::Display for AttributionDirection {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Positive => f.write_str("positive"),
+            Self::Negative => f.write_str("negative"),
+        }
+    }
+}
+impl ::std::str::FromStr for AttributionDirection {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "positive" => Ok(Self::Positive),
+            "negative" => Ok(Self::Negative),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionDirection {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionDirection {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionDirection {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AttributionEnvironmentScope`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"tenant_billing\","]
+#[doc = "    \"sdk_environment\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AttributionEnvironmentScope {
+    #[serde(rename = "tenant_billing")]
+    TenantBilling,
+    #[serde(rename = "sdk_environment")]
+    SdkEnvironment,
+}
+impl ::std::fmt::Display for AttributionEnvironmentScope {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::TenantBilling => f.write_str("tenant_billing"),
+            Self::SdkEnvironment => f.write_str("sdk_environment"),
+        }
+    }
+}
+impl ::std::str::FromStr for AttributionEnvironmentScope {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "tenant_billing" => Ok(Self::TenantBilling),
+            "sdk_environment" => Ok(Self::SdkEnvironment),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionEnvironmentScope {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionEnvironmentScope {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionEnvironmentScope {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AttributionLane`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"placement\","]
+#[doc = "    \"message\","]
+#[doc = "    \"experiment\","]
+#[doc = "    \"gate\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AttributionLane {
+    #[serde(rename = "placement")]
+    Placement,
+    #[serde(rename = "message")]
+    Message,
+    #[serde(rename = "experiment")]
+    Experiment,
+    #[serde(rename = "gate")]
+    Gate,
+}
+impl ::std::fmt::Display for AttributionLane {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Placement => f.write_str("placement"),
+            Self::Message => f.write_str("message"),
+            Self::Experiment => f.write_str("experiment"),
+            Self::Gate => f.write_str("gate"),
+        }
+    }
+}
+impl ::std::str::FromStr for AttributionLane {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "placement" => Ok(Self::Placement),
+            "message" => Ok(Self::Message),
+            "experiment" => Ok(Self::Experiment),
+            "gate" => Ok(Self::Gate),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionLane {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionLane {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionLane {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AttributionLineage`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"single\","]
+#[doc = "    \"partial\","]
+#[doc = "    \"day_close\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AttributionLineage {
+    #[serde(rename = "single")]
+    Single,
+    #[serde(rename = "partial")]
+    Partial,
+    #[serde(rename = "day_close")]
+    DayClose,
+}
+impl ::std::fmt::Display for AttributionLineage {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Single => f.write_str("single"),
+            Self::Partial => f.write_str("partial"),
+            Self::DayClose => f.write_str("day_close"),
+        }
+    }
+}
+impl ::std::str::FromStr for AttributionLineage {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "single" => Ok(Self::Single),
+            "partial" => Ok(Self::Partial),
+            "day_close" => Ok(Self::DayClose),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionLineage {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionLineage {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionLineage {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AttributionMoneyBasis`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"item_mrr_delta\","]
+#[doc = "    \"sdk_reported_amount\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AttributionMoneyBasis {
+    #[serde(rename = "item_mrr_delta")]
+    ItemMrrDelta,
+    #[serde(rename = "sdk_reported_amount")]
+    SdkReportedAmount,
+}
+impl ::std::fmt::Display for AttributionMoneyBasis {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::ItemMrrDelta => f.write_str("item_mrr_delta"),
+            Self::SdkReportedAmount => f.write_str("sdk_reported_amount"),
+        }
+    }
+}
+impl ::std::str::FromStr for AttributionMoneyBasis {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "item_mrr_delta" => Ok(Self::ItemMrrDelta),
+            "sdk_reported_amount" => Ok(Self::SdkReportedAmount),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionMoneyBasis {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionMoneyBasis {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionMoneyBasis {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AttributionRunKind`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"landed\","]
+#[doc = "    \"sweep\","]
+#[doc = "    \"rekey\","]
+#[doc = "    \"policy_change\","]
+#[doc = "    \"restate\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AttributionRunKind {
+    #[serde(rename = "landed")]
+    Landed,
+    #[serde(rename = "sweep")]
+    Sweep,
+    #[serde(rename = "rekey")]
+    Rekey,
+    #[serde(rename = "policy_change")]
+    PolicyChange,
+    #[serde(rename = "restate")]
+    Restate,
+}
+impl ::std::fmt::Display for AttributionRunKind {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Landed => f.write_str("landed"),
+            Self::Sweep => f.write_str("sweep"),
+            Self::Rekey => f.write_str("rekey"),
+            Self::PolicyChange => f.write_str("policy_change"),
+            Self::Restate => f.write_str("restate"),
+        }
+    }
+}
+impl ::std::str::FromStr for AttributionRunKind {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "landed" => Ok(Self::Landed),
+            "sweep" => Ok(Self::Sweep),
+            "rekey" => Ok(Self::Rekey),
+            "policy_change" => Ok(Self::PolicyChange),
+            "restate" => Ok(Self::Restate),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionRunKind {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionRunKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionRunKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AttributionRunRow`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"account_key\","]
+#[doc = "    \"account_resolved\","]
+#[doc = "    \"attribution_policy_version\","]
+#[doc = "    \"attribution_version\","]
+#[doc = "    \"content_hash\","]
+#[doc = "    \"created_at\","]
+#[doc = "    \"dedupe_subject_id\","]
+#[doc = "    \"deleted_at\","]
+#[doc = "    \"environment_id\","]
+#[doc = "    \"environment_scope\","]
+#[doc = "    \"identity_snapshot_hash\","]
+#[doc = "    \"is_test\","]
+#[doc = "    \"lineage\","]
+#[doc = "    \"member_keys\","]
+#[doc = "    \"ran_at\","]
+#[doc = "    \"rekeyed_from_subject_id\","]
+#[doc = "    \"run_kind\","]
+#[doc = "    \"settled\","]
+#[doc = "    \"settled_at\","]
+#[doc = "    \"settled_reason\","]
+#[doc = "    \"subject_at\","]
+#[doc = "    \"subject_id\","]
+#[doc = "    \"subject_kind\","]
+#[doc = "    \"telemetry_watermark_at\","]
+#[doc = "    \"tenant_id\","]
+#[doc = "    \"trigger_event_id\","]
+#[doc = "    \"user_count\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"account_key\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 512,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"account_resolved\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"attribution_policy_version\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 128,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"pattern\": \"^[A-Za-z0-9_.:@/+-]+$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"attribution_version\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 2147483647.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"content_hash\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^[0-9a-f]{64}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"created_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"dedupe_subject_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 2048,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"deleted_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"environment_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"environment_scope\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionEnvironmentScope\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"identity_snapshot_hash\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^[0-9a-f]{64}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"is_test\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"lineage\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionLineage\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"member_keys\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 65535,"]
+#[doc = "      \"minLength\": 2,"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"ran_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"rekeyed_from_subject_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 2048,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"run_kind\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionRunKind\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"settled\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"settled_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"settled_reason\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/$defs/AttributionSettledReason\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"subject_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"subject_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 2048,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"subject_kind\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionSubjectKind\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"telemetry_watermark_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"tenant_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"trigger_event_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"user_count\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 2147483647.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-context\": \"billing\","]
+#[doc = "  \"x-revturbine-in-config\": false,"]
+#[doc = "  \"x-revturbine-persistence\": {"]
+#[doc = "    \"indexes\": ["]
+#[doc = "      ["]
+#[doc = "        \"tenant_id\","]
+#[doc = "        \"settled\","]
+#[doc = "        \"subject_at\""]
+#[doc = "      ]"]
+#[doc = "    ],"]
+#[doc = "    \"table\": \"attributionRuns\","]
+#[doc = "    \"uniqueBy\": ["]
+#[doc = "      \"tenant_id\","]
+#[doc = "      \"subject_kind\","]
+#[doc = "      \"subject_id\","]
+#[doc = "      \"attribution_policy_version\","]
+#[doc = "      \"attribution_version\""]
+#[doc = "    ]"]
+#[doc = "  },"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"persisted\","]
+#[doc = "  \"x-revturbine-sdk-input\": false,"]
+#[doc = "  \"x-revturbine-source\": \"runtime\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AttributionRunRow {
+    pub account_key: AttributionRunRowAccountKey,
+    pub account_resolved: bool,
+    pub attribution_policy_version: AttributionRunRowAttributionPolicyVersion,
+    pub attribution_version: ::std::num::NonZeroU64,
+    pub content_hash: AttributionRunRowContentHash,
+    pub created_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub dedupe_subject_id: ::std::option::Option<AttributionRunRowDedupeSubjectId>,
+    pub deleted_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    pub environment_id: AttributionRunRowEnvironmentId,
+    pub environment_scope: AttributionEnvironmentScope,
+    pub identity_snapshot_hash: AttributionRunRowIdentitySnapshotHash,
+    pub is_test: bool,
+    pub lineage: AttributionLineage,
+    pub member_keys: AttributionRunRowMemberKeys,
+    pub ran_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub rekeyed_from_subject_id: ::std::option::Option<AttributionRunRowRekeyedFromSubjectId>,
+    pub run_kind: AttributionRunKind,
+    pub settled: bool,
+    pub settled_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    pub settled_reason: ::std::option::Option<AttributionSettledReason>,
+    pub subject_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub subject_id: AttributionRunRowSubjectId,
+    pub subject_kind: AttributionSubjectKind,
+    pub telemetry_watermark_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    pub tenant_id: AttributionRunRowTenantId,
+    pub trigger_event_id: AttributionRunRowTriggerEventId,
+    pub user_count: i64,
+}
+#[doc = "`AttributionRunRowAccountKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 512,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionRunRowAccountKey(::std::string::String);
+impl ::std::ops::Deref for AttributionRunRowAccountKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionRunRowAccountKey> for ::std::string::String {
+    fn from(value: AttributionRunRowAccountKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionRunRowAccountKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 512usize {
+            return Err("longer than 512 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionRunRowAccountKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionRunRowAccountKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionRunRowAccountKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionRunRowAccountKey {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionRunRowAttributionPolicyVersion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 128,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"pattern\": \"^[A-Za-z0-9_.:@/+-]+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionRunRowAttributionPolicyVersion(::std::string::String);
+impl ::std::ops::Deref for AttributionRunRowAttributionPolicyVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionRunRowAttributionPolicyVersion> for ::std::string::String {
+    fn from(value: AttributionRunRowAttributionPolicyVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionRunRowAttributionPolicyVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Za-z0-9_.:@/+-]+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Za-z0-9_.:@/+-]+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionRunRowAttributionPolicyVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionRunRowAttributionPolicyVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionRunRowAttributionPolicyVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionRunRowAttributionPolicyVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionRunRowContentHash`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[0-9a-f]{64}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionRunRowContentHash(::std::string::String);
+impl ::std::ops::Deref for AttributionRunRowContentHash {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionRunRowContentHash> for ::std::string::String {
+    fn from(value: AttributionRunRowContentHash) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionRunRowContentHash {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[0-9a-f]{64}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[0-9a-f]{64}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionRunRowContentHash {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionRunRowContentHash {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionRunRowContentHash {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionRunRowContentHash {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionRunRowDedupeSubjectId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 2048,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionRunRowDedupeSubjectId(::std::string::String);
+impl ::std::ops::Deref for AttributionRunRowDedupeSubjectId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionRunRowDedupeSubjectId> for ::std::string::String {
+    fn from(value: AttributionRunRowDedupeSubjectId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionRunRowDedupeSubjectId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 2048usize {
+            return Err("longer than 2048 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionRunRowDedupeSubjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionRunRowDedupeSubjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionRunRowDedupeSubjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionRunRowDedupeSubjectId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionRunRowEnvironmentId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionRunRowEnvironmentId(::std::string::String);
+impl ::std::ops::Deref for AttributionRunRowEnvironmentId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionRunRowEnvironmentId> for ::std::string::String {
+    fn from(value: AttributionRunRowEnvironmentId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionRunRowEnvironmentId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionRunRowEnvironmentId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionRunRowEnvironmentId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionRunRowEnvironmentId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionRunRowEnvironmentId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionRunRowIdentitySnapshotHash`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[0-9a-f]{64}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionRunRowIdentitySnapshotHash(::std::string::String);
+impl ::std::ops::Deref for AttributionRunRowIdentitySnapshotHash {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionRunRowIdentitySnapshotHash> for ::std::string::String {
+    fn from(value: AttributionRunRowIdentitySnapshotHash) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionRunRowIdentitySnapshotHash {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[0-9a-f]{64}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[0-9a-f]{64}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionRunRowIdentitySnapshotHash {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionRunRowIdentitySnapshotHash {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionRunRowIdentitySnapshotHash {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionRunRowIdentitySnapshotHash {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionRunRowMemberKeys`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 65535,"]
+#[doc = "  \"minLength\": 2,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionRunRowMemberKeys(::std::string::String);
+impl ::std::ops::Deref for AttributionRunRowMemberKeys {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionRunRowMemberKeys> for ::std::string::String {
+    fn from(value: AttributionRunRowMemberKeys) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionRunRowMemberKeys {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 65535usize {
+            return Err("longer than 65535 characters".into());
+        }
+        if value.chars().count() < 2usize {
+            return Err("shorter than 2 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionRunRowMemberKeys {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionRunRowMemberKeys {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionRunRowMemberKeys {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionRunRowMemberKeys {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionRunRowRekeyedFromSubjectId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 2048,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionRunRowRekeyedFromSubjectId(::std::string::String);
+impl ::std::ops::Deref for AttributionRunRowRekeyedFromSubjectId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionRunRowRekeyedFromSubjectId> for ::std::string::String {
+    fn from(value: AttributionRunRowRekeyedFromSubjectId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionRunRowRekeyedFromSubjectId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 2048usize {
+            return Err("longer than 2048 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionRunRowRekeyedFromSubjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionRunRowRekeyedFromSubjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionRunRowRekeyedFromSubjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionRunRowRekeyedFromSubjectId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionRunRowSubjectId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 2048,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionRunRowSubjectId(::std::string::String);
+impl ::std::ops::Deref for AttributionRunRowSubjectId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionRunRowSubjectId> for ::std::string::String {
+    fn from(value: AttributionRunRowSubjectId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionRunRowSubjectId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 2048usize {
+            return Err("longer than 2048 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionRunRowSubjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionRunRowSubjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionRunRowSubjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionRunRowSubjectId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionRunRowTenantId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionRunRowTenantId(::std::string::String);
+impl ::std::ops::Deref for AttributionRunRowTenantId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionRunRowTenantId> for ::std::string::String {
+    fn from(value: AttributionRunRowTenantId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionRunRowTenantId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionRunRowTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionRunRowTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionRunRowTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionRunRowTenantId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionRunRowTriggerEventId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionRunRowTriggerEventId(::std::string::String);
+impl ::std::ops::Deref for AttributionRunRowTriggerEventId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionRunRowTriggerEventId> for ::std::string::String {
+    fn from(value: AttributionRunRowTriggerEventId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionRunRowTriggerEventId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionRunRowTriggerEventId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionRunRowTriggerEventId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionRunRowTriggerEventId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionRunRowTriggerEventId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionSettledReason`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"watermark\","]
+#[doc = "    \"cap\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AttributionSettledReason {
+    #[serde(rename = "watermark")]
+    Watermark,
+    #[serde(rename = "cap")]
+    Cap,
+}
+impl ::std::fmt::Display for AttributionSettledReason {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Watermark => f.write_str("watermark"),
+            Self::Cap => f.write_str("cap"),
+        }
+    }
+}
+impl ::std::str::FromStr for AttributionSettledReason {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "watermark" => Ok(Self::Watermark),
+            "cap" => Ok(Self::Cap),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionSettledReason {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionSettledReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionSettledReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AttributionSubjectKind`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"movement\","]
+#[doc = "    \"sdk_conversion\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AttributionSubjectKind {
+    #[serde(rename = "movement")]
+    Movement,
+    #[serde(rename = "sdk_conversion")]
+    SdkConversion,
+}
+impl ::std::fmt::Display for AttributionSubjectKind {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Movement => f.write_str("movement"),
+            Self::SdkConversion => f.write_str("sdk_conversion"),
+        }
+    }
+}
+impl ::std::str::FromStr for AttributionSubjectKind {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "movement" => Ok(Self::Movement),
+            "sdk_conversion" => Ok(Self::SdkConversion),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionSubjectKind {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionSubjectKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionSubjectKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AttributionTouchKind`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"exposure\","]
+#[doc = "    \"cta\","]
+#[doc = "    \"gate_denied\","]
+#[doc = "    \"gate\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum AttributionTouchKind {
+    #[serde(rename = "exposure")]
+    Exposure,
+    #[serde(rename = "cta")]
+    Cta,
+    #[serde(rename = "gate_denied")]
+    GateDenied,
+    #[serde(rename = "gate")]
+    Gate,
+}
+impl ::std::fmt::Display for AttributionTouchKind {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Exposure => f.write_str("exposure"),
+            Self::Cta => f.write_str("cta"),
+            Self::GateDenied => f.write_str("gate_denied"),
+            Self::Gate => f.write_str("gate"),
+        }
+    }
+}
+impl ::std::str::FromStr for AttributionTouchKind {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "exposure" => Ok(Self::Exposure),
+            "cta" => Ok(Self::Cta),
+            "gate_denied" => Ok(Self::GateDenied),
+            "gate" => Ok(Self::Gate),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchKind {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`AttributionTouchRow`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"account_key\","]
+#[doc = "    \"account_resolved\","]
+#[doc = "    \"attribution_policy_version\","]
+#[doc = "    \"attribution_version\","]
+#[doc = "    \"created_at\","]
+#[doc = "    \"credit_basis\","]
+#[doc = "    \"decision_id\","]
+#[doc = "    \"deleted_at\","]
+#[doc = "    \"elapsed_seconds\","]
+#[doc = "    \"entitlement_handle\","]
+#[doc = "    \"environment_id\","]
+#[doc = "    \"environment_scope\","]
+#[doc = "    \"experiment_id\","]
+#[doc = "    \"exposure_id\","]
+#[doc = "    \"is_test\","]
+#[doc = "    \"lineage\","]
+#[doc = "    \"message_shown\","]
+#[doc = "    \"movement_direction\","]
+#[doc = "    \"movement_kind\","]
+#[doc = "    \"outcome\","]
+#[doc = "    \"payload_id\","]
+#[doc = "    \"placement_id\","]
+#[doc = "    \"rule_handle\","]
+#[doc = "    \"subject_at\","]
+#[doc = "    \"subject_id\","]
+#[doc = "    \"subject_kind\","]
+#[doc = "    \"subscription_id\","]
+#[doc = "    \"subscription_kind\","]
+#[doc = "    \"tenant_id\","]
+#[doc = "    \"touch_depth\","]
+#[doc = "    \"touch_id\","]
+#[doc = "    \"touch_kind\","]
+#[doc = "    \"touch_rank\","]
+#[doc = "    \"touch_user_id\","]
+#[doc = "    \"touched_at\","]
+#[doc = "    \"variant_key\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"account_key\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 512,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"account_resolved\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"attribution_policy_version\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 128,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"pattern\": \"^[A-Za-z0-9_.:@/+-]+$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"attribution_version\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 2147483647.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"created_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"credit_basis\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionCreditBasis\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"decision_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"deleted_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"elapsed_seconds\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"number\","]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"entitlement_handle\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"environment_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"environment_scope\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionEnvironmentScope\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"experiment_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"exposure_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"is_test\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"lineage\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionLineage\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"message_shown\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"movement_direction\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionDirection\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"movement_kind\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/MrrMovementKind\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"outcome\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 64,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"payload_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"placement_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"rule_handle\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"subject_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"subject_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 2048,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"subject_kind\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionSubjectKind\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_kind\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/$defs/MrrMovementKind\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"tenant_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"touch_depth\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 10.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"touch_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"touch_kind\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/AttributionTouchKind\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"touch_rank\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 10.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"touch_user_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"touched_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"variant_key\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-context\": \"billing\","]
+#[doc = "  \"x-revturbine-in-config\": false,"]
+#[doc = "  \"x-revturbine-persistence\": {"]
+#[doc = "    \"indexes\": ["]
+#[doc = "      ["]
+#[doc = "        \"tenant_id\","]
+#[doc = "        \"subject_kind\","]
+#[doc = "        \"subject_id\""]
+#[doc = "      ],"]
+#[doc = "      ["]
+#[doc = "        \"tenant_id\","]
+#[doc = "        \"account_key\","]
+#[doc = "        \"subject_at\""]
+#[doc = "      ]"]
+#[doc = "    ],"]
+#[doc = "    \"table\": \"attributionTouches\","]
+#[doc = "    \"uniqueBy\": ["]
+#[doc = "      \"tenant_id\","]
+#[doc = "      \"subject_kind\","]
+#[doc = "      \"subject_id\","]
+#[doc = "      \"attribution_policy_version\","]
+#[doc = "      \"touch_kind\","]
+#[doc = "      \"touch_rank\""]
+#[doc = "    ]"]
+#[doc = "  },"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"persisted\","]
+#[doc = "  \"x-revturbine-sdk-input\": false,"]
+#[doc = "  \"x-revturbine-source\": \"runtime\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AttributionTouchRow {
+    pub account_key: AttributionTouchRowAccountKey,
+    pub account_resolved: bool,
+    pub attribution_policy_version: AttributionTouchRowAttributionPolicyVersion,
+    pub attribution_version: ::std::num::NonZeroU64,
+    pub created_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub credit_basis: AttributionCreditBasis,
+    pub decision_id: ::std::option::Option<AttributionTouchRowDecisionId>,
+    pub deleted_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    pub elapsed_seconds: f64,
+    pub entitlement_handle: ::std::option::Option<AttributionTouchRowEntitlementHandle>,
+    pub environment_id: AttributionTouchRowEnvironmentId,
+    pub environment_scope: AttributionEnvironmentScope,
+    pub experiment_id: ::std::option::Option<AttributionTouchRowExperimentId>,
+    pub exposure_id: ::std::option::Option<AttributionTouchRowExposureId>,
+    pub is_test: bool,
+    pub lineage: AttributionLineage,
+    pub message_shown: ::std::option::Option<bool>,
+    pub movement_direction: AttributionDirection,
+    pub movement_kind: MrrMovementKind,
+    pub outcome: ::std::option::Option<AttributionTouchRowOutcome>,
+    pub payload_id: AttributionTouchRowPayloadId,
+    pub placement_id: AttributionTouchRowPlacementId,
+    pub rule_handle: ::std::option::Option<AttributionTouchRowRuleHandle>,
+    pub subject_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub subject_id: AttributionTouchRowSubjectId,
+    pub subject_kind: AttributionSubjectKind,
+    pub subscription_id: ::std::option::Option<AttributionTouchRowSubscriptionId>,
+    pub subscription_kind: ::std::option::Option<MrrMovementKind>,
+    pub tenant_id: AttributionTouchRowTenantId,
+    pub touch_depth: ::std::num::NonZeroU64,
+    pub touch_id: AttributionTouchRowTouchId,
+    pub touch_kind: AttributionTouchKind,
+    pub touch_rank: ::std::num::NonZeroU64,
+    pub touch_user_id: AttributionTouchRowTouchUserId,
+    pub touched_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub variant_key: ::std::option::Option<AttributionTouchRowVariantKey>,
+}
+#[doc = "`AttributionTouchRowAccountKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 512,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowAccountKey(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowAccountKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowAccountKey> for ::std::string::String {
+    fn from(value: AttributionTouchRowAccountKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowAccountKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 512usize {
+            return Err("longer than 512 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowAccountKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchRowAccountKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchRowAccountKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowAccountKey {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionTouchRowAttributionPolicyVersion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 128,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"pattern\": \"^[A-Za-z0-9_.:@/+-]+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowAttributionPolicyVersion(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowAttributionPolicyVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowAttributionPolicyVersion> for ::std::string::String {
+    fn from(value: AttributionTouchRowAttributionPolicyVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowAttributionPolicyVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Za-z0-9_.:@/+-]+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Za-z0-9_.:@/+-]+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowAttributionPolicyVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for AttributionTouchRowAttributionPolicyVersion
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for AttributionTouchRowAttributionPolicyVersion
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowAttributionPolicyVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionTouchRowDecisionId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowDecisionId(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowDecisionId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowDecisionId> for ::std::string::String {
+    fn from(value: AttributionTouchRowDecisionId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowDecisionId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowDecisionId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchRowDecisionId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchRowDecisionId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowDecisionId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionTouchRowEntitlementHandle`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowEntitlementHandle(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowEntitlementHandle {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowEntitlementHandle> for ::std::string::String {
+    fn from(value: AttributionTouchRowEntitlementHandle) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowEntitlementHandle {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowEntitlementHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchRowEntitlementHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchRowEntitlementHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowEntitlementHandle {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionTouchRowEnvironmentId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowEnvironmentId(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowEnvironmentId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowEnvironmentId> for ::std::string::String {
+    fn from(value: AttributionTouchRowEnvironmentId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowEnvironmentId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowEnvironmentId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchRowEnvironmentId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchRowEnvironmentId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowEnvironmentId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionTouchRowExperimentId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowExperimentId(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowExperimentId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowExperimentId> for ::std::string::String {
+    fn from(value: AttributionTouchRowExperimentId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowExperimentId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowExperimentId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchRowExperimentId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchRowExperimentId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowExperimentId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionTouchRowExposureId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowExposureId(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowExposureId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowExposureId> for ::std::string::String {
+    fn from(value: AttributionTouchRowExposureId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowExposureId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowExposureId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchRowExposureId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchRowExposureId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowExposureId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionTouchRowOutcome`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 64,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowOutcome(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowOutcome {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowOutcome> for ::std::string::String {
+    fn from(value: AttributionTouchRowOutcome) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowOutcome {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 64usize {
+            return Err("longer than 64 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowOutcome {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchRowOutcome {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchRowOutcome {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowOutcome {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionTouchRowPayloadId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowPayloadId(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowPayloadId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowPayloadId> for ::std::string::String {
+    fn from(value: AttributionTouchRowPayloadId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowPayloadId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowPayloadId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchRowPayloadId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchRowPayloadId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowPayloadId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionTouchRowPlacementId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowPlacementId(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowPlacementId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowPlacementId> for ::std::string::String {
+    fn from(value: AttributionTouchRowPlacementId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowPlacementId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowPlacementId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchRowPlacementId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchRowPlacementId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowPlacementId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionTouchRowRuleHandle`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowRuleHandle(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowRuleHandle {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowRuleHandle> for ::std::string::String {
+    fn from(value: AttributionTouchRowRuleHandle) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowRuleHandle {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowRuleHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchRowRuleHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchRowRuleHandle {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowRuleHandle {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionTouchRowSubjectId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 2048,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowSubjectId(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowSubjectId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowSubjectId> for ::std::string::String {
+    fn from(value: AttributionTouchRowSubjectId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowSubjectId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 2048usize {
+            return Err("longer than 2048 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowSubjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchRowSubjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchRowSubjectId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowSubjectId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionTouchRowSubscriptionId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowSubscriptionId(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowSubscriptionId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowSubscriptionId> for ::std::string::String {
+    fn from(value: AttributionTouchRowSubscriptionId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowSubscriptionId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowSubscriptionId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchRowSubscriptionId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchRowSubscriptionId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowSubscriptionId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionTouchRowTenantId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowTenantId(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowTenantId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowTenantId> for ::std::string::String {
+    fn from(value: AttributionTouchRowTenantId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowTenantId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchRowTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchRowTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowTenantId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionTouchRowTouchId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowTouchId(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowTouchId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowTouchId> for ::std::string::String {
+    fn from(value: AttributionTouchRowTouchId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowTouchId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowTouchId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchRowTouchId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchRowTouchId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowTouchId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionTouchRowTouchUserId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowTouchUserId(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowTouchUserId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowTouchUserId> for ::std::string::String {
+    fn from(value: AttributionTouchRowTouchUserId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowTouchUserId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowTouchUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchRowTouchUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchRowTouchUserId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowTouchUserId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`AttributionTouchRowVariantKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct AttributionTouchRowVariantKey(::std::string::String);
+impl ::std::ops::Deref for AttributionTouchRowVariantKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<AttributionTouchRowVariantKey> for ::std::string::String {
+    fn from(value: AttributionTouchRowVariantKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for AttributionTouchRowVariantKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for AttributionTouchRowVariantKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for AttributionTouchRowVariantKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for AttributionTouchRowVariantKey {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for AttributionTouchRowVariantKey {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -81088,6 +86838,1229 @@ impl<'de> ::serde::Deserialize<'de> for BillingMappingHistoryTenantId {
             })
     }
 }
+#[doc = "`BillingMirrorCheckoutMode`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"payment\","]
+#[doc = "    \"subscription\","]
+#[doc = "    \"setup\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingMirrorCheckoutMode {
+    #[serde(rename = "payment")]
+    Payment,
+    #[serde(rename = "subscription")]
+    Subscription,
+    #[serde(rename = "setup")]
+    Setup,
+}
+impl ::std::fmt::Display for BillingMirrorCheckoutMode {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Payment => f.write_str("payment"),
+            Self::Subscription => f.write_str("subscription"),
+            Self::Setup => f.write_str("setup"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingMirrorCheckoutMode {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "payment" => Ok(Self::Payment),
+            "subscription" => Ok(Self::Subscription),
+            "setup" => Ok(Self::Setup),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingMirrorCheckoutMode {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingMirrorCheckoutMode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingMirrorCheckoutMode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`BillingMirrorCheckoutSession`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"client_reference_id\","]
+#[doc = "    \"completed_at\","]
+#[doc = "    \"coverage_reasons\","]
+#[doc = "    \"coverage_state\","]
+#[doc = "    \"deleted_at\","]
+#[doc = "    \"invoice_provider_id\","]
+#[doc = "    \"last_synced_at\","]
+#[doc = "    \"livemode\","]
+#[doc = "    \"metadata_decision_id\","]
+#[doc = "    \"metadata_placement_id\","]
+#[doc = "    \"mirror_version\","]
+#[doc = "    \"mode\","]
+#[doc = "    \"observed_at\","]
+#[doc = "    \"payer_provider_id\","]
+#[doc = "    \"provider\","]
+#[doc = "    \"provider_account_id\","]
+#[doc = "    \"provider_extension\","]
+#[doc = "    \"provider_id\","]
+#[doc = "    \"source_updated_at\","]
+#[doc = "    \"subscription_provider_id\","]
+#[doc = "    \"tenant_id\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"client_reference_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 200,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"completed_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"coverage_reasons\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"anyOf\": ["]
+#[doc = "          {"]
+#[doc = "            \"$ref\": \"#/$defs/BillingCoverageGapReason\""]
+#[doc = "          },"]
+#[doc = "          {"]
+#[doc = "            \"$ref\": \"#/$defs/BillingCoverageUnavailableReason\""]
+#[doc = "          }"]
+#[doc = "        ]"]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 250,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"coverage_state\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/BillingMirrorCoverageState\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"deleted_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date-time\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"invoice_provider_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"last_synced_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"livemode\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"metadata_decision_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 500,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"metadata_placement_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 500,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"mirror_version\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 2147483647.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"mode\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/BillingMirrorCheckoutMode\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"observed_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"payer_provider_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"provider\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"$ref\": \"#/$defs/BillingMirrorProvider\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"provider_account_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"provider_extension\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"object\","]
+#[doc = "          \"additionalProperties\": {},"]
+#[doc = "          \"propertyNames\": {"]
+#[doc = "            \"type\": \"string\","]
+#[doc = "            \"maxLength\": 64,"]
+#[doc = "            \"minLength\": 1"]
+#[doc = "          }"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"provider_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"source_updated_at\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date-time\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))T(?:(?:[01]\\\\d|2[0-3]):[0-5]\\\\d(?::[0-5]\\\\d(?:\\\\.\\\\d+)?)?(?:Z|([+-](?:[01]\\\\d|2[0-3]):[0-5]\\\\d)))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_provider_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"tenant_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 255,"]
+#[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-context\": \"billing\","]
+#[doc = "  \"x-revturbine-in-config\": false,"]
+#[doc = "  \"x-revturbine-persistence\": {"]
+#[doc = "    \"indexes\": ["]
+#[doc = "      ["]
+#[doc = "        \"tenant_id\","]
+#[doc = "        \"provider\","]
+#[doc = "        \"payer_provider_id\""]
+#[doc = "      ],"]
+#[doc = "      ["]
+#[doc = "        \"tenant_id\","]
+#[doc = "        \"provider\","]
+#[doc = "        \"subscription_provider_id\""]
+#[doc = "      ],"]
+#[doc = "      ["]
+#[doc = "        \"tenant_id\","]
+#[doc = "        \"completed_at\""]
+#[doc = "      ]"]
+#[doc = "    ],"]
+#[doc = "    \"table\": \"billingMirrorCheckoutSession\","]
+#[doc = "    \"uniqueBy\": ["]
+#[doc = "      \"tenant_id\","]
+#[doc = "      \"provider\","]
+#[doc = "      \"provider_id\""]
+#[doc = "    ]"]
+#[doc = "  },"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"persisted\","]
+#[doc = "  \"x-revturbine-sdk-input\": false,"]
+#[doc = "  \"x-revturbine-source\": \"runtime\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BillingMirrorCheckoutSession {
+    pub client_reference_id: ::std::option::Option<BillingMirrorCheckoutSessionClientReferenceId>,
+    pub completed_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    pub coverage_reasons: ::std::vec::Vec<BillingMirrorCheckoutSessionCoverageReasonsItem>,
+    pub coverage_state: BillingMirrorCoverageState,
+    pub deleted_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    pub invoice_provider_id: ::std::option::Option<BillingMirrorCheckoutSessionInvoiceProviderId>,
+    pub last_synced_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub livemode: bool,
+    pub metadata_decision_id: ::std::option::Option<BillingMirrorCheckoutSessionMetadataDecisionId>,
+    pub metadata_placement_id:
+        ::std::option::Option<BillingMirrorCheckoutSessionMetadataPlacementId>,
+    pub mirror_version: ::std::num::NonZeroU64,
+    pub mode: BillingMirrorCheckoutMode,
+    pub observed_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub payer_provider_id: ::std::option::Option<BillingMirrorCheckoutSessionPayerProviderId>,
+    pub provider: BillingMirrorProvider,
+    pub provider_account_id: ::std::option::Option<BillingMirrorCheckoutSessionProviderAccountId>,
+    pub provider_extension: ::std::option::Option<
+        ::std::collections::HashMap<
+            BillingMirrorCheckoutSessionProviderExtensionKey,
+            ::serde_json::Value,
+        >,
+    >,
+    pub provider_id: BillingMirrorCheckoutSessionProviderId,
+    pub source_updated_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub subscription_provider_id:
+        ::std::option::Option<BillingMirrorCheckoutSessionSubscriptionProviderId>,
+    pub tenant_id: BillingMirrorCheckoutSessionTenantId,
+}
+#[doc = "`BillingMirrorCheckoutSessionClientReferenceId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 200,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingMirrorCheckoutSessionClientReferenceId(::std::string::String);
+impl ::std::ops::Deref for BillingMirrorCheckoutSessionClientReferenceId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingMirrorCheckoutSessionClientReferenceId> for ::std::string::String {
+    fn from(value: BillingMirrorCheckoutSessionClientReferenceId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingMirrorCheckoutSessionClientReferenceId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 200usize {
+            return Err("longer than 200 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingMirrorCheckoutSessionClientReferenceId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingMirrorCheckoutSessionClientReferenceId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for BillingMirrorCheckoutSessionClientReferenceId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingMirrorCheckoutSessionClientReferenceId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingMirrorCheckoutSessionCoverageReasonsItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"anyOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"$ref\": \"#/$defs/BillingCoverageGapReason\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"$ref\": \"#/$defs/BillingCoverageUnavailableReason\""]
+#[doc = "    }"]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+pub struct BillingMirrorCheckoutSessionCoverageReasonsItem {
+    #[serde(
+        flatten,
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub subtype_0: ::std::option::Option<BillingCoverageGapReason>,
+    #[serde(
+        flatten,
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub subtype_1: ::std::option::Option<BillingCoverageUnavailableReason>,
+}
+impl ::std::default::Default for BillingMirrorCheckoutSessionCoverageReasonsItem {
+    fn default() -> Self {
+        Self {
+            subtype_0: Default::default(),
+            subtype_1: Default::default(),
+        }
+    }
+}
+#[doc = "`BillingMirrorCheckoutSessionInvoiceProviderId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingMirrorCheckoutSessionInvoiceProviderId(::std::string::String);
+impl ::std::ops::Deref for BillingMirrorCheckoutSessionInvoiceProviderId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingMirrorCheckoutSessionInvoiceProviderId> for ::std::string::String {
+    fn from(value: BillingMirrorCheckoutSessionInvoiceProviderId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingMirrorCheckoutSessionInvoiceProviderId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingMirrorCheckoutSessionInvoiceProviderId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingMirrorCheckoutSessionInvoiceProviderId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for BillingMirrorCheckoutSessionInvoiceProviderId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingMirrorCheckoutSessionInvoiceProviderId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingMirrorCheckoutSessionMetadataDecisionId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 500,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingMirrorCheckoutSessionMetadataDecisionId(::std::string::String);
+impl ::std::ops::Deref for BillingMirrorCheckoutSessionMetadataDecisionId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingMirrorCheckoutSessionMetadataDecisionId>
+    for ::std::string::String
+{
+    fn from(value: BillingMirrorCheckoutSessionMetadataDecisionId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingMirrorCheckoutSessionMetadataDecisionId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 500usize {
+            return Err("longer than 500 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingMirrorCheckoutSessionMetadataDecisionId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingMirrorCheckoutSessionMetadataDecisionId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for BillingMirrorCheckoutSessionMetadataDecisionId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingMirrorCheckoutSessionMetadataDecisionId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingMirrorCheckoutSessionMetadataPlacementId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 500,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingMirrorCheckoutSessionMetadataPlacementId(::std::string::String);
+impl ::std::ops::Deref for BillingMirrorCheckoutSessionMetadataPlacementId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingMirrorCheckoutSessionMetadataPlacementId>
+    for ::std::string::String
+{
+    fn from(value: BillingMirrorCheckoutSessionMetadataPlacementId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingMirrorCheckoutSessionMetadataPlacementId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 500usize {
+            return Err("longer than 500 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingMirrorCheckoutSessionMetadataPlacementId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingMirrorCheckoutSessionMetadataPlacementId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for BillingMirrorCheckoutSessionMetadataPlacementId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingMirrorCheckoutSessionMetadataPlacementId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingMirrorCheckoutSessionPayerProviderId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingMirrorCheckoutSessionPayerProviderId(::std::string::String);
+impl ::std::ops::Deref for BillingMirrorCheckoutSessionPayerProviderId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingMirrorCheckoutSessionPayerProviderId> for ::std::string::String {
+    fn from(value: BillingMirrorCheckoutSessionPayerProviderId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingMirrorCheckoutSessionPayerProviderId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingMirrorCheckoutSessionPayerProviderId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingMirrorCheckoutSessionPayerProviderId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for BillingMirrorCheckoutSessionPayerProviderId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingMirrorCheckoutSessionPayerProviderId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingMirrorCheckoutSessionProviderAccountId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingMirrorCheckoutSessionProviderAccountId(::std::string::String);
+impl ::std::ops::Deref for BillingMirrorCheckoutSessionProviderAccountId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingMirrorCheckoutSessionProviderAccountId> for ::std::string::String {
+    fn from(value: BillingMirrorCheckoutSessionProviderAccountId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingMirrorCheckoutSessionProviderAccountId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingMirrorCheckoutSessionProviderAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingMirrorCheckoutSessionProviderAccountId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for BillingMirrorCheckoutSessionProviderAccountId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingMirrorCheckoutSessionProviderAccountId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingMirrorCheckoutSessionProviderExtensionKey`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 64,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingMirrorCheckoutSessionProviderExtensionKey(::std::string::String);
+impl ::std::ops::Deref for BillingMirrorCheckoutSessionProviderExtensionKey {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingMirrorCheckoutSessionProviderExtensionKey>
+    for ::std::string::String
+{
+    fn from(value: BillingMirrorCheckoutSessionProviderExtensionKey) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingMirrorCheckoutSessionProviderExtensionKey {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 64usize {
+            return Err("longer than 64 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingMirrorCheckoutSessionProviderExtensionKey {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingMirrorCheckoutSessionProviderExtensionKey
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for BillingMirrorCheckoutSessionProviderExtensionKey
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingMirrorCheckoutSessionProviderExtensionKey {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingMirrorCheckoutSessionProviderId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingMirrorCheckoutSessionProviderId(::std::string::String);
+impl ::std::ops::Deref for BillingMirrorCheckoutSessionProviderId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingMirrorCheckoutSessionProviderId> for ::std::string::String {
+    fn from(value: BillingMirrorCheckoutSessionProviderId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingMirrorCheckoutSessionProviderId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingMirrorCheckoutSessionProviderId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingMirrorCheckoutSessionProviderId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingMirrorCheckoutSessionProviderId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingMirrorCheckoutSessionProviderId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingMirrorCheckoutSessionSubscriptionProviderId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingMirrorCheckoutSessionSubscriptionProviderId(::std::string::String);
+impl ::std::ops::Deref for BillingMirrorCheckoutSessionSubscriptionProviderId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingMirrorCheckoutSessionSubscriptionProviderId>
+    for ::std::string::String
+{
+    fn from(value: BillingMirrorCheckoutSessionSubscriptionProviderId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingMirrorCheckoutSessionSubscriptionProviderId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingMirrorCheckoutSessionSubscriptionProviderId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String>
+    for BillingMirrorCheckoutSessionSubscriptionProviderId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String>
+    for BillingMirrorCheckoutSessionSubscriptionProviderId
+{
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingMirrorCheckoutSessionSubscriptionProviderId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`BillingMirrorCheckoutSessionTenantId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"readOnly\": true,"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1,"]
+#[doc = "  \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct BillingMirrorCheckoutSessionTenantId(::std::string::String);
+impl ::std::ops::Deref for BillingMirrorCheckoutSessionTenantId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<BillingMirrorCheckoutSessionTenantId> for ::std::string::String {
+    fn from(value: BillingMirrorCheckoutSessionTenantId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for BillingMirrorCheckoutSessionTenantId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingMirrorCheckoutSessionTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingMirrorCheckoutSessionTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingMirrorCheckoutSessionTenantId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for BillingMirrorCheckoutSessionTenantId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`BillingMirrorCoverageState`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -92199,6 +99172,7 @@ impl<'de> ::serde::Deserialize<'de> for BillingObservationContentHash {
 #[doc = "    \"invoice\","]
 #[doc = "    \"invoice_line\","]
 #[doc = "    \"payment\","]
+#[doc = "    \"checkout_session\","]
 #[doc = "    \"subscription_item_state\""]
 #[doc = "  ],"]
 #[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
@@ -92237,6 +99211,8 @@ pub enum BillingObservationEntityKind {
     InvoiceLine,
     #[serde(rename = "payment")]
     Payment,
+    #[serde(rename = "checkout_session")]
+    CheckoutSession,
     #[serde(rename = "subscription_item_state")]
     SubscriptionItemState,
 }
@@ -92252,6 +99228,7 @@ impl ::std::fmt::Display for BillingObservationEntityKind {
             Self::Invoice => f.write_str("invoice"),
             Self::InvoiceLine => f.write_str("invoice_line"),
             Self::Payment => f.write_str("payment"),
+            Self::CheckoutSession => f.write_str("checkout_session"),
             Self::SubscriptionItemState => f.write_str("subscription_item_state"),
         }
     }
@@ -92269,6 +99246,7 @@ impl ::std::str::FromStr for BillingObservationEntityKind {
             "invoice" => Ok(Self::Invoice),
             "invoice_line" => Ok(Self::InvoiceLine),
             "payment" => Ok(Self::Payment),
+            "checkout_session" => Ok(Self::CheckoutSession),
             "subscription_item_state" => Ok(Self::SubscriptionItemState),
             _ => Err("invalid value".into()),
         }
@@ -153753,6 +160731,10 @@ impl<'de> ::serde::Deserialize<'de> for ExportedConfigSchemaVersion {
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"mode\": {"]
+#[doc = "      \"$ref\": \"#/$defs/SegmentMode\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"name\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"minLength\": 1,"]
@@ -153784,6 +160766,8 @@ pub struct ExportedConfigSegmentsItem {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub experiment_handle: ::std::option::Option<ExportedConfigSegmentsItemExperimentHandle>,
     pub handle: ExportedConfigSegmentsItemHandle,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub mode: ::std::option::Option<SegmentMode>,
     pub name: ExportedConfigSegmentsItemName,
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
     pub predicates: ::std::vec::Vec<RevTurbineConfigSegmentsItemPredicatesItem>,
@@ -191087,6 +198071,10 @@ impl<'de> ::serde::Deserialize<'de> for PlaybookSchemaVersion {
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"mode\": {"]
+#[doc = "      \"$ref\": \"#/$defs/SegmentMode\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"name\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"minLength\": 1,"]
@@ -191118,6 +198106,8 @@ pub struct PlaybookSegmentsItem {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub experiment_handle: ::std::option::Option<PlaybookSegmentsItemExperimentHandle>,
     pub handle: PlaybookSegmentsItemHandle,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub mode: ::std::option::Option<SegmentMode>,
     pub name: PlaybookSegmentsItemName,
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
     pub predicates: ::std::vec::Vec<RevTurbineConfigSegmentsItemPredicatesItem>,
@@ -205651,6 +212641,10 @@ impl<'de> ::serde::Deserialize<'de> for RevTurbineConfigSegmentDimensionsItemNam
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"mode\": {"]
+#[doc = "      \"$ref\": \"#/$defs/SegmentMode\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"name\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"minLength\": 1,"]
@@ -205682,6 +212676,8 @@ pub struct RevTurbineConfigSegmentsItem {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub experiment_handle: ::std::option::Option<RevTurbineConfigSegmentsItemExperimentHandle>,
     pub handle: RevTurbineConfigSegmentsItemHandle,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub mode: ::std::option::Option<SegmentMode>,
     pub name: RevTurbineConfigSegmentsItemName,
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
     pub predicates: ::std::vec::Vec<RevTurbineConfigSegmentsItemPredicatesItem>,
@@ -245892,6 +252888,80 @@ impl<'de> ::serde::Deserialize<'de> for SegmentLibraryContextVersion {
             .map_err(|e: self::error::ConversionError| {
                 <D::Error as ::serde::de::Error>::custom(e.to_string())
             })
+    }
+}
+#[doc = "`SegmentMode`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"basic\","]
+#[doc = "    \"advanced\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum SegmentMode {
+    #[serde(rename = "basic")]
+    Basic,
+    #[serde(rename = "advanced")]
+    Advanced,
+}
+impl ::std::fmt::Display for SegmentMode {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Basic => f.write_str("basic"),
+            Self::Advanced => f.write_str("advanced"),
+        }
+    }
+}
+impl ::std::str::FromStr for SegmentMode {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "basic" => Ok(Self::Basic),
+            "advanced" => Ok(Self::Advanced),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for SegmentMode {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for SegmentMode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for SegmentMode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
     }
 }
 #[doc = "`SegmentName`"]

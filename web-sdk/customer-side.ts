@@ -89,10 +89,12 @@ import type {
   PredicateEvaluationResult,
 } from '@revt-eng/core';
 import {
+  classifySegment,
   evaluateSegmentEligibility,
   isReservedSegmentHandle,
   isReservedTraitKey,
   resolvePlacementComponentType,
+  segmentDimensionKeys,
 } from '@revt-eng/core';
 import {
   getEligibleAddons as coreGetEligibleAddons,
@@ -2979,6 +2981,22 @@ function evaluateSegmentPredicateForDiagnostics(
     }
   }
   return evaluatePredicateVerbose(predicate, narrowed);
+}
+
+/**
+ * Basic-segment combination for diagnostics (ST-1391): predicates on the same
+ * field are OR'd, fields are AND'd. `results` is `[field, matched]` per
+ * predicate.
+ */
+function fieldGroupsMatch(results: ReadonlyArray<readonly [string, boolean]>): boolean {
+  const byField = new Map<string, boolean>();
+  for (const [field, matched] of results) {
+    byField.set(field, (byField.get(field) ?? false) || matched);
+  }
+  for (const matched of byField.values()) {
+    if (!matched) return false;
+  }
+  return true;
 }
 
 /**
@@ -5893,10 +5911,9 @@ export class RevTurbineCustomerSdk {
     segmentDimensions: Record<string, string>;
   } {
     const playbook = this.getConfiguredPlaybook();
-    const segmentDimensions: Record<string, string> = {};
-    for (const segment of playbook?.segments ?? []) {
-      if (segment.dimension_id) segmentDimensions[segment.handle] = segment.dimension_id;
-    }
+    // ST-1391: the key is derived from each segment's predicates, so a stored
+    // `dimension_id` (the BUG-1389 upload placeholder) cannot decide it.
+    const segmentDimensions = segmentDimensionKeys(playbook?.segments ?? []);
     return {
       segmentIds: segmentIds ?? this.getTargeting().segmentIds,
       segmentDimensions,
@@ -6462,8 +6479,13 @@ export class RevTurbineCustomerSdk {
       const predicates = Array.isArray(segment.predicates)
         ? segment.predicates.map((predicate) => evaluateSegmentPredicateForDiagnostics(predicate, targeting.traits as SdkTraits))
         : [];
+      // ST-1391: mirror `evaluateSegments` — a basic segment ORs predicates on
+      // the same field and ANDs across fields; an advanced one is a flat AND.
+      const sourcePredicates = Array.isArray(segment.predicates) ? segment.predicates : [];
       const matched = predicates.length > 0
-        ? predicates.every((predicate) => predicate.matched)
+        ? classifySegment(segment).mode === 'advanced'
+          ? predicates.every((predicate) => predicate.matched)
+          : fieldGroupsMatch(sourcePredicates.map((p, i) => [p.field, predicates[i]?.matched === true]))
         : segmentSet.has(segment.handle);
 
       return {
@@ -6513,16 +6535,14 @@ export class RevTurbineCustomerSdk {
 
     // Build a segment_id → dimension_id lookup so the diagnostic mirrors
     // scaffold's intra-dimension-OR + cross-dimension-AND evaluator
-    // (plan #39 REQ-8 / REQ-28). Older exports without `dimension_id`
-    // fall back to flat-OR via the `__no_dim__` bucket inside the helper.
-    const segmentDimensionsById = new Map<string, string>();
-    if (Array.isArray(playbook?.segments)) {
-      for (const segment of playbook.segments) {
-        const segId = firstStringValue(segment.handle);
-        const dim = firstStringValue(segment.dimension_id);
-        if (segId && dim) segmentDimensionsById.set(segId, dim);
-      }
-    }
+    // (plan #39 REQ-8 / REQ-28). ST-1391: the dimension is derived from each
+    // segment's predicates (`segmentDimensionKeys`); segments with no key fall
+    // into the `__no_dim__` bucket inside the helper.
+    const segmentDimensionsById = new Map<string, string>(
+      Object.entries(
+        Array.isArray(playbook?.segments) ? segmentDimensionKeys(playbook.segments) : {},
+      ),
+    );
 
     const entitlementRules: RevTurbineEntitlementRuleEvaluation[] = Array.isArray(playbook?.entitlement_rules)
       ? playbook.entitlement_rules

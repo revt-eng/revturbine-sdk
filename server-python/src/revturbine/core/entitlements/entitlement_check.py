@@ -36,6 +36,7 @@ from revturbine.core.entitlements.rules import (
 from revturbine.core.entitlements.segment_matching import matches_rule_segments
 from revturbine.core.entitlements.unlimited import resolve_limit_value
 from revturbine.core.helpers import is_record
+from revturbine.core.segments.segment_mode import segment_dimension_keys
 from revturbine.playbook_option import resolve_playbook_option
 
 __all__ = ["derive_local_entitlement_from_configured_rules"]
@@ -272,14 +273,10 @@ def derive_local_entitlement_from_configured_rules(
     # `id` made every lookup miss on any export whose ids differ from its
     # handles, collapsing all rule segments into `__no_dim__` and degrading
     # cross-dimension AND to flat OR (a grant where TS denies).
-    segment_dimensions: dict[str, str] = {}
-    for seg in playbook.get("segments") or []:
-        if not isinstance(seg, dict):
-            continue
-        sid = seg.get("handle")
-        dim = seg.get("dimension_id")
-        if isinstance(sid, str) and isinstance(dim, str):
-            segment_dimensions[sid] = dim
+    # ST-1391: the dimension is DERIVED from the segment's predicates
+    # (classify_segment); a stored `dimension_id` only applies to multi-field
+    # and advanced segments, so the BUG-1389 upload placeholder cannot decide.
+    segment_dimensions: dict[str, str] = segment_dimension_keys(playbook.get("segments"))
 
     def _matches(rule: dict[str, Any]) -> bool:
         rule_ent_id = (

@@ -24,6 +24,7 @@ use super::rules::{pick_most_permissive, rule_permissiveness};
 use super::segment_matching::matches_rule_segments;
 use super::unlimited::resolve_limit_value;
 use crate::decisions::{int_if_integral, EntitlementCheckResult};
+use crate::segments::segment_dimension_keys;
 
 /// Mirror JS `Number(v)` for the value shapes `type_fields` carry.
 ///
@@ -529,23 +530,17 @@ pub(crate) fn derive_local_entitlement_reporting(
     // Plan #39 REQ-28: build the segment_id → dimension_id lookup once per
     // call. Segments missing a dimension fall into `__no_dim__` inside the
     // matcher, preserving flat-OR back-compat for pre-PR-B exports.
-    let mut segment_dimensions: HashMap<String, String> = HashMap::new();
-    if let Some(segments) = playbook.get("segments").and_then(Value::as_array) {
-        for seg in segments {
-            // Plan 234 TASK-2: keyed by HANDLE, matching the TS canonical.
-            // Rule `segment_ids` are handle-valued (plan 120 TASK-4); keying
-            // this map by `id` made every lookup miss on any export whose ids
-            // differ from its handles, collapsing all rule segments into
-            // `__no_dim__` and degrading cross-dimension AND to flat OR (a
-            // grant where TS denies).
-            if let (Some(sid), Some(dim)) = (
-                seg.get("handle").and_then(Value::as_str),
-                seg.get("dimension_id").and_then(Value::as_str),
-            ) {
-                segment_dimensions.insert(sid.to_string(), dim.to_string());
-            }
-        }
-    }
+    //
+    // Plan 234 TASK-2: keyed by HANDLE, matching the TS canonical (rule
+    // `segment_ids` are handle-valued, plan 120 TASK-4). ST-1391: the key is
+    // DERIVED from each segment's predicates (`classify_segment`), so a stored
+    // `dimension_id` (the BUG-1389 upload placeholder) cannot decide it.
+    let segment_dimensions: HashMap<String, String> = segment_dimension_keys(
+        playbook
+            .get("segments")
+            .and_then(Value::as_array)
+            .map_or(&[], Vec::as_slice),
+    );
 
     let matches_holding = |rule: &Value, holding: &Value| -> bool {
         rule.get("targets")
