@@ -47,6 +47,130 @@ also require a changelog entry.
 
 ---
 
+## 0.13.0
+
+### Breaking
+
+Pre-1.0, breaking changes ship in the minor. Each item names its migration.
+
+1. **`user` with a non-empty `id` is required, in every runtime mode and at
+   every entry point; there is no anonymous mode (ST-1416).** Ruling (Kent,
+   2026-11-01): "the playbook can't actually do anything without a UserContext
+   to evaluate against" — and anonymous users never receive a playbook.
+   - **What changed.** `RevTurbineInitOptions.user` is no longer optional. It is
+     the new exported type `RevTurbineInitUser` (`RevTurbineUserContext & { id:
+     string }`), and omitting `user` or `user.id` is a compile error in
+     `initRevTurbine` (core and session), `RevTurbineInitOptions`,
+     `<RevTurbineProvider options>`, `createServerRuntimeConfig` /
+     `createCustomEndpointRuntimeConfig` / `createLocalRuntimeConfig` and the
+     snippet `window.RevTurbine.init`. Before, omitting it left the SDK on a
+     random per-browser anonymous id (`revturbine:<namespace>:anon`) and it
+     evaluated the Playbook for that id.
+   - **At runtime, without a usable id** (omitted, `''`, whitespace, a
+     non-string) the SDK never throws into the host app. It stays in its
+     disabled/fallback state in every mode, `local_only` included: no network
+     request at all (no `/api/sdk/config`, no `/api/track`, no `/api/sdk/meta`
+     — the keyless `sdk_init` beacon included), no evaluation, no
+     user-scoped storage read or write. Every entitlement check is denied with
+     the new protected reason `user_id_required`, every placement decision is
+     hidden with the reason code `user_id_required` (never a placeholder), and
+     one typed diagnostic is logged and kept: new
+     `getUserRequiredDiagnostic()` returns `RevTurbineUserRequiredDiagnostic`
+     (`{ code: 'user_id_required', entryPoint, message }`).
+   - **`identify(id)`** still names the user and, after an init that had none,
+     starts what init withheld (Playbook load, storage, the init beacon). An
+     empty id is refused the same way (same diagnostic, entry point
+     `identify`) and keeps the held user. `setUserContext({ id: '' })` cannot
+     blank the identity either. `reset()` / `resetIdentity()` now leaves the SDK
+     with no user, so it is **disabled until the next `identify()`**; it no
+     longer returns to an anonymous visitor.
+   - **No anonymous id stands in for a user anywhere.** The per-browser
+     anonymous id and every fallback to it are removed: impression history,
+     decision/interaction/cap storage keys, presentation-cap history, the
+     account fallback, the event `user_id` and `/api/track` rows now use the
+     identified user's id or nothing. User-scoped storage is keyed
+     `<prefix>:<namespace>:<user id>` and follows `identify()`. The event
+     envelope's `anonymous_id` field (a core contract) now carries a random
+     per-SDK-instance correlation id that is never persisted and never a user
+     identity. `contextPolicy.inferUser` still infers traits for an identified
+     user but cannot create an identity.
+   - **The keyless `sdk_init` beacon** carries no user identity and no install
+     id (it never had either: a one-way config hash and config-shape counts). It
+     is now also withheld until the SDK has an identified user, so an SDK
+     without one makes no request at all.
+   - **Persisted local state** (`local_only`) is restored only for the user it
+     was written for; a blob persisted for another or id-less user is ignored.
+   - **Python and Rust are unchanged.** Both already require a non-empty
+     `user_id`/`tenant_id` and reject an empty one; neither defaults an
+     anonymous user. The server-node `LocalEvaluationRequest.anonymousId` stays
+     an optional correlation field.
+   - **Landed in / Fail-closed in:** `0.13.0` / `0.13.0` (no tolerated window).
+   - **Migration:** initialise after login and pass `user: { id }` (your stable
+     internal user id) to every `initRevTurbine`, `<RevTurbineProvider
+     options>` and `window.RevTurbine.init`; mount the provider inside the
+     authenticated tree. On logout unmount it, or `identify()` the next user.
+     Do not use a blank string as a loading state: wait for the id. State the SDK
+     kept under the old anonymous key (dismissal cooldowns, caps, decision
+     cache) is not carried over; the identified user starts fresh the first
+     time it is initialised.
+   - **Proving tests:** `web-sdk/user-required.test-d.ts` (compile errors),
+     `web-sdk/user-required.test.ts` (no request, no storage, one diagnostic in
+     every mode), `web-sdk/blank-user-id.test.ts`,
+     `web-sdk/no-anonymous-user-identity.guard.test.ts` (fails if an anonymous
+     id stands in for a user), `web-sdk/reason-contract.test.ts` (the new
+     protected reason).
+
+The protected reason baseline gains `user_id_required` (entitlement and
+placement); see [docs/reason-code-contract.md](docs/reason-code-contract.md).
+
+The user requirement is Web SDK only: the Python and Rust ports ship at the same
+version for lockstep, and carry the alias removals below.
+
+### Removed
+
+The deprecated `ExportedConfig`-era aliases are removed (ST-1418; scheduled by
+BL-0156/BL-0167, window set to 0.13.0 on 2026-10-20). Pre-1.0, breaking changes
+ship in the minor. The canonical `Playbook` names were added in 0.11.0 and work
+unchanged, so migrating is a rename. The old spellings emitted a one-time
+deprecation warning since 0.11.0; they now simply do not exist (a TypeScript
+compile error, a Python `TypeError` / `ImportError` / `AttributeError`, a Rust
+compile error).
+
+- **What changed.** TypeScript (`@revturbine/sdk`):
+
+  | Removed | Use instead |
+  |---|---|
+  | `localRuntime.exportedConfig` (and `exportedConfig` on `BrowserRuntime` and `LocalEvaluationServer` options) | `localRuntime.playbook` (`playbook`) |
+  | `configProvider.getExportedConfig()` (and `RevTurbineCustomerSdk.getExportedConfig()`) | `getPlaybook()`, now required on `RevTurbineConfigProvider` |
+  | `localRuntime.resolvers.resolveExportedConfig` | `localRuntime.resolvers.resolvePlaybook` |
+  | `RevTurbinePolicySnapshot.exportedConfigVersion` | `RevTurbinePolicySnapshot.playbookVersion` |
+  | type `ExportedConfigProvider` | `RevTurbineConfigProvider` (or `PlaybookProvider`) |
+  | type `ExportedConfig` | `Playbook` |
+
+  Python (`revturbine`):
+
+  | Removed | Use instead |
+  |---|---|
+  | `RevTurbineCustomerSdk(exported_config=...)`, `LocalRuntime(exported_config=...)`, `create_static_placement_resolver(exported_config=...)`, `derive_local_entitlement_from_configured_rules(exported_config=...)` | `playbook=...` |
+  | `LocalRuntime.get_exported_config()` | `LocalRuntime.get_playbook()` |
+  | `configured_plan_name_from_exported_config` | `configured_plan_name_from_playbook` |
+  | `parse_exported_config_or_throw` | `parse_playbook_or_throw` |
+  | type alias `ExportedConfig` (`revturbine.core.adapters.static`, `.placements`, `.entitlements.entitlement_check`) | `Playbook` |
+
+  Rust (`revturbine` crate):
+
+  | Removed | Use instead |
+  |---|---|
+  | `configured_plan_name_from_exported_config` | `configured_plan_name_from_playbook` |
+
+  Also removed with them: the emitted policy-snapshot field
+  `exportedConfigVersion`; read `playbookVersion`.
+- **Landed in** 0.11.0 (the canonical names); **Fail-closed in** 0.13.0.
+- **Proving test** `tests/parity/facade-presence.test.ts` (its alias manifest is
+  now empty, so any alias re-added without an entry and a removal version
+  is a visible diff), plus `web-sdk/local-playbook-option.test.ts`,
+  `server-python/tests/test_public_api.py`.
+
 ## 0.12.7
 
 ### Changed

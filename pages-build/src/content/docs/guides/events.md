@@ -225,6 +225,7 @@ import { initRevTurbine } from '@revturbine/sdk';
 const rt = await initRevTurbine({
   publicKey: process.env.NEXT_PUBLIC_REVTURBINE_PUBLIC_KEY!, // public key — safe in the browser
   test: true, // this instance's events are test traffic
+  user: { id: 'qa_user_1' }, // required in every mode
 });
 ```
 

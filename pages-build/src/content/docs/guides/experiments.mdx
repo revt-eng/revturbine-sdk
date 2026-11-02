@@ -48,6 +48,7 @@ const rt = initRevTurbine({
   apiKey: 'rtk_…', // publishable ingest key
   endpoint: 'https://revturbine.com/app',
   mode: 'snippet',
+  user: { id: currentUserId }, // required: the same subject the bucketer reads
   domainProviders: [
     createBasicExperimentProvider({
       subject: () => currentUserId, // re-read on every resolve

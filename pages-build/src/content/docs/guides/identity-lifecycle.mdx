@@ -11,15 +11,25 @@ a replacement user ID, and a Stripe payer may map to an account separately.
 
 ## Before sign-in
 
-Omit `user` intentionally for a signed-out visitor. The SDK uses anonymous
-identity for attribution; anonymous identity is not authentication or proof of
-a paid plan. Supplying a user object with a blank ID logs an error and falls
-back to anonymous identity. Do not use a blank string as your loading state.
+There is no anonymous mode. A Playbook can only be evaluated against a
+UserContext, and a signed-out visitor has none, so **`user` with a non-empty
+`id` is required** at every entry point and in every runtime mode. Initialize
+the SDK **after** sign-in: mount `RevTurbineProvider` inside your authenticated
+tree, and show the signed-out visitor your own standard UI. RevTurbine is
+additive, so nothing breaks without it.
 
-If the app needs a stable guest identity across its own sessions or devices,
-the app owns that identity and its authentication policy. The SDK's anonymous
-storage is not an account system. Do not assume it persists across server
-requests, cleared storage, or isolated browser contexts.
+If an init does reach the SDK without a usable id (an omitted `user`, a blank or
+whitespace id, a `user` still loading), the SDK never throws into your app. It
+stays disabled: no network request, no evaluation, no user-scoped storage; every
+check and placement answers with its fallback (`user_id_required`); and it
+reports one typed diagnostic (`getUserRequiredDiagnostic()`). Do not use a blank
+string as your loading state: wait until you have the id, then initialize. A
+later `identify(id)` with a real id enables the SDK.
+
+Before 0.13.0 the SDK fell back to a random per-browser anonymous id for a
+visitor with no `user`. That id and every fallback to it are gone, so state it
+held (dismissals, caps) is not carried into the identified user's scope; it
+starts fresh the first time that user is initialized.
 
 ## Sign-in and user switches
 
@@ -28,14 +38,14 @@ granting paid access. Use `identify` when the identity changes, and `update`
 for changing facts about the same user. Use a stable internal ID, never an email
 address; email can change and is personal data.
 
-An anonymous visitor becoming an identified user retains applicable accumulated
-state. Switching from one identified user to a different identified user clears
+Switching from one identified user to a different identified user clears
 the previous user's context, usage, trial state, and application-provider
 snapshot before applying the new user's facts. Do not rely on a user switch to
 load facts your application has not supplied.
 
-For sign-out, call the SDK's `resetIdentity()` and clear your application's own
-authenticated state. Then return to the visitor experience. Clear private
+For sign-out, call the SDK's `resetIdentity()` (or unmount the provider) and
+clear your application's own authenticated state. After `resetIdentity()` the
+SDK has no user and is disabled until the next `identify()`. Clear private
 application caches and cancel in-flight user work as part of your app's logout;
 the SDK cannot clear application state it does not own.
 
@@ -53,7 +63,7 @@ be issued only after that check; never sign an arbitrary client-provided
 
 ## Lifecycle test
 
-Start signed out, sign in as a paid user, sign out, then sign in as a free user
+Start signed out (no SDK), sign in as a paid user, sign out, then sign in as a free user
 without reloading the application. Assert the actual SDK context and gate result
 after every transition. Repeat with one user switching accounts. The free user
 must not retain the paid user's grants or balances.

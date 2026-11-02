@@ -61,7 +61,7 @@ Here `python` means your virtual environment's interpreter, as in the commands a
 
 ## Quick start
 
-Construct one SDK per `(user_context, exported_config)`, then check
+Construct one SDK per `(user_context, playbook)`, then check
 entitlements and decide placements:
 
 ```python
@@ -69,7 +69,7 @@ import json
 from revturbine import RevTurbineCustomerSdk, UserContext
 
 with open("revturbine.playbook.json") as f:
-    exported_config = json.load(f)
+    playbook = json.load(f)
 
 user_context: UserContext = {
     "tenant_id": "tenant_abc",
@@ -81,7 +81,7 @@ user_context: UserContext = {
 
 sdk = RevTurbineCustomerSdk(
     user_context=user_context,
-    exported_config=exported_config,
+    playbook=playbook,
 )
 
 # Entitlement gate
@@ -193,7 +193,7 @@ playbook = load_config()
 def check_request(user_context, entitlement):
     sdk = RevTurbineCustomerSdk(
         user_context=user_context,
-        exported_config=playbook,
+        playbook=playbook,
     )
     return sdk.check_entitlement(entitlement)
 ```

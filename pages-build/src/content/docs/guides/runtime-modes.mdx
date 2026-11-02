@@ -79,8 +79,10 @@ import { initRevTurbine, RuntimeMode } from '@revturbine/sdk';
 import playbook from './revturbine.playbook.json';
 
 // No account, key, tenant or endpoint: the Playbook is the whole configuration.
+// The one thing every mode needs is the user it evaluates for.
 const session = await initRevTurbine({
   runtimeMode: RuntimeMode.LocalOnly,
+  user: { id: 'user_123' },
   localRuntime: {
     playbook,
     storageKey: 'my-app:revturbine-local-runtime',
@@ -102,6 +104,7 @@ const session = await initRevTurbine(
   createServerRuntimeConfig({
     tenantId: 'tenant_abc',
     publicKey: 'rtk_…', // public key — safe in the browser
+    user: { id: 'user_123' }, // required in every runtime mode
   }),
 );
 ```
@@ -116,6 +119,7 @@ const session = await initRevTurbine(
   createCustomEndpointRuntimeConfig({
     tenantId: 'tenant_abc',
     publicKey: 'rtk_…', // public key — safe in the browser
+    user: { id: 'user_123' }, // required in every runtime mode
     endpointOverrides: {
       clientContext: 'https://proxy.example.com/revturbine/client-context',
       userContext: 'https://proxy.example.com/revturbine/user-context',
@@ -132,7 +136,7 @@ const session = await initRevTurbine(
 
 ### Add the context and UI your Playbook uses
 
-Local mode needs no placeholder tenant, API key or endpoint. Add a user when your rules depend on identity or plan, resolve the CTA action types your Playbook authors, and optionally supply branding:
+Local mode needs no placeholder tenant, API key or endpoint, but like every mode it needs a user: `user.id` is required and an SDK without one is disabled. Add the plan and other context your rules depend on, resolve the CTA action types your Playbook authors, and optionally supply branding:
 
 ```ts
 import { initRevTurbine, RuntimeMode } from '@revturbine/sdk';

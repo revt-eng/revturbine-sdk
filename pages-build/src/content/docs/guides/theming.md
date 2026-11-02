@@ -107,6 +107,7 @@ const customTheme = {
 
 export function App({ children }: { children: ReactNode }) {
   const options = useMemo(() => ({
+    user: { id: 'user_123' }, // required: the signed-in user's id
     localRuntime: { playbook },
     branding: { theme: customTheme },
   }), []);

@@ -13,6 +13,7 @@ sidebar:
 | A slot renders nothing, with no error and no reason code | The placement targets a slot your code never mounts — it can **never** show | Run [`sdk.diagnoseSlotInventory()`](#nothing-renders-and-nothing-explains-why). Comparing slot ids by eye is what this replaces. |
 | A slot renders its fallback forever | Your code mounts a slot no placement targets | Same probe — it reports this direction too. |
 | Entitlement check denies with `config_unavailable` or `sdk_disabled_provider_failure` | Playbook fetch or configured provider failed | Verify endpoint availability, auth headers, and provider health. See [Client vs Server Enforcement](/concepts/enforcement/) for the authoritative fallback contract. |
+| Every check denies with `user_id_required`, the console logs `user_id_required`, and nothing is requested | The SDK was initialized without a non-empty `user.id` (an omitted `user`, a blank id, a user still loading) | Initialize after login with `user: { id }`, or call `identify(id)`. `getUserRequiredDiagnostic()` names the entry point. See [Identity lifecycle](/guides/identity-lifecycle/). |
 | CTA path not firing expected action | Payload action field mismatch (`cta_path` vs legacy shape) | Use canonical `cta_path` in payloads and parse via `PlacementRenderer`. |
 | Decisions feel stale | Cache TTL too long | Lower `ttlMs` in decision requests or call refresh flows explicitly. |
 | Interactions not visible in backend telemetry | Ingestion endpoint misconfigured | Validate `ingestEvents`/`touchpointTransition` endpoint wiring and auth. |

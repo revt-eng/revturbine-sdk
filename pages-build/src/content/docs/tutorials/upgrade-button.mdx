@@ -95,6 +95,8 @@ An upgrade button in your navigation bar that:
            endpoint: 'http://localhost',
            runtimeMode: RuntimeMode.LocalOnly,
            localRuntime: { playbook },
+           // Required: the user the Playbook is evaluated for.
+           user: { id: 'user_123', plan_handle: 'starter' },
            // The button's CTA fires the action you configured; wire CTA
            // handling to your navigation — see the Quickstart.
          }}

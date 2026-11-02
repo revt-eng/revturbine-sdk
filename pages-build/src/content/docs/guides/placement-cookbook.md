@@ -264,6 +264,7 @@ const session = await initRevTurbine({
   publicKey: 'rtk_…',
   endpoint: 'https://edge.example.com',
   mode: 'snippet',
+  user: { id: 'user_123' },
 });
 const ctrl = session.placement({
   surfaceSlot: { id: 'pricing_banner' },

@@ -102,6 +102,8 @@ export const DESCRIPTIONS = {
     "The candidate's trial trigger did not match the user's trial state.",
   unknown_trigger_type:
     "The candidate uses a trigger type this SDK does not recognize, so it is not shown.",
+  user_id_required:
+    'The SDK has no identified user (init or `identify()` got no non-empty `user.id`), so it is disabled: nothing is evaluated and the fallback is returned. Pass `user: { id }`.',
 };
 
 export function loadContract() {

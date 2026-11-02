@@ -41,6 +41,7 @@ Returned in `decision.reasonCodes[]` to explain why a placement was or wasn't sh
 | `threshold_trigger_unmet` | The candidate's threshold trigger did not match the user's current entitlement usage. |
 | `trial_trigger_unmet` | The candidate's trial trigger did not match the user's trial state. |
 | `unknown_trigger_type` | The candidate uses a trigger type this SDK does not recognize, so it is not shown. |
+| `user_id_required` | The SDK has no identified user (init or `identify()` got no non-empty `user.id`), so it is disabled: nothing is evaluated and the fallback is returned. Pass `user: { id }`. |
 
 <!-- END GENERATED: placement-reason-codes -->
 
@@ -72,6 +73,7 @@ suffixes on the two limit codes.
 | `config_unavailable` | The launched Playbook could not be fetched (Server mode) — check **denied** | Check network connectivity; the reason distinguishes a fetch failure from a real denial |
 | `entitlement_not_in_playbook` | Local mode with no Playbook and no cached result — check **denied** | Add the entitlement to the Playbook fixture |
 | `sdk_disabled_provider_failure` | The SDK disabled itself after a provider failure — check **denied** | Check API keys, endpoints, and network |
+| `user_id_required` | The SDK has no identified user (a missing or blank `user.id` at init or in `identify()`), so it is disabled — check **denied**, no request made | Pass `user: { id }` after login; `getUserRequiredDiagnostic()` names the entry point |
 | `granted_by_reverse_trial` | **Allowed** by an active reverse trial rather than by the plan | None — expected during a reverse trial |
 
 :::note[Renamed in 0.3.0]

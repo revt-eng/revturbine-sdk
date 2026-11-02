@@ -32,6 +32,30 @@ In a browser, initialize with `publicKey`. On a trusted backend, headless
 The key never makes a hosted entitlement decision: evaluation runs locally
 with the user's context and the loaded Playbook.
 
+## A user is required
+
+Every initialization takes `user: { id }`, in **every** runtime mode and at every
+entry point (`RevTurbineProvider`, `initRevTurbine`, `window.RevTurbine.init`).
+A Playbook can only be evaluated against a UserContext, and an anonymous visitor
+never receives one, so the SDK has no anonymous mode. `id` is your stable
+internal user id and must be a non-empty string.
+
+- Initialize **after** you know who the user is. In React, mount
+  `RevTurbineProvider` inside your authenticated tree. On logout, unmount it, or
+  call `identify()` for the next user.
+- Leaving out `user`, or `user.id`, is a compile error.
+- If a blank id reaches the SDK at runtime it never throws into your app. The
+  SDK stays disabled: it makes no request, evaluates nothing, stores nothing for
+  a user, answers every check and placement with its fallback, and reports one
+  `user_id_required` diagnostic (`getUserRequiredDiagnostic()`). A later
+  `identify(id)` with a real id turns it on.
+
+<Aside type="caution" title="Upgrading from 0.12">
+Before 0.13.0 `user` was optional, and an SDK without one evaluated against a
+random per-browser anonymous id. That fallback is gone. See the changelog for
+the migration.
+</Aside>
+
 ## Before you go hosted
 
 <Steps>
@@ -145,12 +169,12 @@ Load the Playbook once per process and build a request-scoped instance:
 import {
   initRevTurbine,
   RuntimeMode,
-  type RevTurbineUserContext,
+  type RevTurbineInitUser,
 } from '@revturbine/sdk/headless';
 import playbook from './revturbine.playbook.json';
 
 /** One instance per request: the SDK holds a single user context per instance. */
-export function revturbineFor(user: RevTurbineUserContext) {
+export function revturbineFor(user: RevTurbineInitUser) {
   return initRevTurbine({
     runtimeMode: RuntimeMode.LocalOnly,
     localRuntime: { playbook },
@@ -195,9 +219,9 @@ For hosted Playbook updates, use the server runtime after authenticating the
 caller and constructing their context from trusted application data:
 
 ```ts
-import { initRevTurbine, RuntimeMode, type RevTurbineUserContext } from '@revturbine/sdk/headless';
+import { initRevTurbine, RuntimeMode, type RevTurbineInitUser } from '@revturbine/sdk/headless';
 
-export async function canExport(user: RevTurbineUserContext): Promise<boolean> {
+export async function canExport(user: RevTurbineInitUser): Promise<boolean> {
   const session = await initRevTurbine({
     runtimeMode: RuntimeMode.Server,
     tenantId: process.env.REVTURBINE_TENANT_ID!,

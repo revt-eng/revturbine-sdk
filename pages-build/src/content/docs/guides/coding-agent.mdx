@@ -19,7 +19,8 @@ You're adding RevTurbine (@revturbine/sdk) to this app to gate one paid feature.
 2. Run `npm create revturbine@latest`. It installs @revturbine/sdk, pins the CLI
    and writes a starter revturbine.playbook.json. Wrap the app in
    <RevTurbineProvider> in local_only mode with that Playbook, so it runs with no
-   account.
+   account. Pass `user: { id }` (the signed-in user's stable id): it is required,
+   so mount the provider inside the authenticated part of the app.
 3. Edit the Playbook so it has a free and a pro plan, one entitlement for the
    feature, and a gate placement (upgrade modal) for free users. Refer to plans and
    entitlements by their unique_handle. Run
@@ -59,8 +60,9 @@ entitlements, usage limits and upgrade prompts.
 5. Re-check every paid or billable action on the server with
    @revturbine/sdk/headless before it runs, and answer a denial with 402. Client
    checks only drive the UI.
-6. If people can use the app before signing in, give them a stable id your server
-   can see (for example a cookie) and pass it as user.id.
+6. Pass the signed-in user's stable id as `user.id` and mount <RevTurbineProvider>
+   only inside the authenticated tree: `user.id` is required and there is no
+   anonymous mode, so a signed-out visitor gets no RevTurbine experience.
 7. When the docs don't cover something you need, say so and ask. Don't guess.
 8. Run `npx revturbine generate types ./revturbine.playbook.json --out
    src/revturbine-handles.ts` and the type checker, then explain what lives in

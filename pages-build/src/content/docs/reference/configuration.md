@@ -55,10 +55,10 @@ See [Theming](/guides/theming/) for an example. Set `colorScheme: 'light'` or `'
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `user` | `RevTurbineUserContext` | — | Initial user context. `plan_handle` is the plan's `unique_handle` — the value plan-scoped rules match on |
+| `user` | `RevTurbineInitUser` | **required** | The user the SDK evaluates for; `user.id` must be a non-empty string, in every runtime mode. Without one the SDK is disabled (no requests, no evaluation, fallbacks only) and reports one `user_id_required` diagnostic. `plan_handle` is the plan's `unique_handle` — the value plan-scoped rules match on |
 | `clientSession` | `() => string \| Promise<string>` | — | Mints a client-session token so the SDK keeps server-derived context fresh on its own. See [Server-derived context](#server-derived-context-clientsession) |
 | `page` | `RevTurbinePageContext` | — | Page context (URL, title, referrer, tags) |
-| `contextPolicy` | `RevTurbineContextPolicy` | `{ inferUser: true, inferPage: true, routerAutoTrack: true }` | Auto-inference behavior |
+| `contextPolicy` | `RevTurbineContextPolicy` | `{ inferUser: true, inferPage: true, routerAutoTrack: true }` | Auto-inference behavior. `inferUser` infers traits for the identified user; it never creates an identity |
 
 ### Server-derived context (`clientSession`)
 

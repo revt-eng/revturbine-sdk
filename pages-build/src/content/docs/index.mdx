@@ -48,7 +48,8 @@ These pages are also included in the generated `llms-full.txt` for coding agents
     ```text
     Run `npm create revturbine@latest` in this project. Then follow the
     revturbine-start-here skill: wrap the app in <RevTurbineProvider> in local
-    mode with the generated revturbine.playbook.json, and replace ONE
+    mode with the generated revturbine.playbook.json (pass the signed-in user's
+    id as `user: { id }`; it is required), and replace ONE
     non-critical hard-coded plan check with <Gate>. Do not touch server-side
     enforcement. Show me the diff before you finish.
     ```

@@ -43,12 +43,12 @@ customer-defined fields under `custom`.
 
 | Situation | API | Behavior |
 |---|---|---|
-| Initialize React or the browser SDK | `options.user` | Sets the initial `RevTurbineUserContext` |
+| Initialize React or the browser SDK | `options.user` (**required**, with a non-empty `id`) | Sets the initial user context. Without an id the SDK is disabled |
 | A user logs in or you switch accounts | `identify(userId, context?)` | Establishes the identity, invalidates cached decisions, and applies identity-safe context fields |
 | Data changes for the same user | `update(patch)` | Merges plan, usage, custom traits, and other supported session fields without changing identity |
 | Merge a low-level context snapshot | `setUserContext(context)` | Merges a `RevTurbineUserContext`; React's `setContext` calls this method |
-| A user logs out | `reset()` | Clears the known identity and returns to inferred anonymous state |
-| A demo or test needs a blank slate | `resetUserContext()` | Clears all user values, usage, decisions, and interaction history without anonymous inference |
+| A user logs out | `reset()` | Clears the known identity and user-scoped state; the SDK is disabled until the next `identify()` |
+| A demo or test needs a blank slate | `resetUserContext()` | Clears all user values, usage, decisions, and interaction history without trait inference |
 | Inspect held SDK state | `getUserContext()` | Returns the current context with `tenant_id`, `user_id`, and persistence-envelope fields |
 | Inspect what decisions actually read | `getEffectiveUserContext()` | Returns the immutable context after customer and experiment providers resolve |
 
@@ -103,9 +103,12 @@ initialization, through an experiment provider, or through the lower-level
 | `email` | `string \| null` | Optional contact identity. Put email here, never in `id` |
 | `email_type` | `string` | Optional classification such as `business` or `personal` |
 
-`id` is optional at the type boundary because the browser SDK can operate with
-anonymous state. Once your app knows the user, identify them with the same
-stable internal id on every device and session.
+`id` is **required** in `options.user` (the init type is `RevTurbineInitUser`):
+a Playbook can only be evaluated against an identified user, and there is no
+anonymous state. It stays optional on the patch shape that `setUserContext()`
+merges, because a patch carries only what changed; the identity itself is set
+at init or with `identify()`. Identify the user with the same stable internal id
+on every device and session.
 
 ### Plan
 

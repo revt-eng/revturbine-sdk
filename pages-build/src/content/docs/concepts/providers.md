@@ -137,6 +137,7 @@ function App() {
   const options = useMemo(() => ({
     runtimeMode: RuntimeMode.LocalOnly,
     localRuntime: { playbook },
+    user: { id: 'user_123' }, // required: the signed-in user's id
     provider: myProvider,
   }), []);
 
@@ -214,6 +215,7 @@ function App() {
     return {
       runtimeMode: RuntimeMode.LocalOnly,
       localRuntime: { playbook },
+      user: { id: 'user_123' }, // required: the signed-in user's id
       domainProviders: [analytics],
     };
   }, []);
@@ -240,7 +242,7 @@ The analytics provider receives every SDK event, including:
 | `page_view` | Page navigation |
 | Trigger events | `trial_expiring`, `usage_limit_reached`, etc. |
 
-Each event includes `user_id`, `anonymous_id`, `session_id`, `placement_id`, `interaction_type`, `url`, `page_title`, and the full event properties.
+Each event includes `user_id` (the identified user), `anonymous_id` (a per-SDK-instance correlation id, never a user identity), `session_id`, `placement_id`, `interaction_type`, `url`, `page_title`, and the full event properties.
 
 ### Filtering Events
 

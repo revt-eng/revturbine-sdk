@@ -16,7 +16,8 @@ for the browser; it does not evaluate entitlements.
 <Aside type="note" title="TypeScript uses RevTurbineUserContext">
 The `./headless` entry point accepts the same canonical, flat user shape as the
 browser and React SDKs. Put the tenant in the top-level `tenantId` option and
-the identity in `user.id`; do not use the compact Python/Rust
+the identity in `user.id`, which is **required** (the SDK has no anonymous
+mode: without a non-empty id it is disabled and makes no request); do not use the compact Python/Rust
 `{tenant_id, user_id}` shape here. See the
 [cross-language context mapping](/user-context/#server-sdk-context-shapes).
 </Aside>
@@ -46,12 +47,12 @@ from an already-loaded Playbook makes no network call to decide:
 import {
   initRevTurbine,
   RuntimeMode,
-  type RevTurbineUserContext,
+  type RevTurbineInitUser,
 } from '@revturbine/sdk/headless';
 import playbook from './revturbine.playbook.json';
 
 /** One instance per request. The Playbook is loaded once, when this module is. */
-export function revturbineFor(user: RevTurbineUserContext) {
+export function revturbineFor(user: RevTurbineInitUser) {
   return initRevTurbine({
     runtimeMode: RuntimeMode.LocalOnly,
     localRuntime: { playbook },
@@ -61,7 +62,7 @@ export function revturbineFor(user: RevTurbineUserContext) {
 ```
 
 ```ts title="src/server/export-route.ts" docs-check=strict
-import type { RevTurbineUserContext } from '@revturbine/sdk/headless';
+import type { RevTurbineInitUser } from '@revturbine/sdk/headless';
 import { revturbineFor } from './revturbine';
 import { getSignedInUser, runExport } from './app'; // your own code
 
@@ -69,8 +70,8 @@ export async function POST(request: Request): Promise<Response> {
   const user = await getSignedInUser(request);
   if (!user) return new Response('Unauthorized', { status: 401 });
 
-  const context: RevTurbineUserContext = {
-    id: user.id,
+  const context: RevTurbineInitUser = {
+    id: user.id, // required: the SDK evaluates for an identified user
     plan_handle: user.planHandle, // from your own billing record: the server decides, not the browser
     usage: {
       api_calls: {

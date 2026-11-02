@@ -130,6 +130,7 @@ An interaction-flush failure and a client-side cap-enforcement fallback are each
 | `threshold_trigger_unmet` | The candidate's threshold trigger did not match the user's current entitlement usage. |
 | `trial_trigger_unmet` | The candidate's trial trigger did not match the user's trial state. |
 | `unknown_trigger_type` | The candidate uses a trigger type this SDK does not recognize, so it is not shown. |
+| `user_id_required` | The SDK has no identified user (init or `identify()` got no non-empty `user.id`), so it is disabled: nothing is evaluated and the fallback is returned. Pass `user: { id }`. |
 
 <!-- END GENERATED: placement-reason-codes -->
 
@@ -192,6 +193,7 @@ payloads keep deciding exactly as before. The reason code it produces is now
 | `config_unavailable` | The launched Playbook could not be fetched (hosted mode). Not a rule decision — an infrastructure failure. |
 | `entitlement_not_in_playbook` | Local mode with no Playbook and no cached result: nothing describes this entitlement, so there is no basis to grant it. |
 | `sdk_disabled_provider_failure` | The SDK disabled itself after a provider failure. |
+| `user_id_required` | The SDK has no identified user (missing or blank `user.id`), so it is disabled and made no request. Pass `user: { id }`. |
 
 ### Allowed with a reason
 
