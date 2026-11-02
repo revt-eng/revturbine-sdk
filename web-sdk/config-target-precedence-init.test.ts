@@ -41,6 +41,7 @@ afterEach(() => {
 describe('AC-1 — a canonical Playbook with no tenant_id starts the SDK', () => {
   it('initializes and getPolicy().runtimeMode is readable', () => {
     const sdk = initRevTurbine({
+      user: { id: 'u_test' },
       tenantId: 't_1',
       runtimeMode: RuntimeMode.LocalOnly,
       localRuntime: { playbook: CANONICAL_WITHOUT_TENANT },
@@ -55,6 +56,7 @@ describe('AC-1 — a canonical Playbook with no tenant_id starts the SDK', () =>
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
     initRevTurbine({
+      user: { id: 'u_test' },
       tenantId: 't_1',
       runtimeMode: RuntimeMode.LocalOnly,
       localRuntime: { playbook: CANONICAL_WITHOUT_TENANT },
@@ -65,12 +67,13 @@ describe('AC-1 — a canonical Playbook with no tenant_id starts the SDK', () =>
 
   it('serves the init tenant through the resolved config', () => {
     const sdk = initRevTurbine({
+      user: { id: 'u_test' },
       tenantId: 't_1',
       runtimeMode: RuntimeMode.LocalOnly,
       localRuntime: { playbook: CANONICAL_WITHOUT_TENANT },
     } as never);
 
-    expect(sdk.getExportedConfig()).toMatchObject({ tenant_id: 't_1' });
+    expect(sdk.getPlaybook()).toMatchObject({ tenant_id: 't_1' });
   });
 });
 
@@ -79,6 +82,7 @@ describe('AC-2 — a tenant mismatch warns and resolves to the init option', () 
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
     const sdk = initRevTurbine({
+      user: { id: 'u_test' },
       tenantId: 't_2',
       runtimeMode: RuntimeMode.LocalOnly,
       localRuntime: { playbook: CANONICAL_WITH_TENANT },
@@ -86,13 +90,14 @@ describe('AC-2 — a tenant mismatch warns and resolves to the init option', () 
 
     // The artifact declares t_1; the host asked for t_2. Decisions must resolve
     // against t_2 — the init option is the authority.
-    expect(sdk.getExportedConfig()).toMatchObject({ tenant_id: 't_2' });
+    expect(sdk.getPlaybook()).toMatchObject({ tenant_id: 't_2' });
   });
 
   it('warns once, naming both values', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
     initRevTurbine({
+      user: { id: 'u_test' },
       tenantId: 't_2',
       runtimeMode: RuntimeMode.LocalOnly,
       localRuntime: { playbook: CANONICAL_WITH_TENANT },
@@ -110,6 +115,7 @@ describe('AC-2 — a tenant mismatch warns and resolves to the init option', () 
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
     expect(() => initRevTurbine({
+      user: { id: 'u_test' },
       tenantId: 't_2',
       runtimeMode: RuntimeMode.LocalOnly,
       localRuntime: { playbook: CANONICAL_WITH_TENANT },

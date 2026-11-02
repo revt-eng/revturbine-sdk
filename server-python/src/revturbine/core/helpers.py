@@ -17,7 +17,6 @@ import re
 from typing import Any, Literal, TypedDict, TypeGuard
 
 from revturbine.config import parse_playbook_or_throw
-from revturbine.playbook_option import warn_deprecated_playbook_alias_once
 
 __all__ = [
     "is_record",
@@ -41,9 +40,7 @@ __all__ = [
     "looks_generic_usage_unit",
     "usage_amounts_from_entries",
     "configured_plan_name_from_playbook",
-    "configured_plan_name_from_exported_config",
     "parse_playbook_or_throw",
-    "parse_exported_config_or_throw",
     "category_bucket",
     "placement_score",
     "plan_identity_from_context",
@@ -703,27 +700,6 @@ def configured_plan_name_from_playbook(
                 return name
 
     return None
-
-
-def configured_plan_name_from_exported_config(
-    exported_config: JsonObject | None,
-    plan_value: str | None,
-) -> str | None:
-    """Deprecated alias of :func:`configured_plan_name_from_playbook`.
-
-    ``ExportedConfig`` is dead vocabulary (BL-0156). Kept so an existing import
-    keeps working; removed in ``0.13.0``.
-    """
-    warn_deprecated_playbook_alias_once(
-        "`configured_plan_name_from_exported_config` is deprecated; "
-        "use `configured_plan_name_from_playbook`."
-    )
-    return configured_plan_name_from_playbook(exported_config, plan_value)
-
-
-def parse_exported_config_or_throw(raw: Any, source: str) -> JsonObject | None:
-    """Deprecated config parser; normalize to the canonical Playbook shape."""
-    return parse_playbook_or_throw(raw, source)
 
 
 # ── Placement scoring ───────────────────────────────────────────────────────

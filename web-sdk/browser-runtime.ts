@@ -38,7 +38,6 @@ import {
   type ConfigArtifact,
 } from './config-artifact';
 import { normalizeEnvironmentId } from './environment';
-import { requirePlaybookOption } from './playbook-option';
 
 /* ------------------------------------------------------------------ */
 /*  Options                                                            */
@@ -76,29 +75,12 @@ type BrowserRuntimeOptionsBase = Omit<
 /**
  * Options for {@link BrowserRuntime}.
  *
- * Exactly one of `playbook` (canonical) or `exportedConfig` (deprecated) is
- * required — the union keeps that a compile-time requirement, exactly as the
- * single required `exportedConfig` property did before the rename (BL-0156).
+ * `playbook` is required.
  */
-export type BrowserRuntimeOptions = BrowserRuntimeOptionsBase &
-  (
-    | {
-        /** The Playbook this runtime evaluates against. */
-        playbook: ConfigArtifact;
-        /** @deprecated Use `playbook`. Removed in `0.13.0`. */
-        exportedConfig?: ConfigArtifact;
-      }
-    | {
-        /** The Playbook this runtime evaluates against. */
-        playbook?: ConfigArtifact;
-        /**
-         * @deprecated Renamed to `playbook` — `Playbook` is the canonical name
-         * for the artifact (BL-0156). Still fully supported: pass either one.
-         * When both are supplied `playbook` wins. Removed in `0.13.0`.
-         */
-        exportedConfig: ConfigArtifact;
-      }
-  );
+export type BrowserRuntimeOptions = BrowserRuntimeOptionsBase & {
+  /** The Playbook this runtime evaluates against. */
+  playbook: ConfigArtifact;
+};
 
 /* ------------------------------------------------------------------ */
 /*  BrowserRuntime                                                     */
@@ -108,19 +90,15 @@ export class BrowserRuntime extends LocalRuntime {
   private readonly _hydratePromise: Promise<void> | null;
 
   constructor(options: BrowserRuntimeOptions) {
-    // One resolver, so `playbook` vs the deprecated `exportedConfig` cannot be
-    // decided differently here than anywhere else in the SDK.
-    const rawConfig = requirePlaybookOption(options, 'BrowserRuntime');
+    const rawConfig = options.playbook;
+    if (rawConfig === undefined) {
+      throw new Error('RevTurbine: `BrowserRuntime.playbook` is required.');
+    }
     const {
       playbook: _playbook,
-      exportedConfig: _exportedConfig,
       environmentId,
       ...runtimeOptions
-    } = options as BrowserRuntimeOptionsBase & {
-      playbook?: ConfigArtifact;
-      exportedConfig?: ConfigArtifact;
-      environmentId?: string;
-    };
+    } = options;
     const playbook = configArtifactForRuntime(
       rawConfig,
       'BrowserRuntime.playbook',
@@ -142,9 +120,6 @@ export class BrowserRuntime extends LocalRuntime {
 
     super({
       ...runtimeOptions,
-      // `playbook` is the canonical LocalRuntimeOptions key as of
-      // @revt-eng/core 0.1.330; passing `exportedConfig` here would trip
-      // core's own one-time deprecation warning on every BrowserRuntime.
       playbook,
       storage,
       impressionStore,

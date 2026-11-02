@@ -34,18 +34,24 @@ import type { ConfigArtifact } from './config-artifact';
 
 const playbook = {} as ConfigArtifact;
 
+// ST-1416: every init names the user it evaluates for. Required in the type
+// (see `user-required.test-d.ts` for the assertions); every fixture below
+// carries it so the shapes under test are the only thing that varies.
+const user = { id: 'user_1' };
+
 /* ── Accepted shapes ──────────────────────────────────────────────────── */
 
 // Local-only minimal: `localRuntime.playbook` present, transport omitted.
-initRevTurbine({ localRuntime: { playbook } });
+initRevTurbine({ user, localRuntime: { playbook } });
 
 // The same options built in a VARIABLE rather than inline. This is the shape
 // excess-property checking never saw, and the reason `ExactInitOptions` exists.
-const localOptions = { tenantId: 't_1', localRuntime: { playbook } };
+const localOptions = { user, tenantId: 't_1', localRuntime: { playbook } };
 initRevTurbine(localOptions);
 
 // Full transport options — `publicKey` is the browser credential (plan 257).
 initRevTurbine({
+  user,
   tenantId: 't_1',
   publicKey: 'rtk_test',
   endpoint: 'https://edge.example.com',
@@ -56,6 +62,7 @@ initRevTurbine({
 // headless SDK on a backend. It is no longer read as a browser credential
 // (BL-0113), which is a runtime fact, not a type-level one.
 initRevTurbine({
+  user,
   tenantId: 't_1',
   apiKey: 'sk_test',
   endpoint: 'https://edge.example.com',
@@ -68,6 +75,7 @@ initRevTurbine({
 // promise: if the key is ever re-added, `tsc` fails with "Unused
 // '@ts-expect-error' directive" and the removal has been silently undone.
 initRevTurbine({
+  user,
   tenantId: 't_1',
   endpoint: 'https://edge.example.com',
   mode: 'react',
@@ -78,23 +86,24 @@ initRevTurbine({
 
 // Built in a VARIABLE, so the excess-property check is doing no work here and
 // `ExactInitOptions` is what rejects it — the load-bearing half of the guard.
-const withRemovedAlias = { tenantId: 't_1', localRuntime: { playbook }, ingestPublicKey: 'rtk_test' };
+const withRemovedAlias = { user, tenantId: 't_1', localRuntime: { playbook }, ingestPublicKey: 'rtk_test' };
 // @ts-expect-error - `ingestPublicKey` was removed in 0.11.0 (BL-0113).
 initRevTurbine(withRemovedAlias);
 
-const withPublicKeyTypo = { tenantId: 't_1', localRuntime: { playbook }, publickey: 'rtk_test' };
+const withPublicKeyTypo = { user, tenantId: 't_1', localRuntime: { playbook }, publickey: 'rtk_test' };
 // @ts-expect-error - `publickey` is a casing typo for `publicKey`.
 initRevTurbine(withPublicKeyTypo);
 
 // Keys that live on only ONE union branch must still be accepted — `keyof` over
 // a union yields the INTERSECTION of its members' keys, so a naive
 // `Exact<RevTurbineInitInputOptions, T>` would have rejected both of these.
-initRevTurbine({ localRuntime: { playbook } });
-initRevTurbine({ tenantId: 't_1', localRuntime: { playbook }, provider: undefined });
+initRevTurbine({ user, localRuntime: { playbook } });
+initRevTurbine({ user, tenantId: 't_1', localRuntime: { playbook }, provider: undefined });
 
 /* ── Rejected: an unrecognized key ────────────────────────────────────── */
 
 initRevTurbine({
+  user,
   tenantId: 't_1',
   localRuntime: { playbook },
   // @ts-expect-error - `tenant_id` is the Playbook's field name, not an init
@@ -106,12 +115,12 @@ initRevTurbine({
   tenant_id: 't_1',
 });
 
-const withTypo = { tenantId: 't_1', localRuntime: { playbook }, apikey: 'sk_test' };
+const withTypo = { user, tenantId: 't_1', localRuntime: { playbook }, apikey: 'sk_test' };
 // @ts-expect-error - `apikey` is a casing typo for `apiKey`. Built in a
 // variable, so excess-property checking never fired on it.
 initRevTurbine(withTypo);
 
-const withStaleOption = { tenantId: 't_1', localRuntime: { playbook }, exportedConfig: playbook };
+const withStaleOption = { user, tenantId: 't_1', localRuntime: { playbook }, exportedConfig: playbook };
 // @ts-expect-error - `exportedConfig` belongs inside `localRuntime`, not at the
 // top level. A plausible mistake, and previously a silent one.
 initRevTurbine(withStaleOption);
@@ -124,11 +133,11 @@ initRevTurbine(withStaleOption);
 // fields optional there), so the guard moved to init: these two compile, and
 // `initRevTurbine` throws a descriptive error for them — pinned at runtime in
 // `customer-side-tenant-optional.test.ts`.
-initRevTurbine({});
-initRevTurbine({ localRuntime: {} });
+initRevTurbine({ user });
+initRevTurbine({ user, localRuntime: {} });
 
 // A key-only browser init — the BL-0335 shape — compiles with no tenant id.
-initRevTurbine({ publicKey: 'rtk_public', endpoint: 'https://revturbine.com/app' });
+initRevTurbine({ user, publicKey: 'rtk_public', endpoint: 'https://revturbine.com/app' });
 
 /* ── The React provider enforces the same contract ────────────────────── */
 
@@ -142,9 +151,9 @@ declare function acceptsProviderOptions<TOptions extends RevTurbineInitInputOpti
   options: TOptions & ExactInitOptions<TOptions>,
 ): void;
 
-acceptsProviderOptions({ tenantId: 't_1', localRuntime: { playbook } });
+acceptsProviderOptions({ user, tenantId: 't_1', localRuntime: { playbook } });
 
-const providerOptions = { tenantId: 't_1', localRuntime: { playbook }, notAnOption: true };
+const providerOptions = { user, tenantId: 't_1', localRuntime: { playbook }, notAnOption: true };
 // @ts-expect-error - an unrecognized key is rejected at the provider's prop
 // shape exactly as at the direct call.
 acceptsProviderOptions(providerOptions);

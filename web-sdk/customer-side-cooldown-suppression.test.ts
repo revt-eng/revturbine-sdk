@@ -68,6 +68,7 @@ function playbookWith(options: { cooldownDays?: number; remindMinutes?: number }
 
 function makeSdk(playbook: ConfigArtifact): RevTurbineCustomerSdk {
   return initRevTurbine({
+    user: { id: 'u_test' },
     tenantId: 't_1',
     runtimeMode: RuntimeMode.LocalOnly,
     localRuntime: { playbook },

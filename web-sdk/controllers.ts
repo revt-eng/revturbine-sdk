@@ -41,6 +41,7 @@ import type {
   RevTurbineContextMode,
   RevTurbineEntitlementContext,
   RevTurbineUserContext,
+  RevTurbineInitUser,
   Exact,
   IdentifyContextInput,
   SdkMetadata,
@@ -1429,13 +1430,13 @@ export class SdkSession {
     this.sdk.identify(userId, contextOrTraits);
   }
 
-  /** Reset to anonymous user state. */
+  /** Sign the user out; the SDK is disabled until the next `identify()`. */
   resetIdentity(): void {
     this.sdk.resetIdentity();
   }
 
   /**
-   * Hard-reset the user context to a blank slate (no anonymous inference) —
+   * Hard-reset the user context to a blank slate (no trait inference) —
    * removes every user-context value plus usage balances and clears the
    * decision cache, interaction state, and impression history. Mostly for
    * demo / fixture flows. See {@link RevTurbineCustomerSdk.resetUserContext}.
@@ -1637,7 +1638,8 @@ export class SdkSession {
  * This is the recommended entry point for headless (non-React) consumers.
  * It handles:
  * 1. SDK initialization via `initRevTurbine()`
- * 2. User identification (if `options.user.id` is provided)
+ * 2. User identification (`options.user.id` is required — without it the
+ *    session is disabled and reports one `user_id_required` diagnostic)
  * 3. Theme resolution (from RevTurbineConfig or API)
  * 4. Placement bootstrapping (preloading decisions)
  *
@@ -1661,14 +1663,17 @@ export class SdkSession {
  *
  * @public
  */
-export async function initRevTurbine<TUser extends RevTurbineUserContext = RevTurbineUserContext>(
-  options: SdkSessionOptions & { user?: Exact<RevTurbineUserContext, TUser> },
+export async function initRevTurbine<TUser extends RevTurbineInitUser = RevTurbineInitUser>(
+  options: SdkSessionOptions & { user: Exact<RevTurbineInitUser, TUser> },
 ): Promise<SdkSession> {
   const { bootstrapPlacements, ...rest } = options;
   const initOptions = rest as RevTurbineInitInputOptions;
   const sdk = initRevTurbineCore(initOptions);
 
-  // Identify user if provided
+  // Identify the user. `user` with a non-empty `id` is required (ST-1416);
+  // a plain-JS caller who omits it gets a disabled SDK and one typed
+  // diagnostic from the constructor, never a throw — so there is nothing to
+  // identify here.
   const user = initOptions.user;
   if (user && typeof user === 'object' && user.id) {
     const { id, ...context } = user;

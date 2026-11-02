@@ -42,6 +42,8 @@ function upgradeOutput(over: Partial<PlacementOutput> = {}): PlacementOutput {
  * index, never the decision object.
  */
 function makeSdk(opts: { user?: RevTurbineInitOptions['user']; output?: PlacementOutput } = {}): RevTurbineCustomerSdk {
+  // ST-1416: `user` is required; a test that passes none gets the blank id
+  // that leaves the SDK disabled, which is what "no user" means now.
   const output = opts.output ?? upgradeOutput();
   const sdk = new RevTurbineCustomerSdk({
     tenantId: 'tenant_282',
@@ -52,7 +54,7 @@ function makeSdk(opts: { user?: RevTurbineInitOptions['user']; output?: Placemen
     mode: 'snippet',
     runtimeMode: 'local_only',
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
-    ...(opts.user ? { user: opts.user } : {}),
+    user: opts.user ?? { id: '' },
     localRuntime: {
       resolvers: {
         getPlacementDecision: async (input: { placementId: string }) => ({
@@ -139,16 +141,13 @@ describe('checkoutMetadata(outputId) — every key sourced from the decision the
     expect(JSON.stringify(result)).not.toContain(FALLBACK_ACCOUNT_ID_PREFIX);
   });
 
-  it('omits the user id and client_reference_id for a user identify() never named', async () => {
+  it('returns null for an SDK with no identified user: it decided nothing to attribute', async () => {
+    // ST-1416: there is no anonymous user. An SDK without an id is disabled, so
+    // no decision is made and no user-less metadata bag can exist.
     const sdk = makeSdk();
     const result = sdk.checkoutMetadata(await decide(sdk));
 
-    expect(result).not.toBeNull();
-    expect(result).not.toHaveProperty('client_reference_id');
-    expect(result!.metadata).not.toHaveProperty('revturbine_user_id');
-    // The placement-side keys are still what the decision held.
-    expect(result!.metadata.revturbine_placement_id).toBe(SLOT);
-    expect(result!.metadata.revturbine_output_id).toBe(OUTPUT_ID);
+    expect(result).toBeNull();
   });
 
   it('omits the plan handle when the CTA names none', async () => {

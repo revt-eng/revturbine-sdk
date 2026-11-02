@@ -20,6 +20,7 @@
  *   publicKey: 'rtk_…',
  *   endpoint: 'https://edge.example.com',
  *   mode: 'snippet',
+ *   user: { id: 'user_123' },
  *   domainProviders: [analytics],
  * });
  * ```
@@ -319,6 +320,7 @@ export interface PostHogAnalyticsProviderOptions {
  *   publicKey: 'rtk_…',
  *   endpoint: 'https://edge.example.com',
  *   mode: 'snippet',
+ *   user: { id: 'user_123' },
  *   domainProviders: [analytics],
  * });
  * ```

@@ -69,6 +69,7 @@ const PLAYBOOK = {
 };
 
 const OPTIONS = {
+  user: { id: 'u_test' },
   tenantId: 't_1',
   runtimeMode: 'local_only',
   localRuntime: { playbook: PLAYBOOK },
@@ -77,6 +78,7 @@ const OPTIONS = {
 
 /** No placements at all — the only way to guarantee a no-match. */
 const EMPTY_OPTIONS = {
+  user: { id: 'u_test' },
   tenantId: 't_1',
   runtimeMode: 'local_only',
   localRuntime: { playbook: { ...PLAYBOOK, placements: [] } },

@@ -54,7 +54,7 @@ describe.each([RuntimeMode.LocalOnly, RuntimeMode.Server])('placement explanatio
           contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
           ...(runtimeMode === RuntimeMode.LocalOnly
             ? { localRuntime: { playbook: config } }
-            : { configProvider: { getExportedConfig: () => config } }),
+            : { configProvider: { getPlaybook: () => config } }),
         });
         try {
           await sdk.identify('user_1', {

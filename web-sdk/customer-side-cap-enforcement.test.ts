@@ -51,6 +51,7 @@ function makeSdk(
   over: Partial<RevTurbineInitOptions> = {},
 ): RevTurbineCustomerSdk {
   const sdk = new RevTurbineCustomerSdk({
+    user: { id: 'u_test' },
     tenantId: 'tenant_cap_test',
     apiKey: 'sk_test',
     publicKey: 'pub_test',

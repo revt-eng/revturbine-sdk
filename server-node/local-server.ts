@@ -45,7 +45,6 @@ import {
   type ConfigArtifact,
 } from '../web-sdk/config-artifact';
 import { normalizeEnvironmentId } from '../web-sdk/environment';
-import { resolvePlaybookOption } from '../web-sdk/playbook-option';
 
 import type {
   ServerEvaluationPayload,
@@ -71,13 +70,6 @@ export interface LocalEvaluationServerOptions {
   providers: AnyDomainProvider[];
   /** The Playbook this server resolves placements against. */
   playbook?: ConfigArtifact;
-  /**
-   * @deprecated Renamed to {@link LocalEvaluationServerOptions.playbook} —
-   * `Playbook` is the canonical name for the artifact (BL-0156). Still fully
-   * supported: pass either one. When both are supplied `playbook` wins.
-   * Removed in `0.13.0`.
-   */
-  exportedConfig?: ConfigArtifact;
   /** Target fallback for legacy configs. Omitted or blank resolves to `production`. */
   environmentId?: string;
   /** Optional storage for interaction state (defaults to in-memory). */
@@ -121,10 +113,8 @@ export class LocalEvaluationServer {
     this.tenantId = options.tenantId;
     this.defaultTtlSeconds = options.defaultTtlSeconds ?? 60;
 
-    // One resolver, so `playbook` vs the deprecated `exportedConfig` cannot be
-    // decided differently here than anywhere else (BL-0156).
     const playbook = configArtifactForRuntime(
-      resolvePlaybookOption(options, 'LocalEvaluationServer'),
+      options.playbook,
       'LocalEvaluationServer.playbook',
       {
         tenantId: options.tenantId,
@@ -138,9 +128,6 @@ export class LocalEvaluationServer {
     this.runtime = new LocalRuntime({
       tenantId: options.tenantId,
       userId: '__server__',
-      // `playbook` is the canonical LocalRuntimeOptions key as of
-      // @revt-eng/core 0.1.330; `exportedConfig` would trip core's own
-      // one-time deprecation warning.
       playbook,
       providers: options.providers,
       storage: options.storage,

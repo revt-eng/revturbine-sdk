@@ -2,7 +2,7 @@
 
 ``RevTurbineCustomerSdk`` (plan 33 TASK-7) is the public entry point: a
 stateless wrapper that decides entitlements and placements in-process
-from a caller-supplied user context + ``ExportedConfig`` — no network,
+from a caller-supplied user context + Playbook — no network,
 no persistence beyond memory. See :mod:`revturbine.sdk` for the scope
 boundary (the browser bespoke decision engine is intentionally not
 ported — plan 33 REQ-14).

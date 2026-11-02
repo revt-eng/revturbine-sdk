@@ -47,7 +47,7 @@ describe('public built-in reason values (plan 254 AC-7)', () => {
   });
 
   it('keeps custom resolver reason strings extensible', async () => {
-    const sdk = new RevTurbineCustomerSdk({ tenantId: 'custom_reason', apiKey: 'local',
+    const sdk = new RevTurbineCustomerSdk({ user: { id: 'user' }, tenantId: 'custom_reason', apiKey: 'local',
       endpoint: 'https://reason.example.test', mode: 'snippet', runtimeMode: 'local_only', previewMode: true,
       localRuntime: { resolvers: { checkEntitlement: async () => ({
         status: 'denied', allowed: false, reason: 'customer_owned_contract',

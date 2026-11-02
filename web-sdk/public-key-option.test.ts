@@ -55,6 +55,7 @@ afterEach(() => {
 
 function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerSdk {
   return new RevTurbineCustomerSdk({
+    user: { id: 'u_test' },
     tenantId: 'tenant_abc',
     environmentId: 'staging',
     endpoint: 'https://edge.example.com',
@@ -163,6 +164,7 @@ describe('local-only minimal init (AC-4)', () => {
       placements: [],
     } as unknown as RevTurbineConfig;
     const sdk = initRevTurbine({
+      user: { id: 'u_test' },
       localRuntime: { playbook },
       anonymousTelemetry: false,
     });

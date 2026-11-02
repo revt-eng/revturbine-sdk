@@ -1,6 +1,6 @@
 """Tests for ``revturbine.core.adapters.static.create_static_providers``.
 
-Covers the six provider domains built from an ExportedConfig snapshot
+Covers the six provider domains built from a Playbook snapshot
 (plan / entitlements / segments / rules / content / theme), the
 usage-override + plan-name fallbacks, the targets→plan_ids filter, and
 the empty-config no-provider path. Expected values traced from

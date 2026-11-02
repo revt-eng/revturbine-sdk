@@ -20,7 +20,6 @@ import type { BrandingConfig } from './generated';
 import { isServer, isBrowser, isServerKeyContext } from './env';
 import { normalizeEnvironmentId } from './environment';
 import { devWarn as warnInDevelopmentBuild, isDevelopmentBuild } from './build-mode';
-import { warnDeprecatedPlaybookAliasOnce, resetPlaybookAliasWarning } from './playbook-option';
 import { redactPii, redactIdentityField, redactEnvelope } from './pii-redact';
 import { fallbackAccountId } from './account-identity';
 // Re-exported here rather than only from the barrel: the account-identity
@@ -422,10 +421,9 @@ export type RevTurbineInitWithProviderOptions = RevTurbineInitOptions & RevTurbi
 /**
  * Minimal initialization options for local-only mode.
  *
- * When `localRuntime.playbook` (or the deprecated `exportedConfig` alias) is
- * provided, core transport options can be omitted and the SDK will inject
- * safe local defaults. `playbook` is the canonical key; the runtime resolves
- * both through {@link resolveLocalPlaybook}.
+ * When `localRuntime.playbook` is provided, core transport options can be
+ * omitted and the SDK will inject safe local defaults. The runtime resolves
+ * it through {@link resolveLocalPlaybook}.
  */
 export type RevTurbineLocalOnlyMinimalInitOptions = Omit<
   RevTurbineInitOptions,
@@ -436,22 +434,14 @@ export type RevTurbineLocalOnlyMinimalInitOptions = Omit<
   endpoint?: string;
   mode?: RevTurbineSdkMode;
   runtimeMode?: 'local_only';
-  localRuntime: RevTurbineLocalRuntimeOptions &
-    (
-      | { playbook: ConfigArtifact | UnvalidatedConfigArtifact }
-      | {
-          /** @deprecated Use `playbook` — the canonical key for the same artifact. */
-          exportedConfig: ConfigArtifact | UnvalidatedConfigArtifact;
-        }
-    );
+  localRuntime: RevTurbineLocalRuntimeOptions & { playbook: ConfigArtifact | UnvalidatedConfigArtifact };
 };
 
 /**
  * Public SDK initialization input.
  *
  * Accepts either full options for any runtime mode, or local-only minimal
- * options when `localRuntime.playbook` (or the deprecated `exportedConfig`
- * alias) is provided.
+ * options when `localRuntime.playbook` is provided.
  */
 export type RevTurbineInitInputOptions =
   | RevTurbineInitWithProviderOptions
@@ -932,12 +922,6 @@ export interface RevTurbinePolicySnapshot {
   runtimeMode: RevTurbineRuntimeMode;
   /** `format_version` of the loaded Playbook, when the artifact declares one. */
   playbookVersion?: string;
-  /**
-   * @deprecated Renamed to {@link RevTurbinePolicySnapshot.playbookVersion}
-   * (BL-0156). Still emitted with the identical value; removed in
-   * `0.13.0`. Read `playbookVersion`.
-   */
-  exportedConfigVersion?: string;
 }
 
 export type RevTurbinePersonalizationTokens = Record<string, string | number>;
@@ -1003,7 +987,15 @@ export interface RevTurbineUserContext
     | 'context_hash'
     | ServerAssignedUserContextKey
   > {
-  /** Authenticated user identifier. When undefined, the SDK uses an anonymous ID. */
+  /**
+   * Authenticated user identifier — your stable internal user id.
+   *
+   * Required at init (`user: { id }` on {@link RevTurbineInitOptions.user}):
+   * the SDK has no anonymous mode, and a missing or blank id leaves it
+   * disabled. This patch shape keeps `id` optional only because
+   * `setUserContext()` merges partial updates; identity is (re)established
+   * with `identify()`.
+   */
   id?: string;
   /**
    * Server-computed derived-entitlement cache stamp (plan 74). Optional at the
@@ -1057,6 +1049,45 @@ type HeldUserContext = RevTurbineUserContext & {
 };
 
 /**
+ * The user an SDK is initialised for: a {@link RevTurbineUserContext} whose
+ * `id` is required. Omitting `user`, or `user.id`, at any public init entry
+ * point (`initRevTurbine`, `<RevTurbineProvider options>`,
+ * `window.RevTurbine.init`) is a compile error. A blank `id` cannot be ruled
+ * out by the type and is refused at runtime instead.
+ *
+ * @public
+ */
+export type RevTurbineInitUser = RevTurbineUserContext & {
+  /** Your stable internal user id. Must be a non-empty string. */
+  id: string;
+};
+
+/**
+ * The one diagnostic an SDK without an identified user reports (`0.13.0`).
+ *
+ * The SDK never throws into the host app for a missing user: it sits in its
+ * disabled state (no network, no evaluation, no user-scoped storage) and
+ * records this. Read it with `getUserRequiredDiagnostic()`; the SDK also
+ * logs it once per entry point.
+ *
+ * @public
+ */
+export interface RevTurbineUserRequiredDiagnostic {
+  /** Stable machine code. */
+  code: 'user_id_required';
+  /** Which entry point received the missing or blank id. */
+  entryPoint: 'init' | 'identify' | 'setUserContext';
+  /** What happened and the fix. */
+  message: string;
+}
+
+/**
+ * The `reason` a disabled SDK stamps on denied entitlement checks when it has
+ * no identified user (the sibling of `sdk_disabled_provider_failure`).
+ */
+const USER_REQUIRED_REASON = 'user_id_required';
+
+/**
  * The client-safe shape returned by `GET /api/sdk/client-context` (plan 157).
  * Only `client_safe` fields cross the boundary — `server_only` / `decision_only`
  * leaves are stripped server-side, so this response never carries raw provider
@@ -1102,7 +1133,11 @@ export interface RevTurbinePageContext {
  * All flags default to `true` when omitted.
  */
 export interface RevTurbineContextPolicy {
-  /** Infer anonymous user context from browser APIs. */
+  /**
+   * Infer user TRAITS from browser APIs for an identified user. Never creates
+   * an identity: the user id always comes from `user.id` / `identify()`, and
+   * an SDK without one is disabled whatever this flag says.
+   */
   inferUser?: boolean;
   /** Infer page context (URL, title, referrer) from `window.location`. */
   inferPage?: boolean;
@@ -1233,54 +1268,29 @@ export interface RevTurbineUiPathResolverValidationOptions {
 /**
  * Provider abstraction for Playbook access inside the SDK.
  *
- * Local mode typically uses a static provider backed by `localRuntime.playbook` (or its deprecated `exportedConfig` alias).
+ * Local mode typically uses a static provider backed by `localRuntime.playbook`.
  * Other modes can provide custom or REST-backed resolvers via `refresh()`.
  *
- * Implement **`getPlaybook()`** — `getExportedConfig()` is the deprecated
- * spelling of the same accessor, kept so an already-shipped implementation
- * keeps compiling. Both are optional *on this interface* so that neither
- * spelling breaks an existing `implements` clause; the
- * {@link RevTurbineInitOptions.configProvider} option intersects this with a
- * union that still requires exactly one of them, so a provider supplying
- * neither remains a compile error at the call site it is passed to.
+ * Implement **`getPlaybook()`**; it is required.
  */
 export interface RevTurbineConfigProvider {
   /** Return the latest available Playbook snapshot. */
-  getPlaybook?(): ConfigArtifact | undefined;
-  /**
-   * @deprecated Renamed to {@link RevTurbineConfigProvider.getPlaybook} —
-   * `Playbook` is the canonical name for the artifact (BL-0156). Still fully
-   * supported: implement either one. When both are present `getPlaybook()`
-   * wins. Removed in `0.13.0`.
-   */
-  getExportedConfig?(): ConfigArtifact | undefined;
+  getPlaybook(): ConfigArtifact | undefined;
   /** Optionally refresh the snapshot (for example, from a REST API). */
   refresh?(): Promise<ConfigArtifact | undefined>;
 }
 
 /**
- * A {@link RevTurbineConfigProvider} that supplies at least one of the two
- * Playbook accessors. This is the shape the SDK actually accepts — the bare
- * interface leaves both optional only so an existing `implements` clause keeps
- * compiling.
+ * The shape the SDK accepts for `configProvider`; identical to
+ * {@link RevTurbineConfigProvider}.
  */
-export type RevTurbineConfigProviderInput = RevTurbineConfigProvider &
-  (
-    | { getPlaybook(): ConfigArtifact | undefined }
-    | {
-        /** @deprecated Implement `getPlaybook()` instead. Removed in `0.13.0`. */
-        getExportedConfig(): ConfigArtifact | undefined;
-      }
-  );
+export type RevTurbineConfigProviderInput = RevTurbineConfigProvider;
 
 /**
- * Read a Playbook out of a customer-supplied provider, whichever accessor it
- * implements.
+ * Read a Playbook out of a customer-supplied provider via `getPlaybook()`.
  *
- * `getPlaybook()` is canonical; `getExportedConfig()` is the deprecated
- * spelling. This is the ONE place that decides precedence, so no call site can
- * disagree about which accessor wins — the same single-resolver rule plan 257
- * established for `resolveBrowserPublicKey`.
+ * This is the ONE place that reads the accessor, so no call site can disagree
+ * about how a provider is consulted.
  *
  * @internal
  */
@@ -1288,33 +1298,14 @@ export function resolveProviderPlaybook(
   provider: RevTurbineConfigProvider,
 ): ConfigArtifact | undefined {
   if (typeof provider.getPlaybook === 'function') return provider.getPlaybook();
-  if (typeof provider.getExportedConfig === 'function') {
-    warnDeprecatedPlaybookAliasOnce(
-      'configProvider.getExportedConfig() is deprecated; implement `getPlaybook()` instead.',
-    );
-    return provider.getExportedConfig();
-  }
-  throw new Error(
-    'RevTurbine: `configProvider` must implement `getPlaybook()` (or the deprecated `getExportedConfig()`).',
-  );
+  throw new Error('RevTurbine: `configProvider` must implement `getPlaybook()`.');
 }
 
 /**
- * @deprecated Renamed to {@link RevTurbineConfigProvider} (plan 104). Kept as a
- * back-compat alias so existing integrations keep compiling. Removed in
- * `0.13.0` alongside the other `ExportedConfig`-spelled aliases (BL-0156). Use
- * `RevTurbineConfigProvider`.
- */
-export type ExportedConfigProvider = RevTurbineConfigProvider;
-
-/**
- * The Playbook-named counterpart of the deprecated
- * {@link ExportedConfigProvider} alias (BL-0156).
+ * The Playbook-named counterpart of {@link RevTurbineConfigProvider}.
  *
  * Identical to {@link RevTurbineConfigProvider}, which remains the primary
- * name. This exists so code migrating off `ExportedConfigProvider` has a
- * Playbook-spelled name to land on rather than only the `RevTurbineConfig`
- * one.
+ * name.
  */
 export type PlaybookProvider = RevTurbineConfigProvider;
 
@@ -1328,6 +1319,7 @@ export type PlaybookProvider = RevTurbineConfigProvider;
  * const session = await initRevTurbine({
  *   publicKey: 'rtk_…', // your ingest key; add your app's origin to its allowed origins
  *   mode: 'react',
+ *   user: { id: 'user_123' }, // required: the signed-in user's stable id
  * });
  * ```
  */
@@ -1550,11 +1542,7 @@ export interface RevTurbineInitOptions {
   /**
    * Optional provider for Playbook-backed data (plans, segments, rules, ui paths).
    *
-   * Must implement `getPlaybook()` — or the deprecated `getExportedConfig()`,
-   * accepted for one minor. The union is spelled here rather than on
-   * {@link RevTurbineConfigProvider} so that an existing `implements
-   * RevTurbineConfigProvider` clause keeps compiling while a provider
-   * implementing *neither* accessor is still rejected at this call site.
+   * Must implement `getPlaybook()`.
    */
   configProvider?: RevTurbineConfigProviderInput;
   /** Local-only runtime configuration used in `local_only` mode. */
@@ -1598,7 +1586,27 @@ export interface RevTurbineInitOptions {
    * precedence.
    */
   serverActions?: ServerActionMap;
-  user?: RevTurbineUserContext;
+  /**
+   * The user the SDK evaluates for — **required**, with a non-empty `id`, in
+   * every runtime mode (`0.13.0`).
+   *
+   * A Playbook can only be evaluated against a UserContext, and an anonymous
+   * visitor never receives one, so the SDK has no anonymous mode. Initialise
+   * it after you know who the user is (after login); on logout unmount the
+   * provider or `identify()` the next user.
+   *
+   * At runtime a missing or blank `id` never throws: the SDK stays disabled
+   * (no network request, no evaluation, no user-scoped storage), answers
+   * every check and placement with its fallback, and reports one
+   * {@link RevTurbineUserRequiredDiagnostic} (`getUserRequiredDiagnostic()`).
+   * A later `identify(id)` with a real id enables it.
+   *
+   * @example
+   * ```ts
+   * initRevTurbine({ publicKey: 'rtk_…', mode: 'snippet', user: { id: 'user_123' } });
+   * ```
+   */
+  user: RevTurbineInitUser;
   /**
    * Mint a short-lived client-session token (`rt_client_`, plan 157) for the
    * signed-in user — the SDK's hook into server-authoritative context
@@ -1802,69 +1810,34 @@ export interface RevTurbineLocalRuntimeResolvers {
   getTrialStatus?: () => RevTurbineTrialContext | Promise<RevTurbineTrialContext>;
   /** Optional Playbook resolver for provider-backed config access in any mode. */
   resolvePlaybook?: () => ConfigArtifact | Promise<ConfigArtifact>;
-  /**
-   * @deprecated Renamed to {@link RevTurbineLocalRuntimeResolvers.resolvePlaybook}
-   * — `Playbook` is the canonical name for the artifact (BL-0156). Still fully
-   * supported: pass either one. When both are supplied `resolvePlaybook` wins.
-   * Removed in `0.13.0`.
-   */
-  resolveExportedConfig?: () => ConfigArtifact | Promise<ConfigArtifact>;
 }
 
 /**
- * Resolve the provider-backed Playbook resolver from either accepted key.
- *
- * `resolvePlaybook` is canonical; `resolveExportedConfig` is the deprecated
- * alias. The one place that decides precedence (BL-0156).
+ * Resolve the provider-backed Playbook resolver (`resolvers.resolvePlaybook`).
  *
  * @internal
  */
 export function resolvePlaybookResolver(
-  resolvers?: Pick<RevTurbineLocalRuntimeResolvers, 'resolvePlaybook' | 'resolveExportedConfig'> | null,
+  resolvers?: Pick<RevTurbineLocalRuntimeResolvers, 'resolvePlaybook'> | null,
 ): (() => ConfigArtifact | Promise<ConfigArtifact>) | undefined {
-  if (resolvers?.resolvePlaybook !== undefined) return resolvers.resolvePlaybook;
-  if (resolvers?.resolveExportedConfig !== undefined) {
-    warnDeprecatedPlaybookAliasOnce(
-      '`localRuntime.resolvers.resolveExportedConfig` is deprecated; rename it to `resolvePlaybook`.',
-    );
-    return resolvers.resolveExportedConfig;
-  }
-  return undefined;
+  return resolvers?.resolvePlaybook;
 }
 
 /**
- * Resolve the local-mode Playbook from either accepted key.
+ * Resolve the local-mode Playbook (`localRuntime.playbook`).
  *
- * `playbook` is canonical; `exportedConfig` is the legacy alias kept for
- * backwards compatibility. Both are optional at the type level, so this is the
- * one place that decides precedence — consumers must not read either key
- * directly or they will disagree about which one wins.
+ * This stays the one reader of the option so consumers never read the key
+ * directly.
  *
  * The returned artifact may be the raw {@link UnvalidatedConfigArtifact} the
  * caller supplied (e.g. an imported JSON module); the runtime config pipeline
  * validates it via `configArtifactForRuntime` before evaluation.
  */
 export function resolveLocalPlaybook(
-  localRuntime?: Pick<RevTurbineLocalRuntimeOptions, 'playbook' | 'exportedConfig'> | null,
+  localRuntime?: Pick<RevTurbineLocalRuntimeOptions, 'playbook'> | null,
 ): ConfigArtifact | UnvalidatedConfigArtifact | undefined {
-  if (localRuntime?.playbook !== undefined) return localRuntime.playbook;
-  if (localRuntime?.exportedConfig !== undefined) {
-    warnDeprecatedPlaybookAliasOnce(
-      '`localRuntime.exportedConfig` is deprecated; pass the same artifact as `localRuntime.playbook`.',
-    );
-    return localRuntime.exportedConfig;
-  }
-  return undefined;
+  return localRuntime?.playbook;
 }
-
-/**
- * Test-only: forget that the Playbook alias warning fired so the next read
- * warns again. Re-exported from {@link ./playbook-option} so the whole alias
- * surface is reachable from the barrel a customer already imports.
- *
- * @internal
- */
-export { resetPlaybookAliasWarning };
 
 export interface RevTurbineLocalRuntimeOptions {
   /**
@@ -1892,12 +1865,6 @@ export interface RevTurbineLocalRuntimeOptions {
    * fails closed — a chip or rule naming one matches nobody.
    */
   playbook?: ConfigArtifact | UnvalidatedConfigArtifact;
-  /**
-   * @deprecated Legacy alias for {@link RevTurbineLocalRuntimeOptions.playbook}.
-   * Still fully supported — pass either one. When both are supplied `playbook`
-   * wins. Prefer `playbook`: it matches the canonical type name.
-   */
-  exportedConfig?: ConfigArtifact | UnvalidatedConfigArtifact;
   /** Optional static placements dataset used by the SDK's built-in local resolver. */
   placements?: LocalPlacementDataset;
   /**
@@ -1927,28 +1894,19 @@ type RevTurbineBaseInitWithoutRuntimeSpecifics = Omit<
 
 /**
  * Strict initialization mode for compile-time safety:
- * when using `local_only` runtime with a Playbook (`localRuntime.playbook`, or
- * the legacy `localRuntime.exportedConfig`),
+ * when using `local_only` runtime with a Playbook (`localRuntime.playbook`),
  * `uiPathResolvers` is required.
  */
 export type RevTurbineInitOptionsStrict =
   | (RevTurbineBaseInitWithoutRuntimeSpecifics & {
       runtimeMode: 'local_only';
-      localRuntime: RevTurbineLocalRuntimeOptions &
-        (
-          | { playbook: ConfigArtifact }
-          | {
-              /** @deprecated Use `playbook` — the canonical key for the same artifact. */
-              exportedConfig: ConfigArtifact;
-            }
-        );
+      localRuntime: RevTurbineLocalRuntimeOptions & { playbook: ConfigArtifact };
       uiPathResolvers: RevTurbineUiPathResolverMap;
     })
   | (RevTurbineBaseInitWithoutRuntimeSpecifics & {
       runtimeMode: 'local_only';
       localRuntime: RevTurbineLocalRuntimeOptions & {
         playbook?: undefined;
-        exportedConfig?: undefined;
       };
       uiPathResolvers?: RevTurbineUiPathResolverMap;
     })
@@ -1992,17 +1950,11 @@ export function createLocalRuntimeConfig<const TUiPaths extends readonly unknown
   options: RevTurbineInitBaseOptions & {
     localRuntime: RevTurbineLocalRuntimeOptions &
       (
-        | {
-            playbook:
-              | (Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths })
-              | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
-          }
-        | {
-            /** @deprecated Use `playbook` — the canonical key for the same artifact. */
-            exportedConfig:
-              | (Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths })
-              | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
-          }
+        {
+          playbook:
+            | (Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths })
+            | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
+        }
       );
     uiPathResolvers: RevTurbineRequiredUiPathResolvers<TUiPaths> & RevTurbineUiPathResolverMap;
   },
@@ -2036,24 +1988,18 @@ export function createLocalRuntimeConfig(
  * Build a strict local-only SDK config.
  *
  * Unlike {@link createLocalRuntimeConfig}, this helper always requires
- * `exportedConfig.content_ui_paths` and complete `uiPathResolvers` coverage at
+ * `playbook.content_ui_paths` and complete `uiPathResolvers` coverage at
  * compile time for action types present in that Playbook.
  */
 export function createStrictLocalRuntimeConfig<const TUiPaths extends readonly unknown[]>(
   options: RevTurbineInitBaseOptions & {
     localRuntime: RevTurbineLocalRuntimeOptions &
       (
-        | {
-            playbook:
-              | (Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths })
-              | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
-          }
-        | {
-            /** @deprecated Use `playbook` — the canonical key for the same artifact. */
-            exportedConfig:
-              | (Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths })
-              | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
-          }
+        {
+          playbook:
+            | (Omit<RevTurbineConfig, 'content_ui_paths'> & { content_ui_paths: TUiPaths })
+            | (Omit<Playbook, 'content_ui_paths'> & { content_ui_paths: TUiPaths });
+        }
       );
     uiPathResolvers: RevTurbineRequiredUiPathResolvers<TUiPaths> & RevTurbineUiPathResolverMap;
   },
@@ -3492,6 +3438,7 @@ class ExternalRuntimePlaybookProvider implements RuntimePlaybookProvider {
  * const session = await initRevTurbine({
  *   publicKey: 'rtk_…',
  *   mode: 'react',
+ *   user: { id: 'user_123' }, // required: the signed-in user's stable id
  * });
  *
  * session.identify('user_123', { plan_handle: 'pro' });
@@ -3576,8 +3523,17 @@ export class RevTurbineCustomerSdk {
   private unregisterServerActionResolvers: () => void = () => {};
   private readonly persistentStore: RevTurbineStorage;
   private readonly sessionStore: RevTurbineStorage;
-  private readonly anonymousId: string;
+  /**
+   * Per-instance event correlation id, carried on the event envelope next to
+   * the user id. It is NOT an identity: it is random per SDK instance, never
+   * persisted, and never stands in for a user id anywhere.
+   */
+  private readonly correlationId: string;
   private readonly sessionId: string;
+  /** Set once the user-scoped runtime (storage hydration, Playbook load, telemetry) has started. */
+  private userRuntimeStarted = false;
+  private userRequiredDiagnostic?: RevTurbineUserRequiredDiagnostic;
+  private readonly reportedUserRequiredEntryPoints = new Set<string>();
   private readonly decisionCache = new Map<string, CacheEntry<RevTurbinePlacementDecision>>();
   /**
    * `output_id` → the placement it was decided for, plus the attribution fields
@@ -3825,13 +3781,22 @@ export class RevTurbineCustomerSdk {
     // BL-0352: the `user` option is a browser entry point like identify(), so
     // a plain-JS caller's server-assigned keys are dropped here too (reported
     // once the SDK can emit warnings, below).
-    const initUser = withoutServerAssignedKeys(options.user || {});
+    // A plain-JS caller can omit `user` or pass a non-object; the type forbids
+    // it, the runtime must still not throw (ST-1416).
+    const initUserInput: RevTurbineUserContext = options.user && typeof options.user === 'object' ? options.user : {};
+    const initUser = withoutServerAssignedKeys(initUserInput);
     this.userContext = {
       usage: {},
       ...(this.policy.inferUser ? inferUserContext() : {}),
       ...initUser.accepted,
       ...(initUser.accepted.addons === undefined ? {} : { addons: validatePurchasedAddons(initUser.accepted.addons) }),
     };
+    // ST-1416: identity comes only from `user.id`. A blank or non-string id is
+    // not an identity (the plain-JS caller's `''`, `'   '`, `42`), so it is
+    // dropped here and the SDK stays disabled until `identify()` supplies one.
+    if (!hasValue(this.userContext.id)) {
+      this.userContext = { ...this.userContext, id: undefined };
+    }
     // BL-0403: an init `user.trial` is app-supplied trial state. Stamped here,
     // BEFORE `hydrateLocalRuntimeState()` below, so an
     // `initialData.trialStatus` supplied alongside it is the newer write and
@@ -3844,30 +3809,13 @@ export class RevTurbineCustomerSdk {
       ...(options.page || {}),
       tags: ensureArray(options.page?.tags),
     };
-    this.anonymousId = this.resolveAnonymousId();
-    // Plan 194 REQ-10. `identify('')` is refused loudly; init was not, so an
-    // app that meant to supply an id and had none fell through to an anonymous
-    // id and evaluated normally — caps, usage attribution and analytics
-    // identity all keyed to a user that does not exist, with no signal.
-    //
-    // Deliberately narrow: this fires only when a `user` object IS supplied and
-    // its `id` is blank — the caller intended identity and did not get it.
-    // Omitting `user` entirely is legitimate (a signed-out visitor is what the
-    // anonymous id is FOR), and warning on that would be noise people learn to
-    // ignore.
-    if (
-      isRecord(options.user) &&
-      'id' in options.user &&
-      (typeof options.user.id !== 'string' || options.user.id.trim() === '')
-    ) {
-      console.error(
-        '[RevTurbine] init() received a `user` with a blank id; falling back to an ' +
-          'anonymous id. Caps, usage attribution and analytics identity will key to ' +
-          'that anonymous id, not to your user. Pass a stable internal user id, or ' +
-          'omit `user` entirely if the visitor really is signed out.',
-      );
-      this.emitSdkWarning('init received a blank user id');
-    }
+    this.correlationId = requestId();
+    // ST-1416: a user with a non-empty id is required in every runtime mode
+    // (a Playbook can only be evaluated against a UserContext, and anonymous
+    // users never receive one). Without it the SDK is disabled — no network,
+    // no evaluation, no user-scoped storage — and says so once. It never
+    // throws into the host app.
+    if (this.identifiedUserId === undefined) this.reportUserRequired('init');
     this.reportServerAssignedContextKeys('init', initUser.dropped);
     this.sessionId = requestId();
     this.providerRegistry = new DomainProviderRegistry();
@@ -3878,7 +3826,7 @@ export class RevTurbineCustomerSdk {
         storage: this.persistentStore,
         tenantId: this.tenantNamespace,
       }),
-      userId: this.userContext.id ?? this.anonymousId,
+      userId: this.identifiedUserId ?? '',
     });
     applyPlacementRegistrySeed(this.placementTypeRegistry);
     const experimentProviders = configuredDomainProviders.filter(
@@ -3936,17 +3884,15 @@ export class RevTurbineCustomerSdk {
         action_outcome: error ? 'rejected' : success ? 'success' : 'failure',
       }, { immediate: false }),
     });
-    this.hydrateDecisionCache();
-    this.hydrateInteractionState();
-    this.hydrateOutputPlacementIndex();
-    this.hydratePresentationCaps();
-    this.hydrateLocalRuntimeState();
-    // Hydrate impression history so retired-placement cache is warm before resolutions.
-    void this.impressionHistory.hydrate();
-    this.rebuildSegmentPredicateFieldIndex();
-    void this.refreshPlaybookSnapshot();
-    // recalculateDerivedUsageTraits() hydrates usage limits for the current plan.
-    this.recalculateDerivedUsageTraits();
+    // ST-1416: everything below that reads user-scoped storage, loads the
+    // Playbook or talks to the network waits for an identified user. With one
+    // it runs here, in its original order; without one it runs on the first
+    // valid `identify()` instead (see {@link startUserRuntime}).
+    const identifiedAtInit = this.identifiedUserId !== undefined;
+    if (identifiedAtInit) {
+      this.userRuntimeStarted = true;
+      this.hydrateUserScopedRuntime();
+    }
 
     if (isBrowser() && this.policy.routerAutoTrack) {
       this.installRouteTracking();
@@ -3956,6 +3902,46 @@ export class RevTurbineCustomerSdk {
       this.installBridge();
     }
 
+    if (identifiedAtInit) this.emitUserRuntimeStartEvents();
+
+    // Plan 95 TASK-6: time-interval + page-unload flushing so buffered
+    // clickstream events reach /api/track even in low-volume sessions.
+    this.startEventBatchFlushing();
+    if (identifiedAtInit) this.startUserRuntimeTelemetry();
+  }
+
+  /**
+   * The identified user's id, or `undefined` when the SDK has none (ST-1416).
+   * A blank / whitespace-only / non-string id is not an identity. This is the
+   * ONE place the SDK decides whether it has a user; the disabled state, the
+   * storage keys and every network path derive from it.
+   */
+  private get identifiedUserId(): string | undefined {
+    const id: unknown = this.userContext.id; // sdk-ok: boundary-parse — plain-JS callers can put any value here
+    return hasValue(id) ? id : undefined;
+  }
+
+  /**
+   * Read user-scoped storage, load the Playbook and derive state for the
+   * identified user — the first half of what the constructor used to do
+   * unconditionally. Only ever runs with an identified user.
+   */
+  private hydrateUserScopedRuntime(restoreUserContext = true): void {
+    this.hydrateDecisionCache();
+    this.hydrateInteractionState();
+    this.hydrateOutputPlacementIndex();
+    this.hydratePresentationCaps();
+    this.hydrateLocalRuntimeState(restoreUserContext);
+    // Hydrate impression history so retired-placement cache is warm before resolutions.
+    void this.impressionHistory.hydrate();
+    this.rebuildSegmentPredicateFieldIndex();
+    void this.refreshPlaybookSnapshot();
+    // recalculateDerivedUsageTraits() hydrates usage limits for the current plan.
+    this.recalculateDerivedUsageTraits();
+  }
+
+  /** The initial `page_view` and trial-lifecycle evaluation — identified user only. */
+  private emitUserRuntimeStartEvents(): void {
     // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#initialPageView
     void this.capture('page_view', {
       mode: this.mode,
@@ -3967,17 +3953,76 @@ export class RevTurbineCustomerSdk {
     // BL-0417: an init `user.trial` / `initialData.trialStatus` / restored
     // trial runs the lifecycle evaluation once the SDK can emit.
     this.syncTrialLifecycleWithView();
+  }
 
-    // Plan 95 TASK-6: time-interval + page-unload flushing so buffered
-    // clickstream events reach /api/track even in low-volume sessions.
-    this.startEventBatchFlushing();
-    // Plan 95 TASK-7: keyless anonymous adoption beacon — only fires when no
-    // ingest key is configured (see emitSdkInitTelemetry); best-effort.
+  /** The keyless init beacon and the client-context loop — identified user only. */
+  private startUserRuntimeTelemetry(): void {
+    // Plan 95 TASK-7: keyless adoption beacon — only fires when no ingest key
+    // is configured (see emitSdkInitTelemetry); best-effort. It carries no
+    // user identity and no install id, and (ST-1416) is withheld until the SDK
+    // has an identified user: an SDK without one makes no request at all.
     void this.emitSdkInitTelemetry();
     // Plan 191 REQ-5: with a `clientSession` minter configured, the SDK owns
     // the client-context loop from here — no app call required. Fire-and-
     // forget: enrichment must never delay or fail construction.
     this.autoFetchClientContext();
+  }
+
+  /**
+   * Start the user-scoped runtime the first time an identified user exists
+   * after an init that had none (ST-1416). Idempotent; the constructor sets
+   * {@link userRuntimeStarted} for an init that was identified.
+   */
+  private startUserRuntime(): void {
+    if (this.userRuntimeStarted || this.identifiedUserId === undefined) return;
+    this.userRuntimeStarted = true;
+    this.hydrateUserScopedRuntime(false);
+    this.emitUserRuntimeStartEvents();
+    this.startUserRuntimeTelemetry();
+  }
+
+  /**
+   * Re-point the in-memory copies of user-scoped storage at the current
+   * identified user (ST-1416). Before the user-scoped runtime has started the
+   * start itself hydrates, so this is a no-op until then.
+   */
+  private rehydrateUserScopedStorage(): void {
+    if (!this.userRuntimeStarted) return;
+    this.interactionState.clear();
+    this.outputPlacementIndex.clear();
+    this.presentationCapsByKey.clear();
+    this.hydrateDecisionCache();
+    this.hydrateInteractionState();
+    this.hydrateOutputPlacementIndex();
+    this.hydratePresentationCaps();
+  }
+
+  /**
+   * Report that the SDK has no identified user — the single typed diagnostic
+   * (ST-1416). Logged once per entry point and kept for
+   * {@link getUserRequiredDiagnostic}. Never throws; makes no network request.
+   */
+  private reportUserRequired(entryPoint: RevTurbineUserRequiredDiagnostic['entryPoint']): void {
+    const message = entryPoint !== 'init'
+      ? `${entryPoint}() requires a non-empty user id; the blank id was ignored. Pass your stable internal user id.`
+      : 'RevTurbine requires an identified user: pass `user: { id }` (your stable internal user id) when you '
+        + 'initialise the SDK, after the user is known (after login). Without it the SDK is disabled: it makes '
+        + 'no requests, evaluates nothing and returns fallbacks. Call identify(id) to enable it.';
+    this.userRequiredDiagnostic = { code: 'user_id_required', entryPoint, message };
+    if (this.reportedUserRequiredEntryPoints.has(entryPoint)) return;
+    this.reportedUserRequiredEntryPoints.add(entryPoint);
+    console.error(`[RevTurbine] ${USER_REQUIRED_REASON}: ${message}`);
+  }
+
+  /**
+   * The diagnostic naming why the SDK is disabled, or `undefined` when it has
+   * not refused a missing or blank user id (ST-1416). See
+   * {@link RevTurbineUserRequiredDiagnostic}.
+   *
+   * @public
+   */
+  getUserRequiredDiagnostic(): RevTurbineUserRequiredDiagnostic | undefined {
+    return this.userRequiredDiagnostic ? { ...this.userRequiredDiagnostic } : undefined;
   }
 
   private isLocalOnlyMode(): boolean {
@@ -4066,6 +4111,9 @@ export class RevTurbineCustomerSdk {
     // awaiting the same in-flight promise is what lets those decisions wait for
     // the fetch instead of each firing their own.
     if (this.playbookLoadInFlight) return this.playbookLoadInFlight;
+    // ST-1416: the Playbook is delivered for a user. Without one nothing is
+    // fetched (no /api/sdk/config, no CDN bootstrap) and nothing is loaded.
+    if (this.identifiedUserId === undefined) return;
 
     const attempt = (async () => {
       let previousConfig: RevTurbineConfig | undefined;
@@ -4122,6 +4170,8 @@ export class RevTurbineCustomerSdk {
   getPlaybookLoadState(): RevTurbinePlaybookLoadState {
     if (this.getConfiguredPlaybook()) return 'ready';
     if (!this.configProvider) return 'unavailable';
+    // ST-1416: nothing is loading and nothing will until a user is identified.
+    if (this.identifiedUserId === undefined) return 'unavailable';
     if (this.playbookLoadInFlight) return 'loading';
     return this.playbookLoadAttempted ? 'unavailable' : 'loading';
   }
@@ -4493,8 +4543,9 @@ export class RevTurbineCustomerSdk {
 
   /**
    * Whether `nextUserId` names a DIFFERENT identified user than the one the
-   * SDK currently holds (BL-0417). Anonymous → identified is not a switch: the
-   * anonymous visitor becomes that user, so what they accumulated is kept.
+   * SDK currently holds (BL-0417). No-user → identified (an init without a
+   * user, or after a reset) is not a switch: nothing belonged to a previous
+   * user, so what the app supplied in the meantime is kept.
    */
   private isIdentifiedUserSwitch(nextUserId: unknown): boolean { // sdk-ok: boundary-parse
     const currentUserId = this.userContext.id;
@@ -4516,7 +4567,7 @@ export class RevTurbineCustomerSdk {
    * own values are merged in afterwards by the caller, so user B can never be
    * granted user A's plan or entitlements until the next server delivery.
    *
-   * Anonymous → identified and re-identifying the same user are not switches
+   * No-user → identified and re-identifying the same user are not switches
    * (see {@link isIdentifiedUserSwitch}) and keep merging.
    */
   private dropPreviousUserState(): void {
@@ -4936,8 +4987,8 @@ export class RevTurbineCustomerSdk {
   ): void {
     if (this.configuredSegmentsById.size === 0) return;
 
-    const previousUserId = previousContext.id || this.anonymousId;
-    const nextUserId = nextContext.id || this.anonymousId;
+    const previousUserId = previousContext.id ?? '';
+    const nextUserId = nextContext.id ?? '';
     if (previousUserId !== nextUserId) {
       this.segmentMembershipUserId = nextUserId;
       this.markAllSegmentsDirty();
@@ -4980,24 +5031,43 @@ export class RevTurbineCustomerSdk {
     console.warn(`[RevTurbine] SDK disabled after provider fallback chain failed: ${reason}`);
   }
 
-  private isDisabledByProviderFailure(): boolean {
-    return this.sdkDisabledByProviderFailure;
+  /**
+   * Whether the SDK is in its disabled/fallback state: either the provider
+   * chain failed ({@link disableForProviderFailure}) or — ST-1416 — there is no
+   * identified user. Both answer every decision and check with their fallback;
+   * the reason differs ({@link disabledReason}).
+   */
+  private isSdkDisabled(): boolean {
+    return this.sdkDisabledByProviderFailure || this.identifiedUserId === undefined;
+  }
+
+  /** Why the SDK is disabled: the provider-failure reason, else {@link USER_REQUIRED_REASON}. */
+  private disabledReason(): string {
+    return this.sdkDisabledReason ?? (
+      this.sdkDisabledByProviderFailure ? 'sdk_disabled_provider_failure' : USER_REQUIRED_REASON
+    );
   }
 
   private disabledDecisionForPlacement(
     placementId: string,
     placementName?: string,
   ): RevTurbinePlacementDecision {
-    const visible = this.providerFailureSlotBehavior === 'placeholder';
+    // A missing user (ST-1416) is never rendered as a placeholder: with no
+    // UserContext there is no experience to stand in for.
+    const userRequired = !this.sdkDisabledByProviderFailure;
+    const reason = userRequired ? USER_REQUIRED_REASON : 'sdk_disabled_provider_failure';
+    const visible = !userRequired && this.providerFailureSlotBehavior === 'placeholder';
     const title = visible
       ? `${placementName ?? placementId} temporarily unavailable`
       : `${placementName ?? placementId} unavailable`;
     const body = visible
       ? 'This placement is in safe fallback mode because all configured providers failed.'
-      : 'This placement is currently hidden because provider fallback resolution failed.';
+      : userRequired
+        ? 'This placement is hidden because the SDK has no identified user.'
+        : 'This placement is currently hidden because provider fallback resolution failed.';
 
     this.emitResolutionFailure({
-      reason: 'sdk_disabled_provider_failure',
+      reason,
       placement_handle: placementId,
     });
     return {
@@ -5005,8 +5075,8 @@ export class RevTurbineCustomerSdk {
       requestId: requestId(),
       visible,
       decisionSource: 'fallback',
-      reasonCodes: ['sdk_disabled_provider_failure'],
-      suppressionReason: visible ? undefined : 'sdk_disabled_provider_failure',
+      reasonCodes: [reason],
+      suppressionReason: visible ? undefined : reason,
       content: decisionContent(
         title,
         body,
@@ -5018,7 +5088,7 @@ export class RevTurbineCustomerSdk {
   private disabledPlacementOutputForConfig(
     config: RevTurbinePlacementRequestConfig,
   ): PlacementOutput | null {
-    if (this.providerFailureSlotBehavior !== 'placeholder') {
+    if (!this.sdkDisabledByProviderFailure || this.providerFailureSlotBehavior !== 'placeholder') {
       return null;
     }
 
@@ -5165,7 +5235,14 @@ export class RevTurbineCustomerSdk {
     return decision.output ?? null;
   }
 
-  private hydrateLocalRuntimeState(): void {
+  /**
+   * @param restoreUserContext - restore the persisted user context over the
+   *   one the app supplied. `true` at construction (the init `user` is the
+   *   persisted user's own reload); `false` when the runtime starts late, from
+   *   `identify()` / `setUserContext()`, where the app has just supplied the
+   *   current context and older persisted values must not overwrite it.
+   */
+  private hydrateLocalRuntimeState(restoreUserContext = true): void {
     if (!this.isLocalOnlyMode()) return;
 
     const fromInit = this.localRuntime?.initialData;
@@ -5214,7 +5291,10 @@ export class RevTurbineCustomerSdk {
       // app-set `builtin_dimensions`); purge on restore. Browser storage is
       // app-writable, so a persisted built-in value is never trusted — the
       // next client-context delivery re-supplies the server's values.
-      if (parsed.userContext) {
+      // ST-1416: only the SAME user's persisted context is restored. The blob
+      // is keyed by tenant, not by user, so a different (or id-less) persisted
+      // user must never lend its identity or traits to this one.
+      if (restoreUserContext && parsed.userContext && parsed.userContext.id === this.identifiedUserId) {
         this.userContext = this.mergeUserContext(withoutServerAssignedKeys(parsed.userContext).accepted);
       }
       if (parsed.pageContext) this.pageContext = this.mergePageContext(parsed.pageContext);
@@ -5254,6 +5334,8 @@ export class RevTurbineCustomerSdk {
 
   private persistLocalRuntimeState(): void {
     if (!this.isLocalOnlyMode()) return;
+    // ST-1416: no user, no user-scoped storage.
+    if (this.identifiedUserId === undefined) return;
     try {
       const payload = {
         userContext: this.userContext,
@@ -5276,20 +5358,29 @@ export class RevTurbineCustomerSdk {
     }
   }
 
-  private decisionCacheStorageKey(): string {
-    return `${DECISION_CACHE_STORAGE_PREFIX}:${this.tenantNamespace}:${this.anonymousId}`;
+  // ST-1416: user-scoped storage is keyed by the IDENTIFIED user's id (it was
+  // keyed by a per-browser anonymous id). With no identified user there is no
+  // key (`undefined`) and the hydrate/persist methods below do nothing, so an
+  // SDK without a user reads and writes no user-scoped storage at all.
+  private userScopedStorageKey(prefix: string): string | undefined {
+    const userId = this.identifiedUserId;
+    return userId === undefined ? undefined : `${prefix}:${this.tenantNamespace}:${userId}`;
   }
 
-  private interactionStateStorageKey(): string {
-    return `${INTERACTION_STATE_STORAGE_PREFIX}:${this.tenantNamespace}:${this.anonymousId}`;
+  private decisionCacheStorageKey(): string | undefined {
+    return this.userScopedStorageKey(DECISION_CACHE_STORAGE_PREFIX);
   }
 
-  private presentationCapsStorageKey(): string {
-    return `${PRESENTATION_CAPS_STORAGE_PREFIX}:${this.tenantNamespace}:${this.anonymousId}`;
+  private interactionStateStorageKey(): string | undefined {
+    return this.userScopedStorageKey(INTERACTION_STATE_STORAGE_PREFIX);
   }
 
-  private outputPlacementIndexStorageKey(): string {
-    return `${OUTPUT_PLACEMENT_INDEX_STORAGE_PREFIX}:${this.tenantNamespace}:${this.anonymousId}`;
+  private presentationCapsStorageKey(): string | undefined {
+    return this.userScopedStorageKey(PRESENTATION_CAPS_STORAGE_PREFIX);
+  }
+
+  private outputPlacementIndexStorageKey(): string | undefined {
+    return this.userScopedStorageKey(OUTPUT_PLACEMENT_INDEX_STORAGE_PREFIX);
   }
 
   /**
@@ -5343,7 +5434,9 @@ export class RevTurbineCustomerSdk {
   }
 
   private hydrateOutputPlacementIndex(): void {
-    const raw = this.persistentStore.getItem(this.outputPlacementIndexStorageKey());
+    const storageKey = this.outputPlacementIndexStorageKey();
+    if (storageKey === undefined) return;
+    const raw = this.persistentStore.getItem(storageKey);
     if (!raw) return;
     try {
       const parsed = JSON.parse(raw) as Record<string, OutputPlacementRef>;
@@ -5353,14 +5446,16 @@ export class RevTurbineCustomerSdk {
         this.outputPlacementIndex.set(outputId, ref);
       });
     } catch {
-      this.persistentStore.removeItem(this.outputPlacementIndexStorageKey());
+      this.persistentStore.removeItem(storageKey);
     }
   }
 
   private persistOutputPlacementIndex(): void {
+    const storageKey = this.outputPlacementIndexStorageKey();
+    if (storageKey === undefined) return;
     try {
       this.persistentStore.setItem(
-        this.outputPlacementIndexStorageKey(),
+        storageKey,
         JSON.stringify(Object.fromEntries(this.outputPlacementIndex.entries())),
       );
     } catch {
@@ -5370,7 +5465,9 @@ export class RevTurbineCustomerSdk {
   }
 
   private hydrateDecisionCache(): void {
-    const raw = this.sessionStore.getItem(this.decisionCacheStorageKey());
+    const storageKey = this.decisionCacheStorageKey();
+    if (storageKey === undefined) return;
+    const raw = this.sessionStore.getItem(storageKey);
     if (!raw) return;
 
     try {
@@ -5382,24 +5479,28 @@ export class RevTurbineCustomerSdk {
         this.decisionCache.set(key, entry);
       });
     } catch {
-      this.sessionStore.removeItem(this.decisionCacheStorageKey());
+      this.sessionStore.removeItem(storageKey);
     }
   }
 
   private persistDecisionCache(): void {
+    const storageKey = this.decisionCacheStorageKey();
+    if (storageKey === undefined) return;
     const now = Date.now();
     const payload = Object.fromEntries(
       Array.from(this.decisionCache.entries()).filter(([, value]) => value.expiresAt > now),
     );
     try {
-      this.sessionStore.setItem(this.decisionCacheStorageKey(), JSON.stringify(payload));
+      this.sessionStore.setItem(storageKey, JSON.stringify(payload));
     } catch {
       // Swallow quota/serialization issues and continue with in-memory cache.
     }
   }
 
   private hydrateInteractionState(): void {
-    const raw = this.persistentStore.getItem(this.interactionStateStorageKey());
+    const storageKey = this.interactionStateStorageKey();
+    if (storageKey === undefined) return;
+    const raw = this.persistentStore.getItem(storageKey);
     if (!raw) return;
 
     try {
@@ -5411,14 +5512,16 @@ export class RevTurbineCustomerSdk {
         this.interactionState.set(key, entry);
       });
     } catch {
-      this.persistentStore.removeItem(this.interactionStateStorageKey());
+      this.persistentStore.removeItem(storageKey);
     }
   }
 
   private persistInteractionState(): void {
+    const storageKey = this.interactionStateStorageKey();
+    if (storageKey === undefined) return;
     const payload = Object.fromEntries(this.interactionState.entries());
     try {
-      this.persistentStore.setItem(this.interactionStateStorageKey(), JSON.stringify(payload));
+      this.persistentStore.setItem(storageKey, JSON.stringify(payload));
     } catch {
       // Swallow quota/serialization issues and continue with in-memory state.
     }
@@ -5457,7 +5560,7 @@ export class RevTurbineCustomerSdk {
   }
 
   private presentationCapHistoryKey(): string {
-    return `${PRESENTATION_CAP_RULES_STORAGE_PREFIX}:${this.tenantNamespace}:${this.userContext.id || this.anonymousId}`;
+    return `${PRESENTATION_CAP_RULES_STORAGE_PREFIX}:${this.tenantNamespace}:${this.identifiedUserId ?? ''}`;
   }
 
   /** History for the current user, hydrated lazily and re-read when the user changes. */
@@ -5581,7 +5684,9 @@ export class RevTurbineCustomerSdk {
   }
 
   private hydratePresentationCaps(): void {
-    const raw = this.persistentStore.getItem(this.presentationCapsStorageKey());
+    const storageKey = this.presentationCapsStorageKey();
+    if (storageKey === undefined) return;
+    const raw = this.persistentStore.getItem(storageKey);
     if (!raw) return;
 
     try {
@@ -5597,14 +5702,16 @@ export class RevTurbineCustomerSdk {
         this.presentationCapsByKey.set(key, { seenAt, cooldownUntil });
       }
     } catch {
-      this.persistentStore.removeItem(this.presentationCapsStorageKey());
+      this.persistentStore.removeItem(storageKey);
     }
   }
 
   private persistPresentationCaps(): void {
+    const storageKey = this.presentationCapsStorageKey();
+    if (storageKey === undefined) return;
     try {
       const payload = Object.fromEntries(this.presentationCapsByKey.entries());
-      this.persistentStore.setItem(this.presentationCapsStorageKey(), JSON.stringify(payload));
+      this.persistentStore.setItem(storageKey, JSON.stringify(payload));
     } catch {
       // Best effort persistence.
     }
@@ -6180,12 +6287,7 @@ export class RevTurbineCustomerSdk {
       contextPolicy: this.policy,
       placementBehavior: this.placementBehavior,
       runtimeMode: this.runtimeMode,
-      // Both keys carry the identical value. `playbookVersion` is canonical;
-      // `exportedConfigVersion` is emitted alongside it so a reader on the old
-      // key keeps working, and is removed in 0.13.0.
-      ...(typeof playbook?.format_version === 'string'
-        ? { playbookVersion: playbook.format_version, exportedConfigVersion: playbook.format_version }
-        : {}),
+      ...(typeof playbook?.format_version === 'string' ? { playbookVersion: playbook.format_version } : {}),
     };
   }
 
@@ -6346,7 +6448,7 @@ export class RevTurbineCustomerSdk {
    * surfaces can display the same context used by placement eligibility.
    */
   getTargeting(): RevTurbineTargeting {
-    const userId = this.userContext.id || this.anonymousId;
+    const userId = this.identifiedUserId ?? '';
     const cachedContext = this.localUserContextsByUserId.get(userId);
     const playbook = this.getConfiguredPlaybook();
     const configuredPlanName = configuredPlanNameFromPlaybook(playbook, this.userContext.plan);
@@ -6861,21 +6963,6 @@ export class RevTurbineCustomerSdk {
     }
   }
 
-  private resolveAnonymousId(): string {
-    const storageKey = `revturbine:${this.tenantNamespace}:anon`; 
-    try {
-      const existing = this.persistentStore.getItem(storageKey);
-      if (existing) return existing;
-
-      const generated = requestId();
-      this.persistentStore.setItem(storageKey, generated);
-      return generated;
-    } catch {
-      // Fallback to per-session anonymous id when storage is unavailable.
-      return requestId();
-    }
-  }
-
   private installBridge(): void {
     const bridge: RevTurbineBridge = {
       getSnapshot: () => ({
@@ -7082,14 +7169,16 @@ export class RevTurbineCustomerSdk {
       path,
       page_title: resolvedPage.title || (isBrowser() ? document.title : ''),
       event_time: new Date().toISOString(),
-      anonymous_id: this.anonymousId,
-      user_id: this.userContext.id || null,
+      // The core envelope contract still carries `anonymous_id`; it holds the
+      // per-instance correlation id, never a user id (ST-1416).
+      anonymous_id: this.correlationId,
+      user_id: this.identifiedUserId ?? null,
       session_id: this.sessionId,
       tags: ensureArray(resolvedPage.tags),
       identity: {
         tenant_id: this.tenantId ?? '',
-        user_id: this.userContext.id || null,
-        anonymous_id: this.anonymousId,
+        user_id: this.identifiedUserId ?? null,
+        anonymous_id: this.correlationId,
         // The field-names signal (plan 114 TASK-4) is names-only: it must never
         // carry the custom VALUES that other events attach as traits (AC-9).
         traits: type === USER_CONTEXT_FIELDS_EVENT ? {} : { ...(this.userContext.custom || {}) },
@@ -7320,6 +7409,10 @@ export class RevTurbineCustomerSdk {
       >
     > = {},
   ): Promise<void> {
+    // ST-1416: an SDK without an identified user makes no request at all —
+    // the keyless beacon and the diagnostics included. (The beacon carries no
+    // user identity and no install id; it is withheld, not anonymised.)
+    if (this.identifiedUserId === undefined) return;
     // Whole body is best-effort: hashing, serialization, AND delivery must
     // never throw into the host app (REQ-3/REQ-4).
     try {
@@ -7430,12 +7523,18 @@ export class RevTurbineCustomerSdk {
     // destination.
     if (!this.analyticsEnabled) return;
 
+    // ST-1416: an event with no user id is never sent. `capture` already
+    // refuses to create one without an identified user; this is the wire-side
+    // backstop, so no anonymous id can ever stand in as `user_id`.
+    const identifiedEvents = sanitized.filter((event) => hasValue(event.user_id));
+    if (identifiedEvents.length === 0) return;
+
     const rid = requestId();
     // Map each envelope to the canonical scaffold `TrackEvent`
     // (`@revt-eng/schema`). The SDK has no first-class environment /
     // account concept, so: `environment_id` comes from the init option
-    // (default `'default'`) and `user_id` falls back to the always-present
-    // anonymous id. `account_id` carries the PREFIXED user-derived fallback
+    // (default `'default'`) and `user_id` is the identified user's id.
+    // `account_id` carries the PREFIXED user-derived fallback
     // (`user-fallback:<user_id>`) when the integration identified no account —
     // see {@link resolveAccountIdentity}. The full SDK property
     // bag (level/message/url/traits/raw payload) is preserved as the
@@ -7447,11 +7546,11 @@ export class RevTurbineCustomerSdk {
     // `format_version` constant — the latter would stamp the same value on
     // every event forever and correlate nothing.
     const playbookVersion = this.getConfiguredPlaybook()?.playbook_version_id;
-    const trackEvents: TrackEvent[] = sanitized.map((event) => {
+    const trackEvents: TrackEvent[] = identifiedEvents.map((event) => {
       // `user_id` and the property bag were already scrubbed by
       // `redactEnvelope` above. `account_id` is not carried on the envelope,
       // so it is the one identity field redacted here.
-      const userId = event.user_id || event.anonymous_id;
+      const userId = event.user_id ?? '';
       const accountId = this.resolveAccountIdentity();
       // Idempotent second pass: the envelope is already clean, so this only
       // covers the SDK-generated fields assembled here. Already-redacted
@@ -7688,6 +7787,13 @@ export class RevTurbineCustomerSdk {
     // any destination. Checked live, so a `setTelemetryConsent('granted')`
     // resumes emission on the very next call without a remount (REQ-12).
     if (!this.telemetryConsented()) {
+      this.telemetryCounters.dropped += 1;
+      return;
+    }
+
+    // ST-1416: no identified user, no event — nothing is created, buffered or
+    // delivered, and no anonymous id stands in as `user_id`.
+    if (this.identifiedUserId === undefined) {
       this.telemetryCounters.dropped += 1;
       return;
     }
@@ -7949,7 +8055,16 @@ export class RevTurbineCustomerSdk {
   }
 
   /** {@link setUserContext}'s merge, on a patch already cleared of server-assigned keys. */
-  private mergeAcceptedUserContext(userContext: RevTurbineUserContext): void {
+  private mergeAcceptedUserContext(patch: RevTurbineUserContext): void {
+    let userContext = patch;
+    // ST-1416: a patch cannot blank the identity. An explicit blank / non-string
+    // `id` is refused exactly as `identify('')` is — dropped from the patch,
+    // one typed diagnostic — so the held user stays identified.
+    if (userContext.id !== undefined && !hasValue(userContext.id)) {
+      this.reportUserRequired('setUserContext');
+      // `mergeUserContext` skips undefined values, so this leaves `id` as held.
+      userContext = { ...userContext, id: undefined };
+    }
     // BL-0131 (D-19): the same email-shaped-identity warning as `identify()`.
     // This is the other way an app sets identity, so guarding only `identify()`
     // would leave the diagnostic trivially avoidable — and `update()` routes
@@ -7966,6 +8081,17 @@ export class RevTurbineCustomerSdk {
     const switched = this.isIdentifiedUserSwitch(userContext.id);
     if (switched) this.dropPreviousUserState();
     this.userContext = this.mergeUserContext(userContext);
+    // ST-1416: `setUserContext({ id })` is the other way to name the user, so
+    // it follows the user like `identify()` does: user-scoped storage and
+    // impression history move to the new id, and the first valid id after an
+    // init without one starts the user-scoped runtime.
+    const identifiedUserId = this.identifiedUserId;
+    if (identifiedUserId !== undefined && previousContext.id !== identifiedUserId) {
+      this.rehydrateUserScopedStorage();
+      this.impressionHistory.setUserId(identifiedUserId);
+      void this.impressionHistory.hydrate();
+    }
+    this.startUserRuntime();
     // A client-session token is minted for one user; the switched-to user
     // gets a fresh one, exactly as identify() does.
     if (switched) this.remintClientContextForSwitch();
@@ -8261,7 +8387,7 @@ export class RevTurbineCustomerSdk {
    * @internal
    */
   private async upsertSurfaceSlot(record: RevTurbinePlacementRecord): Promise<void> {
-    if (this.isLocalOnlyMode()) {
+    if (this.isLocalOnlyMode() || this.identifiedUserId === undefined) {
       return;
     }
 
@@ -8463,7 +8589,7 @@ export class RevTurbineCustomerSdk {
    * the same name) to send these somewhere real.
    */
   async persistPlacementTypes(types: RevTurbinePlacementTypeEntity[]): Promise<void> {
-    if (this.isLocalOnlyMode()) return;
+    if (this.isLocalOnlyMode() || this.identifiedUserId === undefined) return;
 
     // No default route exists for this verb, so an unconfigured call can only
     // 404. Fail silent-but-visible instead of throwing (plan 208, F-88).
@@ -8570,7 +8696,7 @@ export class RevTurbineCustomerSdk {
   private placementCapKey(output: PlacementOutput): string {
     return [
       this.tenantNamespace,
-      this.userContext.id || this.anonymousId,
+      this.identifiedUserId ?? '',
       output.surface.type,
       output.output_id,
     ].join(':');
@@ -8692,7 +8818,7 @@ export class RevTurbineCustomerSdk {
     const placement = this.placements.get(input.placementId);
     const rid = requestId();
 
-    if (this.isDisabledByProviderFailure()) {
+    if (this.isSdkDisabled()) {
       return this.disabledDecisionForPlacement(input.placementId, placement?.name);
     }
 
@@ -8830,7 +8956,7 @@ export class RevTurbineCustomerSdk {
   }
 
   async bootstrapPlacementDecisions(inputs: RevTurbinePlacementDecisionInput[]): Promise<void> {
-    if (this.isDisabledByProviderFailure()) {
+    if (this.isSdkDisabled()) {
       await Promise.all(inputs.map(async (input) => {
         const decision = await this.getPlacementDecision(input);
         const cacheKey = this.decisionCacheKey(input);
@@ -9172,7 +9298,7 @@ export class RevTurbineCustomerSdk {
    *    have no user identity to derive from; the browser SDK always has one,
    *    so it always sends the fallback rather than a hole.
    *
-   * The fallback is derived from `userContext.id || anonymousId` — the SAME
+   * The fallback is derived from the identified `userContext.id` — the SAME
    * source both lanes' `user_id` resolves from — and redacted the same way, so
    * `user-fallback:<x>` on one lane matches `user-fallback:<x>` on the other.
    *
@@ -9187,7 +9313,7 @@ export class RevTurbineCustomerSdk {
         return { ...redactIdentityField(trimmed), fallback: false };
       }
     }
-    const identity = redactIdentityField(this.userContext.id || this.anonymousId);
+    const identity = redactIdentityField(this.identifiedUserId ?? '');
     return { value: fallbackAccountId(identity.value), redacted: identity.redacted, fallback: true };
   }
 
@@ -9212,6 +9338,9 @@ export class RevTurbineCustomerSdk {
    * @public
    */
   async trackTreatmentInteraction(input: RevTurbineTreatmentInteractionRequest): Promise<void> {
+    // ST-1416: an interaction belongs to an identified user. Without one it
+    // writes no state, no history and no request.
+    if (this.identifiedUserId === undefined) return;
     // Plan 282 TASK-9: the decision context the presentation row joins on.
     // Explicit input wins, then the plan-144 `metadata.decision_id`
     // convention, then what this SDK indexed for the output — `payloadId` is
@@ -9325,7 +9454,7 @@ export class RevTurbineCustomerSdk {
     const placement = this.placements.get(placementId);
     const rid = requestId();
 
-    if (this.isDisabledByProviderFailure()) {
+    if (this.isSdkDisabled()) {
       const disabledDecision = this.disabledDecisionForPlacement(placementId, placement?.name);
       return {
         placementId,
@@ -9351,7 +9480,7 @@ export class RevTurbineCustomerSdk {
     // Plan 159 TASK-4: the /api/sdk/decide POST is retired — content resolves
     // through the local decision path (config-driven resolver, or the
     // fail-closed `config_unavailable` decision until the fetch lands).
-    const userId = this.userContext.id ?? this.anonymousId;
+    const userId = this.identifiedUserId ?? '';
     const decision = await this.getPlacementDecision({ placementId, userId });
     return {
       placementId,
@@ -9523,7 +9652,7 @@ export class RevTurbineCustomerSdk {
     config: RevTurbinePlacementRequestConfig,
   ): Promise<PlacementOutput | null> {
 
-    if (this.isDisabledByProviderFailure()) {
+    if (this.isSdkDisabled()) {
       return this.disabledPlacementOutputForConfig(config);
     }
 
@@ -9599,16 +9728,16 @@ export class RevTurbineCustomerSdk {
    * @public
    */
   async checkEntitlement(handle: string, context?: RevTurbineEntitlementContext): Promise<EntitlementResult> {
-    if (this.isDisabledByProviderFailure()) {
+    if (this.isSdkDisabled()) {
       // Fail-closed: a disabled SDK cannot affirm the grant, so it must not
       // leak access. The reason is preserved so callers can distinguish this
       // from a rule-based denial.
       this.emitResolutionFailure({
-        reason: 'sdk_disabled_provider_failure',
+        reason: this.sdkDisabledByProviderFailure ? 'sdk_disabled_provider_failure' : USER_REQUIRED_REASON,
         entitlement_handle: handle,
         plan_handle: this.resolveContextPlanRaw() || undefined,
       });
-      return { status: 'denied', allowed: false, reason: this.sdkDisabledReason ?? 'sdk_disabled_provider_failure' };
+      return { status: 'denied', allowed: false, reason: this.disabledReason() };
     }
 
     // local_only: a custom resolver takes precedence.
@@ -9809,7 +9938,9 @@ export class RevTurbineCustomerSdk {
    * @public
    */
   getUserContext(): UserContext {
-    const userId = this.userContext.id || this.anonymousId;
+    // `''` only while the SDK has no identified user (it is then disabled);
+    // never an anonymous stand-in (ST-1416).
+    const userId = this.identifiedUserId ?? '';
     const now = new Date().toISOString();
     return {
       id: userId,
@@ -9885,6 +10016,9 @@ export class RevTurbineCustomerSdk {
       return { userId, segmentIds: [], traits: {}, plan: undefined, usage: this.usageBalances };
     }
 
+    // ST-1416: no identified user, no request.
+    if (this.identifiedUserId === undefined) return { userId, segmentIds: [], traits: {} };
+
     try {
       const response = await fetch(this.endpointFor('userContext', '/api/sdk/user-context'), {
         method: 'POST',
@@ -9958,6 +10092,9 @@ export class RevTurbineCustomerSdk {
    * @param clientToken the `rt_client_` token; when omitted, reuses the last one.
    */
   async fetchClientContext(clientToken?: string): Promise<void> {
+    // ST-1416: a client-session token is minted for a user; without one there
+    // is nothing to mint or fetch.
+    if (this.identifiedUserId === undefined) return;
     if (typeof clientToken === 'string' && clientToken.length > 0) {
       this.clientContextToken = clientToken;
     }
@@ -10249,6 +10386,7 @@ export class RevTurbineCustomerSdk {
     surfaceTemplateId?: string,
     metadata?: RevTurbineImpressionMetadata,
   ): Promise<void> {
+    if (this.identifiedUserId === undefined) return; // ST-1416: no user, no history.
     await this.impressionHistory.recordImpression(
       placementId,
       payloadId,
@@ -10277,6 +10415,7 @@ export class RevTurbineCustomerSdk {
     metadata?: RevTurbineImpressionMetadata,
     cooldownMs?: number,
   ): Promise<void> {
+    if (this.identifiedUserId === undefined) return; // ST-1416: no user, no history.
     await this.impressionHistory.recordDismissal(
       placementId,
       payloadId,
@@ -10305,6 +10444,7 @@ export class RevTurbineCustomerSdk {
     metadata?: RevTurbineImpressionMetadata,
     cooldownMs?: number,
   ): Promise<void> {
+    if (this.identifiedUserId === undefined) return; // ST-1416: no user, no history.
     await this.impressionHistory.recordClickThru(
       placementId,
       payloadId,
@@ -10330,6 +10470,7 @@ export class RevTurbineCustomerSdk {
     surfaceTemplateId?: string,
     metadata?: RevTurbineImpressionMetadata,
   ): Promise<void> {
+    if (this.identifiedUserId === undefined) return; // ST-1416: no user, no history.
     await this.impressionHistory.recordConversion(
       placementId,
       payloadId,
@@ -10362,6 +10503,9 @@ export class RevTurbineCustomerSdk {
       await this.evaluateTrialLifecycleTriggers(view);
       return view;
     }
+
+    // ST-1416: no identified user, no request.
+    if (this.identifiedUserId === undefined) return { in_trial: false };
 
     try {
       const response = await fetch(this.endpointFor('trialStatus', '/api/sdk/trial-status'), {
@@ -10561,15 +10705,6 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
-   * @deprecated Renamed to {@link RevTurbineCustomerSdk.getPlaybook} —
-   * `Playbook` is the canonical name for the artifact (BL-0156). Identical
-   * behaviour; removed in `0.13.0`.
-   */
-  getExportedConfig(): RevTurbineConfig | undefined {
-    return this.getPlaybook();
-  }
-
-  /**
    * Validate that each configured UI path action has a resolver implementation.
    *
   * By default this validates `localRuntime.playbook.content_ui_paths` (when present)
@@ -10757,7 +10892,7 @@ export class RevTurbineCustomerSdk {
     // `trackTreatmentInteraction` emits the canonical event itself, so this must
     // NOT also emit one — that would double-count every interaction.
     await this.trackTreatmentInteraction({
-      userId: this.userContext.id ?? this.anonymousId,
+      userId: this.identifiedUserId ?? '',
       placementId: ref.placementId,
       treatmentId: ref.treatmentId,
       interactionType,
@@ -11050,8 +11185,11 @@ export class RevTurbineCustomerSdk {
    * @public
    */
   identify<T extends IdentifyContextInput>(userId: string, context?: Exact<IdentifyContextInput, T>): void {
-    if (typeof userId !== 'string' || userId.trim() === '') {
-      console.error('[RevTurbine] identify() requires a non-empty user id; call ignored. Pass your stable internal user id.');
+    if (!hasValue(userId)) {
+      // The same refusal and the same typed diagnostic as an init without a
+      // user (ST-1416). The call is ignored, so a previously identified user
+      // stays identified.
+      this.reportUserRequired('identify');
       return;
     }
     warnOnEmailShapedIdentity('user id', userId);
@@ -11111,12 +11249,19 @@ export class RevTurbineCustomerSdk {
     }, 'identify');
     this.recalculateDerivedUsageTraits();
     this.markSegmentsDirtyFromContextChange(previousContext, this.userContext);
+    // ST-1416: user-scoped storage follows the identified user. Moving to a
+    // different id (including from "no user" after a reset) drops the previous
+    // user's in-memory copies and reads the new user's.
+    if (previousContext.id !== userId) this.rehydrateUserScopedStorage();
     this.decisionCache.clear();
     this.persistDecisionCache();
     this.persistLocalRuntimeState();
     // Switch impression history to the new user and re-hydrate retired cache.
     this.impressionHistory.setUserId(userId);
     void this.impressionHistory.hydrate();
+    // The first valid id after an init that had none starts the user-scoped
+    // runtime (storage, Playbook load, telemetry) that init withheld.
+    this.startUserRuntime();
     // A client-session token is minted FOR a specific user, so a DIFFERENT
     // identity invalidates the held one and re-mints (plan 191 REQ-5); a reset
     // drops it too. Identifying the session's first user, or the same user
@@ -11139,8 +11284,11 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
-   * Reset to anonymous user state, re-inferring a fresh anonymous id. Also
-   * available as the advertised {@link reset} alias.
+   * Sign the current user out: clear their context and user-scoped state. The
+   * SDK then has no identified user, so it is disabled (no requests, no
+   * evaluation, fallbacks only) until the next {@link identify}. There is no
+   * anonymous user to fall back to. Also available as the advertised
+   * {@link reset} alias.
    *
    * @public
    */
@@ -11154,7 +11302,7 @@ export class RevTurbineCustomerSdk {
    * `entitlements`, `personalization`) plus usage balances, and clears the
    * decision cache, interaction state, and impression history.
    *
-   * Unlike {@link resetIdentity} (a sign-out that re-infers anonymous context
+   * Unlike {@link resetIdentity} (a sign-out that re-infers user traits
    * when the `inferUser` policy is on), this performs **no** inference, so the
    * resulting context is guaranteed empty. Mostly for demo / fixture flows that
    * reset cleanly between scenarios.
@@ -11172,7 +11320,7 @@ export class RevTurbineCustomerSdk {
    * Shared teardown for {@link resetIdentity} / {@link resetUserContext}:
    * blanks the user context and usage balances, recomputes derived traits, and
    * clears the decision cache, interaction state, and impression history.
-   * `reinfer` controls whether anonymous context is re-inferred (sign-out) or
+   * `reinfer` controls whether user traits are re-inferred (sign-out) or
    * the context is left fully empty (hard reset).
    */
   private clearAllUserState({ reinfer }: { reinfer: boolean }): void {
@@ -11198,12 +11346,18 @@ export class RevTurbineCustomerSdk {
     this.markSegmentsDirtyFromContextChange(previousContext, this.userContext);
     this.decisionCache.clear();
     this.interactionState.clear();
+    // User-scoped storage is keyed by the user that just left (ST-1416); the
+    // in-memory copies go with them. The stored copies stay for that user's
+    // next session — with no identified user the persist calls below are no-ops.
+    this.outputPlacementIndex.clear();
+    this.presentationCapsByKey.clear();
     this.persistDecisionCache();
     this.persistInteractionState();
     this.persistLocalRuntimeState();
-    // Reset impression history to anonymous user.
-    this.impressionHistory.setUserId(this.anonymousId);
-    void this.impressionHistory.hydrate();
+    // No identified user remains, so impression history holds no user either
+    // (ST-1416): it is detached from the previous user and not re-hydrated.
+    // The next `identify()` attaches and hydrates it for the new user.
+    this.impressionHistory.setUserId('');
     // A sign-out is the most consequential context change there is — a mounted
     // gate must not keep rendering the signed-out user's entitlements.
     this.notifyUserContextChanged();
@@ -11399,6 +11553,8 @@ export class RevTurbineCustomerSdk {
  * const sdk = window.RevTurbine?.init({
  *   publicKey: 'rtk_…',
  *   mode: 'snippet',
+ *   // Required: the user the Playbook is evaluated for. Initialise after login.
+ *   user: { id: 'user_123' },
  * });
  * ```
  */
@@ -11489,6 +11645,12 @@ export function initRevTurbine<T extends RevTurbineInitInputOptions>(
   );
 
   sdk.identify = (userId: string, context?: IdentifyContextInput) => {
+    // ST-1416: a blank id is refused before any provider sees it, with the
+    // same diagnostic as the SDK's own identify.
+    if (!hasValue(userId)) {
+      originalIdentify(userId, context);
+      return;
+    }
     let attempted = 0;
     for (let index = 0; index < providerChain.length; index += 1) {
       const candidate = providerChain[index];

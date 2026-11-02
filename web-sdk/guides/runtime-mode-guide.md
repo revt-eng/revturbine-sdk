@@ -20,6 +20,11 @@ Do you want RevTurbine-hosted APIs as your runtime source of truth?
 
 ## Mode Comparison
 
+Every mode requires `user: { id }` (your stable internal user id) as well as the
+config in the last column: a Playbook is evaluated for an identified user, and
+there is no anonymous mode. Without a non-empty id the SDK is disabled in every
+mode — no requests, no evaluation, fallbacks only.
+
 | Mode | Best for | Network dependency | Storage behavior | Required config |
 |---|---|---|---|---|
 | `revturbine_server` | Standard production integration | RevTurbine edge endpoints | SDK cache and interaction state | `tenantId`, `publicKey`, `endpoint`, `mode` |
@@ -60,6 +65,7 @@ const sdk = initRevTurbine(
   createServerRuntimeConfig({
     tenantId: 'tenant_abc',
     publicKey: 'rtk_…',
+    user: { id: 'user_123' }, // required in every runtime mode
   }),
 );
 ```
@@ -73,6 +79,7 @@ const sdk = initRevTurbine({
   ...createServerRuntimeConfig({
     tenantId: 'tenant_abc',
     publicKey: 'rtk_…',
+    user: { id: 'user_123' },
   }),
   provider: primaryProvider,
   providerFallbacks: [fallbackProviderA, fallbackProviderB],
@@ -89,6 +96,7 @@ const sdk = initRevTurbine(
   createCustomEndpointRuntimeConfig({
     tenantId: 'tenant_abc',
     publicKey: 'rtk_…',
+    user: { id: 'user_123' },
     endpoint: 'https://proxy.example.com',
     endpointOverrides: {
       decideContext: '/decisioning/decide-context',
@@ -110,6 +118,7 @@ const sdk = initRevTurbine(
   createLocalRuntimeConfig({
     tenantId: 'tenant_local',
     publicKey: 'local',
+    user: { id: 'user_123' },
     endpoint: 'http://localhost',
     localRuntime: {
       storageKey: 'my-app:revturbine-local-runtime',

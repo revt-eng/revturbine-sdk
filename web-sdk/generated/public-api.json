@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "count": 81,
+  "count": 84,
   "exports": [
     {
       "name": "AccessDeniedPlaceholder",
@@ -84,7 +84,7 @@
       "name": "initRevTurbine",
       "kind": "function",
       "file": "web-sdk/controllers.ts",
-      "signature": "export async function initRevTurbine<TUser extends RevTurbineUserContext = RevTurbineUserContext>( options: SdkSessionOptions &"
+      "signature": "export async function initRevTurbine<TUser extends RevTurbineInitUser = RevTurbineInitUser>( options: SdkSessionOptions &"
     },
     {
       "name": "initStatusForError",
@@ -273,6 +273,12 @@
       "signature": "getUserContext(): UserContext"
     },
     {
+      "name": "RevTurbineCustomerSdk.getUserRequiredDiagnostic",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "getUserRequiredDiagnostic(): RevTurbineUserRequiredDiagnostic | undefined"
+    },
+    {
       "name": "RevTurbineCustomerSdk.identify",
       "kind": "method",
       "file": "web-sdk/customer-side.ts",
@@ -399,6 +405,12 @@
       "signature": "export interface RevTurbineInitStatus { readonly ok: boolean; readonly phase?: RevTurbineInitPhase; readonly message?: string; readonly remediation?: string; }"
     },
     {
+      "name": "RevTurbineInitUser",
+      "kind": "type",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "export type RevTurbineInitUser = RevTurbineUserContext & { id: string; }"
+    },
+    {
       "name": "RevTurbinePlaybookLoadFailure",
       "kind": "interface",
       "file": "web-sdk/customer-side.ts",
@@ -408,7 +420,7 @@
       "name": "RevTurbineProvider",
       "kind": "function",
       "file": "web-sdk/react/RevTurbineProvider.tsx",
-      "signature": "export function RevTurbineProvider< TUser extends RevTurbineUserContext = RevTurbineUserContext, TOptions extends RevTurbineInitInputOptions = RevTurbineInitInputOptions, >("
+      "signature": "export function RevTurbineProvider< TUser extends RevTurbineInitUser = RevTurbineInitUser, TOptions extends RevTurbineInitInputOptions = RevTurbineInitInputOptions, >("
     },
     {
       "name": "RevTurbineRegisteredSlot",
@@ -421,6 +433,12 @@
       "kind": "interface",
       "file": "web-sdk/customer-side.ts",
       "signature": "export interface RevTurbineSlotInventoryDiagnosis { mounted: RevTurbineRegisteredSlot[]; authored: RevTurbineAuthoredSlotRef[]; authoredButUnmounted: RevTurbineAuthoredSlotRef[]; mountedButUnauthored: RevTurbineRegisteredSlot[]; configAvailable: boolean; }"
+    },
+    {
+      "name": "RevTurbineUserRequiredDiagnostic",
+      "kind": "interface",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "export interface RevTurbineUserRequiredDiagnostic { code: 'user_id_required'; entryPoint: 'init' | 'identify' | 'setUserContext'; message: string; }"
     },
     {
       "name": "SurfaceSlotHiddenReason",

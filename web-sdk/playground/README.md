@@ -3,7 +3,7 @@
 **Prism** is a self-contained demo that drives the RevTurbine SDK against a
 synthetic "AI image studio" — a breadth showcase of what RevTurbine can do, with
 **zero backend and zero credentials** (the SDK runs in local-runtime mode against
-a bundled `ExportedConfig`). It's the fastest way to *see* entitlements, usage
+a bundled `Playbook`). It's the fastest way to *see* entitlements, usage
 limits, credits, gates, nudges, trials, retention, and seats behave.
 
 Built across plan 81 (capability breadth), plan 82 (trial-render fix), and plan 83
@@ -46,7 +46,7 @@ The playground drives the SDK through the friendly, advertised surface from the
   paywall. `useEntitlement` (the React form of `can`) still drives the lock icon.
 - **`track(event)`** — a successful generate emits `sdk.track('image_generated', …)`.
 
-Two breadth capabilities also ship here (both within the published `ExportedConfig`):
+Two breadth capabilities also ship here (both within the published `Playbook`):
 
 - **Plan recommendation** — the out-of-generations modal reads its
   `recommendation_strategy` (`next_tier_up`) and shows "✨ We recommend Pro".

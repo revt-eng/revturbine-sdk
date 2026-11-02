@@ -268,6 +268,7 @@ export function createNativeExperimentAssignmentProvider(
  *
  * ```ts
  * initRevTurbine({
+ *   user: { id: currentUserId },
  *   domainProviders: [
  *     createBasicExperimentProvider({
  *       subject: () => currentUserId,

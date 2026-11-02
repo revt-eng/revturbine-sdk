@@ -2,7 +2,7 @@
 
 > Plan 81 (Prism playground — capability-breadth showcase), TASK-1 deliverable.
 > This is the audit that scopes TASK-5 and seeds the TASK-7 self-teaching layer.
-> It answers plan 81 Q-2: *which capabilities can the published `ExportedConfig`
+> It answers plan 81 Q-2: *which capabilities can the published `Playbook`
 > contract actually express?*
 
 The Prism playground (`web-sdk/playground/`) drives the SDK in local-runtime mode
@@ -11,8 +11,8 @@ directly in this repo). The demo's goal is **breadth**:
 showcase as many RevTurbine capabilities as the published contract supports.
 
 Schema references below point at `revturbine-scaffold/src/config/models/schema.ts`
-(`PlaybookSchema` and its item schemas — spelled `ExportedConfigSchema` when this
-audit was written; BL-0165 made `Playbook*` the canonical generated name) and
+(`PlaybookSchema` and its item schemas; BL-0165 made `Playbook*` the canonical
+generated name) and
 `revturbine-scaffold/src/core/common.ts` (`EntitlementTypeSchema`).
 
 ## Demonstrated today (TASK-2 / TASK-3)
@@ -56,21 +56,21 @@ Shipped — each fires from the Director and has a "why am I seeing this?" trace
 | **Plan recommendation** | payload `recommendation_strategy: next_tier_up` on `pl_usage_100` | out-of-generations modal renders "✨ We recommend Pro" — see `state/derived.ts#recommendedPlanName` |
 | **Advertised hero-API** | `<RTSlot>`, `gate(action, fn)`, `track()` (SDK plan-84 aliases) | every slot renders via `<RTSlot>` (`shared/SlotHost.tsx`); ImageStudio uses `gate()` for the gated actions + `track()` on generate; `useEntitlement` is the React form of `can` |
 
-## Deferred — NOT expressible in the published ExportedConfig (REQ-7)
+## Deferred — NOT expressible in the published Playbook (REQ-7)
 
 These must **not** be faked with invalid config. Each is a control-plane / schema
 concern owned by scaffold (Kent); raise as a dependency if the demo needs them.
 
 | Capability | Gap | Disposition |
 |---|---|---|
-| **Add-on entity** (e.g. a real `credit_pack` product) | `ExportedConfigSchema` has no `add_ons` array; `credit_pack` exists only as a `content_ui_paths` CTA target string | Demo represents top-ups as a CTA path only. Real add-on entity = scaffold dependency. |
-| **Customer overrides** | `CustomerOverride` exists in the control-plane API but is **not** part of the portable `ExportedConfig`; it is a per-individual server-side grant | Out of scope for a local-runtime demo. |
-| **Experiments / variant assignment** | No experiment/variant entity in `ExportedConfig`; Optimization-Studio experiment workflow is largely deferred in the specs | Defer; revisit if/when the schema gains an experiment shape. |
+| **Add-on entity** (e.g. a real `credit_pack` product) | `PlaybookSchema` has no `add_ons` array; `credit_pack` exists only as a `content_ui_paths` CTA target string | Demo represents top-ups as a CTA path only. Real add-on entity = scaffold dependency. |
+| **Customer overrides** | `CustomerOverride` exists in the control-plane API but is **not** part of the portable `Playbook`; it is a per-individual server-side grant | Out of scope for a local-runtime demo. |
+| **Experiments / variant assignment** | No experiment/variant entity in `Playbook`; Optimization-Studio experiment workflow is largely deferred in the specs | Defer; revisit if/when the schema gains an experiment shape. |
 
 ## Drift guards
 
 - **Schema validity (CI-authoritative):** `config/prism-export-config.test.ts`
-  parses the bundled config through `ExportedConfigSchema`, the same validation
+  parses the bundled config through `PlaybookSchema`, the same validation
   `prism-config.ts` does at load time — now as a PR-gate test.
 - **Capability breadth:** the same test asserts the demonstrated entitlement types
   and placement categories stay present, so an edit can't silently drop a capability.

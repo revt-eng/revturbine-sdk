@@ -86,5 +86,9 @@ export async function negative(sdk: RevTurbineCustomerSdk): Promise<void> {
   // @ts-expect-error the server options require an apiKey
   void new RevTurbineServer({ tenantId: 'tenant_1', endpoint: 'https://revturbine.com/app' });
   // @ts-expect-error a malformed Playbook is rejected
-  await initRevTurbine({ tenantId: 'tenant_1', localRuntime: { playbook: { plans: 'not-a-list' } } });
+  await initRevTurbine({ user: { id: 'user_1' }, tenantId: 'tenant_1', localRuntime: { playbook: { plans: 'not-a-list' } } });
+  // @ts-expect-error `user` is required: the Playbook is evaluated for an identified user (0.13.0)
+  await initRevTurbine({ tenantId: 'tenant_1', publicKey: 'rtk_public_key' });
+  // @ts-expect-error `user.id` is required
+  await initRevTurbine({ tenantId: 'tenant_1', publicKey: 'rtk_public_key', user: { plan_handle: 'pro' } });
 }

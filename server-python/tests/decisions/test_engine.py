@@ -490,7 +490,7 @@ class TestEntitlementRuleSurfacing:
     def test_no_matching_rule_fails_closed(self) -> None:
         # Kent's 2026-07-13 ruling: a configured entitlement with no rule
         # assigning it to the user's plan is DENIED (plan-#39 alignment,
-        # same reason string as the ExportedConfig evaluator).
+        # same reason string as the Playbook evaluator).
         reg = _registry_with_entitlements(
             entries={"api_calls": {"status": "allowed", "allowed": True}},
         )

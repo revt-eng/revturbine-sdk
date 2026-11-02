@@ -52,6 +52,7 @@ function makeLocalSdk(placements: unknown[]): RevTurbineCustomerSdk {
     placements,
   } as unknown as ConfigArtifact;
   return new RevTurbineCustomerSdk({
+    user: { id: 'u_test' },
     tenantId: 'tenant_fixed_only',
     apiKey: 'sk_test',
     publicKey: 'pub_test',

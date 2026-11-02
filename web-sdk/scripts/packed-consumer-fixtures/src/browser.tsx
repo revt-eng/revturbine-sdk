@@ -26,7 +26,7 @@ function ExportButton() {
 
 export function App() {
   return (
-    <RevTurbineProvider options={{ publicKey: 'rtk_public_key', tenantId: 'tenant_1' }}>
+    <RevTurbineProvider options={{ publicKey: 'rtk_public_key', tenantId: 'tenant_1', user: { id: 'user_1' } }}>
       <Gate id="sso_gate" can="sso">
         <span>SSO settings</span>
       </Gate>
@@ -45,6 +45,14 @@ export function Negative() {
       </Gate>
       {/* @ts-expect-error the provider requires options */}
       <RevTurbineProvider>
+        <span />
+      </RevTurbineProvider>
+      {/* @ts-expect-error the options require a user (0.13.0): no anonymous mode */}
+      <RevTurbineProvider options={{ publicKey: 'rtk_public_key', tenantId: 'tenant_1' }}>
+        <span />
+      </RevTurbineProvider>
+      {/* @ts-expect-error the user requires an id */}
+      <RevTurbineProvider options={{ publicKey: 'rtk_public_key', tenantId: 'tenant_1', user: { plan_handle: 'pro' } }}>
         <span />
       </RevTurbineProvider>
     </>

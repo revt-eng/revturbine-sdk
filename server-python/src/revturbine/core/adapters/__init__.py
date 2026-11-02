@@ -1,7 +1,7 @@
 """revturbine.core.adapters — Python port of @revt-eng/core/adapters/.
 
 Builds domain providers from a config source. ``static`` is the
-local-mode path (an ``ExportedConfig`` snapshot); hydration/API
+local-mode path (a Playbook snapshot); hydration/API
 adapters are HTTP-mode concerns deferred to a later TASK-7 batch.
 """
 

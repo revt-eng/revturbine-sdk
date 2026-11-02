@@ -46,6 +46,7 @@ afterEach(() => {
 
 function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerSdk {
   return new RevTurbineCustomerSdk({
+    user: { id: 'u_test' },
     tenantId: 'tenant_trial_token_test',
     apiKey: 'sk_test',
     publicKey: 'pub_test',
@@ -117,7 +118,9 @@ describe('BL-0120 — synthesizeProviderContext threads trial-only local state',
         },
       },
     });
-    sdk.setUserContext({ id: 'u1', plan: { handle: 'pro', name: 'Pro' } } as RevTurbineUserContext);
+    // Same user as init: naming a DIFFERENT user is a switch and drops the
+    // previous user's trial (BL-0417), which is not what this control is about.
+    sdk.setUserContext({ id: 'u_test', plan: { handle: 'pro', name: 'Pro' } } as RevTurbineUserContext);
 
     const providers = synth(sdk) as ResolvedProviderContext | undefined;
     expect(providers?.plan?.currentPlanHandle).toBe('pro');

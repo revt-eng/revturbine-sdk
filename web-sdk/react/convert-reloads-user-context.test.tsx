@@ -78,6 +78,7 @@ function heldPlanHandle(sdk: RevTurbineCustomerSdk): string | undefined {
 function makeSdk(): RevTurbineCustomerSdk {
   let sdk: RevTurbineCustomerSdk;
   sdk = new RevTurbineCustomerSdk({
+    user: { id: USER },
     tenantId: 'tenant_bl0004_react',
     apiKey: 'sk_test',
     publicKey: 'pub_test',

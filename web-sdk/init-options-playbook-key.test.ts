@@ -9,10 +9,8 @@ import {
 import type { RevTurbineConfig } from './generated';
 
 // Plan 163 (dogfood DX finding, plan 154 TASK-6): the local-only minimal-init
-// arm previously required the DEPRECATED `exportedConfig` key as its typed
-// discriminant, while the runtime already resolved the canonical `playbook`
-// key through `resolveLocalPlaybook`. These tests pin the corrected contract:
-// canonical key compiles, alias still compiles, and the runtime treats them
+// arm is discriminated by the `playbook` key, which the runtime resolves
+// through `resolveLocalPlaybook`. These tests pin that contract: the key compiles and the runtime treats it
 // identically (playbook wins when both are supplied).
 
 function makeConfig(id = 'cfg_a'): RevTurbineConfig {
@@ -30,34 +28,25 @@ function makeConfig(id = 'cfg_a'): RevTurbineConfig {
 }
 
 describe('minimal-init typing accepts the canonical `playbook` key', () => {
-  it('compiles with playbook alone, with the deprecated alias, and rejects neither', () => {
+  it('compiles with playbook, and rejects a missing playbook', () => {
     const withPlaybook: RevTurbineInitInputOptions = {
       localRuntime: { playbook: makeConfig() },
-    };
-    const withAlias: RevTurbineInitInputOptions = {
-      localRuntime: { exportedConfig: makeConfig() },
     };
     const withExplicitMode: RevTurbineInitInputOptions = {
       runtimeMode: 'local_only',
       localRuntime: { playbook: makeConfig() },
     };
-    // @ts-expect-error — minimal init requires a config artifact under one of the two keys
+    // @ts-expect-error — minimal init requires a config artifact under `playbook`
     const withNeither: RevTurbineInitInputOptions = { localRuntime: {} };
 
-    expect([withPlaybook, withAlias, withExplicitMode, withNeither]).toBeDefined();
+    expect([withPlaybook, withExplicitMode, withNeither]).toBeDefined();
   });
 });
 
-describe('resolveLocalPlaybook precedence (the one resolver both keys route through)', () => {
-  it('prefers the canonical key when both are supplied', () => {
+describe('resolveLocalPlaybook (the one resolver the `playbook` key routes through)', () => {
+  it('returns the playbook, and undefined when absent', () => {
     const canonical = makeConfig('cfg_canonical');
-    const legacy = makeConfig('cfg_legacy');
-    expect(resolveLocalPlaybook({ playbook: canonical, exportedConfig: legacy })).toBe(canonical);
-  });
-
-  it('falls back to the deprecated alias, and to undefined when absent', () => {
-    const legacy = makeConfig('cfg_legacy');
-    expect(resolveLocalPlaybook({ exportedConfig: legacy })).toBe(legacy);
+    expect(resolveLocalPlaybook({ playbook: canonical })).toBe(canonical);
     expect(resolveLocalPlaybook({})).toBeUndefined();
     expect(resolveLocalPlaybook(undefined)).toBeUndefined();
   });

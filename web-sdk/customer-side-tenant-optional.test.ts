@@ -86,6 +86,7 @@ function router(requests: Recorded[], opts: { manifest: BundleManifest | null; b
 
 function sdk(overrides: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerSdk {
   const client = new RevTurbineCustomerSdk({
+    user: { id: 'user_1' },
     publicKey: 'rtk_public_key_a',
     endpoint: ENDPOINT,
     mode: 'snippet',
@@ -213,31 +214,37 @@ describe("configured tenantId that disagrees with the key's tenant — warn once
 });
 
 describe('local state namespace', () => {
-  function anonKeys(storage: InMemoryStorage): string[] {
-    const keys: string[] = [];
-    for (const key of ['revturbine:tn_key_tenant:anon']) if (storage.getItem(key) !== null) keys.push(key);
-    return keys;
-  }
+  // ST-1416: user-scoped state is keyed `<prefix>:<namespace>:<user id>`; the
+  // per-browser `:anon` key is gone. These pin the NAMESPACE half of that key.
+  const interactionKey = (namespace: string): string => `revturbine:interaction-state:${namespace}:user_1`;
 
-  it('a configured tenant keeps the existing storage keys byte-for-byte', () => {
+  it('a configured tenant keeps the existing namespace', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 503 })));
     const storage = new InMemoryStorage();
-    sdk({ tenantId: KEY_TENANT, persistentStorage: storage });
-    expect(anonKeys(storage)).toEqual(['revturbine:tn_key_tenant:anon']);
+    const client = sdk({ tenantId: KEY_TENANT, persistentStorage: storage });
+    client.identify('user_1');
+    // The key exists once the identified user's state is persisted.
+    void client.trackTreatmentInteraction({
+      userId: 'user_1', placementId: 'p', treatmentId: 't', interactionType: 'dismiss',
+    });
+    expect(storage.getItem(interactionKey(KEY_TENANT))).not.toBeNull();
   });
 
   it('a key-only init gets a namespace that is stable per key and distinct across keys', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 503 })));
     const setSpy = vi.spyOn(InMemoryStorage.prototype, 'setItem');
-    const anonKeyFor = (publicKey: string): string | undefined => {
+    const interactionKeyFor = (publicKey: string): string | undefined => {
       setSpy.mockClear();
-      sdk({ publicKey, persistentStorage: new InMemoryStorage() });
-      return setSpy.mock.calls.map(([key]) => key).find((key) => key.endsWith(':anon'));
+      const client = sdk({ publicKey, persistentStorage: new InMemoryStorage() });
+      void client.trackTreatmentInteraction({
+        userId: 'user_1', placementId: 'p', treatmentId: 't', interactionType: 'dismiss',
+      });
+      return setSpy.mock.calls.map(([key]) => key).find((key) => key.startsWith('revturbine:interaction-state:'));
     };
-    const first = anonKeyFor('rtk_public_key_a');
-    expect(first).toMatch(/^revturbine:pk-[0-9a-z]+:anon$/);
-    expect(anonKeyFor('rtk_public_key_a')).toBe(first);
-    expect(anonKeyFor('rtk_public_key_b')).not.toBe(first);
+    const first = interactionKeyFor('rtk_public_key_a');
+    expect(first).toMatch(/^revturbine:interaction-state:pk-[0-9a-z]+:user_1$/);
+    expect(interactionKeyFor('rtk_public_key_a')).toBe(first);
+    expect(interactionKeyFor('rtk_public_key_b')).not.toBe(first);
     // The raw key never lands in a storage key.
     expect(first).not.toContain('rtk_public_key_a');
   });
@@ -258,6 +265,7 @@ describe('init guards — a tenant must be identifiable', () => {
 
   it('local_only with a local Playbook still defaults the tenant (unchanged)', () => {
     const client = initRevTurbine({
+      user: { id: 'user_1' },
       localRuntime: { playbook: LAUNCHED },
       contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
       anonymousTelemetry: false,

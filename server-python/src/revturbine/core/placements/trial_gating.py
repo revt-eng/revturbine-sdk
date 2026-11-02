@@ -207,7 +207,7 @@ def apply_milestone_supersession(
 
 
 def normalize_json_trigger(trigger: Any) -> TrialTriggerShape | None:
-    """Normalize ExportedConfig's ``placement.trigger`` (``type``-keyed)
+    """Normalize the Playbook's ``placement.trigger`` (``type``-keyed)
     into a ``TrialTriggerShape``. Non-trial trigger kinds return
     ``None`` — they pass through trial-gating untouched.
 

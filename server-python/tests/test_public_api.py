@@ -124,15 +124,11 @@ class TestPublicSurface:
         # of any persistence parameter: the constructor takes exactly
         # the two server-supplied inputs, keyword-only, plus the D-61
         # Entitlement Mirroring knobs (merge precedence + unknown-handle
-        # callback), neither of which persists anything. `playbook` and
-        # `exported_config` are the SAME input under two spellings
-        # (BL-0156) — `exported_config` is deprecated and removed in
-        # 0.13.0, at which point that name drops out of this set.
+        # callback), neither of which persists anything.
         params = inspect.signature(RevTurbineCustomerSdk).parameters
         assert set(params) == {
             "user_context",
             "playbook",
-            "exported_config",
             "entitlement_merge",
             "on_unknown_entitlement",
         }

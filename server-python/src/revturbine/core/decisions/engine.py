@@ -252,7 +252,7 @@ class DecisionEngine:
         # provider entry's default-policy status. Consult the rules provider
         # with the single-sourced §2.6.5 matcher; a matched rule's
         # `type_fields` shape the result (kind semantics + limit/used/
-        # remaining) via the same shaper the ExportedConfig evaluator uses.
+        # remaining) via the same shaper the Playbook evaluator uses.
         rules = providers.get("rules")
         if rules is not None:
             plan = providers.get("plan")
@@ -315,7 +315,7 @@ class DecisionEngine:
                 # Kent's 2026-07-13 ruling (supersedes the initial plan-133
                 # fail-open stance): a CONFIGURED entitlement with no rule
                 # assigning it to the user's plan is DENIED — aligned with
-                # the ExportedConfig evaluator's plan-#39 posture and reason
+                # the Playbook evaluator's plan-#39 posture and reason
                 # string. Unknown handles (no entry, handled above) and
                 # engines without a rules provider keep the default-policy
                 # behavior.

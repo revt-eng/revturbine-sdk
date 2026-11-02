@@ -116,6 +116,7 @@ function playbook(): RevTurbineConfig {
 
 function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerSdk {
   return new RevTurbineCustomerSdk({
+    user: { id: 'u_test' },
     tenantId: 'tenant_bl0403',
     apiKey: 'sk_test',
     publicKey: 'pub_test',
@@ -278,12 +279,14 @@ describe('BL-0403: precedence — the most recent trial change wins', () => {
       setItem: (key: string, value: string) => { storage.set(key, value); },
       removeItem: (key: string) => { storage.delete(key); },
     };
-    const first = makeSdk({ persistentStorage, localRuntime: { initialData: { trialStatus: EARLY } } });
+    // The reload is the same user's (ST-1416: persisted state is only restored
+    // for the user it was written for).
+    const first = makeSdk({ user: { id: 'u_1' }, persistentStorage, localRuntime: { initialData: { trialStatus: EARLY } } });
     first.identify('u_1', { plan_handle: 'free' });
     first.update({ trial: ENDING });
     expect((await decide(first, 'pl_trial_ending')).visible).toBe(true);
 
-    const reloaded = makeSdk({ persistentStorage, localRuntime: { initialData: { trialStatus: EARLY } } });
+    const reloaded = makeSdk({ user: { id: 'u_1' }, persistentStorage, localRuntime: { initialData: { trialStatus: EARLY } } });
     expect((await decide(reloaded, 'pl_trial_ending')).visible).toBe(true);
   });
 });

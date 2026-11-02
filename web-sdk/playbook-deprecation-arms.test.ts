@@ -1,91 +1,37 @@
 /**
- * Type-level regression for BL-0172.
- *
- * The papercut: several SDK-side option bags carry the `playbook` /
- * deprecated `exportedConfig` alias through a *union* of two required-either
- * arms, mirroring scaffold's `PlaybookOption` (BL-0156). `BrowserRuntimeOptions`
- * and `LocalEvaluationServerOptions` already repeated the `@deprecated` tag on
- * every arm; the customer-facing `localRuntime` init option in
- * `customer-side.ts` did not — `RevTurbineInitOptionsStrict`'s
- * local-only-with-a-Playbook arm (and the identically-shaped
- * `createLocalRuntimeConfig` / `createStrictLocalRuntimeConfig` overloads)
- * declared `exportedConfig` with no JSDoc at all, so it type-checked but drew
- * no IDE strikethrough — exactly the gap #522 reports.
- *
- * A unit test cannot see an IDE decoration, so this asks the same authority
- * the editor asks: the TypeScript checker. For each bag, it resolves the
- * real property symbol for `.exportedConfig` and asserts every declaration
- * contributing to that symbol carries a `@deprecated` JSDoc tag — which is
- * exactly the condition `playbook-deprecation-arms.fixture.ts` exercises via
- * a genuine property access on each type. Reverting any of the three tags
- * added to `customer-side.ts`, or either pre-existing tag on
- * `BrowserRuntimeOptions` / `LocalEvaluationServerOptions`, fails this test.
+ * ST-1418: this file pinned the `@deprecated` tag on every arm of the
+ * `playbook` / `exportedConfig` option unions (BL-0172). Those unions are gone
+ * in 0.13.0; it now asserts the removed names no longer appear in the public
+ * option surfaces, so a re-added alias fails here (the alias manifest in
+ * `tests/parity/facade-surface.json` is the companion gate).
  */
 import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import ts from 'typescript';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import * as fixture from './playbook-deprecation-arms.fixture';
+import { REMOVED_ALIAS_NAMES } from './playbook-option';
 
-const testFileDirectory = dirname(
-  new URL(import.meta.url).pathname.replace(/^\/(.:)/, '$1'),
-);
-const fixturePath = join(testFileDirectory, 'playbook-deprecation-arms.fixture.ts');
+const read = (rel: string) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 
-function loadCompilerOptions(): ts.CompilerOptions {
-  const configPath = join(testFileDirectory, 'tsconfig.typetests.json');
-  const configFile = ts.readConfigFile(configPath, (path) => readFileSync(path, 'utf8'));
-  if (configFile.error) {
-    throw new Error(ts.flattenDiagnosticMessageText(configFile.error.messageText, '\n'));
-  }
-  const parsed = ts.parseJsonConfigFileContent(configFile.config, ts.sys, testFileDirectory);
-  return parsed.options;
-}
+const REMOVED = REMOVED_ALIAS_NAMES;
 
-const program = ts.createProgram([fixturePath], loadCompilerOptions());
-const checker = program.getTypeChecker();
-const fixtureSourceFile = program.getSourceFile(fixturePath);
-if (!fixtureSourceFile) {
-  throw new Error(`Program did not include the fixture file: ${fixturePath}`);
-}
-
-/** The type of a `declare function`'s (only) parameter, by function name. */
-function soleParameterType(functionName: string): ts.Type {
-  let result: ts.Type | undefined;
-  ts.forEachChild(fixtureSourceFile!, (node) => {
-    if (ts.isFunctionDeclaration(node) && node.name?.text === functionName) {
-      const [firstParameter] = node.parameters;
-      if (!firstParameter) throw new Error(`${functionName} has no parameters.`);
-      result = checker.getTypeAtLocation(firstParameter);
-    }
+describe('removed ExportedConfig-era aliases stay removed', () => {
+  it('the type probe fixture compiles (checked by check:types:exact)', () => {
+    expect(fixture.noLegacyLocalRuntimeKey).toBe(true);
   });
-  if (!result) throw new Error(`No \`declare function ${functionName}\` found in the fixture.`);
-  return result;
-}
 
-/**
- * True only if every declaration contributing to the resolved
- * `exportedConfig` property symbol on `type` carries a `@deprecated` JSDoc
- * tag. A union property's symbol carries one declaration per constituent
- * arm that declares the property, so this fails the moment any arm omits
- * the tag — the exact shape of the BL-0172 papercut.
- */
-function exportedConfigIsDeprecatedOnEveryDeclaration(type: ts.Type): boolean {
-  const property = checker.getPropertyOfType(type, 'exportedConfig');
-  if (!property?.declarations?.length) {
-    throw new Error('Resolved type has no `exportedConfig` property — fixture or type drifted.');
+  for (const file of ['./customer-side.ts', './browser-runtime.ts', '../server-node/local-server.ts']) {
+    it(`${file} declares none of the removed names`, () => {
+      const source = read(file);
+      // browser-runtime keeps one Omit of core's own key; it is not an SDK option.
+      const stripped = source.replace(/'exportedConfig'/g, '');
+      for (const name of REMOVED) {
+        expect(stripped, `${name} in ${file}`).not.toMatch(new RegExp(`\\b${name}\\b`));
+      }
+    });
   }
-  return property.declarations.every((declaration) =>
-    ts.getJSDocTags(declaration).some((tag) => tag.tagName.text === 'deprecated'),
-  );
-}
 
-describe('exportedConfig deprecation surfaces on every SDK option bag (BL-0172)', () => {
-  it.each([
-    ['RevTurbineInitOptionsStrict.localRuntime', 'useInitOptionsStrictLocalRuntime'],
-    ['BrowserRuntimeOptions', 'useBrowserRuntimeOptions'],
-    ['LocalEvaluationServerOptions', 'useLocalEvaluationServerOptions'],
-  ] as const)('marks `.exportedConfig` @deprecated on every arm for %s', (_bagName, functionName) => {
-    const type = soleParameterType(functionName);
-    expect(exportedConfigIsDeprecatedOnEveryDeclaration(type)).toBe(true);
+  it('index.ts no longer re-exports Playbook as ExportedConfig', () => {
+    expect(read('./index.ts')).not.toMatch(/as ExportedConfig\b/);
   });
 });

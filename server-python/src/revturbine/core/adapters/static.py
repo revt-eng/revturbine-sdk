@@ -37,8 +37,6 @@ __all__ = [
 ]
 
 Playbook = dict[str, Any]
-#: Deprecated spelling of :data:`Playbook` (BL-0156). Removed in ``0.13.0``.
-ExportedConfig = Playbook
 
 
 def resolve_static_segment_membership(

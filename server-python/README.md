@@ -2,7 +2,7 @@
 
 Headless, **in-memory** entitlement and placement decisioning for Python
 services. `RevTurbineCustomerSdk` (plan 33 TASK-7) decides in-process from a
-caller-supplied user context + `ExportedConfig` snapshot — no network, no
+caller-supplied user context + Playbook snapshot — no network, no
 persistence beyond memory. Its decision output is **byte-identical** to the
 canonical TypeScript `LocalRuntime` (cross-language parity is gate-enforced via
 `revturbine-sdk-internal/tests/parity/`).
@@ -32,11 +32,11 @@ import json
 from revturbine import RevTurbineCustomerSdk
 
 with open("playbook.json") as f:
-    exported_config = json.load(f)
+    playbook = json.load(f)
 
 sdk = RevTurbineCustomerSdk(
     user_context={"tenant_id": "tenant_abc", "user_id": "user_123", "plan_handle": "pro"},
-    exported_config=exported_config,
+    playbook=playbook,
 )
 
 if not sdk.check_entitlement("advanced_analytics")["allowed"]:
@@ -49,7 +49,7 @@ decision = sdk.get_placement_decision(
 
 ### Public API
 
-- `RevTurbineCustomerSdk(*, user_context, exported_config)` — keyword-only;
+- `RevTurbineCustomerSdk(*, user_context, playbook)` — keyword-only;
   `user_context` requires `tenant_id` + `user_id` (optional `plan_handle`,
   `plan_name`, `usage`). Stateless / in-memory — no storage parameter.
 - `check_entitlement(handle, context=None) -> EntitlementCheckResult`

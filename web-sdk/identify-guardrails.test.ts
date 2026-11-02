@@ -34,6 +34,7 @@ const LOCAL_CONFIG = {
 
 function makeLocalSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerSdk {
   return new RevTurbineCustomerSdk({
+    user: { id: 'u_test' },
     tenantId: 'tenant_identity',
     apiKey: 'sk_test',
     publicKey: 'pub_test',
@@ -351,11 +352,24 @@ describe('setUserContext() drops server-assigned keys at its runtime boundary (B
       'revturbine:tenant_identity:local-runtime',
       JSON.stringify({ userContext: { id: 'user_1', plan_handle: 'starter', seat_type_handle: 'admin', activity_score: 3 } }),
     );
-    const sdk = makeLocalSdk({ persistentStorage: store });
+    // The blob is restored only for the user it was persisted for (ST-1416).
+    const sdk = makeLocalSdk({ persistentStorage: store, user: { id: 'user_1' } });
     const held = heldContext(sdk);
     expect(held.plan_handle).toBe('starter');
     expect(held).not.toHaveProperty('seat_type_handle');
     expect(held).not.toHaveProperty('activity_score');
+  });
+
+  it('does not restore a blob persisted for a different user (ST-1416)', () => {
+    const store = new InMemoryStorage();
+    store.setItem(
+      'revturbine:tenant_identity:local-runtime',
+      JSON.stringify({ userContext: { id: 'someone_else', plan_handle: 'starter' } }),
+    );
+    const sdk = makeLocalSdk({ persistentStorage: store, user: { id: 'user_1' } });
+    const held = heldContext(sdk);
+    expect(held.id).toBe('user_1');
+    expect(held.plan_handle).toBeUndefined();
   });
 
   it('the `user` init option drops them too', () => {
@@ -446,7 +460,7 @@ describe('builtin_dimensions never enters the browser context from the app (BL-0
       'revturbine:tenant_identity:local-runtime',
       JSON.stringify({ userContext: { id: 'user_1', plan_handle: 'starter', builtin_dimensions: SPOOF } }),
     );
-    const sdk = makeLocalSdk({ persistentStorage: store });
+    const sdk = makeLocalSdk({ persistentStorage: store, user: { id: 'user_1' } });
     expect(heldContext(sdk).plan_handle).toBe('starter');
     expect(heldContext(sdk)).not.toHaveProperty('builtin_dimensions');
   });

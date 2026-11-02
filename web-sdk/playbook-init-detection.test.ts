@@ -1,12 +1,12 @@
 /**
  * Regression: a `localRuntime.playbook`-only init must be detected as local-only.
  *
- * The playbook option (0.2.29) added the canonical key but two init paths still
- * read `exportedConfig` directly — `normalizeInitOptions` (which applies the
- * local-only defaults) and the React provider's theme shortcut. So a caller who
- * used only `playbook` never entered local mode: the SDK stayed in server mode
- * and hung/failed on init against a non-existent endpoint. These assert the
- * canonical key is honoured wherever the legacy key was.
+ * The playbook option (0.2.29) added the key but two init paths still read a
+ * legacy key directly — `normalizeInitOptions` (which applies the local-only
+ * defaults) and the React provider's theme shortcut. So a caller who used only
+ * `playbook` never entered local mode: the SDK stayed in server mode and
+ * hung/failed on init against a non-existent endpoint. These assert the
+ * `playbook` key is honoured in both.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { initRevTurbine, resolveLocalPlaybook } from './customer-side';
@@ -55,8 +55,7 @@ describe('playbook-only init is detected as local-only', () => {
     expect(result.reason).not.toBe('sdk_disabled_provider_failure');
   });
 
-  it('resolveLocalPlaybook underpins the fix for both keys', () => {
+  it('resolveLocalPlaybook underpins the fix', () => {
     expect(resolveLocalPlaybook({ playbook: MINIMAL_PLAYBOOK })).toBe(MINIMAL_PLAYBOOK);
-    expect(resolveLocalPlaybook({ exportedConfig: MINIMAL_PLAYBOOK })).toBe(MINIMAL_PLAYBOOK);
   });
 });

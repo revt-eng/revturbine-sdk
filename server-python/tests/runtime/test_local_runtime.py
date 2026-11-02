@@ -1,7 +1,7 @@
 """Tests for ``revturbine.core.runtime.local_runtime``.
 
 Covers the ``LocalRuntime`` composition (TASK-6): a placement decision
-served entirely in-process against a hand-built ``ExportedConfig`` with
+served entirely in-process against a hand-built Playbook with
 zero network calls, storage/provider/identity wiring, and the
 *deferred-leaf contract* — the segments/targeting/token methods whose
 helpers are not ported MUST raise ``NotImplementedError`` naming the

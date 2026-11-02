@@ -30,6 +30,7 @@ const gateFor = (entitlement: string, header: string) => ({
 });
 
 const options = (placements: unknown[]) => ({
+  user: { id: 'u_test' },
   tenantId: 't_1',
   runtimeMode: 'local_only',
   anonymousTelemetry: false,

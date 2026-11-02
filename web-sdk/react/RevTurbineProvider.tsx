@@ -10,6 +10,7 @@ import {
   type RevTurbinePlacementConfig,
   type RevTurbinePlacementDecisionInput,
   type RevTurbineUserContext,
+  type RevTurbineInitUser,
   type Exact,
   type ExactInitOptions,
   type IdentifyContextInput,
@@ -97,11 +98,17 @@ type BootstrapPlacementInput =Omit<RevTurbinePlacementDecisionInput, 'placementI
 };
 
 export type RevTurbineProviderProps<
-  TUser extends RevTurbineUserContext = RevTurbineUserContext,
+  TUser extends RevTurbineInitUser = RevTurbineInitUser,
   TOptions extends RevTurbineInitInputOptions = RevTurbineInitInputOptions,
 > = {
   /**
    * SDK initialization options. Accepts optional provider or factory.
+   *
+   * `options.user` with a non-empty `id` is **required** (ST-1416): the SDK
+   * has no anonymous mode, so mount the provider inside your authenticated
+   * tree, once the user is known. Omitting `user` or `user.id` is a compile
+   * error; a blank id at runtime leaves the SDK disabled with one
+   * `user_id_required` diagnostic.
    *
    * `options.user` is exact-checked (plan 191 REQ-3): a key the user context
    * does not declare — the `user: { id, context: { plan_handle } }` shape the
@@ -109,7 +116,7 @@ export type RevTurbineProviderProps<
    * in an un-annotated `useMemo`, which is precisely where TypeScript's own
    * excess-property check stops applying.
    */
-  options: TOptions & ExactInitOptions<TOptions> & { user?: Exact<RevTurbineUserContext, TUser> };
+  options: TOptions & ExactInitOptions<TOptions> & { user: Exact<RevTurbineInitUser, TUser> };
   /** Placements to bootstrap (preload decisions) on mount. */
   bootstrapPlacements?: BootstrapPlacementInput[];
   /**
@@ -183,7 +190,7 @@ function isShallowEqualOptions(
  * @public
  */
 export function RevTurbineProvider<
-  TUser extends RevTurbineUserContext = RevTurbineUserContext,
+  TUser extends RevTurbineInitUser = RevTurbineInitUser,
   TOptions extends RevTurbineInitInputOptions = RevTurbineInitInputOptions,
 >({
   options,

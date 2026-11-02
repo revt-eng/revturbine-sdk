@@ -41,6 +41,7 @@ afterEach(() => {
 
 function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerSdk {
   return new RevTurbineCustomerSdk({
+    user: { id: 'u_test' },
     tenantId: 'tenant_trial_test',
     apiKey: 'sk_test',
     publicKey: 'pub_test',

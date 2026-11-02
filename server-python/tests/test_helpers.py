@@ -682,7 +682,7 @@ class TestUsageAmountsFromEntries:
 # ── configured_plan_name_from_playbook (batch 2) ──────────────────────
 
 
-class TestConfiguredPlanNameFromExportedConfig:
+class TestConfiguredPlanNameFromPlaybook:
     @pytest.fixture
     def config(self) -> dict[str, Any]:
         return {
@@ -757,7 +757,7 @@ class TestConfiguredPlanNameFromExportedConfig:
 # ── parse_playbook_or_throw (batch 2) ─────────────────────────────────
 
 
-class TestParseExportedConfigOrThrow:
+class TestParsePlaybookOrThrow:
     @pytest.fixture
     def valid_config(self) -> dict[str, Any]:
         return {

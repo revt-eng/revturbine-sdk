@@ -62,6 +62,24 @@ Use this table to jump directly to the guide for your current job-to-be-done.
 
 For setup details, see `guides/runtime-mode-guide.md`.
 
+## A user is required
+
+Every SDK needs the user it evaluates for: pass `user: { id }` (your stable
+internal user id) to `initRevTurbine`, `<RevTurbineProvider options>` and
+`window.RevTurbine.init`, in **every** runtime mode. A Playbook can only be
+evaluated against a UserContext, and anonymous users never receive one, so
+there is no anonymous mode (SDK 0.13.0; earlier versions fell back to a random
+anonymous id).
+
+- Initialise after you know who the user is (after login). Mount
+  `<RevTurbineProvider>` inside your authenticated tree; on logout unmount it
+  or `identify()` the next user.
+- Omitting `user` or `user.id` is a compile error. A blank id that slips through
+  at runtime never throws: the SDK stays disabled (no network requests, no
+  evaluation, no user-scoped storage), answers with its fallbacks, and reports
+  one `user_id_required` diagnostic (`getUserRequiredDiagnostic()`). A later
+  `identify(id)` enables it.
+
 ## Runtime Modes
 
 The SDK now supports three runtime modes:
@@ -153,6 +171,7 @@ const fallbackProvider: RevTurbineSdkProvider = {
 const sdk = initRevTurbine({
   tenantId: 'tenant_abc',
   publicKey: 'rtk_…',
+  user: { id: 'user_123' },
   runtimeMode: 'revturbine_server',
   provider: primaryProvider,
   providerFallbacks: [fallbackProvider],
@@ -170,6 +189,7 @@ import { initRevTurbine } from '@revturbine/sdk';
 const sdk = initRevTurbine({
   tenantId: 'tenant_abc',
   publicKey: 'unused_or_customer_key',
+  user: { id: 'user_123' },
   endpoint: 'https://customer-proxy.example.com',
   runtimeMode: 'custom_endpoints',
   endpointOverrides: {
@@ -190,6 +210,7 @@ import { initRevTurbine } from '@revturbine/sdk';
 const sdk = initRevTurbine({
   tenantId: 'tenant_local',
   publicKey: 'local',
+  user: { id: 'user_123' },
   endpoint: 'http://localhost',
   runtimeMode: 'local_only',
   localRuntime: {
@@ -220,6 +241,7 @@ const serverSdk = initRevTurbine(
   createServerRuntimeConfig({
     tenantId: 'tenant_abc',
     publicKey: 'rtk_…',
+    user: { id: 'user_123' },
   }),
 );
 
@@ -227,6 +249,7 @@ const customSdk = initRevTurbine(
   createCustomEndpointRuntimeConfig({
     tenantId: 'tenant_abc',
     publicKey: 'rtk_…',
+    user: { id: 'user_123' },
     endpoint: 'https://proxy.example.com',
     endpointOverrides: {
       decideContext: '/decisioning/decide-context',
@@ -239,6 +262,7 @@ const localSdk = initRevTurbine(
   createLocalRuntimeConfig({
     tenantId: 'tenant_local',
     publicKey: 'local',
+    user: { id: 'user_123' },
     endpoint: 'http://localhost',
     localRuntime: {
       initialData: {
@@ -315,7 +339,7 @@ The SDK includes a standalone local-mode harness that is useful for:
 
 1. Playwright tests against deterministic slot rendering and trigger behavior.
 2. Manual developer testing of user context, entitlement state, and manual triggers.
-3. Editing harness plans, entitlements, slot content/metadata, and exporting or importing an `ExportedConfig` JSON snapshot.
+3. Editing harness plans, entitlements, slot content/metadata, and exporting or importing a `Playbook` JSON snapshot.
 
 Start the harness server:
 
@@ -333,7 +357,7 @@ Default URL:
 
 `http://127.0.0.1:4174/src/sdk/harness/index.html`
 
-The harness side panel exposes live `ExportedConfig` JSON, download/copy actions, and JSON import so SDK and CLI-oriented local scenarios can be captured and replayed.
+The harness side panel exposes live `Playbook` JSON, download/copy actions, and JSON import so SDK and CLI-oriented local scenarios can be captured and replayed.
 
 
 Configurable environment variables:
@@ -347,9 +371,11 @@ Configurable environment variables:
 ```html
 <script src="https://cdn.revturbine.io/sdk.js"></script>
 <script>
+  // Run this after login, with the signed-in user's id.
   RevTurbine.init({
     tenantId: 'your_tenant_id',
     publicKey: 'rtk_…',
+    user: { id: 'user_123' },
   });
 </script>
 ```

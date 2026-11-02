@@ -47,7 +47,7 @@ void fromJsonModule;
 
 // The boundary itself, which is what actually matters — the type is only
 // interesting because `initRevTurbine` accepts it.
-initRevTurbine({ tenantId: 't_1', localRuntime: { playbook: fixture.playbook } });
+initRevTurbine({ user: { id: 'user_1' }, tenantId: 't_1', localRuntime: { playbook: fixture.playbook } });
 
 /* ── Accepted: the SERVED path is not made harder ─────────────────────────── */
 
@@ -55,7 +55,7 @@ initRevTurbine({ tenantId: 't_1', localRuntime: { playbook: fixture.playbook } }
 // cast and no ceremony. Tightening this type did NOT push cost onto the served
 // path — the case that motivated the original (wrong) claim.
 declare const servedArtifact: any; // sdk-ok: boundary-parse
-initRevTurbine({ tenantId: 't_1', localRuntime: { playbook: servedArtifact } });
+initRevTurbine({ user: { id: 'user_1' }, tenantId: 't_1', localRuntime: { playbook: servedArtifact } });
 
 // Unknown extra keys are fine: a Playbook carries many optional header fields,
 // and new ones must not break an SDK that predates them.
@@ -63,7 +63,7 @@ const withExtraHeaderFields = {
   ...fixture.playbook,
   some_future_header_field: 'added by a newer control plane',
 };
-initRevTurbine({ tenantId: 't_1', localRuntime: { playbook: withExtraHeaderFields } });
+initRevTurbine({ user: { id: 'user_1' }, tenantId: 't_1', localRuntime: { playbook: withExtraHeaderFields } });
 
 /* ── Rejected: a truncated artifact — the escalated shape ─────────────────── */
 
@@ -79,7 +79,7 @@ const truncated = {
 
 // @ts-expect-error - a truncated Playbook is now a COMPILE error at the
 // boundary. Before this change it type-checked here and threw at init.
-initRevTurbine({ tenantId: 't_1', localRuntime: { playbook: truncated } });
+initRevTurbine({ user: { id: 'user_1' }, tenantId: 't_1', localRuntime: { playbook: truncated } });
 
 /* ── Rejected: each required array, one at a time ─────────────────────────── */
 

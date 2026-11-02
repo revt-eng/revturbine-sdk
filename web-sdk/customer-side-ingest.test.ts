@@ -50,6 +50,7 @@ afterEach(() => {
 
 function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerSdk {
   return new RevTurbineCustomerSdk({
+    user: { id: 'u_test' },
     tenantId: 'tenant_abc',
     // No `apiKey` by default: on a backend (this test's Node runtime) a server
     // key would be the ingest bearer (hosted-server-key.test.ts).

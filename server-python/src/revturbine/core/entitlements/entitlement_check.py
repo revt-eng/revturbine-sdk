@@ -37,13 +37,10 @@ from revturbine.core.entitlements.segment_matching import matches_rule_segments
 from revturbine.core.entitlements.unlimited import resolve_limit_value
 from revturbine.core.helpers import is_record
 from revturbine.core.segments.segment_mode import segment_dimension_keys
-from revturbine.playbook_option import resolve_playbook_option
 
 __all__ = ["derive_local_entitlement_from_configured_rules"]
 
 Playbook = dict[str, Any]
-#: Deprecated spelling of :data:`Playbook` (BL-0156). Removed in ``0.13.0``.
-ExportedConfig = Playbook
 
 
 def _js_number(v: Any) -> float:
@@ -120,16 +117,12 @@ def derive_local_entitlement_from_configured_rules(
     usage_balances: dict[str, float],
     user_usage: dict[str, Any] | None = None,
     playbook: Playbook | None = None,
-    exported_config: Playbook | None = None,
     trial_granted_entitlement_handles: AbstractSet[str] | None = None,
     effective_plan_handle: str | None = None,
     addons: list[dict[str, Any]] | None = None,
     billing_period: str | None = None,
 ) -> EntitlementCheckResult | None:
     """Derive an entitlement result locally from Playbook rules.
-
-    ``playbook`` is canonical; ``exported_config`` is the deprecated spelling
-    kept for compatibility (BL-0156) and removed in ``0.13.0``.
 
     ``trial_granted_entitlement_handles`` / ``effective_plan_handle`` are the
     reverse-trial inputs (plan 43 TASK-2): a handle the user holds through an
@@ -146,14 +139,8 @@ def derive_local_entitlement_from_configured_rules(
     Source: entitlement-check.ts:77-211
     (deriveLocalEntitlementFromConfiguredRules)
     """
-    # One resolver, so `playbook` vs the deprecated `exported_config` cannot be
-    # decided differently here than anywhere else (BL-0156).
-    resolved = resolve_playbook_option(
-        playbook, exported_config, "derive_local_entitlement_from_configured_rules"
-    )
-    if resolved is None:
+    if playbook is None:
         return None
-    playbook = resolved
     holdings = [
         holding
         for holding in validate_purchased_addons(addons)

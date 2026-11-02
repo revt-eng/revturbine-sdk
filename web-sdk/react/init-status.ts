@@ -4,7 +4,7 @@
  * Init status — the one surface that is reachable when the SDK is not.
  *
  * Plan 233 TASK-2. Every diagnostic the SDK ships (`getPolicy()`,
- * `getExportedConfig()`, `getTargeting()`, `getTelemetryCounters()`,
+ * `getPlaybook()`, `getTargeting()`, `getTelemetryCounters()`,
  * `validateUiPathResolvers()`, `explainPlacementDecision()`) is an instance
  * method, so all of them are unreachable in precisely the failure mode that
  * matters most: the one where the instance was never created. When init throws,

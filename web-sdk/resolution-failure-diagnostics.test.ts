@@ -86,6 +86,7 @@ const metaBodies = () =>
 /** A KEYED local-only install — the adoption beacon stays silent (keyless-only), diagnostics do not. */
 function makeKeyedSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerSdk {
   return trackSdk(new RevTurbineCustomerSdk({
+    user: { id: 'u_test' },
     tenantId: 'tenant_diag',
     apiKey: 'sk_test',
     publicKey: 'pub_test',
@@ -155,6 +156,7 @@ describe('resolution_failure diagnostics — entitlement infra-denials (Q-3 scop
   it('server mode with an unreachable config emits config_unavailable with the entitlement handle', async () => {
     rejectNonMeta = true;
     const sdk = trackSdk(new RevTurbineCustomerSdk({
+      user: { id: 'u_test' },
       tenantId: 'tenant_diag',
       apiKey: 'sk_test',
       publicKey: 'pub_test',
@@ -180,6 +182,7 @@ describe('resolution_failure diagnostics — entitlement infra-denials (Q-3 scop
 
   it("local mode's default deny does NOT emit (a configuration choice, not infrastructure)", async () => {
     const sdk = trackSdk(new RevTurbineCustomerSdk({
+      user: { id: 'u_test' },
       tenantId: 'tenant_diag',
       apiKey: 'sk_test',
       publicKey: 'pub_test',

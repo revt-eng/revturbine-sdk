@@ -64,13 +64,11 @@ from revturbine.core.placements.trial_gating import (
 from revturbine.core.rules.plan_eligibility import evaluate_plan_eligibility
 from revturbine.core.rules.segment_eligibility import evaluate_segment_eligibility
 from revturbine.core.state.impression_history import ImpressionHistory
-from revturbine.playbook_option import require_playbook_option
 
 _logger = logging.getLogger(__name__)
 
 __all__ = [
     "Playbook",
-    "ExportedConfig",
     "LocalPlacementDataset",
     "LocalPlacementEntry",
     "create_static_placement_resolver",
@@ -78,8 +76,6 @@ __all__ = [
 
 # Loose aliases — tightened to generated Pydantic models in TASK-7.
 Playbook = dict[str, Any]
-#: Deprecated spelling of :data:`Playbook` (BL-0156). Removed in ``0.13.0``.
-ExportedConfig = Playbook
 LocalPlacementEntry = dict[str, Any]
 
 
@@ -644,13 +640,8 @@ def create_static_placement_resolver(
     placements: LocalPlacementDataset,
     playbook: Playbook | None = None,
     impression_history: ImpressionHistory | None = None,
-    *,
-    exported_config: Playbook | None = None,
 ) -> PlacementResolver:
     """Create a placement resolver from a static dataset.
-
-    ``playbook`` is canonical; the keyword-only ``exported_config`` is the
-    deprecated spelling kept for compatibility (BL-0156), removed in ``0.13.0``.
 
     Supports plan-target filtering from payload targets, token
     interpolation from payload content, usage-token injection from the
@@ -659,11 +650,8 @@ def create_static_placement_resolver(
 
     Source: local-resolver.ts:129-449
     """
-    # One resolver, so `playbook` vs the deprecated `exported_config` cannot be
-    # decided differently here than anywhere else (BL-0156).
-    playbook = require_playbook_option(
-        playbook, exported_config, "create_static_placement_resolver"
-    )
+    if playbook is None:
+        raise ValueError("create_static_placement_resolver: 'playbook' is required")
     template_to_surface: dict[str, str] = {**BUILT_IN_TEMPLATE_COMPONENT_TYPES}
     for template in playbook.get("surface_templates") or []:
         if is_record(template):

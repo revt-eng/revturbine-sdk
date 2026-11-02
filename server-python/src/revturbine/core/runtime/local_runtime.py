@@ -94,10 +94,6 @@ from revturbine.core.state import (
 from revturbine.core.user_context import (
     build_targeting_state as _build_targeting_state,
 )
-from revturbine.playbook_option import (
-    require_playbook_option,
-    warn_deprecated_playbook_alias_once,
-)
 
 __all__ = ["LocalRuntime", "LocalRuntimeInteractionOptions"]
 
@@ -128,7 +124,6 @@ class LocalRuntime:
         tenant_id: str,
         user_id: str,
         playbook: Playbook | None = None,
-        exported_config: Playbook | None = None,
         providers: list[DomainProvider],
         placements: LocalPlacementDataset | None = None,
         custom_resolver: PlacementResolver | None = None,
@@ -160,9 +155,9 @@ class LocalRuntime:
         """
         self.tenant_id = tenant_id
         self._user_id = user_id
-        # One resolver, so `playbook` vs the deprecated `exported_config`
-        # cannot be decided differently here than anywhere else (BL-0156).
-        self._playbook = require_playbook_option(playbook, exported_config, "LocalRuntime")
+        if playbook is None:
+            raise ValueError("LocalRuntime: 'playbook' is required")
+        self._playbook = playbook
         self._user_entitlements: dict[str, MirroredEntitlement] = dict(user_entitlements or {})
         self._trial_status = trial_status
         self._entitlement_merge = entitlement_merge
@@ -431,17 +426,6 @@ class LocalRuntime:
         Source: local-runtime.ts:312-315
         """
         return self._playbook
-
-    def get_exported_config(self) -> Playbook:
-        """Deprecated alias of :meth:`get_playbook` (BL-0156).
-
-        ``ExportedConfig`` is dead vocabulary. Identical behaviour; removed in
-        ``0.13.0``.
-        """
-        warn_deprecated_playbook_alias_once(
-            "`LocalRuntime.get_exported_config()` is deprecated; use `get_playbook()`."
-        )
-        return self.get_playbook()
 
     # ── Lifecycle ─────────────────────────────────────────────────────────
 

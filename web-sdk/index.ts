@@ -102,28 +102,21 @@ export type { SurfaceSlotComponentProps as RTSlotProps } from './placements/Surf
 
 // Advertised config type (plan 139 / Q-2): the customer-facing vocabulary is
 // `Slot` · `Gate` · `Playbook`. `Playbook` is the canonical name for the config
-// artifact the SDK evaluates against. `ExportedConfig` / `RevTurbineConfig` are
-// re-exported below as EXPLICIT aliases of `Playbook` — they must not ride the
+// artifact the SDK evaluates against. `RevTurbineConfig` is re-exported below
+// as an EXPLICIT alias of `Playbook` — it must not ride the
 // `export type *` schema re-export alone: names that only pass through the star
 // vanish for public-package consumers, where `@revt-eng/schema` is unresolvable
 // (it is neither a dependency of `@revturbine/sdk` nor bundled into its types).
-// The schema declares `ExportedConfigSchema` / `RevTurbineConfigSchema` as true
-// aliases of `PlaybookSchema`, so these type aliases are exact.
+// The schema declares `RevTurbineConfigSchema` as a true alias of
+// `PlaybookSchema`, so this type alias is exact.
 /**
  * The portable RevTurbine monetization config the SDK evaluates against —
  * plans, entitlements, entitlement rules, segments, content UI paths, surface
  * templates, and placements. `Playbook` is the canonical name for this config
- * artifact (typically distributed as `playbook.json`); `ExportedConfig`
- * and `RevTurbineConfig` remain exported as legacy type aliases — prefer
- * `Playbook`.
+ * artifact (typically distributed as `playbook.json`); `RevTurbineConfig`
+ * remains exported as a legacy type alias — prefer `Playbook`.
  */
 export type { Playbook } from './generated';
-/**
- * @deprecated Legacy alias of {@link Playbook} — the pre-plan-139 name for the
- * same config artifact. `ExportedConfig` is dead vocabulary (BL-0156): use
- * `Playbook`. Removed in `0.13.0`.
- */
-export type { Playbook as ExportedConfig } from './generated';
 /**
  * Legacy alias of {@link Playbook} — the original name for the same config
  * artifact. Prefer `Playbook` in new code.

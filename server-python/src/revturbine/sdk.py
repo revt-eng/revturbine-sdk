@@ -64,7 +64,6 @@ from revturbine.core.providers.types import DomainProvider, DomainProviderName
 from revturbine.core.runtime import LocalRuntime
 from revturbine.core.segments import segment_dimension_keys
 from revturbine.core.trials import evaluate_trial_status as _evaluate_trial_status
-from revturbine.playbook_option import require_playbook_option
 
 __all__ = ["RevTurbineCustomerSdk", "UserContext"]
 
@@ -181,16 +180,12 @@ class RevTurbineCustomerSdk:
         *,
         user_context: UserContext,
         playbook: ConfigArtifact | None = None,
-        exported_config: ConfigArtifact | None = None,
         entitlement_merge: EntitlementMergeOptions | None = None,
         on_unknown_entitlement: Callable[[str], None] | None = None,
     ) -> None:
         """Compose the parity-locked substrate for one user context.
 
-        Exactly one of ``playbook`` (canonical) or ``exported_config``
-        (deprecated, removed in ``0.13.0``) is required; supplying
-        neither raises ``ValueError``. ``exported_config`` emits a
-        one-time :class:`DeprecationWarning` naming ``playbook``.
+        ``playbook`` is required; omitting it raises ``ValueError``.
 
         ``entitlement_merge`` (D-61) sets how ``user_context["entitlements"]``
         merges with the Playbook evaluation — provider-level
@@ -211,11 +206,10 @@ class RevTurbineCustomerSdk:
         if not tenant_id or not user_id:
             raise ValueError("user_context requires non-empty 'tenant_id' and 'user_id'")
 
-        # One resolver, so `playbook` vs the deprecated `exported_config`
-        # cannot be decided differently here than anywhere else (BL-0156).
-        raw_playbook = require_playbook_option(playbook, exported_config, "RevTurbineCustomerSdk")
+        if playbook is None:
+            raise ValueError("RevTurbineCustomerSdk: 'playbook' is required")
         parsed = parse_playbook_or_throw(
-            raw_playbook,
+            playbook,
             "playbook",
             {
                 "tenant_id": tenant_id,
@@ -265,10 +259,6 @@ class RevTurbineCustomerSdk:
         self._runtime = LocalRuntime(
             tenant_id=tenant_id,
             user_id=user_id,
-            # Canonical keyword. Passing the deprecated `exported_config` here
-            # would spend the once-per-process DeprecationWarning on the SDK's
-            # OWN internal call, so a caller using the deprecated spelling
-            # would then never be warned.
             playbook=playbook,
             providers=providers,
             # D-61: the same user-context entitlement data and trial status

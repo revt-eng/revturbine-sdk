@@ -82,6 +82,7 @@ function usageConfig(): RevTurbineConfig {
 
 function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerSdk {
   return new RevTurbineCustomerSdk({
+    user: { id: 'u_test' },
     tenantId: 'tenant_trigger_wire',
     apiKey: 'sk_test',
     publicKey: 'pub_test',

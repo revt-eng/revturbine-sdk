@@ -10,7 +10,6 @@ keys). Batch 2c lands the static local resolver
 from revturbine.core.placements.local_resolver import (
     BUILT_IN_TEMPLATE_COMPONENT_TYPES,
     DEFAULT_TEMPLATE_COMPONENT_TYPES,
-    ExportedConfig,
     LocalPlacementDataset,
     LocalPlacementEntry,
     Playbook,
@@ -64,7 +63,6 @@ __all__ = [
     "BUILT_IN_TEMPLATE_COMPONENT_TYPES",
     "DEFAULT_TEMPLATE_COMPONENT_TYPES",
     "Playbook",
-    "ExportedConfig",
     "LocalPlacementDataset",
     "LocalPlacementEntry",
     "create_static_placement_resolver",

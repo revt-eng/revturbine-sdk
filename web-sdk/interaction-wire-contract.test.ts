@@ -57,6 +57,7 @@ function stubFetch(): void {
 
 function sdk(): RevTurbineCustomerSdk {
   return new RevTurbineCustomerSdk({
+    user: { id: 'u_test' },
     tenantId: 'tenant_abc',
     apiKey: 'sk_secret_key',
     environmentId: 'staging',

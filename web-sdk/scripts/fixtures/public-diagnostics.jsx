@@ -13,9 +13,10 @@ const playbook = {
   plans: [], entitlements: [], entitlement_rules: [], segments: [], content_ui_paths: [],
 };
 const { plans: omitted, ...malformed } = playbook;
-const failedOptions = { tenantId: 'diagnostics', runtimeMode: 'local_only', localRuntime: { playbook: malformed } };
+const user = { id: 'user_123' };
+const failedOptions = { user, tenantId: 'diagnostics', runtimeMode: 'local_only', localRuntime: { playbook: malformed } };
 const healthyOptions = {
-  tenantId: 'diagnostics', runtimeMode: 'local_only', localRuntime: { playbook },
+  user, tenantId: 'diagnostics', runtimeMode: 'local_only', localRuntime: { playbook },
   branding: { theme: { colors: { background: '#5d0000' } } },
 };
 const appTheme = { colors: { background: '#0a0a0a' } };

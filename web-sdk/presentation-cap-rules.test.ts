@@ -59,6 +59,7 @@ function playbook(placements: unknown[], capRules: unknown[] = [], sessionCooldo
 
 async function sdkWithSlot(config: ReturnType<typeof playbook>) {
   const sdk = new RevTurbineCustomerSdk({
+    user: { id: 'u_test' },
     tenantId: 'tenant_caps',
     apiKey: 'sk_test',
     publicKey: 'pub_test',

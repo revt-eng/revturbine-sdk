@@ -62,6 +62,7 @@ const PLAYBOOK = {
 
 function makeSdk(): RevTurbineCustomerSdk {
   const sdk = new RevTurbineCustomerSdk({
+    user: { id: 'user_r' },
     tenantId: 'tenant_reactivity',
     apiKey: 'sk_test',
     publicKey: 'pub_test',

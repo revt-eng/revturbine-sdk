@@ -179,7 +179,7 @@ def rule_permissiveness(rule: Mapping[str, Any]) -> float:
     → +inf; finite numeric as-is; non-orderable kinds → neutral 0 (the
     deterministic source-order tie-break then applies).
 
-    Structural param (``{kind, fields}``) so the ExportedConfig fallback
+    Structural param (``{kind, fields}``) so the Playbook fallback
     (``entitlement_check.derive_local_entitlement_from_configured_rules``)
     reuses this single source — mirrors the exported TS
     ``rulePermissiveness``; the §2.6.5 scoring is never implemented twice.
@@ -220,7 +220,7 @@ def pick_most_permissive(
     earliest in source order (strict ``>`` keeps the first seen).
     Deterministic and cross-language-parity-stable. Reused by both the
     provider-snapshot path (``_select_most_permissive``) and the
-    ExportedConfig fallback
+    Playbook fallback
     (``derive_local_entitlement_from_configured_rules``) so the §2.6.5
     rule is never implemented twice.
 

@@ -252,6 +252,8 @@ export function SdkLocalHarnessApp() {
   }, [activeSlots, contentOverrides, entitlementPayloads, planHandle, slotTriggers, slots, traitsInput, usagePercent, userId, userName]);
 
   const sdk = useMemo<RevTurbineCustomerSdk>(() => initRevTurbine(createLocalRuntimeConfig({
+    // ST-1416: the SDK needs the user it evaluates for. The harness edits this id.
+    user: { id: userId },
     tenantId: 'tenant_local_harness',
     apiKey: 'local_only',
     endpoint: 'http://localhost:3000',
@@ -268,7 +270,7 @@ export function SdkLocalHarnessApp() {
       playbook: currentExportedConfig,
       initialData: runtimeData,
     },
-  })), [currentExportedConfig, runtimeData, storageKey]);
+  })), [currentExportedConfig, runtimeData, storageKey, userId]);
 
   const applyLoadedConfig = useCallback((loaded: ReturnType<typeof loadExportedConfig>) => {
     setPlans(loaded.plans);
