@@ -47,7 +47,31 @@ also require a changelog entry.
 
 ---
 
-## Unreleased
+## 0.14.0
+
+### Added
+
+- The web SDK stamps what triggered a placement exposure on its interaction
+  rows (ST-912). Three optional fields join the body sent to
+  `/api/events/interactions` for every interaction of a placement
+  (`impression`, `cta_clicked`, `cta_completed`, `dismiss`, ...). Nothing
+  breaks: no existing field changes, no new field is ever required, and the
+  Python and Rust ports are unchanged (they send no interaction rows); they
+  move to `0.14.0` only to keep the version lock.
+  - `trigger_source`: `"gate"` when the slot was requested through a gate
+    (it carries an `entitlement_handle`, or `surface_slot_category: "gated"`).
+    Absent otherwise. `threshold` and `trial` are not stamped: the SDK has no
+    such request concept.
+  - `entitlement_handle`: the gated slot's entitlement handle. Absent when the
+    slot is not gated.
+  - `playbook_version`: the configured Playbook release id
+    (`playbook_version_id`). Absent when no Playbook is configured.
+  - SDKs before `0.14.0` leave all three absent, so their rows read as
+    unclassified, never guessed. `placement_exposed` is unchanged.
+
+Proving test: `web-sdk/interaction-exposure-stamp.test.ts`.
+
+The unreleased ST-1447 changes from `main` ship in this same release:
 
 ### Fixed (ST-1447, SDK runtime)
 
