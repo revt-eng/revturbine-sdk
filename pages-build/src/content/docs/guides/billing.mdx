@@ -241,7 +241,7 @@ with a settings surface planned.
 ## Where checkout fits
 
 RevTurbine decides *what* to offer; your app owns the checkout itself. A CTA
-with the `open_checkout` action resolves to `open_checkout_modal` carrying the
+with the `open_checkout` action reaches your `open_checkout` resolver carrying the
 plan handle — your resolver opens Stripe Checkout (or your own flow) for the
 matching price. After payment, the subscription webhook updates the customer's
 plan, and access follows without further app code.

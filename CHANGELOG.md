@@ -47,6 +47,85 @@ also require a changelog entry.
 
 ---
 
+## Unreleased
+
+### Fixed (ST-1447, SDK runtime)
+
+Each changes what the SDK does at runtime. The one signature change is additive:
+the `@public` interface `ConfigTargetDefaults` gains an optional
+`tenantIdDefaulted?: boolean` (item 4), so no existing caller breaks.
+
+1. **No request to `/api/sdk/user-context` unless you name one (BUG-1185).**
+   `identify()` and `update({ usage })` called `fetchUserContext`, which posted
+   to a singular route the control plane does not have, so every call was a 404
+   (twice per identify). It now makes the request only when
+   `endpointOverrides.userContext` is set. The server-key upsert is the plural
+   `POST /api/sdk/user-contexts`, unchanged. Proving test:
+   `web-sdk/user-context-route.test.ts`.
+2. **`<Gate deniedFallback>` renders when the SDK failed to initialize
+   (BUG-1194).** A terminal init failure used to leave every gate rendering
+   nothing. `useEntitlement` (and so `useCan` and `<Gate>`) now reports an
+   error, which denies, and the fallback shows beside the dev banner. A gate
+   still renders nothing while init is pending. Proving test:
+   `web-sdk/placements/AccessGateSurfaceSlot.init-failure.test.tsx`.
+3. **A 401/403 reports the response body and tells a challenge from a refused
+   key (BUG-1184).** `getPlaybookLoadFailure().message` appends the body's
+   `{ error: { code, message } }`, and a challenge, firewall or block answer
+   (including `x-vercel-mitigated`) is worded as such rather than as "refused
+   the key". Proving test: `web-sdk/playbook-load-failure.test.ts`.
+4. **Startup warnings fire only for author-fixable conditions.** The
+   `uiPathResolvers` coverage-gap warning is skipped on a headless/server
+   instance, which renders no CTA (BUG-817). A local-only init that gave no
+   `tenantId` no longer warns that the Playbook's tenant differs from the
+   `"local"` placeholder the SDK stamped (BUG-825). A Playbook without
+   `bundle_schema_version` no longer warns, because the schema marks the field
+   read-only (BUG-1191). Proving tests: `web-sdk/config-artifact.test.ts`,
+   `web-sdk/customer-side-ui-path-resolvers.test.ts`.
+5. **No request to `/api/sdk/trial-status` unless you name one (BUG-1470).**
+   `getTrialStatus()` posted to a route the control plane does not have, so every
+   hosted call was a 404. It now makes the request only when
+   `endpointOverrides.trialStatus` is set (as `userContext` does); otherwise it
+   reports the trial the app supplied. A test now walks every `endpointFor`
+   default and fails on one the hosted API does not serve. Proving test:
+   `web-sdk/endpoint-default-routes.test.ts`.
+6. **`getUserContext()` and the user-context types follow the observed-identity
+   contract.** The pin moved to `@revt-eng/*` `0.1.542`, whose `UserContext` has
+   a required, server-only `observed_only`. The SDK reports `observed_only:
+   false` for the identified app user, and treats `observed_only` as a
+   server-assigned key: `RevTurbineUserContext` no longer has it, and a caller
+   that passes it has it dropped and reported, like `retired_at`.
+
+### Changed (ST-1447, nullable `EligiblePlan` fields)
+
+A public plan authored with no price variation (a free plan) is part of the
+catalog (BUG-818). `getEligiblePlans()` now returns it once, with
+`variationHandle`, `segmentHandle` and `price` all `null`. **Callers that read
+`plan.price.price` or `plan.variationHandle` without a null check must add
+one.** `EligiblePlan.variationHandle` is now `string | null` and
+`EligiblePlan.price` is `EligiblePrice | null` (`EligibleAddon` is unchanged);
+the `plan_price` and `upgrade_plan_price` tokens render `''` for a plan with no
+price. A plan whose variations exist but none is eligible for the user is still
+left out. The Python (`get_eligible_plans`) and Rust (`get_eligible_plans`)
+servers return the same shape (`variation_handle`, `segment_handle` and `price`
+null). Proving tests: `web-sdk/customer-side-catalog.test.ts`,
+`server-python/tests/test_catalog_eligibility.py`, the parity scenario
+`catalog_variation_eligibility`.
+
+### Changed (ST-1447, CTA types delivered as authored; BUG-1192)
+
+A placement's `cta_path.type` is now exactly the authored CTA: `open_checkout`
+and `view_plans` are no longer renamed to `open_checkout_modal` and
+`navigate_to_plans` (all three SDKs). Register resolvers under the authored
+names. `open_checkout_modal` and `navigate_to_plans` stay accepted as
+registrations and address the same resolver, but are **deprecated**: the first
+registration of either logs one warning. `validateUiPathResolvers()` also
+covers the CTA paths authored on placements (`dismiss` and `snooze` excepted),
+reporting each gap with `source: 'cta_path'` and its `placementId`, and its
+report gains `totalCtaPaths` and `resolvedCtaPaths`. The Placements guide now
+lists this one vocabulary. Proving test: `web-sdk/cta-path-vocabulary.test.ts`.
+
+---
+
 ## 0.13.0
 
 ### Breaking

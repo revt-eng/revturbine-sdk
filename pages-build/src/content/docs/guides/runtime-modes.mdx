@@ -147,7 +147,7 @@ const session = await initRevTurbine({
   localRuntime: { playbook },
   user: { id: 'user_123', plan_handle: 'starter' },
   uiPathResolvers: {
-    navigate_to_plans: () => { window.location.assign('/pricing'); },
+    view_plans: () => { window.location.assign('/pricing'); },
   },
   branding: {
     workspace_name: 'My app',

@@ -163,10 +163,10 @@ export function Dashboard() {
 }
 ```
 
-When a user clicks a CTA inside a placement, the SDK calls a resolver you provide — `navigate_to_plans`, `open_checkout_modal`, and so on — so navigation and checkout stay in your code. The starter Playbook uses `navigate_to_plans`; add one line to `options`:
+When a user clicks a CTA inside a placement, the SDK calls a resolver you provide — `view_plans`, `open_checkout`, and so on — so navigation and checkout stay in your code. The starter Playbook has a `view_plans` CTA; add one line to `options`:
 
 ```tsx docs-check=false reason="one option line; the full initRevTurbine options object is shown above"
-uiPathResolvers: { navigate_to_plans: () => { window.location.href = '/pricing'; } },
+uiPathResolvers: { view_plans: () => { window.location.href = '/pricing'; } },
 ```
 
 Every action type and what it carries: [Placements → UI paths](/guides/placements/).
