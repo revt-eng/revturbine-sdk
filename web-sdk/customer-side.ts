@@ -192,6 +192,8 @@ import { PlacementTypeRegistry } from './placements/registry';
 import { applyPlacementRegistrySeed } from './placements/registry';
 import {
   bridgeUiPathResolversIntoRegistry,
+  canonicalCtaActionType,
+  getDefaultCtaResolverRegistry,
   registerBuiltinSnoozeResolver,
   registerServerActionResolvers,
   type ServerActionMap,
@@ -221,15 +223,21 @@ export interface EligiblePrice {
   billingPeriod: 'monthly' | 'annual' | 'one_time' | 'custom';
 }
 
-/** A public plan variation eligible for the active targeting context. */
+/**
+ * A public plan variation eligible for the active targeting context.
+ *
+ * A public plan authored with no price variation (a free plan) is still part of
+ * the catalog (BUG-818): it appears once with `variationHandle`, `segmentHandle`
+ * and `price` all `null`.
+ */
 export interface EligiblePlan {
   handle: string;
   name: string;
   tierPosition: number;
   sortOrder: number;
-  variationHandle: string;
+  variationHandle: string | null;
   segmentHandle: string | null;
-  price: EligiblePrice;
+  price: EligiblePrice | null;
 }
 
 /** A public add-on variation eligible for the active targeting context. */
@@ -643,6 +651,8 @@ const SERVER_ASSIGNED_USER_CONTEXT_KEYS = [
   'retired_at',
   'provisional',
   'merged_into',
+  // Observation-created rows are not trusted identities until authorized adoption.
+  'observed_only',
 ] as const satisfies readonly (keyof UserContextInput)[];
 type ServerAssignedUserContextKey = (typeof SERVER_ASSIGNED_USER_CONTEXT_KEYS)[number];
 const SERVER_ASSIGNED_USER_CONTEXT_KEY_SET: ReadonlySet<string> = new Set(SERVER_ASSIGNED_USER_CONTEXT_KEYS);
@@ -1245,12 +1255,23 @@ export interface RevTurbineUiPathResolverValidationIssue {
   name?: string;
   actionType: string;
   reason: 'missing_resolver' | 'missing_action_type';
+  /**
+   * Where the action type was authored: a `content_ui_paths` entry (the
+   * default) or a placement CTA (`cta_path`, with the owning `placementId`).
+   */
+  source?: 'content_ui_path' | 'cta_path';
+  /** The placement whose CTA lacks a resolver, for `source: 'cta_path'`. */
+  placementId?: string;
 }
 
 export interface RevTurbineUiPathResolverValidationReport {
   valid: boolean;
   totalUiPaths: number;
   resolvedUiPaths: number;
+  /** Placement CTAs that need a resolver (`dismiss` and `snooze` are handled by the SDK). */
+  totalCtaPaths: number;
+  /** Of {@link totalCtaPaths}, those with a resolver registered. */
+  resolvedCtaPaths: number;
   issues: RevTurbineUiPathResolverValidationIssue[];
 }
 
@@ -2526,11 +2547,11 @@ interface OutputPlacementRef {
   ruleHandle?: string;
   /**
    * The plan the output's CTA converts the user ONTO, when the authored CTA
-   * names one (`cta_path.plan_handle`, e.g. an `open_checkout_modal` upgrade).
+   * names one (`cta_path.plan_handle`, e.g. an `open_checkout` upgrade).
    *
    * BL-0004: `convert()` receives only an output id, so this is the only place
    * the optimistic post-conversion plan can come from. Absent when the CTA
-   * names no plan (`navigate_to_plans`, a bare `custom_url`) — then the
+   * names no plan (`view_plans`, a bare `custom_url`) — then the
    * conversion's plan effect is left entirely to the server refresh.
    */
   targetPlanHandle?: string;
@@ -2692,12 +2713,13 @@ function outputCtaActionType(output: PlacementOutput | undefined): string | unde
  * checkout, so the placement chain can hold
  * `success ≤ checkout_started ≤ clicked ≤ presented`.
  *
- * `open_checkout_modal` opens checkout directly ("on click") and is
- * deliberately NOT listed: that placement has no separate step, so its started
- * count equals its clicked count. `open_upgrade_modal` opens another placement
- * whose own CTA then decides which of the two it is, so it is not listed
- * either. `view_plans` is the authored alias the local resolver normalizes to
- * `navigate_to_plans`; it is kept for an output built by hand.
+ * `open_checkout` (and its deprecated name `open_checkout_modal`) opens
+ * checkout directly ("on click") and is deliberately NOT listed: that placement
+ * has no separate step, so its started count equals its clicked count.
+ * `open_upgrade_modal` opens another placement whose own CTA then decides which
+ * of the two it is, so it is not listed either. The local resolver now delivers
+ * `view_plans` exactly as authored (BUG-1192); `navigate_to_plans` is its
+ * deprecated name and is kept for an output built by hand.
  */
 export const CHECKOUT_STARTED_CTA_ACTION_TYPES: readonly string[] = ['navigate_to_plans', 'view_plans'];
 
@@ -2975,22 +2997,89 @@ function errorMessage(error: unknown): string { // sdk-ok: boundary-parse
   return error instanceof Error ? error.message : String(error);
 }
 
-/** A failed hosted-delivery step, worded for the integrator (BL-0012). */
-function playbookHttpFailure(
+/** Error codes (or Vercel mitigation values) that mean a firewall or bot challenge answered, not the key check. */
+const CHALLENGE_OR_BLOCK_CODE = /challenge|block|firewall|captcha|rate_?limit/i;
+
+/** What a 401/403 body said, read tolerantly (ST-1447, BUG-1184). */
+interface RefusalEnvelope {
+  code?: string;
+  message?: string;
+}
+
+/**
+ * Read the error envelope from a refusal body. Accepts the shapes the control
+ * plane and its edge produce: `{ error: { code, message } }` (Vercel challenge,
+ * apiError), `{ error: 'text' }`, and a flat `{ code, message }`. Anything else
+ * (an HTML challenge page) yields no envelope.
+ */
+function parseRefusalEnvelope(text: string): RefusalEnvelope | undefined {
+  let parsed: unknown; // sdk-ok: boundary-parse
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+  if (!isRecord(parsed)) return undefined;
+  const source = isRecord(parsed.error) ? parsed.error : parsed;
+  const code = typeof source.code === 'string' ? source.code : undefined;
+  const message = typeof source.message === 'string'
+    ? source.message
+    : typeof parsed.error === 'string' ? parsed.error : undefined;
+  if (code === undefined && message === undefined) return undefined;
+  return { ...(code !== undefined ? { code } : {}), ...(message !== undefined ? { message } : {}) };
+}
+
+/**
+ * A failed hosted-delivery step, worded for the integrator (BL-0012).
+ *
+ * A 401/403 reports the response body and tells a challenge or block (a
+ * firewall or bot check answered before the key was read) apart from a refused
+ * key (ST-1447, BUG-1184).
+ */
+async function playbookResponseFailure(
   stage: RevTurbinePlaybookLoadFailure['stage'],
   url: string,
-  status: number,
-): RevTurbinePlaybookLoadFailure {
-  const refused = status === 401 || status === 403;
+  response: Pick<Response, 'status' | 'headers' | 'text'>,
+): Promise<RevTurbinePlaybookLoadFailure> {
+  const status = response.status;
+  if (status !== 401 && status !== 403) {
+    return { stage, url, status, message: `the Playbook request to ${url} failed with HTTP ${status}.` };
+  }
+  let body = '';
+  let mitigated: string | null = null;
+  // Best-effort: a response the runtime cannot read (or a minimal fetch
+  // double) still yields the status-only message.
+  try {
+    mitigated = response.headers.get('x-vercel-mitigated');
+    body = (await response.text()).trim();
+  } catch {
+    body = '';
+  }
+  const envelope = parseRefusalEnvelope(body);
+  const challenged = (mitigated !== null && mitigated.length > 0)
+    || (envelope?.code !== undefined && CHALLENGE_OR_BLOCK_CODE.test(envelope.code));
+  const detail = envelope
+    ? [envelope.code, envelope.message].filter((part): part is string => part !== undefined).join(': ')
+    : body.length > 0 ? body.slice(0, 200) : '';
+  const bodyNote = detail.length > 0 ? ` Response body: ${detail}` : '';
+  if (challenged) {
+    return {
+      stage,
+      url,
+      status,
+      message: `the request was blocked by a challenge or firewall before the key was checked (HTTP ${status}) at ${url}. `
+        + 'This is not a refused key: allow the request through the firewall or bot protection in front of the control plane.'
+        + bodyNote,
+    };
+  }
   return {
     stage,
     url,
     status,
-    message: refused
-      ? `the control plane refused the key (HTTP ${status}) at ${url}. In a browser, check that publicKey is a public `
-        + 'key for this tenant (Settings → API tokens → Ingest keys) and that this page\'s origin is on its allowlist. '
-        + 'On a backend, pass the tenant\'s server key as apiKey, and a tenantId only if it is that key\'s tenant.'
-      : `the Playbook request to ${url} failed with HTTP ${status}.`,
+    message: `the control plane refused the key (HTTP ${status}) at ${url}. In a browser, check that publicKey is a public `
+      + 'key for this tenant (Settings → API tokens → Ingest keys) and that this page\'s origin is on its allowlist. '
+      + 'On a backend, pass the tenant\'s server key as apiKey, and a tenantId only if it is that key\'s tenant.'
+      + bodyNote,
   };
 }
 
@@ -3167,7 +3256,7 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
           authorization: `Bearer ${this.token}`,
         },
       });
-      if (!bootstrap.ok) return this.cdnMiss(playbookHttpFailure('bootstrap', bootstrapUrl, bootstrap.status));
+      if (!bootstrap.ok) return this.cdnMiss(await playbookResponseFailure('bootstrap', bootstrapUrl, bootstrap));
 
       const bootstrapRaw: unknown = await bootstrap.json(); // sdk-ok: boundary-parse
       if (!isRecord(bootstrapRaw) || typeof bootstrapRaw.manifest_url !== 'string') {
@@ -3184,7 +3273,7 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
           method: 'GET',
           headers: { accept: 'application/json' },
         });
-        if (!manifestResponse.ok) return this.cdnMiss(playbookHttpFailure('manifest', stageUrl, manifestResponse.status));
+        if (!manifestResponse.ok) return this.cdnMiss(await playbookResponseFailure('manifest', stageUrl, manifestResponse));
         const manifestRaw: unknown = await manifestResponse.json(); // sdk-ok: boundary-parse
         manifest = await this.acceptManifest(manifestRaw, Date.now());
       }
@@ -3202,7 +3291,7 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
         method: 'GET',
         headers: { accept: 'application/json' },
       });
-      if (!bundleResponse.ok) return this.cdnMiss(playbookHttpFailure('bundle', stageUrl, bundleResponse.status));
+      if (!bundleResponse.ok) return this.cdnMiss(await playbookResponseFailure('bundle', stageUrl, bundleResponse));
       const bytes = new Uint8Array(await bundleResponse.arrayBuffer());
       if (await sha256Hex(bytes) !== manifest.active.sha256) {
         return this.cdnMiss(playbookStepFailure('bundle', stageUrl, 'the Playbook bundle failed its integrity check'));
@@ -3310,7 +3399,7 @@ class ServerLaunchedPlaybookProvider implements RuntimePlaybookProvider {
         if (this.cached) this.failure = undefined;
         return this.cached;
       }
-      if (!response.ok) return this.legacyMiss(playbookHttpFailure('config', configUrl, response.status));
+      if (!response.ok) return this.legacyMiss(await playbookResponseFailure('config', configUrl, response));
       // The body is the canonical-JSON payload artifact (plan 177 TASK-5).
       // Read it as TEXT so integrity is verified over the exact received
       // bytes, not a re-serialization.
@@ -4057,6 +4146,9 @@ export class RevTurbineCustomerSdk {
       // Undefined for a key-only integration: the Playbook's own `tenant_id`
       // (stamped by the control plane for the key's tenant) is then used.
       tenantId: hasValue(options.tenantId) ? options.tenantId : undefined,
+      // normalizeInitOptions stamps "local" on a local-only init that gave no
+      // tenant; that placeholder is not the author's claim (BUG-825).
+      ...(options.tenantId === LOCAL_ONLY_INIT_DEFAULTS.tenantId ? { tenantIdDefaulted: true } : {}),
       environmentId: normalizeEnvironmentId(options.environmentId),
     };
 
@@ -6065,7 +6157,9 @@ export class RevTurbineCustomerSdk {
     return this.eligibleAddonsForSegments(providers?.segments?.segmentIds);
   }
 
+  /** Format a plan's display price; a plan authored with no price variation has none (`''`). */
   private formatEligiblePrice(plan: EligiblePlan): string {
+    if (plan.price === null) return '';
     return formatCurrencyMinorUnits(plan.price.price, plan.price.currency, this.locale);
   }
 
@@ -6077,15 +6171,16 @@ export class RevTurbineCustomerSdk {
     const billingPeriod = providers?.plan?.billingPeriod;
     const selectVariation = (handle: string | undefined): EligiblePlan | undefined => {
       const candidates = eligible.filter((plan) => plan.handle === handle);
-      return candidates.find((plan) => plan.price.billingPeriod === billingPeriod) ?? candidates[0];
+      return candidates.find((plan) => plan.price?.billingPeriod === billingPeriod) ?? candidates[0];
     };
     const current = selectVariation(currentHandle || undefined);
     const recommendation = this.deriveRecommendedPlanTokens(this.getConfiguredPlaybook());
     const upgrade = selectVariation(recommendation.recommended_plan_handle || undefined);
     return {
-      plan_price: current
-        ? this.formatEligiblePrice(current)
-        : (providers?.plan?.currentPlanPrice ?? ''),
+      // A plan with no price variation has nothing to format; fall back to the
+      // provider's price exactly as when the plan is absent from the catalog.
+      plan_price: (current ? this.formatEligiblePrice(current) : '')
+        || (providers?.plan?.currentPlanPrice ?? ''),
       upgrade_plan_price: upgrade ? this.formatEligiblePrice(upgrade) : '',
     };
   }
@@ -9132,6 +9227,33 @@ export class RevTurbineCustomerSdk {
     this.persistInteractionState();
   }
 
+  /**
+   * The exposure stamp for one interaction row (ST-912 TASK-1), read from the
+   * slot record the interaction's placement was registered under.
+   *
+   * `trigger_source: 'gate'` + `entitlement_handle` when the slot was requested
+   * through a gate (`entitlement_handle` metadata, or `surface_slot_category:
+   * 'gated'`); `playbook_version` is the configured release id. Each key is
+   * omitted when unknown. `threshold` / `trial` sources are not stamped: the
+   * SDK has no such request concept.
+   */
+  private exposureStampFor(placementId: string): {
+    trigger_source?: 'gate';
+    entitlement_handle?: string;
+    playbook_version?: string;
+  } {
+    const metadata = this.placements.get(placementId)?.metadata;
+    const handle = metadata?.entitlement_handle;
+    const entitlementHandle = typeof handle === 'string' && handle.length > 0 ? handle : undefined;
+    const gated = entitlementHandle !== undefined || metadata?.surface_slot_category === 'gated';
+    const playbookVersion = this.getConfiguredPlaybook()?.playbook_version_id;
+    return {
+      ...(gated ? { trigger_source: 'gate' as const } : {}),
+      ...(entitlementHandle ? { entitlement_handle: entitlementHandle } : {}),
+      ...(playbookVersion ? { playbook_version: playbookVersion } : {}),
+    };
+  }
+
   // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#flushInteractionQueue
   private async flushInteractionQueue(): Promise<void> {
     if (this.interactionQueue.length === 0) return;
@@ -9188,6 +9310,10 @@ export class RevTurbineCustomerSdk {
       // "no decision in scope" — `PlacementOutput.rule_id` is simply missing in
       // both — so it sends neither rather than asserting one.
       ...(item.ruleHandle ? { rule_handle: item.ruleHandle } : {}),
+      // ST-912 TASK-1: the exposure stamp — what triggered the slot (`gate`
+      // only today) and the Playbook release that produced the experience.
+      // Absent, never null, when unknown: older SDKs send neither.
+      ...this.exposureStampFor(item.placementId),
       // Plan 282 TASK-9: the decision the presented treatment came from and
       // the segment HANDLES the user was in — the keys `placement_presentations`
       // joins to the clickstream and to the Checkout metadata bag on. Spread
@@ -9950,6 +10076,8 @@ export class RevTurbineCustomerSdk {
       created_at: now,
       updated_at: now,
       retired_at: null,
+      // The held context is the identified app user, never an observation-only row.
+      observed_only: false,
       account_id: this.userContext.account_id,
       email: this.userContext.email,
       // BL-0421: the plan matching identity and the delivered built-in
@@ -10018,6 +10146,13 @@ export class RevTurbineCustomerSdk {
 
     // ST-1416: no identified user, no request.
     if (this.identifiedUserId === undefined) return { userId, segmentIds: [], traits: {} };
+
+    // ST-1447 (BUG-1185): the hosted control plane has no singular
+    // `/api/sdk/user-context` route (only the server-key `user-contexts`
+    // upsert), so the default call is a guaranteed 404 on every identify()
+    // and update(). Only call it when the integrator pointed `userContext` at
+    // a real endpoint through `custom_endpoints`.
+    if (!this.hasEndpointOverride('userContext')) return { userId, segmentIds: [], traits: {} };
 
     try {
       const response = await fetch(this.endpointFor('userContext', '/api/sdk/user-context'), {
@@ -10507,6 +10642,13 @@ export class RevTurbineCustomerSdk {
     // ST-1416: no identified user, no request.
     if (this.identifiedUserId === undefined) return { in_trial: false };
 
+    // ST-1447 (BUG-1470): the hosted control plane has no `/api/sdk/trial-status`
+    // route, so the default call is a guaranteed 404. Like `userContext`, only
+    // call it when the integrator pointed `trialStatus` at a real endpoint
+    // through `custom_endpoints`; otherwise the trial view comes from the
+    // Playbook and the context the app supplied.
+    if (!this.hasEndpointOverride('trialStatus')) return this.resolveTrialView();
+
     try {
       const response = await fetch(this.endpointFor('trialStatus', '/api/sdk/trial-status'), {
         method: 'POST',
@@ -10713,6 +10855,14 @@ export class RevTurbineCustomerSdk {
    * - optional `resolvers` passed to this method
    * - CTA handlers from domain providers (`domain: 'cta'`), unless disabled
    *
+   * It also validates the CTA paths authored on the Playbook's placements
+   * (`open_checkout`, `view_plans`, `extend_trial`, …): each needs a resolver,
+   * a server action or a `registerCtaResolver()` entry, except `dismiss` and
+   * `snooze`, which the SDK handles. Those gaps are reported with
+   * `source: 'cta_path'` and the owning `placementId`. The deprecated names
+   * `open_checkout_modal` and `navigate_to_plans` count as `open_checkout` and
+   * `view_plans`.
+   *
    * @public
    */
   async validateUiPathResolvers(
@@ -10747,6 +10897,16 @@ export class RevTurbineCustomerSdk {
       }
     }
 
+    // One vocabulary (BUG-1192): a resolver registered under a deprecated name
+    // (`open_checkout_modal`, `navigate_to_plans`) covers its authored name too.
+    const resolverKeys = new Set(
+      Object.entries(mergedResolvers)
+        .filter(([, resolver]) => typeof resolver === 'function')
+        .map(([key]) => canonicalCtaActionType(key)),
+    );
+    const hasResolverFor = (actionType: string): boolean =>
+      resolverKeys.has(canonicalCtaActionType(actionType));
+
     const issues: RevTurbineUiPathResolverValidationIssue[] = [];
     let resolvedUiPaths = 0;
 
@@ -10766,7 +10926,7 @@ export class RevTurbineCustomerSdk {
         continue;
       }
 
-      if (typeof mergedResolvers[actionType] === 'function') {
+      if (hasResolverFor(actionType)) {
         resolvedUiPaths += 1;
         continue;
       }
@@ -10774,8 +10934,35 @@ export class RevTurbineCustomerSdk {
       issues.push({
         actionType,
         reason: 'missing_resolver',
+        source: 'content_ui_path',
         ...(typeof uiPath.id === 'string' ? { uiPathId: uiPath.id } : {}),
         ...(typeof uiPath.name === 'string' ? { name: uiPath.name } : {}),
+      });
+    }
+
+    // BUG-1192: placement CTAs dispatch through the same resolver registry, so
+    // an authored CTA path with no resolver is a gap too. `dismiss` and
+    // `snooze` are handled by the SDK itself; an app server action, an init
+    // resolver or an explicit registerCtaResolver() entry all count as covered.
+    const ctaRegistry = getDefaultCtaResolverRegistry();
+    let totalCtaPaths = 0;
+    let resolvedCtaPaths = 0;
+    for (const cta of this.authoredPlacementCtas(playbook)) {
+      if (cta.path === 'dismiss' || cta.path === 'snooze') continue;
+      totalCtaPaths += 1;
+      if (
+        hasResolverFor(cta.path)
+        || typeof this.serverActions[cta.path] === 'function'
+        || ctaRegistry.has(cta.path)
+      ) {
+        resolvedCtaPaths += 1;
+        continue;
+      }
+      issues.push({
+        actionType: cta.path,
+        reason: 'missing_resolver',
+        source: 'cta_path',
+        ...(cta.placementId !== undefined ? { placementId: cta.placementId } : {}),
       });
     }
 
@@ -10783,6 +10970,8 @@ export class RevTurbineCustomerSdk {
       valid: issues.length === 0,
       totalUiPaths: sourceUiPaths.length,
       resolvedUiPaths,
+      totalCtaPaths,
+      resolvedCtaPaths,
       issues,
     };
 
@@ -10801,6 +10990,27 @@ export class RevTurbineCustomerSdk {
     return report;
   }
 
+  /** Every authored placement CTA path in the Playbook, with its owning placement. */
+  private authoredPlacementCtas(
+    playbook: RevTurbineConfig | undefined,
+  ): Array<{ path: string; placementId?: string }> {
+    const found: Array<{ path: string; placementId?: string }> = [];
+    for (const placement of playbook?.placements ?? []) {
+      for (const payload of placement.payloads ?? []) {
+        for (const surface of payload.surfaces ?? []) {
+          for (const cta of surface.ctas ?? []) {
+            if (typeof cta.path !== 'string' || cta.path.length === 0) continue;
+            found.push({
+              path: cta.path,
+              ...(typeof placement.id === 'string' ? { placementId: placement.id } : {}),
+            });
+          }
+        }
+      }
+    }
+    return found;
+  }
+
   /**
    * Init-time `uiPathResolvers` coverage check. A gap used to throw and take
    * the whole app down for what is, in effect, an unwired button; per plan 174
@@ -10810,6 +11020,10 @@ export class RevTurbineCustomerSdk {
    * throwOnMissing: true })` remains the strict opt-in.
    */
   private warnOnUiPathResolverCoverageGaps(): void {
+    // ST-1447 (BUG-817): a headless/server instance renders no CTA, so a
+    // missing resolver is not something its author can or should fix there.
+    // Only an instance with a UI surface (a browser) reports the gap.
+    if (!isBrowser()) return;
     const playbook = this.getConfiguredPlaybook();
     const uiPaths = isRecord(playbook) && Array.isArray(playbook.content_ui_paths)
       ? playbook.content_ui_paths
@@ -10834,7 +11048,12 @@ export class RevTurbineCustomerSdk {
         continue;
       }
 
-      if (typeof this.uiPathResolvers[actionType] !== 'function') {
+      // A resolver under a deprecated name covers its authored name (BUG-1192).
+      const covered = Object.entries(this.uiPathResolvers).some(
+        ([key, resolver]) => typeof resolver === 'function'
+          && canonicalCtaActionType(key) === canonicalCtaActionType(actionType),
+      );
+      if (!covered) {
         missingActionTypes.push(actionType);
       }
     }

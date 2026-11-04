@@ -33,7 +33,7 @@ function config(): RevTurbineConfig {
   } as unknown as RevTurbineConfig;
 }
 
-function sdk(): RevTurbineCustomerSdk {
+function sdk(playbook: RevTurbineConfig = config(), planHandle = 'free'): RevTurbineCustomerSdk {
   const instance = new RevTurbineCustomerSdk({
     tenantId: 'tenant_catalog',
     apiKey: 'test',
@@ -42,10 +42,22 @@ function sdk(): RevTurbineCustomerSdk {
     runtimeMode: 'local_only',
     locale: 'en-US',
     contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
-    localRuntime: { playbook: config() },
+    localRuntime: { playbook },
   });
-  instance.identify('user_1', { plan_handle: 'free', custom: { stage: 'startup' } });
+  instance.identify('user_1', { plan_handle: planHandle, custom: { stage: 'startup' } });
   return instance;
+}
+
+/** The catalog plus a public plan authored with no price variation at all (BUG-818). */
+function configWithVisitorPlan(): RevTurbineConfig {
+  const base = config();
+  return {
+    ...base,
+    plans: [
+      { unique_handle: 'visitor', name: 'Visitor', tier_position: -1, sort_order: 0, visibility: 'public' },
+      ...(base.plans ?? []),
+    ],
+  } as unknown as RevTurbineConfig;
 }
 
 describe('Plan 161 catalog eligibility and price tokens', () => {
@@ -57,6 +69,28 @@ describe('Plan 161 catalog eligibility and price tokens', () => {
       currency: 'usd',
       pricingModel: 'flat',
       billingPeriod: 'monthly',
+    });
+  });
+
+  it('lists a public plan with no price variation once, with null variation, segment and price (BUG-818)', async () => {
+    const plans = await sdk(configWithVisitorPlan()).getEligiblePlans();
+    expect(plans.map((plan) => plan.handle)).toEqual(['visitor', 'free', 'pro']);
+    expect(plans[0]).toEqual({
+      handle: 'visitor',
+      name: 'Visitor',
+      tierPosition: -1,
+      sortOrder: 0,
+      variationHandle: null,
+      segmentHandle: null,
+      price: null,
+    });
+  });
+
+  it('formats a null price as an empty token instead of throwing', async () => {
+    const instance = sdk(configWithVisitorPlan(), 'visitor');
+    expect(instance.getPersonalizationTokens()).toMatchObject({
+      plan_price: '',
+      upgrade_plan_price: '$0.00',
     });
   });
 

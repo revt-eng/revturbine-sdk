@@ -6,7 +6,6 @@ import { isDevelopmentBuild } from './build-mode';
 import { assertPlaybookExtensionsSupported, assertPlaybookPayloadReadable } from '@revt-eng/core/bundle';
 
 const PLAYBOOK_FORMAT_VERSION = '1.0.0';
-let warnedUnversionedPlaybook = false;
 const REQUIRED_BODY_ARRAY_FIELDS = [
   'plans',
   'entitlements',
@@ -70,6 +69,13 @@ export interface ConfigTargetDefaults {
    * public key's tenant — is used.
    */
   tenantId?: string;
+  /**
+   * True when `tenantId` is the SDK's own placeholder (a local-only init with
+   * no tenant, stamped `"local"`) rather than a value the host passed. A
+   * disagreement with the Playbook's `tenant_id` is then not author-fixable, so
+   * it does not warn (ST-1447, BUG-825).
+   */
+  tenantIdDefaulted?: boolean;
   /** Environment the SDK was initialized with. Wins over the artifact's `environment_id`. */
   environmentId: string;
 }
@@ -186,6 +192,7 @@ function resolveTarget(
   initValue: string | undefined,
   field: 'tenant_id' | 'environment_id',
   source: string,
+  initValueDefaulted = false,
 ): string | undefined {
   const fromArtifact = typeof artifactValue === 'string' && artifactValue.length > 0
     ? artifactValue
@@ -202,7 +209,7 @@ function resolveTarget(
   // carry explicitness down; that is tracked separately, not assumed here.
   if (field === 'environment_id') return fromArtifact ?? initValue;
 
-  if (initValue && fromArtifact && initValue !== fromArtifact) {
+  if (initValue && fromArtifact && initValue !== fromArtifact && !initValueDefaulted) {
     console.warn(
       `[RevTurbine] ${source} declares ${field} "${fromArtifact}" but the SDK was initialized with `
         + `"${initValue}". Using "${initValue}" — the init option is the authority; the Playbook's `
@@ -233,11 +240,11 @@ export function normalizeConfigArtifactOrThrow(
   if ('bundle_schema_version' in raw || 'bundle_min_readable_schema_version' in raw) {
     assertPlaybookPayloadReadable(raw);
   } else {
+    // ST-1447 (BUG-1191): no warning. `bundle_schema_version` is read-only in
+    // the schema (the launch stamps it), so an authored local Playbook can
+    // never carry one; the launched artifact's version is the compatibility
+    // signal, checked above when present.
     assertPlaybookExtensionsSupported(raw);
-    if (!warnedUnversionedPlaybook) {
-      warnedUnversionedPlaybook = true;
-      console.warn('[RevTurbine] Playbook has no bundle_schema_version; accepting legacy input without version compatibility assurance.');
-    }
   }
 
   warnForLegacyProjections(raw, source);
@@ -254,7 +261,13 @@ export function normalizeConfigArtifactOrThrow(
     throw new Error(`Invalid ${source}: unsupported legacy "version" ${String(raw.version)}`);
   }
 
-  const tenantId = resolveTarget(raw.tenant_id, targetDefaults?.tenantId, 'tenant_id', source);
+  const tenantId = resolveTarget(
+    raw.tenant_id,
+    targetDefaults?.tenantId,
+    'tenant_id',
+    source,
+    targetDefaults?.tenantIdDefaulted === true,
+  );
   const environmentId = resolveTarget(
     raw.environment_id,
     targetDefaults?.environmentId,

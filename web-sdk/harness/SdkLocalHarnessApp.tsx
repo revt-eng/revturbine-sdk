@@ -14,9 +14,11 @@ import {
   ENTITLEMENT_TYPES,
   evaluateSegmentPredicates,
   HARNESS_SLOTS,
+  HARNESS_TENANT_ID,
   loadConfigFromLocalStorage,
   loadExportedConfig,
   loadHarnessLocalState,
+  newEntitlementRule,
   nextRuleId,
   resolveEntitlementPayloads,
   ruleLimit,
@@ -33,13 +35,19 @@ import {
   type HarnessSlotDescriptor,
   type HarnessSlotId,
   type HarnessTheme,
+  withRuleLimit,
 } from './scenarios';
 import {
   createLocalRuntimeConfig,
-  initRevTurbine,
   type PlacementOutput,
   type RevTurbineCustomerSdk,
 } from '../index';
+// The harness is a synchronous sandbox: it re-creates the SDK on every edit and
+// drives `getPlacement`/`identify` directly. That is the core `initRevTurbine`
+// (sync, returns the SDK). The package entry point's `initRevTurbine` is the
+// async session wrapper (theme resolution + placement bootstrap), which the
+// harness has no use for and which would force a loading state per edit.
+import { initRevTurbine } from '../customer-side';
 import { PlacementRenderer } from '../placements/PlacementRenderer';
 import type { PlacementUiPath } from '../placements/types';
 
@@ -105,6 +113,20 @@ function stringifyTriggerState(triggerState: TriggerState): Record<string, strin
   return Object.fromEntries(
     Object.entries(triggerState).map(([slotId, triggers]) => [slotId, [...triggers].sort()]),
   );
+}
+
+/**
+ * Keep the scalar entries of the harness's free-form traits JSON: the SDK's
+ * `custom` attributes accept strings, numbers, booleans and null only.
+ */
+function toCustomAttributes(traits: Record<string, unknown>): Record<string, string | number | boolean | null> {
+  const custom: Record<string, string | number | boolean | null> = {};
+  for (const [key, value] of Object.entries(traits)) {
+    if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      custom[key] = value;
+    }
+  }
+  return custom;
 }
 
 function buildDefaultTraitsInput(): string {
@@ -254,7 +276,7 @@ export function SdkLocalHarnessApp() {
   const sdk = useMemo<RevTurbineCustomerSdk>(() => initRevTurbine(createLocalRuntimeConfig({
     // ST-1416: the SDK needs the user it evaluates for. The harness edits this id.
     user: { id: userId },
-    tenantId: 'tenant_local_harness',
+    tenantId: HARNESS_TENANT_ID,
     apiKey: 'local_only',
     endpoint: 'http://localhost:3000',
     mode: 'react',
@@ -350,20 +372,23 @@ export function SdkLocalHarnessApp() {
 
   useEffect(() => {
     sdk.identify(userId, {
-      plan: planHandle,
-      traits: {
+      // `plan_handle` is the plan identity; `plan` is display metadata only.
+      plan_handle: planHandle,
+      plan: { handle: planHandle, name: plans.find((plan) => plan.unique_handle === planHandle)?.name ?? planHandle },
+      // Free-form customer attributes live under `custom` (scalar values only).
+      custom: toCustomAttributes({
         user_name: userName,
         plan_name: planHandle,
         usage_percent: usagePercent,
         ...parsedTraits.value,
-      },
+      }),
     });
     void resolvePlacements();
-  }, [parsedTraits.value, planHandle, resolvePlacements, sdk, usagePercent, userId, userName]);
+  }, [parsedTraits.value, planHandle, plans, resolvePlacements, sdk, usagePercent, userId, userName]);
 
   const filteredRules = useMemo(() => {
     if (!rulesPlanFilter) return entitlementRules;
-    return entitlementRules.filter((rule) => rule.plan_ids.includes(rulesPlanFilter));
+    return entitlementRules.filter((rule) => rule.targets.some((target) => target.kind === 'plan' && target.id === rulesPlanFilter));
   }, [entitlementRules, rulesPlanFilter]);
 
   const activateAll = useCallback(() => {
@@ -817,14 +842,19 @@ export function SdkLocalHarnessApp() {
             <div className="rules-table">
               {filteredRules.map((rule) => {
                 const entitlement = entitlements.find((item) => item.id === rule.entitlement_id);
-                const limit = ruleLimit(rule);
-                const percent = limit > 0 ? Math.min(999, Math.round((rule.current_usage / limit) * 100)) : 0;
+                // The parent entitlement owns the kind; a rule whose entitlement
+                // is gone is edited as a plain usage limit.
+                const ruleType = entitlement?.type ?? 'usage_limit';
+                const limit = ruleLimit(rule, ruleType);
+                const percent = limit > 0 && Number.isFinite(limit)
+                  ? Math.min(999, Math.round((rule.current_usage / limit) * 100))
+                  : 0;
                 return (
                   <div className="rules-table__row" key={rule.id}>
                     <div className="rules-table__filters">
-                      {rule.plan_ids.map((planId) => {
-                        const plan = plans.find((item) => item.id === planId);
-                        return <span className="rules-table__plan-badge" key={`${rule.id}-${planId}`}>{plan?.unique_handle ?? planId}</span>;
+                      {rule.targets.map((target) => {
+                        const plan = target.kind === 'plan' ? plans.find((item) => item.id === target.id) : undefined;
+                        return <span className="rules-table__plan-badge" key={`${rule.id}-${target.kind}-${target.id}`}>{plan?.unique_handle ?? target.id}</span>;
                       })}
                     </div>
                     <div className="rules-table__ent">
@@ -833,26 +863,26 @@ export function SdkLocalHarnessApp() {
                         <span className="rules-table__seg-tag">seg: {rule.segment_ids.join(', ')}</span>
                       ) : null}
                     </div>
-                    {rule.type_fields.kind === 'feature' ? (
+                    {ruleType === 'feature' ? (
                       <label className="rules-table__field">
                         <small>enabled</small>
                         <input
                           type="checkbox"
-                          checked={rule.type_fields.enabled}
+                          checked={rule.enabled !== false}
                           onChange={(event) => updateRule(rule.id, (current) => ({
                             ...current,
-                            type_fields: { kind: 'feature', enabled: event.target.checked },
+                            enabled: event.target.checked,
                           }))}
                         />
                       </label>
-                    ) : rule.type_fields.kind === 'capability_tier' ? (
+                    ) : ruleType === 'capability_tier' ? (
                       <label className="rules-table__field">
                         <small>tier</small>
                         <input
-                          value={rule.type_fields.tier_name}
+                          value={rule.tier_value ?? ''}
                           onChange={(event) => updateRule(rule.id, (current) => ({
                             ...current,
-                            type_fields: { kind: 'capability_tier', tier_name: event.target.value },
+                            tier_value: event.target.value,
                           }))}
                         />
                       </label>
@@ -874,21 +904,11 @@ export function SdkLocalHarnessApp() {
                           <small>limit</small>
                           <input
                             type="number"
-                            value={limit}
+                            value={Number.isFinite(limit) ? limit : ''}
+                            placeholder={Number.isFinite(limit) ? undefined : 'unlimited'}
                             onChange={(event) => {
                               const nextLimit = Math.max(1, Number(event.target.value) || 1);
-                              updateRule(rule.id, (current) => {
-                                if (current.type_fields.kind === 'usage_limit') {
-                                  return { ...current, type_fields: { ...current.type_fields, limit_value: nextLimit } };
-                                }
-                                if (current.type_fields.kind === 'credits') {
-                                  return { ...current, type_fields: { ...current.type_fields, allowance: nextLimit } };
-                                }
-                                if (current.type_fields.kind === 'seat') {
-                                  return { ...current, type_fields: { ...current.type_fields, included_seats: nextLimit } };
-                                }
-                                return current;
-                              });
+                              updateRule(rule.id, (current) => withRuleLimit(current, ruleType, nextLimit));
                             }}
                           />
                         </label>
@@ -914,22 +934,10 @@ export function SdkLocalHarnessApp() {
                   const selectedPlan = plans.find((plan) => plan.unique_handle === planHandle) ?? plans[0];
                   const selectedEntitlement = entitlements[0];
                   if (!selectedPlan || !selectedEntitlement) return;
-                  setEntitlementRules((prev) => [...prev, {
-                    id: nextRuleId(),
-                    entitlement_id: selectedEntitlement.id,
-                    plan_ids: [selectedPlan.id],
-                    segment_ids: [],
-                    type_fields: selectedEntitlement.type === 'feature'
-                      ? { kind: 'feature', enabled: true }
-                      : selectedEntitlement.type === 'capability_tier'
-                        ? { kind: 'capability_tier', tier_name: 'pro' }
-                        : selectedEntitlement.type === 'credits'
-                          ? { kind: 'credits', allowance: 100, period: 'per_month', rollover: false, unit: selectedEntitlement.unit ?? 'credits' }
-                          : selectedEntitlement.type === 'seat'
-                            ? { kind: 'seat', included_seats: 5 }
-                            : { kind: 'usage_limit', limit_value: 100, unit: selectedEntitlement.unit ?? 'units', period: 'per_month', enforcement: 'block_with_upsell' },
-                    current_usage: 0,
-                  }]);
+                  setEntitlementRules((prev) => [
+                    ...prev,
+                    newEntitlementRule(nextRuleId(), selectedEntitlement, selectedPlan.id),
+                  ]);
                 }}
               >
                 Add Rule
@@ -972,7 +980,7 @@ export function SdkLocalHarnessApp() {
           <div className="panel-section">
             <h2>Activity</h2>
             <div className="side-log" data-testid="harness-activity-log">
-              {activityLog.length === 0 ? <div>No activity yet</div> : activityLog.map((line) => <div key={line}>{line}</div>)}
+              {activityLog.length === 0 ? <div>No activity yet</div> : activityLog.map((line, index) => <div key={`${index}:${line}`}>{line}</div>)}
             </div>
           </div>
         </aside>

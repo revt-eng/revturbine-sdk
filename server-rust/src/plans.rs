@@ -72,12 +72,14 @@ pub struct EligiblePlan {
     pub tier_position: Value,
     /// Authored ordering within a tier; the secondary sort key.
     pub sort_order: Value,
-    /// The winning variation's own handle.
-    pub variation_handle: String,
-    /// The segment this variation is scoped to, or `null` for the default one.
+    /// The winning variation's own handle, or `null` for a public plan authored
+    /// with no price variation at all (a free plan; BUG-818).
+    pub variation_handle: Option<String>,
+    /// The segment this variation is scoped to, or `null` for the default one
+    /// (and for a plan with no variation).
     pub segment_handle: Option<String>,
-    /// The variation's display price.
-    pub price: EligiblePrice,
+    /// The variation's display price, or `null` for a plan with no variation.
+    pub price: Option<EligiblePrice>,
 }
 
 /// One eligible add-on variation with its add-on metadata and display price.
@@ -192,18 +194,37 @@ pub fn get_eligible_plans(
         let handle = str_field(plan, "unique_handle").unwrap_or_default();
         let candidates = variations
             .iter()
-            .filter(|variation| str_field(variation, "plan_handle") == Some(handle));
-        for variation in matching_variations(candidates, &context_ids, &dimensions) {
+            .filter(|variation| str_field(variation, "plan_handle") == Some(handle))
+            .collect::<Vec<&Value>>();
+        if candidates.is_empty() {
+            // BUG-818: a public plan authored with no price variation (a free
+            // plan) is still part of the catalog; it appears once with null
+            // variation, segment and price. A plan whose variations exist but
+            // none is eligible stays out.
             result.push(EligiblePlan {
                 handle: handle.to_string(),
                 name: field(plan, "name"),
                 tier_position: field(plan, "tier_position"),
                 sort_order: field(plan, "sort_order"),
-                variation_handle: str_field(variation, "handle")
-                    .unwrap_or_default()
-                    .to_string(),
+                variation_handle: None,
+                segment_handle: None,
+                price: None,
+            });
+            continue;
+        }
+        for variation in matching_variations(candidates.into_iter(), &context_ids, &dimensions) {
+            result.push(EligiblePlan {
+                handle: handle.to_string(),
+                name: field(plan, "name"),
+                tier_position: field(plan, "tier_position"),
+                sort_order: field(plan, "sort_order"),
+                variation_handle: Some(
+                    str_field(variation, "handle")
+                        .unwrap_or_default()
+                        .to_string(),
+                ),
                 segment_handle: str_field(variation, "segment_handle").map(str::to_string),
-                price: price_of(variation),
+                price: Some(price_of(variation)),
             });
         }
     }
@@ -402,10 +423,13 @@ mod tests {
         );
         let handles: Vec<&str> = result
             .iter()
-            .map(|item| item.variation_handle.as_str())
+            .map(|item| item.variation_handle.as_deref().unwrap_or("<none>"))
             .collect();
         assert_eq!(handles, vec!["free_default", "pro_startup"]);
-        assert_eq!(result[1].price.price, json!(2900));
+        assert_eq!(
+            result[1].price.as_ref().map(|price| price.price.clone()),
+            Some(json!(2900))
+        );
         assert_eq!(result[1].segment_handle.as_deref(), Some("startup"));
     }
 
@@ -422,9 +446,29 @@ mod tests {
         );
         let handles: Vec<&str> = result
             .iter()
-            .map(|item| item.variation_handle.as_str())
+            .map(|item| item.variation_handle.as_deref().unwrap_or("<none>"))
             .collect();
         assert_eq!(handles, vec!["free_default", "pro_default"]);
+    }
+
+    /// BUG-818: a public plan authored with no price variation is listed once
+    /// with null variation, segment and price; one whose variations exist but
+    /// none is eligible stays out.
+    #[test]
+    fn public_plan_without_variations_is_listed_once_with_null_price() {
+        let plans = vec![
+            json!({ "unique_handle": "visitor", "name": "Visitor", "tier_position": 0, "sort_order": 0, "visibility": "public" }),
+            json!({ "unique_handle": "pro", "name": "Pro", "tier_position": 1, "sort_order": 0, "visibility": "public" }),
+        ];
+        let variations = vec![
+            json!({ "handle": "pro_startup", "plan_handle": "pro", "billing_period": "monthly", "segment_handle": "startup", "price_amount": 2900, "currency": "usd", "pricing_model": "flat", "visibility": "public" }),
+        ];
+        let result = get_eligible_plans(&plans, &variations, &[], &HashMap::new());
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].handle, "visitor");
+        assert_eq!(result[0].variation_handle, None);
+        assert_eq!(result[0].segment_handle, None);
+        assert_eq!(result[0].price, None);
     }
 
     /// Add-ons carry no tier ladder; the shape is otherwise the plan shape.
@@ -459,7 +503,7 @@ mod tests {
         );
         let handles: Vec<&str> = result
             .iter()
-            .map(|item| item.variation_handle.as_str())
+            .map(|item| item.variation_handle.as_deref().unwrap_or("<none>"))
             .collect();
         assert_eq!(handles, vec!["free_default", "pro_default"]);
     }

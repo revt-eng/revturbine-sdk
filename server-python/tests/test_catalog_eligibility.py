@@ -111,3 +111,26 @@ def test_public_catalog_methods_apply_specificity() -> None:
         "billing_period": "monthly",
     }
     assert sdk.get_eligible_addons()[0]["variation_handle"] == "support_default"
+
+
+def test_public_plan_without_variations_is_listed_once_with_null_price() -> None:
+    """BUG-818: a free plan authored with no price variation stays in the catalog."""
+    config = _config()
+    config["plans"].append(
+        {
+            "unique_handle": "visitor",
+            "name": "Visitor",
+            "tier_position": -1,
+            "sort_order": 0,
+            "visibility": "public",
+        }
+    )
+    sdk = RevTurbineCustomerSdk(
+        user_context={"tenant_id": "tenant", "user_id": "user"},
+        playbook=config,
+    )
+    plans = sdk.get_eligible_plans()
+    assert [item["handle"] for item in plans] == ["visitor", "free", "pro"]
+    assert plans[0]["variation_handle"] is None
+    assert plans[0]["segment_handle"] is None
+    assert plans[0]["price"] is None

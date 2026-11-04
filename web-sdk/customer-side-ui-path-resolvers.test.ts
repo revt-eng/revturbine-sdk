@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   RevTurbineCustomerSdk,
   defineUiPathResolvers,
@@ -93,10 +93,18 @@ describe('validateUiPathResolvers()', () => {
       {
         actionType: 'open_checkout_modal',
         reason: 'missing_resolver',
+        source: 'content_ui_path',
         uiPathId: 'u1',
         name: 'checkout',
       },
     ]);
+  });
+
+  it('accepts the authored names as registrations for the legacy content path names (BUG-1192)', async () => {
+    const sdk = makeSdk([CHECKOUT, PLANS], { open_checkout: noop, view_plans: noop });
+    const report = await sdk.validateUiPathResolvers();
+    expect(report.valid).toBe(true);
+    expect(report.resolvedUiPaths).toBe(2);
   });
 
   it('flags an entry with no action_type as a missing_action_type issue', async () => {
@@ -158,7 +166,25 @@ describe('validateUiPathResolvers()', () => {
 });
 
 describe('SDK init-time uiPathResolver coverage guard (warns, never throws — plan 174 Q-2)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** A UI surface exists only in a browser; the guard is skipped on headless/server instances (BUG-817). */
+  function stubBrowser(): void {
+    vi.stubGlobal('window', { location: { hostname: 'app.example.com' }, addEventListener: () => undefined });
+    vi.stubGlobal('document', { addEventListener: () => undefined });
+  }
+
+  it('logs no coverage-gap warning on a headless instance (BUG-817)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(() => makeSdk([CHECKOUT])).not.toThrow();
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('coverage gap'));
+    warn.mockRestore();
+  });
+
   it('warns naming the uncovered action_type and still constructs', () => {
+    stubBrowser();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(() => makeSdk([CHECKOUT])).not.toThrow();
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('open_checkout_modal'));
@@ -166,6 +192,7 @@ describe('SDK init-time uiPathResolver coverage guard (warns, never throws — p
   });
 
   it('warns about a blank action_type and still constructs', () => {
+    stubBrowser();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(() => makeSdk([{ id: 'u3', name: 'broken', action_type: '   ' }])).not.toThrow();
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('missing action_type'));
@@ -173,6 +200,7 @@ describe('SDK init-time uiPathResolver coverage guard (warns, never throws — p
   });
 
   it('constructs with no coverage warning when every action_type is covered', () => {
+    stubBrowser();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(() =>
       makeSdk([CHECKOUT, PLANS], { open_checkout_modal: noop, navigate_to_plans: noop }),

@@ -759,7 +759,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-06-12"
         }
       ],
@@ -800,7 +799,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-06-12"
         }
       ],
@@ -841,7 +839,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-06-12"
         }
       ],
@@ -889,7 +886,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-06-12"
         }
       ],
@@ -937,7 +933,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-06-12"
         }
       ],
@@ -979,7 +974,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-06-12"
         }
       ],
@@ -1025,7 +1019,6 @@
               "period": "session"
             }
           },
-          "status": "active",
           "created_at": "2026-06-12"
         }
       ],
@@ -1074,7 +1067,6 @@
               "period": "session"
             }
           },
-          "status": "active",
           "created_at": "2026-06-12"
         }
       ],
@@ -1126,7 +1118,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-06-12",
           "recommendation_strategy": "next_tier_up"
         }
@@ -1177,7 +1168,6 @@
             },
             "cooldown_days": 1
           },
-          "status": "active",
           "created_at": "2026-06-12"
         }
       ],
@@ -1233,7 +1223,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-06-12"
         }
       ],
@@ -1274,7 +1263,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-06-12"
         }
       ],
@@ -1328,7 +1316,6 @@
             },
             "cooldown_days": 7
           },
-          "status": "active",
           "created_at": "2026-06-12"
         }
       ],
@@ -1374,7 +1361,6 @@
               "period": "day"
             }
           },
-          "status": "active",
           "created_at": "2026-06-15"
         }
       ],
@@ -1415,7 +1401,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-06-15"
         }
       ],
@@ -1455,7 +1440,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-06-15"
         }
       ],
@@ -1499,7 +1483,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-06-15"
         }
       ],
@@ -1546,7 +1529,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-06-18",
           "recommendation_strategy": "next_tier_up"
         }
@@ -1589,7 +1571,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-06-18"
         }
       ],
@@ -1635,7 +1616,6 @@
               "period": "session"
             }
           },
-          "status": "active",
           "created_at": "2026-06-19",
           "recommendation_strategy": "next_tier_up"
         }
@@ -1686,7 +1666,6 @@
             },
             "cooldown_days": 1
           },
-          "status": "active",
           "created_at": "2026-06-19"
         }
       ],
@@ -1739,7 +1718,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-06-19",
           "recommendation_strategy": "next_tier_up"
         }
@@ -1781,7 +1759,6 @@
             }
           ],
           "caps": {},
-          "status": "active",
           "created_at": "2026-06-19"
         }
       ],

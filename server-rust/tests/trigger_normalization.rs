@@ -156,11 +156,11 @@ fn known_paths_map_to_their_resolved_types() {
         "path": "open_checkout",
         "config": { "purchase": "pro" },
     })));
-    assert_eq!(checkout["type"], json!("open_checkout_modal"));
+    assert_eq!(checkout["type"], json!("open_checkout"));
     assert_eq!(checkout["plan_handle"], json!("pro"));
 
     let plans = normalize_cta_path(Some(&json!({ "path": "view_plans" })));
-    assert_eq!(plans["type"], json!("navigate_to_plans"));
+    assert_eq!(plans["type"], json!("view_plans"));
 
     let placement = normalize_cta_path(Some(&json!({
         "path": "open_rt_placement",
@@ -176,7 +176,7 @@ fn optional_config_fields_are_omitted_not_nulled() {
     // an absent key and an explicit null as different output, so emitting
     // null here would diverge.
     let no_purchase = normalize_cta_path(Some(&json!({ "path": "open_checkout" })));
-    assert_eq!(no_purchase["type"], json!("open_checkout_modal"));
+    assert_eq!(no_purchase["type"], json!("open_checkout"));
     assert!(
         !no_purchase.contains_key("plan_handle"),
         "absent purchase must omit plan_handle entirely",

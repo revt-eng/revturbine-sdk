@@ -776,13 +776,17 @@ mod tests {
         let plans = sdk.get_eligible_plans();
         let handles: Vec<&str> = plans
             .iter()
-            .map(|item| item.variation_handle.as_str())
+            .map(|item| item.variation_handle.as_deref().unwrap_or("<none>"))
             .collect();
         assert_eq!(handles, vec!["free_default", "pro_startup"]);
-        assert_eq!(plans[1].price.price, json!(2900));
-        assert_eq!(plans[1].price.currency, json!("usd"));
-        assert_eq!(plans[1].price.pricing_model, json!("flat"));
-        assert_eq!(plans[1].price.billing_period, json!("monthly"));
+        let price = plans[1]
+            .price
+            .as_ref()
+            .expect("pro_startup carries a price");
+        assert_eq!(price.price, json!(2900));
+        assert_eq!(price.currency, json!("usd"));
+        assert_eq!(price.pricing_model, json!("flat"));
+        assert_eq!(price.billing_period, json!("monthly"));
 
         let addons = sdk.get_eligible_addons();
         assert_eq!(addons[0].variation_handle, "support_default");
@@ -794,12 +798,18 @@ mod tests {
     fn catalog_methods_fall_back_to_default_variations() {
         let sdk = RevTurbineCustomerSdk::new(&ctx("tenant", "user"), &catalog_playbook())
             .expect("catalog playbook parses");
-        let handles: Vec<String> = sdk
+        let handles: Vec<Option<String>> = sdk
             .get_eligible_plans()
             .into_iter()
             .map(|item| item.variation_handle)
             .collect();
-        assert_eq!(handles, vec!["free_default", "pro_default"]);
+        assert_eq!(
+            handles,
+            vec![
+                Some("free_default".to_string()),
+                Some("pro_default".to_string())
+            ]
+        );
     }
 
     /// Mirrors `server-python`'s `TestSdkEvaluateTrialStatus`: the method reads

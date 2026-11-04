@@ -177,13 +177,14 @@ pub fn normalize_cta_path(cta: Option<&Value>) -> Map<String, Value> {
 
     match raw_path {
         "open_checkout" => {
-            out.insert("type".into(), Value::String("open_checkout_modal".into()));
+            // BUG-1192: the CTA type is delivered exactly as authored.
+            out.insert("type".into(), Value::String("open_checkout".into()));
             if let Some(p) = config.get("purchase").and_then(Value::as_str) {
                 out.insert("plan_handle".into(), Value::String(p.to_string()));
             }
         }
         "view_plans" => {
-            out.insert("type".into(), Value::String("navigate_to_plans".into()));
+            out.insert("type".into(), Value::String("view_plans".into()));
         }
         "open_rt_placement" => {
             out.insert("type".into(), Value::String("open_rt_placement".into()));

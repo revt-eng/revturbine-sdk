@@ -52,7 +52,7 @@ const bannerActionsStyle: React.CSSProperties = {
  * <BannerSlot
  *   placement={output}
  *   content={{ header: 'Upgrade to Pro', cta_label: 'Upgrade Now', position: 'top' }}
- *   uiPath={{ type: 'navigate_to_plans' }}
+ *   uiPath={{ type: 'view_plans' }}
  *   onCtaClick={() => navigate('/plans')}
  *   onDismiss={() => {}}
  *   visible={true}

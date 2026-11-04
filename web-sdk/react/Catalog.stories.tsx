@@ -27,7 +27,7 @@ function CatalogDemo() {
   return (
     <section aria-label="Eligible catalog">
       <h2>Eligible plans</h2>
-      <ul>{plans.map((plan) => <li key={plan.variationHandle}>{plan.name}: {plan.price.currency.toUpperCase()} {plan.price.price / 100}</li>)}</ul>
+      <ul>{plans.map((plan) => <li key={plan.variationHandle ?? plan.handle}>{plan.name}: {plan.price ? `${plan.price.currency.toUpperCase()} ${plan.price.price / 100}` : 'No price'}</li>)}</ul>
       <h2>Eligible add-ons</h2>
       <ul>{addons.map((addon) => <li key={addon.variationHandle}>{addon.name}: {addon.price.currency.toUpperCase()} {addon.price.price / 100}</li>)}</ul>
     </section>

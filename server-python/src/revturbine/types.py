@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.527/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.542/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -424,7 +424,7 @@ class Values(BaseModel):
         extra="forbid",
     )
     quiet_days: Literal[7]
-    analytics_min_sample: Literal[30]
+    analytics_min_sample: conint(ge=1, le=2147483647)
 
 
 class AnalyticsGateSettingsApplied1(BaseModel):
@@ -936,6 +936,16 @@ class AnalyticsWarning(BaseModel):
     )
     code: constr(pattern=r"^[A-Z][A-Z0-9_]{2,79}$")
     message: constr(min_length=1, max_length=500)
+
+
+class ApprovalGrantLimits(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    max_traffic_units: conint(ge=0, le=9007199254740991)
+    max_minor_units: conint(ge=0, le=9007199254740991)
+    currency: constr(pattern=r"^[a-z]{3}$")
+    allowed_handles: list[constr(min_length=1)] | None = None
 
 
 class AttributionCreditBasis(Enum):
@@ -2925,6 +2935,13 @@ class CapPeriod(Enum):
     lifetime = "lifetime"
 
 
+class ChangeClass(Enum):
+    pricing = "pricing"
+    entitlement = "entitlement"
+    messaging = "messaging"
+    presentation = "presentation"
+
+
 class ChangeLogAction(Enum):
     create = "create"
     update = "update"
@@ -3166,6 +3183,27 @@ class CustomerAccountListQuery(BaseModel):
     account_id: constr(min_length=1, max_length=255) | None = None
 
 
+class LastSource(Enum):
+    clickstream = "clickstream"
+    placement_interaction = "placement_interaction"
+
+
+class CustomerAccountObservation(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+    user_id: constr(min_length=1, max_length=255)
+    account_id: constr(min_length=1, max_length=255)
+    first_seen_at: AwareDatetime
+    last_seen_at: AwareDatetime
+    last_source: LastSource
+    last_event_id: constr(min_length=1, max_length=255)
+
+
 class CustomerAccount(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -3180,6 +3218,7 @@ class CustomerAccount(BaseModel):
     no_app_account: bool | None = False
     merged_into: constr(min_length=1, max_length=255) | None = None
     retired_at: AwareDatetime | None = None
+    observed_only: bool | None = False
 
 
 class Value4(Enum):
@@ -3709,6 +3748,30 @@ class EventIngestBatch(RootModel[list[EventIngestBatchItem]]):
     root: list[EventIngestBatchItem]
 
 
+class AcceptedItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    event_id: constr(min_length=1)
+    late: bool | None = False
+
+
+class Duplicate(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    event_id: constr(min_length=1)
+
+
+class EventRejectionReason(Enum):
+    invalid_timestamp = "invalid_timestamp"
+    future_timestamp = "future_timestamp"
+    outcome_requires_metric_and_value = "outcome_requires_metric_and_value"
+    currency_required = "currency_required"
+    experiment_event_requires_variant = "experiment_event_requires_variant"
+    conflicting_duplicate = "conflicting_duplicate"
+
+
 class EventSource(Enum):
     clickstream = "clickstream"
     telemetry = "telemetry"
@@ -3776,6 +3839,14 @@ class EvidenceRequirement(BaseModel):
     min_denominator: confloat(ge=0.0) | None = None
 
 
+class EvidenceState(Enum):
+    measured = "measured"
+    estimated = "estimated"
+    stale = "stale"
+    missing = "missing"
+    unavailable = "unavailable"
+
+
 class Methodology(Enum):
     frequentist = "frequentist"
     bayesian = "bayesian"
@@ -3790,11 +3861,16 @@ class Sequential(BaseModel):
     alpha: confloat(lt=1.0, gt=0.0) | None = 0.05
 
 
+class Method(Enum):
+    holm = "holm"
+    bonferroni = "bonferroni"
+
+
 class MultipleComparisons(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    method: Literal["holm"]
+    method: Method
     family_scope: Literal["primary_and_guardrails_separate"]
 
 
@@ -3835,9 +3911,34 @@ class ExperimentAnalysisConfig(BaseModel):
     practical_significance: PracticalSignificance | None = None
 
 
+class Assignment(Enum):
+    new = "new"
+    existing = "existing"
+    control_fallback = "control_fallback"
+
+
 class ExperimentAssignmentSource(Enum):
     native = "native"
     customer_sdk = "customer_sdk"
+
+
+class InteractionDesign(Enum):
+    none = "none"
+    factorial = "factorial"
+
+
+class ExperimentCoordination(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    conflict_keys: list[constr(min_length=1, max_length=200)] | None = []
+    interaction_design: InteractionDesign | None = "none"
+    namespace: constr(min_length=1, max_length=200)
+    allocation_version: constr(min_length=1, max_length=50) | None = "v1"
+    holdout_fraction: confloat(ge=0.0, le=0.5) | None = 0
+    max_assignments: conint(ge=1, le=9007199254740991)
+    expires_at: AwareDatetime
+    identity_version: constr(min_length=1, max_length=100) | None = None
 
 
 class ExperimentDecisionFindingCode(Enum):
@@ -3948,6 +4049,66 @@ class ExperimentDecisionType(Enum):
     redesign_randomization = "redesign_randomization"
 
 
+class ExperimentEconomics(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    currency: constr(pattern=r"^[a-z]{3}$")
+    value_per_conversion_minor: conint(ge=0, le=9007199254740991)
+    expected_cost_per_treated_unit_minor: conint(ge=0, le=9007199254740991) | None = 0
+
+
+class ExperimentEffectEstimate(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    estimate: float
+    ci_low: float
+    ci_high: float
+    p_value: confloat(ge=0.0, le=1.0)
+
+
+class ExperimentEstimand(Enum):
+    itt = "itt"
+    cace = "cace"
+    other_preregistered = "other_preregistered"
+
+
+class Evaluator1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    name: constr(min_length=1, max_length=100)
+    version: constr(min_length=1, max_length=100)
+    principal_id: constr(min_length=1, max_length=200)
+
+
+class Arm(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    variant_key: constr(min_length=1)
+    n: conint(ge=0, le=9007199254740991)
+    mean: float
+
+
+class ExperimentFallbackReason(Enum):
+    expired = "expired"
+    traffic_cap = "traffic_cap"
+    stopped = "stopped"
+    ineligible = "ineligible"
+    holdout = "holdout"
+    not_active = "not_active"
+
+
+class ExperimentGuardrailLimit(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    metric: AnalyticsSemanticId
+    max_relative_drop: confloat(ge=0.0, le=1.0)
+
+
 class Status14(Enum):
     healthy = "healthy"
     warning = "warning"
@@ -3963,11 +4124,78 @@ class Issue(BaseModel):
     message: constr(min_length=1, max_length=500)
 
 
+class State3(Enum):
+    pass_ = "pass"
+    fail = "fail"
+    unknown = "unknown"
+
+
+class SampleRatioMismatch(Enum):
+    pass_ = "pass"
+    fail = "fail"
+    not_evaluated = "not_evaluated"
+
+
+class ExperimentIntegrityReport(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    state: State3
+    sample_ratio_mismatch: SampleRatioMismatch
+    telemetry_complete: bool
+    outcomes_mature: bool
+    reason_codes: list[constr(min_length=1, max_length=200)]
+
+
+class ExperimentInterference(Enum):
+    none = "none"
+    account_clustered = "account_clustered"
+
+
+class ExperimentLifecycleEvent(Enum):
+    activate = "activate"
+    expire = "expire"
+    stop = "stop"
+    evaluate = "evaluate"
+    conclude = "conclude"
+    invalidate = "invalidate"
+
+
+class ExperimentLifecycleState(Enum):
+    draft = "draft"
+    active = "active"
+    stopped = "stopped"
+    evaluating = "evaluating"
+    concluded = "concluded"
+    invalidated = "invalidated"
+
+
 class Role1(Enum):
     primary = "primary"
     guardrail = "guardrail"
     diagnostic = "diagnostic"
     exploratory = "exploratory"
+
+
+class ExperimentMultiplicityMethod(Enum):
+    bonferroni = "bonferroni"
+    holm = "holm"
+    none = "none"
+
+
+class ExperimentNetContribution(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    currency: constr(pattern=r"^[a-z]{3}$")
+    estimate_minor: float
+    ci_low_minor: float
+    ci_high_minor: float
+
+
+class PrimaryMetricKind(Enum):
+    binary = "binary"
+    mean = "mean"
 
 
 class EvidenceProviderBinding(BaseModel):
@@ -3986,6 +4214,14 @@ class AnalysisProviderBinding(BaseModel):
     capability: Literal["experiment_analysis"]
 
 
+class ExperimentStatisticalVerdict(Enum):
+    positive = "positive"
+    negative = "negative"
+    null = "null"
+    inconclusive = "inconclusive"
+    invalid = "invalid"
+
+
 class ExperimentStatus(Enum):
     draft = "draft"
     ramping = "ramping"
@@ -3996,12 +4232,26 @@ class ExperimentStatus(Enum):
     complete = "complete"
 
 
+class ExperimentStoppingRule(Enum):
+    fixed_horizon = "fixed_horizon"
+    always_valid = "always_valid"
+
+
 class ExperimentType(Enum):
     placement_ab = "placement_ab"
     entitlement_ab = "entitlement_ab"
     plan_ab = "plan_ab"
     pricing_ab = "pricing_ab"
     custom = "custom"
+
+
+class ExperimentUnit(Enum):
+    account = "account"
+    user = "user"
+    billing_unit = "billing_unit"
+    organization = "organization"
+    session = "session"
+    device = "device"
 
 
 class ExperimentVariantTarget1(BaseModel):
@@ -4146,6 +4396,13 @@ class GateWindowDaysModel(BaseModel):
     max_age_days: conint(ge=1, le=2147483647)
 
 
+class GovernedOperation(Enum):
+    launch = "launch"
+    activate = "activate"
+    promote = "promote"
+    rollback = "rollback"
+
+
 class GrowthSignalPoint(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -4156,6 +4413,20 @@ class GrowthSignalPoint(BaseModel):
     numerator: float | None = None
     denominator: float | None = None
     sample_size: conint(ge=0, le=9007199254740991) | None = None
+
+
+class Member(RootModel[constr(min_length=1)]):
+    root: constr(min_length=1)
+
+
+class AbsorbedItem(RootModel[constr(min_length=1)]):
+    root: constr(min_length=1)
+
+
+class IdentityMergeReason(Enum):
+    account_link = "account_link"
+    verified_identity = "verified_identity"
+    manual_review = "manual_review"
 
 
 class Identity(BaseModel):
@@ -4182,6 +4453,26 @@ class IngestedEvent(BaseModel):
     attributes: dict[str, Any] | None = {}
     payload: dict[str, Any] | None = {}
     ingested_at: AwareDatetime
+
+
+class InterventionCostModel1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["fixed"]
+    minor_per_treated_unit: conint(ge=0, le=9007199254740991)
+
+
+class InterventionCostModel2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["share_of_value"]
+    share: confloat(ge=0.0, le=1.0)
+
+
+class InterventionCostModel(RootModel[InterventionCostModel1 | InterventionCostModel2]):
+    root: InterventionCostModel1 | InterventionCostModel2
 
 
 class InvitationStatus(Enum):
@@ -4235,6 +4526,59 @@ class KpiAggregate(BaseModel):
     change_percent: float | None = None
     period: str
     unit: Unit1 | None = "count"
+
+
+class LearningPolarity(Enum):
+    positive = "positive"
+    negative = "negative"
+    null = "null"
+    inconclusive = "inconclusive"
+    contradictory = "contradictory"
+    invalid = "invalid"
+
+
+class Intervention(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    intervention_key: constr(min_length=1)
+    family: constr(min_length=1)
+    target_handle: constr(min_length=1)
+
+
+class Effect(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    estimate: float
+    ci_low: float
+    ci_high: float
+    p_value: confloat(ge=0.0, le=1.0)
+
+
+class TransferPolicy(Enum):
+    tenant_only = "tenant_only"
+    consented_aggregate = "consented_aggregate"
+
+
+class LearningRecord(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    learning_id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    evaluation_receipt_id: constr(min_length=1)
+    experiment_handle: constr(min_length=1)
+    intervention: Intervention
+    polarity: LearningPolarity
+    effect: Effect | None = None
+    net_contribution_minor: float | None = None
+    treated_units: conint(ge=0, le=9007199254740991)
+    population_scope: constr(min_length=1, max_length=200)
+    transfer_policy: TransferPolicy | None = "tenant_only"
+    contradicts: list[constr(min_length=1)]
+    recorded_at: AwareDatetime
+    expires_at: AwareDatetime
 
 
 class LocalizedText(BaseModel):
@@ -4839,11 +5183,78 @@ class OpportunityInterpretation(Enum):
     correlation = "correlation"
 
 
+class OptimizationNoActionReason(Enum):
+    no_intervention = "no_intervention"
+    insufficient_evidence = "insufficient_evidence"
+    insufficient_power = "insufficient_power"
+    budget = "budget"
+    conflict = "conflict"
+    negative_expected_value = "negative_expected_value"
+    below_threshold = "below_threshold"
+    learned_negative = "learned_negative"
+
+
+class OptimizationNoAction(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    reason: OptimizationNoActionReason
+    detail: constr(min_length=1, max_length=1000)
+    evidence_refs: list[constr(min_length=1)] | None = []
+
+
+class Params(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    learning_weight: confloat(ge=0.0, le=1.0)
+    exploration_weight: confloat(ge=0.0, le=1.0)
+    forecast_shrinkage: confloat(ge=0.0, le=1.0)
+    min_expected_net_minor: confloat(ge=0.0)
+    prior_pessimism: confloat(ge=0.0, le=5.0)
+
+
+class OptimizerDefinition(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    optimizer_id: constr(min_length=1, max_length=100)
+    version: conint(ge=1, le=9007199254740991)
+    parent_digest: constr(pattern=r"^[a-f0-9]{64}$") | None = None
+    params: Params
+    tools: list[constr(min_length=1, max_length=100)]
+    created_by: constr(min_length=1, max_length=200)
+
+
 class OrgMemberRole(Enum):
     viewer = "viewer"
     collaborator = "collaborator"
     approver = "approver"
     admin = "admin"
+
+
+class EffectKind(Enum):
+    message = "message"
+    billing = "billing"
+    entitlement = "entitlement"
+    cache = "cache"
+
+
+class Status18(Enum):
+    stopped = "stopped"
+    compensated = "compensated"
+    compensation_pending = "compensation_pending"
+    irreversible = "irreversible"
+
+
+class OutstandingEffect(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    effect_id: constr(min_length=1)
+    effect_kind: EffectKind
+    reversible: bool
+    status: Status18
 
 
 class PaginationParams(BaseModel):
@@ -4875,7 +5286,7 @@ class Plan(RootModel[constr(max_length=120)]):
     root: constr(max_length=120)
 
 
-class State3(Enum):
+class State4(Enum):
     unmatched = "unmatched"
     linked = "linked"
     no_account = "no_account"
@@ -4886,7 +5297,7 @@ class PayerAccountLinkListQuery(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    state: State3 | None = "unmatched"
+    state: State4 | None = "unmatched"
     q: constr(max_length=255) | None = None
     page: conint(ge=1, le=9007199254740991) | None = 1
     per_page: conint(ge=1, le=100) | None = 25
@@ -5456,6 +5867,89 @@ class PlaybookVersionStatus(Enum):
     archived = "archived"
 
 
+class Forecast(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    metric: AnalyticsSemanticId
+    expected_relative_lift: float
+    basis: Literal["hypothesis"]
+
+
+class EvidenceRef(RootModel[constr(min_length=1)]):
+    root: constr(min_length=1)
+
+
+class Kind5(Enum):
+    deterministic = "deterministic"
+    agent = "agent"
+
+
+class Generator(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Kind5
+    optimizer_id: constr(min_length=1)
+    optimizer_version: conint(ge=1, le=9007199254740991)
+    seed: constr(min_length=1) | None = None
+
+
+class PortfolioCapacity(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    traffic_units: conint(ge=0, le=9007199254740991)
+    max_concurrent_experiments: conint(ge=0, le=9007199254740991)
+    budget_minor: conint(ge=0, le=9007199254740991)
+    customer_burden_limit: confloat(ge=0.0) | None = None
+
+
+class PortfolioDeferralReason(Enum):
+    conflict = "conflict"
+    traffic = "traffic"
+    budget = "budget"
+    concurrency = "concurrency"
+    customer_burden = "customer_burden"
+    negative_expected_value = "negative_expected_value"
+
+
+class PortfolioOpportunity(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    opportunity_id: constr(min_length=1)
+    priority: confloat(ge=0.0, le=1.0)
+    expected_net_value_minor: conint(ge=-9007199254740991, le=9007199254740991)
+    traffic_units: conint(ge=0, le=9007199254740991)
+    experiment_cost_minor: conint(ge=0, le=9007199254740991)
+    conflict_keys: list[constr(min_length=1)]
+    customer_burden: confloat(ge=0.0) | None = 1
+
+
+class Outcome2(Enum):
+    scheduled = "scheduled"
+    no_action = "no_action"
+
+
+class DeferredItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    opportunity_id: constr(min_length=1)
+    reason: PortfolioDeferralReason
+
+
+class PortfolioSchedule(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    outcome: Outcome2
+    scheduled: list[constr(min_length=1)]
+    deferred: list[DeferredItem]
+    no_action: OptimizationNoAction | None = None
+
+
 class PresentationOutcome(Enum):
     presented = "presented"
     clicked = "clicked"
@@ -5496,6 +5990,30 @@ class PromotionStatus(Enum):
     live = "live"
     expired = "expired"
     archived = "archived"
+
+
+class ProposalOutcome2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    outcome: Literal["no_action"]
+    no_action: OptimizationNoAction
+
+
+class ProposalValidationReceipt(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    receipt_id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    proposal_digest: constr(pattern=r"^[a-f0-9]{64}$")
+    base_playbook_version_id: constr(min_length=1)
+    base_alias_revision: conint(ge=1, le=9007199254740991)
+    policy_version: constr(min_length=1, max_length=100)
+    checks: list[constr(min_length=1, max_length=100)]
+    change_classes: list[ChangeClass]
+    requires_high_trust: bool
+    validated_at: AwareDatetime
 
 
 class ProviderAvailability(Enum):
@@ -5570,6 +6088,20 @@ class PurchasedAddon(BaseModel):
 
 class PurchasedAddons(RootModel[list[PurchasedAddon]]):
     root: list[PurchasedAddon]
+
+
+class ReleaseRef(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    playbook_version_id: constr(min_length=1)
+    bundle_sha256: constr(pattern=r"^[a-f0-9]{64}$")
+
+
+class Unit2(Enum):
+    ratio = "ratio"
+    minor_currency = "minor_currency"
+    count = "count"
 
 
 class PriceSource1(Enum):
@@ -6340,6 +6872,28 @@ class Role(Enum):
     admin = "admin"
 
 
+class CompensationMode(Enum):
+    stop_future_only = "stop_future_only"
+    attempt_compensation = "attempt_compensation"
+    manual_review = "manual_review"
+
+
+class RollbackReceipt(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    receipt_id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    alias_id: constr(min_length=1)
+    from_release: ReleaseRef
+    to_release: ReleaseRef
+    alias_revision: conint(ge=1, le=9007199254740991)
+    grant_id: constr(min_length=1)
+    compensation_mode: CompensationMode
+    outstanding_effects: list[OutstandingEffect]
+    rolled_back_at: AwareDatetime
+
+
 class RuleVisibility(Enum):
     public = "public"
     non_public = "non_public"
@@ -6811,7 +7365,9 @@ class SegmentValue(BaseModel):
     name: constr(min_length=1, max_length=200)
     handle: constr(min_length=1, max_length=100)
     description: constr(max_length=500) | None = None
-    definition_rule: dict[str, Any] | None = None
+    definition_rule: (
+        list[RevTurbineConfigSegmentsItemPredicatesItem] | dict[str, Any] | None
+    ) = None
     used_in_count: conint(ge=0, le=9007199254740991) | None = 0
 
 
@@ -7031,7 +7587,7 @@ class Severity(Enum):
     critical = "critical"
 
 
-class Status18(Enum):
+class Status19(Enum):
     qualified = "qualified"
     refused = "refused"
 
@@ -7072,7 +7628,7 @@ class SimulationChildQualificationReceipt(BaseModel):
         extra="forbid",
     )
     operation: Literal["qualify"]
-    status: Status18
+    status: Status19
     parent_event_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
     parent_run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
     qualification_id: constr(
@@ -7173,6 +7729,21 @@ class Producer1(BaseModel):
     deployment_environment: Literal["staging"]
 
 
+class ResourceSetDigest(Enum):
+    field_6333d130cb58dc0a77e86317d96254b6592f651cbe1de0eab50698e951eec64b = (
+        "6333d130cb58dc0a77e86317d96254b6592f651cbe1de0eab50698e951eec64b"
+    )
+    f757adb3237019d30860b2964e50b80316ef1d103603eae31b33c4befe33a570 = (
+        "f757adb3237019d30860b2964e50b80316ef1d103603eae31b33c4befe33a570"
+    )
+    c5e051dd0b8f1f9cbaa16a34f12dbb47f8dea17fb907298dc954a7bc2fa624af = (
+        "c5e051dd0b8f1f9cbaa16a34f12dbb47f8dea17fb907298dc954a7bc2fa624af"
+    )
+    field_1c5942d18e18db722f8316722442c3a7843b5550757282bf1d38dfd95b4e9f22 = (
+        "1c5942d18e18db722f8316722442c3a7843b5550757282bf1d38dfd95b4e9f22"
+    )
+
+
 class Reset(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -7181,9 +7752,7 @@ class Reset(BaseModel):
     predicate_digest: Literal[
         "6704dcf13baa99e2d2a4ac64ffe7b927ba97469b804fdc37a4399bf59cd51318"
     ]
-    resource_set_digest: Literal[
-        "1c5942d18e18db722f8316722442c3a7843b5550757282bf1d38dfd95b4e9f22"
-    ]
+    resource_set_digest: ResourceSetDigest
 
 
 class SimulationExecutionAdmission(BaseModel):
@@ -7241,7 +7810,7 @@ class SimulationExecutionFingerprint(BaseModel):
     mapper_revision: constr(pattern=r"^m[1-9]\d*$", max_length=32)
 
 
-class Status19(Enum):
+class Status20(Enum):
     prepared = "prepared"
     refused = "refused"
     failed = "failed"
@@ -7287,7 +7856,7 @@ class Lane2(Enum):
     billing = "billing"
 
 
-class Status20(Enum):
+class Status21(Enum):
     measured = "measured"
     unknown = "unknown"
 
@@ -7297,7 +7866,7 @@ class Measurement(BaseModel):
         extra="forbid",
     )
     lane: Lane2
-    status: Status20
+    status: Status21
     workflow_run_id: (
         constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128) | None
     )
@@ -7368,9 +7937,9 @@ class Resource2(Enum):
     experiment_assignments = "experiment_assignments"
     conversion_touch_attribution = "conversion_touch_attribution"
     aggregates_daily_revenue = "aggregates_daily_revenue"
-    subscription_stock_weekly = "subscription_stock_weekly"
     gate_event_fields = "gate_event_fields"
     user_account_map = "user_account_map"
+    subscription_stock_weekly = "subscription_stock_weekly"
 
 
 class Example(
@@ -7407,7 +7976,7 @@ class Error1(BaseModel):
     message: constr(pattern=r"^[^\x00-\x1f\x7f]*$", min_length=1, max_length=512)
 
 
-class Kind5(Enum):
+class Kind6(Enum):
     ingest = "ingest"
     billing = "billing"
 
@@ -7424,7 +7993,7 @@ class SimulationProbeReceipt(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    kind: Kind5
+    kind: Kind6
     probe_run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
     workflow_run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
     workflow_attempt: conint(le=9007199254740991, gt=0)
@@ -7436,7 +8005,7 @@ class SimulationProbeReceipt(BaseModel):
     payload_digest: constr(pattern=r"^[a-f0-9]{64}$")
 
 
-class Status21(Enum):
+class Status22(Enum):
     queued = "queued"
     running = "running"
     complete = "complete"
@@ -7466,12 +8035,10 @@ class RequestedReset(BaseModel):
     predicate_digest: Literal[
         "6704dcf13baa99e2d2a4ac64ffe7b927ba97469b804fdc37a4399bf59cd51318"
     ]
-    resource_set_digest: Literal[
-        "1c5942d18e18db722f8316722442c3a7843b5550757282bf1d38dfd95b4e9f22"
-    ]
+    resource_set_digest: ResourceSetDigest
 
 
-class Status22(Enum):
+class Status23(Enum):
     empty = "empty"
     exact_probes = "exact_probes"
 
@@ -7484,9 +8051,9 @@ class Resource4(Enum):
     experiment_assignments = "experiment_assignments"
     conversion_touch_attribution = "conversion_touch_attribution"
     aggregates_daily_revenue = "aggregates_daily_revenue"
-    subscription_stock_weekly = "subscription_stock_weekly"
     gate_event_fields = "gate_event_fields"
     user_account_map = "user_account_map"
+    subscription_stock_weekly = "subscription_stock_weekly"
 
 
 class Resource3(BaseModel):
@@ -7509,11 +8076,11 @@ class AdmittedFootprint(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    status: Status22
+    status: Status23
     observed_at: AwareDatetime
     allowlist_digest: constr(pattern=r"^[a-f0-9]{64}$")
     probe_runs: list[SimulationProbeReceipt] = Field(..., max_length=20)
-    resources: list[Resource3] = Field(..., max_length=10, min_length=10)
+    resources: list[Resource3] = Field(..., max_length=10, min_length=4)
 
 
 class SetupReceipt(BaseModel):
@@ -7545,7 +8112,7 @@ class PlannedLane(BaseModel):
     door_limit_bytes: conint(le=9007199254740991, gt=0)
 
 
-class Status23(Enum):
+class Status24(Enum):
     complete = "complete"
     failed = "failed"
     canceled = "canceled"
@@ -7561,7 +8128,7 @@ class Slice(BaseModel):
     lane: Lane2
     index: conint(ge=0, le=511)
     child_run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
-    status: Status23
+    status: Status24
     expected: conint(le=500, gt=0)
     acknowledged: conint(ge=0, le=9007199254740991) | None
     receipt_digest: constr(pattern=r"^[a-f0-9]{64}$")
@@ -7575,9 +8142,9 @@ class Resource6(Enum):
     experiment_assignments = "experiment_assignments"
     conversion_touch_attribution = "conversion_touch_attribution"
     aggregates_daily_revenue = "aggregates_daily_revenue"
-    subscription_stock_weekly = "subscription_stock_weekly"
     gate_event_fields = "gate_event_fields"
     user_account_map = "user_account_map"
+    subscription_stock_weekly = "subscription_stock_weekly"
 
 
 class Disposition1(Enum):
@@ -7609,7 +8176,7 @@ class Expected1(BaseModel):
     examples: list[Example] = Field(..., max_length=20)
 
 
-class Status24(Enum):
+class Status25(Enum):
     matched = "matched"
     footprint_recorded = "footprint_recorded"
     unresolved = "unresolved"
@@ -7628,10 +8195,10 @@ class Resource5(BaseModel):
     physical_count: conint(ge=0, le=9007199254740991)
     observed: Observed
     expected: Expected1 | None
-    status: Status24
+    status: Status25
 
 
-class Status25(Enum):
+class Status26(Enum):
     complete = "complete"
     unchanged = "unchanged"
     running = "running"
@@ -7659,19 +8226,42 @@ class Replay(BaseModel):
     )
     event_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
     run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
-    status: Status25
+    status: Status26
     generation_id: (
         constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128) | None
     )
-    policy: Literal["mrr-v1-subscription-state"]
     source_interval: SourceInterval
     source_inventory_digest: constr(pattern=r"^[a-f0-9]{64}$")
     output_count: conint(ge=0, le=9007199254740991) | None
     output_digest: constr(pattern=r"^[a-f0-9]{64}$") | None
-    manifest_last_verified: bool
     oracle_matched: bool
     served_matched: bool
     provider_diagnostic: ProviderDiagnostic
+    policy: Literal["mrr-v1-subscription-state"]
+    manifest_last_verified: bool
+
+
+class Replay1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    event_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
+    run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
+    status: Status26
+    generation_id: (
+        constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128) | None
+    )
+    source_interval: SourceInterval
+    source_inventory_digest: constr(pattern=r"^[a-f0-9]{64}$")
+    output_count: conint(ge=0, le=9007199254740991) | None
+    output_digest: constr(pattern=r"^[a-f0-9]{64}$") | None
+    oracle_matched: bool
+    served_matched: bool
+    provider_diagnostic: ProviderDiagnostic
+    policy: Literal["mrr-movement-classification-v2"]
+    active_series_verified: bool
+    complete_through: date_aliased | None
+    required_complete_through: date_aliased
 
 
 class Error2(BaseModel):
@@ -7682,7 +8272,7 @@ class Error2(BaseModel):
     message: constr(pattern=r"^[^\x00-\x1f\x7f]*$", min_length=1, max_length=512)
 
 
-class Status26(Enum):
+class Status28(Enum):
     complete = "complete"
     failed = "failed"
     canceled = "canceled"
@@ -7729,7 +8319,7 @@ class SimulationSliceReceipt(BaseModel):
     lane: Lane2
     index: conint(ge=0, le=511)
     child_run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
-    status: Status26
+    status: Status28
     fingerprint: SimulationExecutionFingerprint
     worker_commit: constr(pattern=r"^[a-f0-9]{40}$")
     expected_inventory_digest: constr(pattern=r"^[a-f0-9]{64}$")
@@ -7768,9 +8358,9 @@ class Resource8(Enum):
     experiment_assignments = "experiment_assignments"
     conversion_touch_attribution = "conversion_touch_attribution"
     aggregates_daily_revenue = "aggregates_daily_revenue"
-    subscription_stock_weekly = "subscription_stock_weekly"
     gate_event_fields = "gate_event_fields"
     user_account_map = "user_account_map"
+    subscription_stock_weekly = "subscription_stock_weekly"
 
 
 class Resource7(BaseModel):
@@ -7794,16 +8384,14 @@ class SimulationTerminalZeroReceipt(BaseModel):
     predicate_digest: Literal[
         "6704dcf13baa99e2d2a4ac64ffe7b927ba97469b804fdc37a4399bf59cd51318"
     ]
-    resource_set_digest: Literal[
-        "1c5942d18e18db722f8316722442c3a7843b5550757282bf1d38dfd95b4e9f22"
-    ]
+    resource_set_digest: ResourceSetDigest
     applied_entry_receipt_id: constr(
         pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128
     )
     workflow_run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
     workflow_attempt: conint(le=9007199254740991, gt=0)
     terminal_at: AwareDatetime
-    resources: list[Resource7] = Field(..., max_length=10, min_length=10)
+    resources: list[Resource7] = Field(..., max_length=10, min_length=4)
 
 
 class SimulationVerifiedProvenance(BaseModel):
@@ -7831,6 +8419,15 @@ class SimulationVerifiedProvenance(BaseModel):
     token_not_before_at: AwareDatetime
     token_expires_at: AwareDatetime
     verified_at: AwareDatetime
+
+
+class SourceWatermark(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    source_id: constr(min_length=1, max_length=100)
+    observed_through: AwareDatetime
+    completeness: confloat(ge=0.0, le=1.0) | None = 1
 
 
 class StripeBillingScope(BaseModel):
@@ -7909,7 +8506,7 @@ class StripeDiscoveryMapRequest(BaseModel):
     expected_observation_revision: conint(ge=0, le=9007199254740991)
 
 
-class Outcome2(Enum):
+class Outcome3(Enum):
     linked = "linked"
     already_linked = "already_linked"
     conflict = "conflict"
@@ -8039,7 +8636,7 @@ class Coverage2(BaseModel):
     positive_only: Literal[True]
 
 
-class State4(Enum):
+class State5(Enum):
     none_observed = "none_observed"
     observed = "observed"
     unknown = "unknown"
@@ -8049,7 +8646,7 @@ class Subscriptions(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    state: State4
+    state: State5
     observed_count: conint(ge=0, le=9007199254740991) | None
 
 
@@ -8814,7 +9411,7 @@ class UserRole(Enum):
     admin = "admin"
 
 
-class State5(Enum):
+class State6(Enum):
     active = "active"
     running_out = "running_out"
     expired = "expired"
@@ -8836,7 +9433,7 @@ class UserTrialStatus(BaseModel):
     started_at: AwareDatetime | None = None
     trial_type: str | None = None
     plan_handle: str | None = None
-    state: State5 | None = None
+    state: State6 | None = None
     trial_limit_type: TrialLimitType1 | None = None
     progress_percent: confloat(ge=0.0, le=100.0) | None = None
     day_number: conint(ge=0, le=9007199254740991) | None = None
@@ -9781,6 +10378,27 @@ class AnalyticsViewQuery(BaseModel):
     compare_anchor: AwareDatetime | None = None
     order_by: list[OrderByItem1] | None = Field(None, max_length=3)
     limit: conint(ge=1, le=1000) | None = None
+
+
+class ApprovalGrant(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    grant_id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    approver_id: constr(min_length=1)
+    operation: GovernedOperation
+    target_id: constr(min_length=1)
+    target_digest: constr(pattern=r"^[a-f0-9]{64}$")
+    experiment_handle: constr(min_length=1) | None = None
+    evaluation_receipt_id: constr(min_length=1) | None = None
+    expected_revision: conint(ge=0, le=9007199254740991)
+    limits: ApprovalGrantLimits
+    policy_version: constr(min_length=1, max_length=100)
+    issued_at: AwareDatetime
+    expires_at: AwareDatetime
+    nonce: constr(min_length=1, max_length=200)
+    signature: constr(pattern=r"^[a-f0-9]{64,}$")
 
 
 class AttributionCreditRow(BaseModel):
@@ -11324,6 +11942,18 @@ class Customer(BaseModel):
     retired_at: AwareDatetime | None = None
 
 
+class DefaultAlias(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    alias_id: constr(min_length=1) | None = "default"
+    release: ReleaseRef
+    revision: conint(ge=1, le=9007199254740991)
+    history: list[ReleaseRef] = Field(..., min_length=1)
+    receipts: list[constr(min_length=1)]
+    last_grant_id: constr(min_length=1) | None = None
+
+
 class DeleteProtectionDecision(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -11529,6 +12159,24 @@ class EventEnvelope(BaseModel):
     payload: dict[str, Any] | None = {}
 
 
+class RejectedItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    event_id: constr(min_length=1)
+    reason: EventRejectionReason
+
+
+class EventIngestReceipt(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    accepted: list[AcceptedItem]
+    rejected: list[RejectedItem]
+    duplicates: list[Duplicate]
+    watermark: SourceWatermark
+
+
 class EventPrefixFamily(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -11599,6 +12247,21 @@ class ExperimentAssignmentFact(BaseModel):
     test: bool | None = None
 
 
+class ExperimentAssignmentOutcome(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    experiment_handle: constr(min_length=1, max_length=100)
+    experiment_version: conint(ge=1, le=9007199254740991)
+    subject_id: constr(min_length=1)
+    variant_key: constr(min_length=1)
+    assignment: Assignment
+    fallback_reason: ExperimentFallbackReason | None = None
+    bucket: confloat(ge=0.0, lt=1.0) | None = None
+    allocation_version: constr(min_length=1)
+    playbook_version_id: constr(min_length=1) | None = None
+
+
 class ExperimentDecisionRecord(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -11617,6 +12280,28 @@ class ExperimentDecisionRecord(BaseModel):
     findings: list[ExperimentDecisionFinding]
     decided_at: AwareDatetime
     evaluator: Evaluator
+
+
+class ExperimentEvaluationReceipt(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    receipt_id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    experiment_handle: constr(min_length=1, max_length=100)
+    experiment_version: conint(ge=1, le=9007199254740991)
+    preregistration_digest: constr(pattern=r"^[a-f0-9]{64}$")
+    data_snapshot_digest: constr(pattern=r"^[a-f0-9]{64}$")
+    evaluator: Evaluator1
+    verdict: ExperimentStatisticalVerdict
+    integrity: ExperimentIntegrityReport
+    arms: list[Arm]
+    effect: ExperimentEffectEstimate | None = None
+    net_contribution: ExperimentNetContribution | None = None
+    look: conint(ge=1, le=9007199254740991)
+    adjusted_alpha: confloat(lt=1.0, gt=0.0)
+    computed_at: AwareDatetime
+    signature: constr(pattern=r"^[a-f0-9]{64,}$")
 
 
 class ExperimentHealth(BaseModel):
@@ -11674,6 +12359,33 @@ class ExperimentMetricResult(BaseModel):
     sequential: ExperimentSequentialResult | None = None
     practical_significance: ExperimentPracticalSignificanceResult | None = None
     sample_size: conint(ge=0, le=9007199254740991) | None = None
+
+
+class ExperimentPreregistration(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    schema_version: Literal[1]
+    hypothesis: constr(min_length=1, max_length=2000)
+    estimand: ExperimentEstimand | None = "itt"
+    randomization_unit: ExperimentUnit
+    analysis_unit: ExperimentUnit
+    interference: ExperimentInterference | None = "none"
+    eligibility: constr(min_length=1, max_length=1000)
+    exclusions: list[constr(min_length=1, max_length=500)] | None = []
+    exposure_definition: constr(min_length=1, max_length=1000)
+    primary_metric: AnalyticsSemanticId
+    primary_metric_kind: PrimaryMetricKind
+    maturity_days: confloat(ge=0.0)
+    min_units_per_arm: conint(ge=1, le=9007199254740991)
+    alpha: confloat(lt=1.0, gt=0.0) | None = 0.05
+    stopping: ExperimentStoppingRule | None = "fixed_horizon"
+    max_looks: conint(ge=1, le=9007199254740991) | None = 1
+    multiplicity: ExperimentMultiplicityMethod | None = "bonferroni"
+    portfolio_size: conint(ge=1, le=9007199254740991) | None = 1
+    srm_threshold: confloat(lt=1.0, gt=0.0) | None = 0.001
+    guardrails: list[ExperimentGuardrailLimit] | None = Field([], validate_default=True)
+    economics: ExperimentEconomics
 
 
 class AssignmentProviderBinding(BaseModel):
@@ -11806,6 +12518,41 @@ class GrowthSignalSeries(BaseModel):
     dimensions: dict[AnalyticsSemanticId, str]
     points: list[GrowthSignalPoint]
     provenance: ProviderProvenance
+
+
+class Merge(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    absorbed: list[AbsorbedItem] = Field(..., min_length=1)
+    reason: IdentityMergeReason
+    evidence_refs: list[constr(min_length=1)]
+    merged_at: AwareDatetime
+
+
+class IdentityLineage(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1)
+    unit_id: constr(min_length=1)
+    identity_version: conint(ge=1, le=9007199254740991)
+    members: list[Member] = Field(..., min_length=1)
+    merges: list[Merge]
+
+
+class InterventionTemplate(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    intervention_key: constr(pattern=r"^[a-z][a-z0-9_]*$")
+    family: constr(pattern=r"^[a-z][a-z0-9_]*$")
+    resource_type: constr(min_length=1, max_length=100)
+    metrics: list[AnalyticsSemanticId] = Field(..., min_length=1)
+    prior_lift: confloat(ge=-1.0, le=1.0)
+    cost_model: InterventionCostModel
+    fields: dict[str, FieldSchema0]
+    change_classes: list[ChangeClass] = Field(..., min_length=1)
 
 
 class ManagedBaselineResult(BaseModel):
@@ -12256,6 +13003,38 @@ class PlaybookVersion(BaseModel):
     metadata: dict[str, Any] | None = {}
 
 
+class PolicyChangeEntry(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    resource_type: constr(min_length=1, max_length=100)
+    handle: constr(min_length=1, max_length=200)
+    action: Action4
+    fields: dict[str, FieldSchema0] | None = None
+
+
+class PolicyProposal(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    proposal_id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    opportunity_id: constr(min_length=1)
+    base_playbook_version_id: constr(min_length=1)
+    base_bundle_sha256: constr(pattern=r"^[a-f0-9]{64}$")
+    target_handle: constr(min_length=1, max_length=200)
+    intervention_key: constr(pattern=r"^[a-z][a-z0-9_]*$")
+    changes: list[PolicyChangeEntry] = Field(..., min_length=1)
+    hypothesis: constr(min_length=1, max_length=2000)
+    forecast: Forecast
+    evidence_refs: list[EvidenceRef] = Field(..., min_length=1)
+    learning_refs: list[constr(min_length=1)]
+    generator: Generator
+    conflict_keys: list[constr(min_length=1)]
+    expected_cost_per_treated_unit_minor: conint(ge=0, le=9007199254740991)
+    created_at: AwareDatetime
+
+
 class PrimaryContactResolution1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -12281,6 +13060,21 @@ class PrimaryContactResolution(
     RootModel[PrimaryContactResolution1 | PrimaryContactResolution2]
 ):
     root: PrimaryContactResolution1 | PrimaryContactResolution2
+
+
+class PromotionReceipt(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    receipt_id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    alias_id: constr(min_length=1)
+    release: ReleaseRef
+    previous_release: ReleaseRef
+    alias_revision: conint(ge=1, le=9007199254740991)
+    grant_id: constr(min_length=1)
+    evaluation_receipt_id: constr(min_length=1)
+    promoted_at: AwareDatetime
 
 
 class Promotion(BaseModel):
@@ -12320,12 +13114,45 @@ class Promotion(BaseModel):
     metadata: dict[str, Any] | None = {}
 
 
+class ProposalOutcome1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    outcome: Literal["proposal"]
+    proposal: PolicyProposal
+
+
+class ProposalOutcome(RootModel[ProposalOutcome1 | ProposalOutcome2]):
+    root: ProposalOutcome1 | ProposalOutcome2
+
+
 class ProviderBindingRef(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
     provider_handle: constr(min_length=1, max_length=100)
     capability: ProviderCapability
+
+
+class ResolvedEvidence(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    evidence_id: constr(min_length=1)
+    tenant_id: constr(min_length=1)
+    metric: AnalyticsSemanticId
+    definition_version: constr(min_length=1, max_length=100)
+    state: EvidenceState
+    value: float | None = None
+    unit: Unit2
+    currency: constr(pattern=r"^[a-z]{3}$") | None = None
+    sample_size: conint(ge=0, le=9007199254740991) | None = None
+    window: Window
+    watermark: SourceWatermark
+    identity_version: constr(min_length=1, max_length=100)
+    producer: constr(min_length=1, max_length=100)
+    provenance: ProviderProvenance | None = None
+    inputs_digest: constr(pattern=r"^[a-f0-9]{64}$")
 
 
 class RevTurbineConfigEntitlementRulesItem(BaseModel):
@@ -12877,7 +13704,7 @@ class SimulationPreparationReceipt(BaseModel):
         extra="forbid",
     )
     operation: Literal["prepare"]
-    status: Status19
+    status: Status20
     identity: Identity1
     provenance: SimulationVerifiedProvenance | None
     child_qualification: SimulationChildQualificationReceipt | None
@@ -12891,7 +13718,7 @@ class SimulationPreparationReceipt(BaseModel):
     budget: Budget
     pending_reset_entries: list[PendingResetEntry] = Field(..., max_length=20)
     applied_reset_entries: list[AppliedResetEntry] = Field(..., max_length=20)
-    resources: list[Resource1] = Field(..., max_length=10, min_length=10)
+    resources: list[Resource1] = Field(..., max_length=10, min_length=4)
     errors: list[Error1] = Field(..., max_length=20)
 
 
@@ -12911,7 +13738,7 @@ class SimulationRunReceipt(BaseModel):
         extra="forbid",
     )
     operation: Literal["execute"]
-    status: Status21
+    status: Status22
     phase: Phase1
     identity: Identity1
     provenance: SimulationVerifiedProvenance | None
@@ -12933,7 +13760,7 @@ class SimulationRunReceipt(BaseModel):
     planned_lanes: list[PlannedLane] = Field(..., max_length=3, min_length=3)
     slices: list[Slice] = Field(..., max_length=512)
     resources: list[Resource5] = Field(..., max_length=10)
-    replay: Replay | None
+    replay: Replay | Replay1 | None
     errors: list[Error2] = Field(..., max_length=20)
 
 
@@ -12979,7 +13806,7 @@ class StripeDiscoveryMapResult(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    outcome: Outcome2
+    outcome: Outcome3
     user_link_status: StripeDiscoveryUserLinkStatus | None
     account_link_status: StripeDiscoveryAccountLinkStatus | None
     observation_revision: conint(ge=0, le=9007199254740991) | None
@@ -15276,6 +16103,7 @@ class UserContext(BaseModel):
     user_id: constr(min_length=1)
     account_id: constr(min_length=1) | None = None
     provisional: bool | None = None
+    observed_only: bool | None = False
     merged_into: constr(min_length=1) | None = None
     retired_at: AwareDatetime | None = None
     email: EmailStr | None = None
@@ -15798,6 +16626,9 @@ class Experiment(BaseModel):
     ended_at: AwareDatetime | None = None
     confidence_threshold: confloat(ge=0.0, le=1.0) | None = 0.95
     winning_variant_id: str | None = None
+    preregistration: ExperimentPreregistration | None = None
+    coordination: ExperimentCoordination | None = None
+    lifecycle_state: ExperimentLifecycleState | None = None
     metadata: dict[str, Any] | None = {}
 
 

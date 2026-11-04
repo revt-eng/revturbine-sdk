@@ -141,6 +141,38 @@ describe('BL-0012: a refused publicKey is named, not silent', () => {
     expect(warnings(warn)[0]).toContain('HTTP 401');
   });
 
+  it('a 403 challenge body is reported as a challenge, not a refused key (BUG-1184)', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    stubFetch(() => ({
+      status: 403,
+      body: JSON.stringify({ error: { code: 'challenge', message: 'Verifying your browser' } }),
+    }));
+    const sdk = makeSdk();
+    sdk.identify('user_1');
+    await sdk.can('sso');
+
+    const failure = sdk.getPlaybookLoadFailure();
+    expect(failure).toMatchObject({ stage: 'bootstrap', status: 403 });
+    expect(failure?.message).toContain('challenge or firewall');
+    expect(failure?.message).not.toContain('refused the key');
+    expect(failure?.message).toContain('challenge: Verifying your browser');
+  });
+
+  it('a 403 with an apiError body is reported as a refused key with the body attached (BUG-1184)', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    stubFetch(() => ({
+      status: 403,
+      body: JSON.stringify({ error: { code: 'origin_not_allowed', message: 'Origin is not on the allowlist' } }),
+    }));
+    const sdk = makeSdk();
+    sdk.identify('user_1');
+    await sdk.can('sso');
+
+    const message = sdk.getPlaybookLoadFailure()?.message ?? '';
+    expect(message).toContain('refused the key');
+    expect(message).toContain('origin_not_allowed: Origin is not on the allowlist');
+  });
+
   it('a 500 on the legacy step reports it with the signed delivery\'s reason', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     stubFetch((url) => ({ status: url.includes('/bootstrap') ? 404 : 500 }));

@@ -125,8 +125,8 @@ function PrismStage() {
           resolvers: { getTrialStatus: () => toTrialStatus(state) },
         },
         uiPathResolvers: {
-          open_checkout_modal: () => note('SDK · checkout'),
-          navigate_to_plans: () => note('SDK · view plans'),
+          open_checkout: () => note('SDK · checkout'),
+          view_plans: () => note('SDK · view plans'),
           contact_sales: () => note('SDK · contact sales'),
           switch_billing_period: () => note('SDK · switch to annual'),
         },

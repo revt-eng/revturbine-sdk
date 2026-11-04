@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRevTurbine } from './useRevTurbine';
+import { INIT_STATUS_OK } from './init-status';
 import { EntitlementGate } from '../controllers';
 import type {
   EntitlementResult,
@@ -85,7 +86,8 @@ export function useEntitlement({
   autoGate = false,
   gatePlacementRequest,
 }: UseEntitlementOptions): UseEntitlementResult {
-  const { sdk, isReady } = useRevTurbine();
+  // The default keeps partial test doubles of the context (no `initStatus`) healthy.
+  const { sdk, isReady, initStatus = INIT_STATUS_OK } = useRevTurbine();
   const [, forceUpdate] = useState(0);
   const gateRef = useRef<EntitlementGate | null>(null);
 
@@ -161,9 +163,17 @@ export function useEntitlement({
   }, [autoCheck, isReady, handle, contextKey, sdk]);
 
   const state = gateRef.current?.state;
+  // ST-1447 (BUG-1194): a terminal init failure never produces an SDK, so no
+  // check ever runs and `result` / `error` stay null — which `<Gate>` reads as
+  // "unresolved" and renders as nothing, forever. Failed init is a settled
+  // answer: the check could not run, so it errors and the gate denies (the SDK
+  // is fail-closed), showing `deniedFallback`.
+  const initFailed = !initStatus.ok && !sdk;
   return {
     isLoading: state?.isLoading ?? false,
-    error: state?.error ?? null,
+    error: state?.error ?? (initFailed
+      ? `RevTurbine failed to initialize${initStatus.message ? `: ${initStatus.message}` : ''}`
+      : null),
     result: state?.result ?? null,
     allowed: state?.allowed ?? false,
     limited: state?.limited ?? false,

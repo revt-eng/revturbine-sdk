@@ -30,6 +30,44 @@ export interface ServerActionResolverCallbacks {
 }
 
 /**
+ * Legacy CTA action names and the authored names that replace them (BUG-1192).
+ *
+ * A placement CTA is delivered with the type exactly as authored in the
+ * Playbook (`open_checkout`, `view_plans`). Before that, the engine renamed
+ * them to the content-path names `open_checkout_modal` and `navigate_to_plans`,
+ * so the legacy names are still accepted as registrations. They are deprecated:
+ * registering one warns once per process and files the resolver under the
+ * authored name, so both spellings address one entry.
+ */
+const LEGACY_CTA_ACTION_ALIASES: Readonly<Record<string, string>> = {
+  open_checkout_modal: 'open_checkout',
+  navigate_to_plans: 'view_plans',
+};
+
+/** The one vocabulary a CTA action type resolves to: a legacy alias maps to its authored name. */
+export function canonicalCtaActionType(type: string): string {
+  return Object.prototype.hasOwnProperty.call(LEGACY_CTA_ACTION_ALIASES, type)
+    ? LEGACY_CTA_ACTION_ALIASES[type]
+    : type;
+}
+
+const warnedLegacyCtaActionTypes = new Set<string>();
+
+function warnLegacyCtaActionType(type: string): void {
+  if (canonicalCtaActionType(type) === type || warnedLegacyCtaActionTypes.has(type)) return;
+  warnedLegacyCtaActionTypes.add(type);
+  console.warn(
+    `[RevTurbine] CTA action type "${type}" is deprecated; register "${canonicalCtaActionType(type)}" instead. ` +
+      'The legacy name still works and addresses the same resolver.',
+  );
+}
+
+/** Forget which deprecation warnings were already shown (test helper). */
+export function resetLegacyCtaActionWarnings(): void {
+  warnedLegacyCtaActionTypes.clear();
+}
+
+/**
  * Registry mapping CTA action types to resolver functions.
  *
  * Customers register a {@link CtaResolver} against an action type — typically a
@@ -37,6 +75,10 @@ export interface ServerActionResolverCallbacks {
  * {@link PlacementRenderer} can dispatch a CTA click to dedicated logic instead
  * of the generic `onCtaClick` callback. Built-in action types may also be
  * overridden by registering a resolver for them.
+ *
+ * The deprecated names `open_checkout_modal` and `navigate_to_plans` address
+ * the same entries as `open_checkout` and `view_plans` (see
+ * {@link canonicalCtaActionType}).
  */
 export class CtaResolverRegistry {
   private readonly resolvers = new Map<string, CtaResolver>();
@@ -44,13 +86,16 @@ export class CtaResolverRegistry {
   /**
    * Register a resolver for an action type. Re-registering the same type
    * replaces the previous resolver (and warns), matching the slot-type
-   * registry's override semantics.
+   * registry's override semantics. A deprecated alias (`open_checkout_modal`,
+   * `navigate_to_plans`) warns once and registers under the authored name.
    */
   register(type: string, resolver: CtaResolver): void {
-    if (this.resolvers.has(type)) {
-      console.warn(`[RevTurbine] Replacing existing CTA resolver for action type "${type}".`);
+    warnLegacyCtaActionType(type);
+    const key = canonicalCtaActionType(type);
+    if (this.resolvers.has(key)) {
+      console.warn(`[RevTurbine] Replacing existing CTA resolver for action type "${key}".`);
     }
-    this.resolvers.set(type, resolver);
+    this.resolvers.set(key, resolver);
   }
 
   /**
@@ -58,17 +103,17 @@ export class CtaResolverRegistry {
    * Returns true if a resolver was registered and removed.
    */
   unregister(type: string): boolean {
-    return this.resolvers.delete(type);
+    return this.resolvers.delete(canonicalCtaActionType(type));
   }
 
   /** Look up the resolver registered for an action type, if any. */
   get(type: string): CtaResolver | undefined {
-    return this.resolvers.get(type);
+    return this.resolvers.get(canonicalCtaActionType(type));
   }
 
   /** Whether a resolver is registered for an action type. */
   has(type: string): boolean {
-    return this.resolvers.has(type);
+    return this.resolvers.has(canonicalCtaActionType(type));
   }
 
   /** Remove every registered resolver. */

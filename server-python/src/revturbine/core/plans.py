@@ -69,6 +69,23 @@ def get_eligible_plans(
         candidates = [
             item for item in variations if item.get("plan_handle") == plan.get("unique_handle")
         ]
+        if not candidates:
+            # BUG-818: a public plan authored with no price variation (a free
+            # plan) is still part of the catalog. It appears once with null
+            # variation_handle, segment_handle and price. A plan whose
+            # variations exist but none is eligible stays out.
+            result.append(
+                {
+                    "handle": plan["unique_handle"],
+                    "name": plan["name"],
+                    "tier_position": plan["tier_position"],
+                    "sort_order": plan["sort_order"],
+                    "variation_handle": None,
+                    "segment_handle": None,
+                    "price": None,
+                }
+            )
+            continue
         for variation in _matching_variations(candidates, context_ids, dimensions):
             result.append(
                 {
@@ -87,7 +104,7 @@ def get_eligible_plans(
             item["tier_position"],
             item["sort_order"],
             item["handle"],
-            item["variation_handle"],
+            item["variation_handle"] or "",
         ),
     )
 

@@ -238,17 +238,18 @@ class TestNormalizeCtaPath:
 
     def test_open_checkout_with_and_without_purchase(self) -> None:
         assert _normalize_cta_path({"path": "open_checkout", "config": {"purchase": "pro"}}) == {
-            "type": "open_checkout_modal",
+            "type": "open_checkout",
             "plan_handle": "pro",
         }
         # Non-string purchase → key omitted (JS undefined drops in JSON).
-        assert _normalize_cta_path({"path": "open_checkout"}) == {"type": "open_checkout_modal"}
+        assert _normalize_cta_path({"path": "open_checkout"}) == {"type": "open_checkout"}
         assert _normalize_cta_path({"path": "open_checkout", "config": {"purchase": 1}}) == {
-            "type": "open_checkout_modal"
+            "type": "open_checkout"
         }
 
     def test_view_plans(self) -> None:
-        assert _normalize_cta_path({"path": "view_plans"}) == {"type": "navigate_to_plans"}
+        # BUG-1192: delivered as authored, not renamed to navigate_to_plans.
+        assert _normalize_cta_path({"path": "view_plans"}) == {"type": "view_plans"}
 
     def test_custom_passes_action_name_and_config_through(self) -> None:
         # The authored action name flows through as ``type`` and every config
@@ -1068,7 +1069,7 @@ class TestResolverEnrichment:
         out = decision["output"]["content"]
         assert out["cta_label"] == "Primary"
         assert out["secondary_cta_label"] == "Secondary"
-        assert decision["output"]["cta_path"] == {"type": "navigate_to_plans"}
+        assert decision["output"]["cta_path"] == {"type": "view_plans"}
         assert decision["content"]["cta_label"] == "Primary"
 
     def test_target_plan_ids_gate_eligibility(self) -> None:
@@ -1116,7 +1117,7 @@ class TestLocalResolverPilotCorpus:
         (
             "open_checkout_plan_handle",
             _normalize_cta_path({"path": "open_checkout", "config": {"purchase": "pro"}})
-            == {"type": "open_checkout_modal", "plan_handle": "pro"},
+            == {"type": "open_checkout", "plan_handle": "pro"},
         ),
         (
             "custom_passthrough_config",

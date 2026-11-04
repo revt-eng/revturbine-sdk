@@ -57,7 +57,7 @@ fn resolves_directly_by_placement_id() {
     assert_eq!(d["visible"], json!(true));
     assert_eq!(d["content"]["header"], json!("Hello"));
     assert_eq!(d["output"]["surface"]["type"], json!("banner"));
-    assert_eq!(d["output"]["cta_path"]["type"], json!("navigate_to_plans"));
+    assert_eq!(d["output"]["cta_path"]["type"], json!("view_plans"));
 }
 
 #[test]

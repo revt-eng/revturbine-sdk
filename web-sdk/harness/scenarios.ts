@@ -5,6 +5,12 @@ import type {
   EntitlementStatus,
 } from '../customer-side';
 
+/**
+ * The tenant the harness Playbook is authored for. The SDK is initialised with
+ * the same id; a mismatch makes the SDK warn on every init.
+ */
+export const HARNESS_TENANT_ID = 'tenant_harness';
+
 export type HarnessSlotId = string;
 
 export interface HarnessSlotDescriptor {
@@ -284,8 +290,9 @@ function slotPlacement(slot: HarnessSlotDescriptor): PlacementOutput {
   }
 }
 
-type HarnessPlacementCategory = Playbook['placements'][number]['category'];
-type HarnessAuthoredCta = Playbook['placements'][number]['payloads'][number]['surfaces'][number]['ctas'][number];
+type HarnessAuthoredPlacement = NonNullable<Playbook['placements']>[number];
+type HarnessPlacementCategory = HarnessAuthoredPlacement['category'];
+type HarnessAuthoredCta = HarnessAuthoredPlacement['payloads'][number]['surfaces'][number]['ctas'][number];
 
 interface HarnessCanonicalCta {
   authored: Omit<HarnessAuthoredCta, 'label'>;
@@ -327,7 +334,7 @@ function canonicalPlacementCta(slot: HarnessSlotDescriptor): HarnessCanonicalCta
     case 'slot_modal':
       return {
         authored: { path: 'open_checkout', config: { purchase: 'pro' } },
-        runtime: { type: 'open_checkout_modal', plan_handle: 'pro' },
+        runtime: { type: 'open_checkout', plan_handle: 'pro' },
       };
     case 'slot_inline':
       return {
@@ -343,7 +350,7 @@ function canonicalPlacementCta(slot: HarnessSlotDescriptor): HarnessCanonicalCta
     case 'slot_full_page':
       return {
         authored: { path: 'view_plans' },
-        runtime: { type: 'navigate_to_plans' },
+        runtime: { type: 'view_plans' },
       };
     case 'slot_cli':
       return {
@@ -521,10 +528,10 @@ export function createLocalRuntimeData(
       },
     },
     trialStatus: {
-      inTrial: planHandle === 'trial',
-      planHandle,
-      dayNumber: planHandle === 'trial' ? 6 : undefined,
-      daysRemaining: planHandle === 'trial' ? 8 : undefined,
+      in_trial: planHandle === 'trial',
+      plan_handle: planHandle,
+      day_number: planHandle === 'trial' ? 6 : undefined,
+      days_remaining: planHandle === 'trial' ? 8 : undefined,
     },
   };
 }
@@ -568,35 +575,35 @@ export function resolveEntitlementPayloads(
     }
     // Use the first matching rule
     const rule = matching[0];
-    const tf = rule.type_fields;
 
     // Base fields shared across all resolved payloads
     const base = { handle: ent.unique_handle, kind: ent.type };
 
-    if (tf.kind === 'feature') {
-      return tf.enabled
+    if (ent.type === 'feature') {
+      return rule.enabled !== false
         ? { ...base, allowed: true, status: 'allowed' }
         : { ...base, allowed: false, status: 'denied', reason: 'feature_disabled' };
     }
-    if (tf.kind === 'capability_tier') {
-      return { ...base, allowed: true, status: 'allowed', tier_name: tf.tier_name };
+    if (ent.type === 'capability_tier') {
+      return { ...base, allowed: true, status: 'allowed', tier_name: rule.tier_value };
     }
-    // Metered / quantifiable: compare usage to limit
-    const limit = ruleLimit(rule);
+    // Metered / quantifiable: compare usage to limit. An unlimited rule has an
+    // infinite limit, which is reported as no `limit`.
+    const limit = ruleLimit(rule, ent.type);
     const withinLimit = rule.current_usage < limit;
     const metered: Partial<HarnessEntitlementPayload> = {
-      limit,
       current_usage: rule.current_usage,
     };
-    if (tf.kind === 'usage_limit') {
-      metered.unit = tf.unit;
-      metered.period = tf.period;
-      metered.enforcement = tf.enforcement;
-    } else if (tf.kind === 'credits') {
-      metered.unit = tf.unit;
-      metered.period = tf.period;
-      metered.rollover = tf.rollover;
-    } else if (tf.kind === 'seat') {
+    if (Number.isFinite(limit)) metered.limit = limit;
+    if (ent.type === 'usage_limit') {
+      metered.unit = ent.unit;
+      metered.period = rule.period_scope;
+      metered.enforcement = rule.enforcement;
+    } else if (ent.type === 'credits') {
+      metered.unit = ent.unit;
+      metered.period = rule.reset_period;
+      metered.rollover = rule.rollover_enabled;
+    } else if (ent.type === 'seat') {
       metered.unit = 'seats';
     }
     return {
@@ -796,42 +803,84 @@ export interface HarnessEntitlement {
 }
 
 /**
- * Entitlement rule type_fields discriminated union, matching EntitlementRuleFields
- * from the canonical schema. Simplified to the fields material for trigger payloads.
+ * An entitlement rule in the harness is exactly the Playbook's flat
+ * `entitlement_rules[]` item (plan 147): the rule carries its type-specific
+ * fields under their canonical names (`enabled`, `limit_value`, `enforcement`,
+ * `allowance_value`, `included_count`, `tier_value`, …) and the parent
+ * entitlement owns the kind and unit. There is no harness-only rule shape.
+ *
+ * Inside the harness, `entitlement_id` and `targets[].id` hold the harness
+ * entitlement/plan ids; {@link buildExportedConfig} maps them to handles on
+ * export and {@link loadExportedConfig} reads handles back as ids.
+ * `current_usage` is part of the Playbook rule (a simulated usage figure).
  */
-export type HarnessEntitlementRuleFields =
-  | { kind: 'feature'; enabled: boolean }
-  | { kind: 'capability_tier'; tier_name: string }
-  | { kind: 'usage_limit'; limit_value: number; unit: string; period: string; enforcement: string }
-  | { kind: 'credits'; allowance: number; period: string; rollover: boolean; unit?: string }
-  | { kind: 'seat'; included_seats: number; max_seats?: number | null };
+export type HarnessEntitlementRule = Playbook['entitlement_rules'][number];
 
-/**
- * Simplified entitlement rule for harness use.
- * Aligns with `EntitlementRule` schema: id, entitlement_id, targets[], segment_ids, type_fields.
- * Adds `current_usage` for harness simulation (not part of the canonical schema —
- * usage data comes from metering at runtime).
- */
-export interface HarnessEntitlementRule {
-  id: string;
-  entitlement_id: string;
-  targets: Array<{ kind: 'plan' | 'plan_variation' | 'addon' | 'addon_variation'; id: string }>;
-  /** Segment scope. Empty array means all segments (matches every user). */
-  segment_ids: string[];
-  type_fields: HarnessEntitlementRuleFields;
-  /** Simulated current usage for the harness (runtime concept, not persisted in schema). */
-  current_usage: number;
+/** The numeric value of a `number | 'unlimited'` rule field; `unlimited` is infinite. */
+function boundedValue(value: number | 'unlimited' | null | undefined): number {
+  if (value === 'unlimited') return Number.POSITIVE_INFINITY;
+  return value ?? 0;
 }
 
-/** Helper: extract the limit value from a rule's type_fields. */
-export function ruleLimit(rule: HarnessEntitlementRule): number {
-  switch (rule.type_fields.kind) {
-    case 'usage_limit': return rule.type_fields.limit_value;
-    case 'credits': return rule.type_fields.allowance;
-    case 'seat': return rule.type_fields.included_seats;
-    case 'feature': return rule.type_fields.enabled ? 1 : 0;
+/**
+ * The limit a rule enforces for an entitlement of `type`, read from the flat
+ * field that type owns. `Infinity` means unlimited.
+ */
+export function ruleLimit(rule: HarnessEntitlementRule, type: EntitlementType): number {
+  switch (type) {
+    case 'usage_limit': return boundedValue(rule.limit_value);
+    case 'credits': return boundedValue(rule.allowance_value);
+    case 'seat': return boundedValue(rule.included_count);
+    case 'feature': return rule.enabled === false ? 0 : 1;
     case 'capability_tier': return 1;
-    default: return 0;
+    default: return boundedValue(rule.limit_value);
+  }
+}
+
+/** Return `rule` with the limit for an entitlement of `type` set to `limit`. */
+export function withRuleLimit(
+  rule: HarnessEntitlementRule,
+  type: EntitlementType,
+  limit: number,
+): HarnessEntitlementRule {
+  switch (type) {
+    case 'credits': return { ...rule, allowance_value: limit };
+    case 'seat': return { ...rule, included_count: limit };
+    case 'feature':
+    case 'capability_tier': return rule;
+    default: return { ...rule, limit_value: limit };
+  }
+}
+
+/**
+ * A new rule that grants `entitlement` to `planId`, with the flat fields its
+ * type needs and sensible defaults.
+ */
+export function newEntitlementRule(
+  id: string,
+  entitlement: HarnessEntitlement,
+  planId: string,
+  fields: Partial<HarnessEntitlementRule> = {},
+): HarnessEntitlementRule {
+  const base: HarnessEntitlementRule = {
+    id,
+    entitlement_id: entitlement.id,
+    targets: [{ kind: 'plan', id: planId }],
+    segment_ids: [],
+    max_balance: null,
+    current_usage: 0,
+  };
+  switch (entitlement.type) {
+    case 'feature':
+      return { ...base, enabled: true, ...fields };
+    case 'capability_tier':
+      return { ...base, tier_value: 'pro', ...fields };
+    case 'credits':
+      return { ...base, allowance_value: 100, reset_period: 'month', rollover_enabled: false, ...fields };
+    case 'seat':
+      return { ...base, included_count: 5, ...fields };
+    default:
+      return { ...base, limit_value: 100, period_scope: 'per_month', enforcement: 'block_with_upsell', ...fields };
   }
 }
 
@@ -871,29 +920,42 @@ export const DEFAULT_ENTITLEMENTS: HarnessEntitlement[] = [
   { id: 'ent_exports', unique_handle: 'exports', name: 'Exports', type: 'usage_limit', unit: 'exports' },
 ];
 
+/** A seeded rule for one of {@link DEFAULT_ENTITLEMENTS}, in the flat Playbook shape. */
+function defaultRule(
+  id: string,
+  entitlementId: string,
+  planId: string,
+  currentUsage: number,
+  fields: Partial<HarnessEntitlementRule>,
+): HarnessEntitlementRule {
+  const entitlement = DEFAULT_ENTITLEMENTS.find((item) => item.id === entitlementId);
+  if (!entitlement) throw new Error(`Unknown default entitlement: ${entitlementId}`);
+  return newEntitlementRule(id, entitlement, planId, { current_usage: currentUsage, ...fields });
+}
+
 export const DEFAULT_ENTITLEMENT_RULES: HarnessEntitlementRule[] = [
   // Trial
-  { id: 'rule_1', entitlement_id: 'ent_api_calls', targets: [{ kind: 'plan', id: 'plan_trial' }], segment_ids: [], type_fields: { kind: 'usage_limit', limit_value: 1000, unit: 'calls', period: 'per_month', enforcement: 'block_with_upsell' }, current_usage: 800 },
-  { id: 'rule_2', entitlement_id: 'ent_seats', targets: [{ kind: 'plan', id: 'plan_trial' }], segment_ids: [], type_fields: { kind: 'seat', included_seats: 3 }, current_usage: 2 },
-  { id: 'rule_3', entitlement_id: 'ent_credits', targets: [{ kind: 'plan', id: 'plan_trial' }], segment_ids: [], type_fields: { kind: 'credits', allowance: 50, period: 'per_month', rollover: false, unit: 'credits' }, current_usage: 42 },
-  { id: 'rule_4', entitlement_id: 'ent_exports', targets: [{ kind: 'plan', id: 'plan_trial' }], segment_ids: [], type_fields: { kind: 'usage_limit', limit_value: 10, unit: 'exports', period: 'per_month', enforcement: 'hard_block' }, current_usage: 8 },
+  defaultRule('rule_1', 'ent_api_calls', 'plan_trial', 800, { limit_value: 1000, enforcement: 'block_with_upsell' }),
+  defaultRule('rule_2', 'ent_seats', 'plan_trial', 2, { included_count: 3 }),
+  defaultRule('rule_3', 'ent_credits', 'plan_trial', 42, { allowance_value: 50, rollover_enabled: false }),
+  defaultRule('rule_4', 'ent_exports', 'plan_trial', 8, { limit_value: 10, enforcement: 'hard_block' }),
   // Starter
-  { id: 'rule_5', entitlement_id: 'ent_api_calls', targets: [{ kind: 'plan', id: 'plan_starter' }], segment_ids: [], type_fields: { kind: 'usage_limit', limit_value: 5000, unit: 'calls', period: 'per_month', enforcement: 'block_with_upsell' }, current_usage: 4200 },
-  { id: 'rule_6', entitlement_id: 'ent_seats', targets: [{ kind: 'plan', id: 'plan_starter' }], segment_ids: [], type_fields: { kind: 'seat', included_seats: 10 }, current_usage: 7 },
-  { id: 'rule_7', entitlement_id: 'ent_credits', targets: [{ kind: 'plan', id: 'plan_starter' }], segment_ids: [], type_fields: { kind: 'credits', allowance: 200, period: 'per_month', rollover: false, unit: 'credits' }, current_usage: 150 },
-  { id: 'rule_8', entitlement_id: 'ent_exports', targets: [{ kind: 'plan', id: 'plan_starter' }], segment_ids: [], type_fields: { kind: 'usage_limit', limit_value: 100, unit: 'exports', period: 'per_month', enforcement: 'block_with_upsell' }, current_usage: 65 },
+  defaultRule('rule_5', 'ent_api_calls', 'plan_starter', 4200, { limit_value: 5000, enforcement: 'block_with_upsell' }),
+  defaultRule('rule_6', 'ent_seats', 'plan_starter', 7, { included_count: 10 }),
+  defaultRule('rule_7', 'ent_credits', 'plan_starter', 150, { allowance_value: 200, rollover_enabled: false }),
+  defaultRule('rule_8', 'ent_exports', 'plan_starter', 65, { limit_value: 100, enforcement: 'block_with_upsell' }),
   // Pro
-  { id: 'rule_9', entitlement_id: 'ent_api_calls', targets: [{ kind: 'plan', id: 'plan_pro' }], segment_ids: [], type_fields: { kind: 'usage_limit', limit_value: 50000, unit: 'calls', period: 'per_month', enforcement: 'allow_overage' }, current_usage: 12000 },
-  { id: 'rule_10', entitlement_id: 'ent_seats', targets: [{ kind: 'plan', id: 'plan_pro' }], segment_ids: [], type_fields: { kind: 'seat', included_seats: 50 }, current_usage: 22 },
-  { id: 'rule_11', entitlement_id: 'ent_automations', targets: [{ kind: 'plan', id: 'plan_pro' }], segment_ids: [], type_fields: { kind: 'feature', enabled: true }, current_usage: 1 },
-  { id: 'rule_12', entitlement_id: 'ent_credits', targets: [{ kind: 'plan', id: 'plan_pro' }], segment_ids: [], type_fields: { kind: 'credits', allowance: 1000, period: 'per_month', rollover: true, unit: 'credits' }, current_usage: 400 },
-  { id: 'rule_13', entitlement_id: 'ent_exports', targets: [{ kind: 'plan', id: 'plan_pro' }], segment_ids: [], type_fields: { kind: 'usage_limit', limit_value: 500, unit: 'exports', period: 'per_month', enforcement: 'allow_overage' }, current_usage: 120 },
+  defaultRule('rule_9', 'ent_api_calls', 'plan_pro', 12000, { limit_value: 50000, enforcement: 'allow_overage' }),
+  defaultRule('rule_10', 'ent_seats', 'plan_pro', 22, { included_count: 50 }),
+  defaultRule('rule_11', 'ent_automations', 'plan_pro', 1, { enabled: true }),
+  defaultRule('rule_12', 'ent_credits', 'plan_pro', 400, { allowance_value: 1000, rollover_enabled: true }),
+  defaultRule('rule_13', 'ent_exports', 'plan_pro', 120, { limit_value: 500, enforcement: 'allow_overage' }),
   // Enterprise
-  { id: 'rule_14', entitlement_id: 'ent_api_calls', targets: [{ kind: 'plan', id: 'plan_enterprise' }], segment_ids: [], type_fields: { kind: 'usage_limit', limit_value: 500000, unit: 'calls', period: 'per_month', enforcement: 'allow_overage' }, current_usage: 85000 },
-  { id: 'rule_15', entitlement_id: 'ent_seats', targets: [{ kind: 'plan', id: 'plan_enterprise' }], segment_ids: [], type_fields: { kind: 'seat', included_seats: 500 }, current_usage: 180 },
-  { id: 'rule_16', entitlement_id: 'ent_automations', targets: [{ kind: 'plan', id: 'plan_enterprise' }], segment_ids: [], type_fields: { kind: 'feature', enabled: true }, current_usage: 1 },
-  { id: 'rule_17', entitlement_id: 'ent_credits', targets: [{ kind: 'plan', id: 'plan_enterprise' }], segment_ids: [], type_fields: { kind: 'credits', allowance: 10000, period: 'per_month', rollover: true, unit: 'credits' }, current_usage: 3200 },
-  { id: 'rule_18', entitlement_id: 'ent_exports', targets: [{ kind: 'plan', id: 'plan_enterprise' }], segment_ids: [], type_fields: { kind: 'usage_limit', limit_value: 5000, unit: 'exports', period: 'per_month', enforcement: 'allow_overage' }, current_usage: 800 },
+  defaultRule('rule_14', 'ent_api_calls', 'plan_enterprise', 85000, { limit_value: 500000, enforcement: 'allow_overage' }),
+  defaultRule('rule_15', 'ent_seats', 'plan_enterprise', 180, { included_count: 500 }),
+  defaultRule('rule_16', 'ent_automations', 'plan_enterprise', 1, { enabled: true }),
+  defaultRule('rule_17', 'ent_credits', 'plan_enterprise', 3200, { allowance_value: 10000, rollover_enabled: true }),
+  defaultRule('rule_18', 'ent_exports', 'plan_enterprise', 800, { limit_value: 5000, enforcement: 'allow_overage' }),
 ];
 
 let ruleCounter = DEFAULT_ENTITLEMENT_RULES.length + 1;
@@ -1042,7 +1104,7 @@ export function buildExportedConfig(params: {
     format_version: EXPORTED_CONFIG_VERSION,
     playbook_handle: 'default',
     playbook_version_id: null,
-    tenant_id: 'tenant_harness',
+    tenant_id: HARNESS_TENANT_ID,
     environment_id: 'production',
     exported_at: nowIso,
     plans: params.plans.map((p, index) => ({
@@ -1058,19 +1120,27 @@ export function buildExportedConfig(params: {
       type: toPortableEntitlementType(e.type),
       ...(e.unit ? { unit: e.unit } : {}),
     })),
-    entitlement_rules: params.entitlementRules.map((r) => ({
-      id: r.id,
-      entitlement_id: entitlementHandleById.get(r.entitlement_id) ?? r.entitlement_id,
-      targets: r.targets.map((target) => ({
-        ...target,
-        id: target.kind === 'plan'
-          ? planHandleById.get(target.id) ?? target.id
-          : target.id,
-      })),
-      segment_ids: r.segment_ids.map((segmentId) => segmentHandleById.get(segmentId) ?? segmentId),
-      type_fields: r.type_fields as Record<string, unknown>,
-      current_usage: r.current_usage,
-    })),
+    entitlement_rules: params.entitlementRules.map((r) => {
+      // `kind` and `unit` are derived from the parent entitlement on export.
+      const entitlement = params.entitlements.find((item) => item.id === r.entitlement_id);
+      return {
+        ...r,
+        entitlement_id: entitlementHandleById.get(r.entitlement_id) ?? r.entitlement_id,
+        targets: r.targets.map((target) => ({
+          ...target,
+          id: target.kind === 'plan'
+            ? planHandleById.get(target.id) ?? target.id
+            : target.id,
+        })),
+        segment_ids: r.segment_ids.map((segmentId) => segmentHandleById.get(segmentId) ?? segmentId),
+        ...(entitlement
+          ? {
+              kind: toPortableEntitlementType(entitlement.type),
+              ...(entitlement.unit ? { unit: entitlement.unit } : {}),
+            }
+          : {}),
+      };
+    }),
     segments: params.segments.map((s) => ({
       name: s.name,
       handle: s.handle,
@@ -1111,7 +1181,7 @@ export function buildExportedConfig(params: {
     })),
     message_blocks: params.slots.map((slot) => ({
       block_id: harnessMessageBlockId(slot),
-      tenant_id: 'tenant_harness',
+      tenant_id: HARNESS_TENANT_ID,
       name: `${slot.label} content`,
       surface_template_id: harnessTemplateId(slot),
       default_content: toMessageBlockContent(placementCatalog[slot.id]),
@@ -1257,7 +1327,7 @@ export function loadExportedConfig(raw: unknown): {
   slots: HarnessSlotDescriptor[];
 } {
   const cfg = normalizeConfigArtifactOrThrow(raw, 'harness config', {
-    tenantId: 'tenant_harness',
+    tenantId: HARNESS_TENANT_ID,
     environmentId: 'production',
   });
   if (!cfg) throw new Error('Invalid config: not an object');
@@ -1280,14 +1350,10 @@ export function loadExportedConfig(raw: unknown): {
     ...(e.unit ? { unit: String(e.unit) } : {}),
   }));
 
-  const entitlementRules: HarnessEntitlementRule[] = cfg.entitlement_rules.map((r) => ({
-    id: String(r.id),
-    entitlement_id: String(r.entitlement_id),
-    targets: Array.isArray(r.targets) ? r.targets : [],
-    segment_ids: Array.isArray(r.segment_ids) ? r.segment_ids : [],
-    type_fields: r.type_fields as HarnessEntitlementRuleFields,
-    current_usage: Number(r.current_usage) || 0,
-  }));
+  // Handles are the ids in an imported Playbook (plans, entitlements and
+  // segments carry no `id`), so a rule's `entitlement_id` and `targets[].id`
+  // already name the harness items.
+  const entitlementRules: HarnessEntitlementRule[] = cfg.entitlement_rules.map((r) => ({ ...r }));
 
   const segments: HarnessSegment[] = cfg.segments.map((s) => ({
     id: legacyItemId(s, s.handle),

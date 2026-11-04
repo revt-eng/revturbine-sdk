@@ -143,7 +143,9 @@ const declaredHere = new Set(
   taxonomy.events.filter((e) => e.surface === 'sdk_client').map((e) => e.name),
 );
 
-describe('event taxonomy parity (plan 181 AC-2)', () => {
+// Each test rescans every SDK source file, which outlasts vitest's 5 s default
+// on a loaded machine (the full verify run timed out here under parallel load).
+describe('event taxonomy parity (plan 181 AC-2)', { timeout: 30_000 }, () => {
   it('the scanner resolves constants and unions — otherwise it lies', () => {
     const emitted = scanEmittedNames();
     // Guards the scanner itself. These four reach their emit call as a

@@ -373,14 +373,15 @@ def _normalize_cta_path(cta: Any) -> dict[str, Any]:
         config = {}
 
     if raw_path == "open_checkout":
-        result: dict[str, Any] = {"type": "open_checkout_modal"}
+        # BUG-1192: the CTA type is delivered exactly as authored.
+        result: dict[str, Any] = {"type": "open_checkout"}
         purchase = config.get("purchase")
         if isinstance(purchase, str):
             result["plan_handle"] = purchase
         return result
 
     if raw_path == "view_plans":
-        return {"type": "navigate_to_plans"}
+        return {"type": "view_plans"}
 
     if raw_path == "open_rt_placement":
         rt_result: dict[str, Any] = {"type": "open_rt_placement"}

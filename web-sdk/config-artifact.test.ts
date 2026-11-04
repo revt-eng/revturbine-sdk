@@ -13,14 +13,39 @@ const BODY = {
 };
 
 describe('config artifact dual-read normalization', () => {
-  it('warns once when accepting a legacy unversioned Playbook', async () => {
-    vi.resetModules();
+  it('does not warn about a missing bundle_schema_version on an authored Playbook (BUG-1191)', () => {
+    // The schema marks bundle_schema_version read-only, so an author cannot set it.
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const { normalizeConfigArtifactOrThrow: normalize } = await import('./config-artifact');
     const input = { ...BODY, version: '1.0.0', tenant_id: 't', environment_id: 'e' };
-    normalize(input, 'fixture');
-    normalize(input, 'fixture');
-    expect(warn.mock.calls.filter(([message]) => String(message).includes('no bundle_schema_version'))).toHaveLength(1);
+    expect(normalizeConfigArtifactOrThrow(input, 'fixture')).toBeDefined();
+    expect(warn.mock.calls.filter(([message]) => String(message).includes('bundle_schema_version'))).toHaveLength(0);
+  });
+  it('does not warn when the tenant is the SDK-stamped local placeholder (BUG-825)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const input = { ...BODY, version: '1.0.0', tenant_id: 'tenant_real', environment_id: 'e' };
+    normalizeConfigArtifactOrThrow(input, 'fixture', {
+      tenantId: 'local', tenantIdDefaulted: true, environmentId: 'e',
+    });
+    expect(warn.mock.calls.filter(([message]) => String(message).includes('tenant_id'))).toHaveLength(0);
+  });
+  it('a local-only init with a tenant-stamped Playbook logs no tenant or bundle_schema_version warning (AC-5)', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { initRevTurbine } = await import('./customer-side');
+    const sdk = initRevTurbine({
+      user: { id: 'u_1' },
+      anonymousTelemetry: false,
+      contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
+      localRuntime: { playbook: { ...BODY, version: '1.0.0', tenant_id: 'tenant_real', environment_id: 'production' } },
+    } as unknown as Parameters<typeof initRevTurbine>[0]);
+    sdk.dispose();
+    const noisy = warn.mock.calls.filter(([message]) => /tenant_id|bundle_schema_version/.test(String(message)));
+    expect(noisy).toEqual([]);
+  });
+  it('still warns when a host-supplied tenant disagrees with the Playbook', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const input = { ...BODY, version: '1.0.0', tenant_id: 'tenant_real', environment_id: 'e' };
+    normalizeConfigArtifactOrThrow(input, 'fixture', { tenantId: 'tenant_other', environmentId: 'e' });
+    expect(warn.mock.calls.filter(([message]) => String(message).includes('tenant_id'))).toHaveLength(1);
   });
   it.each([15, 16, 18])('admits historical/current writer %s through the actual normalizer', (version) => {
     expect(normalizeConfigArtifactOrThrow({

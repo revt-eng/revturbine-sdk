@@ -7,6 +7,9 @@ import { PRISM_CONFIG } from '../config/prism-config';
  * handle-free wording. NOT an SDK surface — a demo reference view.
  */
 
+/** One authored placement; `Playbook.placements` is optional, so unwrap it. */
+type PrismPlacement = NonNullable<typeof PRISM_CONFIG.placements>[number];
+
 const CATEGORY_LABEL: Record<string, string> = {
   gated: 'Gates',
   fixed: 'Always-on',
@@ -41,7 +44,7 @@ function cleanName(name: string): string {
 }
 
 /** Plain-language "fires when" for a placement, from its trigger. */
-function firesWhen(p: (typeof PRISM_CONFIG.placements)[number]): string {
+function firesWhen(p: PrismPlacement): string {
   const t = p.trigger as { type: string; slot_id?: string; entitlement_handle?: string; threshold_percent?: number };
   const pct = t.threshold_percent;
   switch (t.type) {
@@ -80,12 +83,12 @@ function firesWhen(p: (typeof PRISM_CONFIG.placements)[number]): string {
   }
 }
 
-function who(p: (typeof PRISM_CONFIG.placements)[number]): string {
+function who(p: PrismPlacement): string {
   const plans = (p.payloads[0]?.target?.plan_ids ?? []).map((id) => PLAN_LABEL[id] ?? id);
   return plans.length === 3 || plans.length === 0 ? 'All plans' : plans.join(' + ');
 }
 
-function showsAs(p: (typeof PRISM_CONFIG.placements)[number]): string {
+function showsAs(p: PrismPlacement): string {
   const tmpl = p.payloads[0]?.surfaces?.[0]?.template_id ?? '';
   return TEMPLATE_LABEL[tmpl] ?? tmpl;
 }
@@ -94,7 +97,7 @@ export function PlacementsModal({ onClose }: { onClose: () => void }) {
   const byCategory = CATEGORY_ORDER.map((cat) => ({
     cat,
     label: CATEGORY_LABEL[cat] ?? cat,
-    items: PRISM_CONFIG.placements
+    items: (PRISM_CONFIG.placements ?? [])
       .filter((p) => p.category === cat)
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
   })).filter((g) => g.items.length > 0);

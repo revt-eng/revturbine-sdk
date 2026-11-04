@@ -199,7 +199,13 @@ describe('automatic trial-lifecycle triggers reach the wire under the ruled name
 });
 
 function makeUsageSdk(): RevTurbineCustomerSdk {
-  return makeSdk({ localRuntime: { playbook: usageConfig() } });
+  // BUG-1185: the singular user-context route no longer exists on the hosted
+  // control plane, so the SDK calls it only when the integrator names one. This
+  // fixture is that integrator: its "backend" supplies the previous usage.
+  return makeSdk({
+    localRuntime: { playbook: usageConfig() },
+    endpointOverrides: { userContext: '/api/sdk/user-context' },
+  });
 }
 
 /**
