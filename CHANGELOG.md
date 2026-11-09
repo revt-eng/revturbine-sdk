@@ -3463,8 +3463,9 @@ active tenants and only in-org code referenced the changed surfaces.
 - **Symptom if you do not migrate** — a context whose only plan signal is
   `plan.id` now matches **no** plan-targeted rule and fails closed. It does not
   error; it simply has no plan.
-- **Landed in** — `0.3.0`
-- **Fail-closed in** — `0.3.0`.
+- **Landed in** — `0.2.89` for Web matching; `0.3.0` completed the Python,
+  Rust, and plain-JS runtime enforcement.
+- **Fail-closed in** — `0.3.0` across all three ports.
 - **Proving test** — `web-sdk/user-context-exactness.test-d.ts` plus the
   plan-identity parity fixtures
   (`tests/parity/fixtures/entitlement_plan_identity_is_handle.json`,
@@ -3474,8 +3475,9 @@ active tenants and only in-org code referenced the changed surfaces.
 
 - **What changed** — unknown top-level context keys are a compile error.
   Free-form values go under `custom`, via `update()`.
-- **Landed in** — `0.3.0`
-- **Fail-closed in** — `0.3.0`, at compile time.
+- **Landed in** — `0.2.90` for the Web signature and runtime stripping;
+  `0.3.0` was the lockstep minor release that announced the migration.
+- **Fail-closed in** — `0.2.90`, at compile time and at the plain-JS boundary.
 - **Proving test** — `web-sdk/user-context-exactness.test-d.ts`
 
 ### `local_runtime_default_allow` → `entitlement_not_in_playbook`
@@ -3494,7 +3496,271 @@ active tenants and only in-org code referenced the changed surfaces.
 
 ## Before 0.3.0
 
-Versions `0.1.0` through `0.2.91` predate this changelog. Breaking changes in
-that range are recorded only in commit history and release notes. If you are
-upgrading from `0.2.x`, read the `0.3.0` section first — it is the release that
-changed plan identity, and it is the one most likely to affect you.
+This history was reconstructed from the repository's local release tags and
+the merge commits they name. The root cause of the former gap was procedural,
+not missing Git data: this file was introduced with `0.8.0` (PR #443), after
+the releases below, and the later publication work (PR #494) deliberately
+preserved the gap instead of inferring it from commit subjects. The annotated
+`v0.2.0` tag and the merge bodies attached to every subsequent release provide
+the old/new contract, affected ports, and release boundary needed to document
+the customer-visible breaks without guessing.
+
+`0.2.13` was the first release described as public. The earlier entries remain
+here because packages and tags existed and an old internal or prerelease
+integration can still cross those boundaries. Versions omitted below were
+additive, packaging-only, or fixes that required no integration migration;
+this is a breaking-change history, not a feature-by-feature release log.
+
+### 0.2.0 — telemetry moved to `/api/track`
+
+- **What changed** — `RevTurbineEndpointOverrides.legacyTelemetry` and the
+  `/api/telemetry` fallback were removed. Event delivery moved from
+  `/api/events/ingest` to `/api/track`, whose body is `{ events: TrackEvent[] }`
+  and whose browser credential is the public ingest key; the old tenant header
+  and ingest envelope are not sent.
+- **Landed in / Fail-closed in** — `0.2.0` / `0.2.0`. The annotated release tag
+  calls out `legacyTelemetry` as breaking.
+- **Migration** — remove `legacyTelemetry` overrides, implement `/api/track` if
+  using a custom host, and supply `ingestPublicKey` for browser event delivery.
+- **Proving test** — `web-sdk/customer-side-ingest.test.ts` pins the current
+  `/api/track` request and credential contract.
+
+### 0.2.9 — placement and targeting wire fields were removed
+
+- **What changed** — the generated API and vendored port types dropped stored
+  placement/payload `status`, replaced `target_plan_id` with
+  `target_plan_ids[]`, and removed the stale `clicks_paid_feature` and
+  `clicks_cancel` qualifiers. A payload present in a launched Playbook is
+  active; there is no status field to inspect.
+- **Landed in / Fail-closed in** — `0.2.9` / `0.2.9`, as recorded by the tagged
+  pin-and-regeneration commit for schema wire v8.
+- **Migration** — stop reading the removed status and qualifier fields and
+  treat plan targeting as a list.
+- **Proving test** — `pnpm check:client-drift` and the vendored-type checks pin
+  the generated surface to the schema that removed these fields.
+
+### 0.2.10 — a configured entitlement with no matching rule denies
+
+- **What changed** — TypeScript and Python changed a fully-loaded Playbook's
+  no-matching-rule result from allowed to `{ status: "denied", allowed: false,
+  reason: "no_matching_entitlement_rule" }`. This did not yet change the
+  infrastructure-failure fallback.
+- **Landed in / Fail-closed in** — `0.2.10` / `0.2.10`.
+- **Migration** — add an explicit rule for every plan that should receive the
+  entitlement; an empty or nonmatching target set is not an implicit grant.
+- **Proving test** — `web-sdk/entitlement-fail-closed.test.ts` and
+  `server-python/tests/entitlements/test_entitlement_check.py`.
+
+### 0.2.23 — `useCan()` changed its return shape
+
+- **What changed** — the hook added in `0.2.22` stopped returning the raw
+  `useEntitlement()` surface and returned `{ can, limited, result }` instead.
+  Consumers needing `allowed`, `denied`, `error`, `recheck`, or
+  `gatedPlacement` must call `useEntitlement()`.
+- **Landed in / Fail-closed in** — `0.2.23` / `0.2.23` (a compile-time and
+  destructuring break).
+- **Migration** — read `can` for the access answer and `result` for the full
+  entitlement result, or replace the call with `useEntitlement()`.
+- **Proving test** — `web-sdk/react/useCan.test.tsx` pins the curated shape.
+
+### 0.2.30 — infrastructure failures deny instead of grant
+
+- **What changed** — `checkEntitlement()` / `can()` changed four no-answer
+  fallbacks from allowed to denied: a non-OK server response, a network/parse
+  failure, local mode without a Playbook or cache, and SDK disablement after a
+  provider failure. The diagnostic reason remained available.
+- **Landed in / Fail-closed in** — `0.2.30` / `0.2.30`.
+- **Migration** — do not rely on an unavailable SDK to grant access. Keep a
+  Playbook cached and enforce revenue-bearing actions on the server.
+- **Proving test** — `web-sdk/entitlement-fail-closed.test.ts`.
+
+### 0.2.35 — standalone placement interaction event names were retired
+
+- **What changed** — `dismiss()`, `snooze()`, and `convert()` stopped emitting
+  `placement_dismissed`, `placement_snoozed`, and `placement_converted`. They
+  emit the canonical `placement_interaction` event with interaction types
+  `dismiss`, `remind_me_later`, and `cta_completed`.
+- **Landed in / Fail-closed in** — `0.2.35` / `0.2.35`; there was no dual-write
+  window.
+- **Migration** — consume `placement_interaction.interaction_type` instead of
+  subscribing to the three retired event names.
+- **Proving test** — `web-sdk/customer-side-canonical-interaction.test.ts`.
+
+### 0.2.40 — the nonfunctional API adapter was removed
+
+- **What changed** — `createApiProviders`, `ApiAdapterOptions`, and their public
+  re-exports from the headless and server-node entries were deleted. The
+  adapter called routes that the control plane never implemented;
+  `createRevTurbineApiClient()` remained available.
+- **Landed in / Fail-closed in** — `0.2.40` / `0.2.40` (import/compile time).
+- **Migration** — use a `RevTurbineConfigProvider`, the runtime-mode helpers,
+  or `createRevTurbineApiClient()` with a caller-supplied base URL.
+- **Proving test** — `web-sdk/generated/public-api.json` is the guarded current
+  public surface; the tagged `0.2.40` merge records the removed exports.
+
+### 0.2.46 — local mode began sending the anonymous init beacon
+
+- **What changed** — `local_only` stopped implicitly suppressing the keyless
+  `POST /api/sdk/meta` adoption beacon. A new `previewMode` option became the
+  purpose-specific way for demos and previews not to count as installs;
+  `anonymousTelemetry: false` remained the customer opt-out.
+- **Landed in / Fail-closed in** — `0.2.46` / `0.2.46`.
+- **Migration** — set `anonymousTelemetry: false` to opt out, or set
+  `previewMode: true` for a non-install preview. Do not infer zero network
+  traffic solely from `local_only` when running this historical version.
+- **Proving test** — `web-sdk/customer-side-telemetry.test.ts` pins the beacon,
+  opt-out, local-mode, and preview behavior.
+
+### 0.2.50 — connected entitlement checks became local evaluation
+
+- **What changed** — connected/server mode stopped posting each entitlement
+  check to `/api/sdk/check-entitlement`. It fetched the launched Playbook from
+  `/api/sdk/config`, cached it, and evaluated with the local engine; without a
+  usable Playbook it returned the fail-closed `config_unavailable` result.
+- **Landed in / Fail-closed in** — `0.2.50` / `0.2.50`.
+- **Migration** — a custom SDK host must serve the launched-Playbook contract;
+  remove any implementation that expects per-check requests.
+- **Proving test** — `web-sdk/entitlement-fail-closed.test.ts`.
+
+### 0.2.54 — connected placement decisions became local evaluation
+
+- **What changed** — placement decisions followed entitlements onto the
+  fetched Playbook. The SDK retired `/api/sdk/decide-context`,
+  `/api/sdk/bootstrap-context`, `/api/sdk/decide`, and
+  `/api/sdk/get-placement`; a configless decision fails closed with
+  `config_unavailable` and `getPlacement()` returns `null` while fetching.
+- **Landed in / Fail-closed in** — `0.2.54` / `0.2.54`.
+- **Migration** — custom hosts provide `/api/sdk/config`, not the four retired
+  per-decision routes, and callers handle the documented empty decision.
+- **Proving test** — `web-sdk/server-placement-local-eval.test.ts`.
+
+### 0.2.58 and 0.2.60 — dismissal became a cooldown; conversion became terminal
+
+- **What changed** — Web (`0.2.58`) and then Python (`0.2.60`) stopped treating
+  dismissal/click-through as permanent suppression. They use a seven-day
+  default cooldown (or the resolved override); `cta_completed` / conversion is
+  the permanent-retirement outcome. The Web `recordDismissal()` and
+  `recordClickThru()` methods gained an optional cooldown and
+  `recordConversion()` was added.
+- **Landed in / Fail-closed in** — `0.2.58` Web, `0.2.60` Python / the same
+  versions. These are state-semantics changes rather than error fallbacks.
+- **Migration** — use conversion, not dismissal or click-through, for permanent
+  retirement; pass a cooldown override when seven days is not desired.
+- **Proving test** — `web-sdk/customer-side-cooldown-suppression.test.ts` and
+  `server-python/tests/state/test_impression_history.py`.
+
+### 0.2.64 — missing CTA resolvers stopped throwing during initialization
+
+- **What changed** — a missing `uiPathResolvers` entry changed from an
+  initialization exception to a detailed warning and a no-op CTA fallback. The
+  explicit `validateUiPathResolvers({ throwOnMissing: true })` check remained
+  available for integrations that require strict validation.
+- **Landed in / Fail-closed in** — `0.2.64` / `0.2.64`; this is an error-mode
+  change rather than an access-decision fallback.
+- **Migration** — callers that caught an initialization exception must call the
+  strict validator explicitly. Supply every resolver to avoid the warning and
+  no-op click path.
+- **Proving test** — `web-sdk/customer-side-ui-path-resolvers.test.ts`.
+
+### 0.2.69 — `useCan()` denies until its first answer
+
+- **What changed** — `useCan().can` is `false` during initialization and the
+  first check instead of optimistically `true`. `isLoading` was added so a UI
+  can distinguish an unresolved check from a settled denial.
+- **Landed in / Fail-closed in** — `0.2.69` / `0.2.69`.
+- **Migration** — render loading behavior from `isLoading`; never treat the
+  unresolved state as an affirmative entitlement grant.
+- **Proving test** — `web-sdk/react/useCan.test.tsx`.
+
+### 0.2.70 — invalid identity input stopped mutating the session
+
+- **What changed** — `identify("")` and whitespace-only ids are rejected
+  without changing the held identity. Unrecognized top-level context keys are
+  reported instead of silently disappearing, and `plan_handle` became a
+  first-class accepted spelling.
+- **Landed in / Fail-closed in** — `0.2.70` / `0.2.70` for the invalid-id path.
+- **Migration** — wait for a nonempty stable user id before calling
+  `identify()`, put free-form traits under `custom`, and pass plan identity as
+  `plan_handle`.
+- **Proving test** — `web-sdk/blank-user-id.test.ts` and
+  `web-sdk/customer-side-context-fields.test.ts`.
+
+### 0.2.73 — `registerBuiltinSlotTypes` left the headless entry
+
+- **What changed** — `registerBuiltinSlotTypes` was removed from
+  `@revturbine/sdk/headless` so that importing the optional-React headless
+  package no longer loaded React components. It remained exported from the
+  main entry.
+- **Landed in / Fail-closed in** — `0.2.73` / `0.2.73` (import/compile time).
+- **Migration** — import this React-component registry helper from
+  `@revturbine/sdk`, not `@revturbine/sdk/headless`.
+- **Proving test** — `scripts/check-adapter-bundle-isolation.mjs` checks the
+  package entry boundaries; the tagged `0.2.73` merge records the moved export.
+
+### 0.2.75 — gates began honoring `allowed: false`
+
+- **What changed** — `<Gate>`, `EntitlementGate`, auto-gated placements, and
+  `useCan()` now deny a result whose status is `limited` but whose explicit
+  `allowed` field is `false`. Previously only `status: "denied"` blocked, so a
+  hard at-cap usage result leaked through.
+- **Landed in / Fail-closed in** — `0.2.75` / `0.2.75`.
+- **Migration** — if a custom provider returns `limited`, set `allowed` to the
+  intended enforcement result; do not assume every limited result grants.
+- **Proving test** — `web-sdk/controllers.test.ts` and
+  `web-sdk/react/useCan.test.tsx` pin limited results with `allowed: false`.
+
+### 0.2.86 — canonical JSON replaced FlatBuffers and the short-lived server API was removed
+
+- **What changed** — connected Web delivery switched from the FlatBuffer
+  octet-stream bundle to integrity-checked canonical JSON in `0.2.86` and
+  rejects malformed, unversioned, or unreadably new payloads while retaining
+  last-known-good. The same release removed the `createServerClient`,
+  `getEntitlement`, `getPlacement`, `EntitlementView`, and `PlacementView`
+  surface that had existed only in `0.2.82`–`0.2.85`; use the established
+  headless SDK rather than that parallel evaluator.
+- **Landed in / Fail-closed in** — `0.2.86` / `0.2.86`.
+- **Migration** — custom delivery endpoints return the versioned canonical
+  JSON Playbook (and its content hash when supplied). Replace the removed
+  server helpers with `initRevTurbine()` from the headless entry and call the
+  resulting session SDK.
+- **Proving test** — `web-sdk/entitlement-fail-closed.test.ts` and the
+  canonical-JSON parity corpus under `tests/parity/canonical/`; the guarded
+  public snapshot pins the current entry-point surface.
+
+### 0.2.87 — Python and Rust FlatBuffer decoders were removed
+
+- **What changed** — the Python `revturbine.bundle` generated package and
+  `core.bundle.decode` module, plus Rust's public `bundle` module, were deleted
+  after canonical JSON became the sole Playbook wire format.
+- **Landed in / Fail-closed in** — `0.2.87` / `0.2.87` (import/compile time).
+- **Migration** — parse the versioned canonical JSON Playbook with the port's
+  Playbook/config-payload parser rather than importing a FlatBuffer decoder.
+- **Proving test** — `server-python/tests/test_config_payload.py` and the
+  canonical-JSON parity corpus under `tests/parity/canonical/`.
+
+### 0.2.89 — Web plan identity changed from id to handle
+
+- **What changed** — the Web SDK stopped matching `plan: { id }` and custom
+  plan traits. It reads first-class `plan_handle` or `plan: { handle }`; the DB
+  id no longer identifies a plan. This Web-side break shipped before the
+  cross-language/runtime enforcement completed in `0.3.0`.
+- **Landed in / Fail-closed in** — `0.2.89` Web / `0.3.0`, when plain-JS legacy
+  input was rejected and the Python and Rust evaluators became handle-only.
+- **Migration** — replace `plan: { id }` with `plan: { handle }` or the flat
+  `plan_handle` field.
+- **Proving test** — `web-sdk/user-context-exactness.test-d.ts` and the parity
+  fixtures `entitlement_plan_identity_is_handle.json` and
+  `entitlement_no_plan_identity_denies.json`.
+
+### 0.2.90 — Web `identify()` stopped accepting a traits bag
+
+- **What changed** — Web `identify(id, { someTrait })` no longer routes unknown
+  top-level keys into custom traits. Exact user-context typing makes them a
+  compile error; plain-JS callers have the keys stripped and reported. The
+  lockstep `0.3.0` release completed and announced this migration across the
+  supported artifact set.
+- **Landed in / Fail-closed in** — `0.2.90` Web / `0.2.90` at compile time and
+  runtime for that Web call.
+- **Migration** — pass `identify(id, { custom: { someTrait } })`, or patch
+  free-form values with `update({ custom: ... })`.
+- **Proving test** — `web-sdk/user-context-exactness.test-d.ts`.
