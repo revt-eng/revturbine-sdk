@@ -121,6 +121,52 @@ describe('RevTurbineInitOptions.serverActions', () => {
     }), { immediate: false });
   });
 
+  it('a server-action click is exactly ONE row-producing event: the resolver handles it, the click fallback is not also called, and the event carries the real placement id (EP-1692)', async () => {
+    const sdk = makeSdk(async () => ({ success: true }));
+    // An output this SDK decided: indexed under its real placement.
+    (Reflect.get(sdk, 'outputPlacementIndex') as Map<string, unknown>).set('out_1', {
+      placementId: 'pl_trial',
+      treatmentId: 'rule_1',
+      surfaceSlotId: 'trial_modal',
+      surfaceTemplateId: 'modal_overlay',
+      decisionId: 'decision_1',
+      ruleHandle: 'rule_1',
+      segmentHandles: ['trialists'],
+    });
+    const emitted = vi.spyOn(sdk, 'emitPlatformEvent').mockResolvedValue(undefined);
+    const interaction = vi.spyOn(sdk, 'trackTreatmentInteraction');
+    const fallback = vi.fn();
+
+    const value = placement();
+    const handled = dispatchCtaClick(
+      parseUiPath(value.cta_path ?? {}),
+      { placement: value, kind: 'primary' },
+      getDefaultCtaResolverRegistry(),
+      fallback,
+    );
+    await settle();
+
+    expect(handled).toBe(true);
+    // The path that would call trackTreatmentInteraction (onCtaClick -> ctaClick) never ran.
+    expect(fallback).not.toHaveBeenCalled();
+    expect(interaction).not.toHaveBeenCalled();
+    const events = emitted.mock.calls.filter(([name]) => name === 'placement_interaction');
+    expect(events).toHaveLength(1);
+    expect(events[0][1]).toMatchObject({
+      user_id: 'user_1',
+      placement_id: 'pl_trial',
+      interaction_type: 'cta_clicked',
+      surface_slot_id: 'trial_modal',
+      surface_template_id: 'modal_overlay',
+      payload_id: 'out_1',
+      decision_id: 'decision_1',
+      rule_handle: 'rule_1',
+      segment_handles: ['trialists'],
+      action_type: 'extend_trial',
+      action_outcome: 'success',
+    });
+  });
+
   it('leaves context unchanged and tracks a reported failure', async () => {
     const sdk = makeSdk(async () => ({ success: false, userContext: { plan_handle: 'pro' } }));
     const emitted = vi.spyOn(sdk, 'emitPlatformEvent').mockResolvedValue(undefined);

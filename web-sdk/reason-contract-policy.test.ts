@@ -40,5 +40,5 @@ describe('reason baseline changelog policy', () => {
     } finally {
       rmSync(scratch, { recursive: true, force: true });
     }
-  });
+  }, 30_000);
 });

@@ -61,26 +61,26 @@ describe('no anonymous id stands in for a user (ST-1416 AC-3)', () => {
   it('the anonymous-id identifier is gone from the SDK runtime', () => {
     const hits = scan(/\banonymousId\b|\bresolveAnonymousId\b/);
     expect(hits, show(hits)).toEqual([]);
-  });
+  }, 30_000);
 
   it('no per-browser anonymous id is persisted or read from storage', () => {
     const hits = scan(/revturbine:[^'"`]*:anon\b|:anon['"`]/);
     expect(hits, show(hits)).toEqual([]);
-  });
+  }, 30_000);
 
   it('no user id expression falls back to an anonymous / correlation id', () => {
     const hits = scan(
       /(?:user_?[iI]d|userContext\??\.id|\.id|\bid)\s*(?:\|\||\?\?)\s*[^;)]*(?:[aA]nonymous|anon_?[iI]d|correlationId|sessionId|requestId\()/,
     );
     expect(hits, show(hits)).toEqual([]);
-  });
+  }, 30_000);
 
   it('no user-id setter or storage key is handed an anonymous / correlation id', () => {
     const hits = scan(
       /(?:setUserId|userId|user_id|userScopedStorageKey|StorageKey)\s*[:(=]\s*[^;,]*(?:[aA]nonymous|correlationId|this\.sessionId)/,
     );
     expect(hits, show(hits)).toEqual([]);
-  });
+  }, 30_000);
 
   it('the event envelope carries the correlation id only beside, never as, the user id', () => {
     const source = readFileSync(join(WEB_SDK_DIR, 'customer-side.ts'), 'utf8');

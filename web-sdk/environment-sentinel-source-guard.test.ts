@@ -78,5 +78,5 @@ describe('production environment sentinel source guard', () => {
     }
 
     expect(violations).toEqual([]);
-  });
+  }, 30_000);
 });

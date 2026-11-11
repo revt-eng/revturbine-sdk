@@ -1,12 +1,13 @@
 /**
  * Plan 114 TASK-2 — web-SDK treatment-interaction path.
  *
- * `trackTreatmentInteraction` flushes to `POST /api/events/interactions` (the
- * control-plane route that writes `placement_presentations`), carrying the
+ * `trackTreatmentInteraction` reports the interaction as ONE
+ * `placement_interaction` clickstream event in the `/api/track` batch (EP-1692:
+ * the separate `/api/events/interactions` POST lane is gone), carrying the
  * presentation context — `surface_slot_id` / `surface_template_id` /
  * `payload_id` — so slot/payload discovery + health analytics are complete.
- * Before this the SDK POSTed to `/api/touchpoints/transition`, which never
- * existed, so presentations 404'd into the void.
+ * The wire columns `surface_slot_id` / `payload_id` / `placement_id` /
+ * `experiment_id` / `variant_key` lift from the same payload.
  */
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { RevTurbineCustomerSdk } from './customer-side';
@@ -49,18 +50,24 @@ function makeSdk(over: Partial<RevTurbineInitOptions> = {}): RevTurbineCustomerS
   });
 }
 
-/** The interaction queue flush is fire-and-forget — let its microtask settle. */
-const settle = () => new Promise((r) => setTimeout(r, 0));
-
-function interactionCall() {
-  const hit = calls.find((c) => c.url.endsWith('/api/events/interactions'));
-  expect(hit, 'expected a POST to /api/events/interactions').toBeDefined();
-  const parsed = JSON.parse(String(hit!.init.body)) as Record<string, unknown> | Array<Record<string, unknown>>;
-  return { ...hit!, row: Array.isArray(parsed) ? parsed[0] : parsed };
+/**
+ * Flush the batch, then read the `placement_interaction` event the SDK put in
+ * the `/api/track` body: its payload (the record) and its wire row (the lifted
+ * columns).
+ */
+async function interactionCall(sdk: RevTurbineCustomerSdk) {
+  await sdk.flushEvents();
+  const track = calls.filter((c) => c.url.endsWith('/api/track'));
+  const events = track.flatMap((c) => (JSON.parse(String(c.init.body)) as { events: Array<Record<string, unknown>> }).events);
+  const hit = events.filter((e) => e.event_name === 'placement_interaction');
+  expect(hit, 'expected a placement_interaction event in the /api/track batch').toHaveLength(1);
+  const wire = hit[0];
+  const row = (JSON.parse(String(wire.properties)) as { payload: Record<string, unknown> }).payload;
+  return { url: track[0].url, init: track[0].init, row, wire };
 }
 
-describe('web-SDK treatment interactions → /api/events/interactions', () => {
-  it('POSTs the presentation context (surface_slot_id / surface_template_id / payload_id)', async () => {
+describe('web-SDK treatment interactions → one placement_interaction event on /api/track', () => {
+  it('carries the presentation context (surface_slot_id / surface_template_id / payload_id)', async () => {
     const sdk = makeSdk();
     await sdk.trackTreatmentInteraction({
       userId: 'end_user_1',
@@ -70,10 +77,9 @@ describe('web-SDK treatment interactions → /api/events/interactions', () => {
       surfaceTemplateId: 'banner_v1',
       payloadId: 'payload_9',
     });
-    await settle();
 
-    const { url, init, row } = interactionCall();
-    expect(url).toBe('https://edge.example.com/api/events/interactions');
+    const { url, init, row, wire } = await interactionCall(sdk);
+    expect(url).toBe('https://edge.example.com/api/track');
     expect(init.method).toBe('POST');
     expect(row).toMatchObject({
       user_id: 'end_user_1',
@@ -83,15 +89,21 @@ describe('web-SDK treatment interactions → /api/events/interactions', () => {
       surface_template_id: 'banner_v1',
       payload_id: 'payload_9',
     });
+    // The lifted wire columns come from the same payload.
+    expect(wire).toMatchObject({
+      placement_id: 'pl_upgrade',
+      surface_slot_id: 'dashboard_promo',
+      payload_id: 'payload_9',
+    });
   });
 
-  it('no longer posts to the never-implemented /api/touchpoints/transition route', async () => {
+  it('reports each interaction once and never posts to a second lane', async () => {
     const sdk = makeSdk();
     await sdk.trackTreatmentInteraction({ userId: 'u', placementId: 'p', interactionType: 'dismiss' });
-    await settle();
+    await interactionCall(sdk);
 
     expect(calls.some((c) => c.url.endsWith('/api/touchpoints/transition'))).toBe(false);
-    expect(calls.some((c) => c.url.endsWith('/api/events/interactions'))).toBe(true);
+    expect(calls.some((c) => c.url.endsWith('/api/events/interactions'))).toBe(false);
   });
 });
 
@@ -106,13 +118,15 @@ describe('experiment attribution on interactions (plan 183 TASK-6 / AC-4)', () =
       experimentId: 'pricing_test',
       variantKey: 'variant_b',
     });
-    await settle();
 
-    expect(interactionCall().row).toMatchObject({
+    const { row, wire } = await interactionCall(sdk);
+    expect(row).toMatchObject({
       placement_id: 'pl_upgrade',
       experiment_id: 'pricing_test',
       variant_key: 'variant_b',
     });
+    // Lifted to the wire columns the experiment pipes group by.
+    expect(wire).toMatchObject({ experiment_id: 'pricing_test', variant_key: 'variant_b' });
   });
 
   it('reports a control assignment — control is enrollment, not absence', async () => {
@@ -121,9 +135,8 @@ describe('experiment attribution on interactions (plan 183 TASK-6 / AC-4)', () =
       userId: 'u', placementId: 'p', interactionType: 'impression',
       experimentId: 'pricing_test', variantKey: 'control',
     });
-    await settle();
 
-    expect(interactionCall().row).toMatchObject({
+    expect((await interactionCall(sdk)).row).toMatchObject({
       experiment_id: 'pricing_test',
       variant_key: 'control',
     });
@@ -136,11 +149,13 @@ describe('experiment attribution on interactions (plan 183 TASK-6 / AC-4)', () =
     await sdk.trackTreatmentInteraction({
       userId: 'u', placementId: 'p', interactionType: 'impression',
     });
-    await settle();
 
-    const { row } = interactionCall();
+    const { row, wire } = await interactionCall(sdk);
     expect(row).not.toHaveProperty('experiment_id');
     expect(row).not.toHaveProperty('variant_key');
+    // The wire columns stay null, never an empty arm.
+    expect(wire.experiment_id).toBeNull();
+    expect(wire.variant_key).toBeNull();
   });
 
   it('carries attribution on a conversion, not just an impression', async () => {
@@ -149,9 +164,8 @@ describe('experiment attribution on interactions (plan 183 TASK-6 / AC-4)', () =
       userId: 'u', placementId: 'p', interactionType: 'cta_completed',
       experimentId: 'pricing_test', variantKey: 'variant_b',
     });
-    await settle();
 
-    expect(interactionCall().row).toMatchObject({
+    expect((await interactionCall(sdk)).row).toMatchObject({
       interaction_type: 'cta_completed',
       experiment_id: 'pricing_test',
       variant_key: 'variant_b',

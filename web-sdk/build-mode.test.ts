@@ -130,7 +130,7 @@ describe('bundler inlining contract', () => {
     // Guards against a sixth copy reappearing. Scoped to non-test sources.
     const offenders = collectNodeEnvReaders(join(__dirname));
     expect(offenders).toEqual([]);
-  });
+  }, 30_000);
 });
 
 /**

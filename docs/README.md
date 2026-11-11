@@ -197,7 +197,6 @@ const sdk = initRevTurbine({
     bootstrapContext: '/decisioning/bootstrap',
     checkEntitlement: '/entitlements/check',
     ingestEvents: '/events/ingest',
-    touchpointTransition: '/touchpoints/transition',
   },
 });
 ```

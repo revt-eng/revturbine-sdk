@@ -1,25 +1,23 @@
 /**
- * Interaction wire-contract parity (plan 232 REQ-2 / AC-2).
+ * Interaction wire-contract parity (plan 232 REQ-2 / AC-2; EP-1692).
  *
- * `flushInteractionQueue` sends a bare object when one interaction is queued
- * and an ARRAY when two or more are. Nothing bound that body to a declared
- * shape, so when the route was written against the single-object schema, every
- * multi-item flush 422'd — and the SDK retried against a route that does not
- * exist, then dropped the batch at page unload. Presentations, clicks and
- * conversions were lost for any customer with an active page.
+ * Before 0.15.0 the SDK reported each interaction twice: a typed row POSTed to
+ * a separate interactions route, and a `placement_interaction` clickstream
+ * event. Nothing bound the POST body to a declared shape, so when the route
+ * was written against the single-object schema every multi-item flush 422'd
+ * and presentations, clicks and conversions were lost.
  *
- * This is the standing net for that drift class: it drives the REAL SDK, takes
- * the body it actually put on the wire, and parses it against the canonical
- * scaffold schema the route now uses. If either side changes shape
- * independently again, this fails instead of production going quiet.
+ * The POST lane is gone: the interaction is ONE `placement_interaction` event
+ * in the `/api/track` batch, carrying the full record. This is the standing net
+ * for that drift class: it drives the REAL SDK, takes the event it actually put
+ * on the wire, and parses it against the canonical scaffold schemas
+ * (`TrackEvent` for the wire row, the `placement_interaction` payload contract
+ * for the record). If either side changes shape independently again, this
+ * fails instead of production going quiet.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  TrackEventSchema,
-  TreatmentInteractionBatchSchema,
-  TreatmentInteractionInputSchema,
-  TreatmentInteractionRequestSchema,
-} from '@revt-eng/schema/zod';
+import { validateEventPayload } from '@revt-eng/schema';
+import { TrackEventSchema } from '@revt-eng/schema/zod';
 import { RevTurbineCustomerSdk } from './customer-side';
 import {
   FALLBACK_ACCOUNT_ID_PREFIX,
@@ -34,7 +32,7 @@ interface CapturedPost {
 }
 
 let posts: CapturedPost[] = [];
-let interactionsRespondOk = true;
+let trackRespondOk = true;
 
 const INTERACTIONS_PATH = '/api/events/interactions';
 const LEGACY_PATH = '/api/placements/interactions';
@@ -50,8 +48,8 @@ function stubFetch(): void {
       body = String(init?.body ?? '');
     }
     posts.push({ url, body });
-    const ok = url.includes(INTERACTIONS_PATH) ? interactionsRespondOk : true;
-    return new Response(JSON.stringify({ accepted: 1 }), { status: ok ? 202 : 500 });
+    const ok = url.includes(TRACK_PATH) ? trackRespondOk : true;
+    return new Response(JSON.stringify({ accepted: 1 }), { status: ok ? 202 : 400 });
   }));
 }
 
@@ -79,12 +77,38 @@ const interaction = (over: Record<string, unknown> = {}) => ({
 
 const interactionPosts = () => posts.filter((p) => p.url.includes(INTERACTIONS_PATH));
 
-/** Let the fire-and-forget flush settle. */
+/** Every row across all POSTed `/api/track` batches. */
+const trackedEvents = (): Array<Record<string, unknown>> =>
+  posts
+    .filter((p) => p.url.includes(TRACK_PATH))
+    .flatMap((p) => {
+      const b = p.body as { events?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>;
+      return Array.isArray(b) ? b : (b.events ?? []);
+    });
+
+/** The `placement_interaction` wire rows, each with its payload (the record). */
+const interactionEvents = (): Array<{ wire: Record<string, unknown>; payload: Record<string, unknown> }> =>
+  trackedEvents()
+    .filter((e) => e.event_name === 'placement_interaction')
+    .map((wire) => ({
+      wire,
+      payload: (JSON.parse(String(wire.properties)) as { payload: Record<string, unknown> }).payload,
+    }));
+
+/** Flush the clickstream batch, then return the single interaction event. */
+async function sentInteraction(client: RevTurbineCustomerSdk) {
+  await client.flushEvents();
+  const events = interactionEvents();
+  expect(events, 'exactly one placement_interaction event per interaction').toHaveLength(1);
+  return events[0];
+}
+
+/** Let any fire-and-forget work settle. */
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 beforeEach(() => {
   posts = [];
-  interactionsRespondOk = true;
+  trackRespondOk = true;
   stubFetch();
 });
 afterEach(() => {
@@ -92,79 +116,126 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('the body flushInteractionQueue puts on the wire', () => {
-  it('a single queued interaction parses as the bare shape', async () => {
+describe('the placement_interaction event the SDK puts on the /api/track wire', () => {
+  it('a single interaction is one event whose row and record the contracts accept', async () => {
     const client = sdk();
     await client.trackTreatmentInteraction(interaction());
-    await settle();
 
-    const sent = interactionPosts();
-    expect(sent).toHaveLength(1);
-    expect(Array.isArray(sent[0].body)).toBe(false);
-    expect(TreatmentInteractionInputSchema.safeParse(sent[0].body).success).toBe(true);
-    expect(TreatmentInteractionRequestSchema.safeParse(sent[0].body).success).toBe(true);
+    const { wire, payload } = await sentInteraction(client);
+    expect(TrackEventSchema.safeParse(wire).success).toBe(true);
+    const verdict = validateEventPayload('placement_interaction', payload);
+    expect(verdict.ok, verdict.ok ? '' : String(verdict.detail)).toBe(true);
+    expect(interactionPosts(), 'no second lane').toHaveLength(0);
   });
 
-  it('a re-queued batch parses as the ARRAY shape', async () => {
-    // How production actually reaches the array: a flush fails and re-queues,
-    // another interaction arrives, and the next flush carries both. This is
-    // the shape that was 422'ing, and the failure that produced it is the same
-    // one that then discarded the batch.
+  it('two interactions are two events in ONE batch, each accepted by the contract', async () => {
+    // The old POST lane sent a bare object for one interaction and an ARRAY for
+    // two; the array shape is what 422'd. Both are now plain rows of the same
+    // `/api/track` body.
     const client = sdk();
-    interactionsRespondOk = false;
     await client.trackTreatmentInteraction(interaction());
-    await settle();
-
-    interactionsRespondOk = true;
-    posts = [];
     await client.trackTreatmentInteraction(interaction({ userId: 'user_2', interactionType: 'cta_clicked' }));
-    await settle();
+    await client.flushEvents();
 
-    const sent = interactionPosts();
-    expect(sent).toHaveLength(1);
-    expect(Array.isArray(sent[0].body), 'the re-queued flush should carry both interactions').toBe(true);
-    expect((sent[0].body as unknown[]).length).toBe(2);
-    expect(TreatmentInteractionBatchSchema.safeParse(sent[0].body).success).toBe(true);
-    expect(TreatmentInteractionRequestSchema.safeParse(sent[0].body).success).toBe(true);
+    const events = interactionEvents();
+    expect(events).toHaveLength(2);
+    expect(events.map((e) => e.payload.interaction_type)).toEqual(['impression', 'cta_clicked']);
+    for (const { wire, payload } of events) {
+      expect(TrackEventSchema.safeParse(wire).success).toBe(true);
+      expect(validateEventPayload('placement_interaction', payload).ok).toBe(true);
+    }
   });
 
-  it('every field the SDK sends is one the contract declares', async () => {
-    // A field the schema strips is a field the route never sees — the silent
-    // half of drift, where the request succeeds and the data is incomplete.
+  it('every field the SDK sends is one the contract keeps', async () => {
+    // A field the schema strips is a field ingest never sees — the silent half
+    // of drift, where the request succeeds and the data is incomplete.
     const client = sdk();
-    await client.trackTreatmentInteraction(interaction({ experimentId: 'exp_1', variantKey: 'B' }));
-    await settle();
+    await client.trackTreatmentInteraction(interaction({
+      experimentId: 'exp_1',
+      variantKey: 'B',
+      ruleHandle: 'rule_1',
+      decisionId: 'dec_1',
+      segmentHandles: ['seg_a'],
+      messageBlockHandle: 'block_1',
+    }));
 
-    const body = interactionPosts()[0].body as Record<string, unknown>;
-    const parsed = TreatmentInteractionInputSchema.parse(body) as Record<string, unknown>;
-    for (const [key, value] of Object.entries(body)) {
-      // `tenant_id` is accepted-and-ignored by the route by design (the tenant
-      // comes from the verified credential), so it may be stripped.
-      if (key === 'tenant_id' || value === undefined) continue;
-      expect(parsed, `the contract drops ${key}, so the route never sees it`).toHaveProperty(key);
+    const { payload } = await sentInteraction(client);
+    const verdict = validateEventPayload('placement_interaction', payload);
+    expect(verdict.ok).toBe(true);
+    const parsed = verdict.ok ? verdict.payload : {};
+    for (const [key, value] of Object.entries(payload)) {
+      if (value === undefined) continue;
+      expect(parsed, `the contract drops ${key}, so ingest never sees it`).toHaveProperty(key);
     }
+  });
+
+  it('carries the full record the presentation row needs', async () => {
+    const client = sdk();
+    client.identify('user_1', { account_id: 'acct_acme' });
+    await client.trackTreatmentInteraction(interaction({
+      treatmentId: 'treat_1',
+      experimentId: 'exp_1',
+      variantKey: 'B',
+      ruleHandle: 'rule_1',
+      decisionId: 'dec_1',
+      segmentHandles: ['seg_a'],
+      messageBlockHandle: 'block_1',
+      metadata: { cooldown_ms: 5 },
+      interactionAt: '2026-11-10T10:00:00.000Z',
+    }));
+
+    const { payload, wire } = await sentInteraction(client);
+    expect(payload).toEqual({
+      user_id: 'user_1',
+      account_id: 'acct_acme',
+      placement_id: 'pl_upgrade',
+      treatment_id: 'treat_1',
+      interaction_type: 'impression',
+      interaction_at: '2026-11-10T10:00:00.000Z',
+      surface_slot_id: 'dashboard_promo',
+      surface_template_id: 'banner_v1',
+      payload_id: 'payload_9',
+      message_block_handle: 'block_1',
+      experiment_id: 'exp_1',
+      variant_key: 'B',
+      rule_handle: 'rule_1',
+      decision_id: 'dec_1',
+      segment_handles: ['seg_a'],
+      metadata: { cooldown_ms: 5 },
+    });
+    // These lift to the named wire columns analytics groups by.
+    expect(wire).toMatchObject({
+      account_id: 'acct_acme',
+      placement_id: 'pl_upgrade',
+      surface_slot_id: 'dashboard_promo',
+      payload_id: 'payload_9',
+      experiment_id: 'exp_1',
+      variant_key: 'B',
+      decision_id: 'dec_1',
+    });
   });
 
   it('carries the experiment attribution the analytics pipes filter on', async () => {
     const client = sdk();
     await client.trackTreatmentInteraction(interaction({ experimentId: 'exp_1', variantKey: 'B' }));
-    await settle();
-    expect(interactionPosts()[0].body).toMatchObject({ experiment_id: 'exp_1', variant_key: 'B' });
+    const { payload, wire } = await sentInteraction(client);
+    expect(payload).toMatchObject({ experiment_id: 'exp_1', variant_key: 'B' });
+    expect(wire).toMatchObject({ experiment_id: 'exp_1', variant_key: 'B' });
   });
 });
 
 /**
- * Account identity on the interaction wire (plan 232 REQ-4 / BL-0011).
+ * Account identity on the interaction event (plan 232 REQ-4 / BL-0011).
  *
  * `placement_presentations.account_id` is a JOIN KEY — `monetization_funnel`
  * matches it against account ids from `events_clickstream` / `events_billing`,
  * and every experiment summary pipe reads it when `analysis_unit='account'`.
- * The SDK never put the field on the wire, so the ingest route's
- * `account_id ?? user_id` fallback stamped a BARE USER id into that column: the
- * funnel joined only by coincidence, and an account-grain experiment readout
- * silently returned the user-grain n while looking valid. Per Kent's D-13 the
- * SDK now sends the same derivation LABELLED — `user-fallback:<user_id>` — so
- * the two cases are distinguishable at read time.
+ * A bare USER id in that column made the funnel join only by coincidence, and
+ * an account-grain experiment readout silently returned the user-grain n while
+ * looking valid. Per Kent's D-13 the SDK sends the same derivation LABELLED —
+ * `user-fallback:<user_id>` — so the two cases are distinguishable at read
+ * time. The event carries the account in its payload AND in the wire
+ * `account_id` column.
  */
 describe('the account identity the analytics joins key on', () => {
   const EMAIL_ACCOUNT = 'billing@acme.example';
@@ -173,15 +244,15 @@ describe('the account identity the analytics joins key on', () => {
     const client = sdk();
     client.identify('user_1', { account_id: 'acct_acme' });
     await client.trackTreatmentInteraction(interaction());
-    await settle();
 
-    const body = interactionPosts()[0].body as Record<string, unknown>;
-    expect(body.account_id).toBe('acct_acme');
-    expect(body.account_id).not.toBe(body.user_id);
+    const { payload, wire } = await sentInteraction(client);
+    expect(payload.account_id).toBe('acct_acme');
+    expect(payload.account_id).not.toBe(payload.user_id);
     // And the contract must actually carry it — a field zod strips is a field
-    // the route never sees.
-    const parsed = TreatmentInteractionInputSchema.parse(body) as Record<string, unknown>;
-    expect(parsed.account_id).toBe('acct_acme');
+    // ingest never sees.
+    const verdict = validateEventPayload('placement_interaction', payload);
+    expect(verdict.ok && verdict.payload.account_id).toBe('acct_acme');
+    expect(wire.account_id).toBe('acct_acme');
   });
 
   it('sends the PREFIXED user fallback when no account was identified — never a bare user_id', async () => {
@@ -192,80 +263,70 @@ describe('the account identity the analytics joins key on', () => {
     const client = sdk();
     client.identify('user_1');
     await client.trackTreatmentInteraction(interaction());
-    await settle();
 
-    const body = interactionPosts()[0].body as Record<string, unknown>;
-    expect(body.account_id).toBe(fallbackAccountId('user_1'));
-    expect(body.account_id).toBe(`${FALLBACK_ACCOUNT_ID_PREFIX}user_1`);
-    expect(isFallbackAccountId(body.account_id as string)).toBe(true);
+    const { payload, wire } = await sentInteraction(client);
+    expect(payload.account_id).toBe(fallbackAccountId('user_1'));
+    expect(payload.account_id).toBe(`${FALLBACK_ACCOUNT_ID_PREFIX}user_1`);
+    expect(isFallbackAccountId(payload.account_id as string)).toBe(true);
     // The thing this whole change exists to prevent: a BARE user id.
-    expect(body.account_id).not.toBe(body.user_id);
-    // And the contract must carry it — a field zod strips is a field the route
+    expect(payload.account_id).not.toBe(payload.user_id);
+    // And the contract must carry it — a field zod strips is a field ingest
     // never sees.
-    expect(
-      (TreatmentInteractionInputSchema.parse(body) as Record<string, unknown>).account_id,
-    ).toBe(fallbackAccountId('user_1'));
+    const verdict = validateEventPayload('placement_interaction', payload);
+    expect(verdict.ok && verdict.payload.account_id).toBe(fallbackAccountId('user_1'));
+    expect(wire.account_id).toBe(fallbackAccountId('user_1'));
   });
 
   it('classifies an identified account as NOT a fallback', async () => {
     const client = sdk();
     client.identify('user_1', { account_id: 'acct_acme' });
     await client.trackTreatmentInteraction(interaction());
-    await settle();
 
-    const body = interactionPosts()[0].body as Record<string, unknown>;
-    expect(isFallbackAccountId(body.account_id as string)).toBe(false);
+    const { payload } = await sentInteraction(client);
+    expect(isFallbackAccountId(payload.account_id as string)).toBe(false);
   });
 
-  it('redacts an email-shaped account id the same way /api/track does', async () => {
+  it('redacts an email-shaped account id the same way every other clickstream row does', async () => {
     // Identity keys are hashed, not sentinelled, and the contract is
-    // byte-identical across lanes. Hash on one lane only and
-    // `monetization_funnel` joins a hash against a raw email — i.e. nothing.
+    // byte-identical across rows. Hash on one only and `monetization_funnel`
+    // joins a hash against a raw email — i.e. nothing.
     const client = sdk();
     client.identify('user_1', { account_id: EMAIL_ACCOUNT });
     await client.trackTreatmentInteraction(interaction());
-    await settle();
 
-    const body = interactionPosts()[0].body as Record<string, unknown>;
-    expect(body.account_id).not.toBe(EMAIL_ACCOUNT);
-    expect(body.account_id).toBe(redactIdentityField(EMAIL_ACCOUNT).value);
+    const { payload, wire } = await sentInteraction(client);
+    expect(payload.account_id).not.toBe(EMAIL_ACCOUNT);
+    expect(payload.account_id).toBe(redactIdentityField(EMAIL_ACCOUNT).value);
+    expect(wire.account_id).toBe(payload.account_id);
 
-    // Same value the clickstream lane puts in `events_clickstream.account_id`.
-    await client.flushEvents();
-    await settle();
-    const tracked = posts.filter((p) => p.url.includes(TRACK_PATH));
-    const events = tracked.flatMap((p) => {
-      const b = p.body as { events?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>;
-      return Array.isArray(b) ? b : (b.events ?? []);
-    });
-    const withAccount = events.filter((e) => typeof e.account_id === 'string');
-    expect(withAccount.length, 'the clickstream lane should have flushed at least one event').toBeGreaterThan(0);
+    // Same value every other clickstream row puts in `events_clickstream.account_id`.
+    const withAccount = trackedEvents().filter((e) => typeof e.account_id === 'string');
+    expect(withAccount.length, 'the clickstream should have flushed at least one event').toBeGreaterThan(0);
     for (const event of withAccount) {
-      expect(event.account_id, 'the two lanes must be byte-identical or the funnel joins nothing')
-        .toBe(body.account_id);
+      expect(event.account_id, 'the rows must be byte-identical or the funnel joins nothing')
+        .toBe(payload.account_id);
     }
   });
 
   it('stamps the account that was acting when the interaction happened', async () => {
-    // A queued batch can outlive an `identify()` that swapped the acting
-    // account. Resolving at flush time would re-attribute the earlier
-    // interaction to whichever account happened to be current.
+    // A queued event can outlive an `identify()` that swapped the acting
+    // account. Resolving at send time would re-attribute the earlier
+    // interaction to whichever account happened to be current — in the payload
+    // AND in the wire `account_id` column.
     const client = sdk();
     client.identify('user_1', { account_id: 'acct_first' });
-    interactionsRespondOk = false;
     await client.trackTreatmentInteraction(interaction());
-    await settle();
 
     client.identify('user_1', { account_id: 'acct_second' });
-    interactionsRespondOk = true;
-    posts = [];
     await client.trackTreatmentInteraction(interaction({ interactionType: 'cta_clicked' }));
-    await settle();
+    await client.flushEvents();
 
-    const batch = interactionPosts()[0].body as Array<Record<string, unknown>>;
-    expect(batch).toHaveLength(2);
-    expect(batch[0].account_id).toBe('acct_first');
-    expect(batch[1].account_id).toBe('acct_second');
+    const events = interactionEvents();
+    expect(events).toHaveLength(2);
+    expect(events[0].payload.account_id).toBe('acct_first');
+    expect(events[1].payload.account_id).toBe('acct_second');
+    expect(events[0].wire.account_id).toBe('acct_first');
+    expect(events[1].wire.account_id).toBe('acct_second');
   });
 });
 
@@ -287,14 +348,6 @@ describe('the account identity the analytics joins key on', () => {
  * apart again silently.
  */
 describe('the account identity on the /api/track wire', () => {
-  const trackedEvents = (): Array<Record<string, unknown>> =>
-    posts
-      .filter((p) => p.url.includes(TRACK_PATH))
-      .flatMap((p) => {
-        const b = p.body as { events?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>;
-        return Array.isArray(b) ? b : (b.events ?? []);
-      });
-
   it('sends the PREFIXED user fallback for an identified user with no account', async () => {
     const client = sdk();
     client.identify('user_1');
@@ -385,35 +438,32 @@ describe('the account identity on the /api/track wire', () => {
   });
 });
 
-describe('a failed flush surfaces instead of retrying a route that does not exist', () => {
-  it('never POSTs the legacy fallback path', async () => {
-    interactionsRespondOk = false;
+describe('there is one lane, and a failed send surfaces instead of retrying a route that does not exist', () => {
+  it('never POSTs either retired interaction path', async () => {
     const client = sdk();
     await client.trackTreatmentInteraction(interaction());
+    await client.trackTreatmentInteraction(interaction({ interactionType: 'dismiss' }));
+    await client.flushEvents();
     await settle();
 
     expect(posts.some((p) => p.url.includes(LEGACY_PATH))).toBe(false);
+    expect(interactionPosts()).toHaveLength(0);
   });
 
-  it('counts the failure, and the batch still recovers on the next flush', async () => {
-    interactionsRespondOk = false;
+  it('counts a refused /api/track batch as failed and throws nothing into the app', async () => {
+    trackRespondOk = false;
     const client = sdk();
     await client.trackTreatmentInteraction(interaction());
-    await settle();
+    await client.flushEvents();
 
     expect(client.getTelemetryCounters().failed).toBeGreaterThan(0);
-
-    interactionsRespondOk = true;
-    posts = [];
-    await client.trackTreatmentInteraction(interaction({ userId: 'user_2' }));
-    await settle();
-    expect(interactionPosts()).toHaveLength(1);
+    expect(interactionPosts()).toHaveLength(0);
   });
 
   it('counts a successful flush as sent', async () => {
     const client = sdk();
     await client.trackTreatmentInteraction(interaction());
-    await settle();
+    await client.flushEvents();
     expect(client.getTelemetryCounters().sent).toBeGreaterThan(0);
   });
 });

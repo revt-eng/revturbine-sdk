@@ -2,9 +2,9 @@
  * Plan 164 TASK-4 — caller-declared test traffic.
  *
  * `init({ test: true })` stamps `test: true` on every emitted event — the
- * clickstream wire rows (`POST /api/track`) AND the treatment-interaction
- * payloads (`POST /api/events/interactions`) — so analytics can
- * default-exclude test traffic. Omitted or `false` leaves the wire shape
+ * clickstream wire rows (`POST /api/track`), treatment interactions included
+ * (they are `placement_interaction` rows there; the separate interactions POST
+ * lane was removed in 0.15.0) — so analytics can default-exclude test traffic. Omitted or `false` leaves the wire shape
  * unchanged (no `test` key), keeping pre-164 servers and production
  * instances byte-identical. The flag is a deliberate code-passed option
  * (plan 164 Q-3): nothing here reads NODE_ENV or any environment signal.
@@ -56,11 +56,12 @@ function trackedRows(): Array<Record<string, unknown>> {
     .flatMap((c) => (JSON.parse(String(c.init.body)) as { events: Array<Record<string, unknown>> }).events);
 }
 
-function interactionRow(): Record<string, unknown> {
-  const hit = calls.find((c) => c.url.endsWith('/api/events/interactions'));
-  expect(hit, 'expected a POST to /api/events/interactions').toBeDefined();
-  const parsed = JSON.parse(String(hit!.init.body)) as Record<string, unknown> | Array<Record<string, unknown>>;
-  return Array.isArray(parsed) ? parsed[0] : parsed;
+/** The `placement_interaction` wire row in the `/api/track` batch (flushed first). */
+async function interactionRow(sdk: RevTurbineCustomerSdk): Promise<Record<string, unknown>> {
+  await sdk.flushEvents();
+  const hit = trackedRows().filter((row) => row.event_name === 'placement_interaction');
+  expect(hit, 'expected one placement_interaction row in /api/track').toHaveLength(1);
+  return hit[0];
 }
 
 describe('init({ test: true }) — clickstream (plan 164)', () => {
@@ -95,7 +96,7 @@ describe('init({ test: true }) — clickstream (plan 164)', () => {
 });
 
 describe('init({ test: true }) — treatment interactions (plan 164)', () => {
-  it('stamps test: true on the /api/events/interactions payload', async () => {
+  it('stamps test: true on the placement_interaction wire row', async () => {
     const sdk = makeSdk({ test: true });
     await sdk.trackTreatmentInteraction({
       userId: 'u-1',
@@ -104,7 +105,7 @@ describe('init({ test: true }) — treatment interactions (plan 164)', () => {
       surfaceSlotId: 'slot-1',
     });
 
-    expect(interactionRow().test).toBe(true);
+    expect((await interactionRow(sdk)).test).toBe(true);
   });
 
   it('omits the test key when the option is absent', async () => {
@@ -116,6 +117,6 @@ describe('init({ test: true }) — treatment interactions (plan 164)', () => {
       surfaceSlotId: 'slot-1',
     });
 
-    expect('test' in interactionRow()).toBe(false);
+    expect('test' in (await interactionRow(sdk))).toBe(false);
   });
 });

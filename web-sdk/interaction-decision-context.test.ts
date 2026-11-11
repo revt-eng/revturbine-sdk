@@ -13,15 +13,16 @@
  * what a pre-282 caller sent; for an output this SDK decided, the index fills
  * them from the decision itself and never mixes the two.
  *
- * `segment_handles` joins the wire contract with scaffold BL-0461; until that
- * publish is pinned here, the one contract-side assertion on it is red.
+ * Since SDK 0.15.0 (EP-1692) the interaction travels ONLY as a
+ * `placement_interaction` clickstream event, so "the wire" here is that event's
+ * payload inside the `/api/track` batch; the body is checked against the
+ * `placement_interaction` payload contract.
  *
  * Plan: docs/dev-lifecycle/inprogress/282-control-center-real-data-attribution-proof.md
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PlacementOutput } from '@revt-eng/core';
-import { RevTurbineConfigSchema } from '@revt-eng/schema';
-import { TreatmentInteractionInputSchema } from '@revt-eng/schema/zod';
+import { RevTurbineConfigSchema, validateEventPayload } from '@revt-eng/schema';
 import { RevTurbineCustomerSdk } from './customer-side';
 import type { RevTurbineInitOptions } from './customer-side';
 import { PlacementController } from './controllers';
@@ -31,7 +32,7 @@ interface CapturedPost {
   body: Record<string, unknown>;
 }
 
-const INTERACTIONS_PATH = '/api/events/interactions';
+const TRACK_PATH = '/api/track';
 const SLOT = 'slot_upgrade';
 const OUTPUT_ID = 'payload_upgrade';
 const USER = 'user_1';
@@ -55,14 +56,25 @@ function stubFetch(): void {
   }));
 }
 
-/** The one interaction body a single-item flush puts on the wire. */
+/** Every `placement_interaction` event the SDK put in a `/api/track` batch. */
+const interactionEvents = (): Array<Record<string, unknown>> => posts
+  .filter((p) => p.url.endsWith(TRACK_PATH))
+  .flatMap((p) => (p.body as { events?: Array<{ event_name: string; properties?: string }> }).events ?? [])
+  .filter((e) => e.event_name === 'placement_interaction')
+  .map((e) => (JSON.parse(String(e.properties)) as { payload: Record<string, unknown> }).payload);
+
+/** The one interaction payload the single `placement_interaction` event carries. */
 const sentInteraction = (): Record<string, unknown> => {
-  const sent = posts.filter((p) => p.url.includes(INTERACTIONS_PATH));
+  const sent = interactionEvents();
   expect(sent).toHaveLength(1);
-  return sent[0].body;
+  return sent[0];
 };
 
-/** Let the fire-and-forget flush settle. */
+/** The `placement_interaction` payload contract accepts this body. */
+const acceptedByContract = (body: Record<string, unknown>): boolean =>
+  validateEventPayload('placement_interaction', body).ok;
+
+/** Let the fire-and-forget work settle. */
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 const BASE_OPTIONS = {
@@ -72,6 +84,9 @@ const BASE_OPTIONS = {
   environmentId: 'staging',
   endpoint: 'https://edge.example.com',
   mode: 'snippet',
+  // One event per batch: each interaction reaches `/api/track` as soon as it
+  // is emitted, so the test reads the wire without a manual flush.
+  eventBatching: { maxBatchSize: 1 },
   contextPolicy: { inferUser: false, inferPage: false, routerAutoTrack: false },
 } satisfies Partial<RevTurbineInitOptions>;
 
@@ -119,8 +134,8 @@ function seedSlot(sdk: RevTurbineCustomerSdk): RevTurbineCustomerSdk {
 
 /**
  * A hosted-resolved fixture: a segments provider supplies minted ids AND their
- * slugs, the way a hosted context does. Not `local_only` — that mode never
- * flushes the interaction lane, and the wire body is what these tests assert.
+ * slugs, the way a hosted context does. Not `local_only` — that mode sends
+ * nothing, and the wire body is what these tests assert.
  */
 function hostedSdk(): RevTurbineCustomerSdk {
   return seedSlot(new RevTurbineCustomerSdk({
@@ -172,18 +187,18 @@ describe('given explicitly, the decision context reaches the wire', () => {
     expect(body.decision_id).toBe('dec_1');
     expect(body.segment_handles).toEqual(['seg_a', 'seg_b']);
     expect(body.segment_ids).toEqual([MINTED_ID]);
-    const parsed = TreatmentInteractionInputSchema.safeParse(body);
-    expect(parsed.success, parsed.success ? '' : JSON.stringify(parsed.error.issues)).toBe(true);
-    // Neither declared key is stripped — the route sees what the SDK sent.
-    expect(parsed.success && parsed.data).toMatchObject({ decision_id: 'dec_1', segment_ids: [MINTED_ID] });
+    const verdict = validateEventPayload('placement_interaction', body);
+    expect(verdict.ok, verdict.ok ? '' : String(verdict.detail)).toBe(true);
+    // No declared key is stripped — ingest sees what the SDK sent.
+    expect(verdict.ok && verdict.payload).toMatchObject({ decision_id: 'dec_1', segment_ids: [MINTED_ID] });
   });
 
-  it('the contract declares segment_handles, so the route sees the join key (scaffold BL-0461)', async () => {
+  it('the contract keeps segment_handles, so ingest sees the join key', async () => {
     await headlessSdk().trackTreatmentInteraction(interaction({ segmentHandles: ['seg_a'] }));
     await settle();
 
-    const parsed = TreatmentInteractionInputSchema.safeParse(sentInteraction());
-    expect(parsed.success && parsed.data).toMatchObject({ segment_handles: ['seg_a'] });
+    const verdict = validateEventPayload('placement_interaction', sentInteraction());
+    expect(verdict.ok && verdict.payload).toMatchObject({ segment_handles: ['seg_a'] });
   });
 
   it('sends segment_handles: [] as the real observation it is', async () => {
@@ -193,7 +208,7 @@ describe('given explicitly, the decision context reaches the wire', () => {
     const body = sentInteraction();
     expect(body.segment_handles).toEqual([]);
     expect(body).not.toHaveProperty('segment_ids');
-    expect(TreatmentInteractionInputSchema.safeParse(body).success).toBe(true);
+    expect(acceptedByContract(body)).toBe(true);
   });
 
   it('honours the plan-144 metadata.decision_id convention, and lets the explicit field win', async () => {
@@ -227,7 +242,7 @@ describe('not given, with no decision in scope, the row is the pre-282 row', () 
     expect(body).not.toHaveProperty('decision_id');
     expect(body).not.toHaveProperty('segment_handles');
     expect(body).not.toHaveProperty('segment_ids');
-    expect(TreatmentInteractionInputSchema.safeParse(body).success).toBe(true);
+    expect(acceptedByContract(body)).toBe(true);
   });
 
   it('sends none for a payloadId this SDK never decided', async () => {
@@ -256,7 +271,7 @@ describe('for an output this SDK decided, the index fills what the caller did no
     expect(body.segment_ids).toEqual([MINTED_ID]);
     expect(body.segment_handles).not.toContain(MINTED_ID);
     for (const handle of HOSTED_HANDLES) expect(body.segment_ids).not.toContain(handle);
-    expect(TreatmentInteractionInputSchema.safeParse(body).success).toBe(true);
+    expect(acceptedByContract(body)).toBe(true);
   });
 
   it('the React controller’s click carries them the same way', async () => {
@@ -374,7 +389,7 @@ describe('segments are handles: local mode carries the evaluated handle set and 
     expect(JSON.stringify(body.segment_handles)).not.toContain(ANCHOR);
     expect(body).not.toHaveProperty('segment_ids');
     expect(body.decision_id).toBe('dec_upgrade');
-    expect(TreatmentInteractionInputSchema.safeParse(body).success).toBe(true);
+    expect(acceptedByContract(body)).toBe(true);
   });
 
   it('in local mode the checkout_started envelope’s legacy segment_ids stamp is that same handle set', async () => {

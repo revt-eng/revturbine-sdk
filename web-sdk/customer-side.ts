@@ -196,6 +196,7 @@ import {
   getDefaultCtaResolverRegistry,
   registerBuiltinSnoozeResolver,
   registerServerActionResolvers,
+  type ServerActionContext,
   type ServerActionMap,
 } from './placements/cta-resolvers';
 import {
@@ -1365,6 +1366,12 @@ export interface RevTurbineTelemetryOptions {
    * remount is needed (REQ-12). Independent of
    * {@link RevTurbineInitOptions.anonymousTelemetry}, which governs the keyless
    * SDK-init beacon (REQ-13).
+   *
+   * Placement interactions are reported only as `placement_interaction`
+   * clickstream events, so this gate covers them: with `denied` or `pending`
+   * the SDK sends no interaction data at all. Consent never affects Playbook
+   * delivery, entitlement or placement decisions, dismissal cooldowns,
+   * suppression or presentation caps — those keep working from local state.
    */
   consent?: TelemetryConsent;
 }
@@ -1462,8 +1469,8 @@ export interface RevTurbineInitOptions {
    *
    * Set to `true` when this SDK instance generates **test traffic** — a
    * staging deploy, an integration test, a QA walkthrough. Every emitted
-   * event (clickstream via `POST /api/track` and treatment interactions via
-   * `POST /api/events/interactions`) is then stamped `test: true`, and
+   * event (every clickstream row sent to `POST /api/track`, treatment
+   * interactions included) is then stamped `test: true`, and
    * RevTurbine analytics **exclude those events by default** from every
    * metric, rollup, and denominator; an `include_test` toggle reveals them.
    *
@@ -1483,6 +1490,12 @@ export interface RevTurbineInitOptions {
    * Locally-registered {@link RevTurbineEventConsumer} adapters and
    * `local_only` runtime state are unaffected — this flag governs only the
    * RevTurbine ingest network call.
+   *
+   * Placement interactions (impression, dismiss, CTA click, conversion, snooze,
+   * suppress) are reported only as `placement_interaction` clickstream events,
+   * so this opt-out covers them too. It never affects Playbook delivery,
+   * entitlement or placement decisions, dismissal cooldowns, suppression or
+   * presentation caps: those keep working from local state.
    *
    * Note: this opt-out covers the authed clickstream. The separate keyless
    * anonymous SDK-init beacon has its own opt-out ({@link anonymousTelemetry}).
@@ -1556,6 +1569,13 @@ export interface RevTurbineInitOptions {
    * - `revturbine_server` (default): standard RevTurbine-hosted endpoints.
    * - `custom_endpoints`: customer-provided endpoint replacements.
    * - `local_only`: no server calls, runtime data initialized locally.
+   *
+   * With {@link localRuntime} `.playbook` and no `runtimeMode`, the SDK
+   * defaults to `local_only`. With an explicit connected mode the Playbook is
+   * a startup seed instead: the init keeps the `publicKey` and `endpoint` you
+   * passed (a key-only init uses {@link DEFAULT_HOSTED_ENDPOINT} and learns its
+   * tenant from the key), the seed answers decisions until the hosted Playbook
+   * is delivered, and it stays in force if delivery fails.
    */
   runtimeMode?: RevTurbineRuntimeMode;
   /** Optional endpoint overrides used in `custom_endpoints` mode. */
@@ -1566,7 +1586,11 @@ export interface RevTurbineInitOptions {
    * Must implement `getPlaybook()`.
    */
   configProvider?: RevTurbineConfigProviderInput;
-  /** Local-only runtime configuration used in `local_only` mode. */
+  /**
+   * Local runtime configuration. In `local_only` mode it is the whole runtime;
+   * in a connected {@link runtimeMode} its `playbook` is a startup seed that
+   * the hosted Playbook replaces once delivered.
+   */
   localRuntime?: RevTurbineLocalRuntimeOptions;
   /**
    * Slot behavior after provider-chain failure disables the SDK.
@@ -1778,7 +1802,6 @@ export interface RevTurbineEndpointOverrides {
   ingestEvents: string;
   /** Keyless anonymous SDK telemetry endpoint (`POST /api/sdk/meta`). */
   ingestSdkMeta: string;
-  touchpointTransition: string;
   /**
    * @deprecated Ignored since plan 232. This pointed at a fallback the SDK
    * retried when the interactions POST failed — against a route the app does
@@ -2491,11 +2514,6 @@ const PRESENTATION_CAP_RULES_STORAGE_PREFIX = 'revturbine:presentation-cap-rules
 const SESSION_STARTED_STORAGE_PREFIX = 'revturbine:session-started';
 const INGEST_GATEWAY_PATH = '/api/track';
 const SDK_META_GATEWAY_PATH = '/api/sdk/meta';
-// Treatment interactions (impression / dismiss / cta) POST here so the control
-// plane can write a `placement_presentations` row (plan 114). The public
-// `touchpointTransition` endpoint-override key is kept for back-compat; the
-// default target is the events interactions route.
-const TOUCHPOINT_TRANSITION_PATH = '/api/events/interactions';
 const SDK_EVENT_SOURCE = 'revturbine-web-sdk';
 
 /**
@@ -2645,13 +2663,13 @@ export interface RevTurbineCheckoutMetadata {
 export type RevTurbineTreatmentInteractionRequest = RevTurbineTreatmentInteractionInput;
 
 /**
- * A queued interaction plus the account identity resolved at the moment the
+ * An interaction plus the account identity resolved at the moment the
  * interaction happened (plan 232 REQ-4 / BL-0011).
  *
  * Internal only — {@link RevTurbineTreatmentInteractionRequest} stays the public
  * input shape. The account is read from the SDK's own user context rather than
- * asked of the caller, and it is captured at `track` time rather than at flush
- * time because a queued batch can outlive an `identify()` that swapped the
+ * asked of the caller, and it is captured at `track` time rather than at send
+ * time because a queued event can outlive an `identify()` that swapped the
  * acting account underneath it.
  */
 interface QueuedTreatmentInteraction extends RevTurbineTreatmentInteractionInput {
@@ -3641,7 +3659,6 @@ export class RevTurbineCustomerSdk {
   private readonly outputPlacementIndex = new Map<string, OutputPlacementRef>();
   private readonly outputPlacementIndexLimit = 200;
   private readonly interactionState = new Map<string, InteractionState>();
-  private readonly interactionQueue: QueuedTreatmentInteraction[] = [];
   private readonly defaultDecisionTtlMs = 60_000;
   private readonly defaultDismissCooldownMs = 24 * 60 * 60 * 1000;
   /**
@@ -3956,22 +3973,7 @@ export class RevTurbineCustomerSdk {
     this.unregisterServerActionResolvers = registerServerActionResolvers(this.serverActions, {
       applyUserContext: (context) => this.setUserContext(withoutServerAssignedKeys(context).accepted as RevTurbineUserContext), // sdk-ok: boundary-parse — generated UserContextInput is the public handler contract
       // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#uiPathResolver.trackResult
-      trackResult: (context, success, error) => this.emitPlatformEvent('placement_interaction', {
-        interaction_type: 'cta_clicked',
-        action_type: context.actionType,
-        action_success: success,
-        payload_id: context.placement.output_id,
-        placement_id: context.placement.surface?.slot_id ?? null,
-        decision_id: context.placement.decision_id ?? null,
-        user_id: this.userContext.id ?? null,
-        interaction_at: new Date().toISOString(),
-        // BL-0182: `context.placement` is the full `PlacementOutput`, so the
-        // winning rule is right here — the same `rule_id` the lifecycle emits
-        // stamp. A server-action CTA is a click like any other and belongs in
-        // the same rule slice.
-        rule_handle: context.placement.rule_id ?? null,
-        action_outcome: error ? 'rejected' : success ? 'success' : 'failure',
-      }, { immediate: false }),
+      trackResult: (context, success, error) => this.trackServerActionClick(context, success, error),
     });
     // ST-1416: everything below that reads user-scoped storage, loads the
     // Playbook or talks to the network waits for an identified user. With one
@@ -7249,7 +7251,15 @@ export class RevTurbineCustomerSdk {
     // Effective segment memberships, stamped exactly as experiment
     // assignments are (plan 228 TASK-4 / REQ-11a): as-of-event truth on the
     // envelope, so segment cuts never need a mutable config join.
-    const effectiveProperties = this.lastEffectiveSegmentIds.length > 0
+    //
+    // Not for `placement_interaction`: it is the full presentation record and
+    // carries its own `segment_handles` (the join key) and, only when a hosted
+    // context supplied minted ids, `segment_ids`, both resolved AT the
+    // interaction. The envelope stamp is the latest resolution and, in local
+    // mode, holds HANDLES under the legacy `segment_ids` name; stamping it
+    // here would overwrite the interaction's own ids or put handles in the
+    // minted-ids column of the derived presentation row.
+    const effectiveProperties = this.lastEffectiveSegmentIds.length > 0 && type !== 'placement_interaction'
       ? { ...withAssignments, segment_ids: [...this.lastEffectiveSegmentIds] }
       : withAssignments;
 
@@ -7664,6 +7674,18 @@ export class RevTurbineCustomerSdk {
         source: SDK_EVENT_SOURCE,
       });
       valuesRedacted += redactedProps.redactions + (accountId?.redacted ? 1 : 0);
+      // A `placement_interaction` carries the account and Playbook release it
+      // was resolved under AT THE INTERACTION; those win over the send-time
+      // values so a batch that outlives an `identify()` keeps the identity the
+      // user acted under. Only this platform event: the generic `track()` lane
+      // namespaces a colliding name, so a customer property can never steer
+      // the wire columns of any other event.
+      const interactionLift = event.type === 'placement_interaction'
+        ? {
+            account_id: pickClickstreamField(event.properties, 'account_id'),
+            playbook_version: pickClickstreamField(event.properties, 'playbook_version'),
+          }
+        : { account_id: null, playbook_version: null };
       return {
         environment_id: this.environmentId,
         user_id: userId,
@@ -7673,7 +7695,7 @@ export class RevTurbineCustomerSdk {
         // (`user-fallback:<user_id>`), never a bare user id: the row stays
         // countable and joinable, and read-time guards can exclude a
         // fabricated key from account denominators (Kent's D-13, BL-0117).
-        account_id: accountId.value,
+        account_id: interactionLift.account_id ?? accountId.value,
         event_name: normalizeEventType(event.type).slice(0, 120),
         event_ts: event.event_time,
         properties: JSON.stringify(redactedProps.value),
@@ -7688,7 +7710,8 @@ export class RevTurbineCustomerSdk {
         ...liftProvenanceFields(event.properties),
         origin: classifyEventOrigin(event.type),
         playbook_version:
-          typeof playbookVersion === 'string' && playbookVersion.length > 0 ? playbookVersion : null,
+          interactionLift.playbook_version
+          ?? (typeof playbookVersion === 'string' && playbookVersion.length > 0 ? playbookVersion : null),
         // Sortable, unique id minted here at the wire boundary (plan 144
         // TASK-7 / REQ-7). It lives on the flat `TrackEvent`, not the
         // in-memory `RevTurbineEventEnvelope` (a closed core interface) —
@@ -9254,143 +9277,21 @@ export class RevTurbineCustomerSdk {
     };
   }
 
-  // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#flushInteractionQueue
-  private async flushInteractionQueue(): Promise<void> {
-    if (this.interactionQueue.length === 0) return;
-    const pending = [...this.interactionQueue];
-    this.interactionQueue.length = 0;
-
-    if (this.isLocalOnlyMode()) {
-      this.persistLocalRuntimeState();
-      return;
-    }
-
-    // @revturbine-graph event:sdk:treatment_interaction
-    const transitionPayload = pending.map((item) => ({
-      user_id: item.userId,
-      // The account the user acted on behalf of (plan 232 REQ-4 / BL-0011).
-      // `placement_presentations.account_id` is an analytical JOIN KEY:
-      // `monetization_funnel` matches it against account ids from
-      // `events_clickstream` / `events_billing`, and experiment analysis reads
-      // it whenever `analysis_unit='account'`. The SDK never sent it, so the
-      // ingest route's `account_id ?? user_id` fallback stamped a USER id into
-      // an account column — every one of those joins then matched only by
-      // coincidence, and an account-grain experiment readout silently returned
-      // the user-grain n. When no account was identified this carries the
-      // PREFIXED fallback (`user-fallback:<user_id>`) instead: still a bare
-      // derivation of the user id, but labelled as one so the warehouse can
-      // exclude it from account denominators (Kent's D-13, BL-0117).
-      account_id: item.accountId,
-      placement_id: item.placementId,
-      treatment_id: item.treatmentId,
-      interaction_type: item.interactionType,
-      interaction_at: item.interactionAt,
-      // Presentation context → placement_presentations (plan 114 TASK-2).
-      surface_slot_id: item.surfaceSlotId,
-      surface_template_id: item.surfaceTemplateId,
-      payload_id: item.payloadId,
-      // Experiment attribution (plan 183). Omitted rather than nulled when the
-      // user is not enrolled: absence means NOT ENROLLED, which stays distinct
-      // from being assigned to a control arm.
-      ...(item.experimentId ? { experiment_id: item.experimentId } : {}),
-      ...(item.variantKey ? { variant_key: item.variantKey } : {}),
-      // The rule the treatment was decided by (BL-0200). BL-0182 sent this on
-      // the clickstream `placement_interaction` event only, and #530 asserted
-      // it never reached here — the interaction wire record is column-shaped
-      // (`placement_presentations`) and a new key needed a datasource
-      // migration. `placement_exposure_attribution.rule_handle` exists since
-      // web ledger 015, and the contract now declares the field, so the base
-      // exposure row can record the rule the exposure was DECIDED by instead of
-      // waiting for the attribution worker to reconstruct one from the
-      // clickstream when a conversion lands.
-      //
-      // Spread, like the two above: ABSENT when no decision was in scope, never
-      // an empty string. The contract accepts an explicit `null` for "a rule was
-      // selected and none matched"; the SDK has no way to distinguish that from
-      // "no decision in scope" — `PlacementOutput.rule_id` is simply missing in
-      // both — so it sends neither rather than asserting one.
-      ...(item.ruleHandle ? { rule_handle: item.ruleHandle } : {}),
-      // ST-912 TASK-1: the exposure stamp — what triggered the slot (`gate`
-      // only today) and the Playbook release that produced the experience.
-      // Absent, never null, when unknown: older SDKs send neither.
-      ...this.exposureStampFor(item.placementId),
-      // Plan 282 TASK-9: the decision the presented treatment came from and
-      // the segment HANDLES the user was in — the keys `placement_presentations`
-      // joins to the clickstream and to the Checkout metadata bag on. Spread
-      // like the fields above: absent when no decision was in scope (a
-      // pre-282 caller's row is byte-identical to before); `[]` only when a
-      // decision resolved segments and found none. `segment_handles` is the
-      // join key (Kent, 2026-09-29: the value was always a handle); the
-      // legacy `segment_ids` name carries ONLY the minted ids a hosted context
-      // supplied — telemetry, present only when there were any.
-      ...(item.decisionId ? { decision_id: item.decisionId } : {}),
-      ...(item.segmentHandles ? { segment_handles: [...item.segmentHandles] } : {}),
-      ...(item.segmentIds ? { segment_ids: [...item.segmentIds] } : {}),
-      metadata: item.metadata ?? {},
-      // Omitted (undefined) until a key-only integration's Playbook loads.
-      tenant_id: this.tenantId,
-      // Caller-declared test traffic (plan 164): stamped only when the
-      // integration passed `test: true` at init — omitted otherwise.
-      ...(this.testTraffic ? { test: true } : {}),
-    }));
-
-    try {
-      const response = await fetch(this.endpointFor('touchpointTransition', TOUCHPOINT_TRANSITION_PATH), {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${this.publicKey}`,
-          ...this.tenantHeader(),
-          'x-request-id': requestId(),
-        },
-        body: JSON.stringify(transitionPayload.length === 1 ? transitionPayload[0] : transitionPayload),
-      });
-
-      if (!response.ok) {
-        this.failInteractionFlush(pending, `status_${response.status}`);
-        return;
-      }
-      this.telemetryCounters.sent += pending.length;
-    } catch {
-      this.failInteractionFlush(pending, 'network_error');
-    }
-  }
-
-  /**
-   * Re-queue a failed interaction flush and make the failure VISIBLE.
-   *
-   * This used to retry against a legacy path that does not exist in the app,
-   * with the internal queue shape rather than the wire shape — so a failure
-   * produced a silent 404, the batch went back on the queue, and it was
-   * discarded at page unload with nothing recorded anywhere. That is how a
-   * whole class of dropped presentations stayed invisible (plan 232).
-   *
-   * Re-queuing is still right — a transient failure should retry on the next
-   * flush — but it is now paired with a counter and a diagnostic, so a
-   * persistent failure is observable instead of merely quiet.
-   */
-  private failInteractionFlush(pending: readonly QueuedTreatmentInteraction[], reason: string): void {
-    this.telemetryCounters.failed += pending.length;
-    this.interactionQueue.unshift(...pending);
-    this.reportSdkError('interaction_flush_failed', reason);
-  }
-
   /**
    * The account identity to stamp on a treatment interaction — the identified
    * account, or the prefixed user-derived fallback when none was identified.
    *
    * Two rules make this a usable join key rather than a label:
    *
-   * 1. **Redacted identically to `/api/track`.** Both paths run the account id
-   *    through {@link redactIdentityField}, so an email-shaped account id
-   *    becomes the SAME hash in `placement_presentations` and in
-   *    `events_clickstream`. Hashing on one path only would produce a hash on
-   *    one side and a raw email on the other, and `monetization_funnel` would
-   *    join nothing (identity keys are hashed, not sentinelled — the contract
-   *    is byte-identical across repos).
-   * 2. **A user-derived key is labelled as one.** The ingest route's own
-   *    `account_id ?? user_id` fallback stamped a bare user id into an account
-   *    column, indistinguishable from a real account. This lane sends
+   * 1. **Redacted identically to every other wire payload.** The account id
+   *    runs through {@link redactIdentityField}, so an email-shaped account id
+   *    becomes the SAME hash on the `placement_interaction` event and on every
+   *    other clickstream row. Hashing on one only would produce a hash on one
+   *    side and a raw email on the other, and `monetization_funnel` would join
+   *    nothing (identity keys are hashed, not sentinelled — the contract is
+   *    byte-identical across repos).
+   * 2. **A user-derived key is labelled as one.** A bare user id in an account
+   *    column is indistinguishable from a real account. The fallback is
    *    `user-fallback:<user_id>` instead, so the warehouse can exclude it from
    *    account denominators (Kent's D-13, BL-0117).
    */
@@ -9449,8 +9350,18 @@ export class RevTurbineCustomerSdk {
    * lower-level counterpart to {@link dismiss}/{@link snooze}/{@link convert},
    * which key off a decision's `output_id` instead.
    *
+   * The interaction is reported exactly once, as a `placement_interaction`
+   * clickstream event carrying the full record (user, account, placement,
+   * treatment, interaction type and time, surface slot and template, payload,
+   * message block, experiment, variant, rule, exposure stamp, decision,
+   * segments, metadata). There is no second lane: it inherits the clickstream
+   * gates, so with `telemetry.consent` other than `granted` or with
+   * `analytics: false` nothing is sent. Suppression state, local runtime
+   * persistence and the impression history (cooldowns, caps) are updated
+   * first and unconditionally, so behaviour never depends on reporting.
+   *
    * `decisionId`, `segmentHandles` and `segmentIds` (plan 282 TASK-9) ride
-   * the interaction onto the wire as `decision_id` / `segment_handles` /
+   * the interaction onto the event as `decision_id` / `segment_handles` /
    * `segment_ids`. All optional: given, they win; otherwise the SDK fills
    * them from the output it indexed for `payloadId` (`segment_ids` only when
    * a hosted context supplied minted ids — never in local mode); a caller
@@ -9496,9 +9407,12 @@ export class RevTurbineCustomerSdk {
       accountId: this.interactionAccountId(),
     };
 
+    // Behaviour first, unconditionally: suppression state, local runtime
+    // persistence and impression history never depend on consent, `analytics`
+    // or any network send. Only the `placement_interaction` event below is
+    // reporting, and it inherits the clickstream gates.
     this.updateInteractionState(normalized);
-    this.interactionQueue.push(normalized);
-    void this.flushInteractionQueue();
+    if (this.isLocalOnlyMode()) this.persistLocalRuntimeState();
 
     // Record interactions into the impression history (plan 167 Q-1):
     // - dismiss / bare cta_clicked → time-boxed cooldown (re-shows after it).
@@ -9531,13 +9445,120 @@ export class RevTurbineCustomerSdk {
       );
     }
 
-    const interactionMeta = (normalized.metadata ?? {}) as Record<string, JsonValue>;
+    // The ONE report of this interaction: the full record rides the clickstream
+    // lane (`/api/track`), so it inherits the consent and `analytics` gates and
+    // the pipeline derives the presentation row from it.
+    // @revturbine-graph event:sdk:treatment_interaction
+    await this.emitPlatformEvent('placement_interaction', this.placementInteractionPayload(normalized), { immediate: false });
+
+    // Plan 282 TASK-8/9: the step between a CTA click and checkout. Only for
+    // an output this SDK decided, and only when its CTA opens a plan picker
+    // or pricing page — a CTA that opens checkout directly ("on click") has
+    // no separate step, so it emits nothing here and its started count is its
+    // clicked count. `placement_id` is the one required key; the rest are
+    // `null` when the decision held no value, per the contract.
+    // @revturbine-graph event:platform:checkout_started
+    if (normalized.interactionType === 'cta_clicked' && indexed && isCheckoutStartedCtaAction(indexed.ctaActionType)) {
+      await this.emitPlatformEvent('checkout_started', {
+        placement_id: normalized.placementId,
+        payload_id: input.payloadId ?? null,
+        decision_id: indexed.decisionId ?? null,
+        plan_handle: indexed.targetPlanHandle ?? null,
+        rule_handle: indexed.ruleHandle ?? null,
+      }, { immediate: false });
+    }
+  }
+
+  /**
+   * Report a server-action CTA click. A registered resolver fully handles the
+   * click (`dispatchCtaClick` does not also call the `onCtaClick` fallback that
+   * leads to `trackTreatmentInteraction`), so this is the ONE
+   * `placement_interaction` for that click and carries the full record, built
+   * by the same builder as every other interaction, plus the action facts
+   * (`action_type`, `action_success`, `action_outcome`). Suppression state and
+   * cooldowns are untouched, as before. An output this SDK never decided has no
+   * indexed placement, so it keeps the slot id as before.
+   */
+  private async trackServerActionClick(
+    context: ServerActionContext,
+    success: boolean,
+    error?: Error,
+  ): Promise<void> {
+    const output = context.placement;
+    const action = {
+      action_type: context.actionType,
+      action_success: success,
+      action_outcome: error ? 'rejected' : success ? 'success' : 'failure',
+    };
+    const ref = this.outputPlacementIndex.get(output.output_id);
+    if (ref && this.identifiedUserId !== undefined) {
+      const normalized: QueuedTreatmentInteraction = {
+        userId: this.identifiedUserId,
+        placementId: ref.placementId,
+        treatmentId: ref.treatmentId,
+        interactionType: 'cta_clicked',
+        surfaceSlotId: ref.surfaceSlotId,
+        surfaceTemplateId: ref.surfaceTemplateId,
+        payloadId: output.output_id,
+        experimentId: ref.experimentId,
+        variantKey: ref.variantKey,
+        ruleHandle: ref.ruleHandle,
+        decisionId: ref.decisionId,
+        segmentHandles: ref.segmentHandles,
+        segmentIds: ref.segmentIds,
+        interactionAt: new Date().toISOString(),
+        accountId: this.interactionAccountId(),
+      };
+      await this.emitPlatformEvent(
+        'placement_interaction',
+        { ...this.placementInteractionPayload(normalized), ...action },
+        { immediate: false },
+      );
+      return;
+    }
     await this.emitPlatformEvent('placement_interaction', {
+      interaction_type: 'cta_clicked',
+      ...action,
+      payload_id: output.output_id,
+      placement_id: output.surface?.slot_id ?? null,
+      decision_id: output.decision_id ?? null,
+      user_id: this.userContext.id ?? null,
+      interaction_at: new Date().toISOString(),
+      rule_handle: output.rule_id ?? null,
+    }, { immediate: false });
+  }
+
+  /**
+   * The full `placement_interaction` record for one interaction — the single
+   * builder both `trackTreatmentInteraction` and the server-action CTA result
+   * use, so the field list exists once.
+   */
+  private placementInteractionPayload(normalized: QueuedTreatmentInteraction): EventPayloadInput<'placement_interaction'> {
+    const interactionMeta = (normalized.metadata ?? {}) as Record<string, JsonValue>;
+    return {
       user_id: normalized.userId,
+      // The account the user acted on behalf of, resolved at call time (a
+      // queued event can outlive an `identify()` that swapped the account):
+      // the identified account, or the prefixed `user-fallback:<user_id>`.
+      account_id: normalized.accountId,
       placement_id: normalized.placementId,
       treatment_id: normalized.treatmentId ?? null,
       interaction_type: normalized.interactionType,
       interaction_at: normalized.interactionAt ?? null,
+      // Presentation context → `placement_presentations`. Absent, never
+      // null/empty, when the caller supplied none.
+      ...(normalized.surfaceSlotId ? { surface_slot_id: normalized.surfaceSlotId } : {}),
+      ...(normalized.surfaceTemplateId ? { surface_template_id: normalized.surfaceTemplateId } : {}),
+      ...(normalized.payloadId ? { payload_id: normalized.payloadId } : {}),
+      ...(normalized.messageBlockHandle ? { message_block_handle: normalized.messageBlockHandle } : {}),
+      // The exposure stamp (ST-912 TASK-1): `trigger_source` (`gate` only),
+      // `entitlement_handle` and the Playbook release as `playbook_version`.
+      ...this.exposureStampFor(normalized.placementId),
+      // The segment HANDLES the user was in (the join key) and, only when a
+      // hosted context supplied minted ids, `segment_ids`. Absent when no
+      // decision was in scope; `[]` only when segments resolved to none.
+      ...(normalized.segmentHandles ? { segment_handles: [...normalized.segmentHandles] } : {}),
+      ...(normalized.segmentIds ? { segment_ids: [...normalized.segmentIds] } : {}),
       // Top level so it lifts to the wire `decision_id` column (plan 144
       // TASK-10 / REQ-8); resolved above from the input, the metadata
       // convention or the output index.
@@ -9556,24 +9577,7 @@ export class RevTurbineCustomerSdk {
       // slice's coverage honest.
       ...(normalized.ruleHandle ? { rule_handle: normalized.ruleHandle } : {}),
       metadata: interactionMeta,
-    }, { immediate: false });
-
-    // Plan 282 TASK-8/9: the step between a CTA click and checkout. Only for
-    // an output this SDK decided, and only when its CTA opens a plan picker
-    // or pricing page — a CTA that opens checkout directly ("on click") has
-    // no separate step, so it emits nothing here and its started count is its
-    // clicked count. `placement_id` is the one required key; the rest are
-    // `null` when the decision held no value, per the contract.
-    // @revturbine-graph event:platform:checkout_started
-    if (normalized.interactionType === 'cta_clicked' && indexed && isCheckoutStartedCtaAction(indexed.ctaActionType)) {
-      await this.emitPlatformEvent('checkout_started', {
-        placement_id: normalized.placementId,
-        payload_id: input.payloadId ?? null,
-        decision_id: indexed.decisionId ?? null,
-        plan_handle: indexed.targetPlanHandle ?? null,
-        rule_handle: indexed.ruleHandle ?? null,
-      }, { immediate: false });
-    }
+    };
   }
 
   async getPlacementContent(placementId: string, request?: JsonObject): Promise<RevTurbinePlacementContent> {
@@ -12003,6 +12007,13 @@ export function resolveBrowserPublicKey(options: BrowserKeyOptions): string | un
 /**
  * Normalizes initialization options so local-only mode can be bootstrapped from
  * `localRuntime.playbook` without requiring transport credentials.
+ *
+ * A Playbook with no `runtimeMode` defaults to `local_only`, and only then are
+ * the local placeholders (`tenantId`, `publicKey`, `endpoint`) applied. With an
+ * explicit connected `runtimeMode` the Playbook is a startup seed: the init
+ * keeps exactly the credentials and endpoint it was given, so a key-only
+ * browser init uses the hosted default endpoint and learns its tenant from the
+ * key, exactly like an init without a seed.
  */
 function normalizeInitOptions(options: RevTurbineInitInputOptions): RevTurbineInitWithProviderOptions {
   // Either config key counts: a Playbook supplied via the canonical `playbook`
@@ -12010,7 +12021,8 @@ function normalizeInitOptions(options: RevTurbineInitInputOptions): RevTurbineIn
   // Reading only `playbook` here meant a `playbook`-only caller never got
   // the local-only defaults, so the SDK stayed in server mode and hung on init.
   const hasPlaybook = resolveLocalPlaybook(options.localRuntime) !== undefined;
-  if (!hasPlaybook) {
+  const runtimeMode = options.runtimeMode ?? RuntimeMode.LocalOnly;
+  if (!hasPlaybook || runtimeMode !== RuntimeMode.LocalOnly) {
     return options as RevTurbineInitWithProviderOptions;
   }
 
@@ -12020,7 +12032,7 @@ function normalizeInitOptions(options: RevTurbineInitInputOptions): RevTurbineIn
     publicKey: resolveBrowserPublicKey(options) ?? LOCAL_ONLY_INIT_DEFAULTS.publicKey,
     endpoint: hasValue(options.endpoint) ? options.endpoint : LOCAL_ONLY_INIT_DEFAULTS.endpoint,
     mode: options.mode ?? LOCAL_ONLY_INIT_DEFAULTS.mode,
-    runtimeMode: options.runtimeMode ?? 'local_only',
+    runtimeMode,
   };
 }
 

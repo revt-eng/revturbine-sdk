@@ -1,10 +1,12 @@
 /**
- * ST-912 TASK-1 — the exposure stamp on the interaction wire.
+ * ST-912 TASK-1 — the exposure stamp on the interaction event.
  *
  * The impression a `PlacementController` fires carries the slot type that
  * triggered it (`trigger_source: 'gate'` + `entitlement_handle`) and the
  * configured `playbook_version`, read from the slot record the controller
- * itself registered. Real SDK, real controller, stubbed `fetch`; each path once.
+ * itself registered. Since SDK 0.15.0 (EP-1692) it rides the
+ * `placement_interaction` clickstream event, the only lane. Real SDK, real
+ * controller, stubbed `fetch`; each path once.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PlacementOutput } from '@revt-eng/core';
@@ -12,9 +14,10 @@ import { RevTurbineCustomerSdk } from './customer-side';
 import type { RevTurbineInitOptions, RevTurbineSurfaceSlotConfig } from './customer-side';
 import { PlacementController } from './controllers';
 
-const INTERACTIONS_PATH = '/api/events/interactions';
+const TRACK_PATH = '/api/track';
 const USER = 'user_1';
-let bodies: Array<Record<string, unknown>> = [];
+/** The `placement_interaction` events the SDK put in `/api/track` batches. */
+let bodies: Array<{ payload: Record<string, unknown>; row: Record<string, unknown> }> = [];
 
 const output: PlacementOutput = {
   output_id: 'payload_gate',
@@ -70,15 +73,28 @@ async function impressionFor(
   await controller.load();
   await new Promise((resolve) => setTimeout(resolve, 0));
   controller.dispose();
+  // The event is queued, not sent: flush until the impression has landed.
+  await vi.waitFor(async () => {
+    await sdk.flushEvents();
+    expect(bodies).toHaveLength(1);
+  });
+  await sdk.flushEvents();
   expect(bodies).toHaveLength(1);
-  expect(bodies[0].interaction_type).toBe('impression');
-  return bodies[0];
+  expect(bodies[0].payload.interaction_type).toBe('impression');
+  return bodies[0].payload;
 }
 
 beforeEach(() => {
   bodies = [];
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    if (String(input).includes(INTERACTIONS_PATH)) bodies.push(JSON.parse(String(init?.body)));
+    if (String(input).endsWith(TRACK_PATH)) {
+      const sent = JSON.parse(String(init?.body)) as { events: Array<Record<string, unknown>> };
+      for (const row of sent.events) {
+        if (row.event_name !== 'placement_interaction') continue;
+        const properties = JSON.parse(String(row.properties)) as { payload: Record<string, unknown> };
+        bodies.push({ payload: properties.payload, row });
+      }
+    }
     return new Response(JSON.stringify({ accepted: 1 }), { status: 202 });
   }));
   vi.spyOn(console, 'warn').mockImplementation(() => undefined);
@@ -101,6 +117,8 @@ describe('the impression of a gate-requested slot carries the exposure stamp', (
       entitlement_handle: 'export_pdf',
       playbook_version: 'pbv_912',
     });
+    // The stamp also lifts to the wire `playbook_version` column.
+    expect(bodies[0].row.playbook_version).toBe('pbv_912');
   });
 
   it('a plain surface slot carries neither trigger_source nor entitlement_handle', async () => {

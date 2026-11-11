@@ -69,12 +69,17 @@ describe('every endpointFor() default', () => {
     expect(keys).toEqual(expect.arrayContaining([
       'ingestEvents',
       'ingestSdkMeta',
-      'touchpointTransition',
       'clientContext',
       'userContext',
       'trialStatus',
       'placementTypes',
     ]));
+  });
+
+  it('has no interaction lane: interactions travel only as placement_interaction clickstream events (EP-1692)', () => {
+    expect(defaults.map((entry) => entry.key)).not.toContain('touchpointTransition');
+    expect(SOURCE).not.toContain('/api/events/interactions');
+    expect(SOURCE).not.toContain('touchpointTransition');
   });
 
   it.each(defaults.filter((entry) => entry.path !== ''))(

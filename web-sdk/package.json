@@ -1,9 +1,9 @@
 {
   "name": "@revt-eng/sdk",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "RevTurbine customer-facing SDK — placement decisioning, entitlement checks, and usage tracking.",
   "type": "module",
-  "packageManager": "pnpm@11.12.0",
+  "packageManager": "pnpm@11.13.1",
   "engines": {
     "node": ">=22.13"
   },
