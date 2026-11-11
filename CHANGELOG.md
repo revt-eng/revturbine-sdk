@@ -47,6 +47,99 @@ also require a changelog entry.
 
 ---
 
+## 0.15.0
+
+Python and Rust ship at `0.15.0` only to keep the version lock; they send no
+interaction data and have no behaviour change.
+
+### Breaking
+
+1. **Placement interactions are reported once, as `placement_interaction`
+   clickstream events: the `/api/events/interactions` lane is gone (EP-1692,
+   ST-1695).**
+   - **What changed:** until `0.14.x` the browser SDK reported every treatment
+     interaction (`impression`, `dismiss`, `remind_me_later`, `cta_clicked`,
+     `cta_completed`, `suppress`) twice: a typed row POSTed to
+     `/api/events/interactions`, and a `placement_interaction` event through
+     `/api/track`. The POST ignored `telemetry.consent` and `analytics: false`,
+     was refused by browser CORS preflight, and never checked the key's origin
+     allowlist. It is removed: `trackTreatmentInteraction()` no longer makes
+     that request, the interaction queue and its flush are gone, the
+     `touchpointTransition` key of `RevTurbineEndpointOverrides` is removed
+     (passing it is now a type error; it was ignored apart from this lane), and
+     the `interaction_flush_failed` diagnostic no longer exists. Every field the
+     POST carried now rides the one `placement_interaction` event, which
+     RevTurbine derives the presentation row from: `user_id`, `account_id`
+     (resolved when the interaction happens), `placement_id`, `treatment_id`,
+     `interaction_type`, `interaction_at`, `surface_slot_id`,
+     `surface_template_id`, `payload_id`, `message_block_handle`,
+     `experiment_id`, `variant_key`, `rule_handle`, `trigger_source`,
+     `entitlement_handle`, `playbook_version`, `decision_id`,
+     `segment_handles`, `segment_ids` and `metadata`. Optional keys are absent,
+     never `null` or empty. `account_id`, `playbook_version`,
+     `surface_slot_id`, `placement_id`, `payload_id`, `experiment_id`,
+     `variant_key` and `decision_id` also lift to the `/api/track` row's own
+     columns. The envelope's legacy `segment_ids` stamp (the latest effective
+     set, handles in local mode) is no longer written over a
+     `placement_interaction`: it carries `segment_handles` and, only when a
+     hosted context supplied minted ids, its own `segment_ids`, both as of the
+     interaction. Every other event keeps the stamp.
+   - **Server-action CTA clicks.** A click handled by a `serverActions`
+     resolver is the one `placement_interaction` for that click (the resolver
+     replaces the `onCtaClick` path, so no second event exists). It now carries
+     the same full record as any interaction, with the real placement id for an
+     output this SDK decided, plus `action_type`, `action_success` and
+     `action_outcome`. Before, its `placement_id` held the surface slot id.
+   - **Consequence you must know about:** interactions now inherit the
+     clickstream gates. With `telemetry.consent` `denied` or `pending`, or
+     `analytics: false`, the SDK sends **no** interaction data, where `0.14.x`
+     still POSTed it. Nothing else changes with consent: Playbook delivery,
+     entitlement and placement decisions, dismissal cooldowns, suppression and
+     presentation caps run from local state exactly as with consent granted, and
+     local runtime persistence is unchanged. Hosted integrations that kept
+     `local_only` only to honour consent can now use a connected mode.
+   - **Landed in / Fail-closed in:** `0.15.0` / `0.15.0` (no tolerated window).
+     A `0.14.x` SDK keeps POSTing to the old route until the control plane
+     removes it; upgrade the SDK before that.
+   - **Migration:** delete `touchpointTransition` from `endpointOverrides`; a
+     proxy for `custom_endpoints` need only forward `ingestEvents`. Read
+     interaction data from the `placement_interaction` clickstream rows or the
+     presentation table RevTurbine derives from them.
+   - **Proving tests:** `web-sdk/interaction-single-lane.test.ts` (AC-1 consent
+     `denied`/`pending` and `analytics: false` send nothing while cooldowns and
+     caps hold; AC-2 one event per interaction with the full record and no
+     request to the old route; AC-3 runtime consent flip),
+     `web-sdk/interaction-wire-contract.test.ts` (payload contract, lifted
+     columns, account at interaction time),
+     `web-sdk/endpoint-default-routes.test.ts` (the lane and key are gone).
+
+2. **A bundled Playbook with a connected `runtimeMode` no longer takes local
+   placeholders for `tenantId`, `publicKey` and `endpoint` (EP-1692, ST-1695).**
+   - **What changed:** `initRevTurbine` filled `tenantId: 'local'`, a placeholder
+     `publicKey` and the placeholder endpoint whenever `localRuntime.playbook`
+     was present, whatever `runtimeMode` said. A browser init with `publicKey`,
+     `runtimeMode: RuntimeMode.Server` and a bundled seed therefore asked a
+     non-existent host for the Playbook and claimed tenant `local`. The
+     placeholders now apply only when the mode resolves to `local_only` (an
+     explicit `local_only`, or a Playbook with no `runtimeMode`, which still
+     defaults to it). With an explicit connected mode the SDK keeps the options
+     you passed: a key-only init uses the hosted default endpoint and learns its
+     tenant from the key; the seed answers until delivery lands and stays if
+     delivery fails (`getPlaybookLoadFailure()`).
+   - **Landed in / Fail-closed in:** `0.15.0` / `0.15.0`. Before it, the connected
+     seed was only reliable when `tenantId`, `publicKey` and `endpoint` were all
+     passed.
+   - **Migration:** none for an init that passes them. If you relied on the
+     placeholder endpoint in a connected mode, pass `endpoint`; if you meant
+     `local_only`, say so.
+   - **Proving test:** `web-sdk/interaction-single-lane.test.ts` (AC-8).
+
+Public API: `RevTurbineEndpointOverrides` loses `touchpointTransition`; the TSDoc of
+`analytics`, `telemetry.consent`, `runtimeMode`, `localRuntime` and
+`trackTreatmentInteraction` now states the scope above.
+
+---
+
 ## 0.14.0
 
 ### Added

@@ -244,6 +244,18 @@ Playbook snapshots, not sessions, between callers. A connected instance treats
 `localRuntime.playbook` as a startup seed and refreshes it from hosted delivery;
 `LocalOnly` continues using the supplied snapshot without fetching.
 
+The same holds in the browser: with `publicKey`, an explicit connected
+`runtimeMode` (`RuntimeMode.Server`) and a bundled Playbook, pass no `tenantId`
+and no `endpoint`. The SDK uses the hosted default endpoint, learns the tenant
+from the key, answers from the seed until delivery lands, and keeps the seed if
+delivery fails. Only a Playbook with **no** `runtimeMode` defaults to `local_only`
+and its placeholders.
+
+Analytics consent never changes this. `telemetry.consent` other than `granted`
+and `analytics: false` stop the SDK from reporting events (placement
+interactions included) and nothing else: Playbook delivery, decisions,
+cooldowns and caps are unaffected. See [Events & Analytics](/guides/events/#consent).
+
 The [cloud integration tutorial](/tutorials/vercel-edge-entitlements/) adds authenticated
 context tokens, an explicitly bounded shared Playbook cache, and provider adapters.
 

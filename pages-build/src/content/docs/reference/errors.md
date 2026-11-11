@@ -96,7 +96,8 @@ alias. The old name stated a verdict the result does not have (it denies).
 |---|---|---|
 | `interaction_tracking_failed` | `trackTreatmentInteraction()` | Event delivery failed — silently dropped |
 | `event_delivery_failed` | `trackEvent()` | Custom event could not be sent — buffered for retry |
-| `network_error` | Interaction-flush fetch | The touchpoint-transition request threw (offline, DNS, CORS) — the batch is re-queued and retried |
+
+Placement interactions are `placement_interaction` events on the clickstream (`0.15.0`), so a failed send shows up in `getTelemetryCounters().failed`, like any other event. The separate interaction-flush request and its `interaction_flush_failed` diagnostic (`network_error` / `status_<code>`) were removed.
 
 ## Storage Errors
 

@@ -198,11 +198,12 @@ The calls the SDK makes over the network, and the key that reroutes each one in 
 | `clientContext` | Server-derived user context, read with an `rt_client_` session token | `/api/sdk/client-context` |
 | `userContext` | User context read | `/api/sdk/user-context` |
 | `trialStatus` | Trial status read | `/api/sdk/trial-status` |
-| `ingestEvents` | Clickstream events (`track` / `capture`) | `/api/track` |
-| `touchpointTransition` | Placement interactions — impression, dismiss, CTA | `/api/events/interactions` |
+| `ingestEvents` | Clickstream events (`track` / `capture`), including every `placement_interaction` (impression, dismiss, CTA) | `/api/track` |
 | `ingestSdkMeta` | The anonymous `sdk_init` beacon | `/api/sdk/meta` |
 | `surfaceSlots` | Surface-slot inventory registration | `/api/placements` |
 | `placementTypes` | Custom placement-type persistence — meaningful only when overridden | `/api/sdk/placement-types` |
+
+Placement interactions have no endpoint of their own: since `0.15.0` they travel only as `placement_interaction` events on `ingestEvents`, so `telemetry.consent` and `analytics: false` cover them (neither affects Playbook delivery, decisions, cooldowns or caps). The `touchpointTransition` key and its `/api/events/interactions` route were removed in `0.15.0`.
 
 Not overridable: **Playbook delivery**. The SDK fetches the launched Playbook from `endpoint` directly (`/api/sdk/bootstrap`, then the signed manifest and bundle), so `custom_endpoints` routes context and telemetry through your proxy but not the Playbook itself.
 
@@ -263,7 +264,6 @@ interface RevTurbineStorage {
   endpointOverrides: {               // ✅ At least one override required
     clientContext?: string;
     ingestEvents?: string;
-    touchpointTransition?: string;
   };
 }
 ```

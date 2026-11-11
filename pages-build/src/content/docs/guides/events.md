@@ -19,7 +19,7 @@ Placement components and headless controllers instrument the placement lifecycle
 | `placement_interaction` | The canonical interaction event, discriminated by `interaction_type`: `dismiss` · `remind_me_later` · `cta_clicked` · `cta_completed` · `suppress` |
 | `placement_rendered` / `placement_exposed` | The visual root rendered / entered the viewport (when you attach `exposureRef`) |
 
-`placement_interaction` is the one placement interaction event; there are no separate dismiss/snooze/convert events.
+`placement_interaction` is the one placement interaction event; there are no separate dismiss/snooze/convert events. Since `0.15.0` it is also the **only** way an interaction (impression included) is reported: it carries the full record — user and account, placement, treatment, `interaction_type` and `interaction_at`, surface slot and template, payload, message block, experiment and variant, rule, the exposure stamp (`trigger_source`, `entitlement_handle`, `playbook_version`), decision and segments — and RevTurbine derives the presentation row from it. There is no separate interactions request.
 
 ## Billing facts and application events
 
@@ -156,6 +156,10 @@ sdk.setTelemetryConsent('denied'); // stop; 'granted' resumes on the next event
 
 The keyless anonymous SDK-init beacon (`anonymousTelemetry`) is controlled separately and is unaffected by consent.
 
+Consent covers **placement interaction reporting** too. Impressions, dismissals, CTA clicks, conversions, snoozes and suppressions travel only as `placement_interaction` events, so with `denied` or `pending` the SDK sends no interaction data at all, exactly as it sends no other behavior.
+
+Consent never affects how the SDK **behaves**. Playbook delivery, entitlement and placement decisions, dismissal cooldowns, suppression and presentation caps keep working from local state, so a visitor who declines analytics still gets a correct, capped experience. To keep reporting off for everyone, set `analytics: false` (below); it has the same scope.
+
 ## Annotated DOM capture
 
 Opt into hand-authored capture with `domCapture` on the provider. One delegated listener per event reads **only** allowlisted `data-rt-*` attributes — never element text, input values, `href`s, or selectors — and always skips password / file / hidden / payment-autocomplete controls. A `data-rt-no-capture` ancestor opts an element and its subtree out. Collected values pass through the same PII redactor.
@@ -229,7 +233,7 @@ const rt = await initRevTurbine({
 });
 ```
 
-Every emitted event (clickstream and treatment interactions) is then stamped `test: true`, and RevTurbine analytics **exclude those events by default** from every metric, rollup, and denominator. An `include_test=1` toggle on the analytics pipes reveals them when you want to inspect test traffic.
+Every emitted event (every clickstream row, `placement_interaction` included) is then stamped `test: true`, and RevTurbine analytics **exclude those events by default** from every metric, rollup, and denominator. An `include_test=1` toggle on the analytics pipes reveals them when you want to inspect test traffic.
 
 This is a deliberate, code-passed decision: pass it explicitly from your own configuration. The SDK never infers it from the environment — no `NODE_ENV` sniffing. Whether traffic is test traffic is your call, not a deployment artifact. Omitted or `false`, events are emitted unchanged (byte-identical to earlier SDK versions).
 
@@ -264,6 +268,7 @@ Events that carry the `area` / `action` / `purpose` taxonomy (from `TelemetrySco
 
 - **Redaction.** Email- and card-shaped values in properties and traits are scrubbed to `[REDACTED]` before any destination — one sanitized envelope, every mirror. Best-effort, not a guarantee: don't put PII in event data.
 - **Advisory purpose, server-owned scoring.** A client-declared `purpose` never grants engagement eligibility; a static server-side allowlist decides which event names feed scoring, regardless of purpose.
+- **One lane, two switches.** Interaction reporting rides the clickstream, so both switches cover it: `telemetry.consent` other than `granted` stops event creation, and `analytics: false` skips the ingest call. Neither affects Playbook delivery (a read), decisions, cooldowns, suppression or caps. There is no separate consent or opt-out for interactions and no second request to opt out of.
 - **Delivery.** Events batch and flush on size, interval, or page-unload. A transient failure is retried with the byte-identical row, so storage collapses it to one; a permanent failure is dropped silently. In `local_only` mode nothing is sent at all — the right mode for demos and examples.
 
 ## Next steps

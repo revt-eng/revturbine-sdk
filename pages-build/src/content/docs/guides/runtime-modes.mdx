@@ -125,7 +125,6 @@ const session = await initRevTurbine(
       userContext: 'https://proxy.example.com/revturbine/user-context',
       trialStatus: 'https://proxy.example.com/revturbine/trial-status',
       ingestEvents: 'https://proxy.example.com/revturbine/track',
-      touchpointTransition: 'https://proxy.example.com/revturbine/interactions',
     },
   }),
 );
@@ -160,6 +159,29 @@ const branding = session.sdk.getBranding();
 ```
 
 Use your actual plan handle and CTA action types. Branding is optional and merges over defaults. With React, pass the same options to [RevTurbineProvider](/getting-started/react/) and let it initialize the SDK. See [User Context](/user-context/), [CTA actions](/guides/placements/#cta-actions) and [Theming](/guides/theming/) for the individual options.
+
+### A bundled Playbook as a startup seed in hosted mode
+
+`localRuntime.playbook` has two roles, decided by `runtimeMode`:
+
+- **No `runtimeMode`, or `local_only`:** the Playbook is the whole runtime. The SDK fills a placeholder `tenantId`, `publicKey` and `endpoint`, and makes no hosted calls.
+- **A connected `runtimeMode` (`RuntimeMode.Server` or `RuntimeMode.CustomEndpoints`):** the Playbook is a **startup seed**. The SDK keeps exactly the options you pass, so a browser init with only `publicKey` uses the hosted default endpoint and learns its tenant from the key, like an init without a seed. The seed answers entitlement and placement decisions immediately, the delivered Playbook replaces it when it arrives, and the seed stays in force if delivery fails (`getPlaybookLoadFailure()` says why).
+
+```ts
+import { initRevTurbine, RuntimeMode } from '@revturbine/sdk';
+import playbook from './revturbine.playbook.json'; // bundled snapshot
+
+const session = await initRevTurbine({
+  publicKey: 'rtk_…', // no tenantId, no endpoint
+  runtimeMode: RuntimeMode.Server, // connected: the Playbook is a seed
+  localRuntime: { playbook },
+  user: { id: 'user_123' },
+});
+```
+
+### Analytics consent and the rest of the SDK
+
+Analytics is a separate concern from behavior. `telemetry.consent` and `analytics: false` stop the SDK **reporting**: clickstream events, including every `placement_interaction` (impression, dismissal, CTA click), are not sent. They never affect Playbook delivery, entitlement or placement decisions, dismissal cooldowns, suppression or presentation caps, so a hosted instance with consent denied still downloads your Playbook and enforces its caps. You do not need `local_only` to honor consent. See [Events & Analytics](/guides/events/#consent).
 
 ## Migrating from local to hosted mode
 
