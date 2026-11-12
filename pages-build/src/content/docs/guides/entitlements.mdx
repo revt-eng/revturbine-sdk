@@ -399,7 +399,7 @@ const { can } = useCan('ai_generations', { cost: 3 }); // also useEntitlement({ 
 
 | `cost` | What happens |
 |---|---|
-| above `0` | allowed while `usage + cost <= limit` (credits: while `cost <= balance`). Over the limit follows the rule's enforcement mode (`hard_block`, `degrade`, `allow_overage`). Fractional costs are valid, with a small tolerance for binary floating-point error |
+| above `0` | allowed while it fits: a usage limit counts **up** (`usage + cost <= limit`), credits count **down** (`cost <= balance`). Over follows the rule's enforcement mode (`hard_block`, `degrade`, `allow_overage`). Fractional costs are valid, with a small tolerance for binary floating-point error. See [Credits count down, usage limits count up](#credits-count-down-usage-limits-count-up) for where the numbers come from |
 | `0` | always allowed, even past the limit (the action is free). A developer **warning** (`entitlement_cost_zero`) makes sure that was deliberate |
 | left out | today's check: allowed while `usage < limit`. A developer **error** (`entitlement_cost_missing`) tells you to pass a cost: use `0` for a free action |
 | negative, not a number, `NaN`, infinite | treated as left out, with the error `entitlement_cost_invalid` naming only the kind of the bad value, never the value |
@@ -409,6 +409,35 @@ Other entitlement kinds, and unlimited entitlements, ignore `cost` without a mes
 The result carries the diagnostic as `result.diagnostic` (`{ level, code, handle, received? }`). It never changes `allowed`, `status` or `reason`, and it appears only on a single-handle check, never on a bulk read of every entitlement. Each handle and code is reported once per process: `console.warn` / `console.error` in the browser, `console.error` and a `RuntimeWarning` on the `revturbine` logger in Python, one line on stderr in Rust. Nothing is thrown or panicked.
 
 **Every existing check on a usage-limit or credits entitlement now logs the missing-cost error once until you pass a cost.** The decision is unchanged.
+
+## Credits count down, usage limits count up
+
+With a `cost` above `0`, the direction follows the kind of the Playbook rule. There is no prop for it on `<Gate>`, the hooks or the functions: you pass the same `cost` as before.
+
+- A **credits** entitlement counts **down**. The check is over when the cost exceeds the balance.
+- A **usage limit** counts **up**. The check is over when `used + cost` exceeds the limit.
+
+The SDK never decrements a balance. It compares what it is given; your app (or the RevTurbine backend) owns the number and reports the new one.
+
+**Where the numbers come from.** An app that mirrors its own entitlements (`user.entitlements`, `identify`, `update` or `setUserContext`) reports a record such as `{ status: 'allowed', limit: 1000, used: 995 }`. The first source that has a number wins:
+
+| Kind | Sources, in order |
+|---|---|
+| credits | the call's `balance`; the call's `used` against the rule's allowance; the app's `remaining`, or `limit - used` when it sent both; the usage the SDK holds |
+| usage limit | the call's `used` against the rule's limit; the app's `used` and `limit` (a missing half falls back to the held usage or the rule's limit); the usage the SDK holds |
+
+On a usage limit the app's `remaining` on its own, and a per-call `balance`, are ignored. A finite `limit` the app reports applies even when the rule is unlimited. When the app sends both `limit` and `used` for credits, the pair is compared as `used + cost <= limit`, so `limit: 1000, used: 999.7` accepts a cost of `0.3` exactly. An explicit `remaining` is compared as a balance. If your `entitlementMerge` makes `limit` or `used` follow the Playbook instead of the app, that pair is no longer the app's and the balance form (`limit - used`) is used.
+
+**When the cost does not fit** the check is the rule's own over result: its enforcement mode (`hard_block`, `block_with_upsell`, `degrade`, `allow_overage`), its existing reason (for example `credit_balance_exhausted_block_with_upsell` or `usage_limit_reached`) and its `rule_handle`. A `<Gate>` then renders its gate placement, or `deniedFallback`, instead of its children. With no rule, or no plan, for the entitlement, and the app having said "allowed", the result is `status: 'limited'`, `allowed: false`, the plain reason (`credit_balance_exhausted` or `usage_limit_reached`) and no `rule_handle`.
+
+**Cost `0`, a missing cost and an invalid cost behave exactly as before.** They never consult the app's numbers.
+
+### What changes for integrations that mirror entitlements
+
+- **A mirrored "allowed" no longer overrides an over result** when the numbers compared were the app's or the call's. Before, an app that reported `{ status: 'allowed', limit: 1000, used: 995 }` was allowed for a cost of 500. A mirrored "denied" still wins, and a mirrored answer with no numbers (`true`, `{ status: 'allowed' }`) is unchanged.
+- **A mirrored record with a boolean `allowed` and no `status` now sets the answer.** `{ allowed: true }` is `allowed` and `{ allowed: false }` is `denied`, with the reason `entitlement_mirrored` and no `rule_handle`. Before, the `allowed` flag of such a record was ignored.
+
+Python and Rust give the same results as the browser for every case above (the parity corpus holds them byte-identical).
 
 ## One entitlement per Gate
 

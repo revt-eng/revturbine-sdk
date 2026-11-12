@@ -47,6 +47,90 @@ also require a changelog entry.
 
 ---
 
+## 0.17.0
+
+The three packages ship at `0.17.0` together. One change, in all three runtimes
+(ST-1741, Kent's D-7): the per-call `cost` now counts **credits down** and
+**usage limits up**, and the numbers an app mirrors take part in the comparison.
+The browser SDK takes it through `@revt-eng/core` (pin `0.1.559` to `0.1.560`);
+Python and Rust carry the same rule, ported with parity fixtures that are
+byte-identical to scaffold's TypeScript snapshots. No new prop, option or public
+input on `<Gate>`, the hooks or the functions. The SDK never decrements a
+balance. Cost `0`, a missing cost and an invalid cost decide exactly as on
+`0.16.0`.
+
+### Breaking
+
+1. **Credits count down and usage limits count up from the numbers the app
+   mirrored, per kind (all runtimes; ST-1741).**
+   - **What changed:** with a cost above 0, a `credits` entitlement is over when
+     the cost exceeds the balance, from the first available of the call's
+     `balance`, the call's `used` (allowance minus used), the app's mirrored
+     `remaining` (or `limit - used` when it sent both and no `remaining`), then
+     held usage. A `usage_limit` is over when `used + cost` exceeds the limit,
+     from the call's `used`, else the app's mirrored `used` / `limit` (a missing
+     half falls back to held usage or the rule's limit; a mirrored finite limit
+     applies even when the rule is unlimited), else held usage. A mirrored
+     `remaining` alone and a per-call `balance` are ignored on a usage limit. A
+     derived pair (`limit`, `used`) is compared as `used + cost <= limit`, so
+     `999.7 + 0.3` fits `1000`. The over result is the matching rule's own
+     (enforcement mode, existing reasons, its `rule_handle`); with no rule or no
+     plan and the app having said "allowed" it is `status: 'limited'`,
+     `allowed: false`, the plain reason and no `rule_handle`. No new reason codes.
+   - **Landed in / Fail-closed in:** `0.17.0` / `0.17.0`. An app that mirrors
+     numbers (for example Color42's `{ status: 'allowed', limit, used }` on a
+     credits rule) and passes a `cost` above 0 now gets an over result where
+     `0.16.0` returned the mirrored "allowed".
+   - **Migration:** none needed for a correct integration. Check that the app's
+     mirrored numbers are current: they now decide.
+   - **Proving tests:** parity fixtures `entitlement_credits_count_down_mirrored`,
+     `entitlement_usage_limit_count_up_mirrored`, `entitlement_countdown_precedence`
+     (TypeScript, Python, Rust byte-identical to scaffold v0.1.560);
+     `web-sdk/entitlement-countdown.test.ts`;
+     `web-sdk/placements/AccessGateSurfaceSlot.countdown.test.tsx`;
+     `server-python/tests/entitlements/test_effective_entitlement.py`
+     (`TestDerivedRemainingFallback`); `server-rust/tests/effective_entitlement.rs`.
+2. **A mirrored "allowed" no longer overrides an over result (all runtimes;
+   ST-1741, D-2).**
+   - **What changed:** when the numbers compared were the app's or the call's, a
+     mirrored "allowed" does not turn an over result back into "allowed". A
+     mirrored denial always stays denied, and a mirrored answer with no numbers
+     and no per-call `balance` / `used` (`true`, `{ status: 'allowed' }`) is
+     unchanged.
+   - **Landed in / Fail-closed in:** `0.17.0` / `0.17.0`.
+   - **Migration:** an integration that mirrored "allowed" to force a grant past
+     the numbers must stop reporting numbers it does not want enforced.
+   - **Proving tests:** parity fixture `entitlement_countdown_unchanged` (the
+     cases that must not change, byte for byte) and `entitlement_countdown_precedence`.
+3. **A mirrored record with a boolean `allowed` and no valid `status` sets the
+   answer (all runtimes; ST-1741, D-6).**
+   - **What changed:** `{ allowed: true }` is `allowed` and `{ allowed: false }` is
+     `denied`, with the reason `entitlement_mirrored` and no `rule_handle`.
+     Before, the flag of a status-less record was ignored and the Playbook
+     decided.
+   - **Landed in / Fail-closed in:** `0.17.0` / `0.17.0`.
+   - **Migration:** a record that carried `allowed: false` beside a granting
+     Playbook now denies. Send a `status` when you mean something else.
+   - **Proving tests:** parity fixture `entitlement_mirrored_allowed_without_status`;
+     `web-sdk/entitlement-countdown.test.ts` (D-6).
+
+### Public surface added in 0.17.0
+
+**Rust:** none. The rule is carried by crate-internal types (`AppReportedNumbers`,
+`CostTrace`, the merge's extras); `LocalEntitlementInput` and every exported
+signature are unchanged, so existing struct literals and `..Default::default()`
+keep compiling.
+
+**Python:** no new public function or class. The helpers added for the rule are
+underscore-private, and nothing is added to a package `__all__`. The keyword-only
+parameters `app_numbers` and `cost_trace` on
+`derive_local_entitlement_from_configured_rules`, and `used_given`, `app` and
+`trace` on `derive_result_from_rule_type_fields`, are internal plumbing for the
+mirrored merge (optional; `used_given` defaults to `False`, the others to
+`None`); do not pass them.
+
+**Browser:** no new export, prop or option.
+
 ## 0.16.0
 
 The three packages ship at `0.16.0` together. The browser SDK carries most

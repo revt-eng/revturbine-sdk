@@ -7,7 +7,7 @@ description: SDK version compatibility, supported browsers, runtimes, and featur
 
 | SDK Version | Schema Version | API Version | Status |
 |---|---|---|---|
-| `0.16.x` | `0.1.x` | `v1` | Current |
+| `0.17.x` | `0.1.x` | `v1` | Current |
 
 ## Browser Support
 
