@@ -1,0 +1,333 @@
+# GENERATED from revt-eng/revturbine-devkit .github/workflows/ci-level.yml (v1.5.0). Do not edit here:
+# this repository is public and cannot call the internal devkit workflow, so the devkit
+# keeps the master and `pnpm sync:ci-level` refreshes this copy (docs/ops/ci-levels.md).
+
+name: CI level
+
+# One shared definition of a check level (EP-1747; docs/ops/ci-levels.md):
+#   l1  pull request: lint, types, static guards, targeted unit tests
+#   l2  release integration: all units plus database, browser, Tinybird and
+#       cross-repository suites, against the release candidate environment
+#   l3  staging verification: smoke and end-to-end checks against staging
+#   l4  production verification: smoke checks against production
+#
+# A repository supplies only the command for each level (by default
+# `<package manager> run ci:<level>`) and the toolchains it needs. This file
+# owns the runner choice, toolchain setup, caching and install, so the runner
+# label is defined here and nowhere else.
+#
+# Inputs reach shell steps through env, never by expression inside `run:`.
+
+on:
+  workflow_call:
+    inputs:
+      level:
+        description: 'Check level: l1, l2, l3 or l4.'
+        required: true
+        type: string
+      command:
+        description: 'Command to run. Empty runs "<package manager> run ci:<level>".'
+        type: string
+        default: ''
+      name:
+        description: 'Job name in the check. Empty uses the level, so the check reads "<caller job> / l1".'
+        type: string
+        default: ''
+      pool:
+        description: 'Runner pool: standard, or integration (privileged Docker, larger). Empty picks integration for l2 and l3, standard otherwise.'
+        type: string
+        default: ''
+      timeout-minutes:
+        type: number
+        default: 20
+      working-directory:
+        description: 'Directory (relative to the repository root) the install and command run in.'
+        type: string
+        default: '.'
+      fetch-depth:
+        description: 'Git history to fetch; 0 fetches everything (for checks that diff against a base).'
+        type: number
+        default: 1
+      node-version:
+        description: 'Node.js version, or "none" to skip Node.'
+        type: string
+        default: '24'
+      package-manager:
+        description: 'auto (packageManager field, then lockfile), pnpm, npm or none.'
+        type: string
+        default: 'auto'
+      install:
+        description: 'Install dependencies before the command.'
+        type: boolean
+        default: true
+      install-command:
+        description: 'Custom install command. Empty uses pnpm install --frozen-lockfile or npm ci.'
+        type: string
+        default: ''
+      github-packages:
+        description: 'Authenticate npm to GitHub Packages for @revt-eng. The caller job needs permissions packages: read.'
+        type: boolean
+        default: false
+      python-version:
+        description: 'Python version to set up. Empty skips Python.'
+        type: string
+        default: ''
+      uv:
+        description: 'Set up uv (cached).'
+        type: boolean
+        default: false
+      rust-toolchain:
+        description: 'Rust toolchain, for example stable or 1.88. Empty skips Rust.'
+        type: string
+        default: ''
+      rust-components:
+        description: 'Comma-separated Rust components, for example "rustfmt, clippy".'
+        type: string
+        default: ''
+      go-version-file:
+        description: 'go.mod path (relative to the repository root). Empty skips Go.'
+        type: string
+        default: ''
+      opentofu-version:
+        description: 'OpenTofu version. Empty skips OpenTofu.'
+        type: string
+        default: ''
+      terraform-version:
+        description: 'Terraform version. Empty skips Terraform.'
+        type: string
+        default: ''
+      playwright:
+        description: 'Playwright browsers to install (cached), for example "chromium". Empty installs none.'
+        type: string
+        default: ''
+      target-url:
+        description: 'For l3 and l4: the deployment under test, exported as CI_TARGET_URL.'
+        type: string
+        default: ''
+      secret-env:
+        description: 'Comma-separated names of caller secrets to export to the command. Call with secrets: inherit.'
+        type: string
+        default: ''
+      artifact-paths:
+        description: 'Newline-separated paths (from the repository root) uploaded as evidence, even when the checks fail. Kept 7 days.'
+        type: string
+        default: ''
+      cache-paths:
+        description: 'Newline-separated paths to keep between runs (tool binaries, Terraform providers, generated toolchains). Runners are ephemeral; this is the only way to reuse a download.'
+        type: string
+        default: ''
+      cache-key-files:
+        description: 'Glob of files whose contents decide when the cache-paths cache is rebuilt, for example "**/.terraform.lock.hcl".'
+        type: string
+        default: ''
+
+jobs:
+  check:
+    name: ${{ inputs.name != '' && inputs.name || inputs.level }}
+    # Pull requests from forks never reach our runners (GitHub-hosted fallback);
+    # everything else runs on the HELM CodeBuild pools (helm infra/github-runners).
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-latest' || format('codebuild-helm-ci-{0}-{1}-{2}', (inputs.pool == 'integration' || (inputs.pool == '' && (inputs.level == 'l2' || inputs.level == 'l3'))) && 'integration' || 'backlog', github.run_id, github.run_attempt) }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    concurrency:
+      group: ci-level-${{ github.workflow }}-${{ inputs.level }}-${{ inputs.name }}-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ inputs.fetch-depth }}
+          persist-credentials: false
+
+      - name: Resolve level and package manager
+        id: pm
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          LEVEL: ${{ inputs.level }}
+          POOL: ${{ inputs.pool }}
+          PM: ${{ inputs.package-manager }}
+          WD: ${{ inputs.working-directory }}
+        run: |
+          set -euo pipefail
+          case "$LEVEL" in l1|l2|l3|l4) ;; *) echo "::error::level must be l1, l2, l3 or l4 (got '$LEVEL')"; exit 1 ;; esac
+          case "$POOL" in ''|standard|integration) ;; *) echo "::error::pool must be standard or integration (got '$POOL')"; exit 1 ;; esac
+          case "$PM" in auto|pnpm|npm|none) ;; *) echo "::error::package-manager must be auto, pnpm, npm or none (got '$PM')"; exit 1 ;; esac
+          pm="$PM"
+          if [ "$pm" = auto ]; then
+            declared=""
+            if [ -f package.json ]; then
+              declared="$(sed -n 's/.*"packageManager"[[:space:]]*:[[:space:]]*"\([a-z]*\)@.*/\1/p' package.json | head -n1)"
+            fi
+            if [ "$declared" = pnpm ] || [ "$declared" = npm ]; then pm="$declared"
+            elif [ -f pnpm-lock.yaml ]; then pm=pnpm
+            elif [ -f package.json ]; then pm=npm
+            else pm=none; fi
+          fi
+          lock=""
+          if [ "$pm" = pnpm ] && [ -f pnpm-lock.yaml ]; then lock="$WD/pnpm-lock.yaml"; fi
+          if [ "$pm" = npm ] && [ -f package-lock.json ]; then lock="$WD/package-lock.json"; fi
+          echo "name=$pm" >> "$GITHUB_OUTPUT"
+          echo "lockfile=$lock" >> "$GITHUB_OUTPUT"
+          echo "Level $LEVEL, package manager $pm${lock:+, lockfile $lock}"
+
+      - name: Set up pnpm
+        if: steps.pm.outputs.name == 'pnpm'
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: ${{ inputs.working-directory }}/package.json
+
+      - name: Set up Node.js
+        if: inputs.node-version != 'none'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: ${{ steps.pm.outputs.lockfile != '' && steps.pm.outputs.name || '' }}
+          cache-dependency-path: ${{ steps.pm.outputs.lockfile }}
+          registry-url: ${{ inputs.github-packages && 'https://npm.pkg.github.com' || '' }}
+          scope: ${{ inputs.github-packages && '@revt-eng' || '' }}
+
+      - name: Set up Python
+        if: inputs.python-version != ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Set up uv
+        if: inputs.uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Rust
+        if: inputs.rust-toolchain != ''
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ inputs.rust-toolchain }}
+          components: ${{ inputs.rust-components }}
+
+      - name: Cache Rust builds
+        if: inputs.rust-toolchain != ''
+        uses: Swatinem/rust-cache@v2
+
+      - name: Set up Go
+        if: inputs.go-version-file != ''
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ inputs.go-version-file }}
+
+      - name: Set up OpenTofu
+        if: inputs.opentofu-version != ''
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ inputs.opentofu-version }}
+          tofu_wrapper: false
+
+      - name: Set up Terraform
+        if: inputs.terraform-version != ''
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ inputs.terraform-version }}
+          terraform_wrapper: false
+
+      - name: Restore cached tools
+        if: inputs.cache-paths != ''
+        uses: actions/cache@v4
+        with:
+          path: ${{ inputs.cache-paths }}
+          key: ci-${{ inputs.level }}-${{ runner.os }}-${{ hashFiles(inputs.cache-key-files != '' && inputs.cache-key-files || '.github/workflows/*.yml') }}
+          restore-keys: ci-${{ inputs.level }}-${{ runner.os }}-
+
+      - name: Install dependencies
+        if: inputs.install && steps.pm.outputs.name != 'none'
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          PM: ${{ steps.pm.outputs.name }}
+          LOCK: ${{ steps.pm.outputs.lockfile }}
+          INSTALL: ${{ inputs.install-command }}
+          NODE_AUTH_TOKEN: ${{ inputs.github-packages && github.token || '' }}
+        run: |
+          set -euo pipefail
+          if [ -n "$INSTALL" ]; then eval "$INSTALL"
+          elif [ "$PM" = pnpm ]; then pnpm install --frozen-lockfile
+          elif [ -n "$LOCK" ]; then npm ci
+          else npm install --no-package-lock; fi
+
+      - name: Find the Playwright version
+        id: playwright
+        if: inputs.playwright != ''
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          set -euo pipefail
+          version="$(npx --no-install playwright --version 2>/dev/null | awk '{print $NF}' || true)"
+          echo "version=${version:-unknown}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        if: inputs.playwright != ''
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-${{ inputs.playwright }}
+
+      - name: Install Playwright browsers
+        if: inputs.playwright != ''
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          BROWSERS: ${{ inputs.playwright }}
+        run: |
+          set -euo pipefail
+          read -ra browsers <<< "$BROWSERS"
+          npx --no-install playwright install --with-deps "${browsers[@]}"
+
+      - name: Export requested secrets
+        if: inputs.secret-env != ''
+        env:
+          NAMES: ${{ inputs.secret-env }}
+          ALL_SECRETS: ${{ toJSON(secrets) }}
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("node:fs");
+            const { randomBytes } = require("node:crypto");
+            const all = JSON.parse(process.env.ALL_SECRETS || "{}");
+            for (const name of process.env.NAMES.split(",").map((s) => s.trim()).filter(Boolean)) {
+              if (!(name in all)) {
+                console.log("::error::Secret " + name + " is not available. Call this workflow with secrets: inherit.");
+                process.exitCode = 1;
+                continue;
+              }
+              const end = "END_" + randomBytes(12).toString("hex");
+              fs.appendFileSync(process.env.GITHUB_ENV, name + "<<" + end + "\n" + all[name] + "\n" + end + "\n");
+            }
+          '
+
+      - name: Run the level's checks
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          CI_LEVEL: ${{ inputs.level }}
+          CI_TARGET_URL: ${{ inputs.target-url }}
+          COMMAND: ${{ inputs.command }}
+          PM: ${{ steps.pm.outputs.name }}
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          NODE_AUTH_TOKEN: ${{ inputs.github-packages && github.token || '' }}
+        run: |
+          set -euo pipefail
+          if [ -z "$COMMAND" ]; then
+            if [ "$PM" = none ]; then
+              echo "::error::No command given and no package.json to find ci:$CI_LEVEL in."
+              exit 1
+            fi
+            COMMAND="$PM run ci:$CI_LEVEL"
+          fi
+          echo "Running: $COMMAND"
+          eval "$COMMAND"
+
+      - name: Upload evidence
+        if: always() && inputs.artifact-paths != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.level }}-evidence${{ inputs.name != '' && format('-{0}', inputs.name) || '' }}
+          path: ${{ inputs.artifact-paths }}
+          retention-days: 7
+          if-no-files-found: warn
