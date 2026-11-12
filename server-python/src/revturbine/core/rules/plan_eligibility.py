@@ -96,7 +96,10 @@ def evaluate_plan_eligibility(
     """
     target_plan_ids = cfg.get("target_plan_ids") or []
     current_plan_id = ctx.get("current_plan_id")
-    if len(target_plan_ids) > 0 and current_plan_id and current_plan_id not in target_plan_ids:
+    # ST-1696 C1 (D-4): fails closed. A payload that targets plans is eligible
+    # only for a user whose resolved plan is one of them; a user with no plan,
+    # or one the Playbook does not define (no resolved plan id), is not.
+    if len(target_plan_ids) > 0 and (not current_plan_id or current_plan_id not in target_plan_ids):
         return {"eligible": False, "reason": "plan_mismatch"}
 
     target_billing_periods = cfg.get("target_billing_periods") or []

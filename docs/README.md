@@ -74,11 +74,16 @@ anonymous id).
 - Initialise after you know who the user is (after login). Mount
   `<RevTurbineProvider>` inside your authenticated tree; on logout unmount it
   or `identify()` the next user.
-- Omitting `user` or `user.id` is a compile error. A blank id that slips through
-  at runtime never throws: the SDK stays disabled (no network requests, no
-  evaluation, no user-scoped storage), answers with its fallbacks, and reports
-  one `user_id_required` diagnostic (`getUserRequiredDiagnostic()`). A later
+- Omitting `user` or `user.id` is a compile error. A missing user that slips
+  through at runtime (omitted, `null`, blank id) is an error but never throws:
+  the SDK stays disabled (no network requests, no evaluation, no user-scoped
+  storage), answers with its fallbacks, logs one `user_id_required` error, and
+  reports one diagnostic (`getUserRequiredDiagnostic()`). A later
   `identify(id)` enables it.
+- `user` may be a `Promise` of the user (0.16.0). While pending the SDK is
+  disabled and silent and a `Gate` renders nothing; on resolve it behaves as
+  `identify()` with that user; a resolve without an id, or a rejection, is the
+  same `user_id_required` error. Memoise the promise.
 
 ## Runtime Modes
 

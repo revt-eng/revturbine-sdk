@@ -42,6 +42,7 @@ import type {
   RevTurbineEntitlementContext,
   RevTurbineUserContext,
   RevTurbineInitUser,
+  RevTurbineInitUserPromise,
   Exact,
   IdentifyContextInput,
   SdkMetadata,
@@ -1639,7 +1640,9 @@ export class SdkSession {
  * It handles:
  * 1. SDK initialization via `initRevTurbine()`
  * 2. User identification (`options.user.id` is required — without it the
- *    session is disabled and reports one `user_id_required` diagnostic)
+ *    session is disabled and reports one `user_id_required` diagnostic;
+ *    `options.user` may also be a `Promise` of the user, applied as an
+ *    `identify()` when it resolves)
  * 3. Theme resolution (from RevTurbineConfig or API)
  * 4. Placement bootstrapping (preloading decisions)
  *
@@ -1664,7 +1667,7 @@ export class SdkSession {
  * @public
  */
 export async function initRevTurbine<TUser extends RevTurbineInitUser = RevTurbineInitUser>(
-  options: SdkSessionOptions & { user: Exact<RevTurbineInitUser, TUser> },
+  options: SdkSessionOptions & { user: Exact<RevTurbineInitUser, TUser> | RevTurbineInitUserPromise },
 ): Promise<SdkSession> {
   const { bootstrapPlacements, ...rest } = options;
   const initOptions = rest as RevTurbineInitInputOptions;
@@ -1675,7 +1678,8 @@ export async function initRevTurbine<TUser extends RevTurbineInitUser = RevTurbi
   // diagnostic from the constructor, never a throw — so there is nothing to
   // identify here.
   const user = initOptions.user;
-  if (user && typeof user === 'object' && user.id) {
+  // A promised user is applied by the SDK itself when it resolves.
+  if (user && typeof user === 'object' && !('then' in user) && user.id) {
     const { id, ...context } = user;
     sdk.identify(id, context as IdentifyContextInput);
   }

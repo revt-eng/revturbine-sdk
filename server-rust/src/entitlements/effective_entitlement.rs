@@ -23,7 +23,9 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use serde_json::{Number, Value};
 
-use super::entitlement_check::{derive_local_entitlement_reporting, LocalEntitlementInput};
+use super::entitlement_check::{
+    derive_local_entitlement_reporting, report_entitlement_diagnostic, LocalEntitlementInput,
+};
 use crate::decisions::{int_if_integral, EntitlementCheckResult};
 
 /// Which side wins a merge: the app's own data, or the Playbook evaluation.
@@ -365,6 +367,10 @@ pub struct EffectiveEntitlementBase<'a> {
     pub playbook: Option<&'a Value>,
     /// Explicit usage override (`context.used`).
     pub context_used: Option<f64>,
+    /// The caller's `{ balance }` (`context.balance`), the remaining credits.
+    pub context_balance: Option<f64>,
+    /// The caller's per-call `cost` (`context.cost`), raw (ST-1696).
+    pub context_cost: Option<Value>,
     /// The user's plan handle.
     pub current_plan_handle: String,
     /// Segments the user belongs to.
@@ -430,7 +436,10 @@ pub fn derive_effective_entitlement(
     base: &EffectiveEntitlementBase,
     app: Option<&AppEntitlementInputs>,
 ) -> EffectiveEntitlement {
-    derive_effective_entitlement_reporting(handle, base, app, &mut None)
+    // A single-handle check: carries and routes the cost diagnostic (ST-1696).
+    let effective = derive_effective_entitlement_reporting(handle, base, app, &mut None, true);
+    report_entitlement_diagnostic(&effective.result);
+    effective
 }
 
 /// [`derive_effective_entitlement`], but the Playbook evaluation's purchased
@@ -447,7 +456,10 @@ pub fn try_derive_effective_entitlement(
     app: Option<&AppEntitlementInputs>,
 ) -> Result<EffectiveEntitlement, String> {
     let mut error = None;
-    let effective = derive_effective_entitlement_reporting(handle, base, app, &mut error);
+    let effective = derive_effective_entitlement_reporting(handle, base, app, &mut error, true);
+    if error.is_none() {
+        report_entitlement_diagnostic(&effective.result);
+    }
     error.map_or(Ok(effective), Err)
 }
 
@@ -456,6 +468,7 @@ fn derive_effective_entitlement_reporting(
     base: &EffectiveEntitlementBase,
     app: Option<&AppEntitlementInputs>,
     error: &mut Option<String>,
+    diagnostics: bool,
 ) -> EffectiveEntitlement {
     let app_view = app_entitlement(app);
     let known_playbook = base.playbook.filter(|pb| playbook_knows(pb, handle));
@@ -486,6 +499,9 @@ fn derive_effective_entitlement_reporting(
         let input = LocalEntitlementInput {
             handle,
             context_used: base.context_used,
+            context_balance: base.context_balance,
+            context_cost: base.context_cost.clone(),
+            diagnostics,
             current_plan_handle: &base.current_plan_handle,
             segment_ids: base.segment_ids.clone(),
             usage_balances,
@@ -497,10 +513,15 @@ fn derive_effective_entitlement_reporting(
         };
         derive_local_entitlement_reporting(&input, playbook, error)
     });
-    let result = merge_entitlement_results(evaluated.as_ref(), app_view.as_ref(), &base.merge)
+    let mut result = merge_entitlement_results(evaluated.as_ref(), app_view.as_ref(), &base.merge)
         .unwrap_or_else(|| {
             EntitlementCheckResult::with_reason("denied", false, "entitlement_not_in_playbook")
         });
+    // ST-1696: the cost diagnostic rides on the result for runtimes with their
+    // own channel; the Playbook's own evaluation is where it was produced.
+    if let Some(diagnostic) = evaluated.as_ref().and_then(|e| e.diagnostic.clone()) {
+        result.diagnostic = Some(diagnostic);
+    }
     EffectiveEntitlement {
         result,
         unknown_handle: false,
@@ -530,7 +551,15 @@ pub fn derive_effective_entitlements(
         .map(|handle| {
             (
                 handle.to_string(),
-                derive_effective_entitlement(handle, base, app_by_handle.get(handle)).result,
+                // The all-handles map carries no diagnostics and reports none.
+                derive_effective_entitlement_reporting(
+                    handle,
+                    base,
+                    app_by_handle.get(handle),
+                    &mut None,
+                    false,
+                )
+                .result,
             )
         })
         .collect()

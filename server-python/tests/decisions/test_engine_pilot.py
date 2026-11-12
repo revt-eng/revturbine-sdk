@@ -157,6 +157,12 @@ _FIXTURES: list[
             "limit": 100,
             "used": 100,
             "remaining": 0,
+            # ST-1696: no cost passed on a limit-enforcing check.
+            "diagnostic": {
+                "level": "error",
+                "code": "entitlement_cost_missing",
+                "handle": "feat",
+            },
         },
     ),
     # 9 — Usage below limit returns the entry's status enriched with the
@@ -176,6 +182,11 @@ _FIXTURES: list[
             "limit": 100,
             "used": 30,
             "remaining": 70,
+            "diagnostic": {
+                "level": "error",
+                "code": "entitlement_cost_missing",
+                "handle": "feat",
+            },
         },
     ),
     # 10 — limit == 0 means "no limit" per TS (`if (usage.limit > 0 && ...)`).

@@ -1,5 +1,5 @@
 # @generated — DO NOT EDIT BY HAND.
-# Vendored from revturbine-scaffold published/v0.1.542/python/revturbine_types/__init__.py
+# Vendored from revturbine-scaffold published/v0.1.559/python/revturbine_types/__init__.py
 # (datamodel-code-generator, via scaffold scripts/generate-python-types.ts).
 # This is the importable `revturbine.types` module (plan 33 REQ-4).
 # Refresh: in revturbine-scaffold `npm run generate`, then here
@@ -28,6 +28,612 @@ from datetime import date as date_aliased
 
 class RevTurbineSchemas(BaseModel):
     pass
+
+
+class Status(Enum):
+    pending = "pending"
+    completed = "completed"
+    unresolved = "unresolved"
+    error = "error"
+
+
+class AccountActivityBatch(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+    generation_id: constr(min_length=1, max_length=255)
+    batch_id: constr(min_length=1, max_length=255)
+    content_hash: constr(pattern=r"^[a-f0-9]{64}$")
+    accepted_at: AwareDatetime
+    status: Status
+    completed_at: AwareDatetime | None
+    error_reason: constr(min_length=1, max_length=255) | None
+    input_revision: conint(ge=1, le=2147483647) | None = None
+
+
+class Resolution(Enum):
+    trusted = "trusted"
+    observed = "observed"
+    unresolved = "unresolved"
+    conflicting = "conflicting"
+    provisional = "provisional"
+    retired = "retired"
+
+
+class AccountActivityEvidence(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+    generation_id: constr(min_length=1, max_length=255)
+    event_id: constr(min_length=1, max_length=255)
+    batch_id: constr(min_length=1, max_length=255)
+    user_id: constr(min_length=1, max_length=255)
+    stamped_account_id: constr(min_length=1, max_length=255) | None
+    account_id: constr(min_length=1, max_length=255) | None
+    resolution: Resolution
+    resolution_evidence: constr(min_length=1, max_length=255)
+    identity_divergence: bool
+    occurred_at: AwareDatetime
+    accepted_at: AwareDatetime
+    input_revision: conint(ge=1, le=2147483647) | None = None
+    normalized_pass_id: constr(min_length=1, max_length=255) | None = None
+
+
+class User(RootModel[constr(min_length=1, max_length=255)]):
+    root: constr(min_length=1, max_length=255)
+
+
+class AccountInactivityAttributionSubject(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    subject_kind: Literal["account_inactivity"]
+    subject_id: constr(min_length=1, max_length=2048)
+    subject_at: AwareDatetime
+    lineage: Literal["threshold_crossing"]
+    account_key: constr(min_length=1, max_length=255)
+    environment_id: constr(min_length=1, max_length=255)
+    environment_scope: Literal["account_activity"]
+    is_test: bool
+    generation_id: constr(min_length=1, max_length=255)
+    episode_id: constr(min_length=1, max_length=2048)
+    episode_revision: conint(ge=1, le=2147483647)
+    threshold_revision: conint(ge=1, le=2147483647)
+    quiet_days: conint(ge=1, le=2147483647)
+    users: list[User] = Field(..., max_length=100000)
+    money_basis: Literal["nonmonetary"]
+    outcome_polarity: Literal["adverse"]
+    delta_minor: None
+    currency: None
+    movement_kind: None
+    subscription_kind: None
+
+
+class AttributionStatus(Enum):
+    pending = "pending"
+    complete = "complete"
+    invalidated = "invalidated"
+
+
+class AccountInactivityEpisode(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+    generation_id: constr(min_length=1, max_length=255)
+    account_id: constr(min_length=1, max_length=255)
+    episode_id: constr(min_length=1, max_length=2048)
+    episode_revision: conint(ge=1, le=2147483647)
+    anchor_event_id: constr(min_length=1, max_length=255)
+    last_activity_at: AwareDatetime
+    effective_at: AwareDatetime
+    resumed_at: AwareDatetime | None
+    invalidated_at: AwareDatetime | None
+    invalidation_reason: constr(min_length=1, max_length=255) | None
+    threshold_revision: conint(ge=1, le=2147483647)
+    quiet_days: conint(ge=1, le=2147483647)
+    attribution_status: AttributionStatus
+    attribution_policy_version: constr(min_length=1, max_length=255)
+    attribution_work_revision: conint(ge=1, le=2147483647)
+    producing_pass_id: constr(min_length=1, max_length=255) | None = None
+
+
+class AccountInactivityGapDelta(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+    generation_id: constr(min_length=1, max_length=255)
+    account_id: constr(min_length=1, max_length=255)
+    pass_id: constr(min_length=1, max_length=255)
+    work_revision: conint(ge=1, le=2147483647)
+    anchor_event_id: constr(min_length=1, max_length=255)
+    anchor_at: AwareDatetime
+    is_open: bool
+    upsert: AccountInactivityEpisode | None
+    invalidated_episodes: list[AccountInactivityEpisode] = Field(..., max_length=1)
+    next_due_at: AwareDatetime | None
+    max_episode_revision: conint(ge=0, le=2147483647)
+
+
+class RightBoundary(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["successor"]
+    activity: AccountActivityEvidence
+    complete: Literal[True]
+
+
+class RightBoundary1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["open"]
+    through: AwareDatetime
+    complete: Literal[True]
+
+
+class AccountInactivityReadToken(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+    generation_id: constr(pattern=r"^(live|epoch:(0|[1-9]\d*))$")
+    tenant_revision: conint(ge=1, le=2147483647)
+    producer_revision: conint(ge=1, le=2147483647)
+
+
+class AccountInactivityReadiness(Enum):
+    unobserved = "unobserved"
+    ready = "ready"
+    pending = "pending"
+    error = "error"
+    unknown = "unknown"
+
+
+class AccountInactivityScope(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+    generation_id: constr(min_length=1, max_length=255)
+
+
+class SourceKind(Enum):
+    activity = "activity"
+    threshold = "threshold"
+    identity_repair = "identity_repair"
+    eligibility = "eligibility"
+
+
+class Status1(Enum):
+    pending = "pending"
+    normalized = "normalized"
+    completed = "completed"
+    unresolved = "unresolved"
+    deferred = "deferred"
+    superseded = "superseded"
+
+
+class AccountInactivitySourceRevision(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+    generation_id: constr(min_length=1, max_length=255)
+    input_revision: conint(ge=1, le=2147483647)
+    source_kind: SourceKind
+    source_key: constr(min_length=1, max_length=255)
+    accepted_at: AwareDatetime
+    effective_at: AwareDatetime
+    status: Status1
+    scanned_pass_id: constr(min_length=1, max_length=255) | None
+    normalized_pass_id: constr(min_length=1, max_length=255) | None
+    completed_pass_id: constr(min_length=1, max_length=255) | None
+    next_wakeup_at: AwareDatetime | None
+    error_reason: constr(min_length=1, max_length=255) | None
+    tenant_threshold_revision: conint(ge=1, le=2147483647) | None = None
+
+
+class AccountInactivityState(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+    generation_id: constr(min_length=1, max_length=255)
+    account_id: constr(min_length=1, max_length=255)
+    state_revision: conint(ge=1, le=2147483647)
+    inactive: bool
+    readiness: AccountInactivityReadiness
+    last_activity_at: AwareDatetime | None
+    next_due_at: AwareDatetime | None
+    current_episode_id: constr(min_length=1, max_length=2048) | None
+    threshold_revision: conint(ge=1, le=2147483647)
+    processed_through: AwareDatetime | None
+    as_of: AwareDatetime
+    producing_pass_id: constr(min_length=1, max_length=255) | None = None
+
+
+class Status2(Enum):
+    pending = "pending"
+    running = "running"
+    retry = "retry"
+    unavailable = "unavailable"
+    complete = "complete"
+
+
+class AccountInactivityThresholdAdmission(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+    generation_id: constr(pattern=r"^(live|epoch:(0|[1-9]\d*))$")
+    work_revision: conint(ge=1, le=2147483647)
+    continuation_id: constr(min_length=1, max_length=255)
+    status: Status2
+    owner_id: constr(min_length=1, max_length=255) | None
+    lease_expires_at: AwareDatetime | None
+    retry_count: conint(ge=0, le=2147483647)
+    next_wakeup_at: AwareDatetime | None
+    error_reason: constr(min_length=1, max_length=255) | None
+    baseline_tenant_revision: conint(ge=1, le=2147483647)
+    admitted_tenant_revision: conint(ge=1, le=2147483647)
+    target_tenant_revision: conint(ge=1, le=2147483647)
+
+
+class Kind(Enum):
+    baseline = "baseline"
+    edit = "edit"
+
+
+class AccountInactivityThresholdChange(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    generation_id: constr(pattern=r"^(live|epoch:(0|[1-9]\d*))$")
+    tenant_revision: conint(ge=1, le=2147483647)
+    previous_revision: conint(ge=1, le=2147483647) | None
+    change_id: constr(min_length=1, max_length=255)
+    kind: Kind
+    quiet_days: conint(ge=1, le=2147483647)
+    accepted_at: AwareDatetime
+    effective_at: AwareDatetime
+
+
+class AccountInactivityThresholdHead(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    generation_id: constr(pattern=r"^(live|epoch:(0|[1-9]\d*))$")
+    tenant_revision: conint(ge=1, le=2147483647)
+    quiet_days: conint(ge=1, le=2147483647)
+    change_id: constr(min_length=1, max_length=255)
+    accepted_at: AwareDatetime
+    effective_at: AwareDatetime
+    baseline_change_id: constr(min_length=1, max_length=255)
+    baseline_quiet_days: conint(ge=1, le=2147483647)
+    baseline_accepted_at: AwareDatetime
+    baseline_effective_at: AwareDatetime
+
+
+class Purpose(Enum):
+    work = "work"
+    current = "current"
+
+
+class AccountInactivityThresholdReceiptTransition(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    before: AccountInactivityThresholdChange
+    after: AccountInactivityThresholdChange
+
+
+class AccountInactivityThresholdRevision(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+    generation_id: constr(min_length=1, max_length=255)
+    threshold_revision: conint(ge=1, le=2147483647)
+    quiet_days: conint(ge=1, le=2147483647) | None = 28
+    effective_at: AwareDatetime
+    input_revision: conint(ge=1, le=2147483647) | None = None
+    tenant_threshold_revision: conint(ge=1, le=2147483647) | None = None
+
+
+class AccountInactivityThresholdScopeKey(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+
+
+class AccountInactivityThresholdSyncRequested1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["discover_scopes"]
+    tenant_id: constr(min_length=1, max_length=255)
+    generation_id: constr(pattern=r"^(live|epoch:(0|[1-9]\d*))$")
+    tenant_revision: conint(ge=1, le=2147483647)
+    work_revision: conint(ge=1, le=2147483647)
+    after_scope: AccountInactivityThresholdScopeKey | None
+    continuation_id: constr(min_length=1, max_length=255)
+
+
+class AccountInactivityThresholdSyncRequested2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["admit_scope_history"]
+    tenant_id: constr(min_length=1, max_length=255)
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+    generation_id: constr(pattern=r"^(live|epoch:(0|[1-9]\d*))$")
+    target_tenant_revision: conint(ge=1, le=2147483647)
+    admitted_tenant_revision: conint(ge=1, le=2147483647)
+    work_revision: conint(ge=1, le=2147483647)
+    continuation_id: constr(min_length=1, max_length=255)
+
+
+class AccountInactivityThresholdSyncRequested(
+    RootModel[
+        AccountInactivityThresholdSyncRequested1
+        | AccountInactivityThresholdSyncRequested2
+    ]
+):
+    root: (
+        AccountInactivityThresholdSyncRequested1
+        | AccountInactivityThresholdSyncRequested2
+    )
+
+
+class AccountInactivityWorkCursor1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    phase: Literal["normalize"]
+    input_revision: conint(ge=0, le=2147483647)
+    event_id: constr(min_length=1, max_length=255) | None
+
+
+class AccountInactivityWorkCursor2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    phase: Literal["fan_out"]
+    input_revision: conint(ge=0, le=2147483647)
+    account_id: constr(min_length=1, max_length=255) | None
+    anchor_at: AwareDatetime | None
+
+
+class AccountInactivityWorkCursor3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    phase: Literal["gaps"]
+    account_id: constr(min_length=1, max_length=255) | None
+    anchor_at: AwareDatetime | None
+    anchor_event_id: constr(min_length=1, max_length=255) | None
+
+
+class AccountInactivityWorkCursor4(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    phase: Literal["accounts"]
+    account_id: constr(min_length=1, max_length=255) | None
+
+
+class AccountInactivityWorkCursor5(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    phase: Literal["attribution"]
+    episode_id: constr(min_length=1, max_length=2048) | None
+    episode_revision: conint(ge=1, le=2147483647) | None
+
+
+class AccountInactivityWorkCursor6(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    phase: Literal["publish"]
+
+
+class AccountInactivityWorkCursor7(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    phase: Literal["complete"]
+
+
+class AccountInactivityWorkCursor8(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    phase: Literal["superseded"]
+
+
+class AccountInactivityWorkCursor(
+    RootModel[
+        AccountInactivityWorkCursor1
+        | AccountInactivityWorkCursor2
+        | AccountInactivityWorkCursor3
+        | AccountInactivityWorkCursor4
+        | AccountInactivityWorkCursor5
+        | AccountInactivityWorkCursor6
+        | AccountInactivityWorkCursor7
+        | AccountInactivityWorkCursor8
+    ]
+):
+    root: (
+        AccountInactivityWorkCursor1
+        | AccountInactivityWorkCursor2
+        | AccountInactivityWorkCursor3
+        | AccountInactivityWorkCursor4
+        | AccountInactivityWorkCursor5
+        | AccountInactivityWorkCursor6
+        | AccountInactivityWorkCursor7
+        | AccountInactivityWorkCursor8
+    )
+
+
+class Kind1(Enum):
+    input = "input"
+    fan_out = "fan_out"
+    gap = "gap"
+    account = "account"
+    attribution = "attribution"
+
+
+class Cause(Enum):
+    accepted_activity = "accepted_activity"
+    future_activity = "future_activity"
+    threshold_change = "threshold_change"
+    identity_repair = "identity_repair"
+    eligibility_change = "eligibility_change"
+    due = "due"
+    attribution = "attribution"
+    settlement = "settlement"
+    draft_recompute = "draft_recompute"
+
+
+class Status4(Enum):
+    pending = "pending"
+    running = "running"
+    complete = "complete"
+    unresolved = "unresolved"
+    unavailable = "unavailable"
+    superseded = "superseded"
+
+
+class AccountInactivityWorkItem(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+    generation_id: constr(min_length=1, max_length=255)
+    pass_id: constr(min_length=1, max_length=255)
+    item_key: constr(min_length=1, max_length=255)
+    item_revision: conint(ge=1, le=2147483647)
+    kind: Kind1
+    cause: Cause
+    input_revision: conint(ge=1, le=2147483647) | None
+    account_id: constr(min_length=1, max_length=255) | None
+    anchor_event_id: constr(min_length=1, max_length=255) | None
+    anchor_at: AwareDatetime | None
+    episode_id: constr(min_length=1, max_length=2048) | None
+    episode_revision: conint(ge=1, le=2147483647) | None
+    episode_work_revision: conint(ge=1, le=2147483647) | None
+    status: Status4
+    continuation_id: constr(min_length=1, max_length=255)
+    next_wakeup_at: AwareDatetime | None
+    error_reason: constr(min_length=1, max_length=255) | None
+
+
+class Phase(Enum):
+    normalize = "normalize"
+    fan_out = "fan_out"
+    gaps = "gaps"
+    accounts = "accounts"
+    attribution = "attribution"
+    publish = "publish"
+    complete = "complete"
+    superseded = "superseded"
+
+
+class Status5(Enum):
+    pending = "pending"
+    running = "running"
+    retry = "retry"
+    unavailable = "unavailable"
+    complete = "complete"
+    superseded = "superseded"
+
+
+class PublicationStatus(Enum):
+    pending = "pending"
+    published = "published"
+    superseded = "superseded"
+
+
+class AccountInactivityWorkPass(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+    generation_id: constr(min_length=1, max_length=255)
+    pass_id: constr(min_length=1, max_length=255)
+    work_revision: conint(ge=1, le=2147483647)
+    continuation_id: constr(min_length=1, max_length=255)
+    input_high_water: conint(ge=0, le=2147483647)
+    captured_at: AwareDatetime
+    captured_clock: AwareDatetime
+    available_from: AwareDatetime
+    threshold_revision: conint(ge=1, le=2147483647)
+    settings_id: constr(min_length=1, max_length=255)
+    attribution_policy_version: constr(min_length=1, max_length=255)
+    phase: Phase
+    cursor: AccountInactivityWorkCursor
+    scanned_input_revision: conint(ge=0, le=2147483647)
+    normalized_input_revision: conint(ge=0, le=2147483647)
+    completed_input_revision: conint(ge=0, le=2147483647)
+    status: Status5
+    owner_id: constr(min_length=1, max_length=255) | None
+    lease_expires_at: AwareDatetime | None
+    retry_count: conint(ge=0, le=2147483647)
+    next_wakeup_at: AwareDatetime | None
+    error_reason: constr(min_length=1, max_length=255) | None
+    publication_status: PublicationStatus
+    publication_id: constr(min_length=1, max_length=255) | None
+    publication_token: conint(ge=1, le=2147483647) | None
+    published_at: AwareDatetime | None
+    published_input_revision: conint(ge=0, le=2147483647) | None
+    published_threshold_revision: conint(ge=1, le=2147483647) | None
+    published_settings_id: constr(min_length=1, max_length=255) | None
+    published_clock: AwareDatetime | None
+    tenant_threshold_revision: conint(ge=1, le=2147483647) | None = None
+    published_tenant_threshold_revision: conint(ge=1, le=2147483647) | None = None
+
+
+class AccountInactivityWorkTransition(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    before: AccountInactivityWorkPass
+    after: AccountInactivityWorkPass
 
 
 class ActivityLevel(Enum):
@@ -110,7 +716,7 @@ class AnalyticsAnnotationRequest(BaseModel):
     )
 
 
-class Kind(Enum):
+class Kind2(Enum):
     playbook_published = "playbook_published"
     entitlement_change = "entitlement_change"
     price_change = "price_change"
@@ -126,6 +732,40 @@ class AnalyticsAnnotationSource(Enum):
     events_billing = "events_billing"
     events_sdk_meta = "events_sdk_meta"
     events_sdk_diagnostics = "events_sdk_diagnostics"
+
+
+class AttributionPolicyVersion(RootModel[constr(min_length=1)]):
+    root: constr(min_length=1)
+
+
+class EnvironmentScope(Enum):
+    tenant_billing = "tenant_billing"
+    sdk_environment = "sdk_environment"
+
+
+class Disclosure(RootModel[constr(min_length=1, max_length=500)]):
+    root: constr(min_length=1, max_length=500)
+
+
+class AnalyticsAttributionMeta(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    settled: bool
+    attribution_policy_versions: list[AttributionPolicyVersion] = Field(
+        ..., max_length=20, min_length=1
+    )
+    restating: bool
+    subjects_live_by_version: (
+        dict[constr(min_length=1), conint(ge=0, le=9007199254740991)] | None
+    ) = None
+    gate_touch_rule: Literal["exposure"] = "exposure"
+    classified_share: confloat(ge=0.0, le=1.0) | None = None
+    unclassified_exposures: conint(ge=0, le=9007199254740991) | None = None
+    environment_scope: EnvironmentScope
+    disclosures: list[Disclosure] | None = Field(
+        [], max_length=20, validate_default=True
+    )
 
 
 class AnalyticsBlockError(BaseModel):
@@ -419,6 +1059,65 @@ class AnalyticsFxRateEvidenceSet(
     root: AnalyticsFxRateEvidenceSet1 | AnalyticsFxRateEvidenceSet2
 
 
+class Status6(Enum):
+    resolved = "resolved"
+    empty = "empty"
+    unavailable = "unavailable"
+
+
+class Touch(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    start: AwareDatetime
+    end: AwareDatetime
+
+
+class Evidence(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    start: AwareDatetime
+    end: AwareDatetime
+
+
+class FollowUpMaturity(Enum):
+    complete = "complete"
+    partial = "partial"
+    unknown = "unknown"
+
+
+class QuietMaturity(Enum):
+    complete = "complete"
+    partial = "partial"
+    unknown = "unknown"
+
+
+class State(Enum):
+    bought = "bought"
+    no_change = "no_change"
+    left = "left"
+    immature = "immature"
+    unknown = "unknown"
+
+
+class RedReason(Enum):
+    churned = "churned"
+    quiet = "quiet"
+    downgraded = "downgraded"
+
+
+class AnalyticsGateOutcome(Enum):
+    bought = "bought"
+    no_change = "no_change"
+    left = "left"
+
+
+class AnalyticsGatePool(Enum):
+    paying = "paying"
+    not_paying = "not_paying"
+
+
 class Values(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -441,12 +1140,6 @@ class AnalyticsGateSettingsApplied2(BaseModel):
         extra="forbid",
     )
     status: Literal["not_applied"]
-
-
-class AnalyticsGateSettingsApplied(
-    RootModel[AnalyticsGateSettingsApplied1 | AnalyticsGateSettingsApplied2]
-):
-    root: AnalyticsGateSettingsApplied1 | AnalyticsGateSettingsApplied2
 
 
 class Source(Enum):
@@ -477,7 +1170,7 @@ class GateFollowUpDays(Enum):
     override = "override"
 
 
-class GateWindowDays(Enum):
+class GateWindowDays1(Enum):
     default = "default"
     override = "override"
 
@@ -489,15 +1182,37 @@ class AnalyticsGateSettingsProvenance(BaseModel):
     analytics_min_sample: AnalyticsMinSample
     quiet_days: QuietDays
     gate_follow_up_days: GateFollowUpDays
-    gate_window_days: GateWindowDays
+    gate_window_days: GateWindowDays1
 
 
-class AnalyticsGateSettingsTarget(BaseModel):
+class AnalyticsGateSettingsTarget1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
     status: Literal["unavailable"]
-    prerequisite: Literal["BL-0497"]
+    prerequisite: Literal["BL-0498"]
+
+
+class AnalyticsGateSettingsTarget2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    status: Literal["available"]
+    carrier: Literal["gate_outcomes"]
+
+
+class AnalyticsGateSettingsTarget(
+    RootModel[AnalyticsGateSettingsTarget1 | AnalyticsGateSettingsTarget2]
+):
+    root: AnalyticsGateSettingsTarget1 | AnalyticsGateSettingsTarget2
+
+
+class AnalyticsGateVerdict(Enum):
+    working = "working"
+    working_but_costly = "working_but_costly"
+    hurting = "hurting"
+    within_expected_range = "within_expected_range"
+    not_enough_data = "not_enough_data"
 
 
 class AnalyticsHistoricalMode(Enum):
@@ -753,7 +1468,7 @@ class Unit(Enum):
     invoice = "invoice"
 
 
-class Status(Enum):
+class Status8(Enum):
     available = "available"
     below_minimum = "below_minimum"
     unknown = "unknown"
@@ -769,7 +1484,7 @@ class Sample(BaseModel):
     unit: Unit
     count: conint(ge=0, le=9007199254740991) | None
     minimum: conint(ge=1, le=2147483647)
-    status: Status
+    status: Status8
 
 
 class Legend(Enum):
@@ -953,6 +1668,14 @@ class AttributionCreditBasis(Enum):
     inferred = "inferred"
 
 
+class OutcomePolarityEnum(Enum):
+    adverse = "adverse"
+
+
+class OutcomePolarity(RootModel[OutcomePolarityEnum | None]):
+    root: OutcomePolarityEnum | None = None
+
+
 class AttributionCreditStatus(Enum):
     credited = "credited"
     no_eligible_touch = "no_eligible_touch"
@@ -969,6 +1692,7 @@ class AttributionDirection(Enum):
 class AttributionEnvironmentScope(Enum):
     tenant_billing = "tenant_billing"
     sdk_environment = "sdk_environment"
+    account_activity = "account_activity"
 
 
 class AttributionLane(Enum):
@@ -982,11 +1706,13 @@ class AttributionLineage(Enum):
     single = "single"
     partial = "partial"
     day_close = "day_close"
+    threshold_crossing = "threshold_crossing"
 
 
 class AttributionMoneyBasis(Enum):
     item_mrr_delta = "item_mrr_delta"
     sdk_reported_amount = "sdk_reported_amount"
+    nonmonetary = "nonmonetary"
 
 
 class AttributionRunKind(Enum):
@@ -997,6 +1723,14 @@ class AttributionRunKind(Enum):
     restate = "restate"
 
 
+class OutcomePolarity1Enum(Enum):
+    adverse = "adverse"
+
+
+class OutcomePolarity1(RootModel[OutcomePolarity1Enum | None]):
+    root: OutcomePolarity1Enum | None = None
+
+
 class AttributionSettledReason(Enum):
     watermark = "watermark"
     cap = "cap"
@@ -1005,6 +1739,7 @@ class AttributionSettledReason(Enum):
 class AttributionSubjectKind(Enum):
     movement = "movement"
     sdk_conversion = "sdk_conversion"
+    account_inactivity = "account_inactivity"
 
 
 class AttributionTouchKind(Enum):
@@ -1012,6 +1747,14 @@ class AttributionTouchKind(Enum):
     cta = "cta"
     gate_denied = "gate_denied"
     gate = "gate"
+
+
+class OutcomePolarity2Enum(Enum):
+    adverse = "adverse"
+
+
+class OutcomePolarity2(RootModel[OutcomePolarity2Enum | None]):
+    root: OutcomePolarity2Enum | None = None
 
 
 class AuditActorType(Enum):
@@ -1210,7 +1953,7 @@ class BillingAccountBindingActor(
     root: BillingAccountBindingActor1 | BillingAccountBindingActor2
 
 
-class Kind1(Enum):
+class Kind3(Enum):
     provider_metadata_account = "provider_metadata_account"
     provider_metadata_user = "provider_metadata_user"
     customer_link = "customer_link"
@@ -1231,7 +1974,7 @@ class BillingAccountBindingEvidence(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    kind: Kind1
+    kind: Kind3
     confidence: Confidence
     actor: BillingAccountBindingActor
     reason: constr(max_length=500) | None
@@ -1315,7 +2058,7 @@ class Gap(Enum):
     provider_failure = "provider_failure"
 
 
-class Status1(Enum):
+class Status9(Enum):
     succeeded = "succeeded"
     pending = "pending"
     failed = "failed"
@@ -1352,7 +2095,7 @@ class Coverage(BaseModel):
     carry_forward: Literal["known_contract_terms_only"]
 
 
-class Status2(Enum):
+class Status10(Enum):
     complete = "complete"
     partial = "partial"
     unavailable = "unavailable"
@@ -1492,7 +2235,7 @@ class BillingCreditSettlement(
     root: BillingCreditSettlement1 | BillingCreditSettlement2 | BillingCreditSettlement3
 
 
-class Kind2(Enum):
+class Kind4(Enum):
     discount = "discount"
     coupon = "coupon"
     promotion_code = "promotion_code"
@@ -1502,7 +2245,7 @@ class Reference(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    kind: Kind2
+    kind: Kind4
     id: constr(min_length=1, max_length=255)
 
 
@@ -1589,7 +2332,7 @@ class BillingGenerationCheckpoint(BaseModel):
     completed: bool
 
 
-class Status3(Enum):
+class Status11(Enum):
     building = "building"
     shadow = "shadow"
     active = "active"
@@ -1614,7 +2357,7 @@ class BillingHealthStatus(Enum):
     payment_method_missing = "payment_method_missing"
 
 
-class Status4(Enum):
+class Status12(Enum):
     draft = "draft"
     open = "open"
     paid = "paid"
@@ -1816,7 +2559,7 @@ class Payment3(BaseModel):
     reason: Reason4
 
 
-class Status5(Enum):
+class Status13(Enum):
     open = "open"
     paid = "paid"
     canceled = "canceled"
@@ -1902,7 +2645,7 @@ class CadenceProvenance(Enum):
     unknown = "unknown"
 
 
-class Evidence(Enum):
+class Evidence1(Enum):
     start = "start"
     renewal = "renewal"
     change = "change"
@@ -1931,7 +2674,7 @@ class BillingItemStateDerivation(BaseModel):
     )
     source: Literal["payments"]
     cadence_provenance: CadenceProvenance
-    evidence: Evidence
+    evidence: Evidence1
     price_key: constr(pattern=r"^opk_[0-9a-f]{24}$")
     amount_basis: AmountBasis
     list_amount_minor: conint(ge=1, le=9007199254740991) | None
@@ -2046,7 +2789,7 @@ class BillingLifecyclePayload2(BaseModel):
     selections: list[BillingLifecyclePartitionSelection] = Field(..., max_length=128)
 
 
-class Status7(Enum):
+class Status15(Enum):
     complete = "complete"
     partial = "partial"
     unavailable = "unavailable"
@@ -2084,7 +2827,7 @@ class BillingLifecycleTransitionLink(BaseModel):
     config_snapshot_ids: list[ConfigSnapshotId] = Field(..., max_length=1000)
 
 
-class Kind3(Enum):
+class Kind5(Enum):
     paid_started = "paid_started"
     reactivated = "reactivated"
     paid_ended = "paid_ended"
@@ -2119,7 +2862,7 @@ class TierEvidenceItem(BaseModel):
     snapshot_id: constr(min_length=1, max_length=800)
 
 
-class Cause(RootModel[constr(min_length=1)]):
+class Cause1(RootModel[constr(min_length=1)]):
     root: constr(min_length=1)
 
 
@@ -2140,7 +2883,7 @@ class StockItem(BaseModel):
     after_items: list[AfterItem] = Field(..., max_length=10000)
 
 
-class Status8(Enum):
+class Status16(Enum):
     warning_needs_response = "warning_needs_response"
     warning_under_review = "warning_under_review"
     warning_closed = "warning_closed"
@@ -2241,7 +2984,7 @@ class Gap3(Enum):
     provider_failure = "provider_failure"
 
 
-class Status9(Enum):
+class Status17(Enum):
     requires_payment_method = "requires_payment_method"
     requires_confirmation = "requires_confirmation"
     requires_action = "requires_action"
@@ -2608,7 +3351,7 @@ class Atomicity(Enum):
     source_confirmed = "source_confirmed"
 
 
-class Cause1(Enum):
+class Cause2(Enum):
     activation = "activation"
     quantity = "quantity"
     price = "price"
@@ -2677,7 +3420,7 @@ class BillingRecurringOpeningItem(BaseModel):
     segment_ids: list[SegmentId] | None
 
 
-class Status10(Enum):
+class Status18(Enum):
     pending = "pending"
     requires_action = "requires_action"
     succeeded = "succeeded"
@@ -3021,7 +3764,7 @@ class ContentPayloadSegmentEntry(BaseModel):
     promotion_id: str | None = None
 
 
-class Status11(Enum):
+class Status19(Enum):
     draft = "draft"
     active = "active"
     inactive = "inactive"
@@ -3039,7 +3782,7 @@ class ContentPlacementPayload(BaseModel):
     segment_content_map: list[ContentPayloadSegmentEntry] | None = None
     ui_path_id: str | None = None
     promotion_id: str | None = None
-    status: Status11
+    status: Status19
     created_at: AwareDatetime | None = None
     updated_at: AwareDatetime | None = None
 
@@ -3219,6 +3962,12 @@ class CustomerAccount(BaseModel):
     merged_into: constr(min_length=1, max_length=255) | None = None
     retired_at: AwareDatetime | None = None
     observed_only: bool | None = False
+    inactive: bool | None = False
+    inactivity_readiness: AccountInactivityReadiness | None = "unobserved"
+    inactivity_environment_id: str | None = None
+    inactivity_is_test: bool | None = None
+    inactivity_generation_id: str | None = None
+    inactivity_as_of: AwareDatetime | None = None
 
 
 class Value4(Enum):
@@ -3362,7 +4111,7 @@ class CustomerBuiltinDimensions(BaseModel):
     device_type: DeviceType | None = None
 
 
-class State(Enum):
+class State1(Enum):
     draft = "draft"
     live = "live"
     release = "release"
@@ -3375,7 +4124,7 @@ class CustomerCatalogQuery(BaseModel):
     page: conint(ge=1, le=9007199254740991) | None = 1
     per_page: conint(ge=1, le=100) | None = 25
     environment_id: constr(min_length=1, max_length=255)
-    state: State
+    state: State1
     release_id: constr(min_length=1, max_length=255) | None = None
     handle: constr(min_length=1, max_length=255) | None = None
 
@@ -3413,7 +4162,7 @@ class CustomerEntityLinkCreate(BaseModel):
     external_id: constr(min_length=1, max_length=255)
     billing_period: BillingPeriod1 | None = ""
     currency: constr(pattern=r"^(?:[a-z]{3})?$") | None = ""
-    state: State | None = None
+    state: State1 | None = None
     release_id: constr(min_length=1, max_length=255) | None = None
 
 
@@ -3426,7 +4175,7 @@ class CustomerEntityLinkListQuery(BaseModel):
     environment_id: constr(min_length=1, max_length=255)
     provider: Literal["clerk"]
     provider_instance_id: constr(min_length=1, max_length=255)
-    state: State | None = None
+    state: State1 | None = None
     release_id: constr(min_length=1, max_length=255) | None = None
     resource_type: ResourceType
     resource_key: constr(min_length=1, max_length=255) | None = None
@@ -3478,7 +4227,7 @@ class SubscriptionStatus(Enum):
     none = "none"
 
 
-class Status12(Enum):
+class Status20(Enum):
     active = "active"
     churned = "churned"
     trial = "trial"
@@ -3498,7 +4247,7 @@ class CustomerSummary(BaseModel):
     external_id: constr(min_length=1)
     current_plan_id: str | None = None
     subscription_status: SubscriptionStatus | None = "none"
-    status: Status12 | None = "active"
+    status: Status20 | None = "active"
     billing_health_issues: list[BillingHealthIssue] | None = []
     provisional: bool | None = False
     created_at: AwareDatetime
@@ -3613,6 +4362,34 @@ class EnforcementMode(Enum):
     block_with_upsell = "block_with_upsell"
     degrade = "degrade"
     allow_overage = "allow_overage"
+
+
+class Level(Enum):
+    warning = "warning"
+    error = "error"
+
+
+class Code1(Enum):
+    entitlement_cost_zero = "entitlement_cost_zero"
+    entitlement_cost_missing = "entitlement_cost_missing"
+    entitlement_cost_invalid = "entitlement_cost_invalid"
+
+
+class Received(Enum):
+    negative = "negative"
+    nan = "nan"
+    infinite = "infinite"
+    non_number = "non_number"
+
+
+class Diagnostic(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    level: Level
+    code: Code1
+    handle: str
+    received: Received | None = None
 
 
 class EntitlementGrantSource(Enum):
@@ -4109,7 +4886,7 @@ class ExperimentGuardrailLimit(BaseModel):
     max_relative_drop: confloat(ge=0.0, le=1.0)
 
 
-class Status14(Enum):
+class Status22(Enum):
     healthy = "healthy"
     warning = "warning"
     unhealthy = "unhealthy"
@@ -4124,7 +4901,7 @@ class Issue(BaseModel):
     message: constr(min_length=1, max_length=500)
 
 
-class State3(Enum):
+class State4(Enum):
     pass_ = "pass"
     fail = "fail"
     unknown = "unknown"
@@ -4140,7 +4917,7 @@ class ExperimentIntegrityReport(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    state: State3
+    state: State4
     sample_ratio_mismatch: SampleRatioMismatch
     telemetry_complete: bool
     outcomes_mature: bool
@@ -4388,7 +5165,7 @@ class FxRateDecimal(RootModel[constr(pattern=r"^\d+(?:\.\d+)?$", max_length=256)
     root: constr(pattern=r"^\d+(?:\.\d+)?$", max_length=256)
 
 
-class GateWindowDaysModel(BaseModel):
+class GateWindowDays(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -4638,7 +5415,7 @@ class History1(BaseModel):
     evidence_reference: constr(min_length=1, max_length=512)
 
 
-class Status15(Enum):
+class Status23(Enum):
     complete = "complete"
     partial = "partial"
     unavailable = "unavailable"
@@ -4709,7 +5486,7 @@ class ManagedItemBaseline(BaseModel):
     )
     subscription_id: constr(min_length=1, max_length=512)
     item_id: constr(min_length=1, max_length=512)
-    status: Status15
+    status: Status23
     baseline_basis: BaselineBasis
     currency: constr(pattern=r"^[A-Z]{3}$") | None
     currency_exponent: conint(ge=0, le=4) | None
@@ -4941,7 +5718,7 @@ class ChildBlock(BaseModel):
     block_id: str
 
 
-class Status17(Enum):
+class Status25(Enum):
     draft = "draft"
     active = "active"
     archived = "archived"
@@ -4959,7 +5736,7 @@ class MessageBlock(BaseModel):
     segment_overrides: list[SegmentOverride] | None = None
     child_blocks: list[ChildBlock] | None = None
     tokens_used: list[str] | None = None
-    status: Status17
+    status: Status25
     created_at: AwareDatetime
     updated_at: AwareDatetime
 
@@ -5240,7 +6017,7 @@ class EffectKind(Enum):
     cache = "cache"
 
 
-class Status18(Enum):
+class Status26(Enum):
     stopped = "stopped"
     compensated = "compensated"
     compensation_pending = "compensation_pending"
@@ -5254,7 +6031,7 @@ class OutstandingEffect(BaseModel):
     effect_id: constr(min_length=1)
     effect_kind: EffectKind
     reversible: bool
-    status: Status18
+    status: Status26
 
 
 class PaginationParams(BaseModel):
@@ -5286,7 +6063,7 @@ class Plan(RootModel[constr(max_length=120)]):
     root: constr(max_length=120)
 
 
-class State4(Enum):
+class State5(Enum):
     unmatched = "unmatched"
     linked = "linked"
     no_account = "no_account"
@@ -5297,7 +6074,7 @@ class PayerAccountLinkListQuery(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    state: State4 | None = "unmatched"
+    state: State5 | None = "unmatched"
     q: constr(max_length=255) | None = None
     page: conint(ge=1, le=9007199254740991) | None = 1
     per_page: conint(ge=1, le=100) | None = 25
@@ -5669,7 +6446,7 @@ class Placement(BaseModel):
     metadata: dict[str, Any] | None = {}
 
 
-class Kind4(Enum):
+class Kind6(Enum):
     template = "template"
     slot = "slot"
 
@@ -5678,7 +6455,7 @@ class PlacementSettingsCapRuleGroupItem(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    kind: Kind4
+    kind: Kind6
     id: constr(min_length=1)
     label: constr(min_length=1) | None = None
 
@@ -5880,7 +6657,7 @@ class EvidenceRef(RootModel[constr(min_length=1)]):
     root: constr(min_length=1)
 
 
-class Kind5(Enum):
+class Kind7(Enum):
     deterministic = "deterministic"
     agent = "agent"
 
@@ -5889,7 +6666,7 @@ class Generator(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    kind: Kind5
+    kind: Kind7
     optimizer_id: constr(min_length=1)
     optimizer_version: conint(ge=1, le=9007199254740991)
     seed: constr(min_length=1) | None = None
@@ -7461,6 +8238,16 @@ class ServerEvaluationPayloadDecisionsItem(BaseModel):
     reason_codes: list[str] | None = None
 
 
+class Diagnostic1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    level: Level
+    code: Code1
+    handle: str
+    received: Received | None = None
+
+
 class ServerEvaluationPayloadEntitlementsValue(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -7475,6 +8262,7 @@ class ServerEvaluationPayloadEntitlementsValue(BaseModel):
     rule_handle: str | None = None
     contributing_rule_handles: list[str] | None = None
     placement: PlacementDecisionOutput | None = None
+    diagnostic: Diagnostic1 | None = None
 
 
 class ServerEvaluationPayloadUserContext(BaseModel):
@@ -7587,12 +8375,12 @@ class Severity(Enum):
     critical = "critical"
 
 
-class Status19(Enum):
+class Status27(Enum):
     qualified = "qualified"
     refused = "refused"
 
 
-class Code1(Enum):
+class Code3(Enum):
     unauthorized = "unauthorized"
     identity_mismatch = "identity_mismatch"
     unsupported_lane = "unsupported_lane"
@@ -7619,7 +8407,7 @@ class Error(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    code: Code1
+    code: Code3
     message: constr(pattern=r"^[^\x00-\x1f\x7f]*$", min_length=1, max_length=512)
 
 
@@ -7628,7 +8416,7 @@ class SimulationChildQualificationReceipt(BaseModel):
         extra="forbid",
     )
     operation: Literal["qualify"]
-    status: Status19
+    status: Status27
     parent_event_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
     parent_run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
     qualification_id: constr(
@@ -7810,7 +8598,7 @@ class SimulationExecutionFingerprint(BaseModel):
     mapper_revision: constr(pattern=r"^m[1-9]\d*$", max_length=32)
 
 
-class Status20(Enum):
+class Status28(Enum):
     prepared = "prepared"
     refused = "refused"
     failed = "failed"
@@ -7834,7 +8622,6 @@ class Identity1(BaseModel):
 
 class Lane1(Enum):
     clickstream = "clickstream"
-    interactions = "interactions"
     billing = "billing"
 
 
@@ -7852,11 +8639,10 @@ class Lane(BaseModel):
 
 class Lane2(Enum):
     clickstream = "clickstream"
-    interactions = "interactions"
     billing = "billing"
 
 
-class Status21(Enum):
+class Status29(Enum):
     measured = "measured"
     unknown = "unknown"
 
@@ -7866,7 +8652,7 @@ class Measurement(BaseModel):
         extra="forbid",
     )
     lane: Lane2
-    status: Status21
+    status: Status29
     workflow_run_id: (
         constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128) | None
     )
@@ -7972,11 +8758,11 @@ class Error1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    code: Code1
+    code: Code3
     message: constr(pattern=r"^[^\x00-\x1f\x7f]*$", min_length=1, max_length=512)
 
 
-class Kind6(Enum):
+class Kind8(Enum):
     ingest = "ingest"
     billing = "billing"
 
@@ -7993,7 +8779,7 @@ class SimulationProbeReceipt(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    kind: Kind6
+    kind: Kind8
     probe_run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
     workflow_run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
     workflow_attempt: conint(le=9007199254740991, gt=0)
@@ -8005,7 +8791,7 @@ class SimulationProbeReceipt(BaseModel):
     payload_digest: constr(pattern=r"^[a-f0-9]{64}$")
 
 
-class Status22(Enum):
+class Status30(Enum):
     queued = "queued"
     running = "running"
     complete = "complete"
@@ -8018,7 +8804,7 @@ class Status22(Enum):
     unknown = "unknown"
 
 
-class Phase1(Enum):
+class Phase2(Enum):
     admission = "admission"
     setup = "setup"
     slices = "slices"
@@ -8038,7 +8824,7 @@ class RequestedReset(BaseModel):
     resource_set_digest: ResourceSetDigest
 
 
-class Status23(Enum):
+class Status31(Enum):
     empty = "empty"
     exact_probes = "exact_probes"
 
@@ -8076,7 +8862,7 @@ class AdmittedFootprint(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    status: Status23
+    status: Status31
     observed_at: AwareDatetime
     allowlist_digest: constr(pattern=r"^[a-f0-9]{64}$")
     probe_runs: list[SimulationProbeReceipt] = Field(..., max_length=20)
@@ -8112,7 +8898,7 @@ class PlannedLane(BaseModel):
     door_limit_bytes: conint(le=9007199254740991, gt=0)
 
 
-class Status24(Enum):
+class Status32(Enum):
     complete = "complete"
     failed = "failed"
     canceled = "canceled"
@@ -8128,7 +8914,7 @@ class Slice(BaseModel):
     lane: Lane2
     index: conint(ge=0, le=511)
     child_run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
-    status: Status24
+    status: Status32
     expected: conint(le=500, gt=0)
     acknowledged: conint(ge=0, le=9007199254740991) | None
     receipt_digest: constr(pattern=r"^[a-f0-9]{64}$")
@@ -8176,7 +8962,7 @@ class Expected1(BaseModel):
     examples: list[Example] = Field(..., max_length=20)
 
 
-class Status25(Enum):
+class Status33(Enum):
     matched = "matched"
     footprint_recorded = "footprint_recorded"
     unresolved = "unresolved"
@@ -8195,10 +8981,10 @@ class Resource5(BaseModel):
     physical_count: conint(ge=0, le=9007199254740991)
     observed: Observed
     expected: Expected1 | None
-    status: Status25
+    status: Status33
 
 
-class Status26(Enum):
+class Status34(Enum):
     complete = "complete"
     unchanged = "unchanged"
     running = "running"
@@ -8226,7 +9012,7 @@ class Replay(BaseModel):
     )
     event_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
     run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
-    status: Status26
+    status: Status34
     generation_id: (
         constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128) | None
     )
@@ -8247,7 +9033,7 @@ class Replay1(BaseModel):
     )
     event_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
     run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
-    status: Status26
+    status: Status34
     generation_id: (
         constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128) | None
     )
@@ -8268,11 +9054,11 @@ class Error2(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    code: Code1
+    code: Code3
     message: constr(pattern=r"^[^\x00-\x1f\x7f]*$", min_length=1, max_length=512)
 
 
-class Status28(Enum):
+class Status36(Enum):
     complete = "complete"
     failed = "failed"
     canceled = "canceled"
@@ -8306,7 +9092,7 @@ class Error3(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    code: Code1
+    code: Code3
     message: constr(pattern=r"^[^\x00-\x1f\x7f]*$", min_length=1, max_length=512)
 
 
@@ -8319,7 +9105,7 @@ class SimulationSliceReceipt(BaseModel):
     lane: Lane2
     index: conint(ge=0, le=511)
     child_run_id: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
-    status: Status28
+    status: Status36
     fingerprint: SimulationExecutionFingerprint
     worker_commit: constr(pattern=r"^[a-f0-9]{40}$")
     expected_inventory_digest: constr(pattern=r"^[a-f0-9]{64}$")
@@ -8636,7 +9422,7 @@ class Coverage2(BaseModel):
     positive_only: Literal[True]
 
 
-class State5(Enum):
+class State6(Enum):
     none_observed = "none_observed"
     observed = "observed"
     unknown = "unknown"
@@ -8646,7 +9432,7 @@ class Subscriptions(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    state: State5
+    state: State6
     observed_count: conint(ge=0, le=9007199254740991) | None
 
 
@@ -9057,6 +9843,10 @@ class Theme(BaseModel):
     tokens: dict[str, str] | None = {}
 
 
+class TriggerSource(Enum):
+    gate = "gate"
+
+
 class TreatmentInteractionType(Enum):
     impression = "impression"
     dismiss = "dismiss"
@@ -9411,7 +10201,7 @@ class UserRole(Enum):
     admin = "admin"
 
 
-class State6(Enum):
+class State7(Enum):
     active = "active"
     running_out = "running_out"
     expired = "expired"
@@ -9433,7 +10223,7 @@ class UserTrialStatus(BaseModel):
     started_at: AwareDatetime | None = None
     trial_type: str | None = None
     plan_handle: str | None = None
-    state: State6 | None = None
+    state: State7 | None = None
     trial_limit_type: TrialLimitType1 | None = None
     progress_percent: confloat(ge=0.0, le=100.0) | None = None
     day_number: conint(ge=0, le=9007199254740991) | None = None
@@ -9664,6 +10454,10 @@ class AnalyticsFactKind(RootModel[Any]):
     root: Any
 
 
+class AnalyticsGateOutcomePoolRedTotals(RootModel[Any]):
+    root: Any
+
+
 class AnalyticsMetricDerivation(RootModel[Any]):
     root: Any
 
@@ -9884,6 +10678,156 @@ class FieldSchema4(RootModel[Any]):
     root: Any
 
 
+class AccountInactivityDraftEpisode(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    episode: AccountInactivityEpisode
+    pass_: AccountInactivityWorkPass = Field(..., alias="pass")
+
+
+class AccountInactivityEpisodeTransition(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    pass_: AccountInactivityWorkPass = Field(..., alias="pass")
+    previous_pass: AccountInactivityWorkPass | None
+    before: AccountInactivityEpisode | None
+    after: AccountInactivityEpisode
+    max_previous_revision: conint(ge=0, le=2147483647)
+
+
+class AccountInactivityProducer(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+    generation_id: constr(min_length=1, max_length=255)
+    producer_revision: conint(ge=1, le=2147483647)
+    available_from: AwareDatetime | None
+    processed_through: AwareDatetime | None
+    readiness: AccountInactivityReadiness
+    reason: constr(min_length=1, max_length=255) | None
+    pending_inputs: conint(ge=0, le=9007199254740991)
+    pending_attribution: conint(ge=0, le=9007199254740991)
+    threshold_revision: conint(ge=1, le=2147483647) | None
+    accepted_input_revision: conint(ge=0, le=2147483647) | None = None
+    scanned_input_revision: conint(ge=0, le=2147483647) | None = None
+    completed_input_revision: conint(ge=0, le=2147483647) | None = None
+    active_pass_id: constr(min_length=1, max_length=255) | None = None
+    published_pass_id: constr(min_length=1, max_length=255) | None = None
+    tenant_threshold_revision: conint(ge=1, le=2147483647) | None = None
+
+
+class AccountInactivityPublishedEpisode(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    episode: AccountInactivityEpisode
+    pass_: AccountInactivityWorkPass = Field(..., alias="pass")
+
+
+class AccountInactivityReconcileRequested(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    environment_id: constr(min_length=1, max_length=255)
+    is_test: bool
+    generation_id: constr(min_length=1, max_length=255)
+    pass_id: constr(min_length=1, max_length=255)
+    work_revision: conint(ge=1, le=2147483647)
+    cursor: AccountInactivityWorkCursor
+    continuation_id: constr(min_length=1, max_length=255)
+
+
+class AccountInactivityThresholdAdmissionCapture(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    before: AccountInactivityThresholdAdmission | None
+    after: AccountInactivityThresholdAdmission
+    head: AccountInactivityThresholdHead
+    baseline: AccountInactivityThresholdChange
+
+
+class AccountInactivityThresholdAdmissionTransition(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    before: AccountInactivityThresholdAdmission
+    after: AccountInactivityThresholdAdmission
+    changes: list[AccountInactivityThresholdChange] = Field(..., max_length=200)
+
+
+class AccountInactivityThresholdChangeTransition(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    before: AccountInactivityThresholdHead | None
+    after: AccountInactivityThresholdHead
+    change: AccountInactivityThresholdChange | None
+    quiet_days: conint(ge=1, le=2147483647) | None
+
+
+class AccountInactivityThresholdDiscovery(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tenant_id: constr(min_length=1, max_length=255)
+    generation_id: constr(pattern=r"^(live|epoch:(0|[1-9]\d*))$")
+    tenant_revision: conint(ge=1, le=2147483647)
+    work_revision: conint(ge=1, le=2147483647)
+    continuation_id: constr(min_length=1, max_length=255)
+    status: Status2
+    owner_id: constr(min_length=1, max_length=255) | None
+    lease_expires_at: AwareDatetime | None
+    retry_count: conint(ge=0, le=2147483647)
+    next_wakeup_at: AwareDatetime | None
+    error_reason: constr(min_length=1, max_length=255) | None
+    upper_scope: AccountInactivityThresholdScopeKey | None
+    after_scope: AccountInactivityThresholdScopeKey | None
+
+
+class AccountInactivityThresholdDiscoveryTransition(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    before: AccountInactivityThresholdDiscovery
+    after: AccountInactivityThresholdDiscovery
+    scopes: list[AccountInactivityThresholdScopeKey] = Field(..., max_length=50)
+
+
+class AccountInactivityThresholdReadiness(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    purpose: Purpose
+    head: AccountInactivityThresholdHead
+    admission: AccountInactivityThresholdAdmission
+    producer: AccountInactivityProducer
+    pass_: AccountInactivityWorkPass = Field(..., alias="pass")
+
+
+class AccountInactivityThresholdSyncContext(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    progress: AccountInactivityThresholdDiscovery | AccountInactivityThresholdAdmission
+    request: AccountInactivityThresholdSyncRequested
+
+
+class AccountInactivityWorkContext(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    pass_: AccountInactivityWorkPass = Field(..., alias="pass")
+    request: AccountInactivityReconcileRequested
+    item: AccountInactivityWorkItem | None
+
+
 class AccountPrimaryContactBinding(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -10024,7 +10968,7 @@ class AnalyticsAnnotation1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    kind: Kind
+    kind: Kind2
     at: AwareDatetime
     until: AwareDatetime | None = None
     label: constr(min_length=1, max_length=160)
@@ -10171,6 +11115,62 @@ class AnalyticsFilterValue(
     )
 
 
+class Settings(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    policy: Literal["gate-placement-settings-approved-v1"]
+    minSample: conint(ge=1, le=2147483647)
+    quietDays: conint(ge=1, le=2147483647)
+    gateFollowUpDays: conint(ge=1, le=2147483647)
+    gateWindowDays: GateWindowDays
+    provenance: AnalyticsGateSettingsProvenance
+    target_carrier: Literal["gate_outcomes"]
+    prerequisite: Literal["BL-0498"]
+
+
+class AnalyticsGateObservationWindow(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    settings: Settings
+    as_of: AwareDatetime
+    activation: AwareDatetime | None
+    source_watermark: AwareDatetime | None
+    maxEvidenceDays: conint(ge=1, le=2147483647)
+    status: Status6
+    reason: constr(min_length=1, max_length=500) | None
+    target_carrier: Literal["gate_outcomes"]
+    touch: Touch | None
+    evidence: Evidence | None
+    mature_touch_through: AwareDatetime | None
+    quiet_touch_through: AwareDatetime | None
+    follow_up_maturity: FollowUpMaturity
+    quiet_maturity: QuietMaturity
+    evidence_days: confloat(ge=0.0) | None
+
+
+class AnalyticsGateOutcomeAccount(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    entitlement_handle: constr(min_length=1, max_length=200)
+    account_key: constr(min_length=1, max_length=500)
+    pool: AnalyticsGatePool
+    state: State
+    red_reason: RedReason | None
+    last_touch_at: AwareDatetime
+
+
+class AnalyticsGateOutcomeHeadline(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    pool: AnalyticsGatePool | None
+    tie: bool
+    verdict: AnalyticsGateVerdict | None
+
+
 class AnalyticsGateSettingsValues(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -10178,7 +11178,7 @@ class AnalyticsGateSettingsValues(BaseModel):
     analytics_min_sample: conint(ge=1, le=2147483647)
     quiet_days: conint(ge=1, le=2147483647)
     gate_follow_up_days: conint(ge=1, le=2147483647)
-    gate_window_days: GateWindowDaysModel
+    gate_window_days: GateWindowDays
 
 
 class AnalyticsMetricSemantics(BaseModel):
@@ -10420,8 +11420,14 @@ class AttributionCreditRow(BaseModel):
     attribution_version: conint(ge=1, le=2147483647)
     created_at: AwareDatetime
     deleted_at: AwareDatetime | None
+    generation_id: constr(min_length=1, max_length=255) | None = None
+    episode_id: constr(min_length=1, max_length=2048) | None = None
+    episode_revision: conint(le=9007199254740991, gt=0) | None = None
+    threshold_revision: conint(le=9007199254740991, gt=0) | None = None
+    quiet_days: conint(le=9007199254740991, gt=0) | None = None
+    outcome_polarity: OutcomePolarity | None = None
     lane: AttributionLane
-    direction: AttributionDirection
+    direction: AttributionDirection | None
     target_key: constr(min_length=1, max_length=600)
     status: AttributionCreditStatus
     placement_id: constr(min_length=1, max_length=255) | None
@@ -10432,13 +11438,13 @@ class AttributionCreditRow(BaseModel):
     touch_kind: AttributionTouchKind | None
     touch_rank: conint(ge=1, le=10) | None
     credit_basis: AttributionCreditBasis | None
-    movement_kind: MrrMovementKind
+    movement_kind: MrrMovementKind | None
     subscription_kind: MrrMovementKind | None
     lineage: AttributionLineage
     reason: constr(min_length=1, max_length=160)
     churn_cause: MrrChurnCause | None
     amount_minor: conint(ge=0, le=2147483647) | None
-    currency: constr(pattern=r"^[a-z]{3}$")
+    currency: constr(pattern=r"^[a-z]{3}$") | None
     money_basis: AttributionMoneyBasis
     split_share: confloat(le=1.0, gt=0.0)
     threshold_seconds_applied: conint(ge=0, le=2147483647)
@@ -10478,6 +11484,12 @@ class AttributionRunRow(BaseModel):
     attribution_version: conint(ge=1, le=2147483647)
     created_at: AwareDatetime
     deleted_at: AwareDatetime | None
+    generation_id: constr(min_length=1, max_length=255) | None = None
+    episode_id: constr(min_length=1, max_length=2048) | None = None
+    episode_revision: conint(le=9007199254740991, gt=0) | None = None
+    threshold_revision: conint(le=9007199254740991, gt=0) | None = None
+    quiet_days: conint(le=9007199254740991, gt=0) | None = None
+    outcome_polarity: OutcomePolarity1 | None = None
     run_kind: AttributionRunKind
     content_hash: constr(pattern=r"^[0-9a-f]{64}$")
     identity_snapshot_hash: constr(pattern=r"^[0-9a-f]{64}$")
@@ -10513,6 +11525,12 @@ class AttributionTouchRow(BaseModel):
     attribution_version: conint(ge=1, le=2147483647)
     created_at: AwareDatetime
     deleted_at: AwareDatetime | None
+    generation_id: constr(min_length=1, max_length=255) | None = None
+    episode_id: constr(min_length=1, max_length=2048) | None = None
+    episode_revision: conint(le=9007199254740991, gt=0) | None = None
+    threshold_revision: conint(le=9007199254740991, gt=0) | None = None
+    quiet_days: conint(le=9007199254740991, gt=0) | None = None
+    outcome_polarity: OutcomePolarity2 | None = None
     touch_kind: AttributionTouchKind
     touch_rank: conint(ge=1, le=10)
     touch_depth: conint(ge=1, le=10)
@@ -10531,9 +11549,9 @@ class AttributionTouchRow(BaseModel):
     decision_id: constr(min_length=1, max_length=255) | None
     message_shown: bool | None
     credit_basis: AttributionCreditBasis
-    movement_kind: MrrMovementKind
+    movement_kind: MrrMovementKind | None
     subscription_kind: MrrMovementKind | None
-    movement_direction: AttributionDirection
+    movement_direction: AttributionDirection | None
     lineage: AttributionLineage
     subscription_id: constr(min_length=1, max_length=255) | None
 
@@ -10805,7 +11823,7 @@ class BillingCommittedResult(BaseModel):
     effective_base: AwareDatetime
     horizon: AwareDatetime
     observed_cutoff: AwareDatetime
-    status: Status2
+    status: Status10
     actual_mrr_minor: (
         constr(pattern=r"^(0|[1-9][0-9]*)(\/[1-9][0-9]*)?$", max_length=512) | None
     )
@@ -10982,7 +12000,7 @@ class BillingInvoicePaymentObservation(BaseModel):
     invoice_id: constr(min_length=1, max_length=255)
     provenance: BillingEvidenceProvenance
     payment: Payment | Payment1 | Payment2 | Payment3
-    status: Status5 | None
+    status: Status13 | None
     is_default: bool | None
     currency: constr(pattern=r"^[A-Z]{3}$") | None
     currency_exponent: conint(ge=0, le=4) | None
@@ -11145,7 +12163,7 @@ class EventPayment(BaseModel):
     invoice_id: constr(min_length=1, max_length=255)
     provenance: Provenance
     payment: Payment4 | Payment5 | Payment6 | Payment7
-    status: Status5 | None
+    status: Status13 | None
     is_default: bool | None
     currency: constr(pattern=r"^[A-Z]{3}$") | None
     currency_exponent: conint(ge=0, le=4) | None
@@ -11271,7 +12289,7 @@ class BillingLifecycleTransition(BaseModel):
     account_id: constr(min_length=1, max_length=800)
     payer_id: constr(min_length=1, max_length=800)
     mapping_evidence_id: constr(min_length=1, max_length=800)
-    kind: Kind3
+    kind: Kind5
     effective_at: AwareDatetime
     observed_at: AwareDatetime
     source_recorded_at: AwareDatetime
@@ -11290,7 +12308,7 @@ class BillingLifecycleTransition(BaseModel):
     from_tier: conint(ge=0, le=9007199254740991) | None
     to_tier: conint(ge=0, le=9007199254740991) | None
     tier_evidence: list[TierEvidenceItem] = Field(..., max_length=2000)
-    causes: list[Cause] = Field(..., max_length=1000)
+    causes: list[Cause1] = Field(..., max_length=1000)
     stock: list[StockItem] = Field(..., max_length=10000)
 
 
@@ -11356,7 +12374,7 @@ class BillingLossProfile3(BaseModel):
     observed_at: AwareDatetime
     dispute_id: constr(min_length=1, max_length=255)
     payment_id: constr(min_length=1, max_length=255)
-    status: Status8
+    status: Status16
 
 
 class BillingLossProfile4(BaseModel):
@@ -11725,7 +12743,7 @@ class BillingPaymentIntentObservation(BaseModel):
     amount_requested_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40) | None
     amount_received_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40) | None
     amount_capturable_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40) | None
-    status: Status9 | None
+    status: Status17 | None
     capture_method: CaptureMethod | None
     canceled_at: AwareDatetime | None
     cancellation_reason: CancellationReason | None
@@ -11798,7 +12816,7 @@ class BillingRefundProfile1(BaseModel):
     refund_id: constr(min_length=1, max_length=255)
     payment_id: constr(min_length=1, max_length=255)
     balance_transaction_id: constr(min_length=1, max_length=255) | None = None
-    status: Status10
+    status: Status18
     currency: constr(pattern=r"^[A-Z]{3}$")
     currency_exponent: conint(ge=0, le=4)
     amount_minor: constr(pattern=r"^(0|[1-9][0-9]*)$", max_length=40)
@@ -11934,7 +12952,7 @@ class Customer(BaseModel):
     stripe_customer_id: str | None = None
     current_plan_id: str | None = None
     subscription_status: SubscriptionStatus | None = "none"
-    status: Status12 | None = "active"
+    status: Status20 | None = "active"
     billing_health_issues: list[BillingHealthIssue] | None = []
     metadata: dict[str, Any] | None = {}
     provisional: bool | None = False
@@ -12011,6 +13029,7 @@ class EntitlementCheckResult(BaseModel):
     rule_handle: str | None = None
     contributing_rule_handles: list[str] | None = None
     placement: PlacementDecisionOutput | None = None
+    diagnostic: Diagnostic | None = None
 
 
 class EntitlementGrant(BaseModel):
@@ -12308,7 +13327,7 @@ class ExperimentHealth(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    status: Status14
+    status: Status22
     sample_ratio_mismatch: ExperimentSampleRatioMismatch | None = None
     issues: list[Issue] | None = Field([], validate_default=True)
 
@@ -12564,7 +13583,7 @@ class ManagedBaselineResult(BaseModel):
     activation: ManagedActivation
     as_of: AwareDatetime
     observed_cutoff: AwareDatetime
-    status: Status15
+    status: Status23
     items: list[ManagedItemBaseline] = Field(..., max_length=250)
     limitations: list[Limitation] = Field(..., max_length=250)
 
@@ -12854,7 +13873,7 @@ class PlacementPayload(BaseModel):
     cta_list: list[CtaObject] | None = Field([], validate_default=True)
     max_per_period: conint(ge=0, le=9007199254740991) | None = None
     max_period_unit: CapPeriod | None = "session"
-    cooldown_after_dismiss_days: conint(ge=0, le=9007199254740991) | None = 7
+    cooldown_after_dismiss_days: conint(ge=0, le=9007199254740991) | None = None
     remind_later_minutes: conint(ge=0, le=9007199254740991) | None = None
     recommendation_strategy: RecommendationStrategy | None = "next_tier_up"
     recommendation_plan_override: str | None = None
@@ -13704,7 +14723,7 @@ class SimulationPreparationReceipt(BaseModel):
         extra="forbid",
     )
     operation: Literal["prepare"]
-    status: Status20
+    status: Status28
     identity: Identity1
     provenance: SimulationVerifiedProvenance | None
     child_qualification: SimulationChildQualificationReceipt | None
@@ -13712,8 +14731,8 @@ class SimulationPreparationReceipt(BaseModel):
     prepared_at: AwareDatetime
     expires_at: AwareDatetime
     config_read_authorized: bool
-    lanes: list[Lane] = Field(..., max_length=3, min_length=3)
-    measurements: list[Measurement] = Field(..., max_length=3, min_length=3)
+    lanes: list[Lane] = Field(..., max_length=2, min_length=2)
+    measurements: list[Measurement] = Field(..., max_length=2, min_length=2)
     prior_lanes: list[PriorLane] = Field(..., max_length=20, min_length=1)
     budget: Budget
     pending_reset_entries: list[PendingResetEntry] = Field(..., max_length=20)
@@ -13738,8 +14757,8 @@ class SimulationRunReceipt(BaseModel):
         extra="forbid",
     )
     operation: Literal["execute"]
-    status: Status22
-    phase: Phase1
+    status: Status30
+    phase: Phase2
     identity: Identity1
     provenance: SimulationVerifiedProvenance | None
     admission: SimulationExecutionAdmission | None
@@ -13757,7 +14776,7 @@ class SimulationRunReceipt(BaseModel):
     reset_zero: SimulationTerminalZeroReceipt | None
     admitted_footprint: AdmittedFootprint | None
     setup_receipt: SetupReceipt | None
-    planned_lanes: list[PlannedLane] = Field(..., max_length=3, min_length=3)
+    planned_lanes: list[PlannedLane] = Field(..., max_length=2, min_length=2)
     slices: list[Slice] = Field(..., max_length=512)
     resources: list[Resource5] = Field(..., max_length=10)
     replay: Replay | Replay1 | None
@@ -14062,7 +15081,7 @@ class TenantConfig(BaseModel):
     paid_conversion_window_days: conint(ge=1, le=365) | None = 30
     quiet_days: conint(ge=1, le=2147483647) | None = None
     gate_follow_up_days: conint(ge=1, le=2147483647) | None = None
-    gate_window_days: GateWindowDaysModel | None = None
+    gate_window_days: GateWindowDays | None = None
     payment_evidence: PaymentEvidenceConfig | None = None
     default_currency: constr(min_length=3, max_length=3) | None = "USD"
     logo_url: AnyUrl | None = None
@@ -14135,6 +15154,9 @@ class TreatmentInteractionInput(BaseModel):
     experiment_id: constr(min_length=1) | None = None
     variant_key: constr(min_length=1) | None = None
     rule_handle: constr(min_length=1) | None = None
+    trigger_source: TriggerSource | None = None
+    entitlement_handle: constr(min_length=1) | None = None
+    playbook_version: constr(min_length=1) | None = None
     decision_id: constr(min_length=1) | None = None
     segment_handles: list[constr(min_length=1)] | None = None
     segment_ids: list[constr(min_length=1)] | None = None
@@ -14312,6 +15334,44 @@ class WebhookEventLog(BaseModel):
     error_message: str | None = None
 
 
+class AccountInactivityCurrentInput(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    scope: AccountInactivityScope
+    account_id: constr(min_length=1, max_length=255)
+    pass_: AccountInactivityWorkPass = Field(..., alias="pass")
+    producer: AccountInactivityProducer
+    latest_boundary: AccountActivityEvidence | None
+    latest_complete: Literal[True]
+    gap: AccountInactivityGapDelta | None
+    state_revision: conint(ge=1, le=2147483647)
+    account_eligible: bool
+    source_ready: bool
+    pending_reason: constr(min_length=1, max_length=255) | None
+    processed_through: AwareDatetime | None
+
+
+class AccountInactivityGapInput(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    scope: AccountInactivityScope
+    account_id: constr(min_length=1, max_length=255)
+    pass_: AccountInactivityWorkPass = Field(..., alias="pass")
+    expected_work_revision: conint(ge=1, le=2147483647)
+    anchor: AccountActivityEvidence
+    anchor_complete: Literal[True]
+    thresholds_complete: Literal[True]
+    right_boundary: RightBoundary | RightBoundary1
+    threshold_at_anchor: AccountInactivityThresholdRevision
+    latest_threshold_edit: AccountInactivityThresholdRevision | None
+    published_episode: AccountInactivityPublishedEpisode | None
+    draft_episode: AccountInactivityDraftEpisode | None
+    max_episode_revision: conint(ge=0, le=2147483647)
+    account_eligible: bool
+
+
 class AnalyticsAnnotationChange(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -14444,6 +15504,67 @@ class AnalyticsFilterState(BaseModel):
     value: AnalyticsFilterValue | None
 
 
+class AnalyticsGateOutcomeDetail(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    entitlement_handle: constr(min_length=1, max_length=200)
+    headline: AnalyticsGateOutcomeHeadline
+    pool_red_totals: list[AnalyticsGateOutcomePoolRedTotals] = Field(
+        ..., max_length=3, min_length=3
+    )
+    accounts: list[AnalyticsGateOutcomeAccount] = Field(..., max_length=1000)
+    accounts_truncated: bool
+    credit_without_touch: conint(ge=0, le=9007199254740991)
+
+
+class AnalyticsGateOutcomesMeta(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    status: Status6
+    reason: constr(min_length=1, max_length=500) | None
+    window: AnalyticsGateObservationWindow
+    mature: conint(ge=0, le=9007199254740991) | None
+    immature: conint(ge=0, le=9007199254740991) | None
+    unknown: conint(ge=0, le=9007199254740991) | None
+    inactivity: AccountInactivityProducer | None
+    late_exposed: conint(ge=0, le=9007199254740991) | None
+    credit_without_touch: conint(ge=0, le=9007199254740991) | None
+    unresolved_identity: conint(ge=0, le=9007199254740991) | None
+    identity_divergent: conint(ge=0, le=9007199254740991) | None
+    truncated: bool
+    baseline_anchor: AwareDatetime | None
+    baseline_approximation: Literal["common_window_end_anchor"]
+    grain: Literal["utc_day"]
+    downgraded_is_red: bool
+    gates: list[AnalyticsGateOutcomeDetail] = Field(..., max_length=1000)
+
+
+class AnalyticsGateSettingsApplied3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    status: Literal["approved"]
+    policy: Literal["gate-placement-settings-approved-v1"]
+    carrier: Literal["gate_outcomes"]
+    values: AnalyticsGateSettingsValues
+
+
+class AnalyticsGateSettingsApplied(
+    RootModel[
+        AnalyticsGateSettingsApplied1
+        | AnalyticsGateSettingsApplied2
+        | AnalyticsGateSettingsApplied3
+    ]
+):
+    root: (
+        AnalyticsGateSettingsApplied1
+        | AnalyticsGateSettingsApplied2
+        | AnalyticsGateSettingsApplied3
+    )
+
+
 class AnalyticsGateSettingsConfigured1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -14524,6 +15645,8 @@ class AnalyticsResultMeta(BaseModel):
     as_of: AwareDatetime
     freshness_seconds: conint(ge=0, le=9007199254740991)
     gate_settings: AnalyticsGateSettingsMeta | None = None
+    attribution: AnalyticsAttributionMeta | None = None
+    gate_outcomes: AnalyticsGateOutcomesMeta | None = None
     applied_filters: list[AnalyticsSemanticFilter] | None = Field(
         [], validate_default=True
     )
@@ -14637,7 +15760,7 @@ class BillingChargeObservation(BaseModel):
     captured: bool | None
     refunded: bool | None
     disputed: bool | None
-    status: Status1 | None
+    status: Status9 | None
     payment_intent_id: constr(min_length=1, max_length=255) | None
     balance_transaction_id: constr(min_length=1, max_length=255) | None
     failure_balance_transaction_id: constr(min_length=1, max_length=255) | None
@@ -14899,7 +16022,7 @@ class BillingInvoiceHeaderObservation(BaseModel):
     provenance: BillingEvidenceProvenance
     api_version: constr(min_length=1, max_length=128) | None
     subscription_id: constr(min_length=1, max_length=255) | None
-    status: Status4 | None
+    status: Status12 | None
     previous_status: PreviousStatus | None
     collection_method: CollectionMethod | None
     currency: constr(pattern=r"^[A-Z]{3}$") | None
@@ -15054,7 +16177,7 @@ class BillingLifecycleResult(BaseModel):
         extra="forbid",
     )
     policy_version: Literal["billing-lifecycle-transitions-v1"]
-    status: Status7
+    status: Status15
     rows: list[BillingLifecycleTransition] = Field(..., max_length=10000)
     gaps: list[Gap2] = Field(..., max_length=100000)
 
@@ -16082,16 +17205,6 @@ class SimulationVerifiedControlEvent(BaseModel):
     requested_by: constr(pattern=r"^[A-Za-z0-9_.:-]+$", min_length=1, max_length=128)
 
 
-class TreatmentInteractionBatch(RootModel[list[TreatmentInteractionInput]]):
-    root: list[TreatmentInteractionInput] = Field(..., max_length=500, min_length=1)
-
-
-class TreatmentInteractionRequest(
-    RootModel[TreatmentInteractionInput | TreatmentInteractionBatch]
-):
-    root: TreatmentInteractionInput | TreatmentInteractionBatch
-
-
 class UserContext(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -16185,7 +17298,7 @@ class BillingGenerationRecord(BaseModel):
     tenant_id: constr(min_length=1)
     scope_key: constr(min_length=1)
     generation_id: constr(min_length=1)
-    status: Status3
+    status: Status11
     policy_version: constr(min_length=1)
     input_watermark: AwareDatetime
     generation: BillingGeneration
@@ -16927,7 +18040,7 @@ class Contract1(BaseModel):
     component_bindings: list[ComponentBinding] = Field(..., max_length=1000)
 
 
-class Phase(BaseModel):
+class Phase1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -16946,7 +18059,7 @@ class Schedule(BaseModel):
     rt_account_id: constr(min_length=1, max_length=512)
     schedule_id: constr(min_length=1, max_length=512)
     action: Action
-    phases: list[Phase] = Field(..., max_length=1000)
+    phases: list[Phase1] = Field(..., max_length=1000)
     phases_coverage: PhasesCoverage
 
 
@@ -17014,7 +18127,7 @@ class BillingRecurringMovementOccurrence(BaseModel):
     revision: BillingAccountingRevision
     action: Action
     atomicity: Atomicity
-    cause: Cause1
+    cause: Cause2
     contracts: list[BillingRecurringMovementContract] = Field(..., max_length=1000)
 
 

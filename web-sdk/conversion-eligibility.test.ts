@@ -122,7 +122,19 @@ describe.each(['fixed', 'gated', 'upsell', 'usage', 'trials', 'retention'])('%s 
     expect((await decide(second, OTHER_SLOT)).visible).toBe(true);
   });
 
-  it.each(['dismiss', 'remind_me_later', 'cta_clicked'] as const)('%s follows the resolved category, including reload', async (interactionType) => {
+  it('a bare cta_clicked starts no cooldown in any category, including after reload (ST-1696 C3b)', async () => {
+    const storage = createSharedStorage();
+    const sdk = makeRegisteredSdk(storage, {}, category);
+    const before = await decide(sdk, SLOT);
+    expect(before.visible).toBe(true);
+    await sdk.trackTreatmentInteraction({
+      placementId: SLOT, userId: 'user_1', payloadId: before.output?.output_id, interactionType: 'cta_clicked',
+    });
+    expect((await decide(sdk, SLOT)).visible).toBe(true);
+    expect((await decide(makeRegisteredSdk(storage, {}, category), SLOT)).visible).toBe(true);
+  });
+
+  it.each(['dismiss', 'remind_me_later'] as const)('%s follows the resolved category, including reload', async (interactionType) => {
     const storage = createSharedStorage();
     const sdk = makeRegisteredSdk(storage, {}, category);
     const before = await decide(sdk, SLOT);

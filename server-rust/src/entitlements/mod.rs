@@ -20,8 +20,8 @@ pub use effective_entitlement::{
 };
 pub use entitlement_check::{
     derive_local_entitlement_from_configured_rules, derive_result_from_rule_type_fields,
-    is_rule_shaped_kind, try_derive_local_entitlement_from_configured_rules, with_rule_handle,
-    LocalEntitlementInput,
+    is_rule_shaped_kind, report_entitlement_diagnostic,
+    try_derive_local_entitlement_from_configured_rules, with_rule_handle, LocalEntitlementInput,
 };
 pub use rules::{
     evaluate_entitlement_rules, evaluate_plan_rules, find_matching_entitlement_rule,

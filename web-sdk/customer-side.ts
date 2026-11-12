@@ -76,6 +76,8 @@ import type {
   PresentationCapHistory,
   PresentationCapSettings,
   EntitlementMergeOptions,
+  AppEntitlementInputs,
+  EffectiveEntitlementInput,
   MirroredEntitlement,
   PlacementCapPolicy,
   PlacementCapRule,
@@ -89,6 +91,7 @@ import type {
 } from '@revt-eng/core';
 import {
   classifySegment,
+  evaluatePlanEligibility,
   evaluateSegmentEligibility,
   isReservedSegmentHandle,
   isReservedTraitKey,
@@ -164,6 +167,7 @@ import {
   interactionStateKey as coreInteractionStateKey,
   suppressionForState as coreSuppression,
   deriveEffectiveEntitlement as coreDeriveEffectiveEntitlement,
+  deriveEffectiveEntitlements as coreDeriveEffectiveEntitlements,
   reverseTrialGrants as coreReverseTrialGrants,
   mirroredEntitlementTrait as coreMirroredEntitlementTrait,
   usageThresholdForEntitlement as coreUsageThreshold,
@@ -707,9 +711,14 @@ type IdentifyUnmergedUserContextKey =
  * through {@link RevTurbineCustomerSdk.update} / `setUserContext`, or let
  * client-context enrichment deliver them.
  */
-export type IdentifyContextInput = Partial<Omit<UserContextInput, ServerAssignedUserContextKey | IdentifyUnmergedUserContextKey>> & {
+export type IdentifyContextInput = Partial<Omit<UserContextInput, ServerAssignedUserContextKey | IdentifyUnmergedUserContextKey | 'entitlements'>> & {
   /** THE plan matching identity — the plan's `unique_handle` (e.g. `'pro'`). */
   plan_handle?: string;
+  /**
+   * App-supplied entitlement data, keyed by handle: a boolean or a grant with
+   * optional `status`, `allowed`, `limit`, `used`, `remaining`, `reason`.
+   */
+  entitlements?: Record<string, MirroredEntitlement>;
 };
 
 /**
@@ -1023,12 +1032,14 @@ export interface RevTurbineUserContext
   custom?: SdkTraits;
   /**
    * App-supplied entitlement data, keyed by handle — a boolean or a grant
-   * (`status`, `limit`, `used`). This is Entitlement Mirroring (D-61): it
-   * merges with the Playbook evaluation, and by default the app's data wins.
-   * Browser-supplied data shapes the UI only; the server re-check on the
-   * same inputs stays authoritative for paid actions.
+   * (`status`, `allowed`, `limit`, `used`, `remaining`, `reason`, all
+   * optional; no `entitlement_id` or `entitlement_handle` needed). This is
+   * Entitlement Mirroring (D-61): it merges with the Playbook evaluation, and
+   * by default the app's data wins. Browser-supplied data shapes the UI only;
+   * the server re-check on the same inputs stays authoritative for paid
+   * actions.
    */
-  entitlements?: UserContextInput['entitlements'];
+  entitlements?: Record<string, MirroredEntitlement>;
   /** Usage entries derived from credits / usage_limit entitlements, keyed by handle. */
   usage?: UserContextInput['usage'];
   /**
@@ -1072,6 +1083,30 @@ export type RevTurbineInitUser = RevTurbineUserContext & {
   /** Your stable internal user id. Must be a non-empty string. */
   id: string;
 };
+
+/**
+ * What {@link RevTurbineCustomerSdk.getUserContext} returns: the persistence
+ * shaped {@link UserContext}, except that `entitlements` carries what the app
+ * mirrored in (a boolean or a grant with optional `status`, `allowed`,
+ * `limit`, `used`, `remaining`, `reason`) rather than a full schema row.
+ *
+ * @public
+ */
+export type RevTurbineHeldUserContext = Omit<UserContext, 'entitlements'> & {
+  /** App-mirrored entitlement data, keyed by handle. */
+  entitlements: Record<string, MirroredEntitlement>;
+};
+
+/**
+ * A user the app is still resolving (`0.16.0`): a promise of the same
+ * identity-plus-context an `identify(id, context)` call takes. Resolving it
+ * is equivalent to calling `identify()` with that user; a missing or blank
+ * `id`, or a rejection, is the loud `user_id_required` error. See
+ * {@link RevTurbineInitOptions.user}.
+ *
+ * @public
+ */
+export type RevTurbineInitUserPromise = PromiseLike<{ id: string } & IdentifyContextInput>;
 
 /**
  * The one diagnostic an SDK without an identified user reports (`0.13.0`).
@@ -1502,25 +1537,56 @@ export interface RevTurbineInitOptions {
    */
   analytics?: boolean;
   /**
-   * Keyless anonymous SDK-init telemetry opt-out (plan 95).
+   * Anonymous SDK init and error telemetry to RevTurbine (plan 95; widened in
+   * `0.16.0`).
    *
-   * When **no** {@link publicKey} is configured, the SDK sends a single
-   * anonymous `sdk_init` beacon to `POST /api/sdk/meta` carrying config-shape
-   * **counts only** (number of plans, entitlements, placements, etc.), the SDK
-   * version, runtime/schema/bundle versions, and a one-way hashed config id —
-   * **never** any user, account, or PII context. It powers RevTurbine's
-   * SDK-adoption metrics for installs that haven't wired an ingest key.
+   * The SDK sends anonymous events to `POST /api/sdk/meta`: one `sdk_init`
+   * beacon per session (config-shape **counts only**: number of plans,
+   * entitlements, placements, etc.), `sdk_error` and `resolution_failure`
+   * diagnostics. They carry the SDK version, runtime/bundle versions, a
+   * one-way hashed config id, closed reason codes and author-defined handles;
+   * **never** a user, account, URL or any value a customer typed, and the
+   * request carries no cookies (`credentials: 'omit'`). In a connected mode
+   * with a {@link publicKey} configured the request carries it as
+   * `Authorization: Bearer <public key>`, only so the events are attributed to
+   * your tenant (they appear in its SDK health view); a server key is never
+   * sent, and with no public key there is no header.
    *
-   * On by default (`true`). Set to `false` to opt out entirely; the SDK then
-   * sends no keyless telemetry. When active, the SDK logs a one-time info
-   * console notice naming this flag. Has no effect once a `publicKey`
-   * is present (that path uses the authed clickstream instead). This beacon
-   * fires in every runtime mode, `local_only` included — a bundled-Playbook
-   * install is still a real install worth counting. To silence it for a
-   * non-install render (a docs example, a component preview), use
-   * {@link previewMode} instead of this customer-facing opt-out.
+   * On by default (`true`), in every runtime mode for `sdk_init` and the
+   * diagnostics, and **regardless of `analytics` and `telemetry.consent`**:
+   * these are not behavior events. Set to `false` to stop sending them to
+   * RevTurbine; combine with {@link sdkTelemetryProviders} to send them only to
+   * your own endpoint instead. When active, the SDK logs a one-time info
+   * console notice naming this flag. To silence it for a non-install render
+   * (a docs example, a component preview), use {@link previewMode}.
+   *
+   * A missing user (`user_id_required`) is reported as one `sdk_error` with the
+   * fixed message `user_id_required at <init|identify|setUserContext|
+   * user_promise_rejected|user_promise_resolved_blank>` (connected modes only;
+   * never an id, trait or rejection text). It is the one event an
+   * unidentified SDK sends; `sdk_init` still waits for an identified user.
    */
   anonymousTelemetry?: boolean;
+  /**
+   * Your own sinks for the same anonymous init and error events RevTurbine
+   * receives (`0.16.0`): `sdk_init`, `sdk_error`, `sdk_validation_warning` and
+   * `resolution_failure`, as the `/api/sdk/meta` event shape, after the same
+   * de-duplication, session cap and browser / `previewMode` gates.
+   *
+   * With providers and `anonymousTelemetry` left on, events go to both. With
+   * providers and `anonymousTelemetry: false`, they go only to the providers.
+   * Providers also receive events in `local_only` mode, and independent of
+   * `analytics` and `telemetry.consent`. A provider that throws or rejects
+   * never affects the SDK or another destination (no retry; at most one
+   * `console.warn` per provider per session). This is separate from the
+   * clickstream {@link RevTurbineEventConsumer} mechanism.
+   *
+   * @example
+   * ```ts
+   * sdkTelemetryProviders: [createHttpSdkTelemetryProvider({ url: '/internal/sdk-meta' })]
+   * ```
+   */
+  sdkTelemetryProviders?: SdkTelemetryProvider[];
   /**
    * Preview / example render marker.
    *
@@ -1640,18 +1706,33 @@ export interface RevTurbineInitOptions {
    * it after you know who the user is (after login); on logout unmount the
    * provider or `identify()` the next user.
    *
-   * At runtime a missing or blank `id` never throws: the SDK stays disabled
-   * (no network request, no evaluation, no user-scoped storage), answers
-   * every check and placement with its fallback, and reports one
+   * A missing user is an error, never a quiet state: an omitted or `null`
+   * `user`, or a `null`, omitted or blank `user.id`, never throws but leaves
+   * the SDK disabled, logs one `user_id_required` console error and records a
    * {@link RevTurbineUserRequiredDiagnostic} (`getUserRequiredDiagnostic()`).
    * A later `identify(id)` with a real id enables it.
+   *
+   * When the user is resolved asynchronously (`0.16.0`), pass a
+   * `Promise<RevTurbineInitUser>` ({@link RevTurbineInitUserPromise}) instead.
+   * While it is pending the SDK is disabled **without** console output or a
+   * diagnostic (no request, no evaluation, no storage, no Playbook fetch; a
+   * `<Gate>` renders nothing; events are dropped, not buffered). When it
+   * resolves to a valid user the SDK behaves exactly as `identify()` with
+   * that user. When it resolves to a missing or blank id, or rejects, the
+   * same loud `user_id_required` error is reported and the SDK stays
+   * disabled. An explicit `identify()` while it is pending wins; the
+   * promise's later result is ignored. Keep the promise **stable** (memoise
+   * it): a new promise identity re-initialises the SDK exactly as a new user
+   * object does.
    *
    * @example
    * ```ts
    * initRevTurbine({ publicKey: 'rtk_…', mode: 'snippet', user: { id: 'user_123' } });
+   * // Resolved asynchronously:
+   * initRevTurbine({ publicKey: 'rtk_…', mode: 'snippet', user: fetchSessionUser() });
    * ```
    */
-  user: RevTurbineInitUser;
+  user: RevTurbineInitUser | RevTurbineInitUserPromise;
   /**
    * Mint a short-lived client-session token (`rt_client_`, plan 157) for the
    * signed-in user — the SDK's hook into server-authoritative context
@@ -2533,6 +2614,82 @@ const DEFAULT_EVENT_FLUSH_INTERVAL_MS = 5_000;
 // OpenAPI client (the scaffold contract), never hand-rolled (plan 95 TASK-7).
 type SdkMetaIngestBatchBody = components['schemas']['SdkMetaIngestBatch'];
 type SdkMetaEventBody = components['schemas']['SdkMetaEvent'];
+
+/**
+ * The persisted impression history, minus bare-click suppression (ST-1696 C3b).
+ *
+ * SDK 0.15.0 and earlier recorded a `clicked_thru` row carrying a
+ * `suppressUntil` (the dismiss cooldown) for a bare CTA click. A bare click now
+ * starts no cooldown, so a window an older SDK persisted must not be honoured
+ * after an upgrade. Everything else, a dismiss, a remind-me-later and a
+ * suppression, is read exactly as before; an older dismiss under a click row
+ * counts again because the click no longer masks it.
+ */
+class BareClickBlindImpressionStore extends StorageImpressionStore {
+  override getSuppressedPlacements(userId: string): Map<string, string> {
+    // `query()` returns rows NEWEST first. Core's extractor walks the stored
+    // (oldest-first) list from the end, i.e. newest first, and takes the first
+    // unexpired window per placement: an expired or window-less newer row does
+    // not mask an older unexpired one. Walk the same direction and skip the same rows.
+    const records = this.query(userId).filter((record) => record.outcome !== 'clicked_thru');
+    const suppressed = new Map<string, string>();
+    const now = Date.now();
+    for (const record of records) {
+      if (record.outcome === 'cta_completed' || suppressed.has(record.placementId)) continue;
+      const until = record.metadata?.suppressUntil;
+      if (typeof until === 'string' && new Date(until).getTime() > now) suppressed.set(record.placementId, until);
+    }
+    return suppressed;
+  }
+}
+
+/**
+ * A destination for the SDK's anonymous init and error events, alongside or
+ * instead of RevTurbine (see {@link RevTurbineInitOptions.sdkTelemetryProviders}).
+ * `send` must not be relied on to run to completion: a throw or a rejection is
+ * swallowed (one `console.warn` per provider per session).
+ *
+ * @public
+ */
+export interface SdkTelemetryProvider {
+  /** Names the provider in its one failure warning. */
+  name: string;
+  /**
+   * Receive events that already passed the SDK's de-duplication, cap and
+   * gates: the `SdkMetaEvent` shape `POST /api/sdk/meta` takes (`sdk_init`,
+   * `sdk_error`, `sdk_validation_warning`, `resolution_failure`). Never a
+   * user, tenant, token or URL.
+   */
+  send(events: SdkMetaEventBody[]): void | Promise<void>;
+}
+
+/**
+ * Build an {@link SdkTelemetryProvider} that POSTs `{ events: [...] }` JSON —
+ * the same body the RevTurbine lane receives — to your endpoint, with
+ * `keepalive` so it survives page unload. The SDK adds no `Authorization`
+ * header; pass your own in `headers`.
+ *
+ * @public
+ */
+export function createHttpSdkTelemetryProvider(options: {
+  url: string;
+  headers?: Record<string, string>;
+  name?: string;
+}): SdkTelemetryProvider {
+  return {
+    name: options.name ?? `http:${options.url.split('?')[0]}`,
+    async send(events) {
+      const response = await fetch(options.url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...options.headers },
+        body: JSON.stringify({ events }),
+        keepalive: true,
+        credentials: 'omit', // anonymous events: no cookie, even same-origin
+      });
+      if (!response.ok) throw new Error(`SDK telemetry endpoint answered ${response.status}`);
+    },
+  };
+}
 type SdkConfigShapeBody = components['schemas']['SdkConfigShape'];
 
 interface ValidationIssue {
@@ -3574,7 +3731,8 @@ export class RevTurbineCustomerSdk {
   private readonly ingestBearer: string;
   /**
    * True when the integration supplied a real `publicKey`, as opposed to the
-   * local-only placeholder. Gates the keyless anonymous beacon (plan 95).
+   * local-only placeholder. (It no longer gates the anonymous beacon: since
+   * 0.16.0 keyed installs send `sdk_init` too.)
    */
   private readonly ingestKeyConfigured: boolean;
   private readonly environmentId: string;
@@ -3584,6 +3742,10 @@ export class RevTurbineCustomerSdk {
   private readonly testTraffic: boolean;
   private readonly analyticsEnabled: boolean;
   private readonly anonymousTelemetryEnabled: boolean;
+  /** The app's own sinks for the anonymous init / error events (0.16.0). */
+  private readonly sdkTelemetryProviders: SdkTelemetryProvider[] = [];
+  /** Providers that already warned this session (one warning each). */
+  private readonly warnedTelemetryProviders = new Set<SdkTelemetryProvider>();
   // Preview/example render (docs, playground) — suppresses the keyless init beacon.
   private readonly previewMode: boolean;
   // Behavior-telemetry consent (plan 144 TASK-8). Mutable — `setTelemetryConsent`
@@ -3663,9 +3825,10 @@ export class RevTurbineCustomerSdk {
   private readonly defaultDismissCooldownMs = 24 * 60 * 60 * 1000;
   /**
    * Default dismiss cooldown window — 7 days, matching the engine's
-   * `cooldown_after_dismiss_days` default. Applied to `dismiss` and bare
-   * `cta_clicked` when the payload supplies no explicit `cooldown_ms`
-   * (plan 167 REQ-3 / Q-1). Replaces the legacy 24h dismiss window.
+   * `cooldown_after_dismiss_days` default. Applied to `dismiss` when the
+   * payload supplies neither `cooldown_ms` nor `caps.cooldown_days` (an
+   * authored `0` means no cooldown). A bare `cta_clicked` starts none
+   * (ST-1696). Replaces the legacy 24h dismiss window.
    */
   private readonly dismissCooldownDefaultMs = 7 * 24 * 60 * 60 * 1000;
   private readonly defaultRemindLaterMs = 60 * 60 * 1000;
@@ -3838,6 +4001,9 @@ export class RevTurbineCustomerSdk {
     this.testTraffic = options.test === true;
     this.analyticsEnabled = options.analytics !== false;
     this.anonymousTelemetryEnabled = options.anonymousTelemetry !== false;
+    for (const provider of options.sdkTelemetryProviders ?? []) {
+      if (provider && typeof provider.send === 'function') this.sdkTelemetryProviders.push(provider);
+    }
     this.previewMode = options.previewMode === true;
     // Default `granted` so an integration with no `telemetry` option is
     // unchanged (AC-21). `anonymousTelemetry` above stays separate (REQ-13).
@@ -3889,7 +4055,12 @@ export class RevTurbineCustomerSdk {
     // once the SDK can emit warnings, below).
     // A plain-JS caller can omit `user` or pass a non-object; the type forbids
     // it, the runtime must still not throw (ST-1416).
-    const initUserInput: RevTurbineUserContext = options.user && typeof options.user === 'object' ? options.user : {};
+    // 0.16.0: `user` may be a promise of the user. While it is pending the SDK
+    // is in the disabled state with no diagnostic (the user is on its way, not
+    // missing); the settled value is applied by `identify()` below.
+    const userOption = options.user;
+    const pendingUserPromise = isThenable(userOption) ? userOption : undefined;
+    const initUserInput: RevTurbineUserContext = !isThenable(userOption) && userOption && typeof userOption === 'object' ? userOption : {};
     const initUser = withoutServerAssignedKeys(initUserInput);
     this.userContext = {
       usage: {},
@@ -3921,14 +4092,16 @@ export class RevTurbineCustomerSdk {
     // users never receive one). Without it the SDK is disabled — no network,
     // no evaluation, no user-scoped storage — and says so once. It never
     // throws into the host app.
-    if (this.identifiedUserId === undefined) this.reportUserRequired('init');
+    // A missing user (omitted, null, blank id) is an error. A pending user
+    // promise is not: it is reported only if it settles without a user.
+    if (this.identifiedUserId === undefined && !pendingUserPromise) this.reportUserRequired('init');
     this.reportServerAssignedContextKeys('init', initUser.dropped);
     this.sessionId = requestId();
     this.providerRegistry = new DomainProviderRegistry();
     const configuredDomainProviders = [...(options.domainProviders ?? [])];
     this.placementTypeRegistry = new PlacementTypeRegistry();
     this.impressionHistory = new ImpressionHistory({
-      store: new StorageImpressionStore({
+      store: new BareClickBlindImpressionStore({
         storage: this.persistentStore,
         tenantId: this.tenantNamespace,
       }),
@@ -3999,6 +4172,54 @@ export class RevTurbineCustomerSdk {
     // clickstream events reach /api/track even in low-volume sessions.
     this.startEventBatchFlushing();
     if (identifiedAtInit) this.startUserRuntimeTelemetry();
+
+    if (pendingUserPromise) this.awaitPendingUser(pendingUserPromise);
+  }
+
+  /**
+   * The token of the user promise this SDK is still waiting on, or `undefined`
+   * when none is pending. Any explicit identity change ({@link identify},
+   * {@link reset}) and {@link dispose} clear it, so a late settlement is ignored.
+   */
+  private pendingUserToken?: object;
+
+  /**
+   * Apply a `user` promise (0.16.0). A valid result is exactly an `identify()`
+   * with that user; a missing or blank id, or a rejection, is the loud
+   * `user_id_required` error and the SDK stays disabled. Never throws.
+   */
+  private awaitPendingUser(promise: RevTurbineInitUserPromise): void {
+    const token = {};
+    this.pendingUserToken = token;
+    const isCurrent = (): boolean => this.pendingUserToken === token;
+    promise.then(
+      (user) => {
+        if (!isCurrent()) return;
+        this.pendingUserToken = undefined;
+        const id: unknown = isRecord(user) ? user.id : undefined; // sdk-ok: boundary-parse — a promise from plain JS can resolve to anything
+        if (!hasValue(id)) {
+          this.reportUserRequired('init', {
+            context: 'user_promise_resolved_blank',
+            detail: 'the user promise resolved without a non-empty user id.',
+          });
+          // Pending became the loud error state: mounted gates re-evaluate.
+          this.fireUserContextListeners();
+          return;
+        }
+        const { id: _id, ...context } = user;
+        this.identify(id, context);
+      },
+      (reason: unknown) => { // sdk-ok: boundary-parse — a rejection can be any value
+        if (!isCurrent()) return;
+        this.pendingUserToken = undefined;
+        const detail = reason instanceof Error ? reason.message : String(reason);
+        this.reportUserRequired('init', {
+          context: 'user_promise_rejected',
+          detail: `the user promise rejected: ${detail}`,
+        });
+        this.fireUserContextListeners();
+      },
+    );
   }
 
   /**
@@ -4048,10 +4269,11 @@ export class RevTurbineCustomerSdk {
 
   /** The keyless init beacon and the client-context loop — identified user only. */
   private startUserRuntimeTelemetry(): void {
-    // Plan 95 TASK-7: keyless adoption beacon — only fires when no ingest key
-    // is configured (see emitSdkInitTelemetry); best-effort. It carries no
-    // user identity and no install id, and (ST-1416) is withheld until the SDK
-    // has an identified user: an SDK without one makes no request at all.
+    // Plan 95 TASK-7: the anonymous `sdk_init` beacon (see emitSdkInitTelemetry);
+    // best-effort. Since 0.16.0 it is sent from keyed installs too. It carries
+    // no user identity and no install id, and (ST-1416) is withheld until the
+    // SDK has an identified user. (The one request an SDK without a user makes
+    // is the missing-user `sdk_error`.)
     void this.emitSdkInitTelemetry();
     // Plan 191 REQ-5: with a `clientSession` minter configured, the SDK owns
     // the client-context loop from here — no app call required. Fire-and-
@@ -4093,8 +4315,22 @@ export class RevTurbineCustomerSdk {
    * (ST-1416). Logged once per entry point and kept for
    * {@link getUserRequiredDiagnostic}. Never throws; makes no network request.
    */
-  private reportUserRequired(entryPoint: RevTurbineUserRequiredDiagnostic['entryPoint']): void {
-    const message = entryPoint !== 'init'
+  private reportUserRequired(
+    entryPoint: RevTurbineUserRequiredDiagnostic['entryPoint'],
+    promise?: { context: 'user_promise_rejected' | 'user_promise_resolved_blank'; detail: string },
+  ): void {
+    // The anonymous report to RevTurbine / telemetry providers: a FIXED
+    // vocabulary, never the rejection text or anything a customer value can
+    // flow into. Connected modes only for RevTurbine's copy; providers always.
+    this.emitSdkError(
+      USER_REQUIRED_REASON,
+      `${USER_REQUIRED_REASON} at ${promise?.context ?? entryPoint}`,
+      `${USER_REQUIRED_REASON}|${promise?.context ?? entryPoint}`,
+      true,
+    );
+    const message = promise !== undefined
+      ? `RevTurbine requires an identified user, but ${promise.detail} The SDK stays disabled; call identify(id) to enable it.`
+      : entryPoint !== 'init'
       ? `${entryPoint}() requires a non-empty user id; the blank id was ignored. Pass your stable internal user id.`
       : 'RevTurbine requires an identified user: pass `user: { id }` (your stable internal user id) when you '
         + 'initialise the SDK, after the user is known (after login). Without it the SDK is disabled: it makes '
@@ -4114,6 +4350,22 @@ export class RevTurbineCustomerSdk {
    */
   getUserRequiredDiagnostic(): RevTurbineUserRequiredDiagnostic | undefined {
     return this.userRequiredDiagnostic ? { ...this.userRequiredDiagnostic } : undefined;
+  }
+
+  /**
+   * Whether a `user` promise passed at init is still pending (`0.16.0`).
+   *
+   * While `true` the SDK is disabled but nothing is wrong yet (the user is on
+   * its way): checks answer `user_id_required`, and a `<Gate>` renders nothing.
+   * It turns `false` when the promise settles (a valid user, a blank result or a
+   * rejection), or when `identify()` / a reset supersedes it. A missing user
+   * that is NOT pending (omitted, `null`, blank id, a settled bad promise) is the
+   * loud error state, reported by {@link getUserRequiredDiagnostic}.
+   *
+   * @public
+   */
+  isUserPending(): boolean {
+    return this.pendingUserToken !== undefined;
   }
 
   private isLocalOnlyMode(): boolean {
@@ -5603,6 +5855,9 @@ export class RevTurbineCustomerSdk {
         if (!state || typeof state !== 'object') return;
         const entry = { ...state };
         if (entry.lastInteractionType === 'cta_completed') delete entry.suppressedUntil;
+        // ST-1696 C3b: a bare click starts no cooldown, so a window written by
+        // an SDK that used to start one is not honoured.
+        if (entry.lastInteractionType === 'cta_clicked') delete entry.suppressedUntil;
         this.interactionState.set(key, entry);
       });
     } catch {
@@ -5761,9 +6016,23 @@ export class RevTurbineCustomerSdk {
     ]);
     const customResolver = this.isLocalOnlyMode() && this.localRuntime?.resolvers?.checkEntitlement;
     const entries: Record<string, EntitlementResult> = {};
+    // The all-handles evaluation: core's map carries (and prints) no cost
+    // diagnostics, so a bulk read never reports a missing cost for calls nobody
+    // made (ST-1696).
+    const probe = this.entitlementInputFor('', undefined);
+    const appByHandle: Record<string, AppEntitlementInputs> = {};
+    for (const handle of handles) {
+      const app = this.appEntitlementInputsFor(handle);
+      if (app) appByHandle[handle] = app;
+    }
+    let derived: Record<string, EntitlementResult> = {};
+    if (probe) {
+      const { handle: _handle, app: _app, ...base } = probe;
+      derived = coreDeriveEffectiveEntitlements(base, appByHandle);
+    }
     for (const handle of handles) {
       const result = (customResolver ? this.localEntitlementsByHandle.get(handle) : undefined)
-        ?? this.deriveLocalEntitlementFromConfiguredRules(handle);
+        ?? derived[handle];
       if (result) entries[handle] = result;
     }
     return {
@@ -6448,6 +6717,34 @@ export class RevTurbineCustomerSdk {
     handle: string,
     context?: RevTurbineEntitlementContext,
   ): EntitlementResult | null {
+    const input = this.entitlementInputFor(handle, context);
+    if (!input) return null;
+    // A SINGLE-handle check: core attaches the developer `diagnostic` (the
+    // per-call `cost` rule, ST-1696) and prints it once per handle + code. The
+    // SDK adds no console output of its own, so nothing prints twice. The bulk
+    // path (`withSlotEntitlementStatus`) uses core's all-handles map, which
+    // carries and prints no diagnostics.
+    const effective = coreDeriveEffectiveEntitlement(input);
+    if (effective.unknownHandle) this.reportUnknownEntitlement(handle);
+    return effective.result;
+  }
+
+  /** The app-mirrored and provider data for one handle, or `undefined`. */
+  private appEntitlementInputsFor(handle: string): AppEntitlementInputs | undefined {
+    const mirrored: MirroredEntitlement | undefined = this.userContext.entitlements?.[handle];
+    const provider = this.appProviderEntitlements[handle];
+    if (mirrored === undefined && !provider) return undefined;
+    return { ...(mirrored !== undefined ? { userContext: mirrored } : {}), ...(provider ? { provider } : {}) };
+  }
+
+  /**
+   * The shared evaluator's full input for one handle; `null` before a Playbook
+   * is configured.
+   */
+  private entitlementInputFor(
+    handle: string,
+    context?: RevTurbineEntitlementContext,
+  ): EffectiveEntitlementInput | null {
     const playbook = this.getConfiguredPlaybook();
     if (!playbook) return null;
 
@@ -6459,10 +6756,9 @@ export class RevTurbineCustomerSdk {
     // BL-0403: the shared trial view, so an app-supplied reverse trial grants
     // too; the grant derivation itself is the shared core helper.
     const grants = coreReverseTrialGrants(playbook, this.resolveTrialView());
-    const mirrored = this.userContext.entitlements?.[handle] as MirroredEntitlement | undefined;
-    const provider = this.appProviderEntitlements[handle];
 
-    const effective = coreDeriveEffectiveEntitlement({
+    const app = this.appEntitlementInputsFor(handle);
+    return {
       handle,
       context,
       currentPlanHandle,
@@ -6473,11 +6769,9 @@ export class RevTurbineCustomerSdk {
       userUsage: this.userContext.usage as Record<string, unknown> | undefined, // sdk-ok: boundary-parse
       playbook,
       ...grants,
-      ...(mirrored !== undefined || provider ? { app: { ...(mirrored !== undefined ? { userContext: mirrored } : {}), ...(provider ? { provider } : {}) } } : {}),
+      ...(app ? { app } : {}),
       ...(this.entitlementMerge ? { merge: this.entitlementMerge } : {}),
-    });
-    if (effective.unknownHandle) this.reportUnknownEntitlement(handle);
-    return effective.result;
+    };
   }
 
   /**
@@ -6566,7 +6860,7 @@ export class RevTurbineCustomerSdk {
     // grant counts unless denied (D-61) — the same rule the core applies.
     for (const [key, value] of Object.entries(this.userContext.entitlements ?? {})) {
       if (traits[key] === undefined) {
-        traits[key] = coreMirroredEntitlementTrait(value as MirroredEntitlement);
+        traits[key] = coreMirroredEntitlementTrait(value);
       }
     }
 
@@ -6938,9 +7232,19 @@ export class RevTurbineCustomerSdk {
             .map((surface) => firstStringValue(surface.template_id))
             .filter((item: string | undefined): item is string => typeof item === 'string');
 
-        const matchesPlan = payloadPlanIds.length === 0
-          || !normalizedCurrentPlan
-          || payloadPlanIds.some((planId: string) => planId.toLowerCase() === normalizedCurrentPlan);
+        // Plan-targeted payloads fail closed for a user with no plan
+        // (scaffold 0.1.558, ST-1696 C1), the same as the resolver.
+        // Core's own predicate, so the inspector and the resolver cannot
+        // disagree: an EXACT plan-handle compare (a case-different handle does
+        // not match). Only the plan check is asked: no billing period, no category.
+        const matchesPlan = evaluatePlanEligibility(
+          { target_plan_ids: payloadPlanIds, target_billing_periods: [] },
+          {
+            currentPlanId: currentPlanIdOrHandle || undefined,
+            planHandle: currentPlanIdOrHandle || undefined,
+            billingPeriod: undefined,
+          },
+        ).eligible;
         const matchesSegment = evaluateSegmentEligibility(
           { target_segment_chips: segmentChips },
           { segmentIds: targeting.segmentIds },
@@ -7306,23 +7610,24 @@ export class RevTurbineCustomerSdk {
     );
   }
 
-  // ── Keyless anonymous SDK telemetry (plan 95 TASK-7) ──────────────────────
+  // ── Anonymous SDK init and error telemetry (plan 95 TASK-7; 0.16.0) ───────
   //
-  // When NO ingest key is configured, the SDK still reports a minimal,
-  // anonymous adoption signal to the non-authed /api/sdk/meta endpoint:
-  // config-shape COUNTS only + a one-way hashed config id, never any user
-  // context or PII (REQ-6/REQ-7/REQ-9). On by default, opt out via
-  // `anonymousTelemetry: false` (REQ-8); a one-time console notice names the
-  // flag (REQ-8b). It fires in every runtime mode — `local_only` included,
-  // since a bundled-Playbook install is still a real install — and is
-  // suppressed only for non-install `previewMode` renders (docs examples,
-  // playground) so those never inflate adoption counts.
+  // The SDK reports a minimal, anonymous signal to the non-authed
+  // /api/sdk/meta endpoint: config-shape COUNTS, closed reason codes and a
+  // one-way hashed config id, never any user context or PII (REQ-6/REQ-7/
+  // REQ-9). Since 0.16.0 it is sent from keyed, connected installs as well as
+  // keyless ones, and independent of `analytics` and `telemetry.consent`: it
+  // is not behavior data. On by default, opt out via `anonymousTelemetry:
+  // false` (REQ-8); a one-time console notice names the flag (REQ-8b). It
+  // fires in every runtime mode — `local_only` included — and is suppressed
+  // only for non-install `previewMode` renders (docs examples, playground).
+  // The app's own `sdkTelemetryProviders` receive the same events, alongside
+  // or (with `anonymousTelemetry: false`) instead of RevTurbine.
 
-  /** True when keyless anonymous telemetry should fire (REQ-4 conditions). */
+  /** True when anonymous SDK telemetry should be built and delivered somewhere. */
   private anonymousTelemetryActive(): boolean {
     return (
-      !this.ingestKeyConfigured && // keyless only — a keyed install uses /api/track
-      this.anonymousTelemetryEnabled &&
+      (this.anonymousTelemetryEnabled || this.sdkTelemetryProviders.length > 0) &&
       !this.previewMode && // docs/playground renders are not installs
       isBrowser()
     );
@@ -7358,22 +7663,16 @@ export class RevTurbineCustomerSdk {
   private static readonly RESOLUTION_DIAGNOSTIC_SESSION_CAP = 20;
 
   /**
-   * Gate for `resolution_failure` diagnostics (plan 144 TASK-21). Honors BOTH
-   * opt-outs (124 Q-6, decided 2026-08-12): either `anonymousTelemetry: false`
-   * or `analytics: false` silences diagnostics — the most conservative
-   * reading, so no privacy-minded install is surprised by a new emission.
-   * Unlike {@link anonymousTelemetryActive} there is NO keyless requirement:
-   * keyed production installs emit diagnostics too (124 Q-7). `previewMode`
+   * Gate for `resolution_failure` and `sdk_error` diagnostics (plan 144
+   * TASK-21). Since 0.16.0 only `anonymousTelemetry` (and the providers)
+   * govern them: they carry no behavior data, so `analytics: false` and
+   * `telemetry.consent` no longer silence them (Kent, 2026-11-11). Keyed
+   * production installs emit them too (124 Q-7). `previewMode`
    * (docs/playground renders) still suppresses, and the channel is
    * browser-only for now (server-side diagnostics are a named follow-up).
    */
   private diagnosticTelemetryActive(): boolean {
-    return (
-      this.anonymousTelemetryEnabled &&
-      this.analyticsEnabled &&
-      !this.previewMode &&
-      isBrowser()
-    );
+    return this.anonymousTelemetryActive();
   }
 
   /**
@@ -7424,20 +7723,41 @@ export class RevTurbineCustomerSdk {
    *   what dashboards group by.
    * @param message Human-readable detail for triage, sent on the same footing
    *   as `sdk_validation_warning`'s message, which already ships on this lane.
+   *   It is forwarded as given (up to 500 characters) to RevTurbine and to any
+   *   `sdkTelemetryProviders`, **without regard to `analytics` and
+   *   `telemetry.consent`**: it must be a fixed string and must never contain
+   *   user data, a caught exception's text, an id, an email or a URL.
    */
   reportSdkError(reason: string, message?: string): void {
+    this.emitSdkError(reason, message, reason);
+  }
+
+  /**
+   * The shared tail of {@link reportSdkError} and the missing-user report.
+   * `message` must be a fixed vocabulary string: nothing a customer value can
+   * flow into. `connectedOnly` withholds the RevTurbine copy in `local_only`
+   * (providers still receive it).
+   */
+  private emitSdkError(
+    reason: string,
+    message: string | undefined,
+    dedupeKey: string,
+    connectedOnly = false,
+  ): void {
     if (!this.diagnosticTelemetryActive()) return;
-    if (this.emittedSdkErrors.has(reason)) return;
+    if (this.emittedSdkErrors.has(dedupeKey)) return;
     if (this.emittedSdkErrors.size >= RevTurbineCustomerSdk.RESOLUTION_DIAGNOSTIC_SESSION_CAP) {
       return;
     }
-    this.emittedSdkErrors.add(reason);
+    this.emittedSdkErrors.add(dedupeKey);
     try {
       // `void` alone swallows a rejected promise but NOT a synchronous throw,
       // and this runs inside customer catch blocks — a telemetry failure here
       // must never manufacture a second one.
       // @revturbine-graph source:revturbine-sdk-internal:web-sdk/customer-side.ts#reportSdkError
-      void this.postAnonMeta('sdk_error', message ? { reason, message } : { reason });
+      const extra = message ? { reason, message } : { reason };
+      if (connectedOnly) void this.postAnonMeta('sdk_error', extra, { connectedOnly: true });
+      else void this.postAnonMeta('sdk_error', extra);
     } catch {
       // Best-effort by contract.
     }
@@ -7478,8 +7798,8 @@ export class RevTurbineCustomerSdk {
 
   /**
    * Build + POST one allowlisted anonymous meta event to /api/sdk/meta.
-   * No auth header (keyless), no tenant in the body (REQ-9), best-effort and
-   * non-throwing. Stamps SDK/schema versions + a one-way hashed config id.
+   * No tenant or user in the body (REQ-9); a PUBLIC key, when configured, rides
+   * as a bearer for tenant attribution only. Best-effort and non-throwing. Stamps SDK/schema versions + a one-way hashed config id.
    */
   private async emitAnonMeta(
     eventType: components['schemas']['SdkMetaEventType'],
@@ -7492,11 +7812,12 @@ export class RevTurbineCustomerSdk {
   }
 
   /**
-   * Ungated build + POST of one allowlisted meta event — the shared tail of
-   * {@link emitAnonMeta} (keyless adoption beacons, which stay gated on
-   * keyless installs) and the `resolution_failure` diagnostics (plan 144
-   * TASK-21), which are deliberately NOT keyless-only — keyed production
-   * installs emit them too (plan 124 Q-7). Callers gate; this never throws.
+   * Ungated build + delivery of one allowlisted meta event — the shared tail of
+   * {@link emitAnonMeta} (the `sdk_init` beacon) and the `resolution_failure`
+   * and `sdk_error` diagnostics (plan 144 TASK-21). Delivery goes to RevTurbine
+   * (unless `anonymousTelemetry: false`, or `connectedOnly` in `local_only`) and
+   * to every {@link SdkTelemetryProvider}, each independently. Callers gate;
+   * this never throws.
    */
   private async postAnonMeta(
     eventType: components['schemas']['SdkMetaEventType'],
@@ -7513,11 +7834,14 @@ export class RevTurbineCustomerSdk {
         | 'entitlement_handle'
       >
     > = {},
+    delivery: { connectedOnly?: boolean } = {},
   ): Promise<void> {
-    // ST-1416: an SDK without an identified user makes no request at all —
-    // the keyless beacon and the diagnostics included. (The beacon carries no
-    // user identity and no install id; it is withheld, not anonymised.)
-    if (this.identifiedUserId === undefined) return;
+    // ST-1416: an SDK without an identified user makes no request — the
+    // `sdk_init` beacon and the diagnostics included. The ONE exception is
+    // `sdk_error` (0.16.0): the missing-user error itself has to be reportable
+    // by the SDK that has no user. It carries a reason and a fixed-vocabulary
+    // message only, never anything user-derived.
+    if (this.identifiedUserId === undefined && eventType !== 'sdk_error') return;
     // Whole body is best-effort: hashing, serialization, AND delivery must
     // never throw into the host app (REQ-3/REQ-4).
     try {
@@ -7555,14 +7879,53 @@ export class RevTurbineCustomerSdk {
       };
       const body: SdkMetaIngestBatchBody = { events: [event] };
 
+      // The app's own sinks first, each isolated: a provider that throws or
+      // rejects must not affect RevTurbine's copy or another provider.
+      for (const provider of this.sdkTelemetryProviders) this.deliverToTelemetryProvider(provider, event);
+
+      const toRevTurbine = this.anonymousTelemetryEnabled
+        && !(delivery.connectedOnly === true && this.isLocalOnlyMode());
+      if (!toRevTurbine) return;
+      // With a PUBLIC key configured the request carries it as a bearer, only
+      // so the server can attribute the row to the tenant (it appears in the
+      // tenant's SDK health view). Never a server key, and never in `local_only`
+      // (where the key is a placeholder). It is NOT passed to providers. The
+      // header makes the request non-simple (a CORS preflight), which is why
+      // this is `fetch` + `keepalive` rather than `sendBeacon`, and a failed
+      // preflight stays silent: no retry.
+      const attributionKey = !this.isLocalOnlyMode() && hasValue(this.publicKey) ? this.publicKey : undefined;
       await fetch(this.endpointFor('ingestSdkMeta', SDK_META_GATEWAY_PATH), {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          'content-type': 'application/json',
+          ...(attributionKey ? { authorization: `Bearer ${attributionKey}` } : {}),
+        },
         body: JSON.stringify(body),
         keepalive: true,
+        // Never a cookie, even when the endpoint is same-origin: these events
+        // are anonymous.
+        credentials: 'omit',
       });
     } catch {
       // Best-effort: anonymous telemetry must never throw into the host app.
+    }
+  }
+
+  /** Hand one event to one provider; never throws, warns at most once per provider. */
+  private deliverToTelemetryProvider(provider: SdkTelemetryProvider, event: SdkMetaEventBody): void {
+    const warn = (): void => {
+      if (this.warnedTelemetryProviders.has(provider)) return;
+      this.warnedTelemetryProviders.add(provider);
+      console.warn(`[RevTurbine] SDK telemetry provider "${String(provider.name)}" failed; its events are dropped.`);
+    };
+    try {
+      const result = provider.send([{ ...event }]);
+      if (isThenable(result)) {
+        // `isThenable` is typed for the user promise; any thenable works here.
+        (result as PromiseLike<unknown>).then(undefined, warn); // sdk-ok: boundary-parse — app provider result
+      }
+    } catch {
+      warn();
     }
   }
 
@@ -8037,6 +8400,8 @@ export class RevTurbineCustomerSdk {
    * instance (e.g. SPA unmount) to avoid a dangling interval/listeners.
    */
   dispose(): void {
+    // A user promise still pending must apply nothing to a disposed SDK.
+    this.pendingUserToken = undefined;
     this.unbridgeUiPathCtaResolvers();
     this.unregisterBuiltinSnoozeResolver();
     this.unregisterServerActionResolvers();
@@ -8251,6 +8616,11 @@ export class RevTurbineCustomerSdk {
     this.invalidateEffectiveContext();
     // BL-0417: every user-context change can move the resolved trial view.
     this.syncTrialLifecycleWithView();
+    this.fireUserContextListeners();
+  }
+
+  /** Run every user-context subscriber; one that throws never breaks the host app. */
+  private fireUserContextListeners(): void {
     for (const listener of [...this.userContextListeners]) {
       try {
         listener();
@@ -9161,7 +9531,10 @@ export class RevTurbineCustomerSdk {
     const remindMinutes = Number(payload.remind_later_minutes);
 
     return {
-      ...(Number.isFinite(cooldownDays) && cooldownDays > 0
+      // `0` is an authored value (no cooldown), not "unset"; an absent or
+      // non-numeric `cooldown_days` stays unset and takes the 7-day default.
+      ...(payload.caps?.cooldown_days !== undefined && payload.caps?.cooldown_days !== null
+        && Number.isFinite(cooldownDays) && cooldownDays >= 0
         ? { cooldownMs: cooldownDays * 24 * 60 * 60 * 1000 }
         : {}),
       ...(Number.isFinite(remindMinutes) && remindMinutes > 0
@@ -9207,10 +9580,14 @@ export class RevTurbineCustomerSdk {
     const authored = this.authoredSuppressionWindows(input.payloadId);
 
     if (input.interactionType === 'dismiss') {
-      const explicitMs = Number(metadata.cooldown_ms);
-      next.suppressedUntil = now + (Number.isFinite(explicitMs) && explicitMs > 0
-        ? explicitMs
-        : authored.cooldownMs ?? this.dismissCooldownDefaultMs);
+      // An authored or explicit `0` means NO cooldown (ST-1696 C3a): it is a
+      // value, not "unset", so it must not fall through to the 7-day default.
+      const explicitMs = typeof metadata.cooldown_ms === 'number' && Number.isFinite(metadata.cooldown_ms) && metadata.cooldown_ms >= 0
+        ? metadata.cooldown_ms
+        : undefined;
+      const cooldownMs = explicitMs ?? authored.cooldownMs ?? this.dismissCooldownDefaultMs;
+      if (cooldownMs > 0) next.suppressedUntil = now + cooldownMs;
+      else delete next.suppressedUntil;
     }
 
     if (input.interactionType === 'remind_me_later') {
@@ -9223,14 +9600,9 @@ export class RevTurbineCustomerSdk {
         : authored.remindMs ?? this.defaultRemindLaterMs);
     }
 
-    if (input.interactionType === 'cta_clicked') {
-      // Bare click — clicked but not confirmed complete (e.g. abandoned checkout).
-      // Treated as a dismiss cooldown; the placement may return (plan 167 Q-1).
-      const explicitMs = Number(metadata.cooldown_ms);
-      next.suppressedUntil = now + (Number.isFinite(explicitMs) && explicitMs > 0
-        ? explicitMs
-        : authored.cooldownMs ?? this.dismissCooldownDefaultMs);
-    }
+    // A bare `cta_clicked` starts NO cooldown (ST-1696 C3b;
+    // placement-decision-rules.md §5 "Dismissal": "Bare CTA clicks create no
+    // cooldown"). Only a dismiss, a remind-me-later or a suppress does.
 
     if (input.interactionType === 'suppress') {
       // Time-based suppression — honour metadata.suppress_duration_ms or default to dismiss cooldown.
@@ -9415,15 +9787,18 @@ export class RevTurbineCustomerSdk {
     if (this.isLocalOnlyMode()) this.persistLocalRuntimeState();
 
     // Record interactions into the impression history (plan 167 Q-1):
-    // - dismiss / bare cta_clicked → time-boxed cooldown (re-shows after it).
+    // - dismiss → time-boxed cooldown (re-shows after it); an explicit or
+    //   authored `0` means none.
+    // - cta_clicked (bare click) → no cooldown (ST-1696 C3b).
     // - cta_completed (confirmed conversion) → analytics only.
     // - suppress → hidden for a configurable duration.
     const placementId = normalized.placementId;
     const treatmentId = normalized.treatmentId;
     const meta = normalized.metadata ?? {};
-    const dismissCooldownMs = Number(meta.cooldown_ms);
-    const resolvedCooldownMs =
-      Number.isFinite(dismissCooldownMs) && dismissCooldownMs > 0 ? dismissCooldownMs : undefined;
+    const explicitCooldownMs = typeof meta.cooldown_ms === 'number' && Number.isFinite(meta.cooldown_ms) && meta.cooldown_ms >= 0
+      ? meta.cooldown_ms
+      : undefined;
+    const resolvedCooldownMs = explicitCooldownMs ?? this.authoredSuppressionWindows(normalized.payloadId).cooldownMs;
 
     // @revturbine-graph derived_item:revturbine-sdk-internal:impression_history
     if (normalized.interactionType === 'dismiss') {
@@ -9431,9 +9806,6 @@ export class RevTurbineCustomerSdk {
     } else if (normalized.interactionType === 'cta_completed') {
       // Conversion analytics do not change future eligibility.
       void this.impressionHistory.recordConversion(placementId, treatmentId);
-    } else if (normalized.interactionType === 'cta_clicked') {
-      // Bare click → dismiss-style cooldown, not permanent.
-      void this.impressionHistory.recordClickThru(placementId, treatmentId, undefined, undefined, resolvedCooldownMs);
     } else if (normalized.interactionType === 'suppress') {
       const durationMs = Number(meta.suppress_duration_ms);
       void this.impressionHistory.recordSuppression(
@@ -10067,7 +10439,7 @@ export class RevTurbineCustomerSdk {
    *
    * @public
    */
-  getUserContext(): UserContext {
+  getUserContext(): RevTurbineHeldUserContext {
     // `''` only while the SDK has no identified user (it is then disabled);
     // never an anonymous stand-in (ST-1416).
     const userId = this.identifiedUserId ?? '';
@@ -10566,22 +10938,23 @@ export class RevTurbineCustomerSdk {
 
   /**
    * Record a bare placement click-through — the user clicked the CTA but did
-   * not confirm the conversion (e.g. abandoned checkout). Time-boxed like a
-   * dismiss; the placement may return (plan 167). For a confirmed conversion
-   * use {@link recordConversion}.
+   * not confirm the conversion (e.g. abandoned checkout). Since `0.16.0` a
+   * bare click starts **no cooldown**: the record is kept for history only and
+   * the placement stays eligible. For a confirmed conversion use
+   * {@link recordConversion}.
    *
    * @param placementId - The placement's stable rule_id.
    * @param payloadId - Optional payload variant id.
    * @param surfaceTemplateId - Optional surface template id.
    * @param metadata - Optional metadata persisted with the record.
-   * @param cooldownMs - Optional explicit cooldown window (ms). Defaults to 7 days.
+   * @param _cooldownMs - Ignored since `0.16.0` (a click starts no cooldown); kept so existing calls compile.
    */
   async recordClickThru(
     placementId: string,
     payloadId?: string,
     surfaceTemplateId?: string,
     metadata?: RevTurbineImpressionMetadata,
-    cooldownMs?: number,
+    _cooldownMs?: number,
   ): Promise<void> {
     if (this.identifiedUserId === undefined) return; // ST-1416: no user, no history.
     await this.impressionHistory.recordClickThru(
@@ -10589,7 +10962,7 @@ export class RevTurbineCustomerSdk {
       payloadId,
       surfaceTemplateId,
       metadata,
-      cooldownMs,
+      0,
     );
   }
 
@@ -11415,6 +11788,8 @@ export class RevTurbineCustomerSdk {
       this.reportUserRequired('identify');
       return;
     }
+    // An explicit identity wins over a user promise still pending.
+    this.pendingUserToken = undefined;
     warnOnEmailShapedIdentity('user id', userId);
     // BL-0131 (D-19): `account_id` is the OTHER identity key, and the one the
     // account-map joins are built from, so an email there is at least as
@@ -11466,7 +11841,7 @@ export class RevTurbineCustomerSdk {
       plan: ctx.plan,
       usage: ctx.usage,
       addons: ctx.addons,
-      entitlements: ctx.entitlements as Record<string, boolean> | undefined,
+      entitlements: ctx.entitlements,
       custom: ctx.custom,
       personalization: ctx.personalization,
     }, 'identify');
@@ -11516,6 +11891,8 @@ export class RevTurbineCustomerSdk {
    * @public
    */
   resetIdentity(): void {
+    // A sign-out supersedes a user promise still pending.
+    this.pendingUserToken = undefined;
     this.clearAllUserState({ reinfer: true });
   }
 
@@ -11915,6 +12292,11 @@ const LOCAL_ONLY_INIT_DEFAULTS: Pick<RevTurbineInitOptions, 'tenantId' | 'public
 
 function hasValue(input: unknown): input is string { // sdk-ok: boundary-parse
   return typeof input === 'string' && input.trim().length > 0;
+}
+
+/** A thenable (promise-like) value — the `user` option's async form. */
+function isThenable(input: unknown): input is RevTurbineInitUserPromise { // sdk-ok: boundary-parse
+  return typeof input === 'object' && input !== null && typeof Reflect.get(input, 'then') === 'function';
 }
 
 /**

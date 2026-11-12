@@ -71,11 +71,12 @@ describe('SDK impression-record public API (TASK-9 minimum-viable)', () => {
     expect(sdk.impressionHistory.isHiddenSync('pl_upgrade_modal')).toBe(true);
   });
 
-  it('recordClickThru records a cooldown', async () => {
+  it('recordClickThru records the click and starts no cooldown (0.16.0)', async () => {
     const sdk = makeSdk();
     await sdk.recordClickThru('pl_pro_upsell', 'pay_pro_a');
     await sdk.impressionHistory.hydrate();
-    expect(sdk.impressionHistory.isHiddenSync('pl_pro_upsell')).toBe(true);
+    expect(sdk.impressionHistory.isHiddenSync('pl_pro_upsell')).toBe(false);
+    expect(await sdk.impressionHistory.queryHistory({ placementIds: ['pl_pro_upsell'], outcomes: ['clicked_thru'] })).toHaveLength(1);
   });
 
   it('multiple impressions for the same placement append independent records', async () => {

@@ -52,7 +52,7 @@ if (gate.denied) {
 Creates a fully-initialized session. Handles:
 
 1. SDK initialization
-2. User identification (`options.user.id` is **required**; without a non-empty id the session is disabled — no requests, no evaluation, fallbacks only — and reports one `user_id_required` diagnostic)
+2. User identification (`options.user.id` is **required**; without a non-empty id the session is disabled — no requests, no evaluation, fallbacks only — and reports one `user_id_required` diagnostic; `user` may be a `Promise` of the user, applied as `identify()` when it resolves)
 3. Theme resolution (from the Playbook or API)
 4. Placement bootstrapping (optional preloaded decisions)
 

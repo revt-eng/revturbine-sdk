@@ -20,6 +20,19 @@ export interface UseEntitlementOptions {
   handle: string;
   /** Optional context (usage, required tier, etc.). */
   context?: RevTurbineEntitlementContext;
+  /**
+   * What THIS check would consume, per call (never a Playbook field). Shorthand
+   * for `context: { cost }`; it wins over `context.cost`.
+   *
+   * On a `usage_limit` or `credits` entitlement: a cost above 0 is allowed
+   * while `usage + cost <= limit`; `0` is always allowed (free) with a
+   * developer warning; leaving it out keeps the plain check (allowed while
+   * usage is below the limit) and logs a developer error
+   * (`entitlement_cost_missing`), so pass `cost: 0` for a free action. Other
+   * kinds and unlimited entitlements ignore it. See
+   * {@link RevTurbineEntitlementContext.cost}.
+   */
+  cost?: number;
   /** Whether to fetch automatically on mount. Defaults to `true`. */
   autoCheck?: boolean;
   /**
@@ -81,7 +94,8 @@ export interface UseEntitlementResult {
  */
 export function useEntitlement({
   handle,
-  context,
+  context: contextOption,
+  cost,
   autoCheck = true,
   autoGate = false,
   gatePlacementRequest,
@@ -90,6 +104,11 @@ export function useEntitlement({
   const { sdk, isReady, initStatus = INIT_STATUS_OK } = useRevTurbine();
   const [, forceUpdate] = useState(0);
   const gateRef = useRef<EntitlementGate | null>(null);
+  // `cost` is shorthand for `context.cost` (ST-1696). Not memoised on purpose:
+  // `contextKey` below is what decides whether the gate is rebuilt.
+  const context: RevTurbineEntitlementContext | undefined = cost === undefined
+    ? contextOption
+    : { ...contextOption, cost };
 
   // Plan 194 REQ-3: a changed `context` must re-evaluate. The gate captures
   // `context` at construction and the effect below keyed only on

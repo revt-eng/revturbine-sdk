@@ -15,6 +15,7 @@ Source: revturbine-scaffold/src/decisions/controllers/engine.ts
 
 from __future__ import annotations
 
+import math
 import time
 from typing import Any
 
@@ -22,16 +23,22 @@ from revturbine.core.decisions.types import (
     DecisionContent,
     DecisionEngineOptions,
     EntitlementCheckResult,
+    EntitlementDiagnostic,
     PlacementDecision,
     PlacementDecisionInput,
     PlacementRecord,
     PlacementResolver,
 )
 from revturbine.core.entitlements.entitlement_check import (
+    _cost_exceeds_limit,
+    context_balance,
     derive_result_from_rule_type_fields,
+    evaluate_cost_limit,
     is_rule_shaped_kind,
+    report_entitlement_diagnostic,
     unrecognised_kind_result,
     warn_on_non_access_check,
+    with_diagnostic,
     with_rule_handle,
 )
 from revturbine.core.entitlements.rules import RuleEvaluationContext, find_matching_entitlement_rule
@@ -200,6 +207,7 @@ class DecisionEngine:
         providers = self._registry.resolve_all()
         result = self._derive_entitlement_result(handle, providers, context)
         warn_on_non_access_check(handle, result)
+        report_entitlement_diagnostic(result)
         return result
 
     def track_interaction(self, input_data: RevTurbineTreatmentInteractionInput) -> None:
@@ -289,6 +297,9 @@ class DecisionEngine:
                             type_fields,
                             float(ctx_used) if ctx_used is not None else 0.0,
                             matched.get("effective_allowance"),
+                            context_balance(context),
+                            None if context is None else context.get("cost"),
+                            handle,
                         ),
                         matched_rule_id
                         if isinstance(matched_rule_id, str) and matched_rule_id != ""
@@ -325,23 +336,44 @@ class DecisionEngine:
                     reason="no_matching_entitlement_rule",
                 )
 
+        # ST-1696 cost rule, same three branches as the rule shaper. The
+        # existing quirk stays: a limit of 0 (or a non-finite one) never denies.
+        diagnostic: EntitlementDiagnostic | None = None
         if usage is not None and context is not None and "used" in context:
             used = context["used"]
             limit = usage.get("limit", 0)
-            if limit > 0 and used >= limit:
-                return EntitlementCheckResult(
-                    status="denied",
-                    allowed=False,
-                    reason="usage_limit_exceeded",
-                    limit=limit,
-                    used=used,
-                    remaining=max(0, limit - used),
+            # An int beyond double range is not a finite limit (and must not
+            # raise): `math.isfinite` itself would raise OverflowError on it.
+            try:
+                limit_is_finite = math.isfinite(limit)
+            except OverflowError:
+                limit_is_finite = False
+            if limit > 0 and limit_is_finite:
+                over, diagnostic = evaluate_cost_limit(
+                    context.get("cost"),
+                    handle,
+                    used >= limit,
+                    lambda c: _cost_exceeds_limit(used, c, limit),
                 )
+                if over:
+                    return with_diagnostic(
+                        EntitlementCheckResult(
+                            status="denied",
+                            allowed=False,
+                            reason="usage_limit_exceeded",
+                            limit=limit,
+                            used=used,
+                            remaining=max(0, limit - used),
+                        ),
+                        diagnostic,
+                    )
 
         result: EntitlementCheckResult = EntitlementCheckResult(
             status=entry["status"],
             allowed=entry["status"] == "allowed",
         )
+        if diagnostic is not None:
+            result["diagnostic"] = diagnostic
         entry_reason = entry.get("reason")
         if entry_reason is not None:
             result["reason"] = entry_reason

@@ -44,6 +44,27 @@ acceptsProviderProps({ options: { ...transport, user: { id: 'user_1' } }, childr
 const ok: RevTurbineInitOptions = { ...transport, user: { id: 'user_1' } };
 void ok;
 
+/* ── Accepted: a Promise of the user (0.16.0) ─────────────────────────── */
+
+declare const pendingUser: Promise<{ id: string; plan_handle: string }>;
+initRevTurbine({ ...transport, user: pendingUser });
+void initRevTurbineSession({ ...transport, user: pendingUser });
+acceptsProviderProps({ options: { ...transport, user: pendingUser }, children: null });
+const okPromise: RevTurbineInitOptions = { ...transport, user: pendingUser };
+void okPromise;
+
+/* ── Rejected: a promise of a user with no id, and `null` ─────────────── */
+
+declare const pendingNoId: Promise<{ plan_handle: string }>;
+// @ts-expect-error - a promised user still needs an `id`.
+initRevTurbine({ ...transport, user: pendingNoId });
+// @ts-expect-error - `null` is not a user: a missing user is an error.
+initRevTurbine({ ...transport, user: null });
+// @ts-expect-error - `null` is not a user (session entry point).
+void initRevTurbineSession({ ...transport, user: null });
+// @ts-expect-error - `null` is not a user (React provider options).
+acceptsProviderProps({ options: { ...transport, user: null }, children: null });
+
 /* ── Rejected: no user ────────────────────────────────────────────────── */
 
 // @ts-expect-error - `user` is required.

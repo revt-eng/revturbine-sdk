@@ -21,8 +21,13 @@ const planCases = [
   { name: 'no filter', targets: [], plan: 'free', matches: true },
   { name: 'matching plan', targets: ['free'], plan: 'free', matches: true },
   { name: 'different plan', targets: ['pro'], plan: 'free', matches: false },
-  // Missing plan context is currently permissive in both paths.
-  { name: 'missing plan context', targets: ['pro'], plan: undefined, matches: true },
+  // Scaffold 0.1.558 (ST-1696 C1): a plan-targeted payload fails closed for a
+  // user with no plan, in both paths.
+  { name: 'missing plan context', targets: ['pro'], plan: undefined, matches: false },
+  // Exact handle compare in the inspector AND the resolver (the test also
+  // asserts the decision output follows `eligible`): a case-different handle
+  // matches in neither.
+  { name: 'case-different plan handle', targets: ['free'], plan: 'Free', matches: false },
 ];
 
 describe.each([RuntimeMode.LocalOnly, RuntimeMode.Server])('placement explanation segments (%s)', (runtimeMode) => {

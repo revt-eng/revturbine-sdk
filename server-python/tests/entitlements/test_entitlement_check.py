@@ -76,6 +76,178 @@ class TestFeature:
         assert _derive(cfg, "f")["allowed"] is True
 
 
+class TestCreditsContextBalance:
+    """ST-1696 C2 (REQ-9): ``context.balance`` is the REMAINING credits."""
+
+    @staticmethod
+    def _credits() -> dict[str, Any]:
+        return _cfg(
+            [_rule("c", {"kind": "credits", "allowance_value": 100, "enforcement": "hard_block"})]
+        )
+
+    def test_zero_balance_is_exhausted(self) -> None:
+        r = _derive(self._credits(), "c", context={"balance": 0})
+        assert r["allowed"] is False
+        assert r["reason"] == "credit_balance_exhausted"
+        assert (r["limit"], r["used"], r["remaining"]) == (100, 100, 0)
+
+    def test_positive_balance_is_allowed_with_derived_used(self) -> None:
+        r = _derive(self._credits(), "c", context={"balance": 40})
+        assert r["allowed"] is True
+        assert (r["limit"], r["used"], r["remaining"]) == (100, 60, 40)
+
+    def test_balance_wins_over_used(self) -> None:
+        r = _derive(self._credits(), "c", context={"balance": 40, "used": 100})
+        assert r["allowed"] is True
+        assert r["remaining"] == 40
+
+    def test_negative_balance_clamps_remaining_to_zero(self) -> None:
+        r = _derive(self._credits(), "c", context={"balance": -5})
+        assert r["allowed"] is False
+        assert (r["used"], r["remaining"]) == (105, 0)
+
+    def test_non_finite_or_non_numeric_balance_is_ignored(self) -> None:
+        for bad in (float("nan"), float("inf"), "40", True):
+            r = _derive(self._credits(), "c", context={"balance": bad, "used": 30})
+            assert (r["used"], r["remaining"]) == (30, 70)
+
+    def test_usage_limit_ignores_balance(self) -> None:
+        cfg = _cfg([_rule("u", {"kind": "usage_limit", "limit_value": 100})])
+        r = _derive(cfg, "u", context={"balance": 0, "used": 10})
+        assert r["allowed"] is True
+        assert (r["used"], r["remaining"]) == (10, 90)
+
+
+class TestCostRule:
+    """ST-1696 per-call ``cost`` (Kent's final rule, 2026-11-11)."""
+
+    @staticmethod
+    def _limit(
+        enforcement: str = "hard_block", kind: str = "usage_limit", value: float = 10
+    ) -> dict[str, Any]:
+        field = "limit_value" if kind == "usage_limit" else "allowance_value"
+        return _cfg([_rule("u", {"kind": kind, field: value, "enforcement": enforcement})])
+
+    @staticmethod
+    def _derive_diag(cfg: dict[str, Any], **ctx: Any) -> Any:
+        return derive_local_entitlement_from_configured_rules(
+            handle="u",
+            context=ctx,
+            current_plan_handle="starter",
+            segment_ids=set(),
+            usage_balances={},
+            playbook=cfg,
+            diagnostics=True,
+        )
+
+    def test_positive_cost_allowed_when_it_fits(self) -> None:
+        r = self._derive_diag(self._limit(), used=7, cost=3)
+        assert r["allowed"] is True and "diagnostic" not in r
+
+    def test_positive_cost_over_the_limit_is_blocked(self) -> None:
+        r = self._derive_diag(self._limit(), used=7, cost=3.5)
+        assert r["allowed"] is False and r["reason"] == "usage_limit_reached"
+
+    def test_enforcement_modes_decide(self) -> None:
+        assert self._derive_diag(self._limit("degrade"), used=7, cost=4)["status"] == "limited"
+        r = self._derive_diag(self._limit("allow_overage"), used=7, cost=4)
+        assert r["allowed"] is True and r["reason"] == "usage_limit_reached_overage"
+
+    def test_zero_cost_is_free_with_a_warning_diagnostic(self) -> None:
+        r = self._derive_diag(self._limit(), used=25, cost=0)
+        assert r["allowed"] is True
+        assert r["diagnostic"] == {
+            "level": "warning",
+            "code": "entitlement_cost_zero",
+            "handle": "u",
+        }
+
+    def test_missing_cost_keeps_todays_check_and_reports_an_error(self) -> None:
+        under = self._derive_diag(self._limit(), used=9)
+        over = self._derive_diag(self._limit(), used=10)
+        assert under["allowed"] is True and over["allowed"] is False
+        assert over["diagnostic"]["code"] == "entitlement_cost_missing"
+
+    def test_huge_ints_never_raise(self) -> None:
+        # An int beyond double range is Infinity to TS: an invalid cost naming
+        # `infinite`, a non-finite (ignored) balance; and never an OverflowError.
+        huge = 10**400
+        r = self._derive_diag(self._limit(), used=9, cost=huge)
+        assert r["allowed"] is True
+        assert r["diagnostic"]["received"] == "infinite"
+        assert (
+            self._derive_diag(
+                self._limit(kind="credits", value=100), used=30, balance=huge, cost=1
+            )["remaining"]
+            == 70
+        )
+
+    def test_invalid_cost_names_only_the_kind(self) -> None:
+        for bad, kind in [
+            (-1, "negative"),
+            (float("nan"), "nan"),
+            (float("inf"), "infinite"),
+            ("3", "non_number"),
+            (True, "non_number"),
+        ]:
+            r = self._derive_diag(self._limit(), used=9, cost=bad)
+            assert r["allowed"] is True
+            assert r["diagnostic"] == {
+                "level": "error",
+                "code": "entitlement_cost_invalid",
+                "handle": "u",
+                "received": kind,
+            }
+
+    def test_float_tolerance_copies_scaffolds_formula(self) -> None:
+        assert self._derive_diag(self._limit(value=0.3), used=0.1, cost=0.2)["allowed"] is True
+        assert (
+            self._derive_diag(self._limit(value=0.3), used=0.1, cost=0.2000001)["allowed"] is False
+        )
+
+    def test_credits_balance_is_the_limit_for_cost(self) -> None:
+        cfg = self._limit(kind="credits", value=100)
+        assert self._derive_diag(cfg, balance=40, cost=40)["allowed"] is True
+        over = self._derive_diag(cfg, balance=40, cost=41)
+        assert over["allowed"] is False and over["reason"] == "credit_balance_exhausted"
+        assert (over["limit"], over["used"], over["remaining"]) == (100, 60, 40)
+
+    def test_credits_balance_without_a_finite_allowance_reports_remaining_only(self) -> None:
+        cfg = _cfg(
+            [_rule("u", {"kind": "credits", "allowance_value": None, "enforcement": "hard_block"})]
+        )
+        r = self._derive_diag(cfg, balance=5, cost=6)
+        assert r["allowed"] is False and r["remaining"] == 5
+        assert "limit" not in r and "used" not in r
+
+    def test_other_kinds_unlimited_and_bulk_checks_ignore_cost_silently(self) -> None:
+        feature = _cfg([_rule("u", {"kind": "feature", "enabled": True})])
+        assert "diagnostic" not in self._derive_diag(feature, cost=2)
+        unlimited = _cfg([_rule("u", {"kind": "usage_limit", "limit_value": None})])
+        assert "diagnostic" not in self._derive_diag(unlimited, used=50)
+        bulk = derive_local_entitlement_from_configured_rules(
+            handle="u",
+            context={"used": 9},
+            current_plan_handle="starter",
+            segment_ids=set(),
+            usage_balances={},
+            playbook=self._limit(),
+        )
+        assert bulk is not None
+        assert "diagnostic" not in bulk and bulk["allowed"] is True
+
+    def test_reporting_is_once_per_handle_and_code_and_never_raises(self) -> None:
+        from revturbine.core.entitlements import entitlement_check as ec
+
+        ec._reported_diagnostics.clear()
+        r = self._derive_diag(self._limit(), used=1)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            ec.report_entitlement_diagnostic(r)
+            ec.report_entitlement_diagnostic(r)
+        assert len(caught) == 1 and issubclass(caught[0].category, RuntimeWarning)
+
+
 class TestWinningRuleHandle:
     """BL-0062 (analytics worksheet gap G3) — the §2.6.5 selection must NAME
     its winner, not merely return its outcome.

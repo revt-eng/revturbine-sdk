@@ -19,12 +19,15 @@ Source: revturbine-scaffold/src/entitlements/controllers/entitlement-check.ts
 
 from __future__ import annotations
 
+import logging
 import math
+import sys
 import warnings
+from collections.abc import Callable
 from collections.abc import Set as AbstractSet
 from typing import Any
 
-from revturbine.core.decisions.types import EntitlementCheckResult
+from revturbine.core.decisions.types import EntitlementCheckResult, EntitlementDiagnostic
 from revturbine.core.entitlements.purchased_allowance import (
     aggregate_purchased_allowance,
     validate_purchased_addons,
@@ -121,8 +124,15 @@ def derive_local_entitlement_from_configured_rules(
     effective_plan_handle: str | None = None,
     addons: list[dict[str, Any]] | None = None,
     billing_period: str | None = None,
+    diagnostics: bool = False,
 ) -> EntitlementCheckResult | None:
     """Derive an entitlement result locally from Playbook rules.
+
+    ``diagnostics`` attaches the developer ``diagnostic`` (ST-1696 cost rule)
+    to the result. It is set by the single-handle check paths (``can()`` /
+    ``check_entitlement()``) and left unset when every entitlement is
+    evaluated at once, so a bulk evaluation never reports a missing cost for
+    calls nobody made. The cost RULE applies either way.
 
     ``trial_granted_entitlement_handles`` / ``effective_plan_handle`` are the
     reverse-trial inputs (plan 43 TASK-2): a handle the user holds through an
@@ -516,10 +526,35 @@ def derive_local_entitlement_from_configured_rules(
             used = 0.0
 
     return with_rule_handle(
-        derive_result_from_rule_type_fields(type_fields, used, effective_allowance),
+        derive_result_from_rule_type_fields(
+            type_fields,
+            used,
+            effective_allowance,
+            context_balance(context),
+            None if context is None else context.get("cost"),
+            handle if diagnostics else None,
+        ),
         selected_rule_handle,
         contributing_handles,
     )
+
+
+def context_balance(context: dict[str, Any] | None) -> float | None:
+    """The caller's ``{ balance }`` as a finite number, else ``None``.
+
+    Source: entitlement-check.ts (``context?.balance``). Only a real number
+    counts; a bool, a string or a non-finite value is ignored.
+    """
+    if context is None:
+        return None
+    raw = context.get("balance")
+    if isinstance(raw, (int, float)) and not isinstance(raw, bool):
+        try:
+            value = float(raw)
+        except OverflowError:  # an int beyond double range: not a finite number
+            return None
+        return value if math.isfinite(value) else None
+    return None
 
 
 def with_rule_handle(
@@ -637,10 +672,198 @@ def _with_limit_fields(
     return enriched  # type: ignore[return-value]
 
 
+# ── Per-call cost (ST-1696, Kent's final rule 2026-11-11) ───────────────────
+
+_COST_TOLERANCE_SCALE_CAP = float(2**48)
+
+
+def _to_double(value: float) -> float:
+    """``float(value)``, with an int beyond double range read as +/-infinity
+    (what TS sees) instead of raising ``OverflowError``."""
+    try:
+        return float(value)
+    except OverflowError:
+        return math.inf if value > 0 else -math.inf
+
+
+def _cost_exceeds_limit(used: float, cost: float, limit: float) -> bool:
+    """The ONE comparison the cost > 0 rule uses (usage_limit, credits
+    used-based). Copied from scaffold, not re-derived; IEEE-754 doubles, left
+    to right::
+
+        scale = min(max(1, |used|, |cost|, |limit|), 2**48)
+        over  = ((used + cost) - limit) > 8 * EPSILON * scale
+
+    ``EPSILON`` is ``sys.float_info.epsilon`` (2**-52). The missing-cost path
+    (``used >= limit``) never uses this.
+
+    Source: entitlement-check.ts (costExceedsLimit)
+    """
+    used, cost, limit = _to_double(used), _to_double(cost), _to_double(limit)
+    scale = min(max(1.0, abs(used), abs(cost), abs(limit)), _COST_TOLERANCE_SCALE_CAP)
+    return ((used + cost) - limit) > 8 * sys.float_info.epsilon * scale
+
+
+def _cost_exceeds_balance(cost: float, balance: float) -> bool:
+    """Balance form of :func:`_cost_exceeds_limit` (credits evaluated from a
+    ``balance``)::
+
+        scale = min(max(1, |cost|, |balance|), 2**48)
+        over  = (cost - balance) > 8 * EPSILON * scale
+
+    Source: entitlement-check.ts (costExceedsBalance)
+    """
+    cost, balance = _to_double(cost), _to_double(balance)
+    scale = min(max(1.0, abs(cost), abs(balance)), _COST_TOLERANCE_SCALE_CAP)
+    return (cost - balance) > 8 * sys.float_info.epsilon * scale
+
+
+def _classify_cost(cost: Any) -> tuple[str, Any]:
+    """``(kind, payload)``: ``positive`` (the cost), ``zero``, ``missing`` or
+    ``invalid`` (the received KIND). A ``bool`` is not a number here, as in TS
+    where ``typeof true !== 'number'``."""
+    if cost is None:
+        return ("missing", None)
+    if isinstance(cost, bool) or not isinstance(cost, (int, float)):
+        return ("invalid", "non_number")
+    try:
+        value = float(cost)
+    except OverflowError:
+        # An int beyond double range: TS reads it as Infinity. Never raises.
+        return ("invalid", "infinite")
+    if math.isnan(value):
+        return ("invalid", "nan")
+    if math.isinf(value):
+        return ("invalid", "infinite")
+    if value < 0:
+        return ("invalid", "negative")
+    return ("zero", None) if value == 0 else ("positive", value)
+
+
+def evaluate_cost_limit(
+    cost: Any,
+    diagnose_handle: str | None,
+    legacy_over: bool,
+    over_with_cost: Callable[[float], bool],
+) -> tuple[bool, EntitlementDiagnostic | None]:
+    """Is a limit-enforcing call over its limit, and what should the developer
+    be told? Truth table (finite limit only; callers skip this for unlimited):
+
+    - cost > 0   : over = ``over_with_cost(cost)``, no diagnostic
+    - cost == 0  : never over (free), ``entitlement_cost_zero`` warning
+    - missing    : over = ``legacy_over`` (today's check), ``entitlement_cost_missing`` error
+    - invalid    : over = ``legacy_over``, ``entitlement_cost_invalid`` error naming the kind
+
+    ``diagnose_handle`` is set only by single-handle checks; without it the
+    cost RULE still applies but no diagnostic is produced.
+
+    Source: entitlement-check.ts (costVerdict / evaluateCostLimit)
+    """
+    kind, payload = _classify_cost(cost)
+    if kind == "positive":
+        return (over_with_cost(payload), None)
+    if kind == "zero":
+        zero: EntitlementDiagnostic | None = (
+            None
+            if diagnose_handle is None
+            else {"level": "warning", "code": "entitlement_cost_zero", "handle": diagnose_handle}
+        )
+        return (False, zero)
+    if kind == "missing":
+        missing: EntitlementDiagnostic | None = (
+            None
+            if diagnose_handle is None
+            else {"level": "error", "code": "entitlement_cost_missing", "handle": diagnose_handle}
+        )
+        return (legacy_over, missing)
+    invalid: EntitlementDiagnostic | None = (
+        None
+        if diagnose_handle is None
+        else {
+            "level": "error",
+            "code": "entitlement_cost_invalid",
+            "handle": diagnose_handle,
+            "received": payload,
+        }
+    )
+    return (legacy_over, invalid)
+
+
+def with_diagnostic(
+    result: EntitlementCheckResult, diagnostic: EntitlementDiagnostic | None
+) -> EntitlementCheckResult:
+    """Attach a diagnostic to a result; a no-op without one."""
+    if diagnostic is None:
+        return result
+    enriched = dict(result)
+    enriched["diagnostic"] = diagnostic
+    return enriched  # type: ignore[return-value]
+
+
+_reported_diagnostics: set[tuple[str, str]] = set()
+_LOGGER = logging.getLogger("revturbine")
+
+
+def report_entitlement_diagnostic(result: EntitlementCheckResult | None) -> None:
+    """Default Python routing for a result's developer diagnostic, once per
+    handle + code per process (mirrors :func:`warn_on_non_access_check`).
+
+    The warning (``entitlement_cost_zero``) goes through ``warnings.warn`` as a
+    ``RuntimeWarning``. The two errors (``entitlement_cost_missing`` /
+    ``entitlement_cost_invalid``) are made louder: they are logged at ERROR
+    level on the ``revturbine`` logger AND raised as a ``RuntimeWarning``, so
+    they surface both in a configured logging pipeline and under the default
+    warnings filter. Never raises. Never changes the result.
+
+    Source: entitlement-check.ts (reportEntitlementDiagnostic)
+    """
+    diagnostic = None if result is None else result.get("diagnostic")
+    if not diagnostic:
+        return
+    key = (diagnostic["code"], diagnostic["handle"])
+    if key in _reported_diagnostics:
+        return
+    _reported_diagnostics.add(key)
+    where = f'[revturbine] can() / check_entitlement("{diagnostic["handle"]}")'
+    if diagnostic["code"] == "entitlement_cost_zero":
+        warnings.warn(
+            f"{where} was called with cost 0: the action is treated as free and always "
+            "allowed, even past the limit. Pass a positive cost if it should count "
+            "against the limit.",
+            RuntimeWarning,
+            stacklevel=3,
+        )
+        return
+    if diagnostic["code"] == "entitlement_cost_invalid":
+        kinds = {
+            "negative": "a negative number",
+            "nan": "NaN",
+            "infinite": "a non-finite number",
+            "non_number": "a non-number value",
+        }
+        received: str = diagnostic.get("received") or "non_number"
+        message = (
+            f"{where} was called with an invalid cost ({kinds[received]}); "
+            "falling back to the cost-less check (allowed while usage < limit). "
+            "Pass cost as a finite number >= 0 (0 for free)."
+        )
+    else:
+        message = (
+            f"{where} was called without a cost on a usage-limited entitlement; "
+            "falling back to the cost-less check (allowed while usage < limit). "
+            "Pass a cost (0 for free)."
+        )
+    _LOGGER.error(message)
+    warnings.warn(message, RuntimeWarning, stacklevel=3)
+
+
 def derive_result_from_rule_type_fields(
     type_fields: dict[str, Any],
     used: float,
     effective_allowance: float | None = None,
+    balance: float | None = None,
+    cost: Any = None,
+    diagnose_handle: str | None = None,
 ) -> EntitlementCheckResult:
     """Shape an EntitlementCheckResult from a matched rule's ``type_fields``
     (plan 133). Single-sourced for BOTH evaluators — the Playbook path
@@ -676,12 +899,21 @@ def derive_result_from_rule_type_fields(
             else resolve_limit_value(type_fields.get("limit_value"))
         )
         if ul_limit is not None and math.isfinite(ul_limit) and ul_limit >= 0:
-            return _with_limit_fields(
-                _apply_usage_enforcement(
-                    used >= ul_limit, type_fields.get("enforcement"), "usage_limit_reached"
+            ul_over, ul_diag = evaluate_cost_limit(
+                cost,
+                diagnose_handle,
+                used >= ul_limit,
+                lambda c: _cost_exceeds_limit(used, c, ul_limit),
+            )
+            return with_diagnostic(
+                _with_limit_fields(
+                    _apply_usage_enforcement(
+                        ul_over, type_fields.get("enforcement"), "usage_limit_reached"
+                    ),
+                    ul_limit,
+                    used,
                 ),
-                ul_limit,
-                used,
+                ul_diag,
             )
         return {"status": "allowed", "allowed": True}
 
@@ -707,15 +939,50 @@ def derive_result_from_rule_type_fields(
             cr_limit = initial_grant
         else:
             cr_limit = None
-        if cr_limit is not None and math.isfinite(cr_limit):
-            return _with_limit_fields(
+        # ST-1696 REQ-9: a caller-supplied ``{ balance }`` is the REMAINING
+        # balance and wins over ``used`` and stored usage for this call.
+        # Exhausted at ``balance <= 0``; ``used`` is allowance minus balance.
+        # Ignored when not finite. Mirrors the TS credits branch exactly.
+        # Cost rule: with a finite balance the balance IS the limit, whether or
+        # not the rule has a finite allowance (then only ``remaining`` is
+        # reported, no ``limit`` / ``used``).
+        if balance is not None and math.isfinite(balance):
+            bal_over, bal_diag = evaluate_cost_limit(
+                cost,
+                diagnose_handle,
+                balance <= 0,
+                lambda c: _cost_exceeds_balance(c, balance),
+            )
+            base = with_diagnostic(
                 _apply_usage_enforcement(
-                    used >= cr_limit,
-                    type_fields.get("enforcement"),
-                    "credit_balance_exhausted",
+                    bal_over, type_fields.get("enforcement"), "credit_balance_exhausted"
                 ),
-                cr_limit,
-                used,
+                bal_diag,
+            )
+            enriched = dict(base)
+            if cr_limit is not None and math.isfinite(cr_limit):
+                enriched["limit"] = _int_if_integral(cr_limit)
+                enriched["used"] = _int_if_integral(max(0.0, cr_limit - balance))
+            enriched["remaining"] = _int_if_integral(max(0.0, balance))
+            return enriched  # type: ignore[return-value]
+        if cr_limit is not None and math.isfinite(cr_limit):
+            cr_over, cr_diag = evaluate_cost_limit(
+                cost,
+                diagnose_handle,
+                used >= cr_limit,
+                lambda c: _cost_exceeds_limit(used, c, cr_limit),
+            )
+            return with_diagnostic(
+                _with_limit_fields(
+                    _apply_usage_enforcement(
+                        cr_over,
+                        type_fields.get("enforcement"),
+                        "credit_balance_exhausted",
+                    ),
+                    cr_limit,
+                    used,
+                ),
+                cr_diag,
             )
         return {"status": "allowed", "allowed": True}
 

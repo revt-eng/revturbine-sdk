@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "count": 84,
+  "count": 89,
   "exports": [
     {
       "name": "AccessDeniedPlaceholder",
@@ -37,6 +37,12 @@
       "kind": "interface",
       "file": "web-sdk/config-artifact.ts",
       "signature": "export interface ConfigTargetDefaults { tenantId?: string; tenantIdDefaulted?: boolean; environmentId: string; }"
+    },
+    {
+      "name": "createHttpSdkTelemetryProvider",
+      "kind": "function",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "export function createHttpSdkTelemetryProvider(options:"
     },
     {
       "name": "DARK_THEME",
@@ -270,7 +276,7 @@
       "name": "RevTurbineCustomerSdk.getUserContext",
       "kind": "method",
       "file": "web-sdk/customer-side.ts",
-      "signature": "getUserContext(): UserContext"
+      "signature": "getUserContext(): RevTurbineHeldUserContext"
     },
     {
       "name": "RevTurbineCustomerSdk.getUserRequiredDiagnostic",
@@ -283,6 +289,12 @@
       "kind": "method",
       "file": "web-sdk/customer-side.ts",
       "signature": "identify<T extends IdentifyContextInput>(userId: string, context?: Exact<IdentifyContextInput, T>): void"
+    },
+    {
+      "name": "RevTurbineCustomerSdk.isUserPending",
+      "kind": "method",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "isUserPending(): boolean"
     },
     {
       "name": "RevTurbineCustomerSdk.recordAccountCreated",
@@ -393,6 +405,12 @@
       "signature": "async validateUiPathResolvers( options: RevTurbineUiPathResolverValidationOptions ="
     },
     {
+      "name": "RevTurbineHeldUserContext",
+      "kind": "type",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "export type RevTurbineHeldUserContext = Omit<UserContext, 'entitlements'> & { entitlements: Record<string, MirroredEntitlement>; }"
+    },
+    {
       "name": "RevTurbineInitPhase",
       "kind": "type",
       "file": "web-sdk/react/init-status.ts",
@@ -409,6 +427,12 @@
       "kind": "type",
       "file": "web-sdk/customer-side.ts",
       "signature": "export type RevTurbineInitUser = RevTurbineUserContext & { id: string; }"
+    },
+    {
+      "name": "RevTurbineInitUserPromise",
+      "kind": "type",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "export type RevTurbineInitUserPromise = PromiseLike<{ id: string } & IdentifyContextInput>"
     },
     {
       "name": "RevTurbinePlaybookLoadFailure",
@@ -439,6 +463,12 @@
       "kind": "interface",
       "file": "web-sdk/customer-side.ts",
       "signature": "export interface RevTurbineUserRequiredDiagnostic { code: 'user_id_required'; entryPoint: 'init' | 'identify' | 'setUserContext'; message: string; }"
+    },
+    {
+      "name": "SdkTelemetryProvider",
+      "kind": "interface",
+      "file": "web-sdk/customer-side.ts",
+      "signature": "export interface SdkTelemetryProvider { name: string; send(events: SdkMetaEventBody[]): void | Promise<void>; }"
     },
     {
       "name": "SurfaceSlotHiddenReason",

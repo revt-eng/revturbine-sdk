@@ -96,6 +96,7 @@ const NO_USER: Array<[string, unknown]> = [
   ['a whitespace id', { id: '   ' }],
   ['a non-string id', { id: 42 }],
   ['a null user', null],
+  ['a null id', { id: null }],
 ];
 
 function build(
@@ -155,7 +156,19 @@ describe('AC-2 — init without a non-empty user id is inert in every runtime mo
 
       // No network request at all — not /api/sdk/config, /api/track, /api/sdk/meta,
       // nor the CDN bootstrap, client-context or any other route.
-      expect(calls.map((c) => c.url)).toEqual([]);
+      // The ONE exception (0.16.0): a connected SDK reports the missing user,
+      // anonymously, as a single `sdk_error` with a fixed-vocabulary message.
+      const metaPosts = calls.filter((c) => /\/(api\/sdk|x)\/meta$/.test(c.url));
+      expect(calls.filter((c) => !metaPosts.includes(c)).map((c) => c.url)).toEqual([]);
+      if (_mode === 'local_only') {
+        expect(metaPosts).toEqual([]);
+      } else {
+        expect(metaPosts).toHaveLength(1);
+        const events = (JSON.parse(String(metaPosts[0].init.body)) as { events: Array<Record<string, unknown>> }).events;
+        expect(events).toHaveLength(1);
+        expect(events[0]).toMatchObject({ event_type: 'sdk_error', reason: 'user_id_required', message: 'user_id_required at init' });
+        for (const forbidden of ['user_id', 'account_id', 'tenant_id', 'traits']) expect(forbidden in events[0]).toBe(false);
+      }
 
       // No evaluation: the fallback answers, stamped with the typed reason.
       expect(results.entitlement).toMatchObject({ allowed: false, status: 'denied', reason: 'user_id_required' });
@@ -187,6 +200,155 @@ describe('AC-2 — init without a non-empty user id is inert in every runtime mo
   });
 });
 
+interface Deferred<T> { promise: Promise<T>; resolve: (value: T) => void; reject: (reason: unknown) => void }
+function deferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+  return { promise, resolve, reject };
+}
+const loud = (): string[] => errorSpy.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('user_id_required'));
+
+describe('ST-1696 — `user` may be a Promise of the user (0.16.0)', () => {
+  describe.each(MODES)('%s', (_mode, modeOptions) => {
+    it('while pending: disabled and silent — no console output, no diagnostic, no request, no storage write', async () => {
+      const storages: Storages = { persistent: new InMemoryStorage(), session: new InMemoryStorage() };
+      const setPersistent = vi.spyOn(storages.persistent, 'setItem');
+      const setSession = vi.spyOn(storages.session, 'setItem');
+
+      let sdk!: RevTurbineCustomerSdk;
+      expect(() => { sdk = build(modeOptions(storages), deferred<{ id: string }>().promise); }).not.toThrow();
+      const results = await exerciseEverything(sdk);
+      await new Promise((resolve) => { setTimeout(resolve, 5); });
+
+      expect(errorSpy).not.toHaveBeenCalled();
+      expect(console.warn).not.toHaveBeenCalled();
+      expect(sdk.getUserRequiredDiagnostic()).toBeUndefined();
+      expect(calls.map((c) => c.url)).toEqual([]);
+      expect(setPersistent).not.toHaveBeenCalled();
+      expect(setSession).not.toHaveBeenCalled();
+      expect(window.localStorage.length).toBe(0);
+      expect(window.sessionStorage.length).toBe(0);
+      // Today's disabled state, unchanged: the reason stays `user_id_required`.
+      expect(results.entitlement).toMatchObject({ allowed: false, status: 'denied', reason: 'user_id_required' });
+      expect(results.can).toMatchObject({ allowed: false, reason: 'user_id_required' });
+      expect(results.decision).toMatchObject({ visible: false, decisionSource: 'fallback', reasonCodes: ['user_id_required'] });
+      sdk.dispose();
+    });
+  });
+
+  const serverKeyed = (): Partial<RevTurbineInitOptions> => ({
+    runtimeMode: RuntimeMode.Server, publicKey: 'rtk_public', tenantId: 't_1',
+    persistentStorage: new InMemoryStorage(), sessionStorage: new InMemoryStorage(),
+  });
+
+  it('drops events captured while pending silently, counts them, never sends them later; resolve identifies once and fires the deferred page_view', async () => {
+    const user = deferred<{ id: string; plan_handle: string }>();
+    const sdk = build(serverKeyed(), user.promise);
+    const before = sdk.getTelemetryCounters().dropped;
+    await sdk.capture('before_sign_in', { marker: 'early' }, { immediate: true });
+    expect(sdk.getTelemetryCounters().dropped).toBe(before + 1);
+    expect(calls).toEqual([]);
+
+    user.resolve({ id: 'u1', plan_handle: 'free' });
+    await vi.waitFor(() => expect(sdk.getUserContext().user_id).toBe('u1'));
+    await sdk.flushEvents();
+    await vi.waitFor(() => expect(calls.some((c) => c.url.endsWith('/api/track'))).toBe(true));
+
+    const sent = calls
+      .filter((c) => c.url.endsWith('/api/track'))
+      .flatMap((c) => (JSON.parse(String(c.init.body)) as { events: Array<{ event_name: string; properties: string }> }).events);
+    expect(sent.some((e) => e.properties.includes('early') || e.event_name.includes('before_sign_in'))).toBe(false);
+    // The initial page_view keeps its deferral: it is emitted when the runtime starts.
+    expect(sent.map((e) => e.event_name)).toContain('clickstream_page_view');
+    expect(errorSpy).not.toHaveBeenCalled();
+    sdk.dispose();
+  });
+
+  it('starts Playbook delivery only when the promise resolves', async () => {
+    const user = deferred<{ id: string }>();
+    const sdk = build(serverKeyed(), user.promise);
+    await new Promise((resolve) => { setTimeout(resolve, 5); });
+    expect(calls).toEqual([]);
+    user.resolve({ id: 'u1' });
+    await vi.waitFor(() => expect(calls.some((c) => c.url.includes('/api/sdk/'))).toBe(true));
+    expect(sdk.getUserContext().user_id).toBe('u1');
+    expect(sdk.getUserRequiredDiagnostic()).toBeUndefined();
+    expect(errorSpy).not.toHaveBeenCalled();
+    sdk.dispose();
+  });
+
+  it.each([
+    ['a blank id', { id: '   ' }],
+    ['a null id', { id: null }],
+    ['null', null],
+  ])('resolving to %s is the loud user_id_required error and the SDK stays disabled', async (_label, value) => {
+    const user = deferred<unknown>();
+    const sdk = build(serverKeyed(), user.promise as never);
+    expect(loud()).toHaveLength(0);
+    user.resolve(value);
+    await vi.waitFor(() => expect(loud()).toHaveLength(1));
+    expect(sdk.getUserRequiredDiagnostic()).toMatchObject({ code: 'user_id_required', entryPoint: 'init' });
+    expect(await sdk.checkEntitlement('export')).toMatchObject({ allowed: false, reason: 'user_id_required' });
+    // Only the anonymous sdk_error goes out; nothing else, and no id or rejection text in it.
+    await vi.waitFor(() => expect(calls.filter((c) => c.url.endsWith('/api/sdk/meta'))).toHaveLength(1));
+    expect(calls.filter((c) => !c.url.endsWith('/api/sdk/meta'))).toEqual([]);
+    expect(String(calls[0].init.body)).toContain('user_id_required at user_promise_resolved_blank');
+    sdk.dispose();
+  });
+
+  it('a rejection is the loud error, names the reason, and the SDK stays disabled', async () => {
+    const user = deferred<{ id: string }>();
+    const sdk = build(serverKeyed(), user.promise);
+    user.reject(new Error('session lookup failed'));
+    await vi.waitFor(() => expect(loud()).toHaveLength(1));
+    expect(loud()[0]).toContain('session lookup failed');
+    // The anonymous report carries a fixed message, never the rejection text.
+    await vi.waitFor(() => expect(calls.filter((c) => c.url.endsWith('/api/sdk/meta'))).toHaveLength(1));
+    const wire = String(calls.find((c) => c.url.endsWith('/api/sdk/meta'))?.init.body);
+    expect(wire).toContain('user_id_required at user_promise_rejected');
+    expect(wire).not.toContain('session lookup failed');
+    expect(sdk.getUserRequiredDiagnostic()?.code).toBe('user_id_required');
+    expect(await sdk.checkEntitlement('export')).toMatchObject({ allowed: false, reason: 'user_id_required' });
+    sdk.dispose();
+  });
+
+  it('an explicit identify() while pending wins; the promise\'s later result does not overwrite it', async () => {
+    const user = deferred<{ id: string }>();
+    const sdk = build({ runtimeMode: RuntimeMode.LocalOnly, tenantId: 't_1', localRuntime: { playbook: PLAYBOOK } }, user.promise);
+    sdk.identify('explicit', { plan_handle: 'free' });
+    user.resolve({ id: 'from_promise' });
+    await new Promise((resolve) => { setTimeout(resolve, 5); });
+    expect(sdk.getUserContext().user_id).toBe('explicit');
+    expect(errorSpy).not.toHaveBeenCalled();
+    sdk.dispose();
+  });
+
+  it('a blank identify() while pending does not cancel the promise', async () => {
+    const user = deferred<{ id: string }>();
+    const sdk = build({ runtimeMode: RuntimeMode.LocalOnly, tenantId: 't_1', localRuntime: { playbook: PLAYBOOK } }, user.promise);
+    sdk.identify('');
+    user.resolve({ id: 'from_promise' });
+    await vi.waitFor(() => expect(sdk.getUserContext().user_id).toBe('from_promise'));
+    sdk.dispose();
+  });
+
+  it('a result that arrives after dispose() applies nothing, and a late rejection logs nothing', async () => {
+    const resolved = deferred<{ id: string }>();
+    const a = build({ runtimeMode: RuntimeMode.LocalOnly, tenantId: 't_1', localRuntime: { playbook: PLAYBOOK } }, resolved.promise);
+    a.dispose();
+    resolved.resolve({ id: 'late' });
+    const rejected = deferred<{ id: string }>();
+    const b = build({ runtimeMode: RuntimeMode.LocalOnly, tenantId: 't_1', localRuntime: { playbook: PLAYBOOK } }, rejected.promise);
+    b.dispose();
+    rejected.reject(new Error('late failure'));
+    await new Promise((resolve) => { setTimeout(resolve, 5); });
+    expect(a.getUserContext().user_id).toBe('');
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(b.getUserRequiredDiagnostic()).toBeUndefined();
+  });
+});
+
 describe('identify() still names the user', () => {
   it('rejects an empty id with the same diagnostic and keeps the held user', () => {
     const sdk = build({ runtimeMode: RuntimeMode.LocalOnly, tenantId: 't_1', localRuntime: { playbook: PLAYBOOK } }, { id: 'user_1' });
@@ -209,7 +371,7 @@ describe('identify() still names the user', () => {
       runtimeMode: RuntimeMode.Server, publicKey: 'rtk_public', tenantId: 't_1',
       persistentStorage: new InMemoryStorage(), sessionStorage: new InMemoryStorage(),
     }, undefined);
-    expect(calls).toEqual([]);
+    expect(calls.filter((c) => !c.url.endsWith('/api/sdk/meta'))).toEqual([]);
 
     sdk.identify('user_1', { plan_handle: 'free' });
 
@@ -244,7 +406,8 @@ describe('the keyless sdk_init beacon', () => {
   it('is withheld without a user…', async () => {
     keyless(undefined);
     await new Promise((resolve) => { setTimeout(resolve, 5); });
-    expect(calls.filter((c) => c.url.endsWith('/api/sdk/meta'))).toHaveLength(0);
+    // Only the missing-user `sdk_error` may go out (0.16.0), never the init beacon.
+    expect(calls.filter((c) => c.url.endsWith('/api/sdk/meta') && String(c.init.body).includes('sdk_init'))).toHaveLength(0);
   });
 
   it('…and fires for an identified user, carrying no user identity and no install id', async () => {

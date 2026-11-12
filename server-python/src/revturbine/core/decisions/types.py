@@ -55,6 +55,29 @@ class _EntitlementCheckResultRequired(TypedDict):
     allowed: bool
 
 
+class _EntitlementDiagnosticRequired(TypedDict):
+    level: Literal["warning", "error"]
+    code: Literal[
+        "entitlement_cost_zero",
+        "entitlement_cost_missing",
+        "entitlement_cost_invalid",
+    ]
+    handle: str
+
+
+class EntitlementDiagnostic(_EntitlementDiagnosticRequired, total=False):
+    """Developer diagnostic about HOW a single-handle check was called, never
+    about the user (ST-1696 cost rule). It never changes ``allowed`` /
+    ``status`` / ``reason``. ``received`` (invalid cost only) names the KIND of
+    the bad value (``negative`` | ``nan`` | ``infinite`` | ``non_number``),
+    never the value.
+
+    Source: decisions/models/types.ts (EntitlementDiagnostic)
+    """
+
+    received: Literal["negative", "nan", "infinite", "non_number"]
+
+
 class EntitlementCheckResult(_EntitlementCheckResultRequired, total=False):
     """Returned by ``DecisionEngine.check_entitlement``.
 
@@ -79,6 +102,8 @@ class EntitlementCheckResult(_EntitlementCheckResultRequired, total=False):
     # Absent — never None — when no rule produced the verdict.
     rule_handle: str
     contributing_rule_handles: list[str]
+    # ST-1696 cost rule: present on single-handle checks only.
+    diagnostic: EntitlementDiagnostic
 
 
 # ── Placement input / output / decision ─────────────────────────────────────

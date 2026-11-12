@@ -37,15 +37,26 @@ class TestEvaluatePlanEligibility:
         ctx: PlanEligibilityContext = {"current_plan_id": "anything"}
         assert evaluate_plan_eligibility(cfg, ctx) == {"eligible": True}
 
-    def test_missing_current_plan_id_skips_plan_check(self) -> None:
-        # `ctx.currentPlanId` falsy → guard short-circuits.
+    def test_missing_current_plan_id_fails_closed(self) -> None:
+        # ST-1696 C1 (D-4): a payload that targets plans is not eligible for a
+        # user with no resolved plan.
         cfg: PlanEligibilityRule = {"target_plan_ids": ["plan_pro"]}
-        assert evaluate_plan_eligibility(cfg, {}) == {"eligible": True}
+        assert evaluate_plan_eligibility(cfg, {}) == {
+            "eligible": False,
+            "reason": "plan_mismatch",
+        }
 
-    def test_empty_string_current_plan_id_is_falsy_like_js(self) -> None:
+    def test_empty_string_current_plan_id_fails_closed(self) -> None:
         cfg: PlanEligibilityRule = {"target_plan_ids": ["plan_pro"]}
         ctx: PlanEligibilityContext = {"current_plan_id": ""}
-        assert evaluate_plan_eligibility(cfg, ctx) == {"eligible": True}
+        assert evaluate_plan_eligibility(cfg, ctx) == {
+            "eligible": False,
+            "reason": "plan_mismatch",
+        }
+
+    def test_untargeted_payload_stays_eligible_without_a_plan(self) -> None:
+        cfg: PlanEligibilityRule = {"target_plan_ids": []}
+        assert evaluate_plan_eligibility(cfg, {}) == {"eligible": True}
 
     def test_billing_period_mismatch(self) -> None:
         cfg: PlanEligibilityRule = {"target_billing_periods": ["annual"]}

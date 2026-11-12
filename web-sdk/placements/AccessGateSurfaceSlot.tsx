@@ -12,6 +12,7 @@ import type {
 } from '../customer-side';
 import { useSurfaceSlot } from './useSurfaceSlot';
 import { useEntitlement } from '../react/useEntitlement';
+import { useRevTurbine } from '../react/useRevTurbine';
 import { useUsageSnapshot } from '../react/useUsageSnapshot';
 import { GATED_SURFACE_TEMPLATE_IDS } from './surface-slot-constants';
 import { AccessDeniedPlaceholder } from './AccessDeniedPlaceholder';
@@ -43,10 +44,25 @@ export type AccessGateSurfaceSlotProps = {
    * - `{ entitlement: 'brand_kit' }` — check an entitlement handle.
    * - `{ usage: 'core_credits', threshold: 80 }` — check a usage percentage threshold.
    *
-   * When an array is passed, access is denied if **any** check fails. Optional
-   * when `can` is provided.
+   * A Gate checks **one entitlement** (from `can` or from `check`); any number
+   * of usage thresholds may be combined with it, and access is denied if any
+   * of them fails. To require two entitlements, nest two Gates. A Gate given
+   * more than one entitlement check is a developer error (BUG-1541): it fails
+   * closed (renders as denied) and logs one `console.error` naming the Gate id
+   * and the count. Optional when `can` is provided.
    */
   check?: AccessGateCheck | AccessGateCheck[];
+
+  /**
+   * What this check would consume, per call (never a Playbook field), for a
+   * `usage_limit` or `credits` entitlement: a cost above 0 is allowed while
+   * `usage + cost <= limit`; `0` is always allowed (free) with a developer
+   * warning; leaving it out keeps the plain check (allowed while usage is below
+   * the limit) and logs a developer error (`entitlement_cost_missing`), so pass
+   * `cost={0}` for a free action. Other kinds and unlimited entitlements ignore
+   * it. It wins over a `context.cost` in `check`.
+   */
+  cost?: number;
 
   /**
    * Placement to display when access is denied.
@@ -86,6 +102,9 @@ export type AccessGateSurfaceSlotProps = {
   className?: string;
   style?: React.CSSProperties;
 };
+
+/** Gate ids already reported for an entitlement-count misconfiguration (BUG-1541), per page load. */
+const reportedMisconfiguredGates = new Set<string>();
 
 /**
  * Merge the `can` shorthand and the `check` prop into the effective check list:
@@ -139,6 +158,7 @@ export function AccessGateSurfaceSlot({
   name,
   can,
   check,
+  cost,
   children,
   deniedFallback,
   limitedFallback,
@@ -148,9 +168,28 @@ export function AccessGateSurfaceSlot({
   ...options
 }: AccessGateSurfaceSlotProps) {
   const checks = resolveGateChecks(can, check);
-  const primaryEntitlement = checks.find(
+  const entitlementChecks = checks.filter(
     (c): c is Extract<AccessGateCheck, { entitlement: string }> => 'entitlement' in c,
   );
+  const primaryEntitlement = entitlementChecks[0];
+  // BUG-1541 (Kent and Mark, 2026-11-02): one entitlement per Gate; nest Gates
+  // for two. A second entitlement check used to be dropped silently, so the
+  // Gate could open without checking it. It is now a developer error: the Gate
+  // fails closed and says so once.
+  const entitlementCount = entitlementChecks.length;
+  const misconfigured = entitlementCount > 1;
+  React.useEffect(() => {
+    if (!misconfigured) return;
+    // Once per Gate id per session (page load), not once per mount: a list of
+    // remounting Gates must not flood the console.
+    const key = `${id}|${entitlementCount}`;
+    if (reportedMisconfiguredGates.has(key)) return;
+    reportedMisconfiguredGates.add(key);
+    console.error(
+      `[RevTurbine] <Gate id="${id}"> was given ${entitlementCount} entitlement checks, but a Gate checks exactly one entitlement. `
+      + 'It fails closed (renders as denied). Nest one Gate inside another to require two entitlements.',
+    );
+  }, [misconfigured, entitlementCount, id]);
 
   // Use the entitlement hook for the primary entitlement check.
   // For pure-usage checks, we still use an entitlement handle if available;
@@ -163,6 +202,8 @@ export function AccessGateSurfaceSlot({
   } = useEntitlement({
     handle: entitlementHandle,
     context: primaryEntitlement?.context,
+    // ST-1696 cost rule: the Gate's `cost` wins over a `context.cost` in `check`.
+    cost,
     autoCheck: !!entitlementHandle,
     autoGate: true,
   });
@@ -191,7 +232,20 @@ export function AccessGateSurfaceSlot({
     (entitlementError !== null ||
       (!!entitlementResult &&
         (entitlementResult.status === 'denied' || entitlementResult.allowed === false)));
-  const denied = entitlementDenied || usageDenied;
+  // ST-1696: while a `user` promise is still PENDING the SDK answers every
+  // check `user_id_required`. That is "the user is on its way", not a decision
+  // about this user: the gate stays closed and silent (no children, no
+  // fallback, no gate placement, no `onDenied`) and re-evaluates when the
+  // promise settles or `identify()` arrives. Once the SDK is in the loud
+  // missing-user error state (omitted / blank id, a rejected or blank-resolved
+  // promise) the gate behaves as it did in 0.15.0: the denied path.
+  const { sdk: gateSdk } = useRevTurbine();
+  // A `user_id_required` answer is also stale (not a verdict) in the beat after
+  // the user arrived but before this gate re-checked, so that case waits too.
+  const userPending = entitlementResult?.reason === 'user_id_required'
+    && typeof gateSdk?.isUserPending === 'function'
+    && (gateSdk.isUserPending() || gateSdk.getUserContext().user_id !== '');
+  const denied = !userPending && (entitlementDenied || usageDenied || misconfigured);
   // Limited — still entitled (degrade / running low), unless it also denies.
   const limited = !!entitlementHandle && entitlementResult?.status === 'limited';
 
@@ -263,6 +317,10 @@ export function AccessGateSurfaceSlot({
   const entitlementUnresolved =
     !!entitlementHandle && entitlementResult === null && entitlementError === null;
   if (entitlementUnresolved || (entitlementLoading && entitlementHandle)) return null;
+  // Fail-closed while the user is pending (ST-1696, decision D-3): render
+  // nothing even when `deniedFallback` is supplied, so the upsell never flashes
+  // at a user who is entitled once the promise resolves.
+  if (userPending) return null;
 
   // Granted (allowed, or limited with the evaluator's allowed verdict).
   if (!denied) {

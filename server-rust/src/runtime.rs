@@ -470,7 +470,9 @@ impl LocalRuntime {
         handle: &str,
         context: Option<&Value>,
     ) -> EntitlementCheckResult {
-        self.engine_check_entitlement_reporting(handle, context, &mut None)
+        let result = self.engine_check_entitlement_reporting(handle, context, &mut None);
+        crate::entitlements::entitlement_check::report_entitlement_diagnostic(&result);
+        result
     }
 
     /// [`engine_check_entitlement`](Self::engine_check_entitlement), but an
@@ -489,6 +491,9 @@ impl LocalRuntime {
     ) -> Result<EntitlementCheckResult, String> {
         let mut error = None;
         let result = self.engine_check_entitlement_reporting(handle, context, &mut error);
+        if error.is_none() {
+            crate::entitlements::entitlement_check::report_entitlement_diagnostic(&result);
+        }
         error.map_or(Ok(result), Err)
     }
 
@@ -615,6 +620,14 @@ impl LocalRuntime {
                                 &tf,
                                 used,
                                 aggregate.effective_allowance,
+                                context
+                                    .and_then(|c| c.get("balance"))
+                                    .and_then(Value::as_f64)
+                                    .filter(|b| b.is_finite()),
+                                crate::entitlements::entitlement_check::CostInput {
+                                    cost: context.and_then(|c| c.get("cost")),
+                                    diagnose_handle: Some(handle),
+                                },
                             ),
                             matched
                                 .get("rule_id")
@@ -664,19 +677,34 @@ impl LocalRuntime {
             }
         }
 
-        // Caller-supplied usage enforces the limit.
+        // Caller-supplied usage enforces the limit. ST-1696 cost rule, same
+        // branches as the rule shaper; the existing quirk stays: a limit of 0
+        // (or a non-finite one) never denies here.
+        let mut cost_diagnostic = None;
         if let (Some(usage), Some(used)) = (
             usage,
             context.and_then(|c| c.get("used")).and_then(Value::as_f64),
         ) {
             let limit = usage.get("limit").and_then(Value::as_f64).unwrap_or(0.0);
-            if limit > 0.0 && used >= limit {
-                let mut r = EntitlementCheckResult::new("denied", false);
-                r.reason = Some("usage_limit_exceeded".to_string());
-                r.limit = serde_json::Number::from_f64(limit);
-                r.used = serde_json::Number::from_f64(used);
-                r.remaining = serde_json::Number::from_f64((limit - used).max(0.0));
-                return r;
+            if limit > 0.0 && limit.is_finite() {
+                let (over, diagnostic) = crate::entitlements::entitlement_check::cost_verdict(
+                    crate::entitlements::entitlement_check::CostInput {
+                        cost: context.and_then(|c| c.get("cost")),
+                        diagnose_handle: Some(handle),
+                    },
+                    used >= limit,
+                    |c| crate::entitlements::entitlement_check::cost_exceeds_limit(used, c, limit),
+                );
+                cost_diagnostic = diagnostic;
+                if over {
+                    let mut r = EntitlementCheckResult::new("denied", false);
+                    r.reason = Some("usage_limit_exceeded".to_string());
+                    r.limit = serde_json::Number::from_f64(limit);
+                    r.used = serde_json::Number::from_f64(used);
+                    r.remaining = serde_json::Number::from_f64((limit - used).max(0.0));
+                    r.diagnostic = cost_diagnostic;
+                    return r;
+                }
             }
         }
 
@@ -694,6 +722,7 @@ impl LocalRuntime {
             result.used = u.get("used").and_then(Value::as_number).cloned();
             result.remaining = u.get("remaining").and_then(Value::as_number).cloned();
         }
+        result.diagnostic = cost_diagnostic;
         result
     }
 
@@ -739,6 +768,11 @@ impl LocalRuntime {
         EffectiveEntitlementBase {
             playbook: Some(&self.config),
             context_used: context.and_then(|c| c.get("used")).and_then(Value::as_f64),
+            context_balance: context
+                .and_then(|c| c.get("balance"))
+                .and_then(Value::as_f64)
+                .filter(|b| b.is_finite()),
+            context_cost: context.and_then(|c| c.get("cost")).cloned(),
             current_plan_handle,
             segment_ids,
             usage_balances,

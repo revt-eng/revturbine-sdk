@@ -11,6 +11,7 @@ import {
   type RevTurbinePlacementDecisionInput,
   type RevTurbineUserContext,
   type RevTurbineInitUser,
+  type RevTurbineInitUserPromise,
   type Exact,
   type ExactInitOptions,
   type IdentifyContextInput,
@@ -107,8 +108,16 @@ export type RevTurbineProviderProps<
    * `options.user` with a non-empty `id` is **required** (ST-1416): the SDK
    * has no anonymous mode, so mount the provider inside your authenticated
    * tree, once the user is known. Omitting `user` or `user.id` is a compile
-   * error; a blank id at runtime leaves the SDK disabled with one
-   * `user_id_required` diagnostic.
+   * error; a missing user at runtime (`null`, omitted, blank id) leaves the SDK
+   * disabled with one loud `user_id_required` diagnostic.
+   *
+   * `options.user` may instead be a `Promise` of the user (`0.16.0`): while it
+   * is pending the SDK is disabled and silent and a `<Gate>` renders nothing;
+   * when it resolves the SDK behaves as `identify()` with that user, without a
+   * remount. A resolved blank id or a rejection is the same loud error. Keep
+   * the promise stable (memoise it, as you do `options`): a new promise
+   * identity re-initialises the SDK exactly as a new user object does, and a
+   * result that arrives after unmount or re-initialisation is ignored.
    *
    * `options.user` is exact-checked (plan 191 REQ-3): a key the user context
    * does not declare — the `user: { id, context: { plan_handle } }` shape the
@@ -116,7 +125,7 @@ export type RevTurbineProviderProps<
    * in an un-annotated `useMemo`, which is precisely where TypeScript's own
    * excess-property check stops applying.
    */
-  options: TOptions & ExactInitOptions<TOptions> & { user: Exact<RevTurbineInitUser, TUser> };
+  options: TOptions & ExactInitOptions<TOptions> & { user: Exact<RevTurbineInitUser, TUser> | RevTurbineInitUserPromise };
   /** Placements to bootstrap (preload decisions) on mount. */
   bootstrapPlacements?: BootstrapPlacementInput[];
   /**
@@ -464,7 +473,11 @@ export function RevTurbineProvider<
         // Anonymous "the SDK itself failed" beacon (plan 182 TASK-5). Undefined
         // only when the synchronous constructor threw — a malformed-options
         // develop-time error that already fails loudly.
-        nextSdk?.reportSdkError('provider_init_failed', cause);
+        // The telemetry message is the init PHASE and the error's constructor
+        // name only: an exception message can carry customer data (an id in a
+        // URL, a trait in a parse error), and this lane must carry none.
+        const errorName = error instanceof Error && /^[A-Za-z]{1,40}$/.test(error.name) ? error.name : 'NonError';
+        nextSdk?.reportSdkError('provider_init_failed', `provider_init_failed at ${phase}: ${errorName}`);
         // Reachable with no instance — `sdk` is null from here, so every probe
         // the SDK exposes is gone and this is the only thing left to ask
         // (plan 233 TASK-2).

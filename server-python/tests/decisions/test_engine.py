@@ -24,6 +24,13 @@ from revturbine.core.state.cap_enforcer import CapEnforcer
 from revturbine.core.state.interaction_tracker import InteractionTracker
 from revturbine.core.state.storage import InMemoryStorage
 
+# ST-1696: a limit-enforcing check called without a cost reports this on the result.
+_MISSING_COST_DIAGNOSTIC = {
+    "level": "error",
+    "code": "entitlement_cost_missing",
+    "handle": "feat",
+}
+
 # ── Stub providers ──────────────────────────────────────────────────────────
 
 
@@ -392,6 +399,8 @@ class TestCheckEntitlement:
             "limit": 100,
             "used": 100,
             "remaining": 0,
+            # ST-1696: no cost passed on a limit-enforcing check.
+            "diagnostic": _MISSING_COST_DIAGNOSTIC,
         }
 
     def test_usage_limit_zero_skips_enforcement(self) -> None:
@@ -472,6 +481,11 @@ class TestEntitlementRuleSurfacing:
             "used": 3,
             "remaining": 2,
             "rule_handle": "rule_limit",
+            "diagnostic": {
+                "level": "error",
+                "code": "entitlement_cost_missing",
+                "handle": "api_calls",
+            },
         }
 
     def test_matched_rule_enforces_at_limit(self) -> None:
@@ -485,6 +499,11 @@ class TestEntitlementRuleSurfacing:
             "used": 7,
             "remaining": 0,
             "rule_handle": "rule_limit",
+            "diagnostic": {
+                "level": "error",
+                "code": "entitlement_cost_missing",
+                "handle": "api_calls",
+            },
         }
 
     def test_no_matching_rule_fails_closed(self) -> None:

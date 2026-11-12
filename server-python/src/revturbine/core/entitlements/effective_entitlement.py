@@ -32,6 +32,7 @@ from typing import Any, Literal, TypedDict, cast
 from revturbine.core.decisions.types import EntitlementCheckResult
 from revturbine.core.entitlements.entitlement_check import (
     derive_local_entitlement_from_configured_rules,
+    report_entitlement_diagnostic,
     warn_on_non_access_check,
 )
 from revturbine.core.helpers import is_record
@@ -376,8 +377,15 @@ def derive_effective_entitlement(
         merge=merge,
         addons=addons,
         billing_period=billing_period,
+        diagnostics=True,
     )
     warn_on_non_access_check(handle, evaluated)
+    # ST-1696: the cost diagnostic rides on the result for runtimes with their
+    # own channel; this is the default (once per handle + code).
+    diagnostic = evaluated.get("diagnostic") if evaluated is not None else None
+    if diagnostic:
+        effective = {**effective, "result": {**effective["result"], "diagnostic": diagnostic}}
+    report_entitlement_diagnostic(effective["result"])
     return effective
 
 
@@ -396,6 +404,7 @@ def _effective_entitlement_for(
     merge: EntitlementMergeOptions | None = None,
     addons: list[dict[str, Any]] | None = None,
     billing_period: str | None = None,
+    diagnostics: bool = False,
 ) -> tuple[EffectiveEntitlement, EntitlementCheckResult | None]:
     """The effective entitlement plus the Playbook's own evaluation (before the
     app merge). Source: effective-entitlement.ts (effectiveEntitlementFor)
@@ -435,6 +444,7 @@ def _effective_entitlement_for(
             effective_plan_handle=effective_plan_handle,
             addons=addons,
             billing_period=billing_period,
+            diagnostics=diagnostics,
         )
         if known
         else None

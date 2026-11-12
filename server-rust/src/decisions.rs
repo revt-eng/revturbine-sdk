@@ -56,6 +56,29 @@ pub struct EntitlementCheckResult {
     /// All rules contributing to an additive allowance, in source order.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub contributing_rule_handles: Option<Vec<String>>,
+    /// Developer diagnostic about HOW a single-handle check was called (the
+    /// per-call `cost`, ST-1696). Never changes `allowed` / `status` /
+    /// `reason`; absent on all-handles maps.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub diagnostic: Option<EntitlementDiagnostic>,
+}
+
+/// A developer diagnostic on an [`EntitlementCheckResult`] (ST-1696 cost rule).
+///
+/// Source: decisions/models/types.ts (EntitlementDiagnostic)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EntitlementDiagnostic {
+    /// `warning` | `error`.
+    pub level: String,
+    /// `entitlement_cost_zero` | `entitlement_cost_missing` |
+    /// `entitlement_cost_invalid`.
+    pub code: String,
+    /// The handle the check was for.
+    pub handle: String,
+    /// Invalid cost only: the KIND of the bad value (`negative` | `nan` |
+    /// `infinite` | `non_number`), never the value.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub received: Option<String>,
 }
 
 impl EntitlementCheckResult {
@@ -72,6 +95,7 @@ impl EntitlementCheckResult {
             current_tier: None,
             rule_handle: None,
             contributing_rule_handles: None,
+            diagnostic: None,
         }
     }
 

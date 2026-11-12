@@ -48,9 +48,12 @@ beforeEach(() => {
   );
 });
 
-afterEach(() => {
+afterEach(async () => {
   // Release each SDK's flush timer + page-unload listeners.
   for (const sdk of instances.splice(0)) sdk.dispose();
+  // Keyed installs send their `sdk_init` asynchronously (0.16.0); let it land
+  // in THIS test's `calls` rather than the next one's.
+  if (!vi.isFakeTimers()) await new Promise((resolve) => { setTimeout(resolve, 25); });
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -210,11 +213,27 @@ describe('TASK-7 — keyless anonymous init telemetry', () => {
     expect(info).not.toHaveBeenCalled();
   });
 
-  it('does NOT use the keyless beacon when an ingest key is configured', async () => {
-    makeSdk({ publicKey: 'pub_ingest_key' });
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(metaCalls()).toHaveLength(0);
+  it('a keyed connected install sends exactly one sdk_init, attributed with the PUBLIC key only (0.16.0)', async () => {
+    makeSdk({ publicKey: 'pub_ingest_key', apiKey: 'sk_secret_key' });
+    await vi.waitFor(() => expect(metaCalls()).toHaveLength(1));
+    await new Promise((resolve) => { setTimeout(resolve, 20); });
+    expect(metaCalls()).toHaveLength(1);
+    const headers = metaCalls()[0].init.headers as Record<string, string>;
+    expect(headers.authorization).toBe('Bearer pub_ingest_key');
+    expect(JSON.stringify(metaCalls()[0].init)).not.toContain('sk_secret_key');
+    const ev = metaBody().events[0];
+    expect(ev.event_type).toBe('sdk_init');
+    for (const forbidden of ['user_id', 'account_id', 'anonymous_id', 'tenant_id', 'traits', 'public_key']) {
+      expect(forbidden in ev).toBe(false);
+    }
+  });
+
+  it('a server-key-only install (no public key) sends no Authorization header', async () => {
+    makeSdk({ publicKey: undefined, apiKey: 'sk_secret_key' });
+    await vi.waitFor(() => expect(metaCalls()).toHaveLength(1));
+    const headers = (metaCalls()[0].init.headers ?? {}) as Record<string, string>;
+    expect('authorization' in headers).toBe(false);
+    expect(JSON.stringify(metaCalls()[0].init)).not.toContain('sk_secret_key');
   });
 
   it('emits keyless telemetry in local_only mode (a bundled-Playbook install is still an install)', async () => {

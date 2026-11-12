@@ -13,6 +13,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Mutex, OnceLock, PoisonError};
 
 use serde_json::{Map, Value};
 
@@ -23,7 +24,7 @@ use super::purchased_allowance::{
 use super::rules::{pick_most_permissive, rule_permissiveness};
 use super::segment_matching::matches_rule_segments;
 use super::unlimited::resolve_limit_value;
-use crate::decisions::{int_if_integral, EntitlementCheckResult};
+use crate::decisions::{int_if_integral, EntitlementCheckResult, EntitlementDiagnostic};
 use crate::segments::segment_dimension_keys;
 
 /// Mirror JS `Number(v)` for the value shapes `type_fields` carry.
@@ -198,14 +199,201 @@ pub fn derive_result_from_rule_type_fields(
     type_fields: &Value,
     used: f64,
 ) -> EntitlementCheckResult {
-    derive_result_with_allowance(type_fields, used, None)
+    derive_result_with_allowance(type_fields, used, None, None, CostInput::default())
+}
+
+// ── Per-call cost (ST-1696, Kent's final rule 2026-11-11) ───────────────────
+
+const COST_TOLERANCE_SCALE_CAP: f64 = (1u64 << 48) as f64;
+
+/// The `cost` a limit-enforcing check was called with, and whether to report on
+/// it. `diagnose_handle` is set only by single-handle checks; without it the
+/// cost RULE still applies but no diagnostic is produced.
+///
+/// Source: entitlement-check.ts (CostInput)
+#[derive(Debug, Clone, Copy, Default)]
+pub(crate) struct CostInput<'a> {
+    /// The raw `cost` from the caller's context; `None` and JSON `null` are
+    /// "missing".
+    pub(crate) cost: Option<&'a Value>,
+    /// The handle to name in the diagnostic, on single-handle checks only.
+    pub(crate) diagnose_handle: Option<&'a str>,
+}
+
+/// The ONE comparison the cost > 0 rule uses (usage_limit, credits used-based).
+/// Copied from scaffold, not re-derived; IEEE-754 doubles, left to right:
+///
+/// ```text
+/// scale = min(max(1, |used|, |cost|, |limit|), 2**48)
+/// over  = ((used + cost) - limit) > 8 * EPSILON * scale
+/// ```
+///
+/// `EPSILON` is `f64::EPSILON` (2**-52). The missing-cost path
+/// (`used >= limit`) never uses this.
+///
+/// Source: entitlement-check.ts (costExceedsLimit)
+#[must_use]
+pub(crate) fn cost_exceeds_limit(used: f64, cost: f64, limit: f64) -> bool {
+    let scale = 1.0_f64
+        .max(used.abs())
+        .max(cost.abs())
+        .max(limit.abs())
+        .min(COST_TOLERANCE_SCALE_CAP);
+    ((used + cost) - limit) > 8.0 * f64::EPSILON * scale
+}
+
+/// Balance form of [`cost_exceeds_limit`] (credits evaluated from a
+/// `balance`): `scale = min(max(1, |cost|, |balance|), 2**48)`, over iff
+/// `(cost - balance) > 8 * EPSILON * scale`.
+///
+/// Source: entitlement-check.ts (costExceedsBalance)
+#[must_use]
+pub(crate) fn cost_exceeds_balance(cost: f64, balance: f64) -> bool {
+    let scale = 1.0_f64
+        .max(cost.abs())
+        .max(balance.abs())
+        .min(COST_TOLERANCE_SCALE_CAP);
+    (cost - balance) > 8.0 * f64::EPSILON * scale
+}
+
+enum CostClass {
+    Positive(f64),
+    Zero,
+    Missing,
+    Invalid(&'static str),
+}
+
+fn classify_cost(cost: Option<&Value>) -> CostClass {
+    match cost {
+        None | Some(Value::Null) => CostClass::Missing,
+        Some(Value::Number(n)) => {
+            let v = n.as_f64().unwrap_or(f64::NAN);
+            if v.is_nan() {
+                CostClass::Invalid("nan")
+            } else if v.is_infinite() {
+                CostClass::Invalid("infinite")
+            } else if v < 0.0 {
+                CostClass::Invalid("negative")
+            } else if v == 0.0 {
+                CostClass::Zero
+            } else {
+                CostClass::Positive(v)
+            }
+        }
+        Some(_) => CostClass::Invalid("non_number"),
+    }
+}
+
+fn diagnostic(
+    input: CostInput,
+    level: &str,
+    code: &str,
+    received: Option<&str>,
+) -> Option<EntitlementDiagnostic> {
+    input.diagnose_handle.map(|handle| EntitlementDiagnostic {
+        level: level.to_string(),
+        code: code.to_string(),
+        handle: handle.to_string(),
+        received: received.map(str::to_string),
+    })
+}
+
+/// Is a limit-enforcing call over its limit, and what should the developer be
+/// told? Truth table (finite limit only; callers skip this for unlimited):
+///
+/// - cost > 0   : over = `over_with_cost(cost)`, no diagnostic
+/// - cost == 0  : never over (free), `entitlement_cost_zero` warning
+/// - missing    : over = `legacy_over` (today's check), `entitlement_cost_missing` error
+/// - invalid    : over = `legacy_over`, `entitlement_cost_invalid` error naming the kind
+///
+/// Source: entitlement-check.ts (costVerdict / evaluateCostLimit)
+pub(crate) fn cost_verdict(
+    input: CostInput,
+    legacy_over: bool,
+    over_with_cost: impl Fn(f64) -> bool,
+) -> (bool, Option<EntitlementDiagnostic>) {
+    match classify_cost(input.cost) {
+        CostClass::Positive(c) => (over_with_cost(c), None),
+        CostClass::Zero => (
+            false,
+            diagnostic(input, "warning", "entitlement_cost_zero", None),
+        ),
+        CostClass::Missing => (
+            legacy_over,
+            diagnostic(input, "error", "entitlement_cost_missing", None),
+        ),
+        CostClass::Invalid(kind) => (
+            legacy_over,
+            diagnostic(input, "error", "entitlement_cost_invalid", Some(kind)),
+        ),
+    }
+}
+
+/// Attach a diagnostic to a result; a no-op without one.
+pub(crate) fn with_diagnostic(
+    mut result: EntitlementCheckResult,
+    diagnostic: Option<EntitlementDiagnostic>,
+) -> EntitlementCheckResult {
+    if diagnostic.is_some() {
+        result.diagnostic = diagnostic;
+    }
+    result
+}
+
+static REPORTED_DIAGNOSTICS: OnceLock<Mutex<HashSet<(String, String)>>> = OnceLock::new();
+
+/// Default Rust routing for a result's developer diagnostic: once per handle +
+/// code per process, on stderr like the runtime's other once-per-process
+/// diagnostics ([`warn_non_access_kind`]). Never panics; never changes the
+/// result.
+///
+/// Source: entitlement-check.ts (reportEntitlementDiagnostic)
+pub fn report_entitlement_diagnostic(result: &EntitlementCheckResult) {
+    let Some(d) = &result.diagnostic else {
+        return;
+    };
+    let first = REPORTED_DIAGNOSTICS
+        .get_or_init(|| Mutex::new(HashSet::new()))
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .insert((d.code.clone(), d.handle.clone()));
+    if !first {
+        return;
+    }
+    let handle = &d.handle;
+    match d.code.as_str() {
+        "entitlement_cost_zero" => eprintln!(
+            "[revturbine] can() / check_entitlement(\"{handle}\") was called with cost 0: the action is treated as free and always allowed, even past the limit. Pass a positive cost if it should count against the limit."
+        ),
+        "entitlement_cost_invalid" => {
+            let kind = match d.received.as_deref() {
+                Some("negative") => "a negative number",
+                Some("nan") => "NaN",
+                Some("infinite") => "a non-finite number",
+                _ => "a non-number value",
+            };
+            eprintln!(
+                "[revturbine] ERROR can() / check_entitlement(\"{handle}\") was called with an invalid cost ({kind}); falling back to the cost-less check (allowed while usage < limit). Pass cost as a finite number >= 0 (0 for free)."
+            );
+        }
+        _ => eprintln!(
+            "[revturbine] ERROR can() / check_entitlement(\"{handle}\") was called without a cost on a usage-limited entitlement; falling back to the cost-less check (allowed while usage < limit). Pass a cost (0 for free)."
+        ),
+    }
 }
 
 /// Shape a result without interpreting computed totals as sentinel literals.
+///
+/// `balance` is the caller's `{ balance }` (ST-1696 REQ-9): for a credits rule
+/// it is the REMAINING balance and wins over `used`. A non-finite balance is
+/// ignored by the caller before it gets here. `cost` is the per-call cost
+/// (ST-1696): see [`cost_verdict`].
 pub(crate) fn derive_result_with_allowance(
     type_fields: &Value,
     used: f64,
     allowance_override: Option<f64>,
+    balance: Option<f64>,
+    cost: CostInput,
 ) -> EntitlementCheckResult {
     let kind = type_fields.get("kind").and_then(Value::as_str);
 
@@ -227,15 +415,22 @@ pub(crate) fn derive_result_with_allowance(
             let resolved =
                 allowance_override.or_else(|| resolve_limit_value(type_fields.get("limit_value")));
             match resolved {
-                Some(l) if l.is_finite() && l >= 0.0 => with_limit_fields(
-                    apply_usage_enforcement(
-                        used >= l,
-                        type_fields.get("enforcement"),
-                        "usage_limit_reached",
-                    ),
-                    l,
-                    used,
-                ),
+                Some(l) if l.is_finite() && l >= 0.0 => {
+                    let (over, diagnostic) =
+                        cost_verdict(cost, used >= l, |c| cost_exceeds_limit(used, c, l));
+                    with_diagnostic(
+                        with_limit_fields(
+                            apply_usage_enforcement(
+                                over,
+                                type_fields.get("enforcement"),
+                                "usage_limit_reached",
+                            ),
+                            l,
+                            used,
+                        ),
+                        diagnostic,
+                    )
+                }
                 // Unlimited (+inf) or unusable → allowed, no limit fields.
                 _ => EntitlementCheckResult::new("allowed", true),
             }
@@ -262,16 +457,48 @@ pub(crate) fn derive_result_with_allowance(
                 _ => None,
             };
 
-            match cr_limit {
-                Some(l) if l.is_finite() => with_limit_fields(
+            // ST-1696 REQ-9: a caller-supplied `{ balance }` is the REMAINING
+            // balance and wins over `used` and stored usage for this call.
+            // Exhausted at `balance <= 0`; `used` is allowance minus balance.
+            // Cost rule: with a finite balance the balance IS the limit,
+            // whether or not the rule has a finite allowance (then only
+            // `remaining` is reported, no `limit` / `used`).
+            if let Some(b) = balance.filter(|b| b.is_finite()) {
+                let (over, diagnostic) =
+                    cost_verdict(cost, b <= 0.0, |c| cost_exceeds_balance(c, b));
+                let mut result = with_diagnostic(
                     apply_usage_enforcement(
-                        used >= l,
+                        over,
                         type_fields.get("enforcement"),
                         "credit_balance_exhausted",
                     ),
-                    l,
-                    used,
-                ),
+                    diagnostic,
+                );
+                if let Some(l) = cr_limit.filter(|l| l.is_finite()) {
+                    result.limit = int_if_integral(l);
+                    result.used = int_if_integral((l - b).max(0.0));
+                }
+                result.remaining = int_if_integral(b.max(0.0));
+                return result;
+            }
+
+            match cr_limit {
+                Some(l) if l.is_finite() => {
+                    let (over, diagnostic) =
+                        cost_verdict(cost, used >= l, |c| cost_exceeds_limit(used, c, l));
+                    with_diagnostic(
+                        with_limit_fields(
+                            apply_usage_enforcement(
+                                over,
+                                type_fields.get("enforcement"),
+                                "credit_balance_exhausted",
+                            ),
+                            l,
+                            used,
+                        ),
+                        diagnostic,
+                    )
+                }
                 _ => EntitlementCheckResult::new("allowed", true),
             }
         }
@@ -312,6 +539,17 @@ pub struct LocalEntitlementInput<'a> {
     /// Explicit usage override. `Some(n)` wins over every other source —
     /// including `0`, which is why this is an `Option` and not a sentinel.
     pub context_used: Option<f64>,
+    /// The caller's `{ balance }` — for a credits rule the remaining balance,
+    /// which wins over `used` (ST-1696). Non-finite values are ignored.
+    pub context_balance: Option<f64>,
+    /// The caller's per-call `cost` (ST-1696), raw: `None` and JSON `null` are
+    /// "missing". Applies to `usage_limit` / `limit` and `credits` rules only.
+    pub context_cost: Option<Value>,
+    /// Attach the developer `diagnostic` to the result. Set by the
+    /// single-handle check paths; left `false` when every entitlement is
+    /// evaluated at once, so a bulk evaluation never reports a missing cost for
+    /// calls nobody made. The cost RULE applies either way.
+    pub diagnostics: bool,
     /// The user's plan handle. Matched case-insensitively.
     pub current_plan_handle: &'a str,
     /// Segments the user belongs to, pre-resolved by the caller.
@@ -810,7 +1048,16 @@ pub(crate) fn derive_local_entitlement_reporting(
     });
 
     let mut result = with_rule_handle(
-        derive_result_with_allowance(&type_fields, used, effective_allowance),
+        derive_result_with_allowance(
+            &type_fields,
+            used,
+            effective_allowance,
+            input.context_balance,
+            CostInput {
+                cost: input.context_cost.as_ref(),
+                diagnose_handle: input.diagnostics.then_some(input.handle),
+            },
+        ),
         selected_rule_handle,
     );
     result.contributing_rule_handles = contributing_handles;

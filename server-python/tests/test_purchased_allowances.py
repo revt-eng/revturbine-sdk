@@ -94,7 +94,20 @@ def test_maximum_baseline_plus_purchased_maximum(kind: str, field: str) -> None:
             "addons": [{"addon_handle": "boost", "quantity": 2}],
         },
     )
-    assert sdk.check_entitlement("capacity") == result
+    checked = dict(sdk.check_entitlement("capacity"))
+    # ST-1696: the single-handle check on a usage-limit / credits entitlement
+    # called without a cost reports the missing-cost diagnostic (and nothing else
+    # differs from the bulk-style evaluation above).
+    diagnostic = checked.pop("diagnostic", None)
+    if kind in ("usage_limit", "credits"):
+        assert diagnostic == {
+            "level": "error",
+            "code": "entitlement_cost_missing",
+            "handle": "capacity",
+        }
+    else:
+        assert diagnostic is None
+    assert checked == result
     assert result == {
         "status": "allowed",
         "allowed": True,

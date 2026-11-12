@@ -303,6 +303,18 @@ class RevTurbineCustomerSdk:
         (D-61): the §2.6.5 most-permissive Playbook-rule evaluation,
         merged with ``user_context["entitlements"]``.
 
+        ``context`` may carry (all optional): ``used`` (usage override),
+        ``balance`` (remaining credits) and ``cost`` (what THIS call would
+        consume, per call, never a Playbook field). On a ``usage_limit`` or
+        ``credits`` entitlement: ``cost > 0`` is allowed while
+        ``used + cost <= limit``; ``cost == 0`` is always allowed (free) with a
+        warning; a missing or invalid ``cost`` keeps today's check
+        (``used >= limit``) and reports the error diagnostic
+        ``entitlement_cost_missing`` / ``entitlement_cost_invalid`` on
+        ``result["diagnostic"]`` (also logged on the ``revturbine`` logger and
+        raised as a ``RuntimeWarning``, once per handle and code). Pass
+        ``cost=0`` for a free action. Other kinds ignore ``cost``.
+
         Source: local-runtime.ts checkEntitlement (parity-locked).
         """
         return self._runtime.check_entitlement(handle, context)

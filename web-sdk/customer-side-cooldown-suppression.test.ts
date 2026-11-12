@@ -240,3 +240,187 @@ describe('AC-10c — remind-me-later is its own window (TASK-8c)', () => {
     expect(suppressedUntilFor(sdk)).not.toBe(now + 7 * DAY);
   });
 });
+
+describe('ST-1696 C3a — an authored 0 means no cooldown, not "unset"', () => {
+  it('a dismissal on a payload authored with cooldown_days: 0 leaves the placement eligible', async () => {
+    const sdk = makeSdk(playbookWith({ cooldownDays: 0 }));
+
+    await dismissLikeProduction(sdk);
+
+    expect(suppressedUntilFor(sdk)).toBeUndefined();
+  });
+
+  it('an absent cooldown_days still gives seven days', async () => {
+    vi.useFakeTimers();
+    const now = Date.now();
+    const sdk = makeSdk(playbookWith({}));
+
+    await dismissLikeProduction(sdk);
+
+    expect(suppressedUntilFor(sdk)).toBe(now + 7 * DAY);
+  });
+
+  it('an explicit metadata.cooldown_ms of 0 is honoured the same way', async () => {
+    const sdk = makeSdk(playbookWith({ cooldownDays: 3 }));
+
+    await dismissLikeProduction(sdk, { cooldown_ms: 0 });
+
+    expect(suppressedUntilFor(sdk)).toBeUndefined();
+  });
+
+  it('a zero cooldown also reaches the impression history (no hidden 7-day suppression)', async () => {
+    const sdk = makeSdk(playbookWith({ cooldownDays: 0 }));
+    const recordDismissal = vi.spyOn(sdk.impressionHistory, 'recordDismissal');
+
+    await dismissLikeProduction(sdk);
+
+    expect(recordDismissal).toHaveBeenCalledWith(PLACEMENT_ID, PAYLOAD_ID, undefined, undefined, 0);
+  });
+});
+
+describe('ST-1696 C3b — a bare CTA click starts no cooldown', () => {
+  async function clickLikeProduction(sdk: RevTurbineCustomerSdk): Promise<void> {
+    await sdk.trackTreatmentInteraction({
+      userId: 'user_1',
+      placementId: PLACEMENT_ID,
+      treatmentId: PAYLOAD_ID,
+      payloadId: PAYLOAD_ID,
+      interactionType: 'cta_clicked',
+    } as never);
+  }
+
+  it('a bare cta_clicked leaves the placement eligible', async () => {
+    const sdk = makeSdk(playbookWith({}));
+    const recordClickThru = vi.spyOn(sdk.impressionHistory, 'recordClickThru');
+
+    await clickLikeProduction(sdk);
+
+    expect(suppressedUntilFor(sdk)).toBeUndefined();
+    expect(recordClickThru).not.toHaveBeenCalled();
+  });
+
+  it('even with an authored cooldown, a click does not start it', async () => {
+    const sdk = makeSdk(playbookWith({ cooldownDays: 7 }));
+
+    await clickLikeProduction(sdk);
+
+    expect(suppressedUntilFor(sdk)).toBeUndefined();
+  });
+
+  it('a click-started window persisted by an older SDK is not honoured after hydration', () => {
+    const writer = makeSdk(playbookWith({}));
+    const state = Reflect.get(writer, 'interactionState') as Map<string, unknown>;
+    const readKey = (Reflect.get(writer, 'interactionStateKey') as (i: unknown) => string).call(writer, {
+      placementId: PLACEMENT_ID,
+      userId: 'user_1',
+    });
+    state.set(readKey, {
+      lastInteractionType: 'cta_clicked',
+      suppressedUntil: Date.now() + 7 * DAY,
+      updatedAt: new Date().toISOString(),
+    });
+    (Reflect.get(writer, 'persistInteractionState') as () => void).call(writer);
+
+    const reader = makeSdk(playbookWith({}));
+
+    expect(suppressedUntilFor(reader)).toBeUndefined();
+  });
+
+  describe('the persisted impression history (a 0.15.0-shaped store)', () => {
+    const future = (): string => new Date(Date.now() + 7 * DAY).toISOString();
+    const rowsFor = (sdk: RevTurbineCustomerSdk, rows: Array<{ outcome: string; at: string; until?: string }>): void => {
+      const store = Reflect.get(sdk.impressionHistory, 'store') as {
+        append(userId: string, record: unknown): void;
+      };
+      for (const row of rows) {
+        store.append('u_test', {
+          placementId: PLACEMENT_ID,
+          outcome: row.outcome,
+          occurredAt: row.at,
+          ...(row.until ? { metadata: { suppressUntil: row.until } } : {}),
+        });
+      }
+    };
+    const hydrated = async (): Promise<RevTurbineCustomerSdk> => {
+      const sdk = makeSdk(playbookWith({}));
+      await sdk.impressionHistory.hydrate();
+      return sdk;
+    };
+
+    it('a clicked_thru row with a future suppressUntil is not honoured after hydration', async () => {
+      rowsFor(makeSdk(playbookWith({})), [{ outcome: 'clicked_thru', at: new Date().toISOString(), until: future() }]);
+      const sdk = await hydrated();
+      expect(sdk.impressionHistory.isSuppressedSync(PLACEMENT_ID)).toBe(false);
+    });
+
+    it('a dismissed row with a future suppressUntil is still honoured', async () => {
+      rowsFor(makeSdk(playbookWith({})), [{ outcome: 'dismissed', at: new Date().toISOString(), until: future() }]);
+      const sdk = await hydrated();
+      expect(sdk.impressionHistory.isSuppressedSync(PLACEMENT_ID)).toBe(true);
+    });
+
+    it('a dismiss followed by a later bare click stays suppressed (the click no longer masks it)', async () => {
+      const t0 = new Date(Date.now() - 1000).toISOString();
+      rowsFor(makeSdk(playbookWith({})), [
+        { outcome: 'dismissed', at: t0, until: future() },
+        { outcome: 'clicked_thru', at: new Date().toISOString(), until: future() },
+      ]);
+      const sdk = await hydrated();
+      expect(sdk.impressionHistory.isSuppressedSync(PLACEMENT_ID)).toBe(true);
+    });
+
+    const windowOf = (sdk: RevTurbineCustomerSdk): number | undefined => {
+      const cache = Reflect.get(sdk.impressionHistory, 'suppressedCache') as Map<string, string> | null;
+      const until = cache?.get(PLACEMENT_ID);
+      return until === undefined ? undefined : new Date(until).getTime();
+    };
+    const at = (offsetMs: number): string => new Date(Date.now() + offsetMs).toISOString();
+    const HOUR = 60 * 60 * 1000;
+    const older = (): string => at(-2000);
+    const newer = (): string => at(-1000);
+
+    it('takes the NEWEST unexpired window: an older 7-day dismiss then a newer 1-hour suppression gives about 1 hour', async () => {
+      rowsFor(makeSdk(playbookWith({})), [
+        { outcome: 'dismissed', at: older(), until: at(7 * DAY) },
+        { outcome: 'suppressed', at: newer(), until: at(HOUR) },
+      ]);
+      const until = windowOf(await hydrated());
+      expect(until).toBeGreaterThan(Date.now());
+      expect(until).toBeLessThanOrEqual(Date.now() + 2 * HOUR);
+    });
+
+    it('takes the NEWEST unexpired window in the other order too: older 1-hour then newer 7-day gives about 7 days', async () => {
+      rowsFor(makeSdk(playbookWith({})), [
+        { outcome: 'suppressed', at: older(), until: at(HOUR) },
+        { outcome: 'dismissed', at: newer(), until: at(7 * DAY) },
+      ]);
+      const until = windowOf(await hydrated());
+      expect(until).toBeGreaterThan(Date.now() + 6 * DAY);
+    });
+
+    it('a newer EXPIRED row does not mask an older unexpired one (core semantics)', async () => {
+      rowsFor(makeSdk(playbookWith({})), [
+        { outcome: 'dismissed', at: older(), until: at(3 * DAY) },
+        { outcome: 'dismissed', at: newer(), until: at(-HOUR) },
+      ]);
+      const until = windowOf(await hydrated());
+      expect(until).toBeGreaterThan(Date.now() + 2 * DAY);
+    });
+
+    it('a newest bare click is skipped and the older unexpired dismiss window is the one used', async () => {
+      rowsFor(makeSdk(playbookWith({})), [
+        { outcome: 'dismissed', at: older(), until: at(5 * DAY) },
+        { outcome: 'clicked_thru', at: newer(), until: at(7 * DAY) },
+      ]);
+      const until = windowOf(await hydrated());
+      expect(until).toBeGreaterThan(Date.now() + 4 * DAY);
+      expect(until).toBeLessThan(Date.now() + 6 * DAY);
+    });
+
+    it('the public recordClickThru() starts no cooldown either', async () => {
+      const sdk = makeSdk(playbookWith({}));
+      await sdk.recordClickThru(PLACEMENT_ID, PAYLOAD_ID, undefined, undefined, 7 * DAY);
+      expect(sdk.impressionHistory.isSuppressedSync(PLACEMENT_ID)).toBe(false);
+    });
+  });
+});

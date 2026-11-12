@@ -6,8 +6,9 @@
  *
  *   - KEYED installs emit (124 Q-7: the emit is decoupled from the
  *     `!publicKey` gate the adoption beacon keeps).
- *   - BOTH opt-outs govern (124 Q-6, Kent 2026-08-12): either
- *     `anonymousTelemetry: false` or `analytics: false` silences diagnostics.
+ *   - Since 0.16.0 only `anonymousTelemetry: false` silences diagnostics;
+ *     `analytics: false` and `telemetry.consent` no longer do (they carry no
+ *     behavior data; Kent 2026-11-11, superseding 124 Q-6).
  *   - Session dedup per `(reason, primary handle)` + a session cap (Q-4).
  *   - v1 scope (Q-3): placement fallback sites + the entitlement
  *     infrastructure denials; local mode's default deny does NOT emit.
@@ -61,7 +62,9 @@ beforeEach(() => {
     vi.fn((url: string, init: RequestInit) => {
       const u = String(url);
       if (u.includes('/api/sdk/meta')) {
-        calls.push({ url: u, init: init ?? {} });
+        // The `sdk_init` beacon (sent by keyed installs too since 0.16.0) is
+        // not what these tests are about; they assert the diagnostics.
+        if (!String(init?.body ?? '').includes('"event_type":"sdk_init"')) calls.push({ url: u, init: init ?? {} });
         return Promise.resolve(okResponse());
       }
       if (rejectNonMeta) return Promise.reject(new Error('config fetch down'));
@@ -136,12 +139,11 @@ describe('resolution_failure diagnostics — keyed installs emit (124 Q-7)', () 
   });
 });
 
-describe('resolution_failure diagnostics — both opt-outs govern (124 Q-6)', () => {
-  it('analytics: false silences diagnostics', async () => {
-    const sdk = makeKeyedSdk({ analytics: false } as Partial<RevTurbineInitOptions>);
+describe('resolution_failure diagnostics — only anonymousTelemetry governs (0.16.0)', () => {
+  it('analytics: false and a denied telemetry consent no longer silence diagnostics', async () => {
+    const sdk = makeKeyedSdk({ analytics: false, telemetry: { consent: 'denied' } } as Partial<RevTurbineInitOptions>);
     await sdk.getPlacementDecision({ placementId: 'ghost', userId: 'u1' });
-    await settle();
-    expect(calls).toHaveLength(0);
+    await vi.waitFor(() => expect(calls).toHaveLength(1));
   });
 
   it('anonymousTelemetry: false silences diagnostics', async () => {

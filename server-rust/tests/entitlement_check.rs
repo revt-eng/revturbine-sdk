@@ -384,6 +384,243 @@ fn credits_allowance_exhausted() {
     assert_eq!(r.reason.as_deref(), Some("credit_balance_exhausted"));
 }
 
+fn credits_100() -> Value {
+    config(
+        "credits",
+        json!([{
+            "entitlement_id": "feat_x", "plan_ids": ["pro"],
+            "kind": "credits", "allowance_value": 100, "enforcement": "hard_block",
+        }]),
+    )
+}
+
+fn with_balance<'a>(balance: Option<f64>, used: Option<f64>) -> LocalEntitlementInput<'a> {
+    LocalEntitlementInput {
+        context_balance: balance,
+        context_used: used,
+        ..input("feat_x", "pro")
+    }
+}
+
+fn num(n: Option<serde_json::Number>) -> Option<f64> {
+    n.and_then(|n| n.as_f64())
+}
+
+// ST-1696 per-call `cost` (Kent's final rule, 2026-11-11).
+fn usage_limit_10(enforcement: &str) -> Value {
+    config(
+        "usage_limit",
+        json!([{
+            "entitlement_id": "feat_x", "plan_ids": ["pro"],
+            "kind": "usage_limit", "limit_value": 10, "enforcement": enforcement,
+        }]),
+    )
+}
+
+fn with_cost<'a>(
+    used: Option<f64>,
+    balance: Option<f64>,
+    cost: Value,
+) -> LocalEntitlementInput<'a> {
+    LocalEntitlementInput {
+        context_used: used,
+        context_balance: balance,
+        context_cost: Some(cost),
+        diagnostics: true,
+        ..input("feat_x", "pro")
+    }
+}
+
+fn diag(r: &EntitlementCheckResult) -> Option<(String, Option<String>)> {
+    r.diagnostic
+        .as_ref()
+        .map(|d| (d.code.clone(), d.received.clone()))
+}
+
+#[test]
+fn cost_above_zero_is_allowed_only_while_it_fits() {
+    let cfg = usage_limit_10("hard_block");
+    let fits = derive(&cfg, &with_cost(Some(7.0), None, json!(3)));
+    assert!(fits.allowed && fits.diagnostic.is_none());
+    let over = derive(&cfg, &with_cost(Some(7.0), None, json!(3.5)));
+    assert!(!over.allowed);
+    assert_eq!(over.reason.as_deref(), Some("usage_limit_reached"));
+}
+
+#[test]
+fn cost_enforcement_modes_decide() {
+    let degrade = derive(
+        &usage_limit_10("degrade"),
+        &with_cost(Some(7.0), None, json!(4)),
+    );
+    assert_eq!(degrade.status, "limited");
+    assert!(degrade.allowed);
+    let overage = derive(
+        &usage_limit_10("allow_overage"),
+        &with_cost(Some(7.0), None, json!(4)),
+    );
+    assert!(overage.allowed);
+    assert_eq!(
+        overage.reason.as_deref(),
+        Some("usage_limit_reached_overage")
+    );
+}
+
+#[test]
+fn cost_zero_is_free_with_a_warning_diagnostic() {
+    let r = derive(
+        &usage_limit_10("hard_block"),
+        &with_cost(Some(25.0), None, json!(0)),
+    );
+    assert!(r.allowed);
+    assert_eq!(diag(&r), Some(("entitlement_cost_zero".to_string(), None)));
+    assert_eq!(
+        r.diagnostic.as_ref().map(|d| d.level.as_str()),
+        Some("warning")
+    );
+}
+
+#[test]
+fn missing_cost_keeps_todays_check_and_reports_an_error() {
+    let cfg = usage_limit_10("hard_block");
+    let mut under = with_cost(Some(9.0), None, Value::Null);
+    let r = derive(&cfg, &under);
+    assert!(r.allowed);
+    assert_eq!(
+        diag(&r),
+        Some(("entitlement_cost_missing".to_string(), None))
+    );
+    under.context_cost = None;
+    under.context_used = Some(10.0);
+    let at_limit = derive(&cfg, &under);
+    assert!(!at_limit.allowed);
+    assert_eq!(
+        at_limit.diagnostic.as_ref().map(|d| d.level.as_str()),
+        Some("error")
+    );
+}
+
+#[test]
+fn invalid_cost_names_only_the_kind() {
+    let cfg = usage_limit_10("hard_block");
+    for (bad, kind) in [
+        (json!(-1), "negative"),
+        (json!("3"), "non_number"),
+        (json!(true), "non_number"),
+    ] {
+        let r = derive(&cfg, &with_cost(Some(9.0), None, bad));
+        assert!(r.allowed);
+        assert_eq!(
+            diag(&r),
+            Some((
+                "entitlement_cost_invalid".to_string(),
+                Some(kind.to_string())
+            ))
+        );
+    }
+}
+
+#[test]
+fn cost_tolerance_copies_scaffolds_formula() {
+    let cfg = config(
+        "usage_limit",
+        json!([{
+            "entitlement_id": "feat_x", "plan_ids": ["pro"],
+            "kind": "usage_limit", "limit_value": 0.3, "enforcement": "hard_block",
+        }]),
+    );
+    assert!(derive(&cfg, &with_cost(Some(0.1), None, json!(0.2))).allowed);
+    assert!(!derive(&cfg, &with_cost(Some(0.1), None, json!(0.2000001))).allowed);
+}
+
+#[test]
+fn credits_balance_is_the_limit_for_cost() {
+    let ok = derive(&credits_100(), &with_cost(None, Some(40.0), json!(40)));
+    assert!(ok.allowed);
+    let over = derive(&credits_100(), &with_cost(None, Some(40.0), json!(41)));
+    assert!(!over.allowed);
+    assert_eq!(over.reason.as_deref(), Some("credit_balance_exhausted"));
+    assert_eq!(
+        (num(over.limit), num(over.used), num(over.remaining)),
+        (Some(100.0), Some(60.0), Some(40.0))
+    );
+}
+
+#[test]
+fn credits_balance_without_a_finite_allowance_reports_remaining_only() {
+    let cfg = config(
+        "credits",
+        json!([{
+            "entitlement_id": "feat_x", "plan_ids": ["pro"],
+            "kind": "credits", "allowance_value": null, "enforcement": "hard_block",
+        }]),
+    );
+    let r = derive(&cfg, &with_cost(None, Some(5.0), json!(6)));
+    assert!(!r.allowed);
+    assert_eq!(num(r.remaining), Some(5.0));
+    assert!(r.limit.is_none() && r.used.is_none());
+}
+
+#[test]
+fn other_kinds_and_bulk_checks_ignore_cost_silently() {
+    let feature = config(
+        "feature",
+        json!([{ "entitlement_id": "feat_x", "plan_ids": ["pro"], "enabled": true }]),
+    );
+    assert!(derive(&feature, &with_cost(None, None, json!(2)))
+        .diagnostic
+        .is_none());
+    let bulk = LocalEntitlementInput {
+        context_used: Some(9.0),
+        ..input("feat_x", "pro")
+    };
+    let r = derive(&usage_limit_10("hard_block"), &bulk);
+    assert!(r.allowed && r.diagnostic.is_none());
+}
+
+// ST-1696 C2 (REQ-9): `{ balance }` is the REMAINING credits.
+#[test]
+fn credits_zero_balance_is_exhausted() {
+    let r = derive(&credits_100(), &with_balance(Some(0.0), None));
+    assert_eq!(r.status, "denied");
+    assert_eq!(r.reason.as_deref(), Some("credit_balance_exhausted"));
+    assert_eq!(
+        (num(r.limit), num(r.used), num(r.remaining)),
+        (Some(100.0), Some(100.0), Some(0.0))
+    );
+}
+
+#[test]
+fn credits_positive_balance_derives_used_and_wins_over_used() {
+    let r = derive(&credits_100(), &with_balance(Some(40.0), Some(100.0)));
+    assert_eq!(r.status, "allowed");
+    assert_eq!(
+        (num(r.limit), num(r.used), num(r.remaining)),
+        (Some(100.0), Some(60.0), Some(40.0))
+    );
+}
+
+#[test]
+fn credits_negative_balance_clamps_remaining_to_zero() {
+    let r = derive(&credits_100(), &with_balance(Some(-5.0), None));
+    assert_eq!(r.status, "denied");
+    assert_eq!((num(r.used), num(r.remaining)), (Some(105.0), Some(0.0)));
+}
+
+#[test]
+fn credits_usage_limit_ignores_balance() {
+    let cfg = config(
+        "usage_limit",
+        json!([{
+            "entitlement_id": "feat_x", "plan_ids": ["pro"],
+            "kind": "usage_limit", "limit_value": 100, "enforcement": "hard_block",
+        }]),
+    );
+    let r = derive(&cfg, &with_balance(Some(0.0), Some(10.0)));
+    assert_eq!(r.status, "allowed");
+    assert_eq!((num(r.used), num(r.remaining)), (Some(10.0), Some(90.0)));
+}
+
 #[test]
 fn credits_fall_back_to_initial_grant_only_when_allowance_absent() {
     let cfg = config(

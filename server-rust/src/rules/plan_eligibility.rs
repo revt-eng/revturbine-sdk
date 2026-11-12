@@ -87,25 +87,29 @@ pub struct PlanEligibilityOutcome {
 
 /// Pure predicate.
 ///
-/// Note the guard shape on each check: a non-empty target list only excludes
-/// when the user's corresponding field is **set**. An unset plan or billing
-/// period passes through rather than being ruled out — that asymmetry is
-/// deliberate in the TS and is what lets an unresolved context stay eligible.
+/// Plan targeting fails closed (ST-1696 C1, D-4): a payload that targets plans
+/// is eligible only for a user whose resolved plan id is one of them. A user
+/// with no plan, or one the Playbook does not define, is not. The billing
+/// period check keeps its tolerance: a non-empty target list only excludes
+/// when the user's billing period is **set**.
 ///
-/// Source: plan-eligibility.ts:60-86 (evaluatePlanEligibility)
+/// Source: plan-eligibility.ts (evaluatePlanEligibility)
 #[must_use]
 pub fn evaluate_plan_eligibility(
     cfg: &PlanEligibilityRule,
     ctx: &PlanEligibilityContext,
 ) -> PlanEligibilityOutcome {
     if !cfg.target_plan_ids.is_empty() {
-        if let Some(plan_id) = ctx.current_plan_id.as_ref().filter(|s| !s.is_empty()) {
-            if !cfg.target_plan_ids.contains(plan_id) {
-                return PlanEligibilityOutcome {
-                    eligible: false,
-                    reason: Some(PlanEligibilityReason::PlanMismatch),
-                };
-            }
+        let in_target = ctx
+            .current_plan_id
+            .as_ref()
+            .filter(|s| !s.is_empty())
+            .is_some_and(|plan_id| cfg.target_plan_ids.contains(plan_id));
+        if !in_target {
+            return PlanEligibilityOutcome {
+                eligible: false,
+                reason: Some(PlanEligibilityReason::PlanMismatch),
+            };
         }
     }
 
@@ -191,13 +195,26 @@ mod tests {
     }
 
     #[test]
-    fn unset_plan_passes_a_non_empty_target_list() {
-        // The deliberate asymmetry: targeting only EXCLUDES when the user's
-        // field is set. An unresolved plan stays eligible.
+    fn unset_plan_fails_a_non_empty_target_list() {
+        // ST-1696 C1 (D-4): plan targeting fails closed. A user with no plan
+        // (or an empty plan id) is not eligible for a plan-targeted payload.
         let cfg = PlanEligibilityRule {
             target_plan_ids: v(&["pro"]),
             ..Default::default()
         };
+        let out = evaluate_plan_eligibility(&cfg, &PlanEligibilityContext::default());
+        assert!(!out.eligible);
+        assert_eq!(out.reason, Some(PlanEligibilityReason::PlanMismatch));
+        let empty = PlanEligibilityContext {
+            current_plan_id: Some(String::new()),
+            ..Default::default()
+        };
+        assert!(!evaluate_plan_eligibility(&cfg, &empty).eligible);
+    }
+
+    #[test]
+    fn untargeted_payload_stays_eligible_without_a_plan() {
+        let cfg = PlanEligibilityRule::default();
         assert!(evaluate_plan_eligibility(&cfg, &PlanEligibilityContext::default()).eligible);
     }
 
