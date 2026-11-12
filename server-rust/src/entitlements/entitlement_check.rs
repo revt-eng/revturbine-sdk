@@ -11,6 +11,7 @@
 //!
 //! Source: revturbine-scaffold/src/entitlements/controllers/entitlement-check.ts
 
+use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock, PoisonError};
@@ -218,6 +219,82 @@ pub(crate) struct CostInput<'a> {
     pub(crate) cost: Option<&'a Value>,
     /// The handle to name in the diagnostic, on single-handle checks only.
     pub(crate) diagnose_handle: Option<&'a str>,
+    /// The call passed its own `used` (it beats every held and mirrored source).
+    pub(crate) used_given: bool,
+    /// Numbers the app reported on its mirrored entitlement (only fields that
+    /// follow the app).
+    pub(crate) app: Option<AppReportedNumbers>,
+    /// Out-parameter: what the cost > 0 comparison did (read by the
+    /// effective-entitlement merge).
+    pub(crate) trace: Option<&'a Cell<CostTrace>>,
+}
+
+/// Numbers an app reported on a mirrored entitlement (ST-1741).
+///
+/// Source: entitlement-check.ts (AppReportedNumbers)
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub(crate) struct AppReportedNumbers {
+    /// The app's own `limit`.
+    pub(crate) limit: Option<f64>,
+    /// The app's own `used`.
+    pub(crate) used: Option<f64>,
+    /// The explicit `remaining`, or `max(0, limit - used)` when the app sent both.
+    pub(crate) remaining: Option<f64>,
+    /// `remaining` was derived from the app's `limit` and `used` (it sent no
+    /// explicit `remaining`): the credits comparison then uses the
+    /// used-plus-cost form on those two numbers.
+    pub(crate) remaining_derived: bool,
+}
+
+impl AppReportedNumbers {
+    /// True when the app reported nothing the cost rule can compare.
+    pub(crate) fn is_empty(&self) -> bool {
+        self.limit.is_none() && self.used.is_none() && self.remaining.is_none()
+    }
+}
+
+/// What the cost > 0 comparison did, for the merge (ST-1741): `applied` when a
+/// finite limit or balance was compared, `over` its verdict, `app_numbers` when
+/// the numbers compared were reported by the app or passed on the call.
+///
+/// Source: entitlement-check.ts (CostTrace)
+#[derive(Debug, Clone, Copy, Default)]
+pub(crate) struct CostTrace {
+    /// A finite limit or balance was compared.
+    pub(crate) applied: bool,
+    /// The comparison said the cost does not fit.
+    pub(crate) over: bool,
+    /// The numbers compared came from the app or the call.
+    pub(crate) app_numbers: bool,
+}
+
+/// What the merge hands the evaluator beyond the public input (crate-internal).
+#[derive(Clone, Copy, Default)]
+pub(crate) struct CostExtras<'a> {
+    /// The app's reported numbers, filtered to the fields that follow the app.
+    pub(crate) app_numbers: Option<AppReportedNumbers>,
+    /// Out-parameter filled when a cost > 0 comparison ran.
+    pub(crate) cost_trace: Option<&'a Cell<CostTrace>>,
+}
+
+fn note_trace(input: CostInput, over: bool, app_numbers: bool) {
+    if let Some(trace) = input.trace {
+        if matches!(classify_cost(input.cost), CostClass::Positive(_)) {
+            trace.set(CostTrace {
+                applied: true,
+                over,
+                app_numbers,
+            });
+        }
+    }
+}
+
+/// True for a finite cost above 0: the only cost the count-down / count-up
+/// comparison reads (ST-1741).
+///
+/// Source: entitlement-check.ts (hasPositiveCost)
+pub(crate) fn has_positive_cost(cost: Option<&Value>) -> bool {
+    matches!(classify_cost(cost), CostClass::Positive(_))
 }
 
 /// The ONE comparison the cost > 0 rule uses (usage_limit, credits used-based).
@@ -387,7 +464,8 @@ pub fn report_entitlement_diagnostic(result: &EntitlementCheckResult) {
 /// `balance` is the caller's `{ balance }` (ST-1696 REQ-9): for a credits rule
 /// it is the REMAINING balance and wins over `used`. A non-finite balance is
 /// ignored by the caller before it gets here. `cost` is the per-call cost
-/// (ST-1696): see [`cost_verdict`].
+/// (ST-1696): see [`cost_verdict`]; its `used_given` / `app` / `trace` carry the
+/// ST-1741 count-down / count-up inputs.
 pub(crate) fn derive_result_with_allowance(
     type_fields: &Value,
     used: f64,
@@ -412,12 +490,36 @@ pub(crate) fn derive_result_with_allowance(
         // `usage_limit` is the bundle-canonical kind; `limit` is the accepted
         // config-authoring shorthand — treated identically.
         Some("usage_limit" | "limit") => {
-            let resolved =
+            let mut resolved =
                 allowance_override.or_else(|| resolve_limit_value(type_fields.get("limit_value")));
+            let mut used_now = used;
+            // ST-1741 (D-7): a usage limit always counts UP. With a cost above 0
+            // the comparison reads the call's own `used` (against the rule's
+            // limit), else the used / limit the app mirrored, else held usage
+            // against the rule's limit as before. An unlimited rule plus a
+            // finite mirrored limit therefore enforces the mirrored limit when
+            // cost > 0. A mirrored `remaining` alone, and a per-call `balance`,
+            // are ignored here.
+            let mut app_numbers = false;
+            if has_positive_cost(cost.cost) {
+                if cost.used_given {
+                    app_numbers = true;
+                } else if let Some(app) = cost.app.filter(|a| a.used.is_some() || a.limit.is_some())
+                {
+                    app_numbers = true;
+                    if let Some(limit) = app.limit {
+                        resolved = Some(limit);
+                    }
+                    if let Some(app_used) = app.used {
+                        used_now = app_used;
+                    }
+                }
+            }
             match resolved {
                 Some(l) if l.is_finite() && l >= 0.0 => {
                     let (over, diagnostic) =
-                        cost_verdict(cost, used >= l, |c| cost_exceeds_limit(used, c, l));
+                        cost_verdict(cost, used_now >= l, |c| cost_exceeds_limit(used_now, c, l));
+                    note_trace(cost, over, app_numbers);
                     with_diagnostic(
                         with_limit_fields(
                             apply_usage_enforcement(
@@ -426,7 +528,7 @@ pub(crate) fn derive_result_with_allowance(
                                 "usage_limit_reached",
                             ),
                             l,
-                            used,
+                            used_now,
                         ),
                         diagnostic,
                     )
@@ -463,9 +565,48 @@ pub(crate) fn derive_result_with_allowance(
             // Cost rule: with a finite balance the balance IS the limit,
             // whether or not the rule has a finite allowance (then only
             // `remaining` is reported, no `limit` / `used`).
-            if let Some(b) = balance.filter(|b| b.is_finite()) {
-                let (over, diagnostic) =
-                    cost_verdict(cost, b <= 0.0, |c| cost_exceeds_balance(c, b));
+            // ST-1741 (D-7): credits always count DOWN. The balance is the first
+            // available of: (1) the per-call `balance`; (2) the per-call `used`
+            // (balance = allowance - used); (3) the remaining the app mirrored
+            // (`remaining`, or `limit - used` when both were sent), only with a
+            // cost above 0; (4) held usage (allowance - used). (2) and (4) are
+            // evaluated as `used + cost > allowance` with the 0.16.0 helper.
+            let positive = has_positive_cost(cost.cost);
+            let mirrored_remaining = if positive && !cost.used_given {
+                cost.app.and_then(|a| a.remaining)
+            } else {
+                None
+            };
+            let call_balance = balance.filter(|b| b.is_finite());
+            let balance_now = call_balance.or(mirrored_remaining.filter(|r| r.is_finite()));
+            if let Some(b) = balance_now {
+                let from_mirror = call_balance.is_none();
+                // The limit the result reports: the app's own limit when the
+                // balance is the app's, else the rule's allowance.
+                let app_limit = cost.app.and_then(|a| a.limit);
+                let report_limit = if from_mirror && app_limit.is_some() {
+                    app_limit
+                } else {
+                    cr_limit
+                };
+                // Comparison forms by source (copied from scaffold): a per-call
+                // `balance` and an explicit mirrored `remaining` use the balance
+                // form; a balance DERIVED from the app's `limit - used` uses the
+                // used-plus-cost form on those two numbers, never the derived
+                // remaining.
+                let pair = if from_mirror && cost.app.is_some_and(|a| a.remaining_derived) {
+                    match (cost.app.and_then(|a| a.used), app_limit) {
+                        (Some(u), Some(l)) if u.is_finite() && l.is_finite() => Some((u, l)),
+                        _ => None,
+                    }
+                } else {
+                    None
+                };
+                let (over, diagnostic) = cost_verdict(cost, b <= 0.0, |c| match pair {
+                    Some((u, l)) => cost_exceeds_limit(u, c, l),
+                    None => cost_exceeds_balance(c, b),
+                });
+                note_trace(cost, over, true);
                 let mut result = with_diagnostic(
                     apply_usage_enforcement(
                         over,
@@ -474,9 +615,12 @@ pub(crate) fn derive_result_with_allowance(
                     ),
                     diagnostic,
                 );
-                if let Some(l) = cr_limit.filter(|l| l.is_finite()) {
+                if let Some(l) = report_limit.filter(|l| l.is_finite()) {
                     result.limit = int_if_integral(l);
-                    result.used = int_if_integral((l - b).max(0.0));
+                    result.used = int_if_integral(match pair {
+                        Some((u, _)) => u.min(l).max(0.0),
+                        None => (l - b).max(0.0),
+                    });
                 }
                 result.remaining = int_if_integral(b.max(0.0));
                 return result;
@@ -486,6 +630,7 @@ pub(crate) fn derive_result_with_allowance(
                 Some(l) if l.is_finite() => {
                     let (over, diagnostic) =
                         cost_verdict(cost, used >= l, |c| cost_exceeds_limit(used, c, l));
+                    note_trace(cost, over, cost.used_given);
                     with_diagnostic(
                         with_limit_fields(
                             apply_usage_enforcement(
@@ -590,7 +735,7 @@ pub fn derive_local_entitlement_from_configured_rules(
     input: &LocalEntitlementInput,
     playbook: &Value,
 ) -> Option<EntitlementCheckResult> {
-    derive_local_entitlement_reporting(input, playbook, &mut None)
+    derive_local_entitlement_reporting(input, playbook, &mut None, CostExtras::default())
 }
 
 /// [`derive_local_entitlement_from_configured_rules`], but an invalid
@@ -607,7 +752,8 @@ pub fn try_derive_local_entitlement_from_configured_rules(
     playbook: &Value,
 ) -> Result<Option<EntitlementCheckResult>, String> {
     let mut error = None;
-    let result = derive_local_entitlement_reporting(input, playbook, &mut error);
+    let result =
+        derive_local_entitlement_reporting(input, playbook, &mut error, CostExtras::default());
     error.map_or(Ok(result), Err)
 }
 
@@ -616,6 +762,7 @@ pub(crate) fn derive_local_entitlement_reporting(
     input: &LocalEntitlementInput,
     playbook: &Value,
     error: &mut Option<String>,
+    extras: CostExtras<'_>,
 ) -> Option<EntitlementCheckResult> {
     let mut invalid = |message: String| {
         *error = Some(message);
@@ -1056,6 +1203,9 @@ pub(crate) fn derive_local_entitlement_reporting(
             CostInput {
                 cost: input.context_cost.as_ref(),
                 diagnose_handle: input.diagnostics.then_some(input.handle),
+                used_given: input.context_used.is_some(),
+                app: extras.app_numbers,
+                trace: extras.cost_trace,
             },
         ),
         selected_rule_handle,

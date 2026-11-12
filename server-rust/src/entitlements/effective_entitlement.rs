@@ -19,12 +19,15 @@
 //!
 //! Source: revturbine-scaffold/src/entitlements/controllers/effective-entitlement.ts
 
+use std::cell::Cell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use serde_json::{Number, Value};
 
 use super::entitlement_check::{
-    derive_local_entitlement_reporting, report_entitlement_diagnostic, LocalEntitlementInput,
+    derive_local_entitlement_reporting, derive_result_with_allowance, has_positive_cost,
+    report_entitlement_diagnostic, AppReportedNumbers, CostExtras, CostInput, CostTrace,
+    LocalEntitlementInput,
 };
 use crate::decisions::{int_if_integral, EntitlementCheckResult};
 
@@ -154,6 +157,13 @@ fn from_mirrored(value: Option<&Value>) -> Option<PartialEntitlement> {
                 .and_then(Value::as_bool)
                 .unwrap_or(status != "denied"),
         );
+    } else if let Some(allowed) = record.get("allowed").and_then(Value::as_bool) {
+        // ST-1741 D-6: `allowed` with no valid `status` sets the answer on its
+        // own (it was ignored on 0.16.0): true is `allowed`, false is `denied`.
+        // The result then carries reason `entitlement_mirrored` and NO
+        // `rule_handle` (the app, not a rule, decided).
+        out.status = Some(if allowed { "allowed" } else { "denied" }.to_string());
+        out.allowed = Some(allowed);
     }
     // A `serde_json::Number` is always finite, so `as_number` is exactly
     // `typeof v === 'number' && Number.isFinite(v)`.
@@ -170,6 +180,30 @@ fn from_mirrored(value: Option<&Value>) -> Option<PartialEntitlement> {
         .and_then(Value::as_str)
         .map(str::to_string);
     (!out.is_empty()).then_some(out)
+}
+
+/// ST-1741: was the app's `remaining` DERIVED from its `limit` and `used` (it
+/// sent no explicit `remaining`)? Follows [`app_entitlement`]'s overlay: the
+/// provider entry's `remaining` replaces the user-context one when it has one.
+///
+/// Source: effective-entitlement.ts (remainingWasDerived)
+fn remaining_was_derived(inputs: Option<&AppEntitlementInputs>) -> bool {
+    let explicit = |value: Option<&Value>| {
+        value
+            .and_then(Value::as_object)
+            .is_some_and(|record| record.get("remaining").and_then(Value::as_number).is_some())
+    };
+    let provider = inputs
+        .and_then(|i| i.provider.as_ref())
+        .filter(|p| js_truthy(p));
+    let provider_remaining = provider
+        .and_then(|p| from_mirrored(Some(p)))
+        .and_then(|p| p.remaining);
+    if provider_remaining.is_some() {
+        !explicit(provider)
+    } else {
+        !explicit(inputs.and_then(|i| i.user_context.as_ref()))
+    }
 }
 
 /// The app's view of one entitlement. A provider entry is the app's live
@@ -485,8 +519,10 @@ fn derive_effective_entitlement_reporting(
     // App-mirrored usage is an INPUT to the Playbook evaluation (when `used`
     // follows the app), so the evaluated status reflects it — not a number
     // pasted on afterwards.
+    let follows =
+        |field: Option<EntitlementSource>| base.merge.winner(field) == EntitlementSource::App;
     let mut usage_balances = base.usage_balances.clone();
-    if base.merge.winner(base.merge.fields.used) == EntitlementSource::App {
+    if follows(base.merge.fields.used) {
         if let Some(used) = app_view
             .as_ref()
             .and_then(|a| a.used.as_ref())
@@ -495,6 +531,23 @@ fn derive_effective_entitlement_reporting(
             usage_balances.insert(handle.to_string(), used);
         }
     }
+    // ST-1741: the numbers the app reported, for the cost rule (only the fields
+    // that follow the app), and a trace of what that comparison did.
+    let mut app_numbers = AppReportedNumbers::default();
+    if let Some(a) = app_view.as_ref() {
+        if follows(base.merge.fields.limit) {
+            app_numbers.limit = a.limit.as_ref().and_then(Number::as_f64);
+        }
+        if follows(base.merge.fields.used) {
+            app_numbers.used = a.used.as_ref().and_then(Number::as_f64);
+        }
+        if follows(base.merge.fields.remaining) {
+            app_numbers.remaining = a.remaining.as_ref().and_then(Number::as_f64);
+            app_numbers.remaining_derived =
+                app_numbers.remaining.is_some() && remaining_was_derived(app);
+        }
+    }
+    let cost_trace = Cell::new(CostTrace::default());
     let evaluated = known_playbook.and_then(|playbook| {
         let input = LocalEntitlementInput {
             handle,
@@ -511,12 +564,26 @@ fn derive_effective_entitlement_reporting(
             trial_granted_entitlement_handles: base.trial_granted_entitlement_handles.clone(),
             effective_plan_handle: base.effective_plan_handle.clone(),
         };
-        derive_local_entitlement_reporting(&input, playbook, error)
+        let extras = CostExtras {
+            app_numbers: (!app_numbers.is_empty()).then_some(app_numbers),
+            cost_trace: Some(&cost_trace),
+        };
+        derive_local_entitlement_reporting(&input, playbook, error, extras)
     });
-    let mut result = merge_entitlement_results(evaluated.as_ref(), app_view.as_ref(), &base.merge)
+    let merged = merge_entitlement_results(evaluated.as_ref(), app_view.as_ref(), &base.merge)
         .unwrap_or_else(|| {
             EntitlementCheckResult::with_reason("denied", false, "entitlement_not_in_playbook")
         });
+    let mut result = apply_cost_to_merged(
+        base,
+        handle,
+        known_playbook,
+        app_view.as_ref(),
+        app_numbers,
+        evaluated.as_ref(),
+        merged,
+        cost_trace.get(),
+    );
     // ST-1696: the cost diagnostic rides on the result for runtimes with their
     // own channel; the Playbook's own evaluation is where it was produced.
     if let Some(diagnostic) = evaluated.as_ref().and_then(|e| e.diagnostic.clone()) {
@@ -526,6 +593,128 @@ fn derive_effective_entitlement_reporting(
         result,
         unknown_handle: false,
     }
+}
+
+/// ST-1741 (Kent's D-7): when the cost > 0 comparison used numbers the APP
+/// reported (mirrored values, or a per-call balance / used), the comparison's
+/// numbers describe the result, and a mirrored "allowed" no longer overrides an
+/// over result. A mirrored denial always stays denied. A mirrored answer with no
+/// numbers (and no per-call balance / used), and every cost that is not above 0,
+/// leave the 0.16.0 result exactly as it was.
+///
+/// Source: effective-entitlement.ts (applyCostToMerged)
+#[allow(clippy::too_many_arguments)]
+fn apply_cost_to_merged(
+    base: &EffectiveEntitlementBase,
+    handle: &str,
+    known_playbook: Option<&Value>,
+    app: Option<&PartialEntitlement>,
+    app_numbers: AppReportedNumbers,
+    evaluated: Option<&EntitlementCheckResult>,
+    merged: EntitlementCheckResult,
+    trace: CostTrace,
+) -> EntitlementCheckResult {
+    let Some(app) = app else {
+        return merged;
+    };
+    if !has_positive_cost(base.context_cost.as_ref()) {
+        return merged;
+    }
+    let status_from_app = app.status.is_some()
+        && base.merge.winner(base.merge.fields.status) == EntitlementSource::App;
+    let with_numbers = |from: &EntitlementCheckResult| {
+        let mut out = merged.clone();
+        out.limit = from.limit.clone();
+        out.used = from.used.clone();
+        out.remaining = from.remaining.clone();
+        out
+    };
+    let app_denies = app.allowed == Some(false) || app.status.as_deref() == Some("denied");
+
+    // A rule was evaluated against numbers the app reported or the call passed.
+    if trace.applied && trace.app_numbers {
+        if let Some(evaluated) = evaluated {
+            let numbered = with_numbers(evaluated);
+            if !(trace.over && status_from_app && !app_denies) {
+                return numbered;
+            }
+            // Over: the rule's enforcement decides, whatever the app mirrored
+            // as allowed.
+            let mut out = numbered;
+            out.status = evaluated.status.clone();
+            out.allowed = evaluated.allowed;
+            out.reason = evaluated.reason.clone();
+            if evaluated.rule_handle.is_some() {
+                out.rule_handle = evaluated.rule_handle.clone();
+            }
+            if evaluated.contributing_rule_handles.is_some() {
+                out.contributing_rule_handles = evaluated.contributing_rule_handles.clone();
+            }
+            return out;
+        }
+    }
+
+    // No rule was compared (no plan identity, no matching rule): the app said
+    // "allowed", so compare against what the app reported, with no enforcement
+    // mode to read (status `limited`, not allowed, the plain reason).
+    if !trace.applied && known_playbook.is_some() && status_from_app && !app_denies {
+        let kind = known_playbook
+            .and_then(|pb| pb.get("entitlements"))
+            .and_then(Value::as_array)
+            .and_then(|ents| {
+                ents.iter()
+                    .find(|e| e.get("unique_handle").and_then(Value::as_str) == Some(handle))
+            })
+            .and_then(|e| e.get("type"))
+            .and_then(Value::as_str);
+        let limit_number = app_numbers.limit.and_then(Number::from_f64);
+        let type_fields = match kind {
+            Some("credits") => {
+                let mut tf = serde_json::json!({ "kind": "credits" });
+                if let Some(n) = &limit_number {
+                    tf["allowance"] = Value::Number(n.clone());
+                }
+                Some(tf)
+            }
+            Some("usage_limit") => {
+                let mut tf = serde_json::json!({ "kind": "usage_limit" });
+                if let Some(n) = &limit_number {
+                    tf["limit_value"] = Value::Number(n.clone());
+                }
+                Some(tf)
+            }
+            _ => None,
+        };
+        if let Some(type_fields) = type_fields {
+            let synthetic = Cell::new(CostTrace::default());
+            let verdict = derive_result_with_allowance(
+                &type_fields,
+                base.context_used.or(app_numbers.used).unwrap_or(0.0),
+                None,
+                base.context_balance,
+                CostInput {
+                    cost: base.context_cost.as_ref(),
+                    diagnose_handle: None,
+                    used_given: base.context_used.is_some(),
+                    app: Some(app_numbers),
+                    trace: Some(&synthetic),
+                },
+            );
+            let synthetic = synthetic.get();
+            if synthetic.applied && synthetic.app_numbers {
+                let numbered = with_numbers(&verdict);
+                if !synthetic.over {
+                    return numbered;
+                }
+                let mut out = numbered;
+                out.status = verdict.status.clone();
+                out.allowed = verdict.allowed;
+                out.reason = verdict.reason.clone();
+                return out;
+            }
+        }
+    }
+    merged
 }
 
 /// Effective entitlements for every handle the Playbook or the app knows —

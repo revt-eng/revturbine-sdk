@@ -75,6 +75,7 @@ function claimedCodes(markdown: string): string[] {
  * reason codes — schema field names, enforcement modes, entitlement types.
  */
 const NOT_A_REASON_CODE = new Set([
+  'rule_handle',
   'limit_value',
   'allowance_value',
   'per_month',

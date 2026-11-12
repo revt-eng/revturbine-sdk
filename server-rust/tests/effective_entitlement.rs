@@ -494,3 +494,84 @@ fn both_a_handle_neither_side_knows_is_denied() {
         json!({ "status": "denied", "reason": "entitlement_not_in_playbook" }),
     );
 }
+
+// ── ST-1741: a derived remaining is compared as used + cost against limit ──
+//
+// The app reports only limit and used; the remaining it implies is DERIVED, and
+// is compared as `used + cost` against `limit` (999.7 + 0.3 fits 1000). When the
+// merge points limit or used at the Playbook the pair is no longer the app's,
+// and the plain balance form applies (1000 - 999.7 is 0.2999999999999545, which
+// 0.3 does not fit).
+
+fn credits_playbook() -> Value {
+    let mut pb = playbook();
+    pb["entitlements"] = json!([{ "unique_handle": "video", "name": "Video", "type": "credits" }]);
+    pb["entitlement_rules"] = json!([{
+        "id": "r_video", "entitlement_id": "video",
+        "targets": [{ "kind": "plan", "id": "free" }], "segment_ids": [],
+        "type_fields": { "kind": "credits", "allowance": 1000, "enforcement": "block_with_upsell" },
+    }]);
+    pb["reverse_trial_rules"] = json!([]);
+    pb
+}
+
+fn derived_remaining_check(merge: EntitlementMergeOptions) -> EntitlementCheckResult {
+    let pb = credits_playbook();
+    let mut input = base(&pb, "free");
+    input.context_cost = Some(json!(0.3));
+    input.merge = merge;
+    derive_effective_entitlement(
+        "video",
+        &input,
+        Some(&user_context(
+            json!({ "status": "allowed", "limit": 1000, "used": 999.7 }),
+        )),
+    )
+    .result
+}
+
+#[test]
+fn derived_remaining_the_pair_form_fits_exactly() {
+    assert_matches(
+        &derived_remaining_check(EntitlementMergeOptions::default()),
+        json!({ "allowed": true, "reason": "entitlement_mirrored", "limit": 1000, "used": 999.7 }),
+    );
+}
+
+#[test]
+fn derived_remaining_limit_following_the_playbook_falls_back_to_the_balance_form() {
+    let merge = EntitlementMergeOptions {
+        fields: EntitlementMergeFields {
+            limit: Some(EntitlementSource::Playbook),
+            ..EntitlementMergeFields::default()
+        },
+        ..EntitlementMergeOptions::default()
+    };
+    assert_matches(
+        &derived_remaining_check(merge),
+        json!({
+            "status": "denied", "allowed": false,
+            "reason": "credit_balance_exhausted_block_with_upsell",
+            "rule_handle": "r_video", "remaining": 0.2999999999999545,
+        }),
+    );
+}
+
+#[test]
+fn derived_remaining_used_following_the_playbook_falls_back_to_the_balance_form() {
+    let merge = EntitlementMergeOptions {
+        fields: EntitlementMergeFields {
+            used: Some(EntitlementSource::Playbook),
+            ..EntitlementMergeFields::default()
+        },
+        ..EntitlementMergeOptions::default()
+    };
+    assert_matches(
+        &derived_remaining_check(merge),
+        json!({
+            "status": "denied", "allowed": false,
+            "reason": "credit_balance_exhausted_block_with_upsell",
+            "rule_handle": "r_video",
+        }),
+    );
+}

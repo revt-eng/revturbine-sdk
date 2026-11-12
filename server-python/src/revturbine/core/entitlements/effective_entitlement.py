@@ -31,7 +31,10 @@ from typing import Any, Literal, TypedDict, cast
 
 from revturbine.core.decisions.types import EntitlementCheckResult
 from revturbine.core.entitlements.entitlement_check import (
+    _has_positive_cost,
+    context_balance,
     derive_local_entitlement_from_configured_rules,
+    derive_result_from_rule_type_fields,
     report_entitlement_diagnostic,
     warn_on_non_access_check,
 )
@@ -164,6 +167,14 @@ def _from_mirrored(value: Any) -> dict[str, Any] | None:
         out["status"] = status
         allowed = value.get("allowed")
         out["allowed"] = allowed if isinstance(allowed, bool) else status != "denied"
+    elif isinstance(value.get("allowed"), bool):
+        # ST-1741 D-6: ``allowed`` with no valid ``status`` sets the answer on
+        # its own (it was ignored on 0.16.0): True is ``allowed``, False is
+        # ``denied``. The result then carries reason ``entitlement_mirrored`` and
+        # NO ``rule_handle`` (the app, not a rule, decided).
+        allowed_only = value["allowed"]
+        out["status"] = "allowed" if allowed_only else "denied"
+        out["allowed"] = allowed_only
     limit = _finite(value.get("limit"))
     used = _finite(value.get("used"))
     remaining = _finite(value.get("remaining"))
@@ -179,6 +190,23 @@ def _from_mirrored(value: Any) -> dict[str, Any] | None:
     if isinstance(reason, str):
         out["reason"] = reason
     return out if out else None
+
+
+def _remaining_was_derived(inputs: AppEntitlementInputs | None) -> bool:
+    """ST-1741: was the app's ``remaining`` DERIVED from its ``limit`` and
+    ``used`` (it sent no explicit ``remaining``)? Follows ``app_entitlement``'s
+    overlay: the provider entry's ``remaining`` replaces the user-context one
+    when it has one. Source: effective-entitlement.ts (remainingWasDerived)."""
+
+    def explicit(value: Any) -> bool:
+        return is_record(value) and _finite(value.get("remaining")) is not None
+
+    provider = inputs.get("provider") if inputs is not None else None
+    provider_view = _from_mirrored(provider) if provider else None
+    provider_remaining = provider_view.get("remaining") if provider_view is not None else None
+    if provider_remaining is not None:
+        return not explicit(provider)
+    return not explicit(inputs.get("user_context") if inputs is not None else None)
 
 
 def app_entitlement(inputs: AppEntitlementInputs | None) -> dict[str, Any] | None:
@@ -417,20 +445,34 @@ def _effective_entitlement_for(
     # follows the app), so the evaluated status reflects it — not a number
     # pasted on afterwards.
     merge_opts: EntitlementMergeOptions = merge if merge is not None else {}
-    used_override = (merge_opts.get("fields") or {}).get("used")
-    used_precedence = merge_opts.get("precedence")
-    used_winner = (
-        used_override
-        if used_override is not None
-        else used_precedence
-        if used_precedence is not None
-        else "app"
-    )
+
+    def follows(field: EntitlementMergeField) -> bool:
+        override = (merge_opts.get("fields") or {}).get(field)
+        precedence = merge_opts.get("precedence")
+        winner = (
+            override if override is not None else precedence if precedence is not None else "app"
+        )
+        return winner == "app"
+
+    used_from_app = app_view is not None and "used" in app_view and follows("used")
     evaluation_balances = (
         {**usage_balances, handle: app_view["used"]}
-        if app_view is not None and "used" in app_view and used_winner == "app"
+        if app_view is not None and used_from_app
         else usage_balances
     )
+    # ST-1741: the numbers the app reported, for the cost rule (only the fields
+    # that follow the app), and a trace of what that comparison did.
+    app_numbers: dict[str, Any] = {}
+    if app_view is not None:
+        if "limit" in app_view and follows("limit"):
+            app_numbers["limit"] = app_view["limit"]
+        if used_from_app:
+            app_numbers["used"] = app_view["used"]
+        if "remaining" in app_view and follows("remaining"):
+            app_numbers["remaining"] = app_view["remaining"]
+            if _remaining_was_derived(app):
+                app_numbers["remaining_derived"] = True
+    cost_trace: dict[str, bool] = {}
     evaluated = (
         derive_local_entitlement_from_configured_rules(
             handle=handle,
@@ -445,15 +487,138 @@ def _effective_entitlement_for(
             addons=addons,
             billing_period=billing_period,
             diagnostics=diagnostics,
+            app_numbers=app_numbers if app_numbers else None,
+            cost_trace=cost_trace,
         )
         if known
         else None
     )
     merged = merge_entitlement_results(evaluated, app_view, merge)
-    return {
-        "result": merged if merged is not None else _not_in_playbook(),
-        "unknown_handle": False,
-    }, evaluated
+    result = _apply_cost_to_merged(
+        context=context,
+        merge=merge_opts,
+        playbook=playbook,
+        handle=handle,
+        known=known,
+        app=app_view,
+        app_numbers=app_numbers,
+        evaluated=evaluated,
+        merged=merged if merged is not None else _not_in_playbook(),
+        trace=cost_trace,
+    )
+    return {"result": result, "unknown_handle": False}, evaluated
+
+
+def _apply_cost_to_merged(
+    *,
+    context: dict[str, Any] | None,
+    merge: EntitlementMergeOptions,
+    playbook: Playbook | None,
+    handle: str,
+    known: bool,
+    app: dict[str, Any] | None,
+    app_numbers: dict[str, Any],
+    evaluated: EntitlementCheckResult | None,
+    merged: EntitlementCheckResult,
+    trace: dict[str, bool],
+) -> EntitlementCheckResult:
+    """ST-1741 (Kent's D-7): when the cost > 0 comparison used numbers the APP
+    reported (mirrored values, or a per-call balance / used), the comparison's
+    numbers describe the result, and a mirrored "allowed" no longer overrides
+    an over result. A mirrored denial always stays denied. A mirrored answer
+    with no numbers (and no per-call balance / used), and every cost that is
+    not above 0, leave the 0.16.0 result exactly as it was.
+
+    Source: effective-entitlement.ts (applyCostToMerged)
+    """
+    cost = context.get("cost") if context is not None else None
+    if app is None or not _has_positive_cost(cost):
+        return merged
+    status_override = (merge.get("fields") or {}).get("status")
+    status_precedence = merge.get("precedence")
+    status_winner = (
+        status_override
+        if status_override is not None
+        else status_precedence
+        if status_precedence is not None
+        else "app"
+    )
+    status_from_app = "status" in app and status_winner == "app"
+
+    def with_numbers(source: Mapping[str, Any]) -> dict[str, Any]:
+        out = dict(merged)
+        for key in ("limit", "used", "remaining"):
+            if key in source:
+                out[key] = source[key]
+            else:
+                out.pop(key, None)
+        return out
+
+    app_denies = app.get("allowed") is False or app.get("status") == "denied"
+
+    # A rule was evaluated against numbers the app reported or the call passed.
+    if trace.get("applied") and trace.get("app_numbers") and evaluated is not None:
+        numbered = with_numbers(evaluated)
+        if not (trace.get("over") and status_from_app and not app_denies):
+            return cast(EntitlementCheckResult, numbered)
+        # Over: the rule's enforcement decides, whatever the app mirrored as allowed.
+        out = {**numbered, "status": evaluated["status"], "allowed": evaluated["allowed"]}
+        if "reason" in evaluated:
+            out["reason"] = evaluated["reason"]
+        else:
+            out.pop("reason", None)
+        if "rule_handle" in evaluated:
+            out["rule_handle"] = evaluated["rule_handle"]
+        if "contributing_rule_handles" in evaluated:
+            out["contributing_rule_handles"] = evaluated["contributing_rule_handles"]
+        return cast(EntitlementCheckResult, out)
+
+    # No rule was compared (no plan identity, no matching rule): the app said
+    # "allowed", so compare against what the app reported, with no enforcement
+    # mode to read (status `limited`, not allowed, the plain reason).
+    if not trace.get("applied") and known and status_from_app and not app_denies and playbook:
+        entitlement = next(
+            (e for e in (playbook.get("entitlements") or []) if e.get("unique_handle") == handle),
+            None,
+        )
+        kind = entitlement.get("type") if entitlement is not None else None
+        type_fields: dict[str, Any] | None
+        if kind == "credits":
+            type_fields = {"kind": "credits"}
+            if "limit" in app_numbers:
+                type_fields["allowance"] = app_numbers["limit"]
+        elif kind == "usage_limit":
+            type_fields = {"kind": "usage_limit"}
+            if "limit" in app_numbers:
+                type_fields["limit_value"] = app_numbers["limit"]
+        else:
+            type_fields = None
+        if type_fields is not None:
+            synthetic: dict[str, bool] = {}
+            ctx = context or {}
+            ctx_used = ctx.get("used")
+            verdict = derive_result_from_rule_type_fields(
+                type_fields,
+                ctx_used if ctx_used is not None else app_numbers.get("used", 0),
+                None,
+                context_balance(context),
+                cost,
+                None,
+                used_given=ctx_used is not None,
+                app=app_numbers,
+                trace=synthetic,
+            )
+            if synthetic.get("applied") and synthetic.get("app_numbers"):
+                numbered = with_numbers(verdict)
+                if not synthetic.get("over"):
+                    return cast(EntitlementCheckResult, numbered)
+                out = {**numbered, "status": verdict["status"], "allowed": verdict["allowed"]}
+                if "reason" in verdict:
+                    out["reason"] = verdict["reason"]
+                else:
+                    out.pop("reason", None)
+                return cast(EntitlementCheckResult, out)
+    return merged
 
 
 def derive_effective_entitlements(

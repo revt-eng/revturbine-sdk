@@ -23,7 +23,7 @@ import logging
 import math
 import sys
 import warnings
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from collections.abc import Set as AbstractSet
 from typing import Any
 
@@ -125,8 +125,17 @@ def derive_local_entitlement_from_configured_rules(
     addons: list[dict[str, Any]] | None = None,
     billing_period: str | None = None,
     diagnostics: bool = False,
+    app_numbers: Mapping[str, Any] | None = None,
+    cost_trace: dict[str, bool] | None = None,
 ) -> EntitlementCheckResult | None:
     """Derive an entitlement result locally from Playbook rules.
+
+    ``app_numbers`` (ST-1741, ``limit`` / ``used`` / ``remaining`` and
+    ``remaining_derived``) are the numbers the app reported on its mirrored
+    entitlement that the cost rule may compare against, already filtered to the
+    fields that follow the app; ``cost_trace`` is an out-parameter the
+    evaluation fills (``applied`` / ``over`` / ``app_numbers``) when a cost > 0
+    comparison ran. Both are set by the effective-entitlement merge.
 
     ``diagnostics`` attaches the developer ``diagnostic`` (ST-1696 cost rule)
     to the result. It is set by the single-handle check paths (``can()`` /
@@ -533,6 +542,9 @@ def derive_local_entitlement_from_configured_rules(
             context_balance(context),
             None if context is None else context.get("cost"),
             handle if diagnostics else None,
+            used_given=ctx_used is not None,
+            app=app_numbers,
+            trace=cost_trace,
         ),
         selected_rule_handle,
         contributing_handles,
@@ -740,6 +752,23 @@ def _classify_cost(cost: Any) -> tuple[str, Any]:
     return ("zero", None) if value == 0 else ("positive", value)
 
 
+def _has_positive_cost(cost: Any) -> bool:
+    """True for a finite cost above 0: the only cost the count-down / count-up
+    comparison reads (ST-1741). Source: entitlement-check.ts (hasPositiveCost)."""
+    return _classify_cost(cost)[0] == "positive"
+
+
+def _note_trace(trace: dict[str, bool] | None, cost: Any, over: bool, app_numbers: bool) -> None:
+    """Record what the cost > 0 comparison did, for the effective-entitlement
+    merge: ``applied`` when a finite limit or balance was compared, ``over`` its
+    verdict, ``app_numbers`` when the numbers compared were the app's or the
+    call's. Source: entitlement-check.ts (noteTrace)."""
+    if trace is not None and _classify_cost(cost)[0] == "positive":
+        trace["applied"] = True
+        trace["over"] = over
+        trace["app_numbers"] = app_numbers
+
+
 def evaluate_cost_limit(
     cost: Any,
     diagnose_handle: str | None,
@@ -864,12 +893,21 @@ def derive_result_from_rule_type_fields(
     balance: float | None = None,
     cost: Any = None,
     diagnose_handle: str | None = None,
+    *,
+    used_given: bool = False,
+    app: Mapping[str, Any] | None = None,
+    trace: dict[str, bool] | None = None,
 ) -> EntitlementCheckResult:
     """Shape an EntitlementCheckResult from a matched rule's ``type_fields``
     (plan 133). Single-sourced for BOTH evaluators — the Playbook path
     above and the DecisionEngine's provider-snapshot path (decisions/engine.py)
     — so a matched rule yields identical results on every surface.
     Limit-bearing outcomes carry ``limit`` / ``used`` / ``remaining``.
+
+    ST-1741 (Kent's D-7), cost above 0 only: ``used_given`` says the call passed
+    its own ``used``; ``app`` is the numbers the app reported on its mirrored
+    entitlement (``limit`` / ``used`` / ``remaining`` / ``remaining_derived``);
+    ``trace`` is an out-parameter recording what the comparison did.
 
     Source: entitlement-check.ts (deriveResultFromRuleTypeFields)
     """
@@ -898,20 +936,38 @@ def derive_result_from_rule_type_fields(
             if effective_allowance is not None
             else resolve_limit_value(type_fields.get("limit_value"))
         )
+        used_now = used
+        # ST-1741 (D-7): a usage limit always counts UP. With a cost above 0 the
+        # comparison reads the call's own ``used`` (against the rule's limit),
+        # else the used / limit the app mirrored, else held usage against the
+        # rule's limit as before. An unlimited rule plus a finite mirrored limit
+        # therefore enforces the mirrored limit when cost > 0. A mirrored
+        # ``remaining`` alone, and a per-call ``balance``, are ignored here.
+        ul_app_numbers = False
+        if _classify_cost(cost)[0] == "positive":
+            if used_given:
+                ul_app_numbers = True
+            elif app is not None and ("used" in app or "limit" in app):
+                ul_app_numbers = True
+                if "limit" in app:
+                    ul_limit = app["limit"]
+                if "used" in app:
+                    used_now = app["used"]
         if ul_limit is not None and math.isfinite(ul_limit) and ul_limit >= 0:
             ul_over, ul_diag = evaluate_cost_limit(
                 cost,
                 diagnose_handle,
-                used >= ul_limit,
-                lambda c: _cost_exceeds_limit(used, c, ul_limit),
+                used_now >= ul_limit,
+                lambda c: _cost_exceeds_limit(used_now, c, ul_limit),
             )
+            _note_trace(trace, cost, ul_over, ul_app_numbers)
             return with_diagnostic(
                 _with_limit_fields(
                     _apply_usage_enforcement(
                         ul_over, type_fields.get("enforcement"), "usage_limit_reached"
                     ),
                     ul_limit,
-                    used,
+                    used_now,
                 ),
                 ul_diag,
             )
@@ -946,13 +1002,55 @@ def derive_result_from_rule_type_fields(
         # Cost rule: with a finite balance the balance IS the limit, whether or
         # not the rule has a finite allowance (then only ``remaining`` is
         # reported, no ``limit`` / ``used``).
-        if balance is not None and math.isfinite(balance):
+        # ST-1741 (D-7): credits always count DOWN. The balance is the first
+        # available of: (1) the per-call ``balance``; (2) the per-call ``used``
+        # (balance = allowance - used); (3) the remaining the app mirrored
+        # (``remaining``, or ``limit - used`` when both were sent), only with a
+        # cost above 0; (4) held usage (allowance - used). (2) and (4) are
+        # evaluated as ``used + cost > allowance`` with the 0.16.0 helper.
+        positive = _classify_cost(cost)[0] == "positive"
+        mirrored_remaining = app.get("remaining") if (positive and not used_given and app) else None
+        has_call_balance = balance is not None and math.isfinite(balance)
+        balance_now: float | None
+        if has_call_balance:
+            balance_now = balance
+        elif mirrored_remaining is not None and math.isfinite(mirrored_remaining):
+            balance_now = mirrored_remaining
+        else:
+            balance_now = None
+        if balance_now is not None:
+            from_mirror = not has_call_balance
+            # The limit the result reports: the app's own limit when the balance
+            # is the app's, else the rule's allowance.
+            app_limit = app.get("limit") if app else None
+            report_limit = app_limit if (from_mirror and app_limit is not None) else cr_limit
+            # Comparison forms by source (copied from scaffold): a per-call
+            # ``balance`` and an explicit mirrored ``remaining`` use the balance
+            # form; a balance DERIVED from the app's ``limit - used`` uses the
+            # used-plus-cost form on those two numbers, never the derived remaining.
+            pair_used_raw = app.get("used") if app else None
+            pair: tuple[float, float] | None = (
+                (float(pair_used_raw), float(app_limit))
+                if (
+                    from_mirror
+                    and bool(app and app.get("remaining_derived") is True)
+                    and app_limit is not None
+                    and math.isfinite(app_limit)
+                    and pair_used_raw is not None
+                    and math.isfinite(pair_used_raw)
+                )
+                else None
+            )
+            bal: float = balance_now
             bal_over, bal_diag = evaluate_cost_limit(
                 cost,
                 diagnose_handle,
-                balance <= 0,
-                lambda c: _cost_exceeds_balance(c, balance),
+                bal <= 0,
+                (lambda c: _cost_exceeds_limit(pair[0], c, pair[1]))
+                if pair is not None
+                else (lambda c: _cost_exceeds_balance(c, bal)),
             )
+            _note_trace(trace, cost, bal_over, True)
             base = with_diagnostic(
                 _apply_usage_enforcement(
                     bal_over, type_fields.get("enforcement"), "credit_balance_exhausted"
@@ -960,10 +1058,13 @@ def derive_result_from_rule_type_fields(
                 bal_diag,
             )
             enriched = dict(base)
-            if cr_limit is not None and math.isfinite(cr_limit):
-                enriched["limit"] = _int_if_integral(cr_limit)
-                enriched["used"] = _int_if_integral(max(0.0, cr_limit - balance))
-            enriched["remaining"] = _int_if_integral(max(0.0, balance))
+            if report_limit is not None and math.isfinite(report_limit):
+                rep: float = report_limit
+                enriched["limit"] = _int_if_integral(rep)
+                enriched["used"] = _int_if_integral(
+                    max(0.0, min(pair[0], rep)) if pair is not None else max(0.0, rep - bal)
+                )
+            enriched["remaining"] = _int_if_integral(max(0.0, bal))
             return enriched  # type: ignore[return-value]
         if cr_limit is not None and math.isfinite(cr_limit):
             cr_over, cr_diag = evaluate_cost_limit(
@@ -972,6 +1073,7 @@ def derive_result_from_rule_type_fields(
                 used >= cr_limit,
                 lambda c: _cost_exceeds_limit(used, c, cr_limit),
             )
+            _note_trace(trace, cost, cr_over, used_given)
             return with_diagnostic(
                 _with_limit_fields(
                     _apply_usage_enforcement(

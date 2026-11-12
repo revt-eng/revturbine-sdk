@@ -462,3 +462,76 @@ class TestAppProvidesBothPlanAndEntitlements:
             warnings.simplefilter("ignore", RuntimeWarning)
             result = self._runtime().check_entitlement("never_defined")
         assert _subset(result, {"status": "denied", "reason": "entitlement_not_in_playbook"})
+
+
+# ── ST-1741: a derived remaining is compared as used + cost against limit ───
+
+CREDITS_PLAYBOOK: dict[str, Any] = {
+    **PLAYBOOK,
+    "entitlements": [{"unique_handle": "video", "name": "Video", "type": "credits"}],
+    "entitlement_rules": [
+        {
+            "id": "r_video",
+            "entitlement_id": "video",
+            "targets": [{"kind": "plan", "id": "free"}],
+            "segment_ids": [],
+            "type_fields": {
+                "kind": "credits",
+                "allowance": 1000,
+                "enforcement": "block_with_upsell",
+            },
+        }
+    ],
+    "reverse_trial_rules": [],
+}
+
+
+class TestDerivedRemainingFallback:
+    """The app reports only limit and used; the remaining it implies is DERIVED.
+    The derived pair is compared as ``used + cost`` against ``limit`` (so 999.7 +
+    0.3 fits 1000). When the merge points limit or used at the Playbook the pair
+    is no longer the app's, and the plain balance form is used (1000 - 999.7 is
+    0.2999999999999545, which 0.3 does not fit)."""
+
+    MIRRORED = {"status": "allowed", "limit": 1000, "used": 999.7}
+
+    def _check(self, merge: EntitlementMergeOptions | None) -> Any:
+        return derive_effective_entitlement(
+            handle="video",
+            current_plan_handle="free",
+            segment_ids=set(),
+            usage_balances={},
+            playbook=CREDITS_PLAYBOOK,
+            context={"cost": 0.3},
+            app={"user_context": self.MIRRORED},
+            merge=merge,
+        )["result"]
+
+    def test_the_derived_pair_form_fits_exactly(self) -> None:
+        assert _subset(
+            self._check(None),
+            {"allowed": True, "reason": "entitlement_mirrored", "limit": 1000, "used": 999.7},
+        )
+
+    def test_limit_following_the_playbook_falls_back_to_the_balance_form(self) -> None:
+        assert _subset(
+            self._check({"fields": {"limit": "playbook"}}),
+            {
+                "status": "denied",
+                "allowed": False,
+                "reason": "credit_balance_exhausted_block_with_upsell",
+                "rule_handle": "r_video",
+                "remaining": 0.2999999999999545,
+            },
+        )
+
+    def test_used_following_the_playbook_falls_back_to_the_balance_form(self) -> None:
+        assert _subset(
+            self._check({"fields": {"used": "playbook"}}),
+            {
+                "status": "denied",
+                "allowed": False,
+                "reason": "credit_balance_exhausted_block_with_upsell",
+                "rule_handle": "r_video",
+            },
+        )

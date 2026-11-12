@@ -627,6 +627,7 @@ impl LocalRuntime {
                                 crate::entitlements::entitlement_check::CostInput {
                                     cost: context.and_then(|c| c.get("cost")),
                                     diagnose_handle: Some(handle),
+                                    ..Default::default()
                                 },
                             ),
                             matched
@@ -691,6 +692,7 @@ impl LocalRuntime {
                     crate::entitlements::entitlement_check::CostInput {
                         cost: context.and_then(|c| c.get("cost")),
                         diagnose_handle: Some(handle),
+                        ..Default::default()
                     },
                     used >= limit,
                     |c| crate::entitlements::entitlement_check::cost_exceeds_limit(used, c, limit),
