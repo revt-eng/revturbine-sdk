@@ -1,4 +1,4 @@
-# GENERATED from revt-eng/revturbine-devkit .github/workflows/ci-level.yml (v1.6.0). Do not edit here:
+# GENERATED from revt-eng/revturbine-devkit .github/workflows/ci-level.yml (v1.7.0). Do not edit here:
 # this repository is public and cannot call the internal devkit workflow, so the devkit
 # keeps the master and `pnpm sync:ci-level` refreshes this copy (docs/ops/ci-levels.md).
 
@@ -14,7 +14,8 @@ name: CI level
 # A repository supplies only the command for each level (by default
 # `<package manager> run ci:<level>`) and the toolchains it needs. This file
 # owns the runner choice, toolchain setup, caching and install, so the runner
-# label is defined here and nowhere else.
+# label is defined here and nowhere else. Jobs that are not checks (scheduled
+# reports, GitHub Packages publishes) call it too, at level l1 (ST-1752).
 #
 # Inputs reach shell steps through env, never by expression inside `run:`.
 
@@ -109,9 +110,17 @@ on:
         type: string
         default: ''
       artifact-paths:
-        description: 'Newline-separated paths (from the repository root) uploaded as evidence, even when the checks fail. Kept 7 days.'
+        description: 'Newline-separated paths (from the repository root) uploaded as evidence, even when the checks fail. Kept 7 days unless artifact-retention-days says otherwise.'
         type: string
         default: ''
+      artifact-name:
+        description: 'Name of the artifact-paths upload. Empty uses "<level>-evidence", plus "-<name>" when name is set.'
+        type: string
+        default: ''
+      artifact-retention-days:
+        description: 'Days the artifact-paths upload is kept.'
+        type: number
+        default: 7
       cache-paths:
         description: 'Newline-separated paths to keep between runs (tool binaries, Terraform providers, generated toolchains). Runners are ephemeral; this is the only way to reuse a download.'
         type: string
@@ -356,7 +365,7 @@ jobs:
         if: always() && inputs.artifact-paths != ''
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.level }}-evidence${{ inputs.name != '' && format('-{0}', inputs.name) || '' }}
+          name: ${{ inputs.artifact-name != '' && inputs.artifact-name || format('{0}-evidence{1}', inputs.level, inputs.name != '' && format('-{0}', inputs.name) || '') }}
           path: ${{ inputs.artifact-paths }}
-          retention-days: 7
+          retention-days: ${{ inputs.artifact-retention-days }}
           if-no-files-found: warn
