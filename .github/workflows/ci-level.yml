@@ -1,4 +1,4 @@
-# GENERATED from revt-eng/revturbine-devkit .github/workflows/ci-level.yml (v1.5.0). Do not edit here:
+# GENERATED from revt-eng/revturbine-devkit .github/workflows/ci-level.yml (v1.6.0). Do not edit here:
 # this repository is public and cannot call the internal devkit workflow, so the devkit
 # keeps the master and `pnpm sync:ci-level` refreshes this copy (docs/ops/ci-levels.md).
 
@@ -120,10 +120,24 @@ on:
         description: 'Glob of files whose contents decide when the cache-paths cache is rebuilt, for example "**/.terraform.lock.hcl".'
         type: string
         default: ''
+      cache-refresh:
+        description: 'Save a fresh cache-paths entry on every run (the key ends with the commit) and restore the newest; for incremental caches such as tsc build info or ESLint results.'
+        type: boolean
+        default: false
+      context-json:
+        description: 'JSON handed to the command as CI_CONTEXT_JSON, for example toJSON(needs) for an aggregate gate job.'
+        type: string
+        default: ''
+    outputs:
+      values:
+        description: 'JSON object of the key=value lines the command wrote to the file named by $CI_OUTPUT ({} when none).'
+        value: ${{ jobs.check.outputs.values }}
 
 jobs:
   check:
     name: ${{ inputs.name != '' && inputs.name || inputs.level }}
+    outputs:
+      values: ${{ steps.run.outputs.values }}
     # Pull requests from forks never reach our runners (GitHub-hosted fallback);
     # everything else runs on the HELM CodeBuild pools (helm infra/github-runners).
     runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-latest' || format('codebuild-helm-ci-{0}-{1}-{2}', (inputs.pool == 'integration' || (inputs.pool == '' && (inputs.level == 'l2' || inputs.level == 'l3'))) && 'integration' || 'backlog', github.run_id, github.run_attempt) }}
@@ -182,7 +196,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node-version }}
-          cache: ${{ steps.pm.outputs.lockfile != '' && steps.pm.outputs.name || '' }}
+          cache: ${{ inputs.install && steps.pm.outputs.lockfile != '' && steps.pm.outputs.name || '' }}
           cache-dependency-path: ${{ steps.pm.outputs.lockfile }}
           registry-url: ${{ inputs.github-packages && 'https://npm.pkg.github.com' || '' }}
           scope: ${{ inputs.github-packages && '@revt-eng' || '' }}
@@ -235,8 +249,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ inputs.cache-paths }}
-          key: ci-${{ inputs.level }}-${{ runner.os }}-${{ hashFiles(inputs.cache-key-files != '' && inputs.cache-key-files || '.github/workflows/*.yml') }}
-          restore-keys: ci-${{ inputs.level }}-${{ runner.os }}-
+          key: ci-${{ inputs.level }}${{ inputs.name != '' && format('-{0}', inputs.name) || '' }}-${{ runner.os }}-${{ hashFiles(inputs.cache-key-files != '' && inputs.cache-key-files || '.github/workflows/*.yml') }}${{ inputs.cache-refresh && format('-{0}', github.sha) || '' }}
+          restore-keys: |
+            ci-${{ inputs.level }}${{ inputs.name != '' && format('-{0}', inputs.name) || '' }}-${{ runner.os }}-${{ hashFiles(inputs.cache-key-files != '' && inputs.cache-key-files || '.github/workflows/*.yml') }}-
+            ci-${{ inputs.level }}${{ inputs.name != '' && format('-{0}', inputs.name) || '' }}-${{ runner.os }}-
 
       - name: Install dependencies
         if: inputs.install && steps.pm.outputs.name != 'none'
@@ -302,10 +318,12 @@ jobs:
           '
 
       - name: Run the level's checks
+        id: run
         working-directory: ${{ inputs.working-directory }}
         env:
           CI_LEVEL: ${{ inputs.level }}
           CI_TARGET_URL: ${{ inputs.target-url }}
+          CI_CONTEXT_JSON: ${{ inputs.context-json }}
           COMMAND: ${{ inputs.command }}
           PM: ${{ steps.pm.outputs.name }}
           GH_TOKEN: ${{ github.token }}
@@ -320,8 +338,19 @@ jobs:
             fi
             COMMAND="$PM run ci:$CI_LEVEL"
           fi
+          # A command may report values to the caller as key=value lines in $CI_OUTPUT
+          # (the workflow's `values` output, a JSON object).
+          CI_OUTPUT="$RUNNER_TEMP/ci-level-output"
+          export CI_OUTPUT
+          : > "$CI_OUTPUT"
           echo "Running: $COMMAND"
           eval "$COMMAND"
+          if command -v jq > /dev/null; then
+            values="$(jq -cRn '[inputs | select(test("^[^=]+=")) | capture("^(?<k>[^=]+)=(?<v>.*)$") | {(.k): .v}] | add // {}' < "$CI_OUTPUT")"
+          else
+            values="$(node -e 'const o={};for(const l of require("fs").readFileSync(process.argv[1],"utf8").split(/\r?\n/)){const i=l.indexOf("=");if(i>0)o[l.slice(0,i)]=l.slice(i+1)}console.log(JSON.stringify(o))' "$CI_OUTPUT")"
+          fi
+          echo "values=$values" >> "$GITHUB_OUTPUT"
 
       - name: Upload evidence
         if: always() && inputs.artifact-paths != ''
