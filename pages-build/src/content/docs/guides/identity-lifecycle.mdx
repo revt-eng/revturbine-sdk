@@ -18,13 +18,45 @@ the SDK **after** sign-in: mount `RevTurbineProvider` inside your authenticated
 tree, and show the signed-out visitor your own standard UI. RevTurbine is
 additive, so nothing breaks without it.
 
-If an init does reach the SDK without a usable id (an omitted `user`, a blank or
-whitespace id, a `user` still loading), the SDK never throws into your app. It
-stays disabled: no network request, no evaluation, no user-scoped storage; every
-check and placement answers with its fallback (`user_id_required`); and it
-reports one typed diagnostic (`getUserRequiredDiagnostic()`). Do not use a blank
-string as your loading state: wait until you have the id, then initialize. A
-later `identify(id)` with a real id enables the SDK.
+A missing user is an error. If an init does reach the SDK without a usable id (an
+omitted or `null` `user`, a `null`, omitted, blank or whitespace id), the SDK
+never throws into your app. It stays disabled: no network request, no
+evaluation, no user-scoped storage; every check and placement answers with its
+fallback (`user_id_required`); a `Gate` behaves as it does for a denied user
+(its `deniedFallback`, placement or placeholder, and `onDenied`); it logs one
+`user_id_required` console error; and it reports one typed diagnostic
+(`getUserRequiredDiagnostic()`). Do not use a blank string or `null` as your
+loading state. A later `identify(id)` with a real id enables the SDK.
+
+When the user is resolved asynchronously (a session lookup, say), pass a
+`Promise` as `user` (0.16.0) instead:
+
+```tsx
+import { useMemo, type ReactNode } from 'react';
+import { RevTurbineProvider } from '@revturbine/sdk';
+
+declare function fetchSessionUser(): Promise<{ id: string; plan_handle?: string }>;
+
+export function Providers({ children }: { children: ReactNode }) {
+  const options = useMemo(
+    () => ({ publicKey: 'rtk_…', user: fetchSessionUser() }), // stable: memoise it
+    [],
+  );
+  return <RevTurbineProvider options={options}>{children}</RevTurbineProvider>;
+}
+```
+
+While the promise is pending the SDK is disabled **without** console output or a
+diagnostic: no request, no evaluation, no storage, no Playbook fetch; a `Gate`
+renders nothing (not its `deniedFallback`); events are dropped, not buffered.
+When it resolves to a user (`{ id, ...identify context }`), the SDK behaves
+exactly as `identify()` with that user: the Playbook loads, mounted gates
+re-evaluate without a remount, and the first `page_view` is sent. If it
+resolves to a missing or blank id, or rejects, you get the loud
+`user_id_required` error (a rejection's reason is in the message) and the SDK
+stays disabled. An explicit `identify()` while it is pending wins, and a result
+that arrives after the provider unmounted is ignored. A new promise identity
+re-initialises the SDK exactly as a new `user` object does, so keep it stable.
 
 Before 0.13.0 the SDK fell back to a random per-browser anonymous id for a
 visitor with no `user`. That id and every fallback to it are gone, so state it

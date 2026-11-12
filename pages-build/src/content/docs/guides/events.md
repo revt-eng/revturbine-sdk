@@ -5,7 +5,7 @@ sidebar:
   order: 10
 ---
 
-RevTurbine reports what it did — a placement was shown, a CTA was clicked — and, when you opt in, what the user was doing around it. Placement lifecycle is tracked automatically; everything else is opt-in, additive, and privacy-safe by default. An integration that sets no telemetry options behaves exactly as before.
+RevTurbine reports what it did — a placement was shown, a CTA was clicked — and **RevTurbine reporting is on by default**. It is treated as functional: it is how a placement is attributed to the conversion it led to, and it is planned to carry caps and cooldowns. You turn it off explicitly, with `analytics: false` or `telemetry.consent` (see [Consent](#consent)). The one reporting feature that is opt-in is DOM capture: the SDK reports what the user was doing *around* a placement (annotated clicks) only when you opt in with `domCapture`. Placement lifecycle is tracked automatically, and everything is privacy-safe by default.
 
 Every event carries a sortable, unique `event_id`, is PII-redacted before it leaves the browser, and is batched and delivered best-effort (a failed send never throws into your app, and a retry resends the identical row so it can't duplicate).
 
@@ -140,6 +140,8 @@ const { run, isRunning } = useTrackedAction('export_pdf', () => exportPdf());
 
 ## Consent
 
+RevTurbine's own reporting (clickstream and placement-interaction events) is **opt-out**: with neither `analytics` nor `telemetry.consent` set, it is on. It is functional: it is used to attribute placements to conversions and is planned to carry caps and cooldowns. You turn it off explicitly, with `analytics: false`, with `telemetry.consent: 'denied'` or `'pending'`, or at runtime with `setTelemetryConsent()`. Turning it off never changes Playbook delivery or any decision. (This page describes behaviour, not legal requirements: decide for your own product what you need to tell and ask your users.)
+
 `telemetry.consent` gates event **creation** ahead of every destination:
 
 | Value | Effect |
@@ -154,7 +156,7 @@ Change it at runtime with no remount:
 sdk.setTelemetryConsent('denied'); // stop; 'granted' resumes on the next event
 ```
 
-The keyless anonymous SDK-init beacon (`anonymousTelemetry`) is controlled separately and is unaffected by consent.
+The anonymous SDK init and error events (`anonymousTelemetry`, see [SDK init and error events](#sdk-init-and-error-events)) are controlled separately and are unaffected by consent and by `analytics`.
 
 Consent covers **placement interaction reporting** too. Impressions, dismissals, CTA clicks, conversions, snoozes and suppressions travel only as `placement_interaction` events, so with `denied` or `pending` the SDK sends no interaction data at all, exactly as it sends no other behavior.
 
@@ -251,14 +253,33 @@ When a placement or entitlement can't resolve for **infrastructure** reasons, th
 | `config_unavailable` | The Playbook never arrived, so a placement fell back or an entitlement check denied without a rule saying no |
 | `sdk_disabled_provider_failure` | The provider chain failed: entitlement checks deny with this reason and slots follow `providerFailureSlotBehavior` |
 
-Diagnostics carry **only** author-defined handles (placement, slot, plan, entitlement) and closed reason codes — never user context, free text, or your tenant identifier (deployments are counted through a one-way hash). They're deduplicated per session and capped, fire from keyed production installs as well as keyless ones, and are silenced by **either** opt-out:
-
-```ts
-initRevTurbine({ analytics: false });          // silences diagnostics too
-initRevTurbine({ anonymousTelemetry: false }); // likewise
-```
+Diagnostics carry **only** author-defined handles (placement, slot, plan, entitlement) and closed reason codes — never user context, free text, or your tenant identifier (deployments are counted through a one-way hash). They're deduplicated per session and capped, and fire from keyed production installs as well as keyless ones.
 
 Rule-based denials and local mode's default behavior are not failures and never emit.
+
+## SDK init and error events
+
+Since 0.16.0 the SDK sends three kinds of anonymous event to RevTurbine's `/api/sdk/meta`: one `sdk_init` per session (counts of plans, entitlements, placements and so on), `sdk_error` (the SDK itself failed) and the `resolution_failure` diagnostics above. They contain the SDK version, runtime mode, bundle version, a one-way hash of the deployment, closed reason codes, author-defined handles and a fixed-vocabulary message. They never contain a user, account, URL, token or anything you typed, and a caught exception's text is never copied into them. The requests carry no cookies (`credentials: 'omit'`), even to a same-origin endpoint.
+
+- **They are sent without regard to `analytics` and `telemetry.consent`.** They are not behavior events.
+- **With a public key configured** the request carries it as `Authorization: Bearer <public key>`, only so the events are attributed to your tenant and appear in its SDK health view. A server key is never sent. With no public key the request has no header and is attributed by the hash alone.
+- **A missing user is reported.** The SDK that has no user is the one that cannot tell you, so a connected SDK (not `local_only`) sends one `sdk_error` with the message `user_id_required at <init|identify|setUserContext|user_promise_rejected|user_promise_resolved_blank>`. It is the only request an SDK without a user makes; `sdk_init` waits for a user.
+- **Turn it off** with `anonymousTelemetry: false`. A render that is not an install (docs, a playground) uses `previewMode: true`.
+- **Send it to your own endpoint, instead of or as well as RevTurbine** with `sdkTelemetryProviders`:
+
+```ts
+import { createHttpSdkTelemetryProvider } from '@revturbine/sdk';
+
+initRevTurbine({
+  // ...
+  sdkTelemetryProviders: [createHttpSdkTelemetryProvider({ url: '/internal/sdk-meta', headers: { 'x-app': 'web' } })],
+  anonymousTelemetry: false, // omit to send to both
+});
+```
+
+The public `sdk.reportSdkError(reason, message)` forwards what you pass (up to 500 characters) to the same destinations, also without regard to consent: the message must be a fixed string and never contain user data, an exception's text, an id, an email or a URL.
+
+A provider is `{ name, send(events) }` and receives the same events, after the same de-duplication, cap and `previewMode` / browser gates, in `local_only` mode too. A provider that throws or rejects is ignored (one console warning per provider per session) and never affects the SDK or another destination. A provider never receives your public key; the helper sends only the headers you give it. This is separate from the clickstream event consumers.
 
 ## Your taxonomy in analytics
 

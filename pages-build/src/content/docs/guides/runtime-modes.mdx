@@ -64,10 +64,11 @@ import { RuntimeMode } from '@revturbine/sdk';
 ```
 
 `local_only` makes no config or decisioning calls and does not send clickstream
-events to RevTurbine ingest. A keyless, anonymous `sdk_init` adoption beacon is
-the one network exception. Set `anonymousTelemetry: false` (or
-`previewMode: true` for docs and examples) when the process must make zero
-RevTurbine requests.
+events to RevTurbine ingest. The anonymous SDK init and error events
+(`sdk_init`, `sdk_error`, `resolution_failure`) are the one network exception;
+see [SDK init and error events](/guides/events/#sdk-init-and-error-events). Set
+`anonymousTelemetry: false` (or `previewMode: true` for docs and examples) when
+the process must make zero RevTurbine requests.
 
 ## Copy-Paste Setup
 

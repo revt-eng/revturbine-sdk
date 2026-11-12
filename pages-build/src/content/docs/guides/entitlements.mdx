@@ -140,7 +140,7 @@ Pass only what your app knows better than the Playbook — current consumption, 
 | Feature | — | `status`, `allowed` |
 | Capability tier | `{ requiredTier }` | `status`, `allowed`, `current_tier` |
 | Usage limit | `{ used }` | `status`, `allowed`, `limit`, `used`, `remaining` |
-| Credits | `{ balance }` | `status`, `allowed`, `remaining` |
+| Credits | `{ balance }` (the remaining credits; exhausted at 0 or below; wins over `used`) | `status`, `allowed`, `remaining` |
 | Seats | — (counts come from the usage snapshot) | `status`, `allowed` |
 
 ```ts
@@ -368,11 +368,61 @@ row returned here. If the admitted artifact does not include this metadata,
 use your application's authoritative configuration source instead of inventing
 a default.
 
+A mirrored grant is a boolean or a record of optional `status`, `allowed`,
+`limit`, `used`, `remaining` and `reason` (0.16.0: the TypeScript type now
+accepts exactly that shape; it no longer asks for `entitlement_id` or
+`entitlement_handle`).
+
 For mirrored access grants, `UserContext.entitlements` and `entitlementMerge`
 control how application facts combine with Playbook evaluation. The default
 gives application mirrors precedence. A result with `entitlement_mirrored`
 therefore need not have a Playbook `rule_handle`. See
 [SDK upgrades](/guides/sdk-upgrades/) before copying old rule-only assertions.
+
+## Per-call `cost`
+
+On a **usage-limit** or **credits** entitlement, say what this call would consume:
+
+```ts
+const result = await rt.can('ai_generations', { cost: 3 });
+```
+
+```tsx
+<Gate can="ai_generations" cost={3} deniedFallback={<UpgradePrompt />}>
+  <GenerateButton />
+</Gate>
+
+const { can } = useCan('ai_generations', { cost: 3 }); // also useEntitlement({ handle, cost })
+```
+
+`cost` belongs to the call. It is not a Playbook field. In Python it is `context={"cost": 3}` on `can` / `check_entitlement`, and in Rust a `cost` key in the context passed to the check.
+
+| `cost` | What happens |
+|---|---|
+| above `0` | allowed while `usage + cost <= limit` (credits: while `cost <= balance`). Over the limit follows the rule's enforcement mode (`hard_block`, `degrade`, `allow_overage`). Fractional costs are valid, with a small tolerance for binary floating-point error |
+| `0` | always allowed, even past the limit (the action is free). A developer **warning** (`entitlement_cost_zero`) makes sure that was deliberate |
+| left out | today's check: allowed while `usage < limit`. A developer **error** (`entitlement_cost_missing`) tells you to pass a cost: use `0` for a free action |
+| negative, not a number, `NaN`, infinite | treated as left out, with the error `entitlement_cost_invalid` naming only the kind of the bad value, never the value |
+
+Other entitlement kinds, and unlimited entitlements, ignore `cost` without a message.
+
+The result carries the diagnostic as `result.diagnostic` (`{ level, code, handle, received? }`). It never changes `allowed`, `status` or `reason`, and it appears only on a single-handle check, never on a bulk read of every entitlement. Each handle and code is reported once per process: `console.warn` / `console.error` in the browser, `console.error` and a `RuntimeWarning` on the `revturbine` logger in Python, one line on stderr in Rust. Nothing is thrown or panicked.
+
+**Every existing check on a usage-limit or credits entitlement now logs the missing-cost error once until you pass a cost.** The decision is unchanged.
+
+## One entitlement per Gate
+
+A `<Gate>` checks **one** entitlement (from `can` or from `check`); usage thresholds can be combined with it. To require two entitlements, nest two Gates, so each shows its own upgrade message:
+
+```tsx
+<Gate id="export-gate" can="export" deniedFallback={<UpgradeToExport />}>
+  <Gate id="export-quota" can="export_quota" cost={1} deniedFallback={<OutOfExports />}>
+    <ExportButton />
+  </Gate>
+</Gate>
+```
+
+A Gate given more than one entitlement check is a developer error: it fails closed (it renders as denied) and logs one `console.error` naming the Gate id and the count. Before 0.16.0 the second entitlement was silently ignored.
 
 ## Next Steps
 

@@ -25,6 +25,13 @@ const base = process.env.PAGES_BASE
 // Vercel /docs build sets PAGES_SITE=https://revturbine.com (with PAGES_BASE=/docs).
 const site = process.env.PAGES_SITE ?? 'https://revt-eng.github.io';
 
+// Social crawlers need og:image / twitter:image as an ABSOLUTE URL on the host
+// and base the page is served from (BUG-1157): `<site><base>logo.webp`, which is
+// `https://revturbine.com/docs/logo.webp` on the /docs build. A root-absolute
+// `/logo.webp` in a meta `content` attribute is neither absolute nor base-prefixed
+// (the post-build link pass rewrites only href / src).
+const socialImage = `${site.replace(/\/+$/, '')}${base.replace(/\/*$/, '/')}logo.webp`;
+
 // Resolve @revt-eng/* packages from the isolated pages-build install so Vite
 // uses this docs workspace's exact registry pins, not an outer workspace tree.
 const pagesNodeModules = resolve(import.meta.dirname, 'node_modules');
@@ -153,7 +160,8 @@ export default defineConfig({
         // OpenGraph defaults
         { tag: 'meta', attrs: { property: 'og:type', content: 'website' } },
         { tag: 'meta', attrs: { property: 'og:site_name', content: 'RevTurbine Docs' } },
-        { tag: 'meta', attrs: { property: 'og:image', content: '/logo.webp' } },
+        { tag: 'meta', attrs: { property: 'og:image', content: socialImage } },
+        { tag: 'meta', attrs: { name: 'twitter:image', content: socialImage } },
         { tag: 'meta', attrs: { name: 'twitter:card', content: 'summary' } },
         { tag: 'meta', attrs: { name: 'twitter:site', content: '@revturbine' } },
       ],

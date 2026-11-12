@@ -47,6 +47,271 @@ also require a changelog entry.
 
 ---
 
+## 0.16.0
+
+The three packages ship at `0.16.0` together. The browser SDK carries most
+changes below; Python and Rust carry the engine changes marked "all runtimes"
+(plan targeting that fails closed, credit `balance`, and the per-call `cost`),
+ported from scaffold with parity fixtures. The `@revt-eng/core` and
+`@revt-eng/schema` pins moved from `0.1.542` to `0.1.559`.
+
+**Most visible upgrade effect:** every existing check on a `usage_limit` or
+`credits` entitlement now logs a developer **error** once per handle until you
+pass a `cost` (see "The per-call `cost`" below). The decision itself does not
+change.
+
+### Breaking
+
+1. **Per-call `cost` on usage-limit and credits checks, with a developer error
+   when it is missing (all runtimes; ST-1696).**
+   - **What changed:** `can(handle, { cost })` / `checkEntitlement` /
+     `check_entitlement` take an optional per-call `cost` (what THIS call would
+     consume; not a Playbook field). Above 0: allowed while
+     `usage + cost <= limit` (credits evaluated from a `balance`: while
+     `cost <= balance`), with the rule's enforcement mode deciding when it is
+     not. `0`: always allowed (free), with a **warning** (`entitlement_cost_zero`).
+     Left out: today's check (`used >= limit`, `balance <= 0`) and an **error**
+     (`entitlement_cost_missing`). Negative, `NaN`, infinite or non-number:
+     treated as left out, with `entitlement_cost_invalid` naming only the kind
+     (`negative` | `nan` | `infinite` | `non_number`), never the value. The
+     over-the-limit comparison uses a tolerance for binary floating-point error
+     (`0.1 + 0.2` fits a limit of `0.3`), identical in all three runtimes. Other
+     entitlement kinds, unlimited entitlements, and credits with neither a finite
+     allowance nor a balance ignore `cost` silently. The result carries an
+     optional `diagnostic { level, code, handle, received? }` on single-handle
+     checks only (never on a bulk read of every entitlement); it never changes
+     `allowed`, `status` or `reason`. Each handle and code is reported once per
+     process: `console.warn` / `console.error` in the browser (core's own
+     routing; the SDK adds no second line), a `RuntimeWarning` plus an ERROR on
+     the `revturbine` logger in Python, one line on stderr in Rust. Nothing
+     throws or panics. Browser surfaces: `can` / `checkEntitlement` context,
+     `useEntitlement({ cost })`, `useCan(handle, { cost })`, `useGatedAction`
+     (through its context) and `<Gate cost>`. The diagnostics are not sent on the
+     anonymous meta lane or the clickstream.
+   - **Landed in / Fail-closed in:** `0.16.0` / `0.16.0` (a missing cost still
+     decides as before; only the diagnostic is new).
+   - **Migration:** pass `cost` (`0` for a free action) on every usage-limit and
+     credits check, `<Gate>` included.
+   - **Proving tests:** parity fixtures `entitlement_usage_limit_cost` and
+     `entitlement_credits_cost` (TypeScript, Python, Rust byte-identical to
+     scaffold's snapshots); `web-sdk/entitlement-cost.test.ts`;
+     `web-sdk/placements/AccessGateSurfaceSlot.cost.test.tsx`;
+     `server-python/tests/entitlements/test_entitlement_check.py`
+     (`TestCostRule`); `server-rust/tests/entitlement_check.rs`.
+2. **A `<Gate>` given more than one entitlement check fails closed (BUG-1541).**
+   - **What changed:** a Gate used to evaluate only the first entitlement check
+     (`can` plus an entitlement in `check`, or two in `check`) and silently
+     ignore the rest, so it could open without checking the second. A Gate
+     checks exactly one entitlement (usage thresholds still combine with it); a
+     second entitlement check is a developer error: the Gate renders as denied
+     and logs one `console.error` naming the Gate id and the count (once per
+     Gate id per page load, not once per mount). Nest Gates to
+     require two entitlements.
+   - **Landed in / Fail-closed in:** `0.16.0` / `0.16.0`.
+   - **Migration:** nest one Gate inside another.
+   - **Proving tests:** `web-sdk/placements/AccessGateSurfaceSlot.cost.test.tsx`.
+
+3. **Plan-targeted placement payloads fail closed (all runtimes; ST-1696).**
+   - **What changed:** a payload that targets plans was eligible for a user with
+     no plan, or with a plan the Playbook does not define (the check only
+     excluded a user whose plan was set and not targeted). It is now eligible
+     only for a user whose resolved plan is one of the targets. The reason on a
+     direct decision stays `plan_target_mismatch`. The billing-period tolerance
+     is unchanged. This is the same in the browser SDK (through core), Python and
+     Rust, and the SDK inspector's `matchesPlan` agrees. The browser's
+     `placementMatchesPlanTarget` (re-exported from core) is now an exact plan
+     handle compare: the alias and substring matching it used to do is gone.
+   - **Landed in / Fail-closed in:** `0.16.0` / `0.16.0`. An app that never
+     supplies a plan loses every plan-targeted placement; untargeted payloads
+     are unaffected. The browser inspector (`explainPlacementDecision`) now
+     calls core's own predicate, so it also compares plan handles exactly (a
+     case-different handle matches in neither the inspector nor the resolver).
+   - **Migration:** pass the user's `plan_handle` (`identify()` / `user`), and use
+     the plan's exact `unique_handle`.
+   - **Proving tests:** parity fixtures `placement_plan_target_requires_plan_identity`,
+     `placement_plan_target_unknown_plan`, `placement_plan_target_matching_plan`
+     (TypeScript, Python, Rust byte-identical);
+     `web-sdk/placement-explanation-segments.test.ts`;
+     `server-python/tests/rules/test_plan_eligibility.py`;
+     `server-rust/src/rules/plan_eligibility.rs` tests.
+
+4. **A bare CTA click no longer starts a dismissal cooldown, and
+   `caps.cooldown_days: 0` means no cooldown (ST-1696).**
+   - **What changed:** `trackTreatmentInteraction({ interactionType:
+     'cta_clicked' })` used to hide the placement for the dismiss cooldown
+     (7 days by default). It now starts none; only `dismiss`,
+     `remind_me_later` and `suppress` do (placement decision rules, "Bare CTA
+     clicks create no cooldown"). A window an older SDK persisted from a click
+     is not honoured after an upgrade, in either persisted store (the
+     interaction state and the impression history); a dismissal is still
+     honoured, even one older than a click. The public `recordClickThru()`
+     records the click and starts no cooldown. Separately, an authored
+     `caps.cooldown_days: 0` (or `metadata.cooldown_ms: 0`) was read as "unset"
+     and took the 7-day default; it now means no cooldown. An absent value
+     still gives seven days.
+   - **Landed in / Fail-closed in:** `0.16.0` / `0.16.0`.
+   - **Migration:** if you relied on a click hiding the placement, dismiss it
+     yourself (`dismiss` or `remind_me_later`) when the click should hide it.
+   - **Proving tests:** `web-sdk/customer-side-cooldown-suppression.test.ts`
+     (ST-1696 C3a, C3b), `web-sdk/conversion-eligibility.test.ts`.
+5. **`user.entitlements` is typed as the documented mirrored shape (ST-1696).**
+   - **What changed:** the TypeScript type of `entitlements` on the init
+     `user`, `identify()`, `update()` and `setUserContext()` was the control
+     plane row (`entitlement_id` and `entitlement_handle` required), while the
+     runtime always read `status`, `allowed`, `limit`, `used`, `remaining` and
+     `reason`, all optional. It now accepts a boolean or that record. Types
+     only; no runtime change. `getUserContext()` returns the new exported
+     `RevTurbineHeldUserContext`, whose `entitlements` carries the mirrored
+     shape.
+   - **Landed in / Fail-closed in:** `0.16.0` / `0.16.0`.
+   - **Migration:** none for callers; code that read `entitlement_id` off
+     `getUserContext().entitlements` must narrow first.
+   - **Proving tests:** `web-sdk/mirrored-entitlements.test-d.ts`.
+
+6. **Anonymous SDK init and error events no longer depend on `analytics` or
+   `telemetry.consent`, and keyed installs send `sdk_init` (ST-1696).**
+   - **What changed:** `resolution_failure` diagnostics were silenced by
+     `analytics: false`, and the `sdk_init` beacon was sent only by installs
+     with no `publicKey`. Now `sdk_init`, `sdk_error` and `resolution_failure`
+     go to `POST /api/sdk/meta` from every install (connected or `local_only`,
+     keyed or keyless; browser, not `previewMode`) unless
+     `anonymousTelemetry: false`, whatever `analytics` and `telemetry.consent`
+     say: they are not behavior events. With a **public** key configured in a
+     connected mode the request carries `Authorization: Bearer <public key>`,
+     only so the row is attributed to your tenant and appears in its SDK health
+     view (a server key is never sent; no key, no header; the body still has no
+     user, tenant or URL field). The events contain the SDK version, runtime
+     and bundle versions, a one-way config hash, config-shape counts, closed
+     reason codes, author-defined handles and fixed-vocabulary messages; the
+     `provider_init_failed` message is now `provider_init_failed at <phase>:
+     <ErrorName>` instead of the caught exception's text. The header makes the
+     request cross-origin non-simple (a CORS preflight); a failed preflight or
+     network error is silent and never retried.
+   - **Landed in / Fail-closed in:** `0.16.0` / `0.16.0`.
+   - **Migration:** if you relied on `analytics: false` or a denied consent to
+     keep these quiet, set `anonymousTelemetry: false` (or route them to your own
+     endpoint with `sdkTelemetryProviders`).
+   - **Proving tests:** `web-sdk/sdk-telemetry-providers.test.ts`,
+     `web-sdk/resolution-failure-diagnostics.test.ts`,
+     `web-sdk/customer-side-telemetry.test.ts`.
+
+### Rust crate: public API additions (breaking for literal constructors)
+
+- `LocalEntitlementInput` gains a public field `context_balance: Option<f64>`
+  and `EffectiveEntitlementBase` gains `context_balance: Option<f64>` (the
+  caller's `{ balance }`, remaining credits). The crate-internal
+  `derive_result_with_allowance` takes a new `balance: Option<f64>` parameter;
+  the public `derive_result_from_rule_type_fields` keeps its signature. Callers
+  that build these structs with `..Default::default()` are unaffected; code that
+  constructs them with a full struct literal must add the field.
+- **Per-call `cost` (all new, additive; ST-1696).** `LocalEntitlementInput`
+  gains `context_cost: Option<serde_json::Value>` (the raw `cost`, where `None`
+  and JSON `null` are "missing") and `diagnostics: bool` (attach the developer
+  diagnostic; the single-handle paths set it), and `EffectiveEntitlementBase`
+  gains `context_cost: Option<serde_json::Value>`; the same literal-constructor
+  note applies, `..Default::default()` callers are unaffected.
+  `EntitlementCheckResult` gains `diagnostic: Option<EntitlementDiagnostic>`,
+  and the new `EntitlementDiagnostic { level, code, handle, received }` is
+  public in `decisions` (it is a field type of the public result). One new
+  public function in `entitlements`:
+  `report_entitlement_diagnostic(&EntitlementCheckResult)` (once per handle and
+  code, to stderr), kept public so a caller that evaluates with
+  `diagnostics: true` itself can route the diagnostic the way the runtime does.
+  The two comparison helpers are crate-internal. The crate-internal
+  `derive_result_with_allowance` takes a new `CostInput` parameter. Through the runtime, pass `cost` in the context
+  `Value` given to `check_entitlement`. `EntitlementCheckResult`
+  struct literals outside the crate must add `diagnostic: None`.
+- **Python:** `check_entitlement` / `can` accept `cost` in the context dict;
+  new helpers in `revturbine.core.entitlements.entitlement_check`
+  (`evaluate_cost_limit`, `report_entitlement_diagnostic`, `context_balance`;
+  the two comparison helpers are underscore-private and not exported), the `diagnostics`
+  keyword on `derive_local_entitlement_from_configured_rules`, and the
+  `EntitlementDiagnostic` TypedDict. Python routes diagnostics through
+  `warnings.warn` (a `RuntimeWarning`) and, for the two errors, also logs at
+  ERROR level on the `revturbine` logger.
+
+### Vendored scaffold types
+
+- **Scaffold pin 0.1.542 → 0.1.559** (`@revt-eng/core` / `schema` /
+  `schema-external`; vendored `types.py` / `types.rs` refreshed and the browser
+  API client regenerated; `0.1.559` adds the generated `diagnostic` on an
+  entitlement result). The generators renumbered generated enum class names
+  (`Status`, `Status1`, `Kind1`, ...) and dropped generated types nothing
+  referenced any more; code that imported a generated enum by its numbered name
+  from `revturbine.types` or the crate's `types` module must re-check the name.
+  The public SDK surfaces did not change from the refresh.
+
+### Reporting posture and documentation
+
+- **RevTurbine reporting is opt-out (documented and pinned by test; no
+  behaviour change).** `analytics` defaults on and `telemetry.consent` defaults
+  to `granted`; clickstream and placement-interaction reporting are functional
+  (attribution, and planned caps and cooldowns) and stop only when you set
+  `analytics: false`, `telemetry.consent: 'denied' | 'pending'`, or call
+  `setTelemetryConsent()`. Turning them off never changes Playbook delivery or
+  decisions. The events guide, initialization guide and configuration reference
+  say so; the "when you opt in" sentence now refers to `domCapture` only.
+  Test: `web-sdk/reporting-defaults.test.ts`.
+- Docs fixes: the toast `duration` is in seconds, default 5 (BUG-1538); the
+  troubleshooting quick checks no longer send consumers to maintainer scripts
+  (BUG-1167); the compatibility page names `0.16.x` as current (BUG-1164); the
+  docs `og:image` is an absolute URL on the served origin and base, and
+  `twitter:image` is set (BUG-1157).
+
+### Added
+
+- **`can(handle, { balance })` reads the balance on a credits entitlement
+  (all runtimes; ST-1696).** `balance` is the REMAINING credits: the check is
+  exhausted when `balance <= 0` (with the rule's enforcement mode), `remaining`
+  is `max(0, balance)`, `used` is `max(0, allowance - balance)`, and `balance`
+  wins over `used` and stored usage for that call. It is ignored for other
+  kinds and when it is not a finite number. Before, the documented argument was
+  accepted and read nowhere. Proving tests: parity fixture
+  `entitlement_credits_context_balance` (including `balance: -5` giving
+  `used: 105`, `remaining: 0`), `server-python/tests/entitlements/test_entitlement_check.py`,
+  `server-rust/tests/entitlement_check.rs`.
+- **A missing user is reported anonymously (ST-1696).** The one request an SDK
+  without a user makes: in a connected mode, one `sdk_error` with
+  `reason: 'user_id_required'` and the message `user_id_required at <init |
+  identify | setUserContext | user_promise_rejected |
+  user_promise_resolved_blank>`, once per context per session. Never an id, a
+  trait, a URL or a rejection's text. `local_only` sends nothing to RevTurbine
+  (providers still receive it). Console error and disabled state are unchanged.
+- **`sdkTelemetryProviders` and `createHttpSdkTelemetryProvider` (ST-1696).**
+  `sdkTelemetryProviders?: SdkTelemetryProvider[]` (`{ name: string;
+  send(events: SdkMetaEvent[]): void | Promise<void> }`) receives the same
+  anonymous events RevTurbine does, after the same de-duplication, cap and
+  gates, in every runtime mode: alongside RevTurbine, or instead of it with
+  `anonymousTelemetry: false`. A provider that throws or rejects is ignored
+  (one warning per provider per session). Providers never receive the public
+  key. `createHttpSdkTelemetryProvider({ url, headers?, name? })` POSTs
+  `{ events }` with `keepalive`, sending only the headers you pass. Separate
+  from the clickstream event consumers.
+- **`user` may be a `Promise` of the user (ST-1696).** For an app that resolves
+  the signed-in user asynchronously. Type: `RevTurbineInitUserPromise`
+  (`PromiseLike<{ id: string } & IdentifyContextInput>`), accepted by
+  `initRevTurbine` (both the core and the session entry points) and
+  `<RevTurbineProvider options>`. While it is pending the SDK is disabled and
+  silent (no console output, no diagnostic, no request, no evaluation, no
+  storage, no Playbook fetch), a `Gate` renders nothing (no `deniedFallback`, no
+  placeholder, no gate placement, no `onDenied`), and events are dropped, not
+  buffered. `sdk.isUserPending()` (new, `@public`) reports that window; once the
+  promise settles badly, or for an omitted / blank user, a `Gate` behaves exactly
+  as in 0.15.0. When it resolves to a user the SDK behaves exactly as
+  `identify()` with that user, and the deferred first `page_view` is sent. A
+  missing or blank id in the result, or a rejection, is the loud
+  `user_id_required` error (the rejection reason is in the message) and the SDK
+  stays disabled. An explicit `identify()` while pending wins; a result after
+  `dispose()` or unmount is ignored. Keep the promise stable (memoise it): a new
+  identity re-initialises the SDK like a new `user` object. A missing user is
+  still an error everywhere else: omitting `user` is a compile error, and an
+  omitted or `null` `user`, or a `null` or blank `user.id`, logs
+  `user_id_required` as before. Proving tests: `web-sdk/user-required.test.ts`,
+  `web-sdk/placements/AccessGateSurfaceSlot.unidentified.test.tsx`,
+  `web-sdk/user-required.test-d.ts`.
+
+---
+
 ## 0.15.0
 
 Python and Rust ship at `0.15.0` only to keep the version lock; they send no

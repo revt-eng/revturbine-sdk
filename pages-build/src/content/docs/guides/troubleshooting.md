@@ -13,7 +13,7 @@ sidebar:
 | A slot renders nothing, with no error and no reason code | The placement targets a slot your code never mounts — it can **never** show | Run [`sdk.diagnoseSlotInventory()`](#nothing-renders-and-nothing-explains-why). Comparing slot ids by eye is what this replaces. |
 | A slot renders its fallback forever | Your code mounts a slot no placement targets | Same probe — it reports this direction too. |
 | Entitlement check denies with `config_unavailable` or `sdk_disabled_provider_failure` | Playbook fetch or configured provider failed | Verify endpoint availability, auth headers, and provider health. See [Client vs Server Enforcement](/concepts/enforcement/) for the authoritative fallback contract. |
-| Every check denies with `user_id_required`, the console logs `user_id_required`, and nothing is requested | The SDK was initialized without a non-empty `user.id` (an omitted `user`, a blank id, a user still loading) | Initialize after login with `user: { id }`, or call `identify(id)`. `getUserRequiredDiagnostic()` names the entry point. See [Identity lifecycle](/guides/identity-lifecycle/). |
+| Every check denies with `user_id_required`, the console logs `user_id_required`, and nothing is requested | The SDK was initialized without a non-empty `user.id` (an omitted or `null` `user`, a blank id, or a `user` promise that resolved without an id or rejected) | Initialize after login with `user: { id }`, pass a `Promise` of the user while it is loading (it is silent while pending), or call `identify(id)`. `getUserRequiredDiagnostic()` names the entry point. See [Identity lifecycle](/guides/identity-lifecycle/). |
 | CTA path not firing expected action | Payload action field mismatch (`cta_path` vs legacy shape) | Use canonical `cta_path` in payloads and parse via `PlacementRenderer`. |
 | Decisions feel stale | Cache TTL too long | Lower `ttlMs` in decision requests or call refresh flows explicitly. |
 | Interactions not visible in backend telemetry | Interactions travel only as `placement_interaction` events on `/api/track`, so consent is not `granted`, `analytics` is `false`, the mode is `local_only`, or the ingest endpoint is misconfigured | Check `getTelemetryConsent()` and `analytics`, then validate `ingestEvents` endpoint wiring and auth. Consent and `analytics: false` never affect decisions, cooldowns or caps. |
@@ -95,20 +95,11 @@ In this state:
 
 ## Quick Checks
 
-1. **Run API type checks:**
+Run these in your own app, with your own scripts:
 
-   ```bash
-   pnpm typecheck:sdk-api
-   ```
+1. **Type-check your app** (`tsc --noEmit`, or your project's own type-check script). A wrong option name or a missing `user` is a compile error, so fix those first.
+2. **Build your app** with your usual build command, and confirm the build output has no RevTurbine import errors.
+3. **Read the console.** The SDK logs a one-line developer message for each misuse it can detect (a missing user, a missing `cost` on a usage-limited check, a Gate with two entitlements). Each names the fix.
+4. **Call `getUserRequiredDiagnostic()` and, in the React provider, read `useRevTurbine().initStatus`** to see why an SDK is disabled or failed to initialise.
 
-2. **Run web build:**
-
-   ```bash
-   pnpm build
-   ```
-
-3. **Validate SDK docs generation:**
-
-   ```bash
-   pnpm docs:sdk
-   ```
+The SDK repository's own maintenance scripts are not part of integrating or recovering an app and are not needed here.

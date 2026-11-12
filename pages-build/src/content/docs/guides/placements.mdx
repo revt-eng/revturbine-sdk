@@ -198,6 +198,10 @@ await ctaComplete();
 
 Each interaction is automatically tracked as a treatment interaction event.
 
+## Plan targeting
+
+A payload that targets plans is shown only to a user whose plan is one of them (0.16.0). A user with no plan, or with a plan handle the Playbook does not define, does not receive it; untargeted payloads are unaffected. Pass the user's exact plan `unique_handle` as `plan_handle`. This is the same in the browser, Python and Rust SDKs.
+
 ## Cap Policies
 
 Placements can author cap policies that limit how often they appear:
@@ -210,6 +214,8 @@ const capPolicy = {
   },
 };
 ```
+
+`cooldown_days` is how long a placement stays hidden after a **dismissal**. `0` means no cooldown, and leaving it out gives the 7-day default. A bare CTA click starts no cooldown (0.16.0): only a dismissal, remind-me-later or suppression hides the placement.
 
 Authoring a cap in the Playbook enables client-side cap enforcement for that placement. The decision API returns `visible: false` with a `cap_exceeded` reason when capped; the convenience `getPlacement()` API returns `null`.
 

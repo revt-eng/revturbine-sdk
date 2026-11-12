@@ -55,7 +55,10 @@ See [Theming](/guides/theming/) for an example. Set `colorScheme: 'light'` or `'
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `user` | `RevTurbineInitUser` | **required** | The user the SDK evaluates for; `user.id` must be a non-empty string, in every runtime mode. Without one the SDK is disabled (no requests, no evaluation, fallbacks only) and reports one `user_id_required` diagnostic. `plan_handle` is the plan's `unique_handle` — the value plan-scoped rules match on |
+| `user` | `RevTurbineInitUser \| RevTurbineInitUserPromise` | **required** | The user the SDK evaluates for; `user.id` must be a non-empty string, in every runtime mode. A `Promise` of the user is accepted (0.16.0): the SDK is disabled and silent while it is pending, then behaves as `identify()` with the result. A missing user (omitted, `null`, blank id, or a promise that resolves without an id or rejects) is an error: the SDK is disabled (no requests, no evaluation, fallbacks only) and logs one `user_id_required` error. Keep a promise stable (memoise it). `plan_handle` is the plan's `unique_handle` — the value plan-scoped rules match on |
+| `analytics` | `boolean` | `true` | RevTurbine reporting of clickstream and placement-interaction events is **on by default** (functional: attribution, and planned caps and cooldowns). `false` turns it off; it never changes Playbook delivery or decisions. `telemetry.consent` (`granted` by default, `denied` / `pending` to stop) and `setTelemetryConsent()` do the same, per visitor and at runtime |
+| `anonymousTelemetry` | `boolean` | `true` | Send the anonymous `sdk_init`, `sdk_error` and `resolution_failure` events to RevTurbine, regardless of `analytics` and `telemetry.consent`. With a public key they carry it as a bearer for tenant attribution only. `false` stops RevTurbine's copy. See [SDK init and error events](/guides/events/#sdk-init-and-error-events) |
+| `sdkTelemetryProviders` | `SdkTelemetryProvider[]` | — | Your own sinks for the same events, as well as or (with `anonymousTelemetry: false`) instead of RevTurbine. `createHttpSdkTelemetryProvider({ url, headers? })` builds one |
 | `clientSession` | `() => string \| Promise<string>` | — | Mints a client-session token so the SDK keeps server-derived context fresh on its own. See [Server-derived context](#server-derived-context-clientsession) |
 | `page` | `RevTurbinePageContext` | — | Page context (URL, title, referrer, tags) |
 | `contextPolicy` | `RevTurbineContextPolicy` | `{ inferUser: true, inferPage: true, routerAutoTrack: true }` | Auto-inference behavior. `inferUser` infers traits for the identified user; it never creates an identity |
@@ -199,7 +202,7 @@ The calls the SDK makes over the network, and the key that reroutes each one in 
 | `userContext` | User context read | `/api/sdk/user-context` |
 | `trialStatus` | Trial status read | `/api/sdk/trial-status` |
 | `ingestEvents` | Clickstream events (`track` / `capture`), including every `placement_interaction` (impression, dismiss, CTA) | `/api/track` |
-| `ingestSdkMeta` | The anonymous `sdk_init` beacon | `/api/sdk/meta` |
+| `ingestSdkMeta` | The anonymous SDK init and error events (`sdk_init`, `sdk_error`, `resolution_failure`) | `/api/sdk/meta` |
 | `surfaceSlots` | Surface-slot inventory registration | `/api/placements` |
 | `placementTypes` | Custom placement-type persistence — meaningful only when overridden | `/api/sdk/placement-types` |
 
