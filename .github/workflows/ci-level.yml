@@ -1,4 +1,4 @@
-# GENERATED from revt-eng/revturbine-devkit .github/workflows/ci-level.yml (v1.7.0). Do not edit here:
+# GENERATED from revt-eng/revturbine-devkit .github/workflows/ci-level.yml (v1.8.0). Do not edit here:
 # this repository is public and cannot call the internal devkit workflow, so the devkit
 # keeps the master and `pnpm sync:ci-level` refreshes this copy (docs/ops/ci-levels.md).
 
