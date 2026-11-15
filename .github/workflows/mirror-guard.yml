@@ -5,8 +5,8 @@ name: Mirror guard
 # below are overwritten on every release by, in revturbine-sdk-internal:
 #   .github/workflows/publish-to-public.yml  (source: "release: sync ..." commits)
 #   .github/workflows/sync-docs-to-public.yml (docs:   "docs: sync ..."   commits)
-# Both commit as github-actions[bot] and push with the revturbine-ci-bot App's
-# token (EP-1747 phase 7): main takes changes only through a pull request
+# Both commit as github-actions[bot] and push with the push App's token
+# (EP-1747 phase 7; app id vars.CI_PUSH_APP_ID in revturbine-sdk-internal): main takes changes only through a pull request
 # ("Pull requests into main and staging") except from the bypass Apps, and this
 # branch protection requires "guard / l1" on the pushed commit. So a sync first
 # pushes its commit to a mirror-sync/<...> branch, where this guard runs on that
