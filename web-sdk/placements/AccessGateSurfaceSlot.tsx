@@ -289,6 +289,9 @@ export function AccessGateSurfaceSlot({
   } = useSurfaceSlot({
     ...options,
     autoLoad: denied,
+    excludeDismissCtas: true,
+    fallback: deniedFallback !== undefined
+      ? deniedFallback : <AccessDeniedPlaceholder entitlementHandle={entitlementHandle} />,
     surfaceSlot,
   });
 

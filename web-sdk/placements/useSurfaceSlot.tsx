@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   RevTurbineContextMode,
+  SdkMetadata,
   RevTurbinePlacementDecisionOverrides,
   RevTurbineSurfaceSlotConfig,
   RevTurbineComponentType,
@@ -31,6 +32,10 @@ export type UseSurfaceSlotOptions = {
   registry?: PlacementTypeRegistry;
   /** Component types this slot accepts. Matching is exact. */
   acceptedComponentTypes?: readonly RevTurbineComponentType[];
+  /** Gate locations hide dismiss-role CTA controls. */
+  excludeDismissCtas?: boolean;
+  /** Rendered when the placement renderer cannot show an eligible surface. */
+  fallback?: React.ReactNode;
   /** Callback when CTA is clicked. Receives the parsed ui_path. */
   onCtaClick?: (uiPath: PlacementUiPath) => void;
   /**
@@ -101,6 +106,8 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
     personalization,
     registry,
     acceptedComponentTypes,
+    excludeDismissCtas,
+    fallback,
     onCtaClick,
     onDismissed,
     className,
@@ -117,12 +124,22 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
     refreshKey: result.decision?.requestId,
   });
 
+  const handleCtaActivate = useCallback((index: number, metadata?: SdkMetadata) => {
+    const cta = result.decision?.output?.ctas?.[index];
+    if (!cta) return;
+    void result.ctaClick(index, metadata);
+    if (cta.path.type === 'dismiss' || cta.role === 'dismiss') {
+      setDismissedHere(true);
+      onDismissedRef.current?.();
+    }
+  }, [result.ctaClick, result.decision]);
+
   const handleCtaClick = useCallback(
     (uiPath: PlacementUiPath) => {
-      void result.ctaClick(uiPath.type);
+      if (!result.decision?.output?.ctas) void result.ctaClick(uiPath.type);
       onCtaClick?.(uiPath);
     },
-    [result.ctaClick, onCtaClick],
+    [result.ctaClick, result.decision, onCtaClick],
   );
 
   // Dismissal is a local fact the moment it happens — the next decision has not
@@ -149,9 +166,9 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
   );
 
   const handleSnooze = useCallback(
-    (_outputId: string, seconds?: number) => {
+    (_outputId: string, seconds?: number, ctaIndex?: number) => {
       setDismissedHere(true);
-      void result.snooze(seconds);
+      void result.snooze(seconds, ctaIndex);
     },
     [result.snooze],
   );
@@ -198,6 +215,10 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
         personalization={resolvedPersonalization}
         registry={registry}
         acceptedComponentTypes={acceptedComponentTypes}
+        excludeDismissCtas={excludeDismissCtas}
+        fallback={fallback}
+        onCtaActivate={handleCtaActivate}
+        onSecondaryCtaClick={handleCtaClick}
         onCtaClick={handleCtaClick}
         onDismiss={handleDismiss}
         onSnooze={handleSnooze}
@@ -213,7 +234,10 @@ export function useSurfaceSlot(options: UseSurfaceSlotOptions): UseSurfaceSlotRe
     resolvedPersonalization,
     registry,
     acceptedComponentTypes,
+    excludeDismissCtas,
+    fallback,
     handleCtaClick,
+    handleCtaActivate,
     handleDismiss,
     handleSnooze,
     result.exposureRef,

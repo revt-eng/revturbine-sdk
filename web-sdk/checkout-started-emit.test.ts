@@ -166,6 +166,27 @@ describe('checkout_started fires for a CTA that opens a plan picker or pricing p
 });
 
 describe('checkout_started does NOT fire where there is no picker step', () => {
+  it.each([
+    { primary: 'view_plans', clicked: 'pause', expected: 0 },
+    { primary: 'pause', clicked: 'view_plans', expected: 1 },
+  ])('uses the clicked $clicked action, rather than primary $primary, for indexed CTA attribution', async ({ primary, clicked, expected }) => {
+    const decided: PlacementOutput = { ...output({ type: primary }), ctas: [
+      { label: 'Primary', path: { type: primary }, role: 'learn_more', role_overridden: false, emphasis: 'primary' },
+      { label: 'Second', path: { type: clicked }, role: 'pause', role_overridden: true, emphasis: 'secondary' },
+    ] };
+    const sdk = makeSdk(decided);
+    const controller = new PlacementController(sdk, { placement: { name: SLOT }, userId: USER });
+    vi.spyOn(sdk, 'registerPlacement').mockResolvedValue(SLOT);
+    await controller.load();
+    const spy = spyOnEmits(sdk);
+    await controller.ctaClick(1);
+    expect(emitted(spy, 'checkout_started')).toHaveLength(expected);
+    expect(emitted(spy, 'placement_interaction')).toHaveLength(1);
+    expect(emitted(spy, 'placement_interaction')[0]).toMatchObject({ cta_index: 1, cta_target: clicked });
+    controller.dispose();
+    sdk.dispose();
+  });
+
   it('not for open_checkout_modal — that CTA opens checkout directly ("on click")', async () => {
     const sdk = makeSdk(output({ type: 'open_checkout_modal', plan_handle: 'pro' }));
     const spy = await decideThenClick(sdk);

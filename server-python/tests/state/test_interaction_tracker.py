@@ -122,20 +122,22 @@ class TestTrackRemindMeLater:
 
 
 class TestTrackCta:
-    def test_cta_clicked_is_a_dismiss_cooldown(
-        self,
-        freeze_time: Callable[[float], None],
-    ) -> None:
+    def test_cta_clicked_starts_no_cooldown(self, freeze_time: Callable[[float], None]) -> None:
         freeze_time(1.0)
-        storage = InMemoryStorage()
-        tracker = InteractionTracker(storage=storage, tenant_id="t1", user_id="u1")
-        tracker.track(_input(interaction_type="cta_clicked"))
-        # A bare click is a dismiss-style cooldown (plan 167, Q-1), NOT a 5-minute
-        # window — still suppressed well past 5 minutes.
-        freeze_time(1.0 + 6 * 60)
-        result = tracker.check_suppression("p1", "u1")
-        assert result["suppressed"] is True
-        assert result["reason"] == "suppressed_by_dismiss_cooldown"
+        tracker = InteractionTracker(storage=InMemoryStorage(), tenant_id="t1", user_id="u1")
+        tracker.track(_input(interaction_type="cta_clicked", metadata={"cooldown_ms": 5000}))
+        assert tracker.check_suppression("p1", "u1") == {"suppressed": False}
+
+    def test_dismiss_zero_and_default_boundary(self, freeze_time: Callable[[float], None]) -> None:
+        freeze_time(1.0)
+        tracker = InteractionTracker(storage=InMemoryStorage(), tenant_id="t1", user_id="u1")
+        tracker.track(_input(interaction_type="dismiss", metadata={"cooldown_ms": 0}))
+        assert tracker.check_suppression("p1", "u1") == {"suppressed": False}
+        tracker.track(_input(interaction_type="dismiss"))
+        freeze_time(1.0 + 7 * 24 * 60 * 60 - 0.001)
+        assert tracker.check_suppression("p1", "u1")["suppressed"] is True
+        freeze_time(1.0 + 7 * 24 * 60 * 60)
+        assert tracker.check_suppression("p1", "u1") == {"suppressed": False}
 
     def test_cta_completed_does_not_suppress(
         self,

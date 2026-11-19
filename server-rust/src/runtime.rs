@@ -27,7 +27,7 @@
 //! src/core/runtime/local-runtime.ts
 
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::sync::{Mutex, PoisonError};
+use std::sync::{Arc, Mutex, PoisonError};
 
 use serde_json::{json, Map, Value};
 
@@ -95,6 +95,30 @@ impl LocalRuntime {
     /// needs durability owns it.
     #[must_use]
     pub fn new(config: Value, providers: Value, tenant_id: &str, user_id: &str) -> Self {
+        Self::new_with_clock(
+            config,
+            providers,
+            tenant_id,
+            user_id,
+            Arc::new(|| {
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_millis() as i64)
+                    .unwrap_or(0)
+            }),
+        )
+    }
+
+    /// Compose a runtime with an explicit millisecond clock for deterministic
+    /// state-window evaluation. The default constructor uses the system clock.
+    #[must_use]
+    pub fn new_with_clock(
+        config: Value,
+        providers: Value,
+        tenant_id: &str,
+        user_id: &str,
+        clock: Arc<dyn Fn() -> i64 + Send + Sync>,
+    ) -> Self {
         let placements = config
             .get("placements")
             .and_then(Value::as_array)
@@ -107,13 +131,33 @@ impl LocalRuntime {
             providers,
             resolver,
             registered: HashMap::new(),
-            interaction_tracker: InteractionTracker::new(
+            interaction_tracker: InteractionTracker::with_options(
                 InMemoryStorage::new(),
                 tenant_id,
                 user_id,
+                7 * 24 * 60 * 60 * 1000,
+                60 * 60 * 1000,
+                Box::new({
+                    let clock = Arc::clone(&clock);
+                    move || clock()
+                }),
             ),
-            impression_history: ImpressionHistory::new(InMemoryImpressionStore::new(), user_id),
-            cap_enforcer: CapEnforcer::new(InMemoryStorage::new(), tenant_id, user_id),
+            impression_history: ImpressionHistory::with_options(
+                InMemoryImpressionStore::new(),
+                user_id,
+                crate::state::DEFAULT_SUPPRESSION_MS,
+                crate::state::DEFAULT_DISMISS_COOLDOWN_MS,
+                Box::new({
+                    let clock = Arc::clone(&clock);
+                    move || clock()
+                }),
+            ),
+            cap_enforcer: CapEnforcer::with_clock(
+                InMemoryStorage::new(),
+                tenant_id,
+                user_id,
+                Box::new(move || clock()),
+            ),
             // D-61 (Kent, 2026-10-06): unknown handles and a missing
             // entitlement provider fail CLOSED by default; `Allow` remains an
             // explicit opt-in.

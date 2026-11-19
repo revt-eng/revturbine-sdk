@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CtaActions } from '../CtaActions';
 import type { PlacementSlotProps, ResolvedContent } from '../types';
 import { useRevTurbineTheme } from '../../theme/ThemeContext';
 
@@ -78,6 +79,8 @@ export interface ModalFrameProps<C extends ResolvedContent = ResolvedContent>
  */
 export function ModalFrame<C extends ResolvedContent = ResolvedContent>({
   content,
+  ctas,
+  onCtaClickIndex,
   onCtaClick,
   onSecondaryCtaClick,
   onDismiss,
@@ -99,7 +102,8 @@ export function ModalFrame<C extends ResolvedContent = ResolvedContent>({
 }: ModalFrameProps<C>) {
   const theme = useRevTurbineTheme();
   const dialogRef = useRef<HTMLDivElement>(null);
-  const resolvedModalType = modalTypeProp ?? (content.style as 'optional' | 'blocking') ?? 'optional';
+  const authoredModalType = typeof content.modal_type === 'string' ? content.modal_type : content.style;
+  const resolvedModalType = modalTypeProp ?? (typeof authoredModalType === 'string' && authoredModalType.toLowerCase() === 'blocking' ? 'blocking' : 'optional');
   const layout = layoutProp ?? 'centered';
   const [dismissed, setDismissed] = useState(false);
   const prevVisibleRef = useRef(visible);
@@ -259,7 +263,7 @@ export function ModalFrame<C extends ResolvedContent = ResolvedContent>({
   const resolvedCtaLabel = ctaLabel ?? content.cta_label;
   const resolvedSecondaryLabel = secondaryCtaLabel ?? content.secondary_cta_label;
 
-  const ctaRow = (
+  const ctaRow = ctas ? <CtaActions ctas={ctas} onCtaClickIndex={onCtaClickIndex} /> : (
     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
       {resolvedCtaLabel && (
         <button type="button" style={themedStyles.primaryBtn} onClick={onCtaClick}>
@@ -367,6 +371,7 @@ export function ModalFrame<C extends ResolvedContent = ResolvedContent>({
           content.body && <div style={themedStyles.body}>{content.body}</div>
         )}
 
+        {ctas ? <CtaActions ctas={ctas} onCtaClickIndex={onCtaClickIndex} /> : <>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
           {resolvedSecondaryLabel && onSecondaryCtaClick && (
             <button type="button" style={themedStyles.secondaryBtn} onClick={onSecondaryCtaClick}>
@@ -379,6 +384,7 @@ export function ModalFrame<C extends ResolvedContent = ResolvedContent>({
             </button>
           )}
         </div>
+        </>}
       </div>
     </div>
   );

@@ -105,3 +105,11 @@ pnpm dev
 ```
 
 Then open the local Vite URL and navigate scenario pages from the index.
+
+### CTA arrays in local demos
+
+The modal and banner examples use the built-in surface renderer, which displays
+up to five resolved `ctas` with their own paths, roles and emphasis in 0.18.0.
+Existing `uiPathResolvers` registrations continue to dispatch by the clicked path
+and may read the optional second context argument (`index`, `role`, `kind`).
+Legacy two-label outputs remain renderable; no demo data migration is required.

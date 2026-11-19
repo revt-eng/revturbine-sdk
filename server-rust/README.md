@@ -164,9 +164,12 @@ silently discards the change.
 |---|---|---|
 | `src/types.rs` | scaffold Zod schemas → JSON Schema → typify | `node scripts/sync-rust-types.mjs` (repo root) |
 
-The generator resolves revturbine-scaffold from `$REVTURBINE_SCAFFOLD_DIR`,
-falling back to the sibling checkout. Set the env var when working from a git
-worktree, where the sibling path does not resolve.
+The sync copies the file `@revt-eng/schema` ships, from the installed package:
+after a pin change, run `pnpm install` and then the sync. `pnpm check:vendored-types`
+(part of `pnpm verify`) compares `src/types.rs` with the pinned package's file, so
+a pin that changes the types fails until the copy is refreshed and one that does
+not needs no commit. Set `$REVTURBINE_SCAFFOLD_DIR` to read a revturbine-scaffold
+checkout instead, for types that are not published yet.
 
 ### Lints and generated code
 

@@ -3,6 +3,7 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type RevTurbinePlacementConfig,
+  type SdkMetadata,
   type RevTurbineSurfaceSlotConfig,
   type RevTurbinePlacementContent,
   type RevTurbinePlacementDecision,
@@ -66,9 +67,11 @@ export type UsePlacementResult = {
   content: RevTurbinePlacementContent['content'] | null;
   refresh: () => Promise<void>;
   dismiss: (cooldownMs?: number) => Promise<void>;
-  snooze: (seconds?: number) => Promise<void>;
+  /** Snooze this occurrence, optionally attributing it to an authored CTA index. */
+  snooze: (seconds?: number, ctaIndex?: number) => Promise<void>;
   remindMeLater: (seconds?: number) => Promise<void>;
-  ctaClick: (ctaTarget?: string) => Promise<void>;
+  /** Activate an authored CTA index, or record a legacy target-only click. */
+  ctaClick: (ctaTarget?: string | number, metadata?: SdkMetadata) => Promise<void>;
   ctaComplete: (ctaTarget?: string) => Promise<void>;
   /**
    * Ref callback to attach to the placement's true visual root (plan 144
@@ -247,9 +250,9 @@ export function usePlacement({
     content: state?.content ?? null,
     refresh: async () => { await ctrl?.refresh(); },
     dismiss: async (cooldownMs?: number) => { await ctrl?.dismiss(cooldownMs); },
-    snooze: async (seconds?: number) => { await ctrl?.snooze(seconds); },
+    snooze: async (seconds?: number, ctaIndex?: number) => { await ctrl?.snooze(seconds, ctaIndex); },
     remindMeLater: async (seconds?: number) => { await ctrl?.remindMeLater(seconds); },
-    ctaClick: async (ctaTarget) => { await ctrl?.ctaClick(ctaTarget); },
+    ctaClick: async (ctaTarget, metadata) => { await ctrl?.ctaClick(ctaTarget, metadata); },
     ctaComplete: async (ctaTarget) => { await ctrl?.ctaComplete(ctaTarget); },
     exposureRef,
     exposureBasis: state?.exposureBasis ?? null,

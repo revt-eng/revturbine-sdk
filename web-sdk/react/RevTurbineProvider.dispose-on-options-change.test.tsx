@@ -61,14 +61,15 @@ function makeOptions(tenantId: string): RevTurbineInitOptions {
   } as unknown as RevTurbineInitOptions;
 }
 
-// Bootstrapping a placement (registerPlacement → bootstrapPlacementDecisions
-// → getPlacementDecision) resolves over more microtask turns than a single
-// `act(async () => { render() })` flushes, matching the pattern
-// `usePlacement.sdk-rebuild.test.tsx` uses for the same reason.
-async function flushAsyncWork(): Promise<void> {
-  await act(async () => {
-    for (let i = 0; i < 5; i += 1) await Promise.resolve();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+// Native WebCrypto registration and async bootstrap finish before setSdk. Wait
+// for the replacement instance instead of guessing a fixed microtask count.
+async function flushAsyncWork(previousSdk: RevTurbineCustomerSdk | null): Promise<void> {
+  await vi.waitFor(async () => {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(sdkSeen).not.toBeNull();
+    expect(sdkSeen).not.toBe(previousSdk);
   });
 }
 
@@ -83,10 +84,11 @@ async function mount(options: RevTurbineInitOptions): Promise<void> {
       </RevTurbineProvider>,
     );
   });
-  await flushAsyncWork();
+  await flushAsyncWork(null);
 }
 
 async function rerender(options: RevTurbineInitOptions): Promise<void> {
+  const previousSdk = sdkSeen;
   await act(async () => {
     root!.render(
       <RevTurbineProvider options={options} bootstrapPlacements={BOOTSTRAP_PLACEMENTS}>
@@ -94,7 +96,7 @@ async function rerender(options: RevTurbineInitOptions): Promise<void> {
       </RevTurbineProvider>,
     );
   });
-  await flushAsyncWork();
+  await flushAsyncWork(previousSdk);
 }
 
 function equivalentContentWarnings(): string[] {

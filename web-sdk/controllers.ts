@@ -788,11 +788,14 @@ export class PlacementController {
    *   payload's authored `remind_later_minutes`, falling back to the tenant
    *   default (plan 233 TASK-8c). Remind-later is a DIFFERENT window from
    *   dismiss and resolves independently.
+   * @param ctaIndex - Optional authored CTA index for a button-driven reminder.
    */
-  async snooze(seconds?: number): Promise<void> {
+  async snooze(seconds?: number, ctaIndex?: number): Promise<void> {
+    const ctaMetadata = ctaIndex === undefined ? {} : this.ctaInteractionMetadata(ctaIndex);
+    if (ctaMetadata === undefined) return;
     await this.trackInteraction(
       'remind_me_later',
-      seconds === undefined ? {} : { remind_after_seconds: seconds },
+      { ...ctaMetadata, ...(seconds === undefined ? {} : { remind_after_seconds: seconds }) },
     );
   }
 
@@ -801,8 +804,19 @@ export class PlacementController {
     await this.snooze(seconds);
   }
 
-  /** Record a CTA click interaction. */
-  async ctaClick(ctaTarget?: string): Promise<void> {
+  /** Record a CTA by authored index, or retain the legacy target-only interaction. Dismiss paths/roles dismiss this occurrence. */
+  async ctaClick(ctaTarget?: string | number, metadata?: SdkMetadata): Promise<void> {
+    if (typeof ctaTarget === 'number') {
+      if (!Number.isInteger(ctaTarget) || ctaTarget < 0) return;
+      const cta = this._decision?.output?.ctas?.[ctaTarget];
+      const ctaMetadata = this.ctaInteractionMetadata(ctaTarget);
+      if (!cta || !ctaMetadata) return;
+      await this.trackInteraction(cta.path.type === 'dismiss' || cta.role === 'dismiss' ? 'dismiss' : 'cta_clicked', {
+        ...metadata,
+        ...ctaMetadata,
+      });
+      return;
+    }
     await this.trackInteraction('cta_clicked', { cta_target: ctaTarget || null });
   }
 
@@ -842,6 +856,17 @@ export class PlacementController {
     this._lastSlotKey = null;
     this._loadSeq++;
     this.notify();
+  }
+
+  private ctaInteractionMetadata(index: number): SdkMetadata | undefined {
+    if (!Number.isInteger(index) || index < 0) return undefined;
+    const cta = this._decision?.output?.ctas?.[index];
+    if (!cta) return undefined;
+    return {
+      cta_index: index, cta_label: cta.label,
+      cta_target: typeof cta.path.type === 'string' ? cta.path.type : 'dismiss',
+      ...(cta.role === undefined ? {} : { cta_role: cta.role }), cta_role_overridden: cta.role_overridden,
+    };
   }
 
   private async trackInteraction(

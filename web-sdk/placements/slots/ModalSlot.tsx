@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CtaActions } from '../CtaActions';
 import type { PlacementSlotProps } from '../types';
 import { useRevTurbineTheme } from '../../theme/ThemeContext';
 
@@ -52,6 +53,8 @@ const actionsStyle: React.CSSProperties = {
  */
 export function ModalSlot({
   content,
+  ctas,
+  onCtaClickIndex,
   onCtaClick,
   onSecondaryCtaClick,
   onDismiss,
@@ -59,10 +62,12 @@ export function ModalSlot({
   visible,
   className,
   style,
+  modalType: modalTypeProp,
 }: ModalSlotProps) {
   const theme = useRevTurbineTheme();
   const dialogRef = useRef<HTMLDivElement>(null);
-  const modalType = (content.style as 'optional' | 'blocking') || 'optional';
+  const authoredModalType = typeof content.modal_type === 'string' ? content.modal_type : content.style;
+  const modalType = modalTypeProp ?? (typeof authoredModalType === 'string' && authoredModalType.toLowerCase() === 'blocking' ? 'blocking' : 'optional');
   const [dismissed, setDismissed] = useState(false);
   const prevVisibleRef = useRef(visible);
 
@@ -233,6 +238,7 @@ export function ModalSlot({
               Remind me later
             </button>
           )}
+          {ctas ? <CtaActions ctas={ctas} onCtaClickIndex={onCtaClickIndex} /> : <>
           {content.secondary_cta_label && onSecondaryCtaClick && (
             <button type="button" style={themedStyles.secondaryBtn} onClick={onSecondaryCtaClick}>
               {content.secondary_cta_label}
@@ -243,6 +249,7 @@ export function ModalSlot({
               {content.cta_label}
             </button>
           )}
+          </>}
         </div>
       </div>
     </div>

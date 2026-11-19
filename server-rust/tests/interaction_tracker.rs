@@ -94,20 +94,26 @@ fn remind_me_later_uses_its_own_window_and_reason() {
 }
 
 #[test]
-fn a_bare_cta_click_takes_the_dismiss_cooldown_not_the_short_window() {
-    // Plan 167 Q-1: a click is not a confirmed conversion, so the user may
-    // still return — it must NOT get the 5-minute completed window.
+fn a_bare_cta_click_starts_no_dismissal_cooldown() {
     let clock = TestClock::new(T0);
     let mut t = tracker(&clock);
     t.track(&interaction("cta_clicked"));
+    assert!(!t.check_suppression("pl_1", "user_1", None).suppressed);
+}
 
-    clock.advance(5 * 60 * 1000 + 1);
-    assert!(
-        t.check_suppression("pl_1", "user_1", None).suppressed,
-        "a click must outlast the completed-CTA window",
-    );
-
-    clock.advance(DEFAULT_DISMISS_COOLDOWN_MS);
+#[test]
+fn zero_dismissal_cooldown_is_immediate_but_absent_is_seven_days() {
+    let clock = TestClock::new(T0);
+    let mut t = tracker(&clock);
+    let metadata = json!({"cooldown_ms": 0});
+    let mut input = interaction("dismiss");
+    input.metadata = Some(&metadata);
+    t.track(&input);
+    assert!(!t.check_suppression("pl_1", "user_1", None).suppressed);
+    t.track(&interaction("dismiss"));
+    clock.advance(DEFAULT_DISMISS_COOLDOWN_MS - 1);
+    assert!(t.check_suppression("pl_1", "user_1", None).suppressed);
+    clock.advance(1);
     assert!(!t.check_suppression("pl_1", "user_1", None).suppressed);
 }
 
@@ -159,7 +165,7 @@ fn remind_after_seconds_is_seconds_not_milliseconds() {
 fn invalid_metadata_falls_back_to_the_default() {
     let clock = TestClock::new(T0);
     let mut t = tracker(&clock);
-    for bad in [json!(0), json!(-5), json!(true), json!("abc"), json!(null)] {
+    for bad in [json!(-5), json!("abc"), json!(null)] {
         let meta = json!({ "cooldown_ms": bad });
         let mut t2 = tracker(&clock);
         t2.track(&TreatmentInteractionInput {

@@ -250,12 +250,12 @@ registration wins when an app needs custom dispatch instead.
 
 ## Placement Chaining
 
-Some placements need a two-step interaction: a lightweight trigger surface (banner, inline message, toast) whose CTA opens a richer detail surface (modal with upgrade options, plan comparison, checkout). The PM wires this in the Placement Studio by setting a primary placement's CTA Path to **"Open RT placement"** and selecting the target placement. The developer never specifies placement handles — they come from the `cta_path` in the response payload.
+Some placements need a two-step interaction: a lightweight trigger surface (banner, inline message, toast) whose CTA opens a richer detail surface (modal with upgrade options, plan comparison, checkout). The PM wires this in the Placement Studio by setting a primary placement's CTA Path to **"Open RT placement"** and selecting the target placement. The developer never specifies placement handles — they come from the clicked entry in `ctas[i].path` in the response payload (`cta_path` remains the deprecated primary compatibility field).
 
 **How it works:**
 
-1. **Primary placement** fires (e.g. a banner: "You've used 70% of your storage"). The payload includes `cta_path: { "type": "open_rt_placement", "placement_handle": "storage_upgrade_detail" }`.
-2. When the user clicks the CTA, the app's `handleCTA` function reads `cta_path.placement_handle` from the payload and calls `rt.getPlacement({ placementHandle: cta_path.placement_handle })`.
+1. **Primary placement** fires (e.g. a banner: "You've used 70% of your storage"). The clicked button includes `ctas[i].path: { "type": "open_rt_placement", "placement_handle": "storage_upgrade_detail" }`.
+2. When the user clicks the CTA, the app's `handleCTA` function reads `ctx.path.placement_handle` (or the parsed `uiPath.placement_handle`) and calls `rt.getPlacement({ placementHandle: uiPath.placement_handle })`.
 3. **Secondary placement** evaluates and returns its Payload (e.g. a modal with plan comparison, promotion, and checkout CTA). The secondary placement has its own targeting, content, and caps — it's a first-class placement, not a sub-surface.
 4. If the secondary placement returns `null` (e.g. user no longer qualifies, or caps are hit), the app falls back to a generic upgrade modal or navigates to the plans page.
 

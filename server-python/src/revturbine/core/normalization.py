@@ -106,4 +106,41 @@ def normalize_placement_output(
     }
     if is_record(data.get("promotion")):
         result["promotion"] = data["promotion"]
+    from revturbine.core.cta_resolution import project_compatibility, resolve_ctas
+
+    raw_ctas = data.get("ctas")
+    if isinstance(raw_ctas, list) and raw_ctas:
+        ctas = []
+        for cta in raw_ctas:
+            if not is_record(cta):
+                continue
+            normalized = {
+                "label": cta["label"] if isinstance(cta.get("label"), str) else "",
+                "path": cta["path"] if is_record(cta.get("path")) else {},
+                "role_overridden": cta.get("role_overridden") is True,
+                "emphasis": cta.get("emphasis")
+                if cta.get("emphasis") in ("primary", "secondary", "link")
+                else "secondary",
+            }
+            if isinstance(cta.get("role"), str):
+                normalized["role"] = cta["role"]
+            ctas.append(normalized)
+        compat = project_compatibility(ctas)
+        result["cta_path"] = result["ui_path"] = compat.get("cta_path", {})
+        result["content"] = dict(result["content"])
+        for key in ("cta_label", "secondary_cta_label"):
+            if compat.get(key):
+                result["content"][key] = compat[key]
+        result["ctas"] = ctas
+    else:
+        content = result["content"]
+        label = content.get("cta_label")
+        if isinstance(label, str) and label:
+            authored = [{"label": label, "path": cta_path.get("type", "dismiss")}]
+            secondary = content.get("secondary_cta_label")
+            if isinstance(secondary, str) and secondary:
+                authored.append({"label": secondary, "path": "dismiss"})
+            ctas = resolve_ctas(authored, surface_raw.get("template"), [])
+            ctas[0]["path"] = cta_path or {"type": "dismiss"}
+            result["ctas"] = ctas
     return result

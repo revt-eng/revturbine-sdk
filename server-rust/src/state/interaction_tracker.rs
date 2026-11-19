@@ -175,10 +175,15 @@ impl<S: RevTurbineStorage> InteractionTracker<S> {
         };
 
         match input.interaction_type {
-            "dismiss" | "cta_clicked" => {
-                // A bare click is not a confirmed conversion, so it takes the
-                // dismiss cooldown — the user may still return (plan 167 Q-1).
-                let cooldown = coerce_positive_finite(metadata.and_then(|m| m.get("cooldown_ms")))
+            "dismiss" => {
+                let cooldown = metadata
+                    .and_then(|m| m.get("cooldown_ms"))
+                    .filter(|v| !v.is_null())
+                    .and_then(|v| match v {
+                        Value::Bool(b) => Some(if *b { 1.0 } else { 0.0 }),
+                        _ => crate::placements::selection::parse_numberish(Some(v)),
+                    })
+                    .filter(|v| v.is_finite() && *v >= 0.0)
                     .map_or(self.default_dismiss_cooldown_ms, |v| v as i64);
                 next.suppressed_until = Some(now + cooldown);
             }

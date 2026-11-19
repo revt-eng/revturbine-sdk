@@ -13,6 +13,7 @@ export type {
   PlacementCustomCode,
   CtaResolver,
   CtaResolverContext,
+  PlacementCta,
 } from './types';
 export type {
   ServerActionContext,
@@ -183,3 +184,5 @@ export { derivePlacementPersonalizationTokens } from './token-derivation';
 
 // Abstract base components for customer extension
 export * from './abstract';
+
+export { CtaActions } from './CtaActions';

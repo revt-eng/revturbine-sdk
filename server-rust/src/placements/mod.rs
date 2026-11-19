@@ -9,6 +9,7 @@
 //! pass through" — that is what lets a caller run all four over any placement
 //! without first classifying it.
 
+mod cta_resolution;
 pub mod entitlement_gate_gating;
 pub mod local_resolver;
 pub mod payload_resolution;

@@ -106,18 +106,18 @@ class TestCapRules:
 
 
 class TestCooldown:
-    def test_cooldown_blocks_within_window(self, freeze_time: Callable[[float], None]) -> None:
+    def test_presentation_does_not_start_dismiss_cooldown(
+        self, freeze_time: Callable[[float], None]
+    ) -> None:
         freeze_time(1.0)
         storage = InMemoryStorage()
         enforcer = CapEnforcer(storage=storage, tenant_id="t1", user_id="u1")
-        # Cap = 5 (effectively unbounded for these calls); cooldown = 1 day.
-        output = _with_caps(rules_count=5, period="day", cooldown_days=1)
+        output = _with_caps(rules_count=2, period="day", cooldown_days=1)
         assert enforcer.enforce(output)["allowed"] is True
-        # Within cooldown — denied with cooldown reason.
-        freeze_time(1.0 + 12 * 60 * 60)
+        assert enforcer.enforce(output)["allowed"] is True
         assert enforcer.enforce(output) == {
             "allowed": False,
-            "reason": "suppressed_by_payload_cooldown",
+            "reason": "suppressed_by_payload_cap_day",
         }
 
     def test_cooldown_clears_after_expiry(self, freeze_time: Callable[[float], None]) -> None:

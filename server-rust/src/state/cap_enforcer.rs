@@ -174,13 +174,6 @@ impl<S: RevTurbineStorage> CapEnforcer<S> {
         // Allowed — record this presentation.
         state.seen_at.push(now);
 
-        let max_cooldown = policies
-            .iter()
-            .filter_map(|p| p.cooldown_ms)
-            .filter(|ms| *ms > 0)
-            .max();
-        state.cooldown_until = max_cooldown.map(|ms| now + ms);
-
         self.caps_by_key.insert(key, state);
         self.persist();
         CapEnforcementResult {

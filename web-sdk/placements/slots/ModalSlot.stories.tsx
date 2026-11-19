@@ -46,11 +46,19 @@ export const Optional: Story = {};
 
 export const Blocking: Story = {
   args: {
+    ctas: [
+      { label: 'Keep my plan', path: { type: 'open_checkout' }, role: 'purchase', role_overridden: false, emphasis: 'primary' },
+      { label: 'Switch down', path: { type: 'downgrade' }, role: 'downgrade', role_overridden: false, emphasis: 'secondary' },
+      { label: 'Pause for a month', path: { type: 'pause' }, role: 'pause', role_overridden: false, emphasis: 'secondary' },
+      { label: 'Continue to cancel', path: { type: 'manage_subscription' }, role: 'continue', role_overridden: false, emphasis: 'link' },
+      { label: 'Not now', path: { type: 'dismiss' }, role: 'not_now', role_overridden: false, emphasis: 'link' },
+    ],
+    onCtaClickIndex: index => console.info('Authored CTA:', index),
     content: {
       header: 'Your trial has ended',
       body: 'Subscribe to continue using all features. Your data is safe and will be available after upgrade.',
       cta_label: 'Choose a Plan',
-      style: 'blocking',
+      modal_type: 'Blocking',
     },
   },
 };

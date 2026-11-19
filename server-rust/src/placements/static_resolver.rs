@@ -27,6 +27,9 @@ use std::collections::HashMap;
 
 use serde_json::{json, Map, Value};
 
+use super::cta_resolution::{
+    authored_surface_ctas, overlay_ctas, project_compatibility, resolve_ctas,
+};
 use super::entitlement_gate_gating::{matches_entitlement_gate_trigger, EntitlementGateTrigger};
 use super::local_resolver::{
     decision_content, has_unknown_trigger_type, header_str, is_finite_number, normalize_cta_path,
@@ -387,6 +390,8 @@ fn rank_candidates(
 /// A placement resolver built once from a Playbook.
 pub struct StaticPlacementResolver {
     candidates: Vec<CandidateOutput>,
+    authored_cta_sources: HashMap<String, (Vec<Value>, String)>,
+    ui_paths: Vec<Value>,
     by_template: HashMap<String, Vec<usize>>,
     by_name: HashMap<String, Vec<usize>>,
     tier_ladders_by_handle: HashMap<String, Vec<String>>,
@@ -565,6 +570,12 @@ impl StaticPlacementResolver {
             .cloned()
             .unwrap_or(Value::Null);
 
+        let mut authored_cta_sources = HashMap::new();
+        let ui_paths = playbook
+            .get("content_ui_paths")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
         let mut candidates: Vec<CandidateOutput> = Vec::new();
         let mut by_template: HashMap<String, Vec<usize>> = HashMap::new();
         let mut by_name: HashMap<String, Vec<usize>> = HashMap::new();
@@ -621,19 +632,29 @@ impl StaticPlacementResolver {
                     .cloned()
                     .unwrap_or_default();
 
-                let ctas = surface.get("ctas").and_then(Value::as_array);
-                let cta0 = ctas.and_then(|c| c.first());
-                let cta1 = ctas.and_then(|c| c.get(1));
-                if let Some(c) = cta0 {
-                    content.insert(
-                        "cta_label".into(),
-                        c.get("label").cloned().unwrap_or(Value::Null),
-                    );
+                let authored = authored_surface_ctas(surface);
+                let resolved_ctas = resolve_ctas(&authored, &surface_type, &ui_paths);
+                let compat = project_compatibility(&resolved_ctas);
+                for key in ["cta_label", "secondary_cta_label"] {
+                    if let Some(v) = compat
+                        .get(key)
+                        .filter(|v| v.as_str().is_some_and(|s| !s.is_empty()))
+                    {
+                        content.insert(key.into(), v.clone());
+                    }
                 }
-                if let Some(c) = cta1 {
-                    content.insert(
-                        "secondary_cta_label".into(),
-                        c.get("label").cloned().unwrap_or(Value::Null),
+                let cta0 = surface
+                    .get("ctas")
+                    .and_then(Value::as_array)
+                    .and_then(|c| c.first());
+                let cta_path = compat
+                    .get("cta_path")
+                    .cloned()
+                    .unwrap_or_else(|| Value::Object(normalize_cta_path(cta0)));
+                if !resolved_ctas.is_empty() {
+                    authored_cta_sources.insert(
+                        s(payload, "id").unwrap_or_default(),
+                        (authored, surface_type.clone()),
                     );
                 }
 
@@ -643,26 +664,17 @@ impl StaticPlacementResolver {
                     read_entitlement_handle_from_trigger(trigger).map(str::to_string);
 
                 // `__`-prefixed meta keys ride on content, matching the TS.
-                if let Some(target_plan_ids) = payload
-                    .get("target")
-                    .filter(|t| t.is_object())
-                    .map(|t| t.get("plan_ids").cloned().unwrap_or(json!([])))
-                {
-                    let ids = if target_plan_ids.is_array() {
-                        target_plan_ids
-                    } else {
-                        json!([])
-                    };
-                    content.insert("__target_plan_ids".into(), ids);
-                }
-                // Plan 233 TASK-7: segment targeting rides on content the same way.
-                if let Some(chips) = payload
-                    .get("target")
-                    .filter(|t| t.is_object())
-                    .map(|t| t.get("segment_chips").cloned().unwrap_or(json!([])))
-                {
-                    let chips = if chips.is_array() { chips } else { json!([]) };
-                    content.insert("__target_segment_chips".into(), chips);
+                for (key, field) in [
+                    ("__target_plan_ids", "plan_ids"),
+                    ("__target_segment_chips", "segment_chips"),
+                ] {
+                    let values = payload
+                        .get("target")
+                        .and_then(|t| t.get(field))
+                        .filter(|v| v.is_array())
+                        .cloned()
+                        .unwrap_or(json!([]));
+                    content.insert(key.into(), values);
                 }
                 if let Some(h) = trigger_entitlement_handle.as_ref() {
                     content.insert("__trigger_entitlement_handle".into(), json!(h));
@@ -681,7 +693,7 @@ impl StaticPlacementResolver {
                     content.insert("__caps".into(), caps.clone());
                 }
 
-                let output = json!({
+                let mut output = json!({
                     "output_id": payload.get("id").cloned().unwrap_or(Value::Null),
                     "category": entry.get("category").cloned().unwrap_or(Value::Null),
                     "surface": {
@@ -690,13 +702,17 @@ impl StaticPlacementResolver {
                         "slot_id": entry_id,
                     },
                     "content": Value::Object(content),
-                    "cta_path": Value::Object(normalize_cta_path(cta0)),
+                    "cta_path": cta_path,
+                    "ui_path": cta_path,
                     "rule_id": entry_id,
                     "decision_id": payload.get("id").cloned().unwrap_or(Value::Null),
                     "config_version": config_version,
                     "present_upsell": true,
                 });
 
+                if !resolved_ctas.is_empty() {
+                    output["ctas"] = json!(resolved_ctas);
+                }
                 let idx = candidates.len();
                 candidates.push(CandidateOutput {
                     output,
@@ -741,6 +757,8 @@ impl StaticPlacementResolver {
 
         Self {
             candidates,
+            authored_cta_sources,
+            ui_paths,
             by_template,
             by_name,
             tier_ladders_by_handle,
@@ -1335,6 +1353,29 @@ impl StaticPlacementResolver {
             .get("block_id")
             .and_then(Value::as_str)
             .map(str::to_string);
+        let source = selected_output
+            .get("output_id")
+            .and_then(Value::as_str)
+            .and_then(|id| self.authored_cta_sources.get(id));
+        let block_content = Value::Object(resolved.resolved_content.clone());
+        let has_rows = block_content
+            .get("ctas")
+            .and_then(Value::as_array)
+            .is_some_and(|r| !r.is_empty());
+        let overlaid = source
+            .filter(|_| {
+                has_rows
+                    || ["cta_label", "secondary_cta_label"]
+                        .iter()
+                        .any(|k| block_content.get(k).is_some_and(Value::is_string))
+            })
+            .map(|(authored, component)| {
+                resolve_ctas(
+                    &overlay_ctas(authored, &block_content),
+                    component,
+                    &self.ui_paths,
+                )
+            });
         let mut out = selected_output;
         if let Some(content) = out.get_mut("content").and_then(Value::as_object_mut) {
             // Spread the existing content first so the `__`-prefixed meta keys
@@ -1342,6 +1383,31 @@ impl StaticPlacementResolver {
             for (k, v) in resolved.resolved_content {
                 content.insert(k, v);
             }
+        }
+        if let Some(ctas) = overlaid {
+            if has_rows {
+                let compat = project_compatibility(&ctas);
+                let content = out
+                    .get_mut("content")
+                    .and_then(Value::as_object_mut)
+                    .unwrap();
+                for key in ["ctas", "cta_label", "secondary_cta_label"] {
+                    content.remove(key);
+                }
+                for key in ["cta_label", "secondary_cta_label"] {
+                    if let Some(v) = compat
+                        .get(key)
+                        .filter(|v| v.as_str().is_some_and(|s| !s.is_empty()))
+                    {
+                        content.insert(key.into(), v.clone());
+                    }
+                }
+                if let Some(path) = compat.get("cta_path") {
+                    out["cta_path"] = path.clone();
+                    out["ui_path"] = path.clone();
+                }
+            }
+            out["ctas"] = json!(ctas);
         }
         if let (Some(handle), Some(output)) = (message_block_handle, out.as_object_mut()) {
             output.insert("message_block_handle".into(), json!(handle));

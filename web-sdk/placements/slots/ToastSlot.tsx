@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { CtaActions } from '../CtaActions';
 import type { PlacementSlotProps } from '../types';
 import { useRevTurbineTheme } from '../../theme/ThemeContext';
 
@@ -39,6 +40,8 @@ const messageStyle: React.CSSProperties = {
 
 export function ToastSlot({
   content,
+  ctas,
+  onCtaClickIndex,
   onCtaClick,
   onDismiss,
   onRemindLater,
@@ -143,11 +146,13 @@ export function ToastSlot({
       <div style={messageStyle}>
         {content.message || content.body || content.header}
       </div>
-      {content.cta_label && (
+      {ctas ? <CtaActions ctas={ctas} onCtaClickIndex={onCtaClickIndex} /> : <>
+          {content.cta_label && (
         <button type="button" style={themedStyles.cta} onClick={onCtaClick}>
           {content.cta_label}
         </button>
       )}
+          </>}
       {onRemindLater && (
         <button
           type="button"

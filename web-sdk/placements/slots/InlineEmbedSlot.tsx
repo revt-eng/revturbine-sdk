@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import type { CSSProperties } from 'react';
+import { CtaActions } from '../CtaActions';
 import type { PlacementSlotProps } from '../types';
 import { useRevTurbineTheme } from '../../theme/ThemeContext';
 
@@ -25,6 +26,8 @@ const imageLayoutStyle: CSSProperties = {
  */
 export function InlineEmbedSlot({
   content,
+  ctas,
+  onCtaClickIndex,
   onCtaClick,
   visible,
   className,
@@ -90,11 +93,13 @@ export function InlineEmbedSlot({
         <div style={themedStyles.body}>{content.body || content.message}</div>
       )}
 
-      {content.cta_label && (
+      {ctas ? <CtaActions ctas={ctas} onCtaClickIndex={onCtaClickIndex} /> : <>
+          {content.cta_label && (
         <button type="button" style={themedStyles.cta} onClick={onCtaClick}>
           {content.cta_label}
         </button>
       )}
+          </>}
     </div>
   );
 }

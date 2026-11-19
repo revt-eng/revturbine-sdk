@@ -1,3 +1,4 @@
+import type { CtaResolverContext } from './placements/types';
 import { DomainProviderRegistry } from './providers/registry';
 import { ServerUserContextProvider } from './providers/server-user-context-provider';
 import {
@@ -1214,7 +1215,7 @@ export interface RevTurbinePlacementBehaviorFlags {
 }
 
 /** Resolver function for a UI path action type. */
-export type RevTurbineUiPathResolver = (uiPath: JsonObject) => void | Promise<void>;
+export type RevTurbineUiPathResolver = (uiPath: JsonObject, context?: CtaResolverContext) => void | Promise<void>;
 
 /** Map of `action_type` -> resolver implementation supplied by the customer app. */
 export type RevTurbineUiPathResolverMap = Record<string, NonNullable<RevTurbineUiPathResolver>>;
@@ -9830,7 +9831,9 @@ export class RevTurbineCustomerSdk {
     // clicked count. `placement_id` is the one required key; the rest are
     // `null` when the decision held no value, per the contract.
     // @revturbine-graph event:platform:checkout_started
-    if (normalized.interactionType === 'cta_clicked' && indexed && isCheckoutStartedCtaAction(indexed.ctaActionType)) {
+    const clickedAction = typeof normalized.metadata?.cta_target === 'string'
+      ? normalized.metadata.cta_target : indexed?.ctaActionType;
+    if (normalized.interactionType === 'cta_clicked' && indexed && isCheckoutStartedCtaAction(clickedAction)) {
       await this.emitPlatformEvent('checkout_started', {
         placement_id: normalized.placementId,
         payload_id: input.payloadId ?? null,
@@ -9862,6 +9865,10 @@ export class RevTurbineCustomerSdk {
       action_success: success,
       action_outcome: error ? 'rejected' : success ? 'success' : 'failure',
     };
+    if (context.cta?.recordInteraction) {
+      context.cta.recordInteraction(action);
+      return;
+    }
     const ref = this.outputPlacementIndex.get(output.output_id);
     if (ref && this.identifiedUserId !== undefined) {
       const normalized: QueuedTreatmentInteraction = {
@@ -9948,6 +9955,14 @@ export class RevTurbineCustomerSdk {
       // scope, never an empty string, because absence is what keeps the rule
       // slice's coverage honest.
       ...(normalized.ruleHandle ? { rule_handle: normalized.ruleHandle } : {}),
+      ...(typeof interactionMeta.cta_index === 'number' ? { cta_index: interactionMeta.cta_index } : {}),
+      ...(typeof interactionMeta.cta_label === 'string' ? { cta_label: interactionMeta.cta_label } : {}),
+      ...(typeof interactionMeta.cta_target === 'string' ? { cta_target: interactionMeta.cta_target } : {}),
+      ...(typeof interactionMeta.cta_role === 'string' ? { cta_role: interactionMeta.cta_role } : {}),
+      ...(typeof interactionMeta.cta_role_overridden === 'boolean' ? { cta_role_overridden: interactionMeta.cta_role_overridden } : {}),
+      ...(typeof interactionMeta.action_type === 'string' ? { action_type: interactionMeta.action_type } : {}),
+      ...(typeof interactionMeta.action_success === 'boolean' ? { action_success: interactionMeta.action_success } : {}),
+      ...(typeof interactionMeta.action_outcome === 'string' ? { action_outcome: interactionMeta.action_outcome } : {}),
       metadata: interactionMeta,
     };
   }

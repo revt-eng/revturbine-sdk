@@ -87,14 +87,20 @@ registerCtaResolver('custom', (uiPath, ctx) => {
     returnUrl:   uiPath.url,                  // '/integrations/crm'
     org:         String(uiPath.params?.org),  // 'acme'
     flow:        String(uiPath.params?.flow), // 'oauth'
-    placementId: ctx.placement.output_id,     // for attribution; ctx.kind = 'primary' | 'secondary'
+    placementId: ctx.placement.output_id,
+    ctaIndex:    ctx.index,
+    ctaRole:     ctx.role,
+    emphasis:    ctx.kind,                   // legacy 'primary' | 'secondary' remains
   });
 });
 ```
 
 Use a distinct action name per logical action (`'connect_crm'`, `'start_tour'`, …)
 and register one resolver each — the registry key is the action `type`. A
-registered resolver fully handles the click; unregistered types fall back to your
+registered resolver receives that button's own path, even when it is the fifth
+button. `ctx.path`, `ctx.label` and `ctx.role_overridden` complete its identity;
+`ctx.placement.cta_path` remains the compatibility projection of the primary.
+A registered resolver fully handles the click; unregistered types fall back to your
 `onCtaClick(uiPath)` prop.
 
 **Scoped (no global mutation)** — build a local registry and pass it in, e.g. for
@@ -217,3 +223,27 @@ const chainedRequest = createChainedPlacementRequest('upgrade_follow_up', {
   surfaceType: 'in_page',
 });
 ```
+
+### Five-action surfaces (0.18.0)
+
+`PlacementRenderer` and the built-in modal, banner, toast and inline components
+render the ordered decision `ctas`. Primary emphasis displays first, secondary
+buttons follow, and link emphasis displays as text actions below. Semantic roles
+such as `continue`, `not_now`, `purchase` or an authored custom role describe the
+action; its `path.type` still selects the resolver. Gate surfaces hide dismiss-role
+CTAs. Blocking modals omit X/backdrop/Escape dismissal but retain continue links.
+
+For a custom renderer, pass the authored zero-based index to `ctaClick(index)`
+from `usePlacement()` or `PlacementController`. This records the button identity
+and dismisses when its path or role is `dismiss`. The legacy `ctaClick(target)`
+call is still supported. Use `dismiss()` for a close X so its event has no CTA
+identity. Rendering and ordinary clicks do not start a dismissal cooldown;
+authored zero means no cooldown and absence defaults to seven days.
+
+Init `uiPathResolvers` keeps its path argument and optionally receives the same
+resolver context as a second argument. Explicit `registerCtaResolver` registrations
+keep precedence. Server actions keep their existing handler and result contracts;
+the single interaction includes both the CTA identity and the action result.
+
+Older decision outputs without `ctas` retain their two compatibility labels.
+The four legacy output fields are deprecated for removal in a future major.

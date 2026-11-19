@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useState } from 'react';
+import { CtaActions } from '../CtaActions';
 import type { PlacementSlotProps } from '../types';
 import { useRevTurbineTheme } from '../../theme/ThemeContext';
 
@@ -61,6 +62,8 @@ const bannerActionsStyle: React.CSSProperties = {
  */
 export function BannerSlot({
   content,
+  ctas,
+  onCtaClickIndex,
   onCtaClick,
   onDismiss,
   onRemindLater,
@@ -164,11 +167,13 @@ export function BannerSlot({
         )}
       </div>
       <div style={bannerActionsStyle}>
-        {content.cta_label && (
+        {ctas ? <CtaActions ctas={ctas} onCtaClickIndex={onCtaClickIndex} /> : <>
+          {content.cta_label && (
           <button type="button" style={themedStyles.cta} onClick={onCtaClick}>
             {content.cta_label}
           </button>
         )}
+          </>}
         {onRemindLater && dismissible && (
           <button
             type="button"

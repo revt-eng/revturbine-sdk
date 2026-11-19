@@ -1,6 +1,7 @@
 'use client';
 
 import type { CSSProperties } from 'react';
+import { CtaActions } from '../CtaActions';
 import type { PlacementSlotProps } from '../types';
 
 /**
@@ -70,6 +71,8 @@ const secondaryButtonStyle: CSSProperties = {
 
 export function FullPageSlot({
   content,
+  ctas,
+  onCtaClickIndex,
   onCtaClick,
   onSecondaryCtaClick,
   visible,
@@ -88,7 +91,8 @@ export function FullPageSlot({
       {content.body && <p style={bodyStyle}>{content.body}</p>}
 
       <div style={ctaContainerStyle}>
-        {content.cta_label && (
+        {ctas ? <CtaActions ctas={ctas} onCtaClickIndex={onCtaClickIndex} /> : <>
+          {content.cta_label && (
           <button type="button" style={primaryButtonStyle} onClick={onCtaClick}>
             {content.cta_label}
           </button>
@@ -98,6 +102,7 @@ export function FullPageSlot({
             {content.secondary_cta_label}
           </button>
         )}
+          </>}
       </div>
     </div>
   );

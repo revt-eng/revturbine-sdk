@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { PlacementOutput, RevTurbineComponentType } from '../customer-side';
+import { isDevelopmentBuild } from '../build-mode';
+import type { PlacementOutput, RevTurbineComponentType, SdkMetadata } from '../customer-side';
 import type {
   PlacementSlotProps,
   PersonalizationContext,
   PlacementUiPath,
+  CtaResolverContext,
 } from './types';
 import {
   PlacementTypeRegistry,
@@ -21,6 +23,8 @@ import {
   CtaResolverRegistry,
   getDefaultCtaResolverRegistry,
   dispatchCtaClick,
+  isServerActionResolver,
+  isBuiltinSnoozeResolver,
 } from './cta-resolvers';
 
 export interface PlacementRendererProps {
@@ -38,6 +42,10 @@ export interface PlacementRendererProps {
    * instead of `onCtaClick` / `onSecondaryCtaClick`.
    */
   ctaResolvers?: CtaResolverRegistry;
+  /** Record each CTA interaction; server actions supply result metadata after resolving. */
+  onCtaActivate?: (index: number, metadata?: SdkMetadata) => void;
+  /** Gate render locations exclude dismiss-role CTAs. */
+  excludeDismissCtas?: boolean;
   /**
    * Callback when user clicks the primary CTA. Receives the parsed ui_path.
    * Acts as the fallback for action types with no registered resolver.
@@ -56,8 +64,8 @@ export interface PlacementRendererProps {
    * appears (plan 167 REQ-7). Additive/opt-in.
    */
   onRemindLater?: (outputId: string, seconds?: number) => void;
-  /** Handle an authored snooze CTA without enabling an extra defer control. */
-  onSnooze?: (outputId: string, seconds?: number) => void;
+  /** Handle an authored snooze CTA without an extra defer control; indexed actions include their authored index. */
+  onSnooze?: (outputId: string, seconds?: number, ctaIndex?: number) => void;
   /** Callback fired once when the placement is first rendered visible. */
   onImpression?: (outputId: string) => void;
   /**
@@ -97,6 +105,8 @@ export function PlacementRenderer({
   acceptedComponentTypes,
   ctaResolvers,
   onCtaClick,
+  onCtaActivate,
+  excludeDismissCtas = false,
   onSecondaryCtaClick,
   onDismiss,
   onRemindLater,
@@ -139,17 +149,67 @@ export function PlacementRenderer({
     (onSnooze ?? onRemindLater)?.(placement.output_id, seconds);
   }, [onSnooze, onRemindLater, placement.output_id]);
 
+  const renderCtas = useMemo(() => excludeDismissCtas
+    ? placement.ctas?.filter(cta => cta.role !== 'dismiss') : placement.ctas,
+  [placement.ctas, excludeDismissCtas]);
+  const gateFiltersCtas = excludeDismissCtas && renderCtas?.length !== placement.ctas?.length;
+  const gateFiltersAllCtas = gateFiltersCtas && renderCtas?.length === 0;
+  const handleIndexedCtaClick = useCallback((renderIndex: number) => {
+    const cta = renderCtas?.[renderIndex];
+    const index = cta ? placement.ctas?.indexOf(cta) ?? -1 : -1;
+    if (!cta || (excludeDismissCtas && cta.role === 'dismiss')) return;
+    const path = parseUiPath(cta.path);
+    const mountedSnooze = isBuiltinSnoozeResolver(effectiveCtaResolvers.get(path.type)) && Boolean(onSnooze || onRemindLater);
+    const ownsResult = path.type !== 'dismiss' && isServerActionResolver(effectiveCtaResolvers.get(path.type));
+    const context: CtaResolverContext = {
+      placement, kind: cta.emphasis === 'primary' ? 'primary' : 'secondary',
+      ...(ownsResult && onCtaActivate ? { recordInteraction: (metadata: SdkMetadata) => onCtaActivate(index, metadata) } : {}),
+      index, label: cta.label, path: cta.path, role: cta.role, role_overridden: cta.role_overridden,
+      ...(onSnooze || onRemindLater ? { remindLater: mountedSnooze ? (seconds?: number) => {
+        if (onSnooze) onSnooze(placement.output_id, seconds, index);
+        else onRemindLater?.(placement.output_id, seconds);
+      } : handleSnooze } : {}),
+    };
+    if (!ownsResult && !mountedSnooze) onCtaActivate?.(index);
+    if (!onCtaActivate && cta.role === 'dismiss' && path.type !== 'dismiss') onDismiss?.(placement.output_id);
+    // Dismissal belongs to the mounted controller; navigation still uses path.type.
+    if (path.type === 'dismiss') {
+      if (!onCtaActivate || ownsResult) onDismiss?.(placement.output_id);
+      return;
+    }
+    dispatchCtaClick(path, context, effectiveCtaResolvers,
+      cta.emphasis === 'primary' ? onCtaClick : (onSecondaryCtaClick ?? onCtaClick));
+  }, [placement, renderCtas, excludeDismissCtas, onSnooze, onRemindLater, handleSnooze,
+    onCtaActivate, onDismiss, effectiveCtaResolvers, onCtaClick, onSecondaryCtaClick]);
+
+  useEffect(() => {
+    if (excludeDismissCtas && placement.ctas?.some(cta => cta.role === 'dismiss') &&
+        isDevelopmentBuild()) {
+      console.warn('[RevTurbine] Gate surfaces cannot render dismiss-role CTAs.');
+    }
+  }, [excludeDismissCtas, placement.ctas]);
+
   const handleCtaClick = useCallback(() => {
+    if (renderCtas) {
+      const primary = renderCtas.findIndex(cta => cta.emphasis === 'primary');
+      handleIndexedCtaClick(primary < 0 ? 0 : primary);
+      return;
+    }
     dispatchCtaClick(uiPath, { placement, kind: 'primary',
       ...(onSnooze || onRemindLater ? { remindLater: handleSnooze } : {}),
     }, effectiveCtaResolvers, onCtaClick);
-  }, [uiPath, placement, effectiveCtaResolvers, onCtaClick, onSnooze, onRemindLater, handleSnooze]);
+  }, [renderCtas, handleIndexedCtaClick, uiPath, placement, effectiveCtaResolvers, onCtaClick, onSnooze, onRemindLater, handleSnooze]);
 
   const handleSecondaryCtaClick = useCallback(() => {
+    if (renderCtas) {
+      const secondary = placement.ctas?.[1];
+      if (secondary) handleIndexedCtaClick(renderCtas.indexOf(secondary));
+      return;
+    }
     dispatchCtaClick(uiPath, { placement, kind: 'secondary',
       ...(onSnooze || onRemindLater ? { remindLater: handleSnooze } : {}),
     }, effectiveCtaResolvers, onSecondaryCtaClick);
-  }, [uiPath, placement, effectiveCtaResolvers, onSecondaryCtaClick, onSnooze, onRemindLater, handleSnooze]);
+  }, [renderCtas, handleIndexedCtaClick, uiPath, placement, effectiveCtaResolvers, onSecondaryCtaClick, onSnooze, onRemindLater, handleSnooze]);
 
   const handleDismiss = useCallback(() => {
     onDismiss?.(placement.output_id);
@@ -157,26 +217,47 @@ export function PlacementRenderer({
 
   // Fire impression event once when the placement is first rendered visible
   useEffect(() => {
-    if (visible && slotType && !impressionFiredRef.current) {
+    if (visible && slotType && !gateFiltersAllCtas && !impressionFiredRef.current) {
       impressionFiredRef.current = true;
       onImpression?.(placement.output_id);
     }
-  }, [visible, slotType, onImpression, placement.output_id]);
+  }, [visible, slotType, gateFiltersAllCtas, onImpression, placement.output_id]);
 
-  if (!slotType || (acceptedComponentTypes && !acceptedComponentTypes.includes(slotType.componentType))) {
+  if (!slotType || gateFiltersAllCtas || (acceptedComponentTypes && !acceptedComponentTypes.includes(slotType.componentType))) {
     return <>{fallback}</>;
   }
 
   const Component = slotType.component;
   const defaultContent = (slotType.defaultProps as PlacementSlotProps | undefined)?.content;
-  const mergedContent = defaultContent ? { ...defaultContent, ...content } : content;
+  let mergedContent = defaultContent ? { ...defaultContent, ...content } : content;
+  let slotUiPath = uiPath;
+  if (gateFiltersCtas) {
+    const primary = renderCtas?.find(cta => cta.emphasis === 'primary') ?? renderCtas?.[0];
+    const secondary = placement.ctas?.[1];
+    // Legacy slots read the projected labels/path, not the filtered CTA array.
+    // Clear defaults too, so excluded actions cannot reappear through them.
+    mergedContent = { ...mergedContent };
+    delete mergedContent.cta_label;
+    delete mergedContent.secondary_cta_label;
+    if (primary) {
+      mergedContent.cta_label = primary.label;
+      slotUiPath = parseUiPath(primary.path);
+    }
+    if (secondary && secondary !== primary && renderCtas?.includes(secondary)) {
+      mergedContent.secondary_cta_label = secondary.label;
+    }
+  }
 
   const props: PlacementSlotProps = {
     placement,
     content: mergedContent,
-    uiPath,
+    uiPath: slotUiPath,
     promotion,
     onCtaClick: handleCtaClick,
+    ...(placement.ctas ? {
+      ctas: renderCtas,
+      onCtaClickIndex: handleIndexedCtaClick,
+    } : {}),
     onSecondaryCtaClick: handleSecondaryCtaClick,
     onDismiss: handleDismiss,
     // Opt-in: only wire the defer control when the caller supplied a handler.

@@ -105,15 +105,19 @@ node scripts/run-parity.mjs   # TS + Python runners, byte-diff (the gate)
 
 ### Regenerating vendored types
 
-`src/revturbine/types.py` is generated from revturbine-scaffold's published
-Pydantic models (`node scripts/sync-python-types.mjs`, run from the SDK repo
-root) — never hand-edit it. The generator resolves revturbine-scaffold from
-`$REVTURBINE_SCAFFOLD_DIR`, falling back to the sibling checkout
-(`../revturbine-scaffold` next to the SDK repo root). **Inside a `.worktrees/`
-checkout that sibling path resolves to `.worktrees/revturbine-scaffold`, not
-the canonical `revt-eng/revturbine-scaffold`** — set `REVTURBINE_SCAFFOLD_DIR`
-explicitly when running `sync:python-types` (or the Rust equivalent,
-`sync:rust-types`) from a worktree.
+`src/revturbine/types.py` is a copy of the Pydantic models revturbine-scaffold
+generates — never hand-edit it. `@revt-eng/schema` ships the generated file, so
+the copy comes from the installed package: after a pin change, run
+`pnpm install` and then `pnpm sync:python-types` (and `pnpm sync:rust-types`
+for the Rust copy) from the SDK repo root, and commit the result.
+
+`pnpm check:vendored-types` (part of `pnpm verify`) compares both copies with
+the pinned package's files. A pin that leaves the types alone needs no commit
+here; one that changes them fails the check until the copies are refreshed.
+
+To try types that are not published yet, set `REVTURBINE_SCAFFOLD_DIR` to a
+revturbine-scaffold checkout (after `npm run generate` there) and run the sync
+scripts; the check fails until the pin ships those types.
 
 ## Dependencies
 

@@ -114,7 +114,9 @@ describe('init uiPathResolvers → CTA dispatch bridge (AC-1)', () => {
 
     expect(handled).toBe(true);
     expect(resolver).toHaveBeenCalledTimes(1);
-    expect(resolver).toHaveBeenCalledWith({ type: 'open_checkout_modal', plan_handle: 'pro' });
+    expect(resolver).toHaveBeenCalledWith({ type: 'open_checkout_modal', plan_handle: 'pro' }, {
+      placement: makePlacement({ type: 'open_checkout_modal', plan_handle: 'pro' }), kind: 'primary',
+    });
   });
 
   it('an action type with no init resolver still falls through to the fallback', () => {

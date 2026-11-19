@@ -1,12 +1,15 @@
 // @generated — DO NOT EDIT.
 //
-// Vendored from revturbine-scaffold, which is the source of truth:
-//   published/v0.1.560/rust/revturbine_types.rs
+// Vendored from @revt-eng/schema (revturbine-scaffold), the source of truth:
+//   published/v<pinned version>/rust/revturbine_types.rs
 //
 // Produced by scaffold `scripts/generate-rust-types.ts` (typify over the
 // canonical JSON Schema) and copied here by `scripts/sync-rust-types.mjs`.
 // To change a type, change the Zod schema in scaffold and regenerate —
 // edits made here are silently discarded on the next sync.
+//
+// No version is recorded here: `pnpm check:vendored-types` compares this file
+// with the copy in the pinned package.
 
 #![allow(clippy::redundant_closure_call)]
 #![allow(clippy::needless_lifetimes)]
@@ -150915,6 +150918,10 @@ pub struct ContentPromotion {
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"role\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"target_billing_period\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"enum\": ["]
@@ -150955,6 +150962,8 @@ pub struct ContentUiPath {
     pub plan_handle: ::std::option::Option<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub promotion_id: ::std::option::Option<::std::string::String>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub role: ::std::option::Option<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub target_billing_period: ::std::option::Option<ContentUiPathTargetBillingPeriod>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -151689,6 +151698,85 @@ impl ::std::convert::TryFrom<::std::string::String> for CtaActionType {
         value.parse()
     }
 }
+#[doc = "`CtaEmphasis`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"primary\","]
+#[doc = "    \"secondary\","]
+#[doc = "    \"link\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum CtaEmphasis {
+    #[serde(rename = "primary")]
+    Primary,
+    #[serde(rename = "secondary")]
+    Secondary,
+    #[serde(rename = "link")]
+    Link,
+}
+impl ::std::fmt::Display for CtaEmphasis {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Primary => f.write_str("primary"),
+            Self::Secondary => f.write_str("secondary"),
+            Self::Link => f.write_str("link"),
+        }
+    }
+}
+impl ::std::str::FromStr for CtaEmphasis {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "primary" => Ok(Self::Primary),
+            "secondary" => Ok(Self::Secondary),
+            "link" => Ok(Self::Link),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for CtaEmphasis {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CtaEmphasis {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CtaEmphasis {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 #[doc = "`CtaObject`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -151714,10 +151802,18 @@ impl ::std::convert::TryFrom<::std::string::String> for CtaActionType {
 #[doc = "      \"$ref\": \"#/$defs/CtaPathType\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"emphasis\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"label\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 200,"]
 #[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"role\": {"]
+#[doc = "      \"type\": \"string\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    }"]
 #[doc = "  },"]
@@ -151733,7 +151829,11 @@ pub struct CtaObject {
     #[serde(default, skip_serializing_if = "::serde_json::Map::is_empty")]
     pub config_fields: ::serde_json::Map<::std::string::String, ::serde_json::Value>,
     pub cta_path_type: CtaPathType,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub emphasis: ::std::option::Option<::std::string::String>,
     pub label: CtaObjectLabel,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub role: ::std::option::Option<::std::string::String>,
 }
 #[doc = "`CtaObjectLabel`"]
 #[doc = r""]
@@ -152612,6 +152712,255 @@ impl ::std::convert::TryFrom<::std::string::String> for CtaPathType {
         value: ::std::string::String,
     ) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
+    }
+}
+#[doc = "`CtaRole`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"anyOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"upgrade\","]
+#[doc = "        \"downgrade\","]
+#[doc = "        \"purchase\","]
+#[doc = "        \"pause\","]
+#[doc = "        \"continue\","]
+#[doc = "        \"not_now\","]
+#[doc = "        \"learn_more\","]
+#[doc = "        \"contact\","]
+#[doc = "        \"manage\","]
+#[doc = "        \"engage\","]
+#[doc = "        \"snooze\","]
+#[doc = "        \"dismiss\""]
+#[doc = "      ]"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^[a-z][a-z0-9_]{1,31}$\""]
+#[doc = "    }"]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"external\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+pub struct CtaRole {
+    #[serde(
+        flatten,
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub subtype_0: ::std::option::Option<CtaRoleSubtype0>,
+    #[serde(
+        flatten,
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub subtype_1: ::std::option::Option<CtaRoleSubtype1>,
+}
+impl ::std::default::Default for CtaRole {
+    fn default() -> Self {
+        Self {
+            subtype_0: Default::default(),
+            subtype_1: Default::default(),
+        }
+    }
+}
+#[doc = "`CtaRoleSubtype0`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"upgrade\","]
+#[doc = "    \"downgrade\","]
+#[doc = "    \"purchase\","]
+#[doc = "    \"pause\","]
+#[doc = "    \"continue\","]
+#[doc = "    \"not_now\","]
+#[doc = "    \"learn_more\","]
+#[doc = "    \"contact\","]
+#[doc = "    \"manage\","]
+#[doc = "    \"engage\","]
+#[doc = "    \"snooze\","]
+#[doc = "    \"dismiss\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum CtaRoleSubtype0 {
+    #[serde(rename = "upgrade")]
+    Upgrade,
+    #[serde(rename = "downgrade")]
+    Downgrade,
+    #[serde(rename = "purchase")]
+    Purchase,
+    #[serde(rename = "pause")]
+    Pause,
+    #[serde(rename = "continue")]
+    Continue,
+    #[serde(rename = "not_now")]
+    NotNow,
+    #[serde(rename = "learn_more")]
+    LearnMore,
+    #[serde(rename = "contact")]
+    Contact,
+    #[serde(rename = "manage")]
+    Manage,
+    #[serde(rename = "engage")]
+    Engage,
+    #[serde(rename = "snooze")]
+    Snooze,
+    #[serde(rename = "dismiss")]
+    Dismiss,
+}
+impl ::std::fmt::Display for CtaRoleSubtype0 {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Upgrade => f.write_str("upgrade"),
+            Self::Downgrade => f.write_str("downgrade"),
+            Self::Purchase => f.write_str("purchase"),
+            Self::Pause => f.write_str("pause"),
+            Self::Continue => f.write_str("continue"),
+            Self::NotNow => f.write_str("not_now"),
+            Self::LearnMore => f.write_str("learn_more"),
+            Self::Contact => f.write_str("contact"),
+            Self::Manage => f.write_str("manage"),
+            Self::Engage => f.write_str("engage"),
+            Self::Snooze => f.write_str("snooze"),
+            Self::Dismiss => f.write_str("dismiss"),
+        }
+    }
+}
+impl ::std::str::FromStr for CtaRoleSubtype0 {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "upgrade" => Ok(Self::Upgrade),
+            "downgrade" => Ok(Self::Downgrade),
+            "purchase" => Ok(Self::Purchase),
+            "pause" => Ok(Self::Pause),
+            "continue" => Ok(Self::Continue),
+            "not_now" => Ok(Self::NotNow),
+            "learn_more" => Ok(Self::LearnMore),
+            "contact" => Ok(Self::Contact),
+            "manage" => Ok(Self::Manage),
+            "engage" => Ok(Self::Engage),
+            "snooze" => Ok(Self::Snooze),
+            "dismiss" => Ok(Self::Dismiss),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for CtaRoleSubtype0 {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CtaRoleSubtype0 {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CtaRoleSubtype0 {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`CtaRoleSubtype1`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[a-z][a-z0-9_]{1,31}$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CtaRoleSubtype1(::std::string::String);
+impl ::std::ops::Deref for CtaRoleSubtype1 {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CtaRoleSubtype1> for ::std::string::String {
+    fn from(value: CtaRoleSubtype1) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CtaRoleSubtype1 {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[a-z][a-z0-9_]{1,31}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[a-z][a-z0-9_]{1,31}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CtaRoleSubtype1 {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CtaRoleSubtype1 {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CtaRoleSubtype1 {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CtaRoleSubtype1 {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
     }
 }
 #[doc = "`Currency`"]
@@ -199559,6 +199908,28 @@ pub struct MessageBlockChildBlocksItem {
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"ctas\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"object\","]
+#[doc = "        \"required\": ["]
+#[doc = "          \"label\""]
+#[doc = "        ],"]
+#[doc = "        \"properties\": {"]
+#[doc = "          \"emphasis\": {"]
+#[doc = "            \"type\": \"string\""]
+#[doc = "          },"]
+#[doc = "          \"label\": {"]
+#[doc = "            \"type\": \"string\""]
+#[doc = "          },"]
+#[doc = "          \"role\": {"]
+#[doc = "            \"type\": \"string\""]
+#[doc = "          }"]
+#[doc = "        },"]
+#[doc = "        \"additionalProperties\": false"]
+#[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"header\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
@@ -199580,12 +199951,48 @@ pub struct MessageBlockContent {
     pub body: ::std::option::Option<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub cta_label: ::std::option::Option<::std::string::String>,
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub ctas: ::std::vec::Vec<MessageBlockContentCtasItem>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub header: ::std::option::Option<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub secondary_cta_label: ::std::option::Option<::std::string::String>,
     #[serde(flatten)]
     pub extra: ::serde_json::Map<::std::string::String, ::serde_json::Value>,
+}
+#[doc = "`MessageBlockContentCtasItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"label\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"emphasis\": {"]
+#[doc = "      \"type\": \"string\""]
+#[doc = "    },"]
+#[doc = "    \"label\": {"]
+#[doc = "      \"type\": \"string\""]
+#[doc = "    },"]
+#[doc = "    \"role\": {"]
+#[doc = "      \"type\": \"string\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct MessageBlockContentCtasItem {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub emphasis: ::std::option::Option<::std::string::String>,
+    pub label: ::std::string::String,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub role: ::std::option::Option<::std::string::String>,
 }
 #[doc = "`MessageBlockName`"]
 #[doc = r""]
@@ -212779,6 +213186,20 @@ impl<'de> ::serde::Deserialize<'de> for PayerAccountLinkHistoryEntryRtAccountId 
 #[doc = "      \"maxItems\": 8,"]
 #[doc = "      \"x-revturbine-data-classification\": \"operational\""]
 #[doc = "    },"]
+#[doc = "    \"provisional_account_id\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 255,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
 #[doc = "    \"rt_account_id\": {"]
 #[doc = "      \"readOnly\": true,"]
 #[doc = "      \"anyOf\": ["]
@@ -212796,6 +213217,13 @@ impl<'de> ::serde::Deserialize<'de> for PayerAccountLinkHistoryEntryRtAccountId 
 #[doc = "    \"state\": {"]
 #[doc = "      \"readOnly\": true,"]
 #[doc = "      \"$ref\": \"#/$defs/PayerAccountLinkState\","]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
+#[doc = "    \"subscription_count\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
 #[doc = "      \"x-revturbine-data-classification\": \"operational\""]
 #[doc = "    }"]
 #[doc = "  },"]
@@ -212818,8 +213246,12 @@ pub struct PayerAccountLinkItem {
     pub mrr: ::std::vec::Vec<PayerAccountMoney>,
     pub payer_key: PayerKey,
     pub plans: ::std::vec::Vec<PayerAccountLinkItemPlansItem>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub provisional_account_id: ::std::option::Option<PayerAccountLinkItemProvisionalAccountId>,
     pub rt_account_id: ::std::option::Option<PayerAccountLinkItemRtAccountId>,
     pub state: PayerAccountLinkState,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub subscription_count: ::std::option::Option<i64>,
 }
 #[doc = "`PayerAccountLinkItemChangedBy`"]
 #[doc = r""]
@@ -213134,6 +213566,78 @@ impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkItemPlan
     }
 }
 impl<'de> ::serde::Deserialize<'de> for PayerAccountLinkItemPlansItem {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`PayerAccountLinkItemProvisionalAccountId`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 255,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct PayerAccountLinkItemProvisionalAccountId(::std::string::String);
+impl ::std::ops::Deref for PayerAccountLinkItemProvisionalAccountId {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<PayerAccountLinkItemProvisionalAccountId> for ::std::string::String {
+    fn from(value: PayerAccountLinkItemProvisionalAccountId) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for PayerAccountLinkItemProvisionalAccountId {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 255usize {
+            return Err("longer than 255 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for PayerAccountLinkItemProvisionalAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PayerAccountLinkItemProvisionalAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkItemProvisionalAccountId {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PayerAccountLinkItemProvisionalAccountId {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -214378,6 +214882,13 @@ impl ::std::convert::TryFrom<::std::string::String> for PayerAccountLinkState {
 #[doc = "      \"minimum\": 0.0,"]
 #[doc = "      \"x-revturbine-data-classification\": \"operational\""]
 #[doc = "    },"]
+#[doc = "    \"provisional_accounts\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\""]
+#[doc = "    },"]
 #[doc = "    \"unmatched\": {"]
 #[doc = "      \"readOnly\": true,"]
 #[doc = "      \"type\": \"integer\","]
@@ -214415,6 +214926,8 @@ pub struct PayerAccountLinkSummary {
     pub linked_by_evidence: ::std::vec::Vec<PayerAccountLinkSummaryLinkedByEvidenceItem>,
     pub no_account: i64,
     pub payers: i64,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub provisional_accounts: ::std::option::Option<i64>,
     pub unmatched: i64,
     pub unmatched_mrr: ::std::vec::Vec<PayerAccountMoney>,
     pub unmatched_paying: i64,
@@ -218681,6 +219194,46 @@ impl ::std::convert::TryFrom<::std::string::String> for PlacementCategory {
 #[doc = "      },"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"ctas\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"object\","]
+#[doc = "        \"required\": ["]
+#[doc = "          \"emphasis\","]
+#[doc = "          \"label\","]
+#[doc = "          \"path\","]
+#[doc = "          \"role_overridden\""]
+#[doc = "        ],"]
+#[doc = "        \"properties\": {"]
+#[doc = "          \"emphasis\": {"]
+#[doc = "            \"type\": \"string\","]
+#[doc = "            \"enum\": ["]
+#[doc = "              \"primary\","]
+#[doc = "              \"secondary\","]
+#[doc = "              \"link\""]
+#[doc = "            ]"]
+#[doc = "          },"]
+#[doc = "          \"label\": {"]
+#[doc = "            \"type\": \"string\""]
+#[doc = "          },"]
+#[doc = "          \"path\": {"]
+#[doc = "            \"type\": \"object\","]
+#[doc = "            \"additionalProperties\": {},"]
+#[doc = "            \"propertyNames\": {"]
+#[doc = "              \"type\": \"string\""]
+#[doc = "            }"]
+#[doc = "          },"]
+#[doc = "          \"role\": {"]
+#[doc = "            \"type\": \"string\""]
+#[doc = "          },"]
+#[doc = "          \"role_overridden\": {"]
+#[doc = "            \"type\": \"boolean\""]
+#[doc = "          }"]
+#[doc = "        },"]
+#[doc = "        \"additionalProperties\": false"]
+#[doc = "      },"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"decision_id\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
@@ -218770,6 +219323,8 @@ pub struct PlacementDecisionOutput {
     pub content: ::serde_json::Map<::std::string::String, ::serde_json::Value>,
     #[serde(default, skip_serializing_if = "::serde_json::Map::is_empty")]
     pub cta_path: ::serde_json::Map<::std::string::String, ::serde_json::Value>,
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub ctas: ::std::vec::Vec<PlacementDecisionOutputCtasItem>,
     pub decision_id: ::std::string::String,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub experiment_id: ::std::option::Option<::std::string::String>,
@@ -218789,6 +219344,136 @@ pub struct PlacementDecisionOutput {
     pub ui_path: ::serde_json::Map<::std::string::String, ::serde_json::Value>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub variant_key: ::std::option::Option<::std::string::String>,
+}
+#[doc = "`PlacementDecisionOutputCtasItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"emphasis\","]
+#[doc = "    \"label\","]
+#[doc = "    \"path\","]
+#[doc = "    \"role_overridden\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"emphasis\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"primary\","]
+#[doc = "        \"secondary\","]
+#[doc = "        \"link\""]
+#[doc = "      ]"]
+#[doc = "    },"]
+#[doc = "    \"label\": {"]
+#[doc = "      \"type\": \"string\""]
+#[doc = "    },"]
+#[doc = "    \"path\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"additionalProperties\": {},"]
+#[doc = "      \"propertyNames\": {"]
+#[doc = "        \"type\": \"string\""]
+#[doc = "      }"]
+#[doc = "    },"]
+#[doc = "    \"role\": {"]
+#[doc = "      \"type\": \"string\""]
+#[doc = "    },"]
+#[doc = "    \"role_overridden\": {"]
+#[doc = "      \"type\": \"boolean\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct PlacementDecisionOutputCtasItem {
+    pub emphasis: PlacementDecisionOutputCtasItemEmphasis,
+    pub label: ::std::string::String,
+    pub path: ::serde_json::Map<::std::string::String, ::serde_json::Value>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub role: ::std::option::Option<::std::string::String>,
+    pub role_overridden: bool,
+}
+#[doc = "`PlacementDecisionOutputCtasItemEmphasis`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"primary\","]
+#[doc = "    \"secondary\","]
+#[doc = "    \"link\""]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum PlacementDecisionOutputCtasItemEmphasis {
+    #[serde(rename = "primary")]
+    Primary,
+    #[serde(rename = "secondary")]
+    Secondary,
+    #[serde(rename = "link")]
+    Link,
+}
+impl ::std::fmt::Display for PlacementDecisionOutputCtasItemEmphasis {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Primary => f.write_str("primary"),
+            Self::Secondary => f.write_str("secondary"),
+            Self::Link => f.write_str("link"),
+        }
+    }
+}
+impl ::std::str::FromStr for PlacementDecisionOutputCtasItemEmphasis {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "primary" => Ok(Self::Primary),
+            "secondary" => Ok(Self::Secondary),
+            "link" => Ok(Self::Link),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for PlacementDecisionOutputCtasItemEmphasis {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for PlacementDecisionOutputCtasItemEmphasis {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for PlacementDecisionOutputCtasItemEmphasis {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
 }
 #[doc = "`PlacementDecisionOutputSurface`"]
 #[doc = r""]
@@ -246864,12 +247549,20 @@ impl<'de> ::serde::Deserialize<'de> for RevTurbineConfigSlotConfigsItemSlotId {
 #[doc = "      },"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"emphasis\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"label\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"path\": {"]
 #[doc = "      \"$ref\": \"#/$defs/CtaActionType\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"role\": {"]
+#[doc = "      \"type\": \"string\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    }"]
 #[doc = "  },"]
@@ -246887,8 +247580,12 @@ pub struct RevTurbineConfigStudioCtaConfig {
         skip_serializing_if = ":: std :: collections :: HashMap::is_empty"
     )]
     pub config: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub emphasis: ::std::option::Option<::std::string::String>,
     pub label: ::std::string::String,
     pub path: CtaActionType,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub role: ::std::option::Option<::std::string::String>,
 }
 #[doc = "`RevTurbineConfigStudioPayload`"]
 #[doc = r""]
@@ -333741,6 +334438,63 @@ pub struct TrackIngestBatch {
 #[doc = "      \"minLength\": 1,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"cta_index\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 4.0,"]
+#[doc = "          \"minimum\": 0.0"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"cta_label\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"cta_role\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"cta_role_overridden\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"boolean\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"cta_target\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"decision_id\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"minLength\": 1,"]
@@ -333896,6 +334650,16 @@ pub struct TrackIngestBatch {
 pub struct TreatmentInteractionInput {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub account_id: ::std::option::Option<TreatmentInteractionInputAccountId>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub cta_index: ::std::option::Option<i64>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub cta_label: ::std::option::Option<::std::string::String>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub cta_role: ::std::option::Option<::std::string::String>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub cta_role_overridden: ::std::option::Option<bool>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub cta_target: ::std::option::Option<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub decision_id: ::std::option::Option<TreatmentInteractionInputDecisionId>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]

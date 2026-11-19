@@ -7,6 +7,8 @@ export interface ServerActionContext {
   placement: CtaResolverContext['placement'];
   /** The authored CTA action type (v1 documents `extend_trial`). */
   actionType: string;
+  /** Resolved CTA identity and mounted interaction recorder, when available. */
+  cta?: CtaResolverContext;
   /** Tenant-authored custom CTA parameters, when present. */
   params: Record<string, unknown>; // sdk-ok: type-definition
 }
@@ -177,24 +179,24 @@ export function unregisterCtaResolver(type: string): boolean {
  * the registry (via {@link registerCtaResolver} or a direct `register`) is
  * left untouched, and a later explicit registration replaces the bridged
  * entry through the registry's normal override semantics. Each bridged
- * resolver receives the placement's raw authored `cta_path` record — the same
- * shape init-time validation checked. A rejected async resolver is logged,
+ * resolver receives the clicked CTA's raw path record and optional context.
+ * Legacy output uses `cta_path` as before; init-time coverage checks stay the same. A rejected async resolver is logged,
  * never thrown into the click handler.
  *
  * Returns a cleanup function that unregisters exactly the entries this call
  * bridged, skipping any the customer has since replaced.
  */
 export function bridgeUiPathResolversIntoRegistry(
-  resolvers: Record<string, (uiPath: JsonObject) => void | Promise<void>>,
+  resolvers: Record<string, (uiPath: JsonObject, context?: CtaResolverContext) => void | Promise<void>>,
   registry: CtaResolverRegistry = getDefaultCtaResolverRegistry(),
 ): () => void {
   const bridged = new Map<string, CtaResolver>();
   for (const [type, resolver] of Object.entries(resolvers)) {
     if (registry.has(type)) continue;
     const wrapped: CtaResolver = (_uiPath, context) => {
-      const raw = context.placement.cta_path ?? context.placement.ui_path ?? {};
+      const raw = context.path ?? context.placement.cta_path ?? context.placement.ui_path ?? {};
       void Promise.resolve()
-        .then(() => resolver(raw as JsonObject)) // sdk-ok: boundary-parse — authored cta_path record
+        .then(() => resolver(raw as JsonObject, context)) // sdk-ok: boundary-parse — authored cta_path record
         .catch((error) => {
           console.error(`[RevTurbine] uiPathResolvers.${type} failed:`, error);
         });
@@ -209,6 +211,13 @@ export function bridgeUiPathResolversIntoRegistry(
       }
     }
   };
+}
+
+const builtinSnoozeResolvers = new WeakSet<CtaResolver>();
+
+/** Whether this is the SDK's reminder resolver, which records its own interaction. @internal */
+export function isBuiltinSnoozeResolver(resolver: CtaResolver | undefined): boolean {
+  return resolver !== undefined && builtinSnoozeResolvers.has(resolver);
 }
 
 /**
@@ -234,12 +243,20 @@ export function registerBuiltinSnoozeResolver(
     if (context.remindLater) context.remindLater(seconds);
     else snooze(context.placement.output_id, seconds);
   };
+  builtinSnoozeResolvers.add(resolver);
   registry.register('snooze', resolver);
   return () => {
     if (registry.get('snooze') === resolver) {
       registry.unregister('snooze');
     }
   };
+}
+
+const serverActionResolvers = new WeakSet<CtaResolver>();
+
+/** Whether a resolver owns the asynchronous interaction result. @internal */
+export function isServerActionResolver(resolver: CtaResolver | undefined): boolean {
+  return resolver !== undefined && serverActionResolvers.has(resolver);
 }
 
 /**
@@ -261,6 +278,7 @@ export function registerServerActionResolvers(
     const resolver: CtaResolver = (uiPath, resolverContext) => {
       const context: ServerActionContext = {
         placement: resolverContext.placement,
+        cta: resolverContext,
         actionType,
         params: uiPath.params ?? {},
       };
@@ -290,6 +308,7 @@ export function registerServerActionResolvers(
         await trackSafely(true);
       })();
     };
+    serverActionResolvers.add(resolver);
     registry.register(actionType, resolver);
     registered.set(actionType, resolver);
   }

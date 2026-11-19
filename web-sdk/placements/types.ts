@@ -1,4 +1,4 @@
-import type { RevTurbineComponentType, PlacementOutput } from '../customer-side';
+import type { RevTurbineComponentType, PlacementOutput, SdkMetadata } from '../customer-side';
 import type { RevTurbineConfigUiPathActionType, RuntimePromotionSnapshot } from '../generated';
 
 /**
@@ -62,6 +62,18 @@ export interface CtaResolverContext {
   placement: PlacementOutput;
   /** Which CTA fired — the primary button or a secondary action. */
   kind: 'primary' | 'secondary';
+  /** Authored zero-based index of the activated CTA. */
+  index?: number;
+  /** Record the single interaction after a server action resolves, preserving its result facts. @internal */
+  recordInteraction?: (metadata: SdkMetadata) => void;
+  /** Resolved label of the activated CTA. */
+  label?: string;
+  /** The activated CTA's own raw path; legacy placement fields stay intact. */
+  path?: PlacementCta['path'];
+  /** Resolved semantic role, including tenant-defined roles. */
+  role?: string;
+  /** Whether the author overrode the path's default role. */
+  role_overridden?: boolean;
   /** Report snooze through the mounted controller and close this occurrence. */
   remindLater?: (seconds?: number) => void;
 }
@@ -75,6 +87,9 @@ export interface CtaResolverContext {
  * actions (e.g. opening an integration flow) with their own logic.
  */
 export type CtaResolver = (uiPath: PlacementUiPath, context: CtaResolverContext) => void;
+
+/** A resolved CTA from the decision contract, in authored order. */
+export type PlacementCta = NonNullable<PlacementOutput['ctas']>[number];
 
 /**
  * Promotion attached to a placement payload.
@@ -111,6 +126,10 @@ export interface PlacementSlotProps<C extends ResolvedContent = ResolvedContent>
   promotion?: PlacementPromotion;
   /** Callback when user clicks the primary CTA. */
   onCtaClick: () => void;
+  /** Ordered resolved CTAs. Absent retains the legacy label/callback rendering. */
+  ctas?: readonly PlacementCta[];
+  /** Activate a CTA by its authored index, independent of display emphasis. */
+  onCtaClickIndex?: (index: number) => void;
   /** Callback when user clicks a secondary CTA. */
   onSecondaryCtaClick?: () => void;
   /** Callback when user dismisses the placement. */

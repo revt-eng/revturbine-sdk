@@ -28,6 +28,15 @@ import re
 import time
 from typing import Any, TypedDict
 
+from revturbine.core.cta_resolution import (
+    _normalize_cta_path as _normalize_cta_path,
+)
+from revturbine.core.cta_resolution import (
+    authored_surface_ctas,
+    overlay_ctas,
+    project_compatibility,
+    resolve_ctas,
+)
 from revturbine.core.decisions.types import (
     DecisionContent,
     PlacementDecision,
@@ -355,47 +364,6 @@ def _interpolate_content_tokens(content: dict[str, Any]) -> dict[str, Any]:
     return resolved
 
 
-def _normalize_cta_path(cta: Any) -> dict[str, Any]:
-    """Map a raw CTA ``{path, config}`` to the resolved ``cta_path``
-    shape. ``plan_handle`` / ``placement_handle`` are omitted (not set
-    to ``None``) when the source config field isn't a string — this
-    matches JS ``JSON.stringify`` dropping ``undefined`` properties so
-    serialized parity holds.
-
-    Source: local-resolver.ts:81-118
-    """
-    if not is_record(cta) or not cta.get("path"):
-        return {"type": "dismiss"}
-
-    raw_path = cta["path"]
-    config = cta.get("config")
-    if not is_record(config):
-        config = {}
-
-    if raw_path == "open_checkout":
-        # BUG-1192: the CTA type is delivered exactly as authored.
-        result: dict[str, Any] = {"type": "open_checkout"}
-        purchase = config.get("purchase")
-        if isinstance(purchase, str):
-            result["plan_handle"] = purchase
-        return result
-
-    if raw_path == "view_plans":
-        return {"type": "view_plans"}
-
-    if raw_path == "open_rt_placement":
-        rt_result: dict[str, Any] = {"type": "open_rt_placement"}
-        placement_handle = config.get("placement_handle")
-        if isinstance(placement_handle, str):
-            rt_result["placement_handle"] = placement_handle
-        return rt_result
-
-    # Custom and any other unmapped action: pass the authored action name
-    # through as ``type`` and spread its config so a custom CTA's params reach
-    # the SDK resolver. Mirrors local-resolver.ts.
-    return {"type": raw_path, **config}
-
-
 def _decision_content(header: str, body: str, cta_label: str) -> DecisionContent:
     """Header/body/cta mirrored across legacy + canonical naming, same
     shape the TS resolver emits (``title``=header, ``cta``=cta_label).
@@ -708,6 +676,8 @@ def create_static_placement_resolver(
     content_provider = _build_json_content_provider(playbook, dataset)
 
     # ── Index: template_id → candidate outputs (sorted by entry order) ──
+    authored_cta_sources: dict[str, tuple[list[dict[str, Any]], str]] = {}
+    ui_paths = playbook.get("content_ui_paths") or []
     outputs_by_template: dict[str, list[_CandidateOutput]] = {}
     outputs_by_name: dict[str, list[_CandidateOutput]] = {}
 
@@ -756,15 +726,16 @@ def create_static_placement_resolver(
             fields = surface.get("fields")
             content: dict[str, Any] = {**fields} if is_record(fields) else {}
 
-            ctas = surface.get("ctas")
-            cta0 = ctas[0] if isinstance(ctas, list) and len(ctas) >= 1 else None
-            cta1 = ctas[1] if isinstance(ctas, list) and len(ctas) >= 2 else None
-            if cta0 is not None:
-                content["cta_label"] = cta0.get("label") if is_record(cta0) else None
-            if cta1 is not None:
-                content["secondary_cta_label"] = cta1.get("label") if is_record(cta1) else None
-
-            cta_path = _normalize_cta_path(cta0)
+            authored = authored_surface_ctas(surface)
+            resolved_ctas = resolve_ctas(authored, surface_type, ui_paths)
+            compat = project_compatibility(resolved_ctas)
+            for key in ("cta_label", "secondary_cta_label"):
+                if compat.get(key):
+                    content[key] = compat[key]
+            cta0 = (surface.get("ctas") or [None])[0]
+            cta_path = compat.get("cta_path", _normalize_cta_path(cta0))
+            if resolved_ctas:
+                authored_cta_sources[payload.get("id", "")] = (authored, surface_type)
 
             entry_id = entry.get("id")
             output: PlacementOutput = {
@@ -777,6 +748,8 @@ def create_static_placement_resolver(
                 },
                 "content": content,
                 "cta_path": cta_path,
+                "ui_path": cta_path,
+                **({"ctas": resolved_ctas} if resolved_ctas else {}),
                 "rule_id": entry_id,
                 "decision_id": payload.get("id"),
                 "config_version": config_version,
@@ -784,14 +757,13 @@ def create_static_placement_resolver(
             }
 
             target = payload.get("target")
-            if target is not None:
-                plan_ids = target.get("plan_ids") if is_record(target) else None
-                chips = target.get("segment_chips") if is_record(target) else None
-                output["content"] = {
-                    **output["content"],
-                    "__target_plan_ids": plan_ids if isinstance(plan_ids, list) else [],
-                    "__target_segment_chips": chips if isinstance(chips, list) else [],
-                }
+            plan_ids = target.get("plan_ids") if is_record(target) else None
+            chips = target.get("segment_chips") if is_record(target) else None
+            output["content"] = {
+                **output["content"],
+                "__target_plan_ids": plan_ids if isinstance(plan_ids, list) else [],
+                "__target_segment_chips": chips if isinstance(chips, list) else [],
+            }
 
             trigger = entry.get("trigger")
             trigger_entitlement_handle = _read_entitlement_handle_from_trigger(trigger)
@@ -1316,6 +1288,30 @@ def create_static_placement_resolver(
                     "content": {**prev, **resolved_payload["resolved_content"]},
                     "message_block_handle": resolved_payload["message_block"]["block_id"],
                 }
+
+                block_content = resolved_payload["resolved_content"]
+                source = authored_cta_sources.get(selected_output.get("output_id", ""))
+                if source and (
+                    block_content.get("ctas")
+                    or any(
+                        isinstance(block_content.get(k), str)
+                        for k in ("cta_label", "secondary_cta_label")
+                    )
+                ):
+                    overlaid = resolve_ctas(
+                        overlay_ctas(source[0], block_content), source[1], ui_paths
+                    )
+                    selected_output["ctas"] = overlaid
+                    if block_content.get("ctas"):
+                        compat = project_compatibility(overlaid)
+                        for key in ("ctas", "cta_label", "secondary_cta_label"):
+                            selected_output["content"].pop(key, None)
+                        for key in ("cta_label", "secondary_cta_label"):
+                            if compat.get(key):
+                                selected_output["content"][key] = compat[key]
+                        if "cta_path" in compat:
+                            selected_output["cta_path"] = compat["cta_path"]
+                            selected_output["ui_path"] = compat["cta_path"]
 
         # ── Enrich with usage data & interpolation ───────────────────────
         oc_src = selected_output.get("content")

@@ -104,6 +104,7 @@ describe('RevTurbineInitOptions.serverActions', () => {
       placement: expect.objectContaining({ output_id: 'out_1' }),
       actionType: 'extend_trial',
       params: { extension_days: 7 },
+      cta: { placement: placement(), kind: 'primary' },
     });
     expect((await sdk.can('advanced_export')).allowed).toBe(true);
   });

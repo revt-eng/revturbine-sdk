@@ -123,31 +123,19 @@ fn lifetime_and_session_caps_never_drain() {
 }
 
 #[test]
-fn cooldown_suppresses_and_takes_precedence_over_caps() {
+fn presentation_never_starts_dismissal_cooldown_and_count_caps_still_apply() {
     let clock = TestClock::new(T0);
     let mut e = enforcer(&clock);
-    let output = json!({
-        "output_id": "out_1",
-        "surface": { "type": "banner" },
-        "caps": {
-            "max_per_period": { "count": 99, "period": "day" },
-            "cooldown_days": 7,
-        },
-    });
-
+    let output = json!({"output_id":"out_1","surface":{"type":"banner"},
+        "caps":{"max_per_period":{"count":2,"period":"day"},"cooldown_days":7}});
     assert!(e.enforce(&output).allowed);
-
-    // Well under the cap of 99, but inside the cooldown.
-    let second = e.enforce(&output);
-    assert!(!second.allowed);
+    assert!(e.enforce(&output).allowed);
     assert_eq!(
-        second.reason.as_deref(),
-        Some("suppressed_by_payload_cooldown"),
-        "cooldown reason must win over the cap reason",
+        e.enforce(&output).reason.as_deref(),
+        Some("suppressed_by_payload_cap_day")
     );
-
-    clock.advance(7 * MS_PER_DAY + 1);
-    assert!(e.enforce(&output).allowed, "cooldown should have expired");
+    clock.advance(MS_PER_DAY + 1);
+    assert!(e.enforce(&output).allowed);
 }
 
 #[test]

@@ -110,7 +110,7 @@ class InteractionTracker:
             next_state["last_interaction_type"] = input_data["interaction_type"]
 
         if input_data["interaction_type"] == "dismiss":
-            cooldown_ms = self._coerce_positive_finite(metadata.get("cooldown_ms"))
+            cooldown_ms = self._coerce_nonnegative_finite(metadata.get("cooldown_ms"))
             next_state["suppressed_until"] = now + int(
                 cooldown_ms if cooldown_ms is not None else self._default_dismiss_cooldown_ms,
             )
@@ -118,13 +118,6 @@ class InteractionTracker:
             remind_after = self._coerce_positive_finite(metadata.get("remind_after_seconds"))
             next_state["suppressed_until"] = now + int(
                 remind_after * 1000 if remind_after is not None else self._default_remind_later_ms,
-            )
-        elif input_data["interaction_type"] == "cta_clicked":
-            # Bare click (not confirmed complete) → dismiss cooldown; may return
-            # (plan 167, Q-1).
-            cooldown_ms = self._coerce_positive_finite(metadata.get("cooldown_ms"))
-            next_state["suppressed_until"] = now + int(
-                cooldown_ms if cooldown_ms is not None else self._default_dismiss_cooldown_ms,
             )
         self._state[key] = next_state
         self.persist()
@@ -211,3 +204,17 @@ class InteractionTracker:
         if number != number or number in (float("inf"), float("-inf")):
             return None
         return number if number > 0 else None
+
+    @staticmethod
+    def _coerce_nonnegative_finite(value: Any) -> float | None:
+        if value is None:
+            return None
+        from revturbine.core.helpers import js_number
+
+        if isinstance(value, str):
+            number = js_number(value)
+        elif isinstance(value, (int, float)):
+            number = float(value)
+        else:
+            return None
+        return number if number >= 0 and number not in (float("inf"), float("-inf")) else None

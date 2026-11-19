@@ -732,4 +732,4 @@ class TestEdgeCases:
             placement_resolver=_stub_resolver_visible,
         )
         result = engine.evaluate({"placement_id": "p1", "user_id": "u1"})
-        assert result["visible"] is (interaction == "cta_completed")
+        assert result["visible"] is (interaction in {"cta_clicked", "cta_completed"})

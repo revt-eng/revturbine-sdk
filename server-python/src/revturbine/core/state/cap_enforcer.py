@@ -70,7 +70,7 @@ class CapEnforcer:
         """Decide whether ``output`` is allowed by its cap + cooldown policies.
 
         On success: records the presentation (appends ``now`` to ``seen_at``,
-        sets ``cooldown_until`` if any policy declares one) and persists.
+        never starts a dismissal cooldown) and persists.
         On failure: returns the suppression reason without recording.
 
         Source: cap-enforcer.ts:81-128
@@ -113,20 +113,6 @@ class CapEnforcer:
 
         # Allowed — record this presentation.
         state["seen_at"].append(now)
-
-        cooldowns = [
-            policy["cooldown_ms"]
-            for policy in policies
-            if "cooldown_ms" in policy
-            and isinstance(policy["cooldown_ms"], (int, float))
-            and not isinstance(policy["cooldown_ms"], bool)
-            and math.isfinite(policy["cooldown_ms"])
-            and policy["cooldown_ms"] > 0
-        ]
-        if cooldowns:
-            state["cooldown_until"] = now + int(max(cooldowns))
-        else:
-            state.pop("cooldown_until", None)
 
         self._caps_by_key[key] = state
         self.persist()
