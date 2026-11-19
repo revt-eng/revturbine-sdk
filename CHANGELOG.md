@@ -47,6 +47,42 @@ also require a changelog entry.
 
 ---
 
+## 0.18.0
+
+An additive minor release for all three SDKs (ST-1425). Existing Playbooks,
+legacy output fields, customer resolvers and two-button integrations keep working.
+
+### Added
+
+- Ordered `ctas` carries up to five buttons, each with its own label, path,
+  semantic `role`, `role_overridden` and visual `emphasis`.
+- Browser modal, banner, toast and inline renderers show all actions, with
+  primary and secondary buttons followed by text actions. Blocking modals
+  honor authored `modal_type` and retain their semantic continue exits.
+- Resolver context adds `index`, `label`, `path`, `role` and `role_overridden`.
+  Legacy `kind` remains, derived from emphasis. Init `uiPathResolvers` accepts
+  the same context as an optional second argument; dispatch still uses path type.
+- CTA interaction telemetry adds `cta_index`, `cta_label`, `cta_target`,
+  `cta_role` and `cta_role_overridden`. Close-X dismissals omit these fields.
+  Registered resolvers and server actions report one interaction per activation.
+  Authored snooze emits one reminder interaction with the same CTA identity.
+  Legacy slot callbacks retain attribution when decisions include `ctas`.
+
+### Deprecated
+
+`cta_path`, `ui_path`, `content.cta_label` and `content.secondary_cta_label`
+remain available as compatibility projections of `ctas`. Removal is reserved
+for a future major release. New renderers should read the ordered `ctas` list.
+
+### Changed
+
+Python and Rust dismissal cooldowns now match browser behavior: authored
+`cooldown_days: 0` means none, absence means seven days, and presentation or a
+bare CTA click starts no dismissal cooldown. A dismiss path or notification
+`dismiss` role records an actual dismissal. Python and Rust retain their existing
+decision fields and add `ctas`; their headless APIs do not introduce browser
+resolver callbacks.
+
 ## 0.17.0
 
 The three packages ship at `0.17.0` together. One change, in all three runtimes

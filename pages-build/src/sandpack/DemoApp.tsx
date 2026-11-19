@@ -45,7 +45,7 @@ export function DemoApp({
       // Placement CTAs call back into your app's navigation. Here we just log.
       uiPathResolvers: {
         navigate_to_plans: async (ctx) => console.log('[cta] navigate_to_plans', ctx),
-        open_checkout_modal: async (ctx) => console.log('[cta] open_checkout_modal', ctx),
+        open_checkout_modal: async (path, ctx) => console.log('[cta] open_checkout_modal', path, ctx?.index, ctx?.role, ctx?.kind),
         book_demo: async (ctx) => console.log('[cta] book_demo', ctx),
         custom_url: async (ctx) => console.log('[cta] custom_url', ctx),
       },
