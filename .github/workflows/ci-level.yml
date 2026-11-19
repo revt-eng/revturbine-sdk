@@ -1,4 +1,4 @@
-# GENERATED from revt-eng/revturbine-devkit .github/workflows/ci-level.yml (v1.8.0). Do not edit here:
+# GENERATED from revt-eng/revturbine-devkit .github/workflows/ci-level.yml (v1.10.0). Do not edit here:
 # this repository is public and cannot call the internal devkit workflow, so the devkit
 # keeps the master and `pnpm sync:ci-level` refreshes this copy (docs/ops/ci-levels.md).
 
@@ -18,6 +18,13 @@ name: CI level
 # reports, GitHub Packages publishes) call it too, at level l1 (ST-1752).
 #
 # Inputs reach shell steps through env, never by expression inside `run:`.
+#
+# Test a commit once (input reuse-passed): the job first looks for an earlier
+# pass of this same check on the same commit, or on the head of a merged pull
+# request with the same tree, and ends successfully without installing or
+# running anything when it finds one. The decision is scripts/ci-level-reuse.mjs,
+# inlined below by scripts/build-ci-level-reuse-inline.mjs: edit the script, not
+# the copy.
 
 on:
   workflow_call:
@@ -133,24 +140,37 @@ on:
         description: 'Save a fresh cache-paths entry on every run (the key ends with the commit) and restore the newest; for incremental caches such as tsc build info or ESLint results.'
         type: boolean
         default: false
+      cache-save:
+        description: 'Save the caches this job fills (package store, cache-paths, Playwright browsers, Rust builds, uv). False makes the job restore-only: when several jobs of a workflow fill the same package store, let one save it.'
+        type: boolean
+        default: true
+      reuse-passed:
+        description: 'Test a commit once: skip install and the checks, and succeed, when this same check already passed on this commit, or on the head of a merged pull request with the same tree. The caller job needs permissions contents: read, checks: read, actions: read and pull-requests: read; without them the checks simply run. The values output is {} and no evidence is uploaded when a pass is reused.'
+        type: boolean
+        default: false
       context-json:
         description: 'JSON handed to the command as CI_CONTEXT_JSON, for example toJSON(needs) for an aggregate gate job.'
         type: string
         default: ''
+      environment:
+        description: 'GitHub environment the job runs in: its branch policy and protection rules apply, and its secrets are the ones secret-env exports. Empty runs in none. A caller job cannot set environment: on a reusable workflow call, hence the input.'
+        type: string
+        default: ''
     outputs:
       values:
-        description: 'JSON object of the key=value lines the command wrote to the file named by $CI_OUTPUT ({} when none).'
+        description: 'JSON object of the key=value lines the command wrote to the file named by $CI_OUTPUT ({} when none, and when reuse-passed reused an earlier pass).'
         value: ${{ jobs.check.outputs.values }}
 
 jobs:
   check:
     name: ${{ inputs.name != '' && inputs.name || inputs.level }}
     outputs:
-      values: ${{ steps.run.outputs.values }}
+      values: ${{ steps.reuse.outputs.reuse == 'true' && '{}' || steps.run.outputs.values }}
     # Pull requests from forks never reach our runners (GitHub-hosted fallback);
     # everything else runs on the HELM CodeBuild pools (helm infra/github-runners).
     runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-latest' || format('codebuild-helm-ci-{0}-{1}-{2}', (inputs.pool == 'integration' || (inputs.pool == '' && (inputs.level == 'l2' || inputs.level == 'l3'))) && 'integration' || 'backlog', github.run_id, github.run_attempt) }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
+    environment: ${{ inputs.environment }}
     concurrency:
       group: ci-level-${{ github.workflow }}-${{ inputs.level }}-${{ inputs.name }}-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -194,67 +214,479 @@ jobs:
           echo "lockfile=$lock" >> "$GITHUB_OUTPUT"
           echo "Level $LEVEL, package manager $pm${lock:+, lockfile $lock}"
 
+      # Test a commit once. The step prints this job's marker (what it runs and
+      # the tree it tests) and sets reuse=true only when the same check already
+      # passed with the same marker. A failure here, or a missing permission,
+      # leaves reuse unset and the checks run.
+      - name: Look for an earlier pass of this commit
+        id: reuse
+        if: inputs.reuse-passed
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CI_REUSE_INPUTS: ${{ toJSON(inputs) }}
+          CI_REUSE_WORKFLOW_REF: ${{ github.workflow_ref }}
+          CI_REUSE_CHECK_RUN_ID: ${{ job.check_run_id }}
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/ci-level-reuse.mjs" <<'CI_LEVEL_REUSE_EOF'
+          // GENERATED FILE — do not edit here.
+          // Source: revturbine-devkit scripts/ci-level-reuse.mjs
+          // Regenerate: node scripts/build-ci-level-reuse-inline.mjs (--check in the unit gate).
+
+          // Test a commit once: decide whether a check-level job may reuse an earlier
+          // pass instead of running again (ci-level.yml input `reuse-passed`;
+          // docs/ops/ci-levels.md, "Testing a commit once").
+          //
+          // The job reuses a result only when the same code already passed the same
+          // check:
+          //
+          //   a. Same commit. A successful check run with this job's own check name is
+          //      on this commit from an earlier workflow run, for example the staging
+          //      push run of a commit that is now pushed to main.
+          //   b. Same tree after a merge (push events). A merged pull request whose merge
+          //      commit is this commit has a head commit with the same tree, and that
+          //      head has a successful check run with the same name.
+          //
+          // What ties a result to what was run is a marker: every job that opts in
+          // prints one notice annotation, titled `ci-level-reuse`, carrying a
+          // fingerprint (the caller workflow's path and every input of the call, the
+          // level and the command among them) and the tree it checked out. An earlier
+          // result counts only when its marker equals this job's marker, so a changed
+          // command, level, input or workflow file, or a different tree under test,
+          // never matches. Among the check runs with this job's name from the same
+          // workflow file, the newest decides: a failed, cancelled, skipped or running
+          // newest result means the checks run, whatever came before it.
+          //
+          // Anything else means the checks run too: a failed or ambiguous API call, a
+          // result from a fork, from another repository or from this same workflow run.
+          //
+          // This file is inlined into .github/workflows/ci-level.yml by
+          // scripts/build-ci-level-reuse-inline.mjs, so it has no top-level imports and
+          // must never contain an Actions expression opener (BL-0221). Edit this file,
+          // then regenerate.
+
+          /** Title of the notice annotation that carries the marker. */
+          const MARKER_TITLE = 'ci-level-reuse';
+
+          /** Bump when the meaning of a marker changes: older results then stop matching. */
+          const MARKER_VERSION = 'v1';
+
+          /** Inputs that change how a job runs but not what it proves. */
+          const INPUTS_OUTSIDE_FINGERPRINT = ['reuse-passed', 'cache-save'];
+
+          /** Check runs examined on one commit before giving up and running the checks. */
+          const MAX_EXAMINED = 10;
+
+          const SHA = /^[0-9a-f]{40}$/;
+
+          /** JSON with object keys sorted, so equal values always serialize alike. */
+          function canonicalJson(value) {
+            if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+            if (value && typeof value === 'object') {
+              return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;
+            }
+            return JSON.stringify(value ?? null);
+          }
+
+          /**
+           * The caller workflow's path, from `github.workflow_ref`
+           * (`owner/repo/.github/workflows/ci.yml@refs/heads/main`). Null when the
+           * workflow belongs to another repository or the reference cannot be read.
+           */
+          function callerWorkflowPath(workflowRef, repository) {
+            const ref = String(workflowRef ?? '');
+            const prefix = `${repository}/`;
+            if (!repository || !ref.startsWith(prefix)) return null;
+            const path = ref.slice(prefix.length).split('@')[0];
+            return /^\.github\/workflows\/[^/]+\.ya?ml$/.test(path) ? path : null;
+          }
+
+          /** A workflow run's `path`, without the `@ref` some runs carry. */
+          function runWorkflowPath(run) {
+            return String(run?.path ?? '').split('@')[0];
+          }
+
+          /**
+           * Fingerprint of what a job runs: the caller workflow's path and every input
+           * of the call except the ones that cannot change the result.
+           * @param {{ workflowPath: string, level: string, command: string, inputs: Record<string, unknown> }} what
+           * @param {(text: string) => string} sha256 hex digest of a string
+           */
+          function fingerprint({ workflowPath, level, command, inputs }, sha256) {
+            const kept = {};
+            for (const [key, value] of Object.entries(inputs ?? {})) {
+              if (!INPUTS_OUTSIDE_FINGERPRINT.includes(key)) kept[key] = value;
+            }
+            return sha256(canonicalJson({ version: MARKER_VERSION, workflowPath, level, command, inputs: kept }));
+          }
+
+          /** The marker a job prints and looks for: its fingerprint and the tree it tests. */
+          function markerMessage(print, tree) {
+            return `${MARKER_VERSION} fingerprint=${print} tree=${tree}`;
+          }
+
+          /** The distinct markers among a check run's annotations. */
+          function markersIn(annotations) {
+            const found = new Set();
+            for (const annotation of Array.isArray(annotations) ? annotations : []) {
+              if (annotation?.title === MARKER_TITLE) found.add(String(annotation.message ?? '').trim());
+            }
+            return [...found];
+          }
+
+          const run = (reason) => ({ reuse: false, reason });
+
+          /**
+           * This job's own check name, read from the jobs of this run attempt: the job
+           * with this check run id, or else the one job running on this runner.
+           * @returns {string | null} null when the job cannot be told apart
+           */
+          function ownCheckName(jobs, { checkRunId, runnerName }) {
+            const list = Array.isArray(jobs) ? jobs : [];
+            const mine = checkRunId
+              ? list.filter((job) => String(job?.id) === String(checkRunId))
+              : list.filter((job) => runnerName && job?.runner_name === runnerName && job?.status === 'in_progress');
+            return mine.length === 1 && typeof mine[0].name === 'string' && mine[0].name !== '' ? mine[0].name : null;
+          }
+
+          /**
+           * Judge the check runs named `checkName` on one commit.
+           * @returns {Promise<{ verdict: 'reuse', source: object } | { verdict: 'run', reason: string } | { verdict: 'none', reason: string }>}
+           *   `none`: this commit carries no result of this check from this workflow file.
+           */
+          async function judgeCommit({ api, repository, runId, checkName, workflowPath, marker }, sha) {
+            const listed = await api(`/repos/${repository}/commits/${sha}/check-runs?check_name=${encodeURIComponent(checkName)}&filter=all&per_page=100`);
+            if (!Array.isArray(listed?.check_runs)) return { verdict: 'run', reason: `the check runs of ${sha} could not be read` };
+            if (Number(listed.total_count) > listed.check_runs.length) return { verdict: 'run', reason: `${sha} has more "${checkName}" check runs than one page lists` };
+            const named = listed.check_runs.filter((check) => check?.name === checkName);
+            if (named.some((check) => check.head_sha !== sha || !check.started_at)) return { verdict: 'run', reason: `a "${checkName}" check run of ${sha} is malformed` };
+            named.sort((a, b) => Date.parse(b.started_at) - Date.parse(a.started_at) || Number(b.id) - Number(a.id));
+
+            let examined = 0;
+            for (const check of named) {
+              // Another app's check with the same name is not a result of this job.
+              if (check.app?.slug !== 'github-actions') continue;
+              if (examined === MAX_EXAMINED) return { verdict: 'run', reason: `more than ${MAX_EXAMINED} "${checkName}" check runs on ${sha}` };
+              examined += 1;
+
+              const job = await api(`/repos/${repository}/actions/jobs/${check.id}`);
+              if (!job?.run_id) return { verdict: 'run', reason: `check run ${check.id} names no workflow run` };
+              // A result of this same run (this attempt or an earlier one) is never reused:
+              // someone asked for the checks to run again.
+              if (String(job.run_id) === String(runId)) continue;
+
+              const workflowRun = await api(`/repos/${repository}/actions/runs/${job.run_id}`);
+              // A job with the same name in a different workflow file is a different check.
+              if (runWorkflowPath(workflowRun) !== workflowPath) continue;
+
+              // From here on this is the newest result of this check, and it alone decides.
+              if (workflowRun.repository?.full_name !== repository || workflowRun.head_repository?.full_name !== repository)
+                return { verdict: 'run', reason: `the newest "${checkName}" result on ${sha} comes from another repository or a fork (run ${job.run_id})` };
+              if (workflowRun.head_sha !== sha) return { verdict: 'run', reason: `run ${job.run_id} is not a run of ${sha}` };
+              if (check.status !== 'completed' || check.conclusion !== 'success' || job.conclusion !== 'success')
+                return { verdict: 'run', reason: `the newest "${checkName}" result on ${sha} is ${check.status === 'completed' ? check.conclusion : check.status}, not a pass (run ${job.run_id})` };
+
+              const annotations = await api(`/repos/${repository}/check-runs/${check.id}/annotations?per_page=100`);
+              if (!Array.isArray(annotations)) return { verdict: 'run', reason: `the annotations of check run ${check.id} could not be read` };
+              const markers = markersIn(annotations);
+              if (markers.length === 0) return { verdict: 'run', reason: `the newest "${checkName}" pass on ${sha} carries no reuse marker (run ${job.run_id})` };
+              if (markers.length > 1) return { verdict: 'run', reason: `check run ${check.id} carries more than one reuse marker` };
+              if (markers[0] !== marker)
+                return { verdict: 'run', reason: `the newest "${checkName}" pass on ${sha} ran something else or tested another tree (run ${job.run_id}: ${markers[0]})` };
+
+              return {
+                verdict: 'reuse',
+                source: { sha, checkRunId: check.id, checkRunUrl: check.html_url ?? null, runId: job.run_id, runUrl: workflowRun.html_url ?? null, event: workflowRun.event ?? null },
+              };
+            }
+            return { verdict: 'none', reason: `no earlier "${checkName}" result from ${workflowPath} on ${sha}` };
+          }
+
+          /**
+           * The head commits of merged pull requests that produced `sha` with the same
+           * tree: same repository on both sides (never a fork), merge commit equal to
+           * `sha`, and a head commit whose tree is `tree`. Tree equality is the proof;
+           * the association alone says nothing about what the head contained.
+           * @returns {Promise<{ heads: { sha: string, pullRequest: number, pullRequestUrl: string | null }[], notes: string[] }>}
+           */
+          async function mergedHeadsWithSameTree({ api, repository, sha, tree }) {
+            const pulls = await api(`/repos/${repository}/commits/${sha}/pulls?per_page=100`);
+            if (!Array.isArray(pulls)) throw new Error(`the pull requests of ${sha} could not be read`);
+            const heads = [];
+            const notes = [];
+            for (const pull of pulls) {
+              if (!pull?.merged_at || pull.merge_commit_sha !== sha) continue;
+              if (pull.base?.repo?.full_name !== repository) continue;
+              if (pull.head?.repo?.full_name !== repository) {
+                notes.push(`pull request #${pull.number} comes from a fork`);
+                continue;
+              }
+              if (!SHA.test(String(pull.head?.sha ?? ''))) continue;
+              const head = await api(`/repos/${repository}/git/commits/${pull.head.sha}`);
+              if (head?.sha !== pull.head.sha || !SHA.test(String(head?.tree?.sha ?? ''))) throw new Error(`the head commit of pull request #${pull.number} could not be read`);
+              if (head.tree.sha !== tree) {
+                notes.push(`the head of pull request #${pull.number} has a different tree (${head.tree.sha})`);
+                continue;
+              }
+              heads.push({ sha: pull.head.sha, pullRequest: pull.number, pullRequestUrl: pull.html_url ?? null });
+            }
+            return { heads, notes };
+          }
+
+          /**
+           * Decide whether this job may reuse an earlier pass. Never throws: an error is
+           * a reason to run the checks.
+           *
+           * @param {object} context
+           * @param {(path: string) => Promise<any>} context.api GET a GitHub REST path; rejects on any failure
+           * @param {(path: string) => Promise<any[]>} context.listJobs every job of this run attempt; rejects on any failure
+           * @param {string} context.repository `owner/name`
+           * @param {string} context.sha the commit under test (`github.sha`)
+           * @param {string} context.tree the tree checked out
+           * @param {string} context.eventName `github.event_name`
+           * @param {string} context.runId this workflow run
+           * @param {string} context.workflowPath the caller workflow's path
+           * @param {string} context.marker this job's marker (markerMessage)
+           * @param {string} [context.checkRunId] this job's check run id, when the runner reports it
+           * @param {string} [context.runnerName] this job's runner
+           * @returns {Promise<{ reuse: boolean, reason: string, checkName?: string, source?: object }>}
+           */
+          async function decide(context) {
+            try {
+              const { repository, sha, tree, eventName, workflowPath, marker } = context;
+              if (!repository || !SHA.test(String(sha)) || !SHA.test(String(tree))) return run('the commit or tree under test is unknown');
+              if (!workflowPath) return run('the caller workflow is not a file of this repository');
+              if (!marker) return run('this job has no marker');
+
+              const checkName = ownCheckName(await context.listJobs(), context);
+              if (!checkName) return run("this job's own check name could not be determined");
+              const scope = { ...context, checkName };
+
+              const same = await judgeCommit(scope, sha);
+              if (same.verdict === 'reuse') return { reuse: true, reason: 'the same commit already passed this check', checkName, source: { kind: 'same-commit', ...same.source } };
+              if (same.verdict === 'run') return { ...run(same.reason), checkName };
+
+              if (eventName !== 'push') return { ...run(same.reason), checkName };
+
+              const { heads, notes } = await mergedHeadsWithSameTree(scope);
+              if (heads.length === 0) return { ...run([same.reason, ...notes, 'no merged pull request head has the same tree'].join('; ')), checkName };
+              if (heads.length > 1) return { ...run(`more than one merged pull request head matches ${sha}`), checkName };
+              const head = heads[0];
+              const merged = await judgeCommit(scope, head.sha);
+              if (merged.verdict !== 'reuse') return { ...run(merged.reason), checkName };
+              return {
+                reuse: true,
+                reason: `pull request #${head.pullRequest} merged with the same tree as its head, which already passed this check`,
+                checkName,
+                source: { kind: 'merged-pull-request', pullRequest: head.pullRequest, pullRequestUrl: head.pullRequestUrl, ...merged.source },
+              };
+            } catch (error) {
+              return run(`a lookup failed: ${error?.message ?? error}`);
+            }
+          }
+
+          /** The step summary for a decision. */
+          function summarize(decision, { serverUrl, repository, sha, tree }) {
+            const commit = (id) => `[\`${id.slice(0, 12)}\`](${serverUrl}/${repository}/commit/${id})`;
+            if (!decision.reuse) return `### Test a commit once\n\nRunning the checks: ${decision.reason}.\n`;
+            const source = decision.source;
+            const lines = [
+              '### Test a commit once: reused an earlier pass',
+              '',
+              `The checks did not run again: ${decision.reason}.`,
+              '',
+              `- Check: \`${decision.checkName}\``,
+              `- This commit: ${commit(sha)}, tree \`${tree}\``,
+              `- Passed on: ${commit(source.sha)}${source.sha === sha ? ' (the same commit)' : ' (same tree)'}`,
+            ];
+            if (source.pullRequest) lines.push(`- Merged pull request: [#${source.pullRequest}](${source.pullRequestUrl ?? `${serverUrl}/${repository}/pull/${source.pullRequest}`})`);
+            lines.push(
+              `- Earlier run: [${source.runId}](${source.runUrl ?? `${serverUrl}/${repository}/actions/runs/${source.runId}`})${source.event ? ` (${source.event})` : ''}`,
+              `- Earlier check: [${source.checkRunId}](${source.checkRunUrl ?? `${serverUrl}/${repository}/runs/${source.checkRunId}`})`,
+              '',
+              'Install and the checks were skipped; the `values` output is `{}` and no evidence was uploaded.',
+              '',
+            );
+            return lines.join('\n');
+          }
+
+          /**
+           * The step: print this job's marker, decide, and report through
+           * `$GITHUB_OUTPUT` (`reuse=true|false`) and the step summary. Any failure
+           * leaves `reuse` false, so the checks run.
+           */
+          async function main() {
+            const { execFileSync } = await import('node:child_process');
+            const { createHash } = await import('node:crypto');
+            const fs = await import('node:fs');
+            const env = process.env;
+            const output = (key, value) => {
+              if (env.GITHUB_OUTPUT) fs.appendFileSync(env.GITHUB_OUTPUT, `${key}=${String(value).replace(/[\r\n]+/g, ' ')}\n`);
+            };
+            const finish = (decision, where) => {
+              output('reuse', decision.reuse ? 'true' : 'false');
+              output('reason', decision.reason);
+              process.stdout.write(`${decision.reuse ? 'Reusing an earlier pass' : 'Running the checks'}: ${decision.reason}.\n`);
+              if (env.GITHUB_STEP_SUMMARY) fs.appendFileSync(env.GITHUB_STEP_SUMMARY, summarize(decision, where));
+            };
+
+            const repository = env.GITHUB_REPOSITORY ?? '';
+            const sha = env.GITHUB_SHA ?? '';
+            const serverUrl = env.GITHUB_SERVER_URL || 'https://github.com';
+            const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
+            let tree = '';
+            try {
+              if (git('rev-parse', 'HEAD') === sha) tree = git('rev-parse', 'HEAD^{tree}');
+            } catch {
+              // No tree, no marker: the checks run and this job's result is never reused.
+            }
+            const where = { serverUrl, repository, sha, tree };
+            if (!tree) return finish(run(`the checkout is not ${sha || 'the event commit'}`), where);
+
+            let inputs;
+            try {
+              inputs = JSON.parse(env.CI_REUSE_INPUTS || '');
+            } catch {
+              return finish(run('the inputs of this call could not be read'), where);
+            }
+            const workflowPath = callerWorkflowPath(env.CI_REUSE_WORKFLOW_REF, repository);
+            if (!workflowPath) return finish(run('the caller workflow is not a file of this repository'), where);
+
+            const sha256 = (text) => createHash('sha256').update(text).digest('hex');
+            const marker = markerMessage(fingerprint({ workflowPath, level: inputs.level ?? '', command: inputs.command ?? '', inputs }, sha256), tree);
+            // The marker goes out before any lookup, so a job that runs its checks is
+            // reusable later whatever the lookups did.
+            process.stdout.write(`::notice title=${MARKER_TITLE}::${marker}\n`);
+
+            const apiUrl = env.GITHUB_API_URL || 'https://api.github.com';
+            const api = async (path) => {
+              const response = await fetch(`${apiUrl}${path}`, {
+                headers: { accept: 'application/vnd.github+json', authorization: `Bearer ${env.GITHUB_TOKEN ?? ''}`, 'x-github-api-version': '2022-11-28', 'user-agent': 'ci-level-reuse' },
+                signal: AbortSignal.timeout(15000),
+              });
+              if (!response.ok) throw new Error(`GET ${path.split('?')[0]} answered HTTP ${response.status}`);
+              return response.json();
+            };
+            const listJobs = async () => {
+              const jobs = [];
+              for (let page = 1; page <= 10; page += 1) {
+                const body = await api(`/repos/${repository}/actions/runs/${env.GITHUB_RUN_ID}/attempts/${env.GITHUB_RUN_ATTEMPT || 1}/jobs?per_page=100&page=${page}`);
+                if (!Array.isArray(body?.jobs)) throw new Error('the jobs of this run could not be read');
+                jobs.push(...body.jobs);
+                if (jobs.length >= Number(body.total_count) || body.jobs.length === 0) return jobs;
+              }
+              throw new Error('this run has more jobs than could be listed');
+            };
+
+            const decision = await decide({
+              api,
+              listJobs,
+              repository,
+              sha,
+              tree,
+              eventName: env.GITHUB_EVENT_NAME ?? '',
+              runId: env.GITHUB_RUN_ID ?? '',
+              workflowPath,
+              marker,
+              checkRunId: env.CI_REUSE_CHECK_RUN_ID ?? '',
+              runnerName: env.RUNNER_NAME ?? '',
+            });
+            return finish(decision, where);
+          }
+          main().catch((error) => {
+            process.stderr.write(`ci-level-reuse crashed: ${error?.stack ?? error}\n`);
+            process.exit(1);
+          });
+          CI_LEVEL_REUSE_EOF
+          node "$RUNNER_TEMP/ci-level-reuse.mjs"
+
       - name: Set up pnpm
-        if: steps.pm.outputs.name == 'pnpm'
+        if: steps.reuse.outputs.reuse != 'true' && steps.pm.outputs.name == 'pnpm'
         uses: pnpm/action-setup@v4
         with:
           package_json_file: ${{ inputs.working-directory }}/package.json
 
       - name: Set up Node.js
-        if: inputs.node-version != 'none'
+        if: steps.reuse.outputs.reuse != 'true' && inputs.node-version != 'none'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node-version }}
-          cache: ${{ inputs.install && steps.pm.outputs.lockfile != '' && steps.pm.outputs.name || '' }}
+          cache: ${{ inputs.cache-save && inputs.install && steps.pm.outputs.lockfile != '' && steps.pm.outputs.name || '' }}
           cache-dependency-path: ${{ steps.pm.outputs.lockfile }}
           registry-url: ${{ inputs.github-packages && 'https://npm.pkg.github.com' || '' }}
           scope: ${{ inputs.github-packages && '@revt-eng' || '' }}
 
+      # cache-save false: restore the package store setup-node would have
+      # restored (same path, same key), and save nothing.
+      - name: Find the package store
+        id: store
+        if: steps.reuse.outputs.reuse != 'true' && !inputs.cache-save && inputs.install && inputs.node-version != 'none' && steps.pm.outputs.lockfile != ''
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          PM: ${{ steps.pm.outputs.name }}
+        run: |
+          set -euo pipefail
+          if [ "$PM" = pnpm ]; then store="$(pnpm store path --silent)"; else store="$(npm config get cache)"; fi
+          echo "path=$store" >> "$GITHUB_OUTPUT"
+          echo "arch=$(node -p 'require("node:os").arch()')" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the package store (no save)
+        if: steps.reuse.outputs.reuse != 'true' && steps.store.outputs.path != ''
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ steps.store.outputs.path }}
+          key: node-cache-${{ runner.os }}-${{ steps.store.outputs.arch }}-${{ steps.pm.outputs.name }}-${{ hashFiles(steps.pm.outputs.lockfile) }}
+
       - name: Set up Python
-        if: inputs.python-version != ''
+        if: steps.reuse.outputs.reuse != 'true' && inputs.python-version != ''
         uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}
 
       - name: Set up uv
-        if: inputs.uv
+        if: steps.reuse.outputs.reuse != 'true' && inputs.uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
+          save-cache: ${{ inputs.cache-save }}
 
       - name: Set up Rust
-        if: inputs.rust-toolchain != ''
+        if: steps.reuse.outputs.reuse != 'true' && inputs.rust-toolchain != ''
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ inputs.rust-toolchain }}
           components: ${{ inputs.rust-components }}
 
       - name: Cache Rust builds
-        if: inputs.rust-toolchain != ''
+        if: steps.reuse.outputs.reuse != 'true' && inputs.rust-toolchain != ''
         uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ inputs.cache-save }}
 
       - name: Set up Go
-        if: inputs.go-version-file != ''
+        if: steps.reuse.outputs.reuse != 'true' && inputs.go-version-file != ''
         uses: actions/setup-go@v5
         with:
           go-version-file: ${{ inputs.go-version-file }}
 
       - name: Set up OpenTofu
-        if: inputs.opentofu-version != ''
+        if: steps.reuse.outputs.reuse != 'true' && inputs.opentofu-version != ''
         uses: opentofu/setup-opentofu@v1
         with:
           tofu_version: ${{ inputs.opentofu-version }}
           tofu_wrapper: false
 
       - name: Set up Terraform
-        if: inputs.terraform-version != ''
+        if: steps.reuse.outputs.reuse != 'true' && inputs.terraform-version != ''
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ inputs.terraform-version }}
           terraform_wrapper: false
 
       - name: Restore cached tools
-        if: inputs.cache-paths != ''
+        if: steps.reuse.outputs.reuse != 'true' && inputs.cache-paths != '' && inputs.cache-save
         uses: actions/cache@v4
         with:
           path: ${{ inputs.cache-paths }}
@@ -263,8 +695,18 @@ jobs:
             ci-${{ inputs.level }}${{ inputs.name != '' && format('-{0}', inputs.name) || '' }}-${{ runner.os }}-${{ hashFiles(inputs.cache-key-files != '' && inputs.cache-key-files || '.github/workflows/*.yml') }}-
             ci-${{ inputs.level }}${{ inputs.name != '' && format('-{0}', inputs.name) || '' }}-${{ runner.os }}-
 
+      - name: Restore cached tools (no save)
+        if: steps.reuse.outputs.reuse != 'true' && inputs.cache-paths != '' && !inputs.cache-save
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ inputs.cache-paths }}
+          key: ci-${{ inputs.level }}${{ inputs.name != '' && format('-{0}', inputs.name) || '' }}-${{ runner.os }}-${{ hashFiles(inputs.cache-key-files != '' && inputs.cache-key-files || '.github/workflows/*.yml') }}${{ inputs.cache-refresh && format('-{0}', github.sha) || '' }}
+          restore-keys: |
+            ci-${{ inputs.level }}${{ inputs.name != '' && format('-{0}', inputs.name) || '' }}-${{ runner.os }}-${{ hashFiles(inputs.cache-key-files != '' && inputs.cache-key-files || '.github/workflows/*.yml') }}-
+            ci-${{ inputs.level }}${{ inputs.name != '' && format('-{0}', inputs.name) || '' }}-${{ runner.os }}-
+
       - name: Install dependencies
-        if: inputs.install && steps.pm.outputs.name != 'none'
+        if: steps.reuse.outputs.reuse != 'true' && inputs.install && steps.pm.outputs.name != 'none'
         working-directory: ${{ inputs.working-directory }}
         env:
           PM: ${{ steps.pm.outputs.name }}
@@ -280,7 +722,7 @@ jobs:
 
       - name: Find the Playwright version
         id: playwright
-        if: inputs.playwright != ''
+        if: steps.reuse.outputs.reuse != 'true' && inputs.playwright != ''
         working-directory: ${{ inputs.working-directory }}
         run: |
           set -euo pipefail
@@ -288,14 +730,21 @@ jobs:
           echo "version=${version:-unknown}" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
-        if: inputs.playwright != ''
+        if: steps.reuse.outputs.reuse != 'true' && inputs.playwright != '' && inputs.cache-save
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-${{ inputs.playwright }}
 
+      - name: Restore Playwright browsers (no save)
+        if: steps.reuse.outputs.reuse != 'true' && inputs.playwright != '' && !inputs.cache-save
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-${{ inputs.playwright }}
+
       - name: Install Playwright browsers
-        if: inputs.playwright != ''
+        if: steps.reuse.outputs.reuse != 'true' && inputs.playwright != ''
         working-directory: ${{ inputs.working-directory }}
         env:
           BROWSERS: ${{ inputs.playwright }}
@@ -305,7 +754,7 @@ jobs:
           npx --no-install playwright install --with-deps "${browsers[@]}"
 
       - name: Export requested secrets
-        if: inputs.secret-env != ''
+        if: steps.reuse.outputs.reuse != 'true' && inputs.secret-env != ''
         env:
           NAMES: ${{ inputs.secret-env }}
           ALL_SECRETS: ${{ toJSON(secrets) }}
@@ -328,6 +777,7 @@ jobs:
 
       - name: Run the level's checks
         id: run
+        if: steps.reuse.outputs.reuse != 'true'
         working-directory: ${{ inputs.working-directory }}
         env:
           CI_LEVEL: ${{ inputs.level }}
@@ -362,7 +812,7 @@ jobs:
           echo "values=$values" >> "$GITHUB_OUTPUT"
 
       - name: Upload evidence
-        if: always() && inputs.artifact-paths != ''
+        if: always() && inputs.artifact-paths != '' && steps.reuse.outputs.reuse != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact-name != '' && inputs.artifact-name || format('{0}-evidence{1}', inputs.level, inputs.name != '' && format('-{0}', inputs.name) || '') }}
