@@ -407,6 +407,22 @@ class TestCredits:
             "rule_handle": "r_c",
         }
 
+    def test_one_time_grant_is_read_under_its_current_name(self) -> None:
+        # ST-3163: a canonical Playbook carries only one_time_grant; it must
+        # limit, not read as unlimited.
+        cfg = _cfg([_rule("c", {"kind": "credits", "one_time_grant": 3})])
+        assert _derive(cfg, "c", context={"used": 5})["status"] == "limited"
+        assert _derive(cfg, "c", context={"used": 1})["limit"] == 3
+
+    def test_one_time_grant_wins_over_the_old_name_and_null_falls_back(self) -> None:
+        # core: `one_time_grant ?? initial_grant`.
+        both = _cfg([_rule("c", {"kind": "credits", "one_time_grant": 3, "initial_grant": 9})])
+        assert _derive(both, "c", context={"used": 1})["limit"] == 3
+        null_new = _cfg(
+            [_rule("c", {"kind": "credits", "one_time_grant": None, "initial_grant": 9})]
+        )
+        assert _derive(null_new, "c", context={"used": 1})["limit"] == 9
+
 
 class TestCapabilityTierAndUsageResolution:
     def test_capability_tier_emits_current_tier(self) -> None:

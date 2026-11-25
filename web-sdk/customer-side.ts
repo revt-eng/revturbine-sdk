@@ -5564,7 +5564,9 @@ export class RevTurbineCustomerSdk {
 
     const record = await this.buildSurfaceSlotRecord({
       id: slot.id,
-      name: config.placementHandle ?? slot.placement_handle ?? slot.id,
+      // ST-9990: a slot reference may name no placement (absent or empty
+      // `placement_handle`); the record is then named by the slot id.
+      name: config.placementHandle ?? (slot.placement_handle ? slot.placement_handle : slot.id),
       ...(slot.template ? { surfaceTemplateIds: [slot.template] } : {}),
       metadata: {
         surface_type: slot.surface_type,

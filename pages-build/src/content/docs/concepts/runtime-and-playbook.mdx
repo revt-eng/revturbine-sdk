@@ -39,7 +39,7 @@ that calculation waits on RevTurbine.
 The Playbook is the portable artifact RevTurbine evaluates: one JSON file,
 `revturbine.playbook.json`, that you edit in the dashboard, with the CLI or with
 your coding agent. Every launch is an immutable, versioned Release. In local
-mode you bundle the file; in hosted mode the SDK fetches the launched Release.
+mode you bundle the file; in connected mode the SDK fetches the launched Release.
 Either way the SDK evaluates the same artifact the same way.
 
 | Primitive | In plain English | Why it exists | Example |
@@ -63,7 +63,7 @@ The Runtime is everything the SDK knows about the moment of the decision.
 
 | Piece | In plain English | Who supplies it |
 |---|---|---|
-| **<span id="usercontext">UserContext</span>** | The user: id, plan, usage balances, trial state, custom traits. | Your app at init and as things change, plus plan, trial and payment state from Stripe through a [client session](/guides/client-sessions/) in hosted mode. See [`RevTurbineUserContext`](/user-context/). |
+| **<span id="usercontext">UserContext</span>** | The user: id, plan, usage balances, trial state, custom traits. | Your app at init and as things change, plus plan, trial and payment state from Stripe through a [client session](/guides/client-sessions/) in connected mode. See [`RevTurbineUserContext`](/user-context/). |
 | **<span id="usage">Usage</span>** | How much the user has consumed. Always an absolute balance, never a delta. | Your app (`update({ usage })`). |
 | **App answers** | When your own system already decides an entitlement, you pass its answer in the `entitlements` field. This is Entitlement Mirroring. | Your app. |
 | **<span id="entitlement-grant">Entitlement grant</span>** | What a user ends up with for one entitlement, and where it came from: a rule, an answer your app passed, or an override. | Derived by the engine. |
@@ -94,7 +94,7 @@ page will describe them as shipped when they are.
 1. **Initialize.** You give the SDK the Playbook (a bundled file, or a public
    key so it can fetch the launched Release) and the user. See
    [Initialize the SDK](/getting-started/initialization/).
-2. **Load.** In hosted mode the SDK fetches the Playbook once and re-checks for
+2. **Load.** In connected mode the SDK fetches the Playbook once and re-checks for
    a new Release about once a minute, keeping the last good copy if a refresh
    fails. Until the first Playbook arrives, a check **denies** with
    `config_unavailable`. It never grants on a guess.
@@ -112,7 +112,7 @@ availability. Two boundaries matter:
   decision that protects money and data, by building its own instance from the
   Playbook and **its own** record of the user. See
   [Client vs Server Enforcement](/concepts/enforcement/).
-- **Local versus hosted.** Hosted changes where the Playbook and the
+- **Local versus connected mode.** Connected mode changes where the Playbook and the
   server-derived user state come from, not where the decision runs. See
   [Runtime Modes](/guides/runtime-modes/).
 

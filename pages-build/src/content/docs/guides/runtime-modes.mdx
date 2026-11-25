@@ -1,17 +1,17 @@
 ---
 title: Runtime Modes
-description: Local mode and hosted mode, what each gives you, and where decisions run in both.
+description: Local mode and connected mode, what each gives you, and where decisions run in both.
 sidebar:
   order: 1
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
-Two modes matter for most apps: **local** and **hosted**. A third, `custom_endpoints`, routes selected context and telemetry calls through your own proxy while Playbook delivery stays with RevTurbine.
+Two modes matter for most apps: **local mode** and **connected mode**. A third, `custom_endpoints`, routes selected context and telemetry calls through your own proxy while Playbook delivery stays with RevTurbine.
 
-## Hosted mode
+## Connected mode
 
-**Hosted mode is how you change monetization without a deploy.** RevTurbine stores and versions your Playbook; the SDK in your app keeps a fresh local copy and decides from it.
+**Connected mode is how you change monetization without a deploy.** RevTurbine stores and versions your Playbook; the SDK in your app keeps a fresh local copy and decides from it.
 
 What it gives you:
 
@@ -20,33 +20,33 @@ What it gives you:
 - **Analytics.** Conversion and usage analytics, so you can see what's working. Growth adds deeper analytics and self-driving growth recommendations.
 - **Signals your app doesn't hold.** Billing status from Stripe, trial state, per-customer exceptions and end-user behavior follow the user. Caps and cooldowns hold across devices, and an exception applies wherever that user shows up.
 
-What doesn't change: the RevTurbine SDK runs inside your app, and on your backend where you verify. It evaluates entitlements and placements locally, as a pure function of your Playbook and the current user context. Hosted mode changes where the Playbook and user state come from, not where decisions run. We add no latency, and our availability never affects your product.
+What doesn't change: the RevTurbine SDK runs inside your app, and on your backend where you verify. It evaluates entitlements and placements locally, as a pure function of your Playbook and the current user context. Connected mode changes where the Playbook and user state come from, not where decisions run. We add no latency, and our availability never affects your product.
 
 In code: `runtimeMode: RuntimeMode.Server` (`revturbine_server`), with the browser's `publicKey` or a trusted backend's `apiKey`. Both load hosted Playbooks and evaluate locally. Backend sessions belong to one user and operation; keep server keys out of browser bundles. See [Initialize the SDK](/getting-started/initialization/) and [Server-Side Integration](/getting-started/server-side/#hosted-delivery-on-a-backend).
 
 ## Local mode
 
-**Local mode ships the Playbook with your app.** You version it in your own repo, and changing it is a deploy. No account, always free, and production-capable on its own. Every decision is made the same way as in hosted mode.
+**Local mode ships the Playbook with your app.** You version it in your own repo, and changing it is a deploy. No account, always free, and production-capable on its own. Every decision is made the same way as in connected mode.
 
 In code: `runtimeMode: RuntimeMode.LocalOnly` (`local_only`) with `localRuntime: { playbook }`.
 
 ## Which one
 
 1. Getting started, building a demo, or shipping a Playbook that rarely changes? **Local.**
-2. Want to change monetization without deploying, see analytics, or set per-customer exceptions? **Hosted.**
-3. Need context or telemetry calls to go through your own proxy? **Hosted, with `custom_endpoints`.**
+2. Want to change monetization without deploying, see analytics, or set per-customer exceptions? **Connected mode.**
+3. Need context or telemetry calls to go through your own proxy? **Connected mode, with `custom_endpoints`.**
 
 ## Mode comparison
 
 | Mode | Where the Playbook comes from | What RevTurbine provides | Required config |
 |---|---|---|---|
 | **Local** (`local_only`) | Bundled with your app | Nothing at runtime; optional anonymous adoption beacon | `localRuntime: { playbook }` |
-| **Hosted** (`revturbine_server`) | RevTurbine, cached locally and refreshed in the background | Playbook delivery and versioning; user state (billing, trials, exceptions, behavior); analytics | `publicKey` (and a `clientSession` route for server-derived state). `tenantId` and `endpoint` are optional |
-| **Hosted with custom endpoints** (`custom_endpoints`) | RevTurbine, cached locally as in hosted mode | Same as hosted; selected context and telemetry calls use your endpoints | Hosted config + `endpointOverrides` |
+| **Connected** (`revturbine_server`) | RevTurbine, cached locally and refreshed in the background | Playbook delivery and versioning; user state (billing, trials, exceptions, behavior); analytics | `publicKey` (and a `clientSession` route for server-derived state). `tenantId` and `endpoint` are optional |
+| **Connected with custom endpoints** (`custom_endpoints`) | RevTurbine, cached locally as in connected mode | Same as connected mode; selected context and telemetry calls use your endpoints | Connected-mode config + `endpointOverrides` |
 
 ### Keep the Playbook intact
 
-Use a Playbook checked into your app for local mode, or let the SDK retrieve the launched Playbook from RevTurbine in hosted mode. Pass the validated artifact intact. An app endpoint that reshapes, filters or strips fields creates a different artifact from the one you validated.
+Use a Playbook checked into your app for local mode, or let the SDK retrieve the launched Playbook from RevTurbine in connected mode. Pass the validated artifact intact. An app endpoint that reshapes, filters or strips fields creates a different artifact from the one you validated.
 
 `endpointOverrides` does not reroute Playbook delivery. Keep `endpoint` set to RevTurbine and override only the supported context and telemetry calls. See the [endpoint reference](/reference/configuration/#revturbineendpointoverrides) for the complete list.
 
@@ -96,7 +96,7 @@ In `local_only` mode the SDK evaluates all targeting rules, entitlements, and pl
 </Aside>
 
 </TabItem>
-<TabItem label="Hosted mode">
+<TabItem label="Connected mode">
 
 ```ts
 import { initRevTurbine, createServerRuntimeConfig } from '@revturbine/sdk';
@@ -161,7 +161,7 @@ const branding = session.sdk.getBranding();
 
 Use your actual plan handle and CTA action types. Branding is optional and merges over defaults. With React, pass the same options to [RevTurbineProvider](/getting-started/react/) and let it initialize the SDK. See [User Context](/user-context/), [CTA actions](/guides/placements/#cta-actions) and [Theming](/guides/theming/) for the individual options.
 
-### A bundled Playbook as a startup seed in hosted mode
+### A bundled Playbook as a startup seed in connected mode
 
 `localRuntime.playbook` has two roles, decided by `runtimeMode`:
 
@@ -182,9 +182,9 @@ const session = await initRevTurbine({
 
 ### Analytics consent and the rest of the SDK
 
-Analytics is a separate concern from behavior. `telemetry.consent` and `analytics: false` stop the SDK **reporting**: clickstream events, including every `placement_interaction` (impression, dismissal, CTA click), are not sent. They never affect Playbook delivery, entitlement or placement decisions, dismissal cooldowns, suppression or presentation caps, so a hosted instance with consent denied still downloads your Playbook and enforces its caps. You do not need `local_only` to honor consent. See [Events & Analytics](/guides/events/#consent).
+Analytics is a separate concern from behavior. `telemetry.consent` and `analytics: false` stop the SDK **reporting**: clickstream events, including every `placement_interaction` (impression, dismissal, CTA click), are not sent. They never affect Playbook delivery, entitlement or placement decisions, dismissal cooldowns, suppression or presentation caps, so a connected-mode instance with consent denied still downloads your Playbook and enforces its caps. You do not need `local_only` to honor consent. See [Events & Analytics](/guides/events/#consent).
 
-## Migrating from local to hosted mode
+## Migrating from local to connected mode
 
 When you want dashboard-managed changes without deploying your app, switch the connection options. Local mode is also production-capable; your component code stays the same:
 

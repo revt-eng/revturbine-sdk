@@ -551,7 +551,14 @@ pub(crate) fn derive_result_with_allowance(
             } else {
                 None
             };
-            let initial_grant = js_number(type_fields.get("initial_grant"));
+            // ST-3163: the grant is `one_time_grant`; the old name `initial_grant`
+            // is read only when it is absent or null (core: `one_time_grant ?? initial_grant`).
+            let initial_grant = js_number(
+                type_fields
+                    .get("one_time_grant")
+                    .filter(|value| !value.is_null())
+                    .or_else(|| type_fields.get("initial_grant")),
+            );
 
             let cr_limit = match allowance {
                 Some(a) if a >= 0.0 => Some(a),

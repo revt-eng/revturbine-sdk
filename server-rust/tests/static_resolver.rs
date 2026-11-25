@@ -960,40 +960,49 @@ fn a_content_linked_payload_with_no_status_key_is_overlaid() {
     );
 }
 
-// ── D-62 (Kent, 2026-10-06): message slots show only RT-initiated content ──
-// Mirrors the TS "D-62 message slots" block and the py
-// TestMessageSlotsShowOnlyRtInitiated class.
+// ── ST-9991 (§4.2, superseding D-62): message slots admit Fixed content ────
+// Only Access Gate content stays out (§4.1). Mirrors the py
+// TestMessageSlotsAdmitFixed class.
 
-fn d62_message_slot() -> Value {
+fn message_slot() -> Value {
     json!({ "surface_template_ids": ["banner_placement"], "surface_slot_category": "triggered" })
 }
 
-fn d62_resolve(entries: &[Value]) -> Value {
+fn message_slot_resolve(entries: &[Value]) -> Value {
     StaticPlacementResolver::new(entries, &config()).resolve(
         "msg",
-        Some(&d62_message_slot()),
+        Some(&message_slot()),
         None,
         None,
     )
 }
 
 #[test]
-fn d62_a_message_slot_never_shows_fixed_content_even_alone() {
-    let d = d62_resolve(&[entry("pl_fixed", "fixed", 0, "Fixed")]);
+fn a_message_slot_shows_fixed_content_alone() {
+    let d = message_slot_resolve(&[entry("pl_fixed", "fixed", 0, "Fixed")]);
+    assert_eq!(d["visible"], json!(true));
+    assert_eq!(d["content"]["header"], json!("Fixed"));
+}
+
+#[test]
+fn fixed_outranks_rt_initiated_content_in_a_message_slot() {
+    let d = message_slot_resolve(&[
+        entry("pl_nudge", "other_conversion", 0, "Nudge"),
+        entry("pl_fixed", "fixed", 0, "Fixed"),
+    ]);
+    assert_eq!(d["content"]["header"], json!("Fixed"));
+}
+
+#[test]
+fn a_message_slot_never_shows_a_gate() {
+    let mut gate = entry("pl_gate", "gated", 0, "Gate");
+    gate["trigger"] = json!({ "type": "entitlement_gate", "entitlement_handle": "exports" });
+    let d = message_slot_resolve(&[gate]);
     assert_eq!(d["visible"], json!(false));
 }
 
 #[test]
-fn d62_rt_initiated_content_wins_over_fixed_in_a_message_slot() {
-    let d = d62_resolve(&[
-        entry("pl_fixed", "fixed", 0, "Fixed"),
-        entry("pl_nudge", "other_conversion", 0, "Nudge"),
-    ]);
-    assert_eq!(d["content"]["header"], json!("Nudge"));
-}
-
-#[test]
-fn d62_every_rt_initiated_category_spelling_is_accepted() {
+fn every_rt_initiated_category_spelling_is_accepted_in_a_message_slot() {
     for category in [
         "usage_credit_seat",
         "usage_limit",
@@ -1002,9 +1011,75 @@ fn d62_every_rt_initiated_category_spelling_is_accepted() {
         "other_conversion",
         "retention",
     ] {
-        let d = d62_resolve(&[entry("pl_rt", category, 0, "RT")]);
+        let d = message_slot_resolve(&[entry("pl_rt", category, 0, "RT")]);
         assert_eq!(d["content"]["header"], json!("RT"), "{category}");
     }
+}
+
+// ── ST-9991 (§4.2): the slot default ranks last in an inline slot ──────────
+// Mirrors the py TestSlotDefaultRanksLast class.
+
+fn slot_default_entries() -> Vec<Value> {
+    // The default is Fixed (tier 1) and dragged first, so without the rule it
+    // would beat the lower-tier nudge on both counts.
+    let mut default = entry("pl_default", "fixed", 0, "Default");
+    default["slot_default"] = json!(true);
+    vec![default, entry("pl_nudge", "other_conversion", 1, "Nudge")]
+}
+
+fn slot_default_resolve(entries: &[Value], slot_id: &str) -> Value {
+    StaticPlacementResolver::new(entries, &config()).resolve(
+        slot_id,
+        Some(&json!({
+            "surface_template_ids": ["banner_placement"],
+            "surface_slot_id": slot_id,
+        })),
+        None,
+        None,
+    )
+}
+
+#[test]
+fn inline_slot_default_ranks_last() {
+    let d = slot_default_resolve(&slot_default_entries(), "slot_inline");
+    assert_eq!(d["content"]["header"], json!("Nudge"));
+}
+
+#[test]
+fn inline_slot_default_shows_when_nothing_else_qualifies() {
+    let d = slot_default_resolve(&slot_default_entries()[..1], "slot_inline");
+    assert_eq!(d["visible"], json!(true));
+    assert_eq!(d["content"]["header"], json!("Default"));
+}
+
+#[test]
+fn overlay_slot_default_is_an_ordinary_candidate() {
+    let d = slot_default_resolve(&slot_default_entries(), "overlay");
+    assert_eq!(d["content"]["header"], json!("Default"));
+}
+
+#[test]
+fn absent_slot_default_flag_is_unchanged() {
+    let mut entries = slot_default_entries();
+    entries[0].as_object_mut().unwrap().remove("slot_default");
+    let d = slot_default_resolve(&entries, "slot_inline");
+    assert_eq!(d["content"]["header"], json!("Default"));
+}
+
+#[test]
+fn default_that_names_its_slot_still_ranks_last() {
+    // The authored shape: a Fixed default's trigger names its inline slot.
+    // Narrowing to the placements triggered on the slot would leave only the
+    // default, so the slot is not narrowed to defaults alone.
+    let mut entries = slot_default_entries();
+    entries[0]["trigger"] = json!({ "type": "surface_render", "slot_id": "slot_inline" });
+    let d = slot_default_resolve(&entries, "slot_inline");
+    assert_eq!(d["content"]["header"], json!("Nudge"));
+    // A non-default placement triggered on the slot still narrows to it.
+    entries[1]["trigger"] = json!({ "type": "surface_render", "slot_id": "slot_inline" });
+    entries.push(entry("pl_elsewhere", "other_conversion", 2, "Elsewhere"));
+    let d = slot_default_resolve(&entries, "slot_inline");
+    assert_eq!(d["content"]["header"], json!("Nudge"));
 }
 
 // ── Slot matching by legacy or canonical template name (ST-1347) ────────────

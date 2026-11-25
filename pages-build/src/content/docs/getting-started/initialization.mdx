@@ -1,6 +1,6 @@
 ---
 title: Initialize the SDK
-description: One canonical initialization example per runtime — React and headless in the browser, and your Node server — in local and hosted mode, with the option names the SDK actually reads.
+description: One canonical initialization example per runtime — React and headless in the browser, and your Node server — in local and connected mode, with the option names the SDK actually reads.
 sidebar:
   order: 3
 ---
@@ -12,7 +12,7 @@ copy-paste starting points. Each one compiles against the published SDK in CI.
 
 Which entry point you use depends on **where the code runs**:
 
-| Where it runs | Entry point | Local mode | Hosted mode |
+| Where it runs | Entry point | Local mode | Connected mode |
 |---|---|---|---|
 | Browser, React | `RevTurbineProvider` from `@revturbine/sdk` | `localRuntime: { playbook }` | `publicKey` + `clientSession` |
 | Browser, no React | `initRevTurbine` from `@revturbine/sdk/headless` | `localRuntime: { playbook }` | `publicKey` + `clientSession` |
@@ -38,7 +38,8 @@ Every initialization takes `user: { id }`, in **every** runtime mode and at ever
 entry point (`RevTurbineProvider`, `initRevTurbine`, `window.RevTurbine.init`).
 A Playbook can only be evaluated against a UserContext, and an anonymous visitor
 never receives one, so the SDK has no anonymous mode. `id` is your stable
-internal user id and must be a non-empty string.
+internal user id and must be a non-empty string. How your existing users and
+their plans map onto this is on [Connect your existing users](/getting-started/existing-users/).
 
 - Initialize **after** you know who the user is. In React, mount
   `RevTurbineProvider` inside your authenticated tree. On logout, unmount it, or
@@ -67,11 +68,11 @@ random per-browser anonymous id. That fallback is gone. See the changelog for
 the migration.
 </Aside>
 
-## Before you go hosted
+## Before you connect
 
 <Steps>
 
-1. **Launch a Playbook.** Hosted mode serves your launched Playbook:
+1. **Launch a Playbook.** Connected mode serves your launched Playbook:
    `revturbine launch ./revturbine.playbook.json`.
 
 2. **Mint an ingest key and list your origins.** In the dashboard, open
@@ -117,7 +118,7 @@ export default function App() {
 }
 ```
 
-**Hosted**: the SDK fetches your launched Playbook with the public key, and
+**Connected mode**: the SDK fetches your launched Playbook with the public key, and
 the `clientSession` callback brings in the plan Stripe says the user is on.
 
 ```tsx title="src/revturbine-provider.tsx"
@@ -166,7 +167,7 @@ export async function startRevTurbine(userId: string) {
 
 `initRevTurbine` is asynchronous and resolves to a session. Use it directly
 (`await session.can('export')`), or reach the core SDK as `session.sdk`. For
-local mode, swap the two hosted options for `localRuntime: { playbook }`.
+local mode, swap the two connected-mode options for `localRuntime: { playbook }`.
 
 ## Your Node server
 
@@ -226,7 +227,7 @@ bundle is a leaked key. If it ever reaches the client, rotate it under
 
 ### Connected backend
 
-For hosted Playbook updates, use the server runtime after authenticating the
+For hosted Playbook updates, use connected mode after authenticating the
 caller and constructing their context from trusted application data:
 
 ```ts

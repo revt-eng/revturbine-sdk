@@ -236,7 +236,7 @@ pub fn parse_playbook_or_throw(
 /// Newest payload `bundle_schema_version` this port fully understands.
 /// Mirror of `SCHEMA_VERSION` in scaffold `src/core/bundle/ir.ts` — the
 /// single source of truth, whose header logs every bump.
-pub const BUNDLE_SCHEMA_VERSION: u64 = 18;
+pub const BUNDLE_SCHEMA_VERSION: u64 = 19;
 
 /// Oldest payload `bundle_schema_version` this port still reads correctly.
 /// Mirror of `MIN_READABLE_SCHEMA_VERSION` in scaffold `src/core/bundle/ir.ts`.

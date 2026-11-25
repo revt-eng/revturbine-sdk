@@ -21,10 +21,14 @@ pure in-process computation, safe on a request hot path.
 
 ## Install
 
-```toml
-[dependencies]
-revturbine = "0.2"
+```bash
+cargo add revturbine
 ```
+
+`cargo add` writes the latest published version. The crate, the npm package and
+the PyPI package are released together under one version number; to pin, use
+the same version as the other RevTurbine SDKs you run
+(`revturbine = "=<version>"`).
 
 MSRV is **1.88**, declared as `rust-version` in `Cargo.toml`.
 

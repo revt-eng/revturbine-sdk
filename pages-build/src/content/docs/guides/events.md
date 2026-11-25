@@ -194,9 +194,10 @@ Forward the same semantic events to a third-party tool without adding a second t
 
 ```ts
 import posthog from 'posthog-js';
-import { createPostHogIntegration } from '@revturbine/sdk';
+import { createPostHogIntegration, initRevTurbine } from '@revturbine/sdk';
 
 initRevTurbine({
+  user: { id: 'user_123' }, // required in every mode
   domainProviders: [createPostHogIntegration({ posthog, syncIdentity: true })],
   // ...
 });
@@ -268,10 +269,11 @@ Since 0.16.0 the SDK sends three kinds of anonymous event to RevTurbine's `/api/
 - **Send it to your own endpoint, instead of or as well as RevTurbine** with `sdkTelemetryProviders`:
 
 ```ts
-import { createHttpSdkTelemetryProvider } from '@revturbine/sdk';
+import { createHttpSdkTelemetryProvider, initRevTurbine } from '@revturbine/sdk';
 
 initRevTurbine({
   // ...
+  user: { id: 'user_123' }, // required in every mode
   sdkTelemetryProviders: [createHttpSdkTelemetryProvider({ url: '/internal/sdk-meta', headers: { 'x-app': 'web' } })],
   anonymousTelemetry: false, // omit to send to both
 });
@@ -295,5 +297,5 @@ Events that carry the `area` / `action` / `purpose` taxonomy (from `TelemetrySco
 ## Next steps
 
 - [Placements Guide](/guides/placements/) — placement lifecycle and interactions
-- [Runtime Modes](/guides/runtime-modes/) — local vs hosted mode
+- [Runtime Modes](/guides/runtime-modes/) — local vs connected mode
 - [Error Handling](/guides/error-handling/) — graceful event-delivery failures

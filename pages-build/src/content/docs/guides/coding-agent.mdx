@@ -66,11 +66,11 @@ entitlements, usage limits and upgrade prompts.
 7. When the docs don't cover something you need, say so and ask. Don't guess.
 8. Run `npx revturbine generate types ./revturbine.playbook.json --out
    src/revturbine-handles.ts` and the type checker, then explain what lives in
-   the Playbook, what lives in code, and what's left for hosted mode.
+   the Playbook, what lives in code, and what's left for connected mode.
 ```
 
 <Aside type="tip" title="Why the Playbook comes first">
-Everything in the Playbook can change without a deploy once you move to hosted mode, so a new app should never hard-code what RevTurbine decides. The validator catches a reference that would silently grant nothing. See [Runtime Modes](/guides/runtime-modes/) and [Client vs Server Enforcement](/concepts/enforcement/).
+Everything in the Playbook can change without a deploy once you move to connected mode, so a new app should never hard-code what RevTurbine decides. The validator catches a reference that would silently grant nothing. See [Runtime Modes](/guides/runtime-modes/) and [Client vs Server Enforcement](/concepts/enforcement/).
 </Aside>
 
 ## Automate the config loop with the CLI

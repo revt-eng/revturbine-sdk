@@ -30,7 +30,7 @@ const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const DOCS = join(ROOT, 'src', 'content', 'docs');
 const API_DIR = join(DOCS, 'api'); // generated — regenerated clean from web-sdk TSDoc
 const WEB_SDK = join(ROOT, '..', 'web-sdk');
-const SKIP_DIRS = ['node_modules', 'dist', 'sdk-docs', 'coverage', '.astro', '.snippet-check'];
+const SKIP_DIRS = ['node_modules', 'dist', 'sdk-docs', 'coverage', '.astro'];
 
 /** Recursively collect files under `dir` matching `test`, skipping SKIP_DIRS and `skipPaths`. */
 function walk(dir, test, skipPaths = []) {

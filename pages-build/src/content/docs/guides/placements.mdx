@@ -85,7 +85,7 @@ Every slot needs an `id` and optionally a list of accepted `surfaceTemplateIds`:
 
 | Field | Type | Description |
 |---|---|---|
-| `id` | `string` | Unique slot identifier (matches server-side placement rules) |
+| `id` | `string` | Unique slot identifier. Your app defines the slot; RevTurbine discovers it, and placements target it by this id |
 | `surfaceTemplateIds` | `string[]` | Templates this slot accepts (filters available placements) |
 
 :::tip[Design for the empty state]
@@ -100,7 +100,7 @@ Always-visible inline placements — buttons, cards, meters:
 
 <LiveExample code={fixedCode} />
 
-Fixed slots render nothing if no placement matches — your layout stays intact.
+A fixed (inline) slot shows the highest-ranked placement that qualifies. If nothing else qualifies, it shows the slot's **default**: a Fixed placement marked `slot_default: true`, which always ranks last. With no default it renders nothing (or your `fallback`), so your layout stays intact. A slot has at most one default. The overlay slot has no default: a placement marked `slot_default: true` there does not rank last but competes as an ordinary Fixed placement. `VAL-PLC-17` warns when a default can never show as one, because its slot is the overlay or because the slot accepts none of its payload templates. A second default for the same slot warns too (`VAL-PLC-18`). A Playbook that uses a slot default needs an SDK that reads bundle schema 19.
 
 > [Try it live → Upgrade Button](/guides/placements/#fixed-button)
 
@@ -122,7 +122,7 @@ Page-level overlays triggered by targeting rules — toasts, modals, banners:
 
 <LiveExample code={messageCode} />
 
-Message slots render nothing until a targeting rule triggers. Place them at the top level of your layout.
+A message slot shows RevTurbine-initiated placements when their targeting rule fires, and Fixed placements that target the slot. It never shows Access Gate content. Place message slots at the top level of your layout.
 
 :::caution[Modals only at safe moments]
 A modal takes over the screen. Request one only when the user has just performed an action, completed a task, or reached a natural transition — never on passive page render. Banners, inline cards, buttons and toasts are safe on render.
@@ -253,10 +253,12 @@ Register resolvers once, at init, keyed by action type:
 <RevTurbineProvider
   options={{
     // ...
+    user: { id: 'user_123' }, // required in every mode
     uiPathResolvers: {
       view_plans: () => router.push('/pricing'),
       open_checkout: (path) => openCheckout(path.plan_handle, path.promotion_id),
       open_rt_placement: async (path) => {
+        if (typeof path.placement_handle !== 'string') return;
         const next = await rt.getPlacement({ placementHandle: path.placement_handle });
         if (next) showPlacement(next);
       },

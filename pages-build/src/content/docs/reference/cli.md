@@ -157,4 +157,4 @@ you want types from a hosted version.
 
 - [Installation](/getting-started/installation/) — SDK and CLI setup
 - [Entitlements](/guides/entitlements/) — use generated handles in checks
-- [Runtime modes](/guides/runtime-modes/) — local and hosted SDK behavior
+- [Runtime modes](/guides/runtime-modes/) — local and connected mode SDK behavior

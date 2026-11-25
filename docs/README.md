@@ -56,9 +56,12 @@ Use this table to jump directly to the guide for your current job-to-be-done.
 
 ## Runtime Mode Decision Tree
 
-1. Need zero-network/offline behavior? Use `local_only`.
-2. Need customer-owned API/proxy routing? Use `custom_endpoints`.
-3. Otherwise use `revturbine_server`.
+The mode chooses where the Playbook and the user's state come from. Decisions
+run locally in the SDK in every mode; none calls a RevTurbine API.
+
+1. Should the Playbook ship with the app, with no config or decisioning calls? Use local mode, `local_only`.
+2. Need context or telemetry calls to go through customer-owned endpoints? Use `custom_endpoints` (Playbook delivery stays with RevTurbine).
+3. Otherwise use connected mode, `revturbine_server`: the SDK fetches the launched Playbook and evaluates it locally.
 
 For setup details, see `guides/runtime-mode-guide.md`.
 
@@ -87,19 +90,21 @@ anonymous id).
 
 ## Runtime Modes
 
-The SDK now supports three runtime modes:
+The SDK supports three runtime modes. In all of them it evaluates entitlements
+and placements locally, from the Playbook it holds; no check and no placement
+decision calls a RevTurbine API.
 
-1. `revturbine_server` (default)
-- Standard RevTurbine-hosted integration.
-- SDK calls RevTurbine-managed decisioning, entitlement, and ingestion paths.
+1. `revturbine_server` (default; connected mode)
+- The SDK fetches the launched Playbook from RevTurbine, caches it and refreshes it in the background.
+- RevTurbine also supplies user state the app does not hold (billing, trials, exceptions) and receives telemetry.
 
 2. `custom_endpoints`
-- Customer provides endpoint overrides for SDK API calls.
-- Useful when the customer proxies or replaces RevTurbine service surfaces.
+- Connected mode, with selected context and telemetry calls routed through endpoint overrides the customer provides.
+- Playbook delivery stays with RevTurbine; overrides do not reroute it.
 
-3. `local_only`
-- No server dependency.
-- Required context/content/config are provided at initialization.
+3. `local_only` (local mode)
+- The Playbook ships with the app, in `localRuntime: { playbook }`. No account, key, tenant or endpoint is needed.
+- No config or decisioning calls are made.
 - Runtime state is persisted in localStorage.
 
 ## Provider Pattern and Fallbacks
@@ -132,9 +137,11 @@ Use fallbacks in production for `revturbine_server` and `custom_endpoints` deplo
 3. Choose `providerFailureSlotBehavior: 'placeholder'` for upgrade-critical surfaces.
 4. Choose `providerFailureSlotBehavior: 'invisible'` for non-critical surfaces.
 
-### Production Checklist (RT-First)
+### Production Checklist (connected mode)
 
-For production deployments that prefer RevTurbine as the primary runtime:
+For production deployments that take their Playbook from RevTurbine. The SDK
+still evaluates locally; the provider chain below is an explicit override of
+that built-in behavior, for integrations that need one:
 
 1. Set `runtimeMode: 'revturbine_server'` as the default path.
 2. Configure a primary RT provider first in the chain.
@@ -193,31 +200,33 @@ import { initRevTurbine } from '@revturbine/sdk';
 
 const sdk = initRevTurbine({
   tenantId: 'tenant_abc',
-  publicKey: 'unused_or_customer_key',
+  publicKey: 'rtk_…',
   user: { id: 'user_123' },
-  endpoint: 'https://customer-proxy.example.com',
   runtimeMode: 'custom_endpoints',
+  // `endpoint` stays RevTurbine: overrides do not reroute Playbook delivery.
   endpointOverrides: {
-    decideContext: '/decisioning/decide-context',
-    bootstrapContext: '/decisioning/bootstrap',
-    checkEntitlement: '/entitlements/check',
-    ingestEvents: '/events/ingest',
+    clientContext: 'https://proxy.example.com/revturbine/client-context',
+    userContext: 'https://proxy.example.com/revturbine/user-context',
+    trialStatus: 'https://proxy.example.com/revturbine/trial-status',
+    ingestEvents: 'https://proxy.example.com/revturbine/track',
   },
 });
 ```
 
 ### Local-Only Mode
 
+Local mode needs no account, key, tenant or endpoint: the bundled Playbook is
+the whole configuration.
+
 ```ts
 import { initRevTurbine } from '@revturbine/sdk';
+import playbook from './revturbine.playbook.json';
 
 const sdk = initRevTurbine({
-  tenantId: 'tenant_local',
-  publicKey: 'local',
   user: { id: 'user_123' },
-  endpoint: 'http://localhost',
   runtimeMode: 'local_only',
   localRuntime: {
+    playbook,
     storageKey: 'my-app:revturbine-local-runtime',
     initialData: {
       trialStatus: { in_trial: true, day_number: 3, days_remaining: 11 },
@@ -240,6 +249,7 @@ import {
   createCustomEndpointRuntimeConfig,
   createLocalRuntimeConfig,
 } from '@revt-eng/sdk';
+import playbook from './revturbine.playbook.json';
 
 const serverSdk = initRevTurbine(
   createServerRuntimeConfig({
@@ -254,21 +264,19 @@ const customSdk = initRevTurbine(
     tenantId: 'tenant_abc',
     publicKey: 'rtk_…',
     user: { id: 'user_123' },
-    endpoint: 'https://proxy.example.com',
     endpointOverrides: {
-      decideContext: '/decisioning/decide-context',
-      ingestEvents: '/events/ingest',
+      clientContext: 'https://proxy.example.com/revturbine/client-context',
+      ingestEvents: 'https://proxy.example.com/revturbine/track',
     },
   }),
 );
 
 const localSdk = initRevTurbine(
   createLocalRuntimeConfig({
-    tenantId: 'tenant_local',
-    publicKey: 'local',
+    // No tenant, key or endpoint: the bundled Playbook is the whole configuration.
     user: { id: 'user_123' },
-    endpoint: 'http://localhost',
     localRuntime: {
+      playbook,
       initialData: {
         trialStatus: { in_trial: true, day_number: 2 },
       },

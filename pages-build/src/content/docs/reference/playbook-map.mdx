@@ -6,8 +6,10 @@ description: The 29 body fields, their roles, and the references connecting poli
 A Playbook is a versioned document, not a flat list of entitlements. Its envelope
 identifies the artifact, tenant, environment, and schema version; its body holds
 policy, targeting, and presentation. This map describes the 29 top-level body
-keys in the schema pinned by SDK 0.12.5 documentation (`0.1.524`). Their key set
-also matches the scaffold source reviewed on October 23, 2026.
+keys of the current Playbook schema, the one this documentation and the SDK
+release it ships with read. The
+[changelog](https://github.com/revt-eng/revturbine-sdk/blob/main/CHANGELOG.md)
+records the release each field arrived in.
 
 ## The main reference paths
 
@@ -47,16 +49,16 @@ authoring-only fields are not instructions to build new integrations around them
 | `plans` | Array | Base plan definitions, identified by `unique_handle`. |
 | `addons` | Array | Add-on definitions referenced by entitlement targets. |
 | `entitlements` | Array | Named access or parameter capabilities and their kinds. |
-| `entitlement_rules` | Array | Rules binding an entitlement to plan/add-on targets and optional segments. |
+| `entitlement_rules` | Array | Rules binding an entitlement to plan/add-on targets and optional segments. A credits rule may set `one_time_grant` (formerly `initial_grant`, still read with warning `VAL-ENT-04`): on a plan it is granted once, when the customer first enters the plan; on a one-time add-on such as a credit pack it is what one purchase adds. |
 | `segments` | Array | Named targeting predicates over context. |
 | `content_ui_paths` | Array | Authored CTA action definitions and routing parameters. |
 | `slot_configs` | Array | Deprecated compatibility field; activation/trigger state belongs to the SDK. |
 | `content_overrides` | Object | Deprecated compatibility map; author Message Block/Payload content instead. |
 | `theme` | Object | Legacy branding compatibility data; branding is independently owned. |
-| `placement_slots` | Array | Authored locations into which matching placements may render. |
+| `placement_slots` | Array | References to the slots your app defines and RevTurbine discovers; they don't configure a slot. Each entry carries the slot `id`, an optional `label` and `description`, and optionally the `placement_handle` of a placement that uses it. Uploading never removes a slot, and a slot shows whichever placements target it. |
 | `message_blocks` | Array | Reusable content shaped for a surface template. |
 | `placement_payloads` | Array | Content selections, targeting, actions, and presentation for placements. |
-| `placements` | Array | Placement category, triggers, targeting, and content associations. |
+| `placements` | Array | Placement category, triggers, targeting, and content associations. A Fixed placement may set `slot_default: true` to be its inline slot's default: it ranks last there and shows only when nothing else qualifies. A Playbook that uses it needs an SDK that reads bundle schema 19. |
 | `content_promotions` | Array | Authored promotions that content and actions can reference. |
 | `personalization_tokens` | Array | Named substitutions used in content. |
 | `surface_templates` | Array | Presentation templates referenced by message blocks and slots. |

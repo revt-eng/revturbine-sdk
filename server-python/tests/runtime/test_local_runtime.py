@@ -201,6 +201,42 @@ class TestGetPlacementBySlot:
         assert record is not None
         assert record["name"] == "override_h"
 
+    def test_slot_record_without_placement_handle_named_by_slot_id(self) -> None:
+        # ST-9990: a slot reference may name no placement; the record is then
+        # named by the slot id, as the web SDK does.
+        playbook = {
+            "placements": [],
+            "placement_slots": [
+                {"id": "slot_bare", "surface_type": "banner", "template": "banner_placement"},
+                {"id": "slot_empty", "surface_type": "modal", "placement_handle": ""},
+            ],
+        }
+        runtime = _make_runtime(playbook=playbook)
+        bare = runtime._slot_record_for_config({"slot_id": "slot_bare"})
+        assert bare is not None
+        assert bare["name"] == "slot_bare"
+        empty = runtime._slot_record_for_config({"slot_id": "slot_empty"})
+        assert empty is not None
+        assert empty["name"] == "slot_empty"
+        # The caller's handle still overrides.
+        override = runtime._slot_record_for_config(
+            {"slot_id": "slot_bare", "placement_handle": "override_h"}
+        )
+        assert override is not None
+        assert override["name"] == "override_h"
+
+    def test_get_placement_by_slot_without_placement_handle(self) -> None:
+        runtime = _make_runtime(
+            playbook={
+                "placements": [],
+                "placement_slots": [{"id": "slot_bare", "surface_type": "banner"}],
+            },
+            custom_resolver=_stub_resolver_visible,
+        )
+        decision = runtime.get_placement({"slot_id": "slot_bare"})
+        assert decision is not None
+        assert decision["placement_id"] == "slot_bare"
+
     def test_slot_record_prefers_registered(self) -> None:
         runtime = _make_runtime(playbook=SLOT_CONFIG)
         pre = PlacementRecord(placement_id="slot_banner", name="pre-registered")

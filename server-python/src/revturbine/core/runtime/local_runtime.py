@@ -498,8 +498,18 @@ class LocalRuntime:
         if config.get("fixed_only"):
             metadata["fixed_only"] = True
 
+        # The caller's handle overrides the slot's own. A slot reference may
+        # name no placement at all (ST-9990): an absent or empty
+        # ``placement_handle`` names the record by the slot id, as the web SDK
+        # does.
         placement_handle = config.get("placement_handle")
-        name = placement_handle if placement_handle is not None else slot.get("placement_handle")
+        slot_handle = slot.get("placement_handle")
+        if placement_handle is not None:
+            name = placement_handle
+        elif isinstance(slot_handle, str) and slot_handle:
+            name = slot_handle
+        else:
+            name = slot["id"]
         record: PlacementRecord = {
             "placement_id": slot["id"],
             "name": name,

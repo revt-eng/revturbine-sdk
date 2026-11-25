@@ -1,0 +1,128 @@
+---
+title: Entitlements and permissions
+description: An entitlement says what an account gets; a permission says what a person may do. RevTurbine answers the first, your app keeps the second, and you block if either check fails.
+sidebar:
+  order: 1
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+RevTurbine checks **entitlements**. It does not replace your **permission**
+model. The two sound alike and both end in "allowed or not", which is why
+they get mixed up. Keep them apart.
+
+| | Entitlement | Permission |
+|---|---|---|
+| The question | Does this **account** get this feature? | Is this **person** allowed to do this? |
+| Decided by | Plan, add-ons, trial state, usage limits, credits | Role, ownership, the person's relationship to the data |
+| Changes when | The customer upgrades, buys credits, hits a limit, starts a trial | Someone is invited, promoted, shares a document |
+| Owned by | RevTurbine (your Playbook) | Your app (your RBAC, ACLs or policy code) |
+| A denial means | "Upgrade or buy more" (HTTP 402) | "You can't do this here" (HTTP 403) |
+
+## Check both
+
+A request goes ahead only if **both** checks pass:
+
+1. **Permission**: your code decides whether this person may act on this data.
+2. **Entitlement**: RevTurbine decides whether their account gets the feature,
+   and whether they're within its limit.
+
+Take a report export. Dana is an editor on a Pro account. Your app decides
+whether an editor may export this report, which it owns. RevTurbine decides
+whether the Pro plan includes `export_report` and whether Dana's account has
+exports left this month.
+
+On your server, before the export runs:
+
+```ts
+import { initRevTurbine, RuntimeMode } from '@revturbine/sdk/headless';
+import playbook from './revturbine.playbook.json';
+
+// Your app's own pieces.
+interface SignedInUser { id: string; planHandle: string; exportsThisMonth: number }
+declare function getSignedInUser(request: Request): Promise<SignedInUser>;
+declare function canExportReport(user: SignedInUser, reportId: string): Promise<boolean>; // your RBAC
+declare function runExport(reportId: string): Promise<Response>;
+
+export async function POST(request: Request, reportId: string): Promise<Response> {
+  const user = await getSignedInUser(request);
+
+  // 1. Permission: yours.
+  if (!(await canExportReport(user, reportId))) {
+    return Response.json({ error: 'forbidden' }, { status: 403 });
+  }
+
+  // 2. Entitlement: RevTurbine, evaluated in-process from your Playbook.
+  const rt = await initRevTurbine({
+    runtimeMode: RuntimeMode.LocalOnly,
+    localRuntime: { playbook },
+    user: {
+      id: user.id,
+      plan_handle: user.planHandle,
+      usage: { export_report: { entitlement_handle: 'export_report', unit: 'exports', amount: user.exportsThisMonth } },
+    },
+  });
+  const entitlement = await rt.can('export_report');
+  if (!entitlement.allowed) {
+    return Response.json({ error: 'upgrade_required', reason: entitlement.reason }, { status: 402 });
+  }
+
+  return runExport(reportId);
+}
+```
+
+In React, the same split looks like this. Your permission decides whether the
+control is there at all; `<Gate>` decides whether the account gets it, and
+shows an upsell when it doesn't:
+
+```tsx
+import { Gate } from '@revturbine/sdk';
+import type { ReactElement } from 'react';
+
+declare function useCanExport(reportId: string): boolean; // your RBAC, as a hook
+declare function ExportButton(props: { reportId: string }): ReactElement;
+
+export function ExportAction({ reportId }: { reportId: string }) {
+  const permitted = useCanExport(reportId);
+  if (!permitted) return null;
+
+  return (
+    <Gate id="report_export_gate" can="export_report">
+      <ExportButton reportId={reportId} />
+    </Gate>
+  );
+}
+```
+
+The browser check shapes the UI. The server check is the one that protects the
+paid work. See [Client vs Server Enforcement](/concepts/enforcement/).
+
+## Why keep them apart
+
+- **Monetization leaves your RBAC.** Plans and limits change for business
+  reasons, often and without an engineer. When they live in your Playbook, a
+  new plan, a feature moved to another tier or a new add-on is a Playbook
+  launch, not a migration of your roles.
+- **A denial can sell.** A failed entitlement check isn't a dead end: the
+  placement configured for that gate can show a targeted upgrade or a credit
+  pack. A failed permission check should never try to sell anything.
+- **The answers mean different things to the user.** "Ask your admin" and
+  "Upgrade to Pro" are different next steps. 402 versus 403 lets your client
+  show the right one.
+
+<Aside type="caution" title="Don't model roles as plans">
+It's tempting to make "admin" an entitlement, or to give a role its own plan.
+Don't. An entitlement belongs to the account and moves with what it pays for;
+a role belongs to a person inside that account. If a check would change when
+someone is promoted rather than when the account upgrades, it's a permission.
+</Aside>
+
+Your app only needs to know which entitlements exist and which plan each user
+is on. See [Connect your existing users](/getting-started/existing-users/) for
+how that plan reaches the SDK.
+
+## Related
+
+- [Entitlements](/guides/entitlements/): types, limits, credits and the check result
+- [Client vs Server Enforcement](/concepts/enforcement/): `<Gate>`, `gate()` and `can()`, and when to re-check on the server
+- [Server-Side Integration](/getting-started/server-side/): the server re-check in full

@@ -157,6 +157,20 @@ async function mount(sdk: RevTurbineCustomerSdk, node: React.ReactElement): Prom
 const text = (testId: string): string | undefined =>
   container?.querySelector(`[data-testid="${testId}"]`)?.textContent ?? undefined;
 
+/**
+ * Wait until a surface shows `expected`. The decision chain takes a variable
+ * number of ticks, so a fixed `settle()` alone was not always enough on a
+ * loaded runner (ST-6715: the banner was still empty right after mount). Use
+ * this for a state the surface is moving INTO; a state it must KEEP is still
+ * asserted after `settle()`, where waiting would pass without proving anything.
+ */
+async function waitForText(testId: string, expected: string): Promise<void> {
+  await vi.waitFor(async () => {
+    await act(async () => {});
+    expect(text(testId)).toBe(expected);
+  }, { timeout: 5_000 });
+}
+
 /** A mounted slot that renders the placement and nothing else. */
 function Banner({ onOutput }: { onOutput: (id: string) => void }): React.ReactElement {
   const { visible, content, decision } = usePlacement({ surfaceSlot: { id: SLOT, name: SLOT }, userId: USER });
@@ -172,7 +186,7 @@ describe('a mounted placement leaves the screen when the SDK convert path is use
     const sdk = makeSdk();
     let outputId = '';
     await mount(sdk, <Banner onOutput={(id) => { outputId = id; }} />);
-    expect(text('banner')).toBe('Upgrade to Pro');
+    await waitForText('banner', 'Upgrade to Pro');
     expect(outputId).toBe('payload_upgrade');
 
     // The PUBLIC convert path, as a host calling it from its own checkout
@@ -184,14 +198,14 @@ describe('a mounted placement leaves the screen when the SDK convert path is use
     // The Playbook names the plan, so an optimistic move does not put a raw
     // handle in front of the user.
     expect(sdk.getUserContext().plan).toEqual({ handle: 'pro', name: 'Pro' });
-    expect(text('banner')).toBe('');
+    await waitForText('banner', '');
   });
 
   it('keeps the placement when the conversion itself fails', async () => {
     const sdk = makeSdk();
     let outputId = '';
     await mount(sdk, <Banner onOutput={(id) => { outputId = id; }} />);
-    expect(text('banner')).toBe('Upgrade to Pro');
+    await waitForText('banner', 'Upgrade to Pro');
 
     vi.spyOn(sdk, 'trackTreatmentInteraction').mockRejectedValue(new Error('network down'));
     await act(async () => {
@@ -222,11 +236,11 @@ describe('a mounted gate flips after the SDK convert path is used', () => {
     }
 
     await mount(sdk, <Gate />);
-    expect(text('gate')).toBe('denied');
+    await waitForText('gate', 'denied');
 
     await act(async () => { await sdk.convert('payload_upgrade'); });
     await settle();
 
-    expect(text('gate')).toBe('granted');
+    await waitForText('gate', 'granted');
   });
 });

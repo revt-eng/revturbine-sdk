@@ -220,6 +220,7 @@ export default defineConfig({
           items: [
             { label: 'Start here', link: '/' },
             { label: 'Recommended API Path', slug: 'getting-started/api-overview' },
+            { label: 'Connect Your Existing Users', slug: 'getting-started/existing-users' },
             { label: 'Installation', slug: 'getting-started/installation' },
             { label: 'Initialize the SDK', slug: 'getting-started/initialization' },
             { label: 'React Integration', slug: 'getting-started/react' },
@@ -234,6 +235,7 @@ export default defineConfig({
           label: 'Concepts',
           items: [
             { label: 'Core Concepts', slug: 'concepts/core-concepts' },
+            { label: 'Entitlements and Permissions', slug: 'concepts/entitlements-and-permissions' },
             { label: 'Runtime and Playbook', slug: 'concepts/runtime-and-playbook' },
             { label: 'Client vs Server Enforcement', slug: 'concepts/enforcement' },
             { label: 'What Owns What', slug: 'concepts/source-of-truth' },

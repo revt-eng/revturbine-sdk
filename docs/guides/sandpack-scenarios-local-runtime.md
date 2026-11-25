@@ -60,7 +60,7 @@ export default function ScenarioPage() {
 3. Render scenario placement with:
 
 ```tsx
-<SurfaceSlotComponent id={placementName} userId={userId} />
+<SurfaceSlotComponent id={placementName} />
 ```
 
 ## Routing

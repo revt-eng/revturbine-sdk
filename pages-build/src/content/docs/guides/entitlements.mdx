@@ -51,6 +51,8 @@ export default function App() {
 
 Entitlements define what users can do based on their plan. The SDK evaluates entitlements locally from your Playbook in every mode, and provides React hooks and imperative APIs for access control.
 
+An entitlement answers what an **account** gets; it is not a permission, which answers what a **person** may do. Keep your permission checks and add the entitlement check beside them. See [Entitlements and permissions](/concepts/entitlements-and-permissions/).
+
 ## Entitlement Types
 
 | Type | Example | Check Pattern |
@@ -122,7 +124,7 @@ const { allowed, denied, gatedPlacement } = useEntitlement({
   autoGate: true,
   gatePlacementRequest: {
     slotId: 'export_gate',
-    surfaceTemplateIds: ['modal_overlay'],
+    componentType: 'modal',
   },
 });
 
@@ -269,6 +271,17 @@ const { limited, result } = useEntitlement({ handle: 'render_credits' });
 // result.remaining: the balance the evaluation used
 ```
 
+#### Credit grants and credit packs
+
+A credits rule grants credits in two ways, and can use both:
+
+- **`allowance_value`** is a recurring allowance: the credits each reset period (set by `reset_period`) starts with.
+- **`one_time_grant`** is granted once. On a plan, the customer gets it when they first enter the plan (a signup bonus). On a one-time add-on, such as a credit pack, it is what one purchase adds.
+
+`one_time_grant` was called `initial_grant` before. The old name is still read, with warning `VAL-ENT-04`; rename it when you next edit the Playbook.
+
+**A credit pack** is an add-on with its own credits rule: no reset period, no allowance, and the pack size in `one_time_grant`. One add-on can sell the pack in several sizes, one Public variation per size, each sized by its own rule's grant. A checkout button for such a pack must name the variation of the size it sells (`"purchase": "<variation handle>"`). Naming the add-on itself fails launch with `VAL-PLC-16`, because RevTurbine can't tell which size you mean.
+
 ### Seats
 
 ```tsx
@@ -294,7 +307,7 @@ if (denied) {
 A check grants access only when it can affirmatively justify the grant; every other outcome denies, with `allowed: false` and a `reason` naming why. That is what **fail-closed** means wherever these docs use it — and it is about the answer, not the network: the Playbook is cached locally, so a configured runtime answers without a round trip, and the no-rule cases below are the only ones where there was nothing to evaluate. The `reason` lets you tell those apart from a real denial:
 
 ```ts
-// Hosted mode, the launched Playbook could not be fetched:
+// Connected mode, the launched Playbook could not be fetched:
 // { status: 'denied', allowed: false, reason: 'config_unavailable' }
 
 // Local mode, no Playbook and no cached result:
@@ -388,7 +401,7 @@ const result = await rt.can('ai_generations', { cost: 3 });
 ```
 
 ```tsx
-<Gate can="ai_generations" cost={3} deniedFallback={<UpgradePrompt />}>
+<Gate id="ai_generations_gate" can="ai_generations" cost={3} deniedFallback={<UpgradePrompt />}>
   <GenerateButton />
 </Gate>
 

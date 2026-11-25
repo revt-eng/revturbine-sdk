@@ -1432,10 +1432,11 @@ class TestAccessGatePlacements:
         assert direct({}, self._status("denied"))["visible"] is True
 
 
-class TestMessageSlotsShowOnlyRtInitiated:
-    """D-62 (Kent, 2026-10-06): a message slot (surface_slot_category
-    triggered) shows only RT-initiated content — never Fixed or gated.
-    Mirrors local-resolver.test.ts "D-62 message slots".
+class TestMessageSlotsAdmitFixed:
+    """ST-9991 (placement-decision-rules.md §4.2, superseding D-62): a message
+    slot (surface_slot_category triggered) admits Fixed content; only Access
+    Gate content stays out (§4.1). Cross-tier ranking then applies as in any
+    slot, so a Fixed candidate outranks an RT-initiated one.
     """
 
     _SLOT: dict[str, Any] = {
@@ -1463,17 +1464,32 @@ class TestMessageSlotsShowOnlyRtInitiated:
             {},
         )
 
-    def test_never_shows_fixed_even_alone(self) -> None:
-        assert self._resolve([self._entry_for("pl_fixed", "fixed", "Fixed")])["visible"] is False
+    def test_shows_fixed_alone(self) -> None:
+        decision = self._resolve([self._entry_for("pl_fixed", "fixed", "Fixed")])
+        assert decision["visible"] is True
+        assert decision["content"]["header"] == "Fixed"
 
-    def test_rt_initiated_wins_over_fixed(self) -> None:
+    def test_fixed_outranks_rt_initiated(self) -> None:
         decision = self._resolve(
             [
-                self._entry_for("pl_fixed", "fixed", "Fixed"),
                 self._entry_for("pl_nudge", "other_conversion", "Nudge"),
+                self._entry_for("pl_fixed", "fixed", "Fixed"),
             ]
         )
-        assert decision["content"]["header"] == "Nudge"
+        assert decision["content"]["header"] == "Fixed"
+
+    def test_never_shows_a_gate(self) -> None:
+        decision = self._resolve(
+            [
+                _entry(
+                    entry_id="pl_gate",
+                    category="gated",
+                    trigger={"type": "entitlement_gate", "entitlement_handle": "exports"},
+                    payloads=[_payload(payload_id="p_gate")],
+                )
+            ]
+        )
+        assert decision["visible"] is False
 
     def test_accepts_every_rt_initiated_category_spelling(self) -> None:
         for category in (
@@ -1486,6 +1502,80 @@ class TestMessageSlotsShowOnlyRtInitiated:
         ):
             decision = self._resolve([self._entry_for("pl_rt", category, "RT")])
             assert decision["content"]["header"] == "RT", category
+
+
+class TestSlotDefaultRanksLast:
+    """ST-9991 (placement-decision-rules.md §4.2): a slot-default placement
+    (``slot_default: true``) ranks after every other eligible candidate in an
+    inline slot, whatever its tier; on the ``overlay`` slot it is an ordinary
+    candidate.
+    """
+
+    @staticmethod
+    def _entry_for(
+        entry_id: str, category: str, header: str, order: int, slot_default: bool = False
+    ) -> dict[str, Any]:
+        entry = _entry(
+            entry_id=entry_id,
+            order=order,
+            category=category,
+            trigger={},
+            payloads=[
+                _payload(payload_id=f"p_{entry_id}", surfaces=[_surface(fields={"header": header})])
+            ],
+        )
+        if slot_default:
+            entry["slot_default"] = True
+        return entry
+
+    def _resolve(self, entries: list[dict[str, Any]], slot_id: str) -> PlacementDecision:
+        resolver = create_static_placement_resolver({"placements": entries}, _config())
+        return resolver(
+            {"placement_id": slot_id, "user_id": "user_1"},
+            _rec(
+                placement_id=slot_id,
+                name=slot_id,
+                route="/app",
+                metadata={"surface_template_ids": ["modal_overlay"], "surface_slot_id": slot_id},
+            ),
+            {},
+        )
+
+    def _entries(self) -> list[dict[str, Any]]:
+        # The default is Fixed (tier 1) and dragged first, so without the rule
+        # it would beat the lower-tier nudge on both counts.
+        return [
+            self._entry_for("pl_default", "fixed", "Default", order=0, slot_default=True),
+            self._entry_for("pl_nudge", "other_conversion", "Nudge", order=1),
+        ]
+
+    def test_inline_slot_default_ranks_last(self) -> None:
+        assert self._resolve(self._entries(), "slot_inline")["content"]["header"] == "Nudge"
+
+    def test_inline_slot_default_shows_when_nothing_else_qualifies(self) -> None:
+        decision = self._resolve(self._entries()[:1], "slot_inline")
+        assert decision["visible"] is True
+        assert decision["content"]["header"] == "Default"
+
+    def test_overlay_slot_default_is_ordinary(self) -> None:
+        assert self._resolve(self._entries(), "overlay")["content"]["header"] == "Default"
+
+    def test_absent_flag_unchanged(self) -> None:
+        entries = self._entries()
+        del entries[0]["slot_default"]
+        assert self._resolve(entries, "slot_inline")["content"]["header"] == "Default"
+
+    def test_default_that_names_its_slot_still_ranks_last(self) -> None:
+        # The authored shape: a Fixed default's trigger names its inline slot.
+        # Narrowing to the placements triggered on the slot would leave only
+        # the default, so the slot is not narrowed to defaults alone.
+        entries = self._entries()
+        entries[0]["trigger"] = {"type": "surface_render", "slot_id": "slot_inline"}
+        assert self._resolve(entries, "slot_inline")["content"]["header"] == "Nudge"
+        # A non-default placement triggered on the slot still narrows to it.
+        entries[1]["trigger"] = {"type": "surface_render", "slot_id": "slot_inline"}
+        entries.append(self._entry_for("pl_elsewhere", "other_conversion", "Elsewhere", order=2))
+        assert self._resolve(entries, "slot_inline")["content"]["header"] == "Nudge"
 
 
 # ── Slot matching by legacy or canonical template name (ST-1347) ────────────

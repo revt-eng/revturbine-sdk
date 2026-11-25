@@ -1,11 +1,11 @@
 ---
 title: Client sessions
-description: The full round trip for hosted mode — your server route that mints a session token with the server key, the browser callback that fetches it, and what the SDK does with it.
+description: The full round trip for connected mode — your server route that mints a session token with the server key, the browser callback that fetches it, and what the SDK does with it.
 ---
 
 import { Aside, Steps } from '@astrojs/starlight/components';
 
-In hosted mode RevTurbine knows things your browser does not: the plan Stripe
+In connected mode RevTurbine knows things your browser does not: the plan Stripe
 says this user is on, whether a trial is running, whether a payment failed. A
 **client session** is how that state reaches the SDK without you wiring a
 refresh loop.

@@ -1,12 +1,15 @@
 ---
 title: Upgrade an SDK Integration
-description: Check identity, entitlement mirroring, gate behavior, and presentation contracts when upgrading to SDK 0.12.4.
+description: Check identity, entitlement mirroring, gate behavior, and presentation contracts when upgrading the SDK.
 ---
 
-Pin the SDK version in your package manifest and lockfile. This guide describes
-the published TypeScript SDK **0.12.4**; review the
+Pin the SDK version in your package manifest and lockfile. This guide is not
+tied to one release: it lists what to check whenever you move to a newer SDK,
+and the
 [changelog](https://github.com/revt-eng/revturbine-sdk/blob/main/CHANGELOG.md)
-for your starting version. TypeScript, Python, and Rust do not expose identical
+records the version each change arrived in. Read the entries between your
+installed version (`npm ls @revturbine/sdk`) and the one you are moving to.
+TypeScript, Python, and Rust do not expose identical
 integration APIs even when their evaluator results agree.
 
 ## Entitlement results and mirrors
@@ -34,12 +37,19 @@ not interchangeable with a denied gate's upgrade surface. Keep a safe
 
 Presentation caps may come from payloads and placement settings. Check the
 authored category, eligibility, and presentation settings when content does not
-appear. Message slots do not consume fixed-content placements. Test the actual
+appear. Message slots exclude Access Gate content only: a Fixed placement that
+targets a message slot is eligible there. (Earlier SDKs, from 0.11.22, kept
+Fixed content out of message slots.) Test the actual
 mounted component with its authored slot and template, not just a raw placement
-lookup. The public components are `Gate` and `Slot`; this version does not export
+lookup. The public components are `Gate` and `Slot`; the SDK does not export
 `InlineSlot`, `OverlaySlot`, or a `moment()` API.
 
 Mounted gates recheck when the SDK publishes relevant context or usage updates.
+
+A Playbook whose placements use `slot_default` is delivered as bundle schema 19.
+An SDK that reads only schema 18 refuses that Playbook rather than ranking the
+default wrongly, so upgrade every SDK that loads it before you launch a slot
+default. Playbooks without a slot default stay at schema 18.
 You do not need a React key change to make a new SDK balance take effect. Changes
 in another device or a billing webhook still need to reach the local SDK first.
 See [React updates](/getting-started/react/#keeping-mounted-gates-current).

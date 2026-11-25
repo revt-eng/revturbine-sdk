@@ -96,6 +96,11 @@ class LocalPlacementDataset(TypedDict):
     placements: list[LocalPlacementEntry]
 
 
+OVERLAY_SLOT_ID = "overlay"
+"""The overlay slot's fixed id (sdk.md §3): the one slot where a slot default
+is an ordinary candidate."""
+
+
 class _CandidateOutput(TypedDict):
     """Index entry — a built output plus the entry hints used to narrow
     candidates. Mirrors the TS ``CandidateOutput`` interface.
@@ -117,6 +122,10 @@ class _CandidateOutput(TypedDict):
     entry_category: Any
     trigger_entitlement_handle: str | None
     trigger_slot_id: str | None
+    # ST-9991: the entry is its slot's default (``slot_default: true``, a Fixed
+    # placement). Read from the raw Playbook entry, so it works before the
+    # vendored types carry the field.
+    slot_default: bool
     trial_trigger: Any  # TrialTriggerShape | None — see trial_gating.py
     threshold_trigger: Any  # ThresholdTriggerShape | None — see threshold_gating.py
     qualifier_trigger: Any  # QualifierTriggerShape | None — see qualifier_gating.py
@@ -803,6 +812,7 @@ def create_static_placement_resolver(
                 "entry_category": entry.get("category"),
                 "trigger_entitlement_handle": trigger_entitlement_handle,
                 "trigger_slot_id": trigger_slot_id,
+                "slot_default": entry.get("slot_default") is True,
                 "trial_trigger": trial_trigger,
                 "threshold_trigger": threshold_trigger,
                 "qualifier_trigger": qualifier_trigger,
@@ -1009,7 +1019,12 @@ def create_static_placement_resolver(
             slot_id = meta.get("surface_slot_id")
             if slot_id:
                 slot_filtered = [c for c in filtered if c["trigger_slot_id"] == slot_id]
-                if slot_filtered:
+                # ST-9991: a Fixed slot default names its slot in its trigger,
+                # so narrowing to it alone would make it always win. In an
+                # inline slot, narrow only when something other than a default
+                # targets the slot (core local-resolver.ts, the same rule).
+                inline_slot = slot_id != OVERLAY_SLOT_ID
+                if any(not (inline_slot and c["slot_default"]) for c in slot_filtered):
                     filtered = slot_filtered
 
             filtered = [c for c in filtered if _gate_refusal(c, True) is None]
@@ -1026,12 +1041,10 @@ def create_static_placement_resolver(
                 filtered = [c for c in filtered if c["entry_category"] == "fixed"]
 
             if slot_category == "triggered":
-                # D-62 (Kent, 2026-10-06): a message slot shows ONLY RT-initiated
-                # content (category tiers 3 and 4) — a hard filter, never a
-                # preference. Fixed and Access Gate content never render here.
-                filtered = [
-                    c for c in filtered if category_bucket(_candidate_category(c)) in (2, 4)
-                ]
+                # ST-9991 (placement-decision-rules.md §4.2, superseding D-62):
+                # Fixed content is eligible in a message slot; only Access Gate
+                # content stays out (§4.1) — a hard filter, never a preference.
+                filtered = [c for c in filtered if category_bucket(_candidate_category(c)) != 0]
             elif preferred_categories and slot_category != "fixed" and len(filtered) > 1:
                 cat_filtered = [c for c in filtered if c["entry_category"] in preferred_categories]
                 if cat_filtered:
@@ -1136,6 +1149,14 @@ def create_static_placement_resolver(
                 entitlements_state,
                 user_elapsed_percent,
             )
+            # ST-9991 (§4.2): in an inline slot the slot default ranks LAST,
+            # after every other eligible candidate whatever its tier, so it
+            # shows only when nothing else qualifies. On the overlay slot (slot
+            # id ``overlay``) it is an ordinary candidate. Stable partition.
+            if slot_id != OVERLAY_SLOT_ID:
+                ranked = [c for c in ranked if not c["slot_default"]] + [
+                    c for c in ranked if c["slot_default"]
+                ]
             # Server ports carry no presentation (cap) state, so the TS
             # ``candidateGate`` hook (§1 stage 4) has no equivalent here: the
             # first ranked candidate wins.

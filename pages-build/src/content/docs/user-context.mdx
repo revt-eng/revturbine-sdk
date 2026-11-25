@@ -9,7 +9,15 @@ import { Aside } from '@astrojs/starlight/components';
 active Playbook. Entitlement checks, Segment targeting, placements,
 personalization, and experiment assignment all depend on this context.
 
-For most integrations, start with a stable user id and the current plan handle.
+After a user signs in, your app passes the user's ID from your own user table
+to the SDK, and that ID is how RevTurbine knows each user. The SDK also needs
+the user's plan: in local mode your app passes it with the ID; in connected mode
+RevTurbine can [get it from Stripe](/guides/client-sessions/), matched by the
+IDs you put in each customer's
+[Stripe metadata](/guides/billing/#link-stripe-customers-to-accounts).
+For the whole picture (what stays in your app, local and connected mode, and what
+a check returns), see [Connect your existing users](/getting-started/existing-users/).
+
 Add only the fields your Playbook reads.
 
 ```ts

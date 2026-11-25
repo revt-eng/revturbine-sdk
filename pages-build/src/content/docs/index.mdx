@@ -7,7 +7,7 @@ import { Steps, Tabs, TabItem, Card, CardGrid, Aside } from '@astrojs/starlight/
 
 RevTurbine is monetization for product-led SaaS in one SDK: plans, entitlements, usage limits, trials, and the upgrade prompts that convert — decided per user, inside your app, from a Playbook you keep. We add no latency and our availability never affects your product: the SDK evaluates your Playbook locally, so decisions never depend on our servers.
 
-This page is the whole happy path. It runs in local mode first — no account, no key — and ends with hosted mode, where the same Playbook changes without a deploy.
+This page is the whole happy path. It runs in local mode first — no account, no key — and ends with connected mode, where the same Playbook changes without a deploy.
 
 <Aside type="note" title="Not using React?">
 The walkthrough is React because that is the shortest path to something on screen. The engine is framework-agnostic: `import { initRevTurbine } from '@revturbine/sdk/headless'` pulls in no React and runs on Svelte, Vue, plain TypeScript, and Node. Same checks, same decisions; you render the resolved content yourself. See [Headless API](/guides/headless-api/) and [Server-Side Integration](/getting-started/server-side/). Python and Rust SDKs evaluate the same Playbook with byte-identical results.
@@ -27,7 +27,7 @@ Plain-English definitions, how initialization and context changes drive a decisi
 Use these focused guides when moving beyond the first gate:
 
 - [SDK upgrade behavior](/guides/sdk-upgrades/): mirrors, denial reasons, gates, and presentation changes.
-- [Plans without subscriptions](/guides/plans-without-subscriptions/): explicit free-plan policy and hosted context precedence.
+- [Plans without subscriptions](/guides/plans-without-subscriptions/): explicit free-plan policy and connected-mode context precedence.
 - [Visitor, user, and account identity](/guides/identity-lifecycle/): sign-in, sign-out, and account switches.
 - [Usage periods and resets](/guides/usage-periods/): application accounting and atomic enforcement.
 - [Billing facts versus app events](/guides/events/#billing-facts-and-application-events): Stripe ownership and event identity.
@@ -99,7 +99,7 @@ export default function App() {
 }
 ```
 
-`plan_handle` is the plan's handle from your Playbook — the value plan-scoped rules match on. In hosted mode it arrives from Stripe on its own (step 7); here you supply it.
+`id` is the user's ID from your own user table: see [how RevTurbine knows each user](/user-context/). `plan_handle` is the plan's handle from your Playbook — the value plan-scoped rules match on. In connected mode it can come from Stripe instead (step 8); here you supply it.
 
 ## 3. Gate a feature
 
@@ -205,12 +205,12 @@ export async function POST(request: Request): Promise<Response> {
 
 One instance per request, built from a Playbook you loaded once, so the check
 makes no network call. Why the re-check, and which actions need it:
-[Client vs Server Enforcement](/concepts/enforcement/). Why a server does not use
-hosted mode, and what it can report: [Server-Side Integration](/getting-started/server-side/).
+[Client vs Server Enforcement](/concepts/enforcement/). When a server uses
+connected mode instead, and what it can report: [Server-Side Integration](/getting-started/server-side/).
 
-## 8. Go hosted: connect Stripe, change it without a deploy
+## 8. Go connected: connect Stripe, change it without a deploy
 
-Everything above works forever in local mode, free. Hosted mode is where you stop deploying to change monetization.
+Everything above works forever in local mode, free. Connected mode is where you stop deploying to change monetization.
 
 <Steps>
 
@@ -218,7 +218,7 @@ Everything above works forever in local mode, free. Hosted mode is where you sto
 
 2. **Connect Stripe** in **Settings → Stripe**. From then on a purchase updates what the user can do with no app code: plan and payment state arrive through a client session. Put `revturbine_account_id` and `revturbine_user_id` in the metadata of every Stripe customer you create so each payer links to an account from day one: [Link Stripe customers to accounts](/guides/billing/#link-stripe-customers-to-accounts). See [Billing & Stripe](/guides/billing/).
 
-3. **Switch the provider to hosted mode.** Mint an ingest key under **Settings → API Token Management → Ingest Keys** and add your app's origins to its allowed origins. Then add the **client-session route** to your server (it mints a short-lived token with your server key, so the plan Stripe holds reaches the SDK) and pass both to the provider:
+3. **Switch the provider to connected mode.** Mint an ingest key under **Settings → API Token Management → Ingest Keys** and add your app's origins to its allowed origins. Then add the **client-session route** to your server (it mints a short-lived token with your server key, so the plan Stripe holds reaches the SDK) and pass both to the provider:
 
     ```tsx
     import { RevTurbineProvider } from '@revturbine/sdk';
@@ -280,7 +280,7 @@ Coding agents can fetch individual pages from this index. [llms-small.txt](/llms
 - [Recommended API Path](/getting-started/api-overview/) — `can()` vs `gate()` vs `<Gate>`, and the vocabulary
 - [Entitlements](/guides/entitlements/) — feature gates, usage limits, credits, seats, tiers
 - [Placements](/guides/placements/) — targeting, caps, cooldowns, priority, and UI paths
-- [Runtime Modes](/guides/runtime-modes/) — local mode, hosted mode, and what is cached
+- [Runtime Modes](/guides/runtime-modes/) — local mode, connected mode, and what is cached
 - [Interactive Playground](/playground/) — every scenario, live and editable
 - [API reference](/api/) — full TypeDoc reference for all exports
 

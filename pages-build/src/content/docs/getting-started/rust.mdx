@@ -32,9 +32,17 @@ is a plain function call, safe on a request hot path.
 
 The `revturbine` crate is published to **crates.io**:
 
+```bash
+cargo add revturbine
+```
+
+`cargo add` writes the latest published version into `Cargo.toml`. The crate,
+the npm package and the PyPI package are released together under one version
+number, so to pin, use the same version as your other RevTurbine SDKs:
+
 ```toml
 [dependencies]
-revturbine = "0.2"
+revturbine = "=<version>"
 ```
 
 The minimum supported Rust version is **1.88**, declared as `rust-version` in

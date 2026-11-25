@@ -1,21 +1,29 @@
 # Runtime Mode Guide
 
-Choose a runtime mode by answering one question first:
+The runtime mode chooses where the Playbook and the user's state come from. It
+does not choose where decisions run. In every mode the SDK evaluates
+entitlements and placements locally, inside the app or on its server, from the
+Playbook it holds. No entitlement check and no placement decision calls a
+RevTurbine API, so RevTurbine's availability never decides what a user may do.
 
-Do you want RevTurbine-hosted APIs as your runtime source of truth?
+Choose a mode by answering one question first: where should the Playbook come
+from?
 
-- Yes: use `revturbine_server`.
-- No, but we have our own API/proxy layer: use `custom_endpoints`.
-- No, and we want fully local execution: use `local_only`.
+- RevTurbine stores and versions it, and the SDK fetches the launched Release: connected mode, `revturbine_server`.
+- The same, with selected context and telemetry calls routed through our own proxy: `custom_endpoints`.
+- It ships with the app: local mode, `local_only`.
+
+The public page is `pages-build/src/content/docs/guides/runtime-modes.mdx`; keep
+this guide in step with it.
 
 ## Decision Tree
 
-1. Do you need offline/local-only behavior with no network calls?
+1. Should the Playbook ship with the app, with no config or decisioning calls?
 - Yes: `local_only`
 - No: continue
 
-2. Do you need to route SDK calls through customer-owned endpoints?
-- Yes: `custom_endpoints`
+2. Do context or telemetry calls need to go through customer-owned endpoints?
+- Yes: `custom_endpoints` (Playbook delivery stays with RevTurbine)
 - No: `revturbine_server`
 
 ## Mode Comparison
@@ -25,11 +33,11 @@ config in the last column: a Playbook is evaluated for an identified user, and
 there is no anonymous mode. Without a non-empty id the SDK is disabled in every
 mode — no requests, no evaluation, fallbacks only.
 
-| Mode | Best for | Network dependency | Storage behavior | Required config |
-|---|---|---|---|---|
-| `revturbine_server` | Standard production integration | RevTurbine edge endpoints | SDK cache and interaction state | `publicKey`, `endpoint`, `mode` (`tenantId` optional since 0.11.14: the public key identifies the tenant; a passed id that differs is warned about and the key's tenant is used) |
-| `custom_endpoints` | Customer proxy/service boundaries | Customer endpoints | SDK cache and interaction state | Base config + `endpointOverrides` |
-| `local_only` | Demo/offline/local simulation | None | SDK local runtime state in localStorage | Base config + `localRuntime` |
+| Mode | Best for | Where the Playbook comes from | Network dependency | Storage behavior | Required config |
+|---|---|---|---|---|---|
+| `revturbine_server` (connected mode) | Changing monetization without a deploy | RevTurbine, cached locally and refreshed in the background | Playbook delivery, user state and telemetry. Never a decision | SDK cache and interaction state | `publicKey` (and a `clientSession` route for server-derived state). `tenantId` and `endpoint` are optional (`tenantId` since 0.11.14: the public key identifies the tenant; a passed id that differs is warned about and the key's tenant is used) |
+| `custom_endpoints` | Customer proxy/service boundaries | RevTurbine, cached locally as in connected mode | As connected mode, with the overridden context and telemetry calls going to customer endpoints | SDK cache and interaction state | Connected-mode config + `endpointOverrides` |
+| `local_only` (local mode) | Demos, offline use, and Playbooks that change with a deploy | Bundled with the app | None for config or decisions. The anonymous SDK init and error events are the one exception; set `anonymousTelemetry: false` for zero requests | SDK local runtime state in localStorage | `localRuntime: { playbook }` |
 
 ## Provider Fallback Strategy (Recommended)
 
@@ -97,12 +105,12 @@ const sdk = initRevTurbine(
     tenantId: 'tenant_abc',
     publicKey: 'rtk_…',
     user: { id: 'user_123' },
-    endpoint: 'https://proxy.example.com',
+    // `endpoint` stays RevTurbine: overrides do not reroute Playbook delivery.
     endpointOverrides: {
-      decideContext: '/decisioning/decide-context',
-      bootstrapContext: '/decisioning/bootstrap',
-      checkEntitlement: '/entitlements/check',
-      ingestEvents: '/events/ingest',
+      clientContext: 'https://proxy.example.com/revturbine/client-context',
+      userContext: 'https://proxy.example.com/revturbine/user-context',
+      trialStatus: 'https://proxy.example.com/revturbine/trial-status',
+      ingestEvents: 'https://proxy.example.com/revturbine/track',
     },
   }),
 );
@@ -111,20 +119,16 @@ const sdk = initRevTurbine(
 ### Local-only runtime
 
 ```ts
-import { initRevTurbine, createLocalRuntimeConfig } from '@revt-eng/sdk';
+import { initRevTurbine, RuntimeMode } from '@revt-eng/sdk';
+import playbook from './revturbine.playbook.json';
 
-const sdk = initRevTurbine(
-  createLocalRuntimeConfig({
-    tenantId: 'tenant_local',
-    publicKey: 'local',
-    user: { id: 'user_123' },
-    endpoint: 'http://localhost',
-    localRuntime: {
-      storageKey: 'my-app:revturbine-local-runtime',
-      initialData: {
-        trialStatus: { in_trial: true, day_number: 3, days_remaining: 11 },
-      },
-    },
-  }),
-);
+// No account, key, tenant or endpoint: the Playbook is the whole configuration.
+const sdk = initRevTurbine({
+  runtimeMode: RuntimeMode.LocalOnly,
+  user: { id: 'user_123' },
+  localRuntime: {
+    playbook,
+    storageKey: 'my-app:revturbine-local-runtime',
+  },
+});
 ```

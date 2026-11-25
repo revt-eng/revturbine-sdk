@@ -977,8 +977,10 @@ def derive_result_from_rule_type_fields(
         allowance: float | None
         # An *explicit* allowance (incl. None/'unlimited'/999999 → +inf,
         # plan 72) wins; only a *truly absent* allowance falls through to
-        # initial_grant. Source: entitlement-check.ts credits branch.
+        # the one-time grant. Source: entitlement-check.ts credits branch.
         # Plan 147 REQ-2: canonical `allowance_value`, legacy `allowance` tolerated.
+        # ST-3163: the grant is `one_time_grant`; the old name `initial_grant` is
+        # read only when it is absent (core: `one_time_grant ?? initial_grant`).
         if effective_allowance is not None:
             allowance = effective_allowance
         elif "allowance_value" in type_fields:
@@ -987,7 +989,10 @@ def derive_result_from_rule_type_fields(
             allowance = resolve_limit_value(type_fields.get("allowance"))
         else:
             allowance = None
-        initial_grant = _js_number(type_fields.get("initial_grant"))
+        one_time_grant = type_fields.get("one_time_grant")
+        initial_grant = _js_number(
+            one_time_grant if one_time_grant is not None else type_fields.get("initial_grant")
+        )
         cr_limit: float | None
         if allowance is not None and allowance >= 0:
             cr_limit = allowance

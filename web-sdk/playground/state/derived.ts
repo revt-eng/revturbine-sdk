@@ -59,7 +59,9 @@ export function generationsLimitFor(config: RevTurbineConfig, planHandle: PrismP
 /** Style-credit allowance for a plan, derived from the config rule. */
 export function creditAllowanceFor(config: RevTurbineConfig, planHandle: PrismPlanHandle): number {
   const fields = ruleTypeFields(config, 'credits', planHandle);
-  return numberField(fields, 'initial_grant')
+  // `one_time_grant` is the current name; `initial_grant` is the old one, still read (VAL-ENT-04).
+  return numberField(fields, 'one_time_grant')
+    ?? numberField(fields, 'initial_grant')
     ?? numberField(fields, 'allowance_value')
     ?? numberField(fields, 'allowance')
     ?? 0;

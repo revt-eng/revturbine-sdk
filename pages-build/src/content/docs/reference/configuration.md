@@ -26,7 +26,7 @@ In `revturbine_server` and `custom_endpoints` modes the browser needs `publicKey
 | `mode` | `'react' \| 'snippet' \| 'iframe'` | `'snippet'` (`'react'` when `<RevTurbineProvider>` initializes the SDK) | Integration label carried in telemetry; no decision depends on it |
 | `endpointOverrides` | `Partial<RevTurbineEndpointOverrides>` | — | Route the SDK's non-decision calls through your own endpoints (`custom_endpoints` mode) |
 | `configProvider` | `RevTurbineConfigProvider` | — | Custom provider for the Playbook; implement `getPlaybook()` |
-| `localRuntime` | `RevTurbineLocalRuntimeOptions` | — | Local-only mode configuration |
+| `localRuntime` | `RevTurbineLocalRuntimeOptions` | — | Local mode configuration |
 
 ### Provider Configuration
 
@@ -49,7 +49,7 @@ In `revturbine_server` and `custom_endpoints` modes the browser needs `publicKey
 |---|---|---|---|
 | `branding` | `BrandingConfig` | Built-in defaults | Optional workspace name, logo and partial theme. An explicit value takes priority over API branding and legacy config themes. |
 
-See [Theming](/guides/theming/) for an example. Set `colorScheme: 'light'` or `'dark'` in initialization, use the React provider's `colorScheme` prop, or call `session.sdk.setColorScheme(scheme)` in a headless integration (SDK 0.12.4).
+See [Theming](/guides/theming/) for an example. Set `colorScheme: 'light'` or `'dark'` in initialization, use the React provider's `colorScheme` prop, or call `session.sdk.setColorScheme(scheme)` in a headless integration.
 
 ### User & Page Context
 

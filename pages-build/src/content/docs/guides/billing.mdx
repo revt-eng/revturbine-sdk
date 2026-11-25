@@ -60,8 +60,9 @@ to your Stripe account**; the metadata below is yours to set.
 
 RevTurbine looks for these three pieces of evidence for each payer:
 
-1. **Customer metadata.** `revturbine_account_id` (preferred), or
-   `revturbine_user_id`, which resolves through your users to their account.
+1. **Customer metadata.** `revturbine_account_id` and `revturbine_user_id`.
+   Set both. The account id names the account directly; a user id found alone
+   resolves through your users to their account.
 2. **An existing link** between the Stripe customer and an account.
 3. **A customer your Checkout created**, resolved through the session's
    metadata or `client_reference_id`.
@@ -86,7 +87,7 @@ plain `user_id` in the Customer metadata is used as a stand-in account
 identity. It is a reasonable proxy for `account_id`, but it is **not a
 RevTurbine user id**: RevTurbine user ids come from the user context you pass
 to the SDK, never from this key. Do not rely on it when you can set
-`revturbine_account_id`.
+`revturbine_account_id` and `revturbine_user_id`.
 
 ```ts docs-check=strict
 import Stripe from 'stripe';
@@ -195,7 +196,7 @@ one exists, so set the metadata before the first purchase rather than after.
 
 - `customer.subscription.created/updated/deleted` → the customer's current plan
   — which flows into SDK decisions automatically: the client context carries the
-  server-derived plan handle, and hosted evaluation defaults to it when the
+  server-derived plan handle, and connected-mode evaluation defaults to it when the
   caller doesn't supply one.
 - `invoice.payment_failed` / `payment_intent.payment_failed` → the customer's
   billing-health issues, which drive the `payment_failed` retention qualifier
@@ -296,10 +297,12 @@ names no plan yields no `revturbine_plan_handle`.
 
 <Aside type="caution" title="Customer metadata cannot be set from Checkout">
   Checkout cannot set metadata on the Stripe Customer inline. Create the
-  Customer yourself with `metadata.revturbine_user_id` before opening Checkout
-  (see above), or, if you let Checkout create it, follow up with
-  `customers.update({ metadata })` from your `checkout.session.completed`
-  handler. The session and subscription copies of the bag identify the purchase
+  Customer yourself with both `metadata.revturbine_account_id` and
+  `metadata.revturbine_user_id` before opening Checkout (see
+  [Link Stripe customers to accounts](#link-stripe-customers-to-accounts)), or,
+  if you let Checkout create it, follow up with
+  `customers.update({ metadata })` carrying both keys from your
+  `checkout.session.completed` handler. The session and subscription copies of the bag identify the purchase
   either way; the Customer copy is what makes later, checkout-less billing
   events resolvable without a customer mapping.
 </Aside>

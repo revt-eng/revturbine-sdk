@@ -155,10 +155,13 @@ function ThemedBadge({ label }) {
 
 ### In Custom Slot Components
 
-Custom slot components receive the theme as a prop:
+Custom slot components read the theme with the same hook:
 
 ```tsx
-function MySlot({ content, theme }: PlacementSlotProps) {
+import { useRevTurbineTheme, type PlacementSlotProps } from '@revturbine/sdk';
+
+function MySlot({ content }: PlacementSlotProps) {
+  const theme = useRevTurbineTheme();
   return (
     <div style={{
       background: theme.colors.surface,

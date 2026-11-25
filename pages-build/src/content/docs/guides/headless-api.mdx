@@ -54,7 +54,7 @@ const session = await initRevTurbine({
   user: { id: 'user_123', plan_handle: 'pro' },
 });
 
-// Hosted mode — swap the local runtime for your tenant credentials:
+// Connected mode — swap the local runtime for your tenant credentials:
 // const session = await initRevTurbine({
 //   tenantId: 'tenant_abc',
 //   publicKey: 'rtk_…', // public key — safe in the browser
@@ -271,7 +271,10 @@ await gate.recheck(); // re-run the check
 <TabItem label="Vanilla JS">
 
 ```ts
-const session = await initRevTurbine({ /* ... */ });
+const session = await initRevTurbine({
+  user: { id: 'user_123' }, // required in every mode
+  localRuntime: { playbook },
+});
 
 const banner = session.placement({ surfaceSlot: { id: 'top_banner' } });
 banner.onChange(() => {
@@ -279,7 +282,7 @@ banner.onChange(() => {
   if (!el) return;
   el.style.display = banner.visible ? 'block' : 'none';
   if (banner.content) {
-    el.innerHTML = banner.content.headline || '';
+    el.textContent = banner.content.header || '';
   }
 });
 await banner.load();

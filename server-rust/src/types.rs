@@ -110501,6 +110501,80 @@ impl<'de> ::serde::Deserialize<'de> for BillingMirrorInvoiceLineTotalMinor {
             })
     }
 }
+#[doc = "`BillingMirrorInvoiceLinkSource`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"provider\","]
+#[doc = "    \"billing_facts\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum BillingMirrorInvoiceLinkSource {
+    #[serde(rename = "provider")]
+    Provider,
+    #[serde(rename = "billing_facts")]
+    BillingFacts,
+}
+impl ::std::fmt::Display for BillingMirrorInvoiceLinkSource {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Provider => f.write_str("provider"),
+            Self::BillingFacts => f.write_str("billing_facts"),
+        }
+    }
+}
+impl ::std::str::FromStr for BillingMirrorInvoiceLinkSource {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "provider" => Ok(Self::Provider),
+            "billing_facts" => Ok(Self::BillingFacts),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for BillingMirrorInvoiceLinkSource {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for BillingMirrorInvoiceLinkSource {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for BillingMirrorInvoiceLinkSource {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 #[doc = "`BillingMirrorInvoicePayerProviderId`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -112934,6 +113008,19 @@ impl<'de> ::serde::Deserialize<'de> for BillingMirrorPayerTenantId {
 #[doc = "      \"x-revturbine-data-classification\": \"financial\","]
 #[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
 #[doc = "    },"]
+#[doc = "    \"invoice_link_source\": {"]
+#[doc = "      \"readOnly\": true,"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/$defs/BillingMirrorInvoiceLinkSource\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"operational\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
 #[doc = "    \"invoice_provider_id\": {"]
 #[doc = "      \"readOnly\": true,"]
 #[doc = "      \"anyOf\": ["]
@@ -113177,6 +113264,8 @@ pub struct BillingMirrorPayment {
     pub currency_exponent: i64,
     pub deleted_at: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
     pub description: ::std::option::Option<BillingMirrorPaymentDescription>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub invoice_link_source: ::std::option::Option<BillingMirrorInvoiceLinkSource>,
     pub invoice_provider_id: ::std::option::Option<BillingMirrorPaymentInvoiceProviderId>,
     pub last_synced_at: ::chrono::DateTime<::chrono::offset::Utc>,
     pub livemode: bool,
@@ -147318,6 +147407,1482 @@ impl ::std::convert::TryFrom<::std::string::String> for CapPeriod {
         value.parse()
     }
 }
+#[doc = "`CashCoverage`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"complete\","]
+#[doc = "    \"partial\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum CashCoverage {
+    #[serde(rename = "complete")]
+    Complete,
+    #[serde(rename = "partial")]
+    Partial,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for CashCoverage {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Complete => f.write_str("complete"),
+            Self::Partial => f.write_str("partial"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for CashCoverage {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "complete" => Ok(Self::Complete),
+            "partial" => Ok(Self::Partial),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for CashCoverage {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CashCoverage {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CashCoverage {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`CashCurrencyTotal`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"captured_minor\","]
+#[doc = "    \"currency\","]
+#[doc = "    \"currency_exponent\","]
+#[doc = "    \"net_minor\","]
+#[doc = "    \"payments\","]
+#[doc = "    \"refunded_minor\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"captured_minor\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 40,"]
+#[doc = "      \"pattern\": \"^\\\\d+$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "    },"]
+#[doc = "    \"currency\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^[A-Z]{3}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"currency_exponent\": {"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 4.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"net_minor\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 40,"]
+#[doc = "      \"pattern\": \"^-?\\\\d+$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "    },"]
+#[doc = "    \"payments\": {"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"refunded_minor\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 40,"]
+#[doc = "      \"pattern\": \"^\\\\d+$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CashCurrencyTotal {
+    pub captured_minor: CashCurrencyTotalCapturedMinor,
+    pub currency: CashCurrencyTotalCurrency,
+    pub currency_exponent: i64,
+    pub net_minor: CashCurrencyTotalNetMinor,
+    pub payments: i64,
+    pub refunded_minor: CashCurrencyTotalRefundedMinor,
+}
+#[doc = "`CashCurrencyTotalCapturedMinor`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 40,"]
+#[doc = "  \"pattern\": \"^\\\\d+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CashCurrencyTotalCapturedMinor(::std::string::String);
+impl ::std::ops::Deref for CashCurrencyTotalCapturedMinor {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CashCurrencyTotalCapturedMinor> for ::std::string::String {
+    fn from(value: CashCurrencyTotalCapturedMinor) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CashCurrencyTotalCapturedMinor {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 40usize {
+            return Err("longer than 40 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^\\d+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^\\d+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CashCurrencyTotalCapturedMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CashCurrencyTotalCapturedMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CashCurrencyTotalCapturedMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CashCurrencyTotalCapturedMinor {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`CashCurrencyTotalCurrency`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[A-Z]{3}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CashCurrencyTotalCurrency(::std::string::String);
+impl ::std::ops::Deref for CashCurrencyTotalCurrency {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CashCurrencyTotalCurrency> for ::std::string::String {
+    fn from(value: CashCurrencyTotalCurrency) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CashCurrencyTotalCurrency {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Z]{3}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Z]{3}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CashCurrencyTotalCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CashCurrencyTotalCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CashCurrencyTotalCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CashCurrencyTotalCurrency {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`CashCurrencyTotalNetMinor`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 40,"]
+#[doc = "  \"pattern\": \"^-?\\\\d+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CashCurrencyTotalNetMinor(::std::string::String);
+impl ::std::ops::Deref for CashCurrencyTotalNetMinor {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CashCurrencyTotalNetMinor> for ::std::string::String {
+    fn from(value: CashCurrencyTotalNetMinor) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CashCurrencyTotalNetMinor {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 40usize {
+            return Err("longer than 40 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^-?\\d+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^-?\\d+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CashCurrencyTotalNetMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CashCurrencyTotalNetMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CashCurrencyTotalNetMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CashCurrencyTotalNetMinor {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`CashCurrencyTotalRefundedMinor`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 40,"]
+#[doc = "  \"pattern\": \"^\\\\d+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CashCurrencyTotalRefundedMinor(::std::string::String);
+impl ::std::ops::Deref for CashCurrencyTotalRefundedMinor {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CashCurrencyTotalRefundedMinor> for ::std::string::String {
+    fn from(value: CashCurrencyTotalRefundedMinor) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CashCurrencyTotalRefundedMinor {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 40usize {
+            return Err("longer than 40 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^\\d+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^\\d+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CashCurrencyTotalRefundedMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CashCurrencyTotalRefundedMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CashCurrencyTotalRefundedMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CashCurrencyTotalRefundedMinor {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`CashDayRow`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"amount_minor\","]
+#[doc = "    \"currency\","]
+#[doc = "    \"currency_exponent\","]
+#[doc = "    \"date\","]
+#[doc = "    \"payments\","]
+#[doc = "    \"period\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"amount_minor\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 40,"]
+#[doc = "      \"pattern\": \"^-?\\\\d+$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "    },"]
+#[doc = "    \"currency\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"pattern\": \"^[A-Z]{3}$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"currency_exponent\": {"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 4.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "      \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "    },"]
+#[doc = "    \"date\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"payments\": {"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"period\": {"]
+#[doc = "      \"$ref\": \"#/$defs/CashPeriod\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CashDayRow {
+    pub amount_minor: CashDayRowAmountMinor,
+    pub currency: CashDayRowCurrency,
+    pub currency_exponent: i64,
+    pub date: ::chrono::naive::NaiveDate,
+    pub payments: i64,
+    pub period: CashPeriod,
+}
+#[doc = "`CashDayRowAmountMinor`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 40,"]
+#[doc = "  \"pattern\": \"^-?\\\\d+$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CashDayRowAmountMinor(::std::string::String);
+impl ::std::ops::Deref for CashDayRowAmountMinor {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CashDayRowAmountMinor> for ::std::string::String {
+    fn from(value: CashDayRowAmountMinor) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CashDayRowAmountMinor {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 40usize {
+            return Err("longer than 40 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^-?\\d+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^-?\\d+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CashDayRowAmountMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CashDayRowAmountMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CashDayRowAmountMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CashDayRowAmountMinor {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`CashDayRowCurrency`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"pattern\": \"^[A-Z]{3}$\","]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\","]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CashDayRowCurrency(::std::string::String);
+impl ::std::ops::Deref for CashDayRowCurrency {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CashDayRowCurrency> for ::std::string::String {
+    fn from(value: CashDayRowCurrency) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CashDayRowCurrency {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Z]{3}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Z]{3}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CashDayRowCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CashDayRowCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CashDayRowCurrency {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CashDayRowCurrency {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`CashPeriod`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"enum\": ["]
+#[doc = "    \"monthly\","]
+#[doc = "    \"annual\","]
+#[doc = "    \"custom\","]
+#[doc = "    \"one_time\","]
+#[doc = "    \"unknown\""]
+#[doc = "  ],"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum CashPeriod {
+    #[serde(rename = "monthly")]
+    Monthly,
+    #[serde(rename = "annual")]
+    Annual,
+    #[serde(rename = "custom")]
+    Custom,
+    #[serde(rename = "one_time")]
+    OneTime,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+impl ::std::fmt::Display for CashPeriod {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Monthly => f.write_str("monthly"),
+            Self::Annual => f.write_str("annual"),
+            Self::Custom => f.write_str("custom"),
+            Self::OneTime => f.write_str("one_time"),
+            Self::Unknown => f.write_str("unknown"),
+        }
+    }
+}
+impl ::std::str::FromStr for CashPeriod {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "monthly" => Ok(Self::Monthly),
+            "annual" => Ok(Self::Annual),
+            "custom" => Ok(Self::Custom),
+            "one_time" => Ok(Self::OneTime),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for CashPeriod {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CashPeriod {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CashPeriod {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "`CashReadResult`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"calendar\","]
+#[doc = "    \"coverage\","]
+#[doc = "    \"payment_count\","]
+#[doc = "    \"payments_observed_from\","]
+#[doc = "    \"policy\","]
+#[doc = "    \"series\","]
+#[doc = "    \"totals\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"calendar\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"calendar_version\","]
+#[doc = "        \"day_boundary_hour\","]
+#[doc = "        \"timezone\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"calendar_version\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 64,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        \"day_boundary_hour\": {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 23.0,"]
+#[doc = "          \"minimum\": 0.0"]
+#[doc = "        },"]
+#[doc = "        \"timezone\": {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 64,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"coverage\": {"]
+#[doc = "      \"$ref\": \"#/$defs/CashCoverage\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"payment_count\": {"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"payments_observed_from\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"format\": \"date\","]
+#[doc = "          \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"policy\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"cash-net-received-v1\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"reporting\": {"]
+#[doc = "      \"$ref\": \"#/$defs/CashReportingResult\""]
+#[doc = "    },"]
+#[doc = "    \"series\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"$ref\": \"#/$defs/CashDayRow\""]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 100000"]
+#[doc = "    },"]
+#[doc = "    \"totals\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"$ref\": \"#/$defs/CashCurrencyTotal\""]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 200"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CashReadResult {
+    pub calendar: CashReadResultCalendar,
+    pub coverage: CashCoverage,
+    pub payment_count: i64,
+    pub payments_observed_from: ::std::option::Option<::chrono::naive::NaiveDate>,
+    pub policy: ::std::string::String,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub reporting: ::std::option::Option<CashReportingResult>,
+    pub series: ::std::vec::Vec<CashDayRow>,
+    pub totals: ::std::vec::Vec<CashCurrencyTotal>,
+}
+#[doc = "`CashReadResultCalendar`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"calendar_version\","]
+#[doc = "    \"day_boundary_hour\","]
+#[doc = "    \"timezone\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"calendar_version\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 64,"]
+#[doc = "      \"minLength\": 1"]
+#[doc = "    },"]
+#[doc = "    \"day_boundary_hour\": {"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 23.0,"]
+#[doc = "      \"minimum\": 0.0"]
+#[doc = "    },"]
+#[doc = "    \"timezone\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"maxLength\": 64,"]
+#[doc = "      \"minLength\": 1"]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CashReadResultCalendar {
+    pub calendar_version: CashReadResultCalendarCalendarVersion,
+    pub day_boundary_hour: i64,
+    pub timezone: CashReadResultCalendarTimezone,
+}
+#[doc = "`CashReadResultCalendarCalendarVersion`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 64,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CashReadResultCalendarCalendarVersion(::std::string::String);
+impl ::std::ops::Deref for CashReadResultCalendarCalendarVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CashReadResultCalendarCalendarVersion> for ::std::string::String {
+    fn from(value: CashReadResultCalendarCalendarVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CashReadResultCalendarCalendarVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 64usize {
+            return Err("longer than 64 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CashReadResultCalendarCalendarVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CashReadResultCalendarCalendarVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CashReadResultCalendarCalendarVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CashReadResultCalendarCalendarVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`CashReadResultCalendarTimezone`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 64,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CashReadResultCalendarTimezone(::std::string::String);
+impl ::std::ops::Deref for CashReadResultCalendarTimezone {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CashReadResultCalendarTimezone> for ::std::string::String {
+    fn from(value: CashReadResultCalendarTimezone) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CashReadResultCalendarTimezone {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 64usize {
+            return Err("longer than 64 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CashReadResultCalendarTimezone {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CashReadResultCalendarTimezone {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CashReadResultCalendarTimezone {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CashReadResultCalendarTimezone {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`CashReportingResult`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"meta\","]
+#[doc = "    \"series\","]
+#[doc = "    \"total\","]
+#[doc = "    \"unavailable\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"meta\": {"]
+#[doc = "      \"$ref\": \"#/$defs/AnalyticsReportingCurrencyMeta\""]
+#[doc = "    },"]
+#[doc = "    \"series\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"object\","]
+#[doc = "        \"required\": ["]
+#[doc = "          \"amount_minor\","]
+#[doc = "          \"date\","]
+#[doc = "          \"payments\","]
+#[doc = "          \"period\""]
+#[doc = "        ],"]
+#[doc = "        \"properties\": {"]
+#[doc = "          \"amount_minor\": {"]
+#[doc = "            \"anyOf\": ["]
+#[doc = "              {"]
+#[doc = "                \"type\": \"string\","]
+#[doc = "                \"maxLength\": 40,"]
+#[doc = "                \"pattern\": \"^-?\\\\d+$\""]
+#[doc = "              },"]
+#[doc = "              {"]
+#[doc = "                \"type\": \"null\""]
+#[doc = "              }"]
+#[doc = "            ],"]
+#[doc = "            \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "          },"]
+#[doc = "          \"date\": {"]
+#[doc = "            \"type\": \"string\","]
+#[doc = "            \"format\": \"date\","]
+#[doc = "            \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))$\","]
+#[doc = "            \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "          },"]
+#[doc = "          \"payments\": {"]
+#[doc = "            \"type\": \"integer\","]
+#[doc = "            \"maximum\": 9007199254740991.0,"]
+#[doc = "            \"minimum\": 0.0,"]
+#[doc = "            \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "          },"]
+#[doc = "          \"period\": {"]
+#[doc = "            \"$ref\": \"#/$defs/CashPeriod\","]
+#[doc = "            \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "          }"]
+#[doc = "        },"]
+#[doc = "        \"additionalProperties\": false"]
+#[doc = "      },"]
+#[doc = "      \"maxItems\": 100000"]
+#[doc = "    },"]
+#[doc = "    \"total\": {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"net_minor\","]
+#[doc = "        \"payments\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"net_minor\": {"]
+#[doc = "          \"anyOf\": ["]
+#[doc = "            {"]
+#[doc = "              \"type\": \"string\","]
+#[doc = "              \"maxLength\": 40,"]
+#[doc = "              \"pattern\": \"^-?\\\\d+$\""]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"type\": \"null\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "        },"]
+#[doc = "        \"payments\": {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"maximum\": 9007199254740991.0,"]
+#[doc = "          \"minimum\": 0.0,"]
+#[doc = "          \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    \"unavailable\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 2000"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false,"]
+#[doc = "  \"x-revturbine-schema-exposure\": \"internal\","]
+#[doc = "  \"x-revturbine-schema-persistence\": \"transient\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CashReportingResult {
+    pub meta: AnalyticsReportingCurrencyMeta,
+    pub series: ::std::vec::Vec<CashReportingResultSeriesItem>,
+    pub total: CashReportingResultTotal,
+    pub unavailable: ::std::option::Option<CashReportingResultUnavailable>,
+}
+#[doc = "`CashReportingResultSeriesItem`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"amount_minor\","]
+#[doc = "    \"date\","]
+#[doc = "    \"payments\","]
+#[doc = "    \"period\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"amount_minor\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 40,"]
+#[doc = "          \"pattern\": \"^-?\\\\d+$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "    },"]
+#[doc = "    \"date\": {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"format\": \"date\","]
+#[doc = "      \"pattern\": \"^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(?:02)-(?:0[1-9]|1\\\\d|2[0-8])))$\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"payments\": {"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"period\": {"]
+#[doc = "      \"$ref\": \"#/$defs/CashPeriod\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CashReportingResultSeriesItem {
+    pub amount_minor: ::std::option::Option<CashReportingResultSeriesItemAmountMinor>,
+    pub date: ::chrono::naive::NaiveDate,
+    pub payments: i64,
+    pub period: CashPeriod,
+}
+#[doc = "`CashReportingResultSeriesItemAmountMinor`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 40,"]
+#[doc = "  \"pattern\": \"^-?\\\\d+$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CashReportingResultSeriesItemAmountMinor(::std::string::String);
+impl ::std::ops::Deref for CashReportingResultSeriesItemAmountMinor {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CashReportingResultSeriesItemAmountMinor> for ::std::string::String {
+    fn from(value: CashReportingResultSeriesItemAmountMinor) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CashReportingResultSeriesItemAmountMinor {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 40usize {
+            return Err("longer than 40 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^-?\\d+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^-?\\d+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CashReportingResultSeriesItemAmountMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CashReportingResultSeriesItemAmountMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CashReportingResultSeriesItemAmountMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CashReportingResultSeriesItemAmountMinor {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`CashReportingResultTotal`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"net_minor\","]
+#[doc = "    \"payments\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"net_minor\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 40,"]
+#[doc = "          \"pattern\": \"^-?\\\\d+$\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"financial\""]
+#[doc = "    },"]
+#[doc = "    \"payments\": {"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 9007199254740991.0,"]
+#[doc = "      \"minimum\": 0.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    }"]
+#[doc = "  },"]
+#[doc = "  \"additionalProperties\": false"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CashReportingResultTotal {
+    pub net_minor: ::std::option::Option<CashReportingResultTotalNetMinor>,
+    pub payments: i64,
+}
+#[doc = "`CashReportingResultTotalNetMinor`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 40,"]
+#[doc = "  \"pattern\": \"^-?\\\\d+$\""]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CashReportingResultTotalNetMinor(::std::string::String);
+impl ::std::ops::Deref for CashReportingResultTotalNetMinor {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CashReportingResultTotalNetMinor> for ::std::string::String {
+    fn from(value: CashReportingResultTotalNetMinor) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CashReportingResultTotalNetMinor {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 40usize {
+            return Err("longer than 40 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^-?\\d+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^-?\\d+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CashReportingResultTotalNetMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CashReportingResultTotalNetMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CashReportingResultTotalNetMinor {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CashReportingResultTotalNetMinor {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`CashReportingResultUnavailable`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 2000"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CashReportingResultUnavailable(::std::string::String);
+impl ::std::ops::Deref for CashReportingResultUnavailable {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CashReportingResultUnavailable> for ::std::string::String {
+    fn from(value: CashReportingResultUnavailable) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CashReportingResultUnavailable {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 2000usize {
+            return Err("longer than 2000 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CashReportingResultUnavailable {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CashReportingResultUnavailable {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CashReportingResultUnavailable {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CashReportingResultUnavailable {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
 #[doc = "`ChangeClass`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -165056,10 +166621,6 @@ impl<'de> ::serde::Deserialize<'de> for EntitlementName {
 #[doc = "      ],"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
-#[doc = "    \"initial_grant\": {"]
-#[doc = "      \"type\": \"number\","]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    },"]
 #[doc = "    \"instance\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 100,"]
@@ -165139,6 +166700,10 @@ impl<'de> ::serde::Deserialize<'de> for EntitlementName {
 #[doc = "          \"type\": \"null\""]
 #[doc = "        }"]
 #[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"one_time_grant\": {"]
+#[doc = "      \"type\": \"number\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"overage_price_ref\": {"]
@@ -165283,8 +166848,6 @@ pub struct EntitlementRule {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub included_count: ::std::option::Option<EntitlementRuleIncludedCount>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
-    pub initial_grant: ::std::option::Option<f64>,
-    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub instance: ::std::option::Option<EntitlementRuleInstance>,
     #[serde(default = "defaults::default_bool::<true>")]
     pub is_current: bool,
@@ -165298,6 +166861,8 @@ pub struct EntitlementRule {
     pub max_seats: ::std::option::Option<EntitlementRuleMaxSeats>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub objective: ::std::option::Option<EntitlementRuleObjective>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub one_time_grant: ::std::option::Option<f64>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub overage_price_ref: ::std::option::Option<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -186788,6 +188353,10 @@ impl<'de> ::serde::Deserialize<'de> for ExportedConfigEnvironmentId {
 #[doc = "      },"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"slot_default\": {"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"trigger\": {"]
 #[doc = "      \"$ref\": \"#/$defs/RevTurbineConfigPlacementTrigger\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
@@ -186813,6 +188382,8 @@ pub struct ExportedConfigPlacementItem {
     pub objective: ::std::option::Option<ExportedConfigPlacementItemObjective>,
     pub order: i64,
     pub payloads: ::std::vec::Vec<RevTurbineConfigStudioPayload>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub slot_default: ::std::option::Option<bool>,
     pub trigger: RevTurbineConfigPlacementTrigger,
 }
 #[doc = "`ExportedConfigPlacementItemId`"]
@@ -218836,6 +220407,11 @@ impl<'de> ::serde::Deserialize<'de> for PersonalizationTokenTenantId {
 #[doc = "      \"minimum\": 1.0,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"slot_default\": {"]
+#[doc = "      \"default\": false,"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"surface_slot_id\": {"]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
@@ -218938,6 +220514,8 @@ pub struct Placement {
     pub qualifier: ::std::option::Option<PlacementQualifier>,
     #[serde(default = "defaults::default_nzu64::<::std::num::NonZeroU64, 1>")]
     pub sequence: ::std::num::NonZeroU64,
+    #[serde(default)]
+    pub slot_default: bool,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub surface_slot_id: ::std::option::Option<::std::string::String>,
     pub tenant_id: PlacementTenantId,
@@ -227669,6 +229247,10 @@ impl<'de> ::serde::Deserialize<'de> for PlaybookObjectTenantId {
 #[doc = "      },"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"slot_default\": {"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"trigger\": {"]
 #[doc = "      \"$ref\": \"#/$defs/RevTurbineConfigPlacementTrigger\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
@@ -227694,6 +229276,8 @@ pub struct PlaybookPlacementItem {
     pub objective: ::std::option::Option<PlaybookPlacementItemObjective>,
     pub order: i64,
     pub payloads: ::std::vec::Vec<RevTurbineConfigStudioPayload>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub slot_default: ::std::option::Option<bool>,
     pub trigger: RevTurbineConfigPlacementTrigger,
 }
 #[doc = "`PlaybookPlacementItemId`"]
@@ -240546,10 +242130,6 @@ impl<'de> ::serde::Deserialize<'de> for RevTurbineConfigEnforcementDefaultsItemH
 #[doc = "      ],"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
-#[doc = "    \"initial_grant\": {"]
-#[doc = "      \"type\": \"number\","]
-#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
-#[doc = "    },"]
 #[doc = "    \"kind\": {"]
 #[doc = "      \"readOnly\": true,"]
 #[doc = "      \"$ref\": \"#/$defs/EntitlementType\","]
@@ -240610,6 +242190,10 @@ impl<'de> ::serde::Deserialize<'de> for RevTurbineConfigEnforcementDefaultsItemH
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"maxLength\": 100,"]
 #[doc = "      \"minLength\": 1,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"one_time_grant\": {"]
+#[doc = "      \"type\": \"number\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"period_scope\": {"]
@@ -240700,8 +242284,6 @@ pub struct RevTurbineConfigEntitlementRulesItem {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub included_count: ::std::option::Option<RevTurbineConfigEntitlementRulesItemIncludedCount>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
-    pub initial_grant: ::std::option::Option<f64>,
-    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub kind: ::std::option::Option<EntitlementType>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub limit_value: ::std::option::Option<RevTurbineConfigEntitlementRulesItemLimitValue>,
@@ -240711,6 +242293,8 @@ pub struct RevTurbineConfigEntitlementRulesItem {
     pub max_seats: ::std::option::Option<RevTurbineConfigEntitlementRulesItemMaxSeats>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub objective: ::std::option::Option<RevTurbineConfigEntitlementRulesItemObjective>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub one_time_grant: ::std::option::Option<f64>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub period_scope: ::std::option::Option<UsagePeriodScope>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -243332,6 +244916,10 @@ impl ::std::convert::TryFrom<::std::string::String> for RevTurbineConfigPlacemen
 #[doc = "      },"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"slot_default\": {"]
+#[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"trigger\": {"]
 #[doc = "      \"$ref\": \"#/$defs/RevTurbineConfigPlacementTrigger\","]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
@@ -243357,6 +244945,8 @@ pub struct RevTurbineConfigPlacementItem {
     pub objective: ::std::option::Option<RevTurbineConfigPlacementItemObjective>,
     pub order: i64,
     pub payloads: ::std::vec::Vec<RevTurbineConfigStudioPayload>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub slot_default: ::std::option::Option<bool>,
     pub trigger: RevTurbineConfigPlacementTrigger,
 }
 #[doc = "`RevTurbineConfigPlacementItemId`"]
@@ -244254,7 +245844,6 @@ impl<'de> ::serde::Deserialize<'de> for RevTurbineConfigPlacementSettingsItemHan
 #[doc = "    \"description\","]
 #[doc = "    \"id\","]
 #[doc = "    \"label\","]
-#[doc = "    \"placement_handle\","]
 #[doc = "    \"surface_type\""]
 #[doc = "  ],"]
 #[doc = "  \"properties\": {"]
@@ -244302,7 +245891,8 @@ pub struct RevTurbineConfigPlacementSlotsItem {
     pub description: ::std::string::String,
     pub id: RevTurbineConfigPlacementSlotsItemId,
     pub label: RevTurbineConfigPlacementSlotsItemLabel,
-    pub placement_handle: RevTurbineConfigPlacementSlotsItemPlacementHandle,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub placement_handle: ::std::option::Option<RevTurbineConfigPlacementSlotsItemPlacementHandle>,
     pub surface_type: ::std::string::String,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub template: ::std::option::Option<::std::string::String>,
@@ -330538,6 +332128,18 @@ impl<'de> ::serde::Deserialize<'de> for SupersessionRecordSupersededOutputId {
 #[doc = "      ],"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"description\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 2000"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"environment_id\": {"]
 #[doc = "      \"default\": \"production\","]
 #[doc = "      \"readOnly\": true,"]
@@ -330568,6 +332170,19 @@ impl<'de> ::serde::Deserialize<'de> for SupersessionRecordSupersededOutputId {
 #[doc = "      \"default\": false,"]
 #[doc = "      \"readOnly\": true,"]
 #[doc = "      \"type\": \"boolean\","]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
+#[doc = "    \"label\": {"]
+#[doc = "      \"anyOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"string\","]
+#[doc = "          \"maxLength\": 200,"]
+#[doc = "          \"minLength\": 1"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ],"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
 #[doc = "    \"last_seen\": {"]
@@ -330703,6 +332318,8 @@ pub struct SurfaceSlot {
     pub created_at: ::chrono::DateTime<::chrono::offset::Utc>,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub delete_date: ::std::option::Option<::chrono::DateTime<::chrono::offset::Utc>>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub description: ::std::option::Option<SurfaceSlotDescription>,
     #[serde(default = "defaults::surface_slot_environment_id")]
     pub environment_id: SurfaceSlotEnvironmentId,
     pub first_seen: ::chrono::DateTime<::chrono::offset::Utc>,
@@ -330711,6 +332328,8 @@ pub struct SurfaceSlot {
     pub is_current: bool,
     #[serde(default)]
     pub is_deleted: bool,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub label: ::std::option::Option<SurfaceSlotLabel>,
     pub last_seen: ::chrono::DateTime<::chrono::offset::Utc>,
     #[serde(default)]
     pub placement_count: i64,
@@ -330732,6 +332351,74 @@ pub struct SurfaceSlot {
     pub surface_type: ComponentType,
     pub tenant_id: SurfaceSlotTenantId,
     pub updated_at: ::chrono::DateTime<::chrono::offset::Utc>,
+}
+#[doc = "`SurfaceSlotDescription`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 2000"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct SurfaceSlotDescription(::std::string::String);
+impl ::std::ops::Deref for SurfaceSlotDescription {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<SurfaceSlotDescription> for ::std::string::String {
+    fn from(value: SurfaceSlotDescription) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for SurfaceSlotDescription {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 2000usize {
+            return Err("longer than 2000 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for SurfaceSlotDescription {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for SurfaceSlotDescription {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for SurfaceSlotDescription {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for SurfaceSlotDescription {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
 }
 #[doc = "`SurfaceSlotEnvironmentId`"]
 #[doc = r""]
@@ -330868,6 +332555,78 @@ impl ::std::convert::TryFrom<::std::string::String> for SurfaceSlotId {
     }
 }
 impl<'de> ::serde::Deserialize<'de> for SurfaceSlotId {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+#[doc = "`SurfaceSlotLabel`"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"type\": \"string\","]
+#[doc = "  \"maxLength\": 200,"]
+#[doc = "  \"minLength\": 1"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct SurfaceSlotLabel(::std::string::String);
+impl ::std::ops::Deref for SurfaceSlotLabel {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<SurfaceSlotLabel> for ::std::string::String {
+    fn from(value: SurfaceSlotLabel) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for SurfaceSlotLabel {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 200usize {
+            return Err("longer than 200 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for SurfaceSlotLabel {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for SurfaceSlotLabel {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for SurfaceSlotLabel {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for SurfaceSlotLabel {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
@@ -332592,6 +334351,13 @@ pub struct Tenant {
 #[doc = "      \"minimum\": 1.0,"]
 #[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
 #[doc = "    },"]
+#[doc = "    \"analytics_customer_min_sample\": {"]
+#[doc = "      \"default\": 10,"]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"maximum\": 2147483647.0,"]
+#[doc = "      \"minimum\": 1.0,"]
+#[doc = "      \"x-revturbine-data-classification\": \"unrestricted\""]
+#[doc = "    },"]
 #[doc = "    \"analytics_min_sample\": {"]
 #[doc = "      \"default\": 30,"]
 #[doc = "      \"type\": \"integer\","]
@@ -332773,6 +334539,8 @@ pub struct TenantConfig {
     pub activity_medium_min: ::std::num::NonZeroU64,
     #[serde(default = "defaults::default_nzu64::<::std::num::NonZeroU64, 30>")]
     pub activity_window_days: ::std::num::NonZeroU64,
+    #[serde(default = "defaults::default_nzu64::<::std::num::NonZeroU64, 10>")]
+    pub analytics_customer_min_sample: ::std::num::NonZeroU64,
     #[serde(default = "defaults::default_nzu64::<::std::num::NonZeroU64, 30>")]
     pub analytics_min_sample: ::std::num::NonZeroU64,
     #[serde(default = "defaults::default_nzu64::<::std::num::NonZeroU64, 365>")]

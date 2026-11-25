@@ -198,3 +198,24 @@ describe('BL-0119 — controller slot lookup in local_only mode', () => {
     expect(sdk.getRegisteredSlots()[0].surfaceTemplateIds).toEqual(['modal_overlay']);
   });
 });
+
+describe('ST-9990 — a slot reference that names no placement', () => {
+  function playbookWithSlotHandle(handle: string | undefined): Record<string, unknown> {
+    const pb = playbook();
+    const [slot] = pb.placement_slots as Array<Record<string, unknown>>;
+    const { placement_handle: _omitted, ...rest } = slot;
+    pb.placement_slots = [handle === undefined ? rest : { ...rest, placement_handle: handle }];
+    return pb;
+  }
+
+  it.each([
+    ['absent', undefined],
+    ['empty', ''],
+  ])('resolves the slot by its id when placement_handle is %s', async (_label, handle) => {
+    const sdk = makeSdk({ localRuntime: { playbook: playbookWithSlotHandle(handle) } } as Partial<RevTurbineInitOptions>);
+
+    const output = await sdk.getPlacement({ slotId: SLOT_ID });
+
+    expect(output?.rule_id).toBe(PLACEMENT_ID);
+  });
+});

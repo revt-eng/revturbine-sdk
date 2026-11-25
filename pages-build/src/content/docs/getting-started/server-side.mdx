@@ -125,7 +125,7 @@ Playbook, entitlement checks fail closed with `config_unavailable`.
 A `LocalOnly` instance makes no hosted decision or event-ingest call. Its
 `track()` calls do not reach RevTurbine ingest.
 
-A TypeScript hosted backend instance authenticates `track()` events with its
+A TypeScript connected-mode backend instance authenticates `track()` events with its
 server key. Call `await rt.flushEvents()` before ending a short-lived operation;
 backend instances have no browser page-unload lifecycle. `flushEvents()` is
 best-effort transport work, not a durable delivery receipt; call `rt.sdk.dispose()`
@@ -300,7 +300,7 @@ export default function Dashboard({ user }) {
 
 `RevTurbineServer`, exported from `@revturbine/sdk/headless`, holds your server
 key and mints short-lived, browser-safe client sessions for one user at a time.
-This is the hosted-mode job for your server: it is how plan, trial and payment
+This is the connected-mode job for your server: it is how plan, trial and payment
 state from Stripe reaches the browser SDK. It is not a decision evaluator; use
 the headless session above for checks.
 

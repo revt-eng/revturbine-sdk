@@ -17,7 +17,7 @@ The SDK never throws into your app and never blocks your render. But *placements
 
 | API failure scenario | SDK behavior |
 |---|---|
-| Launched Playbook not fetched yet (hosted mode) | Placements return `visible: false` |
+| Launched Playbook not fetched yet (connected mode) | Placements return `visible: false` |
 | Entitlement check fails | Returns `{ status: 'denied', allowed: false, reason: 'config_unavailable' }` |
 | Config fetch fails | Falls back to cached Playbook; with none, entitlement checks deny |
 | Event delivery fails | Events are buffered and retried silently |
@@ -190,7 +190,7 @@ payloads keep deciding exactly as before. The reason code it produces is now
 
 | Reason | Meaning |
 |---|---|
-| `config_unavailable` | The launched Playbook could not be fetched (hosted mode). Not a rule decision — an infrastructure failure. |
+| `config_unavailable` | The launched Playbook could not be fetched (connected mode). Not a rule decision — an infrastructure failure. |
 | `entitlement_not_in_playbook` | Local mode with no Playbook and no cached result: nothing describes this entitlement, so there is no basis to grant it. |
 | `sdk_disabled_provider_failure` | The SDK disabled itself after a provider failure. |
 | `user_id_required` | The SDK has no identified user (missing or blank `user.id`), so it is disabled and made no request. Pass `user: { id }`. |
@@ -225,7 +225,7 @@ boundary between metadata and access checks.
 | Placement resolution | No auto-retry. Call `refresh()` to retry manually. |
 | Entitlement check | No auto-retry. Call `recheck()` to retry manually. |
 | Event delivery | Auto-buffered and retried on next batch interval. |
-| Config fetch | Keeps the last-known-good Playbook; hosted mode re-checks for a new release about once a minute. |
+| Config fetch | Keeps the last-known-good Playbook; connected mode re-checks for a new release about once a minute. |
 
 ### Manual Retry
 

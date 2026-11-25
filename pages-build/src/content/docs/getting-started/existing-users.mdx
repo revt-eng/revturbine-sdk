@@ -1,0 +1,169 @@
+---
+title: Connect your existing users
+description: How RevTurbine fits an app that already has users. You keep your user table; the SDK takes your user id and plan as input, evaluates them against your Playbook, and returns a decision your app enforces.
+sidebar:
+  order: 2
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+You already have users, a user table and a way to sign them in. RevTurbine
+doesn't replace any of that. This page explains how your existing users reach
+RevTurbine, what comes back, and what stays in your app.
+
+## Your user table stays yours
+
+RevTurbine doesn't replace your user table and never signs anyone in. Your app
+stays the source of truth for who a user is. Each time you initialize the SDK,
+you pass the user it should evaluate: a
+**UserContext**. It's an input, built from data you already have:
+
+- **`id`**: your existing user id, exactly as your app knows it. Required, a
+  non-empty string.
+- **`plan_handle`**: which plan this user is on, as a plan handle from your
+  Playbook. This is the trait almost every check depends on.
+- **`usage`**, only where your Playbook has usage limits or credits: how much
+  the user has used.
+- **`custom`**, only if your Playbook targets on your own fields (role, region,
+  company size): those values.
+
+```ts
+import type { RevTurbineUserContext } from '@revturbine/sdk';
+
+// Your existing user record, however you load it.
+interface AppUser {
+  id: string;
+  plan: 'starter' | 'pro';
+  exportsThisMonth: number;
+}
+
+export function toUserContext(user: AppUser): RevTurbineUserContext {
+  return {
+    id: user.id,
+    plan_handle: user.plan,
+    usage: {
+      exports: { entitlement_handle: 'exports', unit: 'exports', amount: user.exportsThisMonth, limit: 100 },
+    },
+  };
+}
+```
+
+The context is flat: `plan_handle` sits directly on the user, with no nested
+`context` object. Add only the fields your Playbook reads. The full field list
+is on [RevTurbineUserContext](/user-context/).
+
+## Where the rules live
+
+The rules that decide what a plan gets (which entitlements, which limits, which
+upsell to show) live in your **Playbook**, a file you manage with the CLI or
+the dashboard. Your code names entitlements (`exports`, `brand_kit`); it never
+hard-codes which plan includes them. A new plan, or a feature moved between
+plans, is a Playbook change, not a code change.
+
+An entitlement check is a pure function of two inputs: the UserContext you
+passed and the Playbook the SDK holds. It runs inside your app, in the browser
+or on your server, and makes no network call per check.
+
+## What a check returns
+
+A check returns a decision, not just yes or no:
+
+```ts
+import { initRevTurbine, RuntimeMode } from '@revturbine/sdk/headless';
+import playbook from './revturbine.playbook.json';
+
+export async function exportAllowance(userId: string, planHandle: string) {
+  const rt = await initRevTurbine({
+    runtimeMode: RuntimeMode.LocalOnly,
+    localRuntime: { playbook },
+    user: { id: userId, plan_handle: planHandle },
+  });
+  const result = await rt.can('exports');
+  // result.allowed:   the verdict your app enforces
+  // result.status:    'allowed' | 'limited' | 'denied'
+  // result.reason:    why, when denied (for example 'entitlement_not_in_playbook')
+  // result.limit, result.used, result.remaining: on usage-limit and credit checks
+  return result;
+}
+```
+
+`allowed` is the verdict. When it's `false`, `reason` says why, so you can
+tell a real denial from a configuration problem. The SDK denies whenever it
+can't affirm a grant. See [Entitlements](/guides/entitlements/#fail-closed-semantics).
+
+In React you rarely call `can()` yourself. `<Gate can="exports">` renders its
+children when the user is entitled and an upsell when not, and `useEntitlement`
+gives you the same result as a hook. See [React Integration](/getting-started/react/).
+
+## Local mode: nothing leaves your app
+
+In **local mode** you ship the Playbook with your app (`localRuntime: { playbook }`)
+and pass the UserContext yourself:
+
+```tsx
+import { RevTurbineProvider } from '@revturbine/sdk';
+import { useMemo, type ReactNode } from 'react';
+import playbook from './revturbine.playbook.json';
+
+export function Monetization({ user, children }: { user: { id: string; plan: string }; children: ReactNode }) {
+  const options = useMemo(() => ({
+    localRuntime: { playbook },
+    user: { id: user.id, plan_handle: user.plan },
+  }), [user.id, user.plan]);
+
+  return <RevTurbineProvider options={options}>{children}</RevTurbineProvider>;
+}
+```
+
+The SDK makes no call to RevTurbine to decide anything. The one exception is an
+anonymous initialization event (config-shape counts and the SDK version, no
+user data), which you turn off with `anonymousTelemetry: false`. In local mode
+the plan is the trait that decides most checks; the id still matters, because
+the SDK keys everything it remembers about a user to it.
+
+Local mode is production-ready on its own, and it's the right place to start.
+
+## Connected mode: what RevTurbine adds
+
+In **connected mode** (`RuntimeMode.Server`, with `publicKey` in the browser)
+RevTurbine adds three things on top of the same local evaluation:
+
+1. **Context from RevTurbine.** Given your user id, RevTurbine returns traits
+   your app may not track: the plan Stripe says the user is on, trial state,
+   and payment health. For this, link each Stripe customer to your user:
+   set both `revturbine_account_id` and `revturbine_user_id` in the Stripe
+   metadata when you create the customer and the Checkout session, so a
+   purchase lands under the right account. See
+   [Link Stripe customers to accounts](/guides/billing/#link-stripe-customers-to-accounts).
+2. **Analytics.** The SDK reports how users meet entitlements and placements,
+   so revenue can be attributed to the prompt or upsell that drove it.
+3. **Playbook delivery.** Your launched Playbook is versioned, kept with its
+   history, and fetched by the SDK, so a launch reaches users without a deploy.
+
+The browser gets that context through a **client session**. You host one small
+route: it checks who is signed in with your own auth, uses the server SDK and
+your server key to mint a short-lived, read-only token for that user, and
+returns it. The SDK calls the route and uses the token to fetch the user's
+context. Your server key never reaches the browser. See [Client sessions](/guides/client-sessions/).
+
+## Where decisions run
+
+Decisions never depend on our servers: in both modes the SDK evaluates your
+Playbook locally, inside your app and on your backend where you verify. In
+connected mode the SDK fetches your launched Playbook at startup and refreshes
+it in the background; until the first one has loaded, a check answers "no
+access" (`reason: 'config_unavailable'`) rather than guessing. To decide from
+the first render, also ship a Playbook with your app as a startup seed
+(`localRuntime: { playbook }`). See [Runtime Modes](/guides/runtime-modes/#where-decisions-run-and-what-is-cached).
+
+<Aside type="tip" title="Permissions are a separate check">
+RevTurbine answers "does this **account** get this feature?" Your app still
+answers "is this **person** allowed to do it?" Check both. See
+[Entitlements and permissions](/concepts/entitlements-and-permissions/).
+</Aside>
+
+## Next
+
+- [Initialize the SDK](/getting-started/initialization/): one starting point per runtime, local and connected.
+- [Server-Side Integration](/getting-started/server-side/): re-check on your server before paid work.
+- [RevTurbineUserContext](/user-context/): every field, and how to keep it current.

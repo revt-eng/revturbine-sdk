@@ -83,7 +83,7 @@ export async function POST(request: Request): Promise<Response> {
 }
 ```
 
-Two conventions worth keeping: answer a denied entitlement with **402** (upgrade to proceed) and reserve 403 for permission denials, so clients can tell the two apart; and build one instance per request from a Playbook you loaded once per process, because the SDK holds a single user context per instance. See [Server-Side Integration](/getting-started/server-side/#headless-server-re-check) for why a server does not use hosted `Server` mode.
+Two conventions worth keeping: answer a denied entitlement with **402** (upgrade to proceed) and reserve 403 for permission denials, so clients can tell the two apart; and build one instance per request from a Playbook you loaded once per process, because the SDK holds a single user context per instance. A server can also run in connected mode (`RuntimeMode.Server`, with your server key), which keeps its Playbook current without a redeploy and reports events; see [Server-Side Integration](/getting-started/server-side/#hosted-delivery-on-a-backend).
 
 The client `<Gate>` keeps the UI honest and fast; the server check keeps the revenue safe. Both evaluate the same Playbook locally, so neither depends on our servers at decision time.
 

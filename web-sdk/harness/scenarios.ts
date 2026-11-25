@@ -1377,7 +1377,8 @@ export function loadExportedConfig(raw: unknown): {
         label: String(s.label),
         description: String(s.description),
         surfaceType: String(s.surface_type) as PlacementOutput['surface']['type'],
-        placementHandle: String(s.placement_handle),
+        // ST-9990: a slot reference may name no placement; fall back to the slot id.
+        placementHandle: s.placement_handle ? String(s.placement_handle) : String(s.id),
         ...(s.template ? { template: String(s.template) } : {}),
       }))
     : [...HARNESS_SLOTS];

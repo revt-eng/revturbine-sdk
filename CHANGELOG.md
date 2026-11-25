@@ -47,6 +47,135 @@ also require a changelog entry.
 
 ---
 
+## 0.19.0
+
+Release RL-3.
+
+Playbook changes for all three SDKs. No public method changes, and existing
+Playbooks keep working. One behaviour change: a Fixed placement that targets a
+message slot now shows there (see *Changed*).
+
+### Added
+
+- **Slot defaults (ST-9990, ST-9991).** A Fixed placement may set
+  `slot_default: true` to be its inline slot's default: it ranks after every
+  other eligible candidate and shows only when nothing else qualifies. On the
+  overlay slot a default does not rank last; it competes as an ordinary Fixed
+  placement. Docs: the Placements guide, *Fixed Slots*
+  (`pages-build/src/content/docs/guides/placements.mdx`).
+- **Bundle schema 19.** A Playbook whose placements use `slot_default` is
+  delivered as bundle schema 19; Playbooks without one stay at schema 18. This
+  release reads schema 19 (browser SDK through `@revt-eng/core`; Python and Rust
+  `BUNDLE_SCHEMA_VERSION = 19`). An SDK that reads only schema 18 refuses a
+  schema 19 Playbook rather than ranking the default wrongly, so upgrade every
+  SDK that loads a Playbook before you launch a slot default. Docs: the SDK
+  upgrades guide (`pages-build/src/content/docs/guides/sdk-upgrades.mdx`).
+  **Proving test:** parity fixture
+  `tests/parity/fixtures/placement_slot_default_ranks_last.json` (ts == py == rs);
+  `server-rust/tests/version_refusal.rs`.
+- **Credit packs in several sizes (ST-3164).** One add-on can sell a credit
+  pack in several sizes: one Public variation per size, each sized by its own
+  credits rule's `one_time_grant`. A checkout button for such a pack names the
+  variation of the size it sells; naming the add-on fails launch with
+  `VAL-PLC-16` (below). No SDK code changed for this. Docs: the Entitlements
+  guide, *Credit grants and credit packs*
+  (`pages-build/src/content/docs/guides/entitlements.mdx`).
+- **New validation codes.** These come from Playbook validation (the CLI,
+  import and launch), not from the SDK at runtime:
+  - `VAL-PLC-16` (error, blocks launch): an `open_checkout` CTA's `purchase`
+    names an add-on that sells several sizes (more than one Public, current
+    variation for the same billing period and segment). Name the variation of
+    the size the button sells.
+  - `VAL-PLC-17` (warning): a slot default can never show as one, because its
+    slot is the overlay or because the slot accepts none of its payload
+    templates.
+  - `VAL-PLC-18` (warning): more than one placement is the default for the same
+    slot; only one can rank last.
+
+### Changed
+
+#### Message slots admit Fixed placements (ST-9991, reversing 0.11.22's D-62)
+
+**What changed.** Behaviour change in every port; no signature changes. A
+message slot (`<MessageSurfaceSlot>`, `surface_slot_category: triggered`) now
+shows a Fixed placement that targets the slot, as well as RevTurbine-initiated
+placements whose targeting rule fires. It still never shows Access Gate
+content. Since 0.11.22 a message slot showed RevTurbine-initiated placements
+only, and rendered nothing when just a Fixed placement qualified. Where a Fixed
+placement and a RevTurbine-initiated placement both qualify in a message slot,
+the Fixed one ranks first, as in any other slot.
+
+**What to check.** A Playbook that targets a Fixed placement at a message slot
+used to show nothing there and now shows that placement. If you relied on the
+slot staying empty, remove the Fixed placement's targeting of that slot. Docs:
+the Placements guide, *Message Slots*
+(`pages-build/src/content/docs/guides/placements.mdx`), and the SDK upgrades
+guide (`pages-build/src/content/docs/guides/sdk-upgrades.mdx`).
+
+**Landed in:** this release. **Fail-closed in:** not applicable; nothing is
+refused.
+**Proving test:** `server-python/tests/placements/test_local_resolver.py`
+(`TestMessageSlotsAdmitFixed`) and `server-rust/tests/static_resolver.rs`
+(`a_message_slot_shows_fixed_content_alone`,
+`fixed_outranks_rt_initiated_content_in_a_message_slot`).
+
+#### `placement_slots` entries are references; `placement_handle` is optional (ST-9947, ST-9990)
+
+**What changed.** A Playbook's `placement_slots` entries are references to the
+slots your app defines and RevTurbine discovers; they do not configure a slot.
+An entry carries the slot `id`, an optional `label` and `description`, and
+optionally the `placement_handle` of a placement that uses it. A slot listed
+with no `placement_handle` is valid, and every SDK reads it. A slot shows
+whichever placements target it. Existing Playbooks, where every entry names a
+placement, read exactly as before. Docs: the Playbook field map
+(`pages-build/src/content/docs/reference/playbook-map.mdx`).
+
+**Landed in:** this release. **Fail-closed in:** not applicable.
+**Proving test:** `web-sdk/local-slot-id-lookup.test.ts` and
+`server-python/tests/runtime/test_local_runtime.py`
+(`test_slot_record_without_placement_handle_named_by_slot_id`). In Rust the
+field is an `Option` on the generated `placement_slots` item type
+(`server-rust/src/types.rs`).
+
+### Deprecated
+
+#### `initial_grant` is renamed `one_time_grant` (ST-3163, `VAL-ENT-04`)
+
+**What changed.** A credits entitlement rule's once-only grant (a plan's signup
+bonus, or what one purchase of a credit-pack add-on adds) is now
+`one_time_grant`. The old name `initial_grant` is still read: every SDK reads
+`one_time_grant` first and falls back to `initial_grant` when the new field is
+absent or `null`, so a Playbook with either name grants the same credits.
+Validation warns with `VAL-ENT-04` on a rule that still uses `initial_grant`.
+No removal version is decided.
+
+**Migration.** Rename the field in each entitlement rule of your Playbook:
+
+```diff
+ "entitlement_rules": [
+   {
+     "id": "ev_core_credits_free",
+     "entitlement_id": "core_credits",
+-    "initial_grant": 30,
++    "one_time_grant": 30,
+     "allowance_value": 5,
+     "reset_period": "month"
+   }
+ ]
+```
+
+If a rule carries both, `one_time_grant` wins; delete `initial_grant`. The
+upgrade worked when validation (`revturbine validate`) no longer reports
+`VAL-ENT-04`. Docs: the Entitlements guide, *Credit grants and credit packs*
+(`pages-build/src/content/docs/guides/entitlements.mdx`).
+
+**Landed in:** this release. **Fail-closed in:** not applicable; the old name
+keeps working.
+**Proving test:** `server-python/tests/entitlements/test_entitlement_check.py`
+(`test_one_time_grant_wins_over_the_old_name_and_null_falls_back`) and
+`server-rust/tests/entitlement_check.rs`
+(`one_time_grant_wins_over_the_old_name_and_a_null_one_falls_back`).
+
 ## 0.18.0
 
 An additive minor release for all three SDKs (ST-1425). Existing Playbooks,

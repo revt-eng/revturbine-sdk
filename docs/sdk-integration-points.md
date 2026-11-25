@@ -224,7 +224,8 @@ state, then returns fresh context so the SDK can re-evaluate immediately:
 
 ```ts
 const rt = initRevTurbine({
-  // ...normal provider options, including the required `user: { id }`
+  // ...normal provider options
+  user: { id: 'user_123' }, // required in every mode
   serverActions: {
     extend_trial: async ({ placement, actionType, params }) => {
       const response = await fetch('/api/trial/extend', {

@@ -35,7 +35,7 @@ semantics, and server-derived context.
 
 ## Runtime modes
 
-The same primitives work whether the SDK reads a Playbook bundled with your app (local mode, `local_only`), syncs it from RevTurbine (hosted mode, `revturbine_server`), or syncs it through your own endpoints (`custom_endpoints`). See [Runtime Modes](/guides/runtime-modes/).
+The same primitives work whether the SDK reads a Playbook bundled with your app (local mode, `local_only`), syncs it from RevTurbine (connected mode, `revturbine_server`), or syncs it through your own endpoints (`custom_endpoints`). See [Runtime Modes](/guides/runtime-modes/).
 
 ## Where decisions run
 
@@ -61,7 +61,7 @@ A check that can't justify a grant returns no access rather than guessing, so a 
 | **Account** | An organization or billing scope identified by `account_id`; membership is enforced by your app |
 | **Trigger** | A supported event or condition that makes a placement eligible for consideration |
 
-"Moment" can describe when your app asks for a decision, but SDK 0.12.4 has no
+"Moment" can describe when your app asks for a decision, but the SDK has no
 public `moment()` function. Use the documented trigger, `Gate`, `Slot`, and
 headless APIs. Likewise, proposed `InlineSlot`/`OverlaySlot` names are not current
 exports. A slot is a place to render; an overlay is a presentation choice of the

@@ -70,7 +70,7 @@ suffixes on the two limit codes.
 | `feature_not_enabled_for_plan` | A matching `feature` rule has `enabled: false` — check **denied** | Enable the rule for that plan, or upgrade the user |
 | `usage_limit_reached` | At or over a `usage_limit` rule's limit | Report accurate usage via `updateUsage()`; raise the limit or change `enforcement` |
 | `credit_balance_exhausted` | At or over a `credits` rule's allowance | Grant more credits or change `enforcement` |
-| `config_unavailable` | The launched Playbook could not be fetched (Server mode) — check **denied** | Check network connectivity; the reason distinguishes a fetch failure from a real denial |
+| `config_unavailable` | The launched Playbook could not be fetched (connected mode) — check **denied** | Check network connectivity; the reason distinguishes a fetch failure from a real denial |
 | `entitlement_not_in_playbook` | Local mode with no Playbook and no cached result — check **denied** | Add the entitlement to the Playbook fixture |
 | `sdk_disabled_provider_failure` | The SDK disabled itself after a provider failure — check **denied** | Check API keys, endpoints, and network |
 | `user_id_required` | The SDK has no identified user (a missing or blank `user.id` at init or in `identify()`), so it is disabled — check **denied**, no request made | Pass `user: { id }` after login; `getUserRequiredDiagnostic()` names the entry point |

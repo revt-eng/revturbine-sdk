@@ -120,8 +120,7 @@ ctaResolvers.register('custom', (uiPath) => openCrmConnectModal({ returnUrl: uiP
 ```tsx
 <SurfaceSlotComponent
   id="upgrade_banner"
-  surfaceType="banner"
-  userId="user_123"
+  acceptedComponentTypes={['banner']}
 />
 ```
 
@@ -130,8 +129,7 @@ ctaResolvers.register('custom', (uiPath) => openCrmConnectModal({ returnUrl: uiP
 ```tsx
 <SurfaceSlotComponent
   id="mp4_download_gate"
-  surfaceType="modal"
-  userId="user_123"
+  acceptedComponentTypes={['modal']}
 />
 ```
 
@@ -140,8 +138,7 @@ ctaResolvers.register('custom', (uiPath) => openCrmConnectModal({ returnUrl: uiP
 ```tsx
 <SurfaceSlotComponent
   id="brand_kit_inline"
-  surfaceType="in_page"
-  userId="user_123"
+  acceptedComponentTypes={['in_page']}
 />
 ```
 
@@ -150,8 +147,7 @@ ctaResolvers.register('custom', (uiPath) => openCrmConnectModal({ returnUrl: uiP
 ```tsx
 <SurfaceSlotComponent
   id="trial_countdown_toast"
-  surfaceType="toast"
-  userId="user_123"
+  acceptedComponentTypes={['toast']}
 />
 ```
 
@@ -160,8 +156,7 @@ ctaResolvers.register('custom', (uiPath) => openCrmConnectModal({ returnUrl: uiP
 ```tsx
 <SurfaceSlotComponent
   id="nav_upgrade_button"
-  surfaceType="button"
-  userId="user_123"
+  acceptedComponentTypes={['button']}
 />
 ```
 
@@ -170,8 +165,7 @@ ctaResolvers.register('custom', (uiPath) => openCrmConnectModal({ returnUrl: uiP
 ```tsx
 <SurfaceSlotComponent
   id="plans_page_surface"
-  surfaceType="full_page"
-  userId="user_123"
+  acceptedComponentTypes={['full_page']}
 />
 ```
 
@@ -180,8 +174,7 @@ ctaResolvers.register('custom', (uiPath) => openCrmConnectModal({ returnUrl: uiP
 ```tsx
 <SurfaceSlotComponent
   id="cli_usage_warning"
-  surfaceType="cli"
-  userId="user_123"
+  acceptedComponentTypes={['cli']}
 />
 ```
 
@@ -190,8 +183,7 @@ ctaResolvers.register('custom', (uiPath) => openCrmConnectModal({ returnUrl: uiP
 ```tsx
 <SurfaceSlotComponent
   id="core_credits_quota_meter"
-  surfaceType="in_page"
-  userId="user_123"
+  acceptedComponentTypes={['in_page']}
 />
 ```
 
@@ -200,8 +192,7 @@ ctaResolvers.register('custom', (uiPath) => openCrmConnectModal({ returnUrl: uiP
 ```tsx
 <SurfaceSlotComponent
   id="credit_balance_panel"
-  surfaceType="in_page"
-  userId="user_123"
+  acceptedComponentTypes={['in_page']}
 />
 ```
 

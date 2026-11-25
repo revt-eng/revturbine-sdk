@@ -636,6 +636,57 @@ fn credits_fall_back_to_initial_grant_only_when_allowance_absent() {
 }
 
 #[test]
+fn credits_read_one_time_grant_the_current_name() {
+    // ST-3163: a canonical Playbook carries only `one_time_grant`; it must limit,
+    // not read as unlimited.
+    let cfg = config(
+        "credits",
+        json!([{
+            "entitlement_id": "feat_x", "plan_ids": ["pro"],
+            "kind": "credits", "one_time_grant": 25, "enforcement": "hard_block",
+        }]),
+    );
+    let r = derive(&cfg, &at_usage(25.0));
+    assert_eq!(r.status, "denied");
+    assert_eq!(r.limit.as_ref().unwrap().to_string(), "25");
+}
+
+#[test]
+fn one_time_grant_wins_over_the_old_name_and_a_null_one_falls_back() {
+    // core: `one_time_grant ?? initial_grant`.
+    let both = config(
+        "credits",
+        json!([{
+            "entitlement_id": "feat_x", "plan_ids": ["pro"],
+            "kind": "credits", "one_time_grant": 25, "initial_grant": 5, "enforcement": "hard_block",
+        }]),
+    );
+    assert_eq!(
+        derive(&both, &at_usage(10.0))
+            .limit
+            .as_ref()
+            .unwrap()
+            .to_string(),
+        "25"
+    );
+    let null_new = config(
+        "credits",
+        json!([{
+            "entitlement_id": "feat_x", "plan_ids": ["pro"],
+            "kind": "credits", "one_time_grant": null, "initial_grant": 5, "enforcement": "hard_block",
+        }]),
+    );
+    assert_eq!(
+        derive(&null_new, &at_usage(1.0))
+            .limit
+            .as_ref()
+            .unwrap()
+            .to_string(),
+        "5"
+    );
+}
+
+#[test]
 fn an_explicit_null_allowance_means_unlimited_and_beats_initial_grant() {
     // Presence, not resolution, picks the source: a null allowance_value is an
     // EXPLICIT unlimited and must not fall through to initial_grant.

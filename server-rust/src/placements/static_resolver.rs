@@ -223,6 +223,10 @@ pub fn interpolate_content_tokens(content: &Map<String, Value>) -> Map<String, V
         .collect()
 }
 
+/// The overlay slot's fixed id (sdk.md §3): the one slot where a slot default
+/// is an ordinary candidate.
+pub const OVERLAY_SLOT_ID: &str = "overlay";
+
 /// One indexed candidate: its output plus every normalized trigger.
 #[derive(Debug, Clone)]
 struct CandidateOutput {
@@ -236,6 +240,10 @@ struct CandidateOutput {
     entry_category: Option<String>,
     trigger_entitlement_handle: Option<String>,
     trigger_slot_id: Option<String>,
+    /// ST-9991: the entry is its slot's default (`slot_default: true`, a Fixed
+    /// placement). Read from the raw Playbook entry, so it works before the
+    /// vendored types carry the field.
+    slot_default: bool,
     trial_trigger: Option<TrialTrigger>,
     threshold_trigger: Option<ThresholdTrigger>,
     qualifier_trigger: Option<QualifierTrigger>,
@@ -721,6 +729,7 @@ impl StaticPlacementResolver {
                     entry_category: s(entry, "category"),
                     trigger_entitlement_handle: trigger_entitlement_handle.clone(),
                     trigger_slot_id: read_slot_id_from_trigger(trigger).map(str::to_string),
+                    slot_default: entry.get("slot_default").and_then(Value::as_bool) == Some(true),
                     trial_trigger,
                     threshold_trigger: read_json_threshold_trigger(
                         trigger,
@@ -1012,7 +1021,15 @@ impl StaticPlacementResolver {
                     .copied()
                     .filter(|i| self.candidates[*i].trigger_slot_id.as_deref() == Some(sid))
                     .collect();
-                if !narrowed.is_empty() {
+                // ST-9991: a Fixed slot default names its slot in its trigger,
+                // so narrowing to it alone would make it always win. In an
+                // inline slot, narrow only when something other than a default
+                // targets the slot (core local-resolver.ts, the same rule).
+                let inline_slot = sid != OVERLAY_SLOT_ID;
+                if narrowed
+                    .iter()
+                    .any(|i| !(inline_slot && self.candidates[*i].slot_default))
+                {
                     idxs = narrowed;
                 }
             }
@@ -1031,16 +1048,11 @@ impl StaticPlacementResolver {
             }
 
             if slot_category == Some("triggered") {
-                // D-62 (Kent, 2026-10-06): a message slot shows ONLY
-                // RT-initiated content (category tiers 3 and 4) — a hard
-                // filter, never a preference. Fixed and Access Gate content
-                // never render here.
-                idxs.retain(|i| {
-                    matches!(
-                        category_bucket(&self.candidates[*i].ranking_category()),
-                        2 | 4
-                    )
-                });
+                // ST-9991 (placement-decision-rules.md §4.2, superseding
+                // D-62): Fixed content is eligible in a message slot; only
+                // Access Gate content stays out (§4.1) — a hard filter, never
+                // a preference.
+                idxs.retain(|i| category_bucket(&self.candidates[*i].ranking_category()) != 0);
             } else if let Some(prefs) = slot_category.and_then(preferred_categories) {
                 if slot_category != Some("fixed") && idxs.len() > 1 {
                     let narrowed: Vec<usize> = idxs
@@ -1163,12 +1175,19 @@ impl StaticPlacementResolver {
                 eligible.push(i);
             }
 
-            let ranked = rank_candidates(
+            let mut ranked = rank_candidates(
                 &self.candidates,
                 apply_threshold_milestone_supersession(&self.candidates, eligible),
                 entitlements_state,
                 user_elapsed_percent,
             );
+            // ST-9991 (§4.2): in an inline slot the slot default ranks LAST,
+            // after every other eligible candidate whatever its tier, so it
+            // shows only when nothing else qualifies. On the overlay slot
+            // (slot id `overlay`) it is an ordinary candidate. Stable sort.
+            if slot_id != Some(OVERLAY_SLOT_ID) {
+                ranked.sort_by_key(|i| self.candidates[*i].slot_default);
+            }
             // Server ports carry no presentation (cap) state, so the TS
             // `candidateGate` hook (§1 stage 4) has no equivalent here: the
             // first ranked candidate wins.

@@ -394,12 +394,21 @@ impl LocalRuntime {
             metadata.insert("fixed_only".into(), json!(true));
         }
 
-        // The caller's handle overrides the slot's own.
+        // The caller's handle overrides the slot's own. A slot reference may
+        // name no placement at all (ST-9990): an absent or empty
+        // `placement_handle` names the record by the slot id, as the web SDK
+        // does.
         let name = config
             .get("placement_handle")
             .cloned()
             .filter(|v| !v.is_null())
-            .or_else(|| slot.get("placement_handle").cloned())
+            .or_else(|| {
+                slot.get("placement_handle")
+                    .and_then(Value::as_str)
+                    .filter(|h| !h.is_empty())
+                    .map(|h| Value::String(h.to_string()))
+            })
+            .or_else(|| slot.get("id").cloned())
             .unwrap_or(Value::Null);
 
         Some(json!({
@@ -923,4 +932,41 @@ fn placement_component_type(config: &Value) -> Option<&str> {
         .get("component_type")
         .or_else(|| config.get("surface_type"))
         .and_then(Value::as_str)
+}
+
+#[cfg(test)]
+mod slot_record_tests {
+    use super::*;
+
+    fn runtime_with_slots(slots: Value) -> LocalRuntime {
+        LocalRuntime::new(
+            json!({ "version": "1", "placements": [], "placement_slots": slots }),
+            json!({}),
+            "tenant_1",
+            "user_1",
+        )
+    }
+
+    /// ST-9990: a slot reference may name no placement; the record is then
+    /// named by the slot id, as the web SDK does.
+    #[test]
+    fn slot_without_placement_handle_is_named_by_slot_id() {
+        let rt = runtime_with_slots(json!([
+            { "id": "slot_bare", "surface_type": "banner", "template": "banner_placement" },
+            { "id": "slot_empty", "surface_type": "modal", "placement_handle": "" },
+            { "id": "slot_named", "surface_type": "toast", "placement_handle": "toast_h" },
+        ]));
+        let name = |cfg: Value| rt.slot_record_for_config(&cfg).unwrap()["name"].clone();
+        assert_eq!(name(json!({ "slot_id": "slot_bare" })), json!("slot_bare"));
+        assert_eq!(
+            name(json!({ "slot_id": "slot_empty" })),
+            json!("slot_empty")
+        );
+        assert_eq!(name(json!({ "slot_id": "slot_named" })), json!("toast_h"));
+        // The caller's handle still overrides.
+        assert_eq!(
+            name(json!({ "slot_id": "slot_bare", "placement_handle": "override_h" })),
+            json!("override_h")
+        );
+    }
 }

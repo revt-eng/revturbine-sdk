@@ -2900,6 +2900,11 @@ class BillingMirrorCheckoutMode(Enum):
     setup = "setup"
 
 
+class BillingMirrorInvoiceLinkSource(Enum):
+    provider = "provider"
+    billing_facts = "billing_facts"
+
+
 class AccountExternalIdSource(Enum):
     customer_metadata_user_id = "customer_metadata.user_id"
 
@@ -3677,6 +3682,69 @@ class CapPeriod(Enum):
     week = "week"
     month = "month"
     lifetime = "lifetime"
+
+
+class CashCoverage(Enum):
+    complete = "complete"
+    partial = "partial"
+    unknown = "unknown"
+
+
+class CashCurrencyTotal(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    captured_minor: constr(pattern=r"^\d+$", max_length=40)
+    refunded_minor: constr(pattern=r"^\d+$", max_length=40)
+    net_minor: constr(pattern=r"^-?\d+$", max_length=40)
+    payments: conint(ge=0, le=9007199254740991)
+
+
+class CashPeriod(Enum):
+    monthly = "monthly"
+    annual = "annual"
+    custom = "custom"
+    one_time = "one_time"
+    unknown = "unknown"
+
+
+class Calendar1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    timezone: constr(min_length=1, max_length=64)
+    day_boundary_hour: conint(ge=0, le=23)
+    calendar_version: constr(min_length=1, max_length=64)
+
+
+class Series(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    date: date_aliased
+    period: CashPeriod
+    amount_minor: constr(pattern=r"^-?\d+$", max_length=40) | None
+    payments: conint(ge=0, le=9007199254740991)
+
+
+class Total(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    net_minor: constr(pattern=r"^-?\d+$", max_length=40) | None
+    payments: conint(ge=0, le=9007199254740991)
+
+
+class CashReportingResult(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    meta: AnalyticsReportingCurrencyMeta
+    series: list[Series] = Field(..., max_length=100000)
+    total: Total
+    unavailable: constr(max_length=2000) | None
 
 
 class ChangeClass(Enum):
@@ -6497,6 +6565,7 @@ class Placement(BaseModel):
     qualifier: Qualifier | None = None
     activation_window_start: AwareDatetime | None = None
     activation_window_end: AwareDatetime | None = None
+    slot_default: bool | None = False
     metadata: dict[str, Any] | None = {}
 
 
@@ -7074,7 +7143,7 @@ class RevTurbineConfigPlacementSlotsItem(BaseModel):
     label: constr(min_length=1)
     description: str
     surface_type: str
-    placement_handle: constr(min_length=1)
+    placement_handle: constr(min_length=1) | None = None
     template: str | None = None
 
 
@@ -12686,6 +12755,7 @@ class BillingMirrorPayment(BaseModel):
     payment_intent_provider_id: constr(min_length=1, max_length=255) | None
     invoice_provider_id: constr(min_length=1, max_length=255) | None
     subscription_provider_id: constr(min_length=1, max_length=255) | None
+    invoice_link_source: BillingMirrorInvoiceLinkSource | None = None
     status: BillingMirrorPaymentStatus
     provider_status: constr(min_length=1, max_length=64)
     currency: constr(pattern=r"^[A-Z]{3}$")
@@ -12928,6 +12998,32 @@ class BillingSubscriptionItemSnapshot(BaseModel):
     trial_end_at: AwareDatetime | None = None
 
 
+class CashDayRow(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    date: date_aliased
+    currency: constr(pattern=r"^[A-Z]{3}$")
+    currency_exponent: conint(ge=0, le=4)
+    period: CashPeriod
+    amount_minor: constr(pattern=r"^-?\d+$", max_length=40)
+    payments: conint(ge=0, le=9007199254740991)
+
+
+class CashReadResult(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    policy: Literal["cash-net-received-v1"]
+    calendar: Calendar1
+    coverage: CashCoverage
+    payment_count: conint(ge=0, le=9007199254740991)
+    payments_observed_from: date_aliased | None
+    series: list[CashDayRow] = Field(..., max_length=100000)
+    totals: list[CashCurrencyTotal] = Field(..., max_length=200)
+    reporting: CashReportingResult | None = None
+
+
 class ClientContext(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -13150,7 +13246,7 @@ class EntitlementRule(BaseModel):
     grace_period_hours: conint(ge=0, le=9007199254740991) | None = None
     tier_value: str | None = None
     rate_value: float | None = None
-    initial_grant: float | None = None
+    one_time_grant: float | None = None
     allowance_value: float | Literal["unlimited"] | None = None
     rollover_enabled: bool | None = None
     max_balance: float | Literal["unlimited"] | None = None
@@ -14257,7 +14353,7 @@ class RevTurbineConfigEntitlementRulesItem(BaseModel):
         conint(ge=-9007199254740991, le=9007199254740991) | Literal["unlimited"] | None
     ) = None
     seat_type_id: str | None = None
-    initial_grant: float | None = None
+    one_time_grant: float | None = None
     allowance_value: float | Literal["unlimited"] | None = None
     rollover_enabled: bool | None = None
     max_balance: float | Literal["unlimited"] | None = None
@@ -15099,6 +15195,8 @@ class SurfaceSlot(BaseModel):
     last_seen: AwareDatetime
     route: constr(min_length=1, max_length=512) | None = None
     slot_name: constr(min_length=1, max_length=200) | None = None
+    label: constr(min_length=1, max_length=200) | None = None
+    description: constr(max_length=2000) | None = None
     status: SurfaceSlotStatus | None = "idle"
     placement_count: conint(ge=0, le=9007199254740991) | None = 0
 
@@ -15140,6 +15238,7 @@ class TenantConfig(BaseModel):
     reporting_day_boundary_hour: conint(ge=0, le=23) | None = 0
     reporting_calendar_version: constr(min_length=1, max_length=512) | None = None
     analytics_min_sample: conint(ge=1, le=2147483647) | None = 30
+    analytics_customer_min_sample: conint(ge=1, le=2147483647) | None = 10
     paid_conversion_window_days: conint(ge=1, le=365) | None = 30
     quiet_days: conint(ge=1, le=2147483647) | None = None
     gate_follow_up_days: conint(ge=1, le=2147483647) | None = None
@@ -16870,6 +16969,7 @@ class ExportedConfigPlacementItem(BaseModel):
     payloads: list[RevTurbineConfigStudioPayload]
     order: conint(ge=0, le=9007199254740991)
     objective: constr(min_length=1, max_length=100) | None = None
+    slot_default: bool | None = None
 
 
 class GrowthSignalBundle(BaseModel):
@@ -16942,6 +17042,7 @@ class PlaybookPlacementItem(BaseModel):
     payloads: list[RevTurbineConfigStudioPayload]
     order: conint(ge=0, le=9007199254740991)
     objective: constr(min_length=1, max_length=100) | None = None
+    slot_default: bool | None = None
 
 
 class RevTurbineConfigPlacementItem(BaseModel):
@@ -16955,6 +17056,7 @@ class RevTurbineConfigPlacementItem(BaseModel):
     payloads: list[RevTurbineConfigStudioPayload]
     order: conint(ge=0, le=9007199254740991)
     objective: constr(min_length=1, max_length=100) | None = None
+    slot_default: bool | None = None
 
 
 class RevTurbineConfig(BaseModel):
