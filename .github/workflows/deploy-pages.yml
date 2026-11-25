@@ -10,6 +10,10 @@ name: Deploy Pages
 # effectively rebuilds the docs once per release. workflow_dispatch allows a
 # manual rebuild.
 #
+# Build and deploy are separate jobs: deploy-pages looks the artifact up right away,
+# and in the job that uploaded it GitHub's listing sometimes does not show it yet
+# (actions/deploy-pages#451).
+#
 # One-time repo setting required: Settings → Pages → Source = "GitHub Actions".
 
 on:
@@ -23,22 +27,19 @@ on:
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
-permissions:
-  contents: read
-  packages: read
-  pages: write
-  id-token: write
+permissions: {}
 
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      packages: read
+      pages: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -85,6 +86,17 @@ jobs:
         with:
           path: pages-build/dist
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
